@@ -43,10 +43,15 @@ class Migration(ABC):
         raise IrreversibleMigrationError()
 
 
-class QueueMigration(Migration):
+class BaseQueueMigration(Migration):
     MONGOENGINE_ALIAS: str = QUEUE_MONGOENGINE_ALIAS
     COLLECTION_JOBS: str = QUEUE_COLLECTION_JOBS
 
+    def __init__(self, version: str, description: str):
+        super().__init__(version=version, description=description)
+
+
+class QueueMigration(BaseQueueMigration):
     def __init__(self, job_type: str, version: str, description: str):
         self.job_type = job_type
         super().__init__(version=version, description=description)

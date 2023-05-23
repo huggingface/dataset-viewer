@@ -6,6 +6,7 @@ from typing import List
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
 )
 from mongodb_migration.migration import Migration
@@ -27,9 +28,6 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 )
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
-)
-from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
-    MigrationQueueDeleteTTLIndexOnFinishedAt,
 )
 from mongodb_migration.migrations._20230511100600_queue_remove_force import (
     MigrationRemoveForceFromJob,
@@ -129,9 +127,10 @@ class MigrationsCollector:
                 cache_kind="/parquet-and-dataset-info",
                 version="20230427121500",
             ),
-            MigrationQueueDeleteTTLIndexOnFinishedAt(
+            MigrationQueueDeleteTTLIndex(
                 version="20230428145000",
                 description="delete the TTL index on the 'finished_at' field in the queue database",
+                field_name="finished_at",
             ),
             CacheDeletionMigration(
                 cache_kind="dataset-split-names-from-streaming",
@@ -199,5 +198,12 @@ class MigrationsCollector:
                 job_type="/split-names-from-dataset-info",
                 cache_kind="/split-names-from-dataset-info",
                 version="20230522191200",
+            ),
+            MigrationQueueDeleteTTLIndex(
+                version="20230523171700",
+                description=(
+                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
+                ),
+                field_name="finished_at",
             ),
         ]

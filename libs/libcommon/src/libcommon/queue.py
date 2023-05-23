@@ -10,6 +10,7 @@ from itertools import groupby
 from operator import itemgetter
 from typing import Generic, List, Optional, Type, TypedDict, TypeVar
 
+import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
 from mongoengine.fields import DateTimeField, EnumField, StringField
@@ -20,7 +21,14 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
-from libcommon.utils import JobInfo, Priority, Status, get_datetime, inputs_to_string
+from libcommon.utils import (
+    FlatJobInfo,
+    JobInfo,
+    Priority,
+    Status,
+    get_datetime,
+    inputs_to_string,
+)
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -37,6 +45,10 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
+
+
+class StartedJobError(Exception):
+    pass
 
 
 # END monkey patching ### hack ###
@@ -166,6 +178,19 @@ class Job(Document):
                     "split": self.split,
                 },
                 "priority": self.priority,
+            }
+        )
+
+    def flat_info(self) -> FlatJobInfo:
+        return FlatJobInfo(
+            {
+                "job_id": str(self.pk),  # job.pk is the id. job.id is not recognized by mypy
+                "type": self.type,
+                "dataset": self.dataset,
+                "revision": self.revision,
+                "config": self.config,
+                "split": self.split,
+                "priority": self.priority.value,
             }
         )
 
@@ -502,6 +527,45 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
+    def _get_started_job(self, job_id: str) -> Job:
+        """Get a started job, and raise if it's not in the correct format
+          (does not exist, not started, incorrect values for finished_at or started_at).
+
+        Args:
+            job_id (`str`, required): id of the job
+
+        Returns:
+            `Job`: the started job
+        """
+        job = Job.objects(pk=job_id).get()
+        if job.status is not Status.STARTED:
+            raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
+        if job.finished_at is not None:
+            raise StartedJobError(f"job {job.unicity_id} has a non-empty finished_at field.")
+        if job.started_at is None:
+            raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
+        return job
+
+    def is_job_started(self, job_id: str) -> bool:
+        """Check if a job is started, with the correct values for finished_at and started_at.
+
+        Args:
+            job_id (`str`, required): id of the job
+
+        Returns:
+            `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
+              started_at, empty finished_at)
+        """
+        try:
+            self._get_started_job(job_id=job_id)
+        except DoesNotExist:
+            logging.error(f"job {job_id} does not exist.")
+            return False
+        except StartedJobError as e:
+            logging.debug(f"job {job_id} has not the expected format for a started job: {e}")
+            return False
+        return True
+
     def finish_job(self, job_id: str, is_success: bool) -> bool:
         """Finish a job in the queue.
 
@@ -515,26 +579,17 @@ class Queue:
             `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
             finished_at) before finishing
         """
-        result = True
         try:
-            job = Job.objects(pk=job_id).get()
+            job = self._get_started_job(job_id=job_id)
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
             return False
-        if job.status is not Status.STARTED:
-            logging.warning(
-                f"job {job.unicity_id} has a not the STARTED status ({job.status.value}). Force finishing anyway."
-            )
-            result = False
-        if job.finished_at is not None:
-            logging.warning(f"job {job.unicity_id} has a non-empty finished_at field. Force finishing anyway.")
-            result = False
-        if job.started_at is None:
-            logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
-            result = False
+        except StartedJobError as e:
+            logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
+            return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
         job.update(finished_at=get_datetime(), status=finished_status)
-        return result
+        return True
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
@@ -570,6 +625,28 @@ class Queue:
             self.upsert_job(
                 job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
             )
+
+    def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "job_id": pd.Series([job["job_id"] for job in jobs], dtype="str"),
+                "type": pd.Series([job["type"] for job in jobs], dtype="category"),
+                "dataset": pd.Series([job["dataset"] for job in jobs], dtype="str"),
+                "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
+                "config": pd.Series([job["config"] for job in jobs], dtype="str"),
+                "split": pd.Series([job["split"] for job in jobs], dtype="str"),
+                "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
+            }
+        )
+        # ^ does not seem optimal at all, but I get the types right
+
+    def get_pending_jobs_df(self, dataset: str, revision: str) -> pd.DataFrame:
+        return self._get_df(
+            [
+                job.flat_info()
+                for job in Job.objects(dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED])
+            ]
+        )
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:

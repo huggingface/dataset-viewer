@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
 )
 
+import pandas as pd
 from bson import ObjectId
 from bson.errors import InvalidId
 from mongoengine import Document, DoesNotExist
@@ -157,7 +158,6 @@ def upsert_response_params(
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
-    dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
@@ -167,7 +167,7 @@ def upsert_response_params(
         config=job_params["config"],
         split=job_params["split"],
         content=content,
-        dataset_git_revision=dataset_git_revision,
+        dataset_git_revision=job_params["revision"],
         details=details,
         error_code=error_code,
         http_status=http_status,
@@ -623,6 +623,66 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
         ],
         "next_cursor": "" if len(objects) < limit else str(objects[-1].id),
     }
+
+
+class CacheEntryFullMetadata(CacheEntryMetadata):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+
+def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "kind": pd.Series([entry["kind"] for entry in entries], dtype="category"),
+            "dataset": pd.Series([entry["dataset"] for entry in entries], dtype="str"),
+            "config": pd.Series([entry["config"] for entry in entries], dtype="str"),
+            "split": pd.Series([entry["split"] for entry in entries], dtype="str"),
+            "http_status": pd.Series(
+                [entry["http_status"] for entry in entries], dtype="category"
+            ),  # check if it's working as expected
+            "error_code": pd.Series([entry["error_code"] for entry in entries], dtype="category"),
+            "dataset_git_revision": pd.Series([entry["dataset_git_revision"] for entry in entries], dtype="str"),
+            "job_runner_version": pd.Series([entry["job_runner_version"] for entry in entries], dtype=pd.Int16Dtype()),
+            "progress": pd.Series([entry["progress"] for entry in entries], dtype="float"),
+            "updated_at": pd.Series(
+                [entry["updated_at"] for entry in entries], dtype="datetime64[ns]"
+            ),  # check if it's working as expected
+        }
+    )
+    # ^ does not seem optimal at all, but I get the types right
+
+
+def get_cache_entries_df(dataset: str) -> pd.DataFrame:
+    return _get_df(
+        [
+            {
+                "kind": response.kind,
+                "dataset": response.dataset,
+                "config": response.config,
+                "split": response.split,
+                "http_status": response.http_status,
+                "error_code": response.error_code,
+                "dataset_git_revision": response.dataset_git_revision,
+                "job_runner_version": response.job_runner_version,
+                "progress": response.progress,
+                "updated_at": response.updated_at,
+            }
+            for response in CachedResponse.objects(dataset=dataset).only(
+                "kind",
+                "dataset",
+                "config",
+                "split",
+                "http_status",
+                "error_code",
+                "job_runner_version",
+                "dataset_git_revision",
+                "progress",
+                "updated_at",
+            )
+        ]
+    )
 
 
 # only for the tests
