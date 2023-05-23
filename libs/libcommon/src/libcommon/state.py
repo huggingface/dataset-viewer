@@ -463,6 +463,7 @@ class CreateJobTask(Task):
             revision=self.artifact_state.revision,
             config=self.artifact_state.config,
             split=self.artifact_state.split,
+            partition=self.artifact_state.partition,
             priority=self.priority,
         )
 
@@ -625,7 +626,11 @@ class DatasetState:
         self.should_be_backfilled = len(self.plan.tasks) > 0
 
     def _get_artifact_states_for_step(
-        self, processing_step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
+        self,
+        processing_step: ProcessingStep,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        partition: Optional[str] = None,
     ) -> List[ArtifactState]:
         """Get the artifact states for a step.
 
@@ -674,6 +679,33 @@ class DatasetState:
                     for split_state in config_state.split_states
                     if split_state.split == split
                 ]
+        elif processing_step.input_type == "partition":
+            if config is None:
+                artifact_states = [
+                    partition_state.artifact_state_by_step[processing_step.name]
+                    for config_state in self.config_states
+                    for split_state in config_state.split_states
+                    for partition_state in split_state.partition_states
+                ]
+            elif split is None:
+                artifact_states = [
+                    partition_state.artifact_state_by_step[processing_step.name]
+                    for config_state in self.config_states
+                    if config_state.config == config
+                    for split_state in config_state.split_states
+                    if split_state.split == split
+                    for partition_state in split_state.partition_states
+                ]
+            else:
+                artifact_states = [
+                    partition_state.artifact_state_by_step[processing_step.name]
+                    for config_state in self.config_states
+                    if config_state.config == config
+                    for split_state in config_state.split_states
+                    if split_state.split == split
+                    for partition_state in split_state.partition_states
+                    if partition_state.partition == partition
+                ]
         else:
             raise ValueError(f"Invalid input type: {processing_step.input_type}")
         artifact_states_ids = {artifact_state.id for artifact_state in artifact_states}
@@ -697,6 +729,7 @@ class DatasetState:
                         processing_step=parent_step,
                         config=artifact_state.config,
                         split=artifact_state.split,
+                        partition=artifact_state.partition,
                     )
                 ):
                     cache_status.cache_is_outdated_by_parent[artifact_state.id] = artifact_state

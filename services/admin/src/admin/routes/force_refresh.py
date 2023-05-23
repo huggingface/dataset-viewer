@@ -38,22 +38,34 @@ def create_force_refresh_endpoint(
             if input_type == "dataset":
                 config = None
                 split = None
+                partition = None
             elif input_type == "config":
                 config = request.query_params.get("config")
                 split = None
+                partition = None
                 if not are_valid_parameters([config]):
                     raise MissingRequiredParameterError("Parameter 'config' is required")
+            elif input_type == "split":
+                config = request.query_params.get("config")
+                split = request.query_params.get("split")
+                partition = None
+                if not are_valid_parameters([config, split]):
+                    raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
             else:
                 config = request.query_params.get("config")
                 split = request.query_params.get("split")
-                if not are_valid_parameters([config, split]):
-                    raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
-            logging.info(f"/force-refresh{job_type}, dataset={dataset}, config={config}, split={split}")
+                partition = request.query_params.get("partition")
+                if not are_valid_parameters([config, split, partition]):
+                    raise MissingRequiredParameterError("Parameters 'config', 'split' and 'partition' are required")
+
+            logging.info(f"/force-refresh{job_type}, {dataset=}, {config=}, {split=}, {partition=}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
             revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            Queue().upsert_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
+            Queue().upsert_job(
+                job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, partition=partition
+            )
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,

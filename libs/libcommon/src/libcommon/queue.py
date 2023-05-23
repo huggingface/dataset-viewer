@@ -249,6 +249,7 @@ class Queue:
         revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add a job to the queue in the waiting state.
@@ -271,7 +272,10 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
+            partition=partition,
+            unicity_id=inputs_to_string(
+                dataset=dataset, config=config, split=split, partition=partition, prefix=job_type
+            ),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -285,6 +289,7 @@ class Queue:
         revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add, or update, a job to the queue in the waiting state.
@@ -298,7 +303,8 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The split on which to apply the job.
+            partition (`str`, optional): The partition on which to apply the job.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
@@ -308,12 +314,19 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
+            partition=partition,
             statuses_to_cancel=[Status.WAITING],
         )
         if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
             priority = Priority.NORMAL
         return self._add_job(
-            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
+            job_type=job_type,
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            partition=partition,
+            priority=priority,
         )
 
     def cancel_jobs(
@@ -322,6 +335,7 @@ class Queue:
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         statuses_to_cancel: Optional[List[Status]] = None,
     ) -> List[JobDict]:
         """Cancel jobs from the queue.
@@ -335,7 +349,8 @@ class Queue:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The split on which to apply the job.
+            partition (`str`, optional): The partition on which to apply the job.
             statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
                 [Status.WAITING, Status.STARTED].
 
@@ -349,6 +364,7 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
+            partition=partition,
             status__in=statuses_to_cancel,
         )
         job_dicts = [job.to_dict() for job in existing]
@@ -639,7 +655,12 @@ class Queue:
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.upsert_job(
-                job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
+                job_type=job.type,
+                dataset=job.dataset,
+                revision=job.revision,
+                config=job.config,
+                split=job.split,
+                partition=job.partition,
             )
 
     def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:

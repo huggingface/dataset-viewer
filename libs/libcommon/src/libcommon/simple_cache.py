@@ -188,9 +188,13 @@ def upsert_response_params(
 
 
 def delete_response(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kind: str,
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    partition: Optional[str] = None,
 ) -> Optional[int]:
-    return CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
+    return CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split, partition=partition).delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
@@ -247,25 +251,6 @@ class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
 
 
-# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
-def get_response_metadata(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> CacheEntryMetadata:
-    response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
-        .get()
-    )
-    return {
-        "http_status": response.http_status,
-        "error_code": response.error_code,
-        "dataset_git_revision": response.dataset_git_revision,
-        "job_runner_version": response.job_runner_version,
-        "progress": response.progress,
-        "updated_at": response.updated_at,
-    }
-
-
 class CacheEntry(CacheEntryWithoutContent):
     content: Mapping[str, Any]
 
@@ -311,9 +296,11 @@ class CachedArtifactError(Exception):
 
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
-def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
+def get_response(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None, partition: Optional[str] = None
+) -> CacheEntry:
     response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split, partition=partition)
         .only("content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
         .get()
     )
@@ -329,10 +316,14 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
 
 # Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
 def get_response_with_details(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kind: str,
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    partition: Optional[str] = None,
 ) -> CacheEntryWithDetails:
     response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split, partition=partition)
         .only(
             "content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "details"
         )
@@ -353,10 +344,16 @@ CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
 
 
 def get_response_or_missing_error(
-    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kind: str,
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    partition: Optional[str] = None,
 ) -> CacheEntryWithDetails:
     try:
-        response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
+        response = get_response_with_details(
+            kind=kind, dataset=dataset, config=config, split=split, partition=partition
+        )
     except DoesNotExist:
         response = CacheEntryWithDetails(
             content={
@@ -381,7 +378,11 @@ class BestResponse:
 
 
 def get_best_response(
-    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kinds: List[str],
+    dataset: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
+    partition: Optional[str] = None,
 ) -> BestResponse:
     """
     Get the best response from a list of cache kinds.
@@ -407,7 +408,10 @@ def get_best_response(
         raise ValueError("kinds must be a non-empty list")
     best_response_candidates = [
         BestResponse(
-            kind=kind, response=get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
+            kind=kind,
+            response=get_response_or_missing_error(
+                kind=kind, dataset=dataset, config=config, split=split, partition=partition
+            ),
         )
         for kind in kinds
     ]
