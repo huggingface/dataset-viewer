@@ -20,7 +20,7 @@ from worker.utils import (
 )
 
 
-def compute_split_names_from_dataset_info_response(dataset: str, config: str) -> SplitsList:
+def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsList:
     """
     Get the response of 'config-split-names-from-info' for one specific dataset and config on huggingface.co
     computed from cached response in dataset-info step.
@@ -75,5 +75,5 @@ class ConfigSplitNamesFromInfoJobRunner(ConfigJobRunner):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_split_names_from_dataset_info_response(dataset=self.dataset, config=self.config)
+            compute_split_names_from_info_response(dataset=self.dataset, config=self.config)
         )
