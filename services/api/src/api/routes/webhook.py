@@ -8,11 +8,11 @@ from jsonschema import ValidationError, validate
 from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
 from libcommon.operations import backfill_dataset, delete_dataset
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.prometheus import StepProfiler
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.prometheus import StepProfiler
 from api.utils import Endpoint, get_response
 
 schema = {

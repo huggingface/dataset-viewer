@@ -8,6 +8,7 @@ from typing import List, Mapping, Optional, Tuple
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
+from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
@@ -20,7 +21,6 @@ from starlette.responses import Response
 
 from api.authentication import auth_check
 from api.config import EndpointConfig
-from api.prometheus import StepProfiler
 from api.utils import (
     ApiCustomError,
     Endpoint,

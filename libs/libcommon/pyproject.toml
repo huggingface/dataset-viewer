@@ -67,6 +67,7 @@ module = [
     "datasets.*",
     "networkx.*",
     "huggingface_hub.*",
+    "prometheus_client.*",
     "pyarrow.*",
 ]
 # ^ huggingface_hub is not typed since version 0.13.0

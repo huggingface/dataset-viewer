@@ -3,10 +3,9 @@
 
 import logging
 
+from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse, Response
-
-from api.prometheus import StepProfiler
 
 
 async def healthcheck_endpoint(_: Request) -> Response:
