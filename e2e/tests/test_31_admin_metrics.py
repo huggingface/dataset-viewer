@@ -9,7 +9,7 @@ from .utils import ADMIN_URL, get
 
 
 def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
-    label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
+    label_str = ",".join([f'{k}="{v}"' for k, v in sorted(labels.items())])
     s = name + "{" + label_str + "}"
     return any(re.match(s, metric_name) is not None for metric_name in metric_names)
 
