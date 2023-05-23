@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from typing import Optional
 
 from libcommon.queue import Job
 from libcommon.simple_cache import CachedResponse
@@ -12,8 +13,10 @@ from mongodb_migration.migration import CacheMigration, QueueMigration
 
 
 class CacheRenamingMigration(CacheMigration):
-    def __init__(self, cache_kind: str, new_cache_kind: str, version: str, description: str):
+    def __init__(self, cache_kind: str, new_cache_kind: str, version: str, description: Optional[str] = None):
         self.new_cache_kind: str = new_cache_kind
+        if not description:
+            description = f"update 'kind' field in cache from '{cache_kind}' to '{new_cache_kind}'"
         super().__init__(cache_kind=cache_kind, version=version, description=description)
 
     def up(self) -> None:
@@ -45,8 +48,10 @@ class CacheRenamingMigration(CacheMigration):
 
 
 class QueueRenamingMigration(QueueMigration):
-    def __init__(self, job_type: str, new_job_type: str, version: str, description: str):
+    def __init__(self, job_type: str, new_job_type: str, version: str, description: Optional[str] = None):
         self.new_job_type: str = new_job_type
+        if not description:
+            description = f"update 'type' and 'unicity_id' fields in job from '{job_type}' to '{new_job_type}'"
         super().__init__(job_type=job_type, version=version, description=description)
 
     def up(self) -> None:
