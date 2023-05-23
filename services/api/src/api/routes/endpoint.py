@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
@@ -132,6 +132,40 @@ def get_cache_entry_from_steps(
         else:
             raise ResponseNotFoundError("Not found.")
     return best_response.response
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+class OptInOutUrlsCountResponse(TypedDict):
+    urls_columns: List[str]
+    num_opt_in_urls: int
+    num_opt_out_urls: int
+    num_urls: int
+    num_scanned_rows: int
+    has_urls_columns: bool
+    full_scan: Optional[bool]
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+HARD_CODED_OPT_IN_OUT_URLS = {
+    "laion/laion2B-en": OptInOutUrlsCountResponse(
+        urls_columns=["URL"],
+        num_opt_in_urls=5,
+        num_opt_out_urls=42785281,
+        num_urls=2322161807,
+        num_scanned_rows=0, # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+    "kakaobrain/coyo-700m": OptInOutUrlsCountResponse(
+        urls_columns=["url"],
+        num_opt_in_urls=2,
+        num_opt_out_urls=4691511,
+        num_urls=746972269,
+        num_scanned_rows=0, # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+}
 
 
 class InputTypeValidator(ABC):
@@ -285,6 +319,16 @@ def create_endpoint(
                     )
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
+                    # TODO: remove once full scan is implemented for spawning urls scan
+                    if (
+                        endpoint_name == "/opt-in-out-urls"
+                        and validator.input_type == "dataset"
+                        and dataset in HARD_CODED_OPT_IN_OUT_URLS
+                    ):
+                        return get_json_ok_response(
+                            content=HARD_CODED_OPT_IN_OUT_URLS[dataset], max_age=max_age_long, revision=revision
+                        )
+
                     result = get_cache_entry_from_steps(
                         processing_steps=processing_steps,
                         dataset=dataset,
