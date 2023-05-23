@@ -74,6 +74,4 @@ class ConfigSplitNamesFromInfoJobRunner(ConfigJobRunner):
         )
 
     def compute(self) -> CompleteJobResult:
-        return CompleteJobResult(
-            compute_split_names_from_info_response(dataset=self.dataset, config=self.config)
-        )
+        return CompleteJobResult(compute_split_names_from_info_response(dataset=self.dataset, config=self.config))
