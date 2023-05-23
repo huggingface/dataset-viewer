@@ -130,31 +130,19 @@ def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
 
-PARQUET_METADATA_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = [
-    "cifar100",  # small images
-    "beans",  # images
-    "lewtun/dog_food",  # images
-    "glue",  # texts
-    "kmfoda/booksum",  # long texts
-    "arabic_speech_corpus",  # audio
-    "segments/sidewalk-semantic",  # two columns of full hd images
-]
+ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
 
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'"]
-# it's too slow for image and audio if parquet metadata are not available
-UNSUPPORTED_FEATURES_MAGIC_STRINGS_WITHOUT_PARQUET_METADATA = [
-    "Audio(",
-    "Image(",
-    "'binary'",
-]
+# audio still has some errors when librosa is imported
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 
 
-def get_supported_unsupported_columns(features: Features, with_parquet_metadata: bool) -> Tuple[List[str], List[str]]:
+def get_supported_unsupported_columns(features: Features, dataset_name: str) -> Tuple[List[str], List[str]]:
     supported_columns, unsupported_columns = [], []
     unsupported_features_magic_strings = (
         UNSUPPORTED_FEATURES_MAGIC_STRINGS
-        if with_parquet_metadata
-        else UNSUPPORTED_FEATURES_MAGIC_STRINGS_WITHOUT_PARQUET_METADATA
+        if ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST != "all"
+        and dataset_name not in ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST
+        else []
     )
     for column, feature in features.items():
         str_feature = str(feature)
@@ -228,9 +216,7 @@ class ParquetIndexWithoutMetadata:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
         with StepProfiler(method="rows.index.without_metadata", step="get the dataset's features"):
             features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
-            supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                features, with_parquet_metadata=False
-            )
+            supported_columns, unsupported_columns = get_supported_unsupported_columns(features, dataset_name=dataset)
 
         with StepProfiler(method="rows.index.without_metadata", step="create the row group offsets"):
             row_group_offsets = np.cumsum(
@@ -361,13 +347,14 @@ class ParquetIndexWithMetadata:
                 ]
                 num_bytes = [parquet_file_metadata["size"] for parquet_file_metadata in parquet_files_metadata]
                 num_rows = [parquet_file_metadata["num_rows"] for parquet_file_metadata in parquet_files_metadata]
+                dataset_name = parquet_files_metadata[0]["dataset"]
             except Exception as e:
                 raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
 
         with StepProfiler(method="rows.index.with_metadata", step="get the dataset's features"):
             features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                features, with_parquet_metadata=True
+                features, dataset_name=dataset_name
             )
         return ParquetIndexWithMetadata(
             features=features,
@@ -413,15 +400,9 @@ class RowsIndex:
             # get the list of parquet files
             with StepProfiler(method="rows.index", step="get list of parquet files for split"):
                 config_parquet_processing_steps = self.processing_graph.get_config_parquet_processing_steps()
-                if (
-                    PARQUET_METADATA_DATASETS_ALLOW_LIST == "all"
-                    or self.dataset in PARQUET_METADATA_DATASETS_ALLOW_LIST
-                ):  # TODO(QL): enable for all datasets once it works well
-                    config_parquet_metadata_processing_steps = (
-                        self.processing_graph.get_config_parquet_metadata_processing_steps()
-                    )
-                else:
-                    config_parquet_metadata_processing_steps = []
+                config_parquet_metadata_processing_steps = (
+                    self.processing_graph.get_config_parquet_metadata_processing_steps()
+                )
                 if not config_parquet_processing_steps:
                     raise RuntimeError("No processing steps are configured to provide a config's parquet response.")
                 try:
