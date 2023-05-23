@@ -47,6 +47,10 @@ class QuerySetManager(Generic[U]):
         return QuerySet(cls, cls._get_collection())
 
 
+class StartedJobError(Exception):
+    pass
+
+
 # END monkey patching ### hack ###
 
 
@@ -523,6 +527,45 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
+    def _get_started_job(self, job_id: str) -> Job:
+        """Get a started job, and raise if it's not in the correct format
+          (does not exist, not started, incorrect values for finished_at or started_at).
+
+        Args:
+            job_id (`str`, required): id of the job
+
+        Returns:
+            `Job`: the started job
+        """
+        job = Job.objects(pk=job_id).get()
+        if job.status is not Status.STARTED:
+            raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
+        if job.finished_at is not None:
+            raise StartedJobError(f"job {job.unicity_id} has a non-empty finished_at field.")
+        if job.started_at is None:
+            raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
+        return job
+
+    def is_job_started(self, job_id: str) -> bool:
+        """Check if a job is started, with the correct values for finished_at and started_at.
+
+        Args:
+            job_id (`str`, required): id of the job
+
+        Returns:
+            `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
+              started_at, empty finished_at)
+        """
+        try:
+            self._get_started_job(job_id=job_id)
+        except DoesNotExist:
+            logging.error(f"job {job_id} does not exist. Aborting.")
+            return False
+        except StartedJobError as e:
+            logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
+            return False
+        return True
+
     def finish_job(self, job_id: str, is_success: bool) -> bool:
         """Finish a job in the queue.
 
@@ -536,26 +579,17 @@ class Queue:
             `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
             finished_at) before finishing
         """
-        result = True
         try:
-            job = Job.objects(pk=job_id).get()
+            job = self._get_started_job(job_id=job_id)
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
             return False
-        if job.status is not Status.STARTED:
-            logging.warning(
-                f"job {job.unicity_id} has a not the STARTED status ({job.status.value}). Force finishing anyway."
-            )
-            result = False
-        if job.finished_at is not None:
-            logging.warning(f"job {job.unicity_id} has a non-empty finished_at field. Force finishing anyway.")
-            result = False
-        if job.started_at is None:
-            logging.warning(f"job {job.unicity_id} has an empty started_at field. Force finishing anyway.")
-            result = False
+        except StartedJobError as e:
+            logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
+            return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
         job.update(finished_at=get_datetime(), status=finished_status)
-        return result
+        return True
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None

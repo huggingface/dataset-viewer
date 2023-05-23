@@ -135,18 +135,23 @@ class JobManager:
 
     def finish(self, job_result: JobResult) -> None:
         # check if the job is still in started status
-        # if not, it means that the job was cancelled, and we don't want to update the cache
-        job_was_valid = Queue().finish_job(
-            job_id=self.job_id,
-            is_success=job_result["is_success"],
-        )
-        if job_was_valid and job_result["output"]:
-            self.set_cache(job_result["output"])
-            logging.debug("the job output has been written to the cache.")
-            self.backfill()
-            logging.debug("the dataset has been backfilled.")
-        else:
-            logging.debug("the job output has not been written to the cache, and the dataset has not been backfilled.")
+        if not Queue().is_job_started(job_id=self.job_id):
+            logging.debug("the job was cancelled, don't update the cache")
+            return
+        # if the job raised an exception, finish it and return
+        if not job_result["output"]:
+            Queue().finish_job(job_id=self.job_id, is_success=False)
+            logging.debug("the job raised an exception, don't update the cache")
+            return
+        # else, update the cache and backfill the dataset
+        self.set_cache(job_result["output"])
+        logging.debug("the job output has been written to the cache.")
+        self.backfill()
+        logging.debug("the dataset has been backfilled, which implies finishing the job.")
+        # ^ no need to finish the job, it's done by the backfilling
+        if Queue().is_job_started(job_id=self.job_id):
+            logging.warning("the job was not finished by the backfilling, finish it")
+            Queue().finish_job(job_id=self.job_id, is_success=True)
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
