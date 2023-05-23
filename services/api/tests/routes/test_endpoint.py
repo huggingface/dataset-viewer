@@ -97,7 +97,7 @@ def test_get_cache_entry_from_steps() -> None:
     processing_graph = ProcessingGraph(graph_config.specification)
 
     cache_with_error = "config-split-names-from-streaming"
-    cache_without_error = "/split-names-from-dataset-info"
+    cache_without_error = "config-split-names-from-info"
 
     step_with_error = processing_graph.get_processing_step(cache_with_error)
     step_without_error = processing_graph.get_processing_step(cache_without_error)

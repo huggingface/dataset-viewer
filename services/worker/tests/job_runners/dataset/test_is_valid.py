@@ -29,7 +29,7 @@ UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING: UpstreamResponse = UpstreamRespons
     kind="config-split-names-from-streaming", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
 )
 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO: UpstreamResponse = UpstreamResponse(
-    kind="/split-names-from-dataset-info", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
+    kind="config-split-names-from-info", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
 )
 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
     kind="split-first-rows-from-streaming",
@@ -42,7 +42,7 @@ UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET: UpstreamResponse = UpstreamResp
     kind="split-first-rows-from-parquet", dataset="dataset_ok", config="config", http_status=HTTPStatus.OK, content={}
 )
 UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="/split-names-from-dataset-info",
+    kind="config-split-names-from-info",
     dataset="dataset_ok",
     config=None,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,

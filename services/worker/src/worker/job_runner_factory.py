@@ -19,11 +19,11 @@ from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.config.size import ConfigSizeJobRunner
-from worker.job_runners.config.split_names_from_dataset_info import (
-    SplitNamesFromDatasetInfoJobRunner,
+from worker.job_runners.config.split_names_from_info import (
+    ConfigSplitNamesFromInfoJobRunner,
 )
 from worker.job_runners.config.split_names_from_streaming import (
-    SplitNamesFromStreamingJobRunner,
+    ConfigSplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
@@ -90,8 +90,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
-        if job_type == SplitNamesFromStreamingJobRunner.get_job_type():
-            return SplitNamesFromStreamingJobRunner(
+        if job_type == ConfigSplitNamesFromStreamingJobRunner.get_job_type():
+            return ConfigSplitNamesFromStreamingJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -155,8 +155,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
             )
-        if job_type == SplitNamesFromDatasetInfoJobRunner.get_job_type():
-            return SplitNamesFromDatasetInfoJobRunner(
+        if job_type == ConfigSplitNamesFromInfoJobRunner.get_job_type():
+            return ConfigSplitNamesFromInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -216,7 +216,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
 
         supported_job_types = [
             ConfigNamesJobRunner.get_job_type(),
-            SplitNamesFromStreamingJobRunner.get_job_type(),
+            ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),
             ConfigParquetJobRunner.get_job_type(),
@@ -225,7 +225,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigInfoJobRunner.get_job_type(),
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
-            SplitNamesFromDatasetInfoJobRunner.get_job_type(),
+            ConfigSplitNamesFromInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),

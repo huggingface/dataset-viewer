@@ -5,12 +5,12 @@ import logging
 from typing import Literal, Optional
 
 import requests
+from libcommon.prometheus import StepProfiler
 from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
 from api.jwt_token import is_jwt_valid
-from api.prometheus import StepProfiler
 from api.utils import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,

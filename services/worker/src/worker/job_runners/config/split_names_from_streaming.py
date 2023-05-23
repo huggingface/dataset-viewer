@@ -7,8 +7,8 @@ from typing import List, Optional, Union
 from datasets import get_dataset_split_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import (
+    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
-    PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
 )
 from libcommon.exceptions import EmptyDatasetError, SplitNamesFromStreamingError
 
@@ -65,10 +65,10 @@ def compute_split_names_from_streaming_response(
             f"Cannot get the split names for the config '{config}' of the dataset.",
             cause=err,
         ) from err
-    return SplitsList({"splits": split_name_items})
+    return SplitsList(splits=split_name_items)
 
 
-class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
+class ConfigSplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-streaming"
@@ -80,8 +80,8 @@ class SplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
     @staticmethod
     def get_parallel_job_runner() -> JobRunnerInfo:
         return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_SPLIT_NAMES_FROM_DATASET_INFO_VERSION,
-            job_type="/split-names-from-dataset-info",
+            job_runner_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
+            job_type="config-split-names-from-info",
         )
 
     def compute(self) -> CompleteJobResult:

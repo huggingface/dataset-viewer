@@ -2,10 +2,12 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from typing import Any, List, Mapping, Optional
 
 from mongoengine.connection import get_db
 
 from mongodb_migration.migration import (
+    BaseQueueMigration,
     CacheMigration,
     IrreversibleMigrationError,
     MetricsMigration,
@@ -14,6 +16,11 @@ from mongodb_migration.migration import (
 
 
 class MetricsDeletionMigration(MetricsMigration):
+    def __init__(self, job_type: str, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the queue and cache metrics for step '{job_type}'"
+        super().__init__(job_type=job_type, cache_kind=cache_kind, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete job metrics of type {self.job_type}")
 
@@ -37,6 +44,11 @@ class MetricsDeletionMigration(MetricsMigration):
 
 
 class CacheDeletionMigration(CacheMigration):
+    def __init__(self, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the cache entries of kind '{cache_kind}'"
+        super().__init__(cache_kind=cache_kind, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete cache entries of kind {self.cache_kind}")
         db = get_db(self.MONGOENGINE_ALIAS)
@@ -57,6 +69,11 @@ class CacheDeletionMigration(CacheMigration):
 
 
 class QueueDeletionMigration(QueueMigration):
+    def __init__(self, job_type: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the jobs of type '{job_type}'"
+        super().__init__(job_type=job_type, version=version, description=description)
+
     def up(self) -> None:
         logging.info(f"Delete jobs of type {self.job_type}")
 
@@ -73,3 +90,45 @@ class QueueDeletionMigration(QueueMigration):
         db = get_db(self.MONGOENGINE_ALIAS)
         if db[self.COLLECTION_JOBS].count_documents({"type": self.job_type}):
             raise ValueError(f"Found documents with type {self.job_type}")
+
+
+def get_index_names(index_information: Mapping[str, Any], field_name: str) -> List[str]:
+    return [
+        name
+        for name, value in index_information.items()
+        if isinstance(value, dict)
+        and "expireAfterSeconds" in value
+        and "key" in value
+        and value["key"] == [(field_name, 1)]
+    ]
+
+
+class MigrationQueueDeleteTTLIndex(BaseQueueMigration):
+    def __init__(self, version: str, description: str, field_name: str):
+        super().__init__(version=version, description=description)
+        self.field_name = field_name
+
+    def up(self) -> None:
+        logging.info(
+            f"Delete ttl index on field {self.field_name}. Mongoengine will create it again with a different TTL"
+            " parameter"
+        )
+
+        db = get_db(self.MONGOENGINE_ALIAS)
+        collection = db[self.COLLECTION_JOBS]
+        ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
+        if len(ttl_index_names) != 1:
+            raise ValueError(f"Expected 1 ttl index on field {self.field_name}, found {len(ttl_index_names)}")
+        collection.drop_index(ttl_index_names[0])
+
+    def down(self) -> None:
+        raise IrreversibleMigrationError("This migration does not support rollback")
+
+    def validate(self) -> None:
+        logging.info("Check that the index does not exists anymore")
+
+        db = get_db(self.MONGOENGINE_ALIAS)
+        collection = db[self.COLLECTION_JOBS]
+        ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
+        if len(ttl_index_names) > 0:
+            raise ValueError(f"Found TTL index for field {self.field_name}")

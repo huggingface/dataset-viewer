@@ -12,13 +12,13 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.split_names_from_streaming import (
-    SplitNamesFromStreamingJobRunner,
+    ConfigSplitNamesFromStreamingJobRunner,
 )
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets, get_default_config_split
 
-GetJobRunner = Callable[[str, str, AppConfig], SplitNamesFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesFromStreamingJobRunner]
 
 
 @pytest.fixture
@@ -31,21 +31,21 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-    ) -> SplitNamesFromStreamingJobRunner:
-        processing_step_name = SplitNamesFromStreamingJobRunner.get_job_type()
+    ) -> ConfigSplitNamesFromStreamingJobRunner:
+        processing_step_name = ConfigSplitNamesFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": SplitNamesFromStreamingJobRunner.get_job_runner_version(),
+                    "job_runner_version": ConfigSplitNamesFromStreamingJobRunner.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
             }
         )
-        return SplitNamesFromStreamingJobRunner(
+        return ConfigSplitNamesFromStreamingJobRunner(
             job_info={
-                "type": SplitNamesFromStreamingJobRunner.get_job_type(),
+                "type": ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": "revision",

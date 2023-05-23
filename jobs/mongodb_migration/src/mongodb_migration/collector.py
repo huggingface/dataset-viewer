@@ -6,6 +6,7 @@ from typing import List
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
 )
 from mongodb_migration.migration import Migration
@@ -27,9 +28,6 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 )
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
-)
-from mongodb_migration.migrations._20230428145000_queue_delete_ttl_index import (
-    MigrationQueueDeleteTTLIndexOnFinishedAt,
 )
 from mongodb_migration.migrations._20230511100600_queue_remove_force import (
     MigrationRemoveForceFromJob,
@@ -72,15 +70,11 @@ class MigrationsCollector:
                 cache_kind="/split-names",
                 new_cache_kind="/split-names-from-streaming",
                 version="20230216112500",
-                description="update 'kind' field in cache from /split-names to /split-names-from-streaming",
             ),
             QueueRenamingMigration(
                 job_type="/split-names",
                 new_job_type="/split-names-from-streaming",
                 version="20230216141000",
-                description=(
-                    "update 'type' and 'unicity_id' fields in job from /split-names to /split-names-from-streaming"
-                ),
             ),
             MigrationAddProgressToCacheResponse(
                 version="20230309123100",
@@ -96,89 +90,73 @@ class MigrationsCollector:
                 cache_kind="/first-rows",
                 new_cache_kind="split-first-rows-from-streaming",
                 version="20230320163700",
-                description="update 'kind' field in cache from /first-rows to split-first-rows-from-streaming",
             ),
             QueueRenamingMigration(
                 job_type="/first-rows",
                 new_job_type="split-first-rows-from-streaming",
                 version="20230320165700",
-                description=(
-                    "update 'type' and 'unicity_id' fields in job from /first-rows to split-first-rows-from-streaming"
-                ),
             ),
             CacheRenamingMigration(
                 cache_kind="/dataset-info",
                 new_cache_kind="dataset-info",
                 version="20230323155000",
-                description="update 'kind' field in cache from '/dataset-info' to 'dataset-info'",
             ),
             QueueRenamingMigration(
                 job_type="/dataset-info",
                 new_job_type="dataset-info",
                 version="20230323160000",
-                description="update 'type' and 'unicity_id' fields in job from /dataset-info to dataset-info",
             ),
             QueueDeletionMigration(
                 job_type="/splits",
                 version="20230407091400",
-                description="delete the jobs of type '/splits'",
             ),
             CacheDeletionMigration(
                 cache_kind="/splits",
                 version="20230407091500",
-                description="delete the cache entries of kind '/splits'",
             ),
             QueueDeletionMigration(
                 job_type="/parquet-and-dataset-info",
                 version="20230424173000",
-                description="delete the jobs of type '/parquet-and-dataset-info'",
             ),
             CacheDeletionMigration(
                 cache_kind="/parquet-and-dataset-info",
                 version="20230424174000",
-                description="delete the cache entries of kind '/parquet-and-dataset-info'",
             ),
             MetricsDeletionMigration(
                 job_type="/parquet-and-dataset-info",
-                cache_kind="'/parquet-and-dataset-info'",
+                cache_kind="/parquet-and-dataset-info",
                 version="20230427121500",
-                description="delete the queue and cache metrics for step '/parquet-and-dataset-info'",
             ),
-            MigrationQueueDeleteTTLIndexOnFinishedAt(
+            MigrationQueueDeleteTTLIndex(
                 version="20230428145000",
                 description="delete the TTL index on the 'finished_at' field in the queue database",
+                field_name="finished_at",
             ),
             CacheDeletionMigration(
                 cache_kind="dataset-split-names-from-streaming",
                 version="20230428175100",
-                description="delete the cache entries of kind 'dataset-split-names-from-streaming'",
             ),
             QueueDeletionMigration(
                 job_type="dataset-split-names-from-streaming",
                 version="20230428181800",
-                description="delete the jobs of type 'dataset-split-names-from-streaming'",
             ),
             MetricsDeletionMigration(
                 job_type="dataset-split-names-from-streaming",
                 cache_kind="dataset-split-names-from-streaming",
                 version="20230428193100",
-                description="delete the queue and cache metrics for step 'dataset-split-names-from-streaming'",
             ),
             CacheDeletionMigration(
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504185100",
-                description="delete the cache entries of kind 'dataset-split-names-from-dataset-info'",
             ),
             QueueDeletionMigration(
                 job_type="dataset-split-names-from-dataset-info",
                 version="20230504192200",
-                description="delete the jobs of type 'dataset-split-names-from-dataset-info'",
             ),
             MetricsDeletionMigration(
                 job_type="dataset-split-names-from-dataset-info",
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504194600",
-                description="delete the queue and cache metrics for step 'dataset-split-names-from-dataset-info'",
             ),
             MigrationRemoveForceFromJob(version="20230511100600", description="remove 'force' field from queue"),
             MigrationQueueDeleteIndexesWithForce(
@@ -195,24 +173,37 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-streaming",
                 new_cache_kind="config-split-names-from-streaming",
                 version="20230516164500",
-                description=(
-                    "update 'kind' field in cache from '/split-names-from-streaming' "
-                    "to 'config-split-names-from-streaming'"
-                ),
             ),
             QueueRenamingMigration(
                 job_type="/split-names-from-streaming",
                 new_job_type="config-split-names-from-streaming",
                 version="20230516164700",
-                description=(
-                    "update 'type' and 'unicity_id' fields in job from '/split-names-from-streaming' "
-                    "to 'config-split-names-from-streaming'"
-                ),
             ),
             MetricsDeletionMigration(
                 job_type="/split-names-from-streaming",
                 cache_kind="/split-names-from-streaming",
                 version="20230522094400",
-                description="delete the queue and cache metrics for step '/split-names-from-streaming'",
+            ),
+            CacheRenamingMigration(
+                cache_kind="/split-names-from-dataset-info",
+                new_cache_kind="config-split-names-from-info",
+                version="20230522190800",
+            ),
+            QueueRenamingMigration(
+                job_type="/split-names-from-dataset-info",
+                new_job_type="config-split-names-from-info",
+                version="20230522191000",
+            ),
+            MetricsDeletionMigration(
+                job_type="/split-names-from-dataset-info",
+                cache_kind="/split-names-from-dataset-info",
+                version="20230522191200",
+            ),
+            MigrationQueueDeleteTTLIndex(
+                version="20230523171700",
+                description=(
+                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
+                ),
+                field_name="finished_at",
             ),
         ]

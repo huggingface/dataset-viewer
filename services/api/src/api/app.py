@@ -15,9 +15,9 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.jwt_token import fetch_jwt_public_key
-from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.metrics import create_metrics_endpoint
 from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
@@ -36,8 +36,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     if not exists(cached_assets_directory):
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
-
-    prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
@@ -96,7 +94,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         ),
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=prometheus.endpoint),
+        Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
         Route(
             "/webhook",

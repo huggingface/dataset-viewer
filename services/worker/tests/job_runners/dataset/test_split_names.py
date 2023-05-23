@@ -163,7 +163,7 @@ def test_compute_progress(
         # we don't really need both parent responses here, but why not (it's one case among many, see
         # libcommon.simple_cache.get_best_response)
         upsert_response(
-            kind="/split-names-from-dataset-info",
+            kind="config-split-names-from-info",
             dataset=dataset,
             config=config["config"],
             content=config["response"],
@@ -203,7 +203,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     # we don't really need both parent responses here, but why not (it's one case among many, see
     # libcommon.simple_cache.get_best_response)
     upsert_response(
-        kind="/split-names-from-dataset-info",
+        kind="config-split-names-from-info",
         dataset=dataset,
         config=config,
         content={},
@@ -242,11 +242,11 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         },
         http_status=HTTPStatus.OK,
     )
-    # here, /split-names-from-dataset-info will be picked because it's the first success response
-    # with progress==1.0 (see libcommon.simple_cache.get_best_response), but it's format is wrong
+    # here, 'config-split-names-from-info' will be picked because it's the first success response
+    # with progress==1.0 (see libcommon.simple_cache.get_best_response), but its format is wrong
     # while the other one ('config-split-names-from-streaming') is correct
     upsert_response(
-        kind="/split-names-from-dataset-info",
+        kind="config-split-names-from-info",
         dataset=dataset,
         config=config,
         content={"wrong_format": []},
