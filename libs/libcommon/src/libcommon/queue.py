@@ -559,10 +559,10 @@ class Queue:
         try:
             self._get_started_job(job_id=job_id)
         except DoesNotExist:
-            logging.error(f"job {job_id} does not exist. Aborting.")
+            logging.error(f"job {job_id} does not exist.")
             return False
         except StartedJobError as e:
-            logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
+            logging.debug(f"job {job_id} has not the expected format for a started job: {e}")
             return False
         return True
 

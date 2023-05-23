@@ -1270,6 +1270,7 @@ pymongo = {version = "^3.13.0", extras = ["srv"]}
 pytz = "^2020.1"
 requests = "^2.31.0"
 soundfile = ">=0.12.1"
+starlette-prometheus = "^0.9.0"
 
 [package.source]
 type = "directory"
@@ -2123,6 +2124,21 @@ sftp = ["paramiko (>=2.7.0)"]
 xxhash = ["xxhash (>=1.4.3)"]
 
 [[package]]
+name = "prometheus-client"
+version = "0.12.0"
+description = "Python client for the Prometheus monitoring system."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "prometheus_client-0.12.0-py2.py3-none-any.whl", hash = "sha256:317453ebabff0a1b02df7f708efbab21e3489e7072b61cb6957230dd004a0af0"},
+    {file = "prometheus_client-0.12.0.tar.gz", hash = "sha256:1b12ba48cee33b9b0b9de64a1047cbd3c5f2d0ab6ebcead7ddda613a750ec3c5"},
+]
+
+[package.extras]
+twisted = ["twisted"]
+
+[[package]]
 name = "psutil"
 version = "5.9.5"
 description = "Cross-platform lib for process and system monitoring in Python."
@@ -2852,6 +2868,22 @@ typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
 
 [[package]]
+name = "starlette-prometheus"
+version = "0.9.0"
+description = "Prometheus integration for Starlette"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "starlette-prometheus-0.9.0.tar.gz", hash = "sha256:a52fb0f1df52b44a7a677a792759337ef0ce0d59ddf3e684a7d6459a93a90e99"},
+    {file = "starlette_prometheus-0.9.0-py3-none-any.whl", hash = "sha256:b4702e4ec67dce508d28551db0e45f12f58411afdb5d1078c92ff74331915381"},
+]
+
+[package.dependencies]
+prometheus_client = ">=0.12,<0.13"
+starlette = ">=0.12.2"
+
+[[package]]
 name = "threadpoolctl"
 version = "3.1.0"
 description = "threadpoolctl"
@@ -3265,4 +3297,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "6fc5cd14f861440d39cffe21e23fcdef56a57d3cd13c69d93f9ae8d4186bc1a6"
+content-hash = "d347cc60e629909cc545b650b3fd6dd44628a349d24caace08d3dadcada7a86b"

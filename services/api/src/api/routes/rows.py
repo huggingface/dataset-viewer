@@ -31,6 +31,7 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 from huggingface_hub.hf_file_system import safe_quote
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.prometheus import StepProfiler
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
     update_last_modified_date_of_rows_in_assets_dir,
@@ -41,7 +42,6 @@ from starlette.responses import Response
 from tqdm.contrib.concurrent import thread_map
 
 from api.authentication import auth_check
-from api.prometheus import StepProfiler
 from api.routes.endpoint import get_cache_entry_from_steps
 from api.utils import (
     ApiCustomError,

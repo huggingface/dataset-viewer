@@ -6,8 +6,13 @@ from typing import Iterator
 from environs import Env
 from pytest import fixture
 
+from libcommon.metrics import _clean_metrics_database
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_cached_assets_dir
 
@@ -70,6 +75,7 @@ def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
             raise RuntimeError("Mongo resource is not available")
         yield queue_mongo_resource
         _clean_queue_database()
+        queue_mongo_resource.release()
 
 
 @fixture
@@ -81,3 +87,16 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
     with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
         yield cache_mongo_resource
         _clean_cache_database()
+        cache_mongo_resource.release()
+
+
+@fixture
+def metrics_mongo_resource(metrics_mongo_host: str) -> Iterator[MetricsMongoResource]:
+    database = "datasets_server_metrics_test"
+    host = metrics_mongo_host
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with MetricsMongoResource(database=database, host=host) as metrics_mongo_resource:
+        yield metrics_mongo_resource
+        _clean_metrics_database()
+        metrics_mongo_resource.release()
