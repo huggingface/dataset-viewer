@@ -26,6 +26,11 @@ services:
       WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
       WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
       WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+  api:
+    extends:
+      service: common
+    environment:
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
   datasets-worker:
     extends:
       service: common

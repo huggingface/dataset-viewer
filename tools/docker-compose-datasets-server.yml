@@ -52,7 +52,7 @@ services:
       dockerfile: services/api/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: common
+      service: api
     volumes:
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}

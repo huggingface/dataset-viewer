@@ -39,6 +39,8 @@ services:
     extends:
       service: common
     # volumes to local source directory for development
+    environment:
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     volumes:
       - ../services/api/src:/src/services/api/src
   datasets-worker:
