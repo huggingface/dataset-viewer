@@ -35,7 +35,7 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
 
 @pytest.fixture(autouse=True)
 def enable_parquet_metadata_on_all_datasets() -> Generator[None, None, None]:
-    with patch("api.routes.rows.PARQUET_METADATA_DATASETS_ALLOW_LIST", "all"):
+    with patch("api.routes.rows.ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST", "all"):
         yield
 
 
