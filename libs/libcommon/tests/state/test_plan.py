@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import List, Set
+from datetime import datetime
+from typing import List, Optional, Set, Tuple
 
 import pytest
 
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.utils import Priority, Status
 
 from .utils import (
     DATASET_NAME,
@@ -69,6 +72,18 @@ ARTIFACT_SA_1_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SP
 ARTIFACT_SA_2_1 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_1}"
 ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_2}"
 
+
+# Graph to test only one step
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#
+PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset"},
+    }
+)
 
 # Graph to test siblings, children, grand-children, multiple parents
 #
@@ -772,3 +787,139 @@ def test_plan_incoherent_state(
         queue_status={"in_process": []},
         tasks=[],
     )
+
+
+JobSpec = Tuple[Priority, Status, Optional[datetime]]
+
+OLD = datetime.strptime("20000101", "%Y%m%d")
+NEW = datetime.strptime("20000102", "%Y%m%d")
+LOW_WAITING_OLD = (Priority.LOW, Status.WAITING, OLD)
+LOW_WAITING_NEW = (Priority.LOW, Status.WAITING, NEW)
+LOW_STARTED_OLD = (Priority.LOW, Status.STARTED, OLD)
+LOW_STARTED_NEW = (Priority.LOW, Status.STARTED, NEW)
+NORMAL_WAITING_OLD = (Priority.NORMAL, Status.WAITING, OLD)
+NORMAL_WAITING_NEW = (Priority.NORMAL, Status.WAITING, NEW)
+NORMAL_STARTED_OLD = (Priority.NORMAL, Status.STARTED, OLD)
+NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
+
+
+@pytest.mark.parametrize(
+    "existing_jobs,expected_create_job,expected_delete_jobs,expected_jobs_after_backfill",
+    [
+        ([], True, False, [(Priority.LOW, Status.WAITING, None)]),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+                NORMAL_STARTED_OLD,
+                NORMAL_STARTED_NEW,
+            ],
+            False,
+            True,
+            [NORMAL_STARTED_OLD],
+        ),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+                NORMAL_STARTED_NEW,
+            ],
+            False,
+            True,
+            [NORMAL_STARTED_NEW],
+        ),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+            ],
+            False,
+            True,
+            [LOW_STARTED_OLD],
+        ),
+        (
+            [LOW_WAITING_OLD, LOW_WAITING_NEW, LOW_STARTED_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
+            False,
+            True,
+            [LOW_STARTED_NEW],
+        ),
+        (
+            [LOW_WAITING_OLD, LOW_WAITING_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
+            False,
+            True,
+            [NORMAL_WAITING_OLD],
+        ),
+        ([LOW_WAITING_OLD, LOW_WAITING_NEW, NORMAL_WAITING_NEW], False, True, [NORMAL_WAITING_NEW]),
+        ([LOW_WAITING_OLD, LOW_WAITING_NEW], False, True, [LOW_WAITING_OLD]),
+        ([LOW_WAITING_NEW], False, False, [LOW_WAITING_NEW]),
+        ([LOW_WAITING_NEW] * 5, False, True, [LOW_WAITING_NEW]),
+    ],
+)
+def test_delete_jobs(
+    existing_jobs: List[JobSpec],
+    expected_create_job: bool,
+    expected_delete_jobs: bool,
+    expected_jobs_after_backfill: List[JobSpec],
+) -> None:
+    processing_graph = PROCESSING_GRAPH_ONE_STEP
+
+    queue = Queue()
+    for job_spec in existing_jobs:
+        (priority, status, created_at) = job_spec
+        job = queue._add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
+        if created_at is not None:
+            job.created_at = created_at
+            job.save()
+        if status is Status.STARTED:
+            queue._start_job(job)
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph)
+    expected_in_process = [ARTIFACT_DA] if existing_jobs else []
+    if expected_create_job:
+        if expected_delete_jobs:
+            raise NotImplementedError()
+        expected_tasks = [f"CreateJob,{ARTIFACT_DA}"]
+    elif expected_delete_jobs:
+        artifact_ids = ",".join([ARTIFACT_DA] * (len(existing_jobs) - 1))
+        expected_tasks = [f"DeleteJobs,{artifact_ids}"]
+    else:
+        expected_tasks = []
+
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": expected_in_process},
+        tasks=expected_tasks,
+    )
+
+    dataset_state.backfill()
+
+    job_dicts = queue.get_dataset_pending_jobs_for_type(dataset=DATASET_NAME, job_type=STEP_DA)
+    assert len(job_dicts) == len(expected_jobs_after_backfill)
+    for job_dict, expected_job_spec in zip(job_dicts, expected_jobs_after_backfill):
+        (priority, status, created_at) = expected_job_spec
+        assert job_dict["priority"] == priority.value
+        assert job_dict["status"] == status.value
+        if created_at is not None:
+            assert job_dict["created_at"] == created_at

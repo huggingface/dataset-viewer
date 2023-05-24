@@ -108,7 +108,6 @@ def get_cache_entry_from_steps(
             revision=revision,
             error_codes_to_retry=ERROR_CODES_TO_RETRY,
             priority=Priority.NORMAL,
-            # TODO: move Priority outside from queue.py (to remove dependency to this file)
         )
         artifact_ids = [
             Artifact(
@@ -117,7 +116,7 @@ def get_cache_entry_from_steps(
             for processing_step in processing_steps
         ]
         should_exist = any(
-            artifact_id in dataset_state.queue_status.in_process for artifact_id in artifact_ids
+            artifact_id in dataset_state.get_queue_status().in_process for artifact_id in artifact_ids
         ) or any(
             f"CreateJob,{artifact_id}" in task.id for task in dataset_state.plan.tasks for artifact_id in artifact_ids
         )
