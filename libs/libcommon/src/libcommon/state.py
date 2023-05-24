@@ -18,7 +18,7 @@ from libcommon.simple_cache import (
     get_best_response,
     get_cache_entries_df,
 )
-from libcommon.utils import Priority, Status, inputs_to_string
+from libcommon.utils import JobInfo, Priority, inputs_to_string
 
 # TODO: use the term Artifact elsewhere in the code (a Step should produce one or several Artifacts, depending on the
 # input level: one, one per dataset, one per config, or one per split)
@@ -388,46 +388,25 @@ class ArtifactTask(Task):
 
 
 @dataclass
-class CreateJobTask(ArtifactTask):
-    priority: Priority
+class CreateJobsTask(Task):
+    job_infos: List[JobInfo] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self.id = f"CreateJob,{self.artifact_state.id}"
+        # for debug and testing
+        self.id = f"CreateJobs,{len(self.job_infos)}"
 
     def run(self) -> None:
         with StepProfiler(
-            method="CreateJobTask.run",
+            method="CreateJobsTask.run",
             step="all",
-            context="creates 1 job",
+            context=f"num_jobs_to_create={len(self.job_infos)}",
         ):
-            Queue().upsert_job(
-                job_type=self.artifact_state.processing_step.job_type,
-                dataset=self.artifact_state.dataset,
-                revision=self.artifact_state.revision,
-                config=self.artifact_state.config,
-                split=self.artifact_state.split,
-                priority=self.priority,
-            )
-
-
-@dataclass
-class DeleteJobTask(ArtifactTask):
-    def __post_init__(self) -> None:
-        self.id = f"DeleteJob,{self.artifact_state.id}"
-
-    def run(self) -> None:
-        with StepProfiler(
-            method="DeleteJobTask.run",
-            step="all",
-            context="deletes 1 job",
-        ):
-            Queue().cancel_jobs(
-                job_type=self.artifact_state.processing_step.job_type,
-                dataset=self.artifact_state.dataset,
-                config=self.artifact_state.config,
-                split=self.artifact_state.split,
-                statuses_to_cancel=[Status.WAITING, Status.STARTED],
-            )
+            created_jobs_count = Queue().create_jobs(job_infos=self.job_infos)
+            if created_jobs_count != len(self.job_infos):
+                raise ValueError(
+                    f"Something went wrong when creating jobs: {len(self.job_infos)} jobs were supposed to be"
+                    f" created, but {created_jobs_count} were created."
+                )
 
 
 @dataclass
@@ -436,17 +415,7 @@ class DeleteJobsTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        artifact_ids = [
-            Artifact.get_id(
-                dataset=row["dataset"],
-                revision=row["revision"],
-                config=row["config"],
-                split=row["split"],
-                processing_step_name=row["type"],
-            )
-            for _, row in self.jobs_df.iterrows()
-        ]
-        self.id = f"DeleteJobs,{','.join(sorted(artifact_ids))}"
+        self.id = f"DeleteJobs,{len(self.jobs_df)}"
 
     def run(self) -> None:
         with StepProfiler(
@@ -462,7 +431,7 @@ class DeleteJobsTask(Task):
                 )
 
 
-SupportedTask = Union[CreateJobTask, DeleteJobTask, DeleteJobsTask]
+SupportedTask = Union[CreateJobsTask, DeleteJobsTask]
 
 
 @dataclass
@@ -721,6 +690,7 @@ class DatasetState:
     def _create_plan(self) -> Plan:
         plan = Plan()
         pending_jobs_to_delete_df = self.pending_jobs_df.copy()
+        job_infos_to_create: List[JobInfo] = []
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
@@ -731,11 +701,26 @@ class DatasetState:
         for artifact_state in artifact_states:
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
-                plan.add(CreateJobTask(artifact_state=artifact_state, priority=self.priority))
+                job_infos_to_create.append(
+                    {
+                        "job_id": "not used",
+                        "type": artifact_state.processing_step.job_type,
+                        "params": {
+                            "dataset": self.dataset,
+                            "revision": self.revision,
+                            "config": artifact_state.config,
+                            "split": artifact_state.split,
+                        },
+                        "priority": self.priority,
+                    }
+                )
             else:
                 pending_jobs_to_delete_df.drop(valid_pending_jobs_df.index, inplace=True)
+        # Better keep this order: delete, then create
         if not pending_jobs_to_delete_df.empty:
             plan.add(DeleteJobsTask(jobs_df=pending_jobs_to_delete_df))
+        if job_infos_to_create:
+            plan.add(CreateJobsTask(job_infos=job_infos_to_create))
         return plan
 
     def backfill(self) -> int:

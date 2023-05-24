@@ -17,6 +17,7 @@ from .utils import (
     assert_dataset_state,
     compute_all,
     get_dataset_state,
+    process_all_jobs,
     process_next_job,
     put_cache,
 )
@@ -215,7 +216,7 @@ def test_initial_state(
             "up_to_date": [],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -234,7 +235,7 @@ def test_da_is_computed(
     processing_graph: ProcessingGraph,
     cache_is_empty: List[str],
 ) -> None:
-    put_cache(ARTIFACT_DA)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -250,7 +251,7 @@ def test_da_is_computed(
             "up_to_date": [ARTIFACT_DA],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -267,8 +268,8 @@ def test_ca_1_is_computed(
     processing_graph: ProcessingGraph,
     cache_is_empty: List[str],
 ) -> None:
-    put_cache(ARTIFACT_DA)
-    put_cache(ARTIFACT_CA_1)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+    put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -284,7 +285,7 @@ def test_ca_1_is_computed(
             "up_to_date": [ARTIFACT_CA_1, ARTIFACT_DA],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -328,7 +329,7 @@ def test_plan_one_job_creation_and_termination(
             "up_to_date": [],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in new_1],
+        tasks=[f"CreateJobs,{len(new_1)}"],
     )
 
     dataset_state.backfill()
@@ -350,7 +351,7 @@ def test_plan_one_job_creation_and_termination(
         tasks=[],
     )
 
-    process_next_job(ARTIFACT_DA)
+    process_next_job()
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -366,7 +367,7 @@ def test_plan_one_job_creation_and_termination(
             "up_to_date": [ARTIFACT_DA],
         },
         queue_status={"in_process": in_process_2},
-        tasks=[f"CreateJob,{name}" for name in new_2],
+        tasks=[f"CreateJobs,{len(new_2)}"] if new_2 else [],
     )
 
 
@@ -411,7 +412,7 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
                 "up_to_date": up_to_date,
             },
             queue_status={"in_process": []},
-            tasks=[f"CreateJob,{name}" for name in in_process],
+            tasks=[f"CreateJobs,{len(in_process)}"] if in_process else [],
         )
 
         dataset_state.backfill()
@@ -431,9 +432,7 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
             tasks=[],
         )
 
-        for artifact in in_process:
-            # note that they are updated in topological order (manually, in parametrize)
-            process_next_job(artifact)
+        process_all_jobs()
 
 
 @pytest.mark.parametrize(
@@ -493,7 +492,7 @@ def test_plan_retry_error_and_outdated_by_parent(
     error_codes_to_retry = [error_code]
     compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
 
-    put_cache(ARTIFACT_DA, error_code=error_code)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
     # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
     # the cache entries (also the jobs, if any - not here) should be deleted.
     # they are still here, and haunting the database
@@ -512,7 +511,7 @@ def test_plan_retry_error_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -543,7 +542,7 @@ def test_plan_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -557,7 +556,7 @@ def test_plan_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent)}"],
     )
 
 
@@ -587,7 +586,7 @@ def test_plan_job_runner_version_and_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA, use_old_job_runner_version=True)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, use_old_job_runner_version=True)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -601,7 +600,7 @@ def test_plan_job_runner_version_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -631,7 +630,7 @@ def test_plan_git_revision_and_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA_OTHER_REVISION)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -645,7 +644,7 @@ def test_plan_git_revision_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -677,7 +676,7 @@ def test_plan_fan_in_updated(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_SA_1_1)
+    put_cache(step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -691,7 +690,7 @@ def test_plan_fan_in_updated(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent)}"],
     )
 
 
@@ -754,7 +753,20 @@ def test_plan_incoherent_state(
     unknown: List[str],
 ) -> None:
     for artifact in initial:
-        put_cache(artifact=artifact)
+        if artifact == ARTIFACT_SA_1_1:
+            put_cache(
+                step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1
+            )
+        elif artifact == ARTIFACT_CA_1:
+            put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
+        elif artifact == ARTIFACT_DA:
+            put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+        elif artifact == ARTIFACT_DD:
+            put_cache(step=STEP_DD, dataset=DATASET_NAME, revision=REVISION_NAME)
+        elif artifact == ARTIFACT_DI:
+            put_cache(step=STEP_DI, dataset=DATASET_NAME, revision=REVISION_NAME)
+        else:
+            raise NotImplementedError()
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -768,7 +780,7 @@ def test_plan_incoherent_state(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_empty]),
+        tasks=[f"CreateJobs,{len(is_empty)}"],
     )
 
     compute_all(processing_graph=processing_graph)
@@ -890,10 +902,9 @@ def test_delete_jobs(
     if expected_create_job:
         if expected_delete_jobs:
             raise NotImplementedError()
-        expected_tasks = [f"CreateJob,{ARTIFACT_DA}"]
+        expected_tasks = ["CreateJobs,1"]
     elif expected_delete_jobs:
-        artifact_ids = ",".join([ARTIFACT_DA] * (len(existing_jobs) - 1))
-        expected_tasks = [f"DeleteJobs,{artifact_ids}"]
+        expected_tasks = [f"DeleteJobs,{len(existing_jobs) - 1}"]
     else:
         expected_tasks = []
 
