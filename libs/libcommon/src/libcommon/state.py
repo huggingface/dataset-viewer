@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import pandas as pd
 
@@ -367,19 +367,10 @@ class CacheStatus:
 
 @dataclass
 class QueueStatus:
-    artifact_states_by_id: Dict[str, ArtifactState] = field(default_factory=dict)
-
-    in_process: Dict[str, ArtifactState] = field(init=False)
-
-    def __post_init__(self) -> None:
-        self.in_process = {
-            artifact_state.id: artifact_state
-            for artifact_state in self.artifact_states_by_id.values()
-            if artifact_state.job_state.is_in_process
-        }
+    in_process: Set[str] = field(default_factory=set)
 
     def as_response(self) -> Dict[str, List[str]]:
-        return {"in_process": sorted(self.in_process.keys())}
+        return {"in_process": sorted(self.in_process)}
 
 
 @dataclass
@@ -718,10 +709,11 @@ class DatasetState:
 
     def get_queue_status(self) -> QueueStatus:
         return QueueStatus(
-            {
-                artifact_state.id: artifact_state
+            in_process={
+                artifact_state.id
                 for processing_step in self.processing_graph.get_topologically_ordered_processing_steps()
                 for artifact_state in self._get_artifact_states_for_step(processing_step)
+                if artifact_state.job_state.is_in_process
             }
         )
 
