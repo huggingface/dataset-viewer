@@ -303,6 +303,43 @@ class Queue:
             job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
         )
 
+    def create_jobs(self, job_infos: List[JobInfo]) -> int:
+        """Creates jobs in the queue.
+
+        They are created in the waiting state.
+
+        Args:
+            job_infos (`List[JobInfo]`): The jobs to be created.
+
+        Returns:
+            `int`: The number of created jobs. 0 if we had an exception.
+        """
+        try:
+            jobs = [
+                Job(
+                    type=job_info["type"],
+                    dataset=job_info["params"]["dataset"],
+                    revision=job_info["params"]["revision"],
+                    config=job_info["params"]["config"],
+                    split=job_info["params"]["split"],
+                    unicity_id=inputs_to_string(
+                        dataset=job_info["params"]["dataset"],
+                        config=job_info["params"]["config"],
+                        split=job_info["params"]["split"],
+                        prefix=job_info["type"],
+                    ),
+                    namespace=job_info["params"]["dataset"].split("/")[0],
+                    priority=job_info["priority"],
+                    created_at=get_datetime(),
+                    status=Status.WAITING,
+                )
+                for job_info in job_infos
+            ]
+            job_ids = Job.objects.insert(jobs, load_bulk=False)
+            return len(job_ids)
+        except Exception:
+            return 0
+
     def cancel_jobs(
         self,
         job_type: str,

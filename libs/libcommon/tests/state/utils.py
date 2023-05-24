@@ -79,34 +79,29 @@ def assert_dataset_state(
 
 
 def put_cache(
-    artifact: str,
+    step: str,
+    dataset: str,
+    revision: str,
+    config: Optional[str] = None,
+    split: Optional[str] = None,
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
 ) -> None:
-    parts = artifact.split(",")
-    if len(parts) < 3 or len(parts) > 5:
-        raise ValueError(f"Unexpected artifact {artifact}: should have at least 2 parts and at most 4")
-    step = parts[0]
-    dataset = parts[1]
-    revision = parts[2]
-    if len(parts) == 3:
+    if not config:
         if not step.startswith("dataset-"):
-            raise ValueError(f"Unexpected artifact {artifact}: should start with dataset-")
+            raise ValueError("Unexpected artifact: should start with dataset-")
         content = CONFIG_NAMES_CONTENT
         config = None
         split = None
-    elif len(parts) == 4:
+    elif not split:
         if not step.startswith("config-"):
-            raise ValueError(f"Unexpected artifact {artifact}: should start with config-")
+            raise ValueError("Unexpected artifact: should start with config-")
         content = SPLIT_NAMES_CONTENT
-        config = parts[3]
         split = None
     else:
         if not step.startswith("split-"):
-            raise ValueError(f"Unexpected artifact {artifact}: should start with split-")
+            raise ValueError("Unexpected artifact: should start with split-")
         content = {}
-        config = parts[3]
-        split = parts[4]
 
     if error_code:
         http_status = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -127,11 +122,26 @@ def put_cache(
     )
 
 
-def process_next_job(artifact: str) -> None:
-    job_type = artifact.split(",")[0]
-    job_info = Queue().start_job(job_types_only=[job_type])
-    put_cache(artifact)
+def process_next_job() -> None:
+    job_info = Queue().start_job()
+    put_cache(
+        step=job_info["type"],
+        dataset=job_info["params"]["dataset"],
+        revision=job_info["params"]["revision"],
+        config=job_info["params"]["config"],
+        split=job_info["params"]["split"],
+    )
     Queue().finish_job(job_id=job_info["job_id"], is_success=True)
+
+
+def process_all_jobs() -> None:
+    runs = 100
+    try:
+        while runs > 0:
+            runs -= 1
+            process_next_job()
+    except Exception:
+        return
 
 
 def compute_all(
@@ -148,9 +158,9 @@ def compute_all(
         max_runs -= 1
         dataset_state.backfill()
         for task in dataset_state.plan.tasks:
-            task_type, sep, artifact = task.id.partition(",")
+            task_type, sep, num = task.id.partition(",")
             if sep is None:
                 raise ValueError(f"Unexpected task id {task.id}: should contain a comma")
-            if task_type == "CreateJob":
-                process_next_job(artifact)
+            if task_type == "CreateJobs":
+                process_all_jobs()
         dataset_state = get_dataset_state(processing_graph, dataset, revision, error_codes_to_retry)
