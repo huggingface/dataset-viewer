@@ -38,6 +38,8 @@ services:
   api:
     extends:
       service: common
+    environment:
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
     volumes:
       - ../services/api/src:/src/services/api/src
