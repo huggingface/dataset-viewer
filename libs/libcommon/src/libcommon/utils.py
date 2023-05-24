@@ -44,6 +44,8 @@ class FlatJobInfo(TypedDict):
     config: Optional[str]
     split: Optional[str]
     priority: str
+    status: str
+    created_at: datetime
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)

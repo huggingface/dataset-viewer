@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -42,6 +42,9 @@ def fetch_names(
     return names
 
 
+DFIndex = Union[pd.Index, pd.MultiIndex]
+
+
 @dataclass
 class JobState:
     """The state of a job for a given input."""
@@ -51,7 +54,19 @@ class JobState:
     config: Optional[str]
     split: Optional[str]
     job_type: str
-    is_in_process: bool
+    pending_jobs_df: pd.DataFrame
+
+    valid_pending_jobs_df: pd.DataFrame = field(
+        init=False
+    )  # contains at most one row (but the logic does not depend on it)
+    is_in_process: bool = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.valid_pending_jobs_df = self.pending_jobs_df.sort_values(
+            ["status", "priority", "created_at"], ascending=[False, False, True]
+        ).head(1)
+        # ^ only keep the first valid job, if any, in order of priority
+        self.is_in_process = not self.valid_pending_jobs_df.empty
 
 
 @dataclass
@@ -137,12 +152,28 @@ class Artifact:
                 raise ValueError("Step input type is split, but config or split is None")
         else:
             raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
-        self.id = inputs_to_string(
+        self.id = Artifact.get_id(
             dataset=self.dataset,
             revision=self.revision,
             config=self.config,
             split=self.split,
-            prefix=self.processing_step.name,
+            processing_step_name=self.processing_step.name,
+        )
+
+    @staticmethod
+    def get_id(
+        dataset: str,
+        revision: str,
+        config: Optional[str],
+        split: Optional[str],
+        processing_step_name: str,
+    ) -> str:
+        return inputs_to_string(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            prefix=processing_step_name,
         )
 
 
@@ -150,7 +181,7 @@ class Artifact:
 class ArtifactState(Artifact):
     """The state of an artifact."""
 
-    has_pending_job: bool
+    pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[List[str]] = None
 
@@ -165,7 +196,7 @@ class ArtifactState(Artifact):
             revision=self.revision,
             config=self.config,
             split=self.split,
-            is_in_process=self.has_pending_job,
+            pending_jobs_df=self.pending_jobs_df,
         )
         self.cache_state = CacheState(
             cache_kind=self.processing_step.cache_kind,
@@ -221,8 +252,8 @@ class SplitState:
                 config=self.config,
                 split=self.split,
                 error_codes_to_retry=self.error_codes_to_retry,
-                has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
-                cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
+                pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["type"] == processing_step.job_type],
+                cache_entries_df=self.cache_entries_df[self.cache_entries_df["kind"] == processing_step.cache_kind],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
@@ -267,12 +298,12 @@ class ConfigState:
                     config=self.config,
                     split=None,
                     error_codes_to_retry=self.error_codes_to_retry,
-                    has_pending_job=(
+                    pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["split"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
-                    ).any(),
+                    ],
                     cache_entries_df=self.cache_entries_df[
-                        (self.cache_entries_df["kind"] == processing_step.cache_kind)
+                        self.cache_entries_df["kind"] == processing_step.cache_kind
                     ],
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
@@ -339,7 +370,16 @@ class CacheStatus:
 
 @dataclass
 class QueueStatus:
-    in_process: Dict[str, ArtifactState] = field(default_factory=dict)
+    artifact_states_by_id: Dict[str, ArtifactState] = field(default_factory=dict)
+
+    in_process: Dict[str, ArtifactState] = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.in_process = {
+            artifact_state.id: artifact_state
+            for artifact_state in self.artifact_states_by_id.values()
+            if artifact_state.job_state.is_in_process
+        }
 
     def as_response(self) -> Dict[str, List[str]]:
         return {"in_process": sorted(self.in_process.keys())}
@@ -347,8 +387,6 @@ class QueueStatus:
 
 @dataclass
 class Task(ABC):
-    artifact_state: ArtifactState
-
     id: str = field(init=False)
 
     @abstractmethod
@@ -357,43 +395,92 @@ class Task(ABC):
 
 
 @dataclass
-class CreateJobTask(Task):
+class ArtifactTask(Task):
+    artifact_state: ArtifactState
+
+
+@dataclass
+class CreateJobTask(ArtifactTask):
     priority: Priority
 
     def __post_init__(self) -> None:
         self.id = f"CreateJob,{self.artifact_state.id}"
 
     def run(self) -> None:
-        Queue().upsert_job(
-            job_type=self.artifact_state.processing_step.job_type,
-            dataset=self.artifact_state.dataset,
-            revision=self.artifact_state.revision,
-            config=self.artifact_state.config,
-            split=self.artifact_state.split,
-            priority=self.priority,
-        )
+        with StepProfiler(
+            method="CreateJobTask.run",
+            step="all",
+            context="creates 1 job",
+        ):
+            Queue().upsert_job(
+                job_type=self.artifact_state.processing_step.job_type,
+                dataset=self.artifact_state.dataset,
+                revision=self.artifact_state.revision,
+                config=self.artifact_state.config,
+                split=self.artifact_state.split,
+                priority=self.priority,
+            )
 
 
 @dataclass
-class DeleteJobTask(Task):
+class DeleteJobTask(ArtifactTask):
     def __post_init__(self) -> None:
         self.id = f"DeleteJob,{self.artifact_state.id}"
 
     def run(self) -> None:
-        Queue().cancel_jobs(
-            job_type=self.artifact_state.processing_step.job_type,
-            dataset=self.artifact_state.dataset,
-            config=self.artifact_state.config,
-            split=self.artifact_state.split,
-            statuses_to_cancel=[Status.WAITING, Status.STARTED],
-        )
+        with StepProfiler(
+            method="DeleteJobTask.run",
+            step="all",
+            context="deletes 1 job",
+        ):
+            Queue().cancel_jobs(
+                job_type=self.artifact_state.processing_step.job_type,
+                dataset=self.artifact_state.dataset,
+                config=self.artifact_state.config,
+                split=self.artifact_state.split,
+                statuses_to_cancel=[Status.WAITING, Status.STARTED],
+            )
+
+
+@dataclass
+class DeleteJobsTask(Task):
+    jobs_df: pd.DataFrame
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        artifact_ids = [
+            Artifact.get_id(
+                dataset=row["dataset"],
+                revision=row["revision"],
+                config=row["config"],
+                split=row["split"],
+                processing_step_name=row["type"],
+            )
+            for _, row in self.jobs_df.iterrows()
+        ]
+        self.id = f"DeleteJobs,{','.join(sorted(artifact_ids))}"
+
+    def run(self) -> None:
+        with StepProfiler(
+            method="DeleteJobsTask.run",
+            step="all",
+            context=f"num_jobs_to_delete={len(self.jobs_df)}",
+        ):
+            if Queue().cancel_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist()) != len(self.jobs_df):
+                raise ValueError(
+                    f"Something went wrong when cancelling jobs: {len(self.jobs_df)} jobs were supposed to be"
+                    f" cancelled, but {len(self.jobs_df)} were cancelled."
+                )
+
+
+SupportedTask = Union[CreateJobTask, DeleteJobTask, DeleteJobsTask]
 
 
 @dataclass
 class Plan:
-    tasks: List[Task] = field(default_factory=list)
+    tasks: List[SupportedTask] = field(default_factory=list)
 
-    def add(self, task: Task) -> None:
+    def add(self, task: SupportedTask) -> None:
         self.tasks.append(task)
 
     def run(self) -> int:
@@ -468,11 +555,11 @@ class DatasetState:
                         config=None,
                         split=None,
                         error_codes_to_retry=self.error_codes_to_retry,
-                        has_pending_job=(
+                        pending_jobs_df=self.pending_jobs_df[
                             (self.pending_jobs_df["config"].isnull())
                             & (self.pending_jobs_df["split"].isnull())
                             & (self.pending_jobs_df["type"] == processing_step.job_type)
-                        ).any(),
+                        ],
                         cache_entries_df=self.cache_entries_df[
                             (self.cache_entries_df["kind"] == processing_step.cache_kind)
                             & (self.cache_entries_df["config"].isnull())
@@ -652,7 +739,8 @@ class DatasetState:
 
     def _create_plan(self) -> Plan:
         plan = Plan()
-        remaining_in_process_artifact_state_ids = list(self.queue_status.in_process.keys())
+        # remaining_in_process_artifact_state_ids = list(self.queue_status.in_process.keys())
+        pending_jobs_to_delete_df = self.pending_jobs_df.copy()
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
@@ -661,13 +749,13 @@ class DatasetState:
             + list(self.cache_status.cache_has_different_git_revision.values())
         )
         for artifact_state in artifact_states:
-            if artifact_state.id in remaining_in_process_artifact_state_ids:
-                # the job already exists
-                remaining_in_process_artifact_state_ids.remove(artifact_state.id)
-                continue
-            plan.add(CreateJobTask(artifact_state=artifact_state, priority=self.priority))
-        for artifact_state_id in remaining_in_process_artifact_state_ids:
-            plan.add(DeleteJobTask(artifact_state=self.queue_status.in_process[artifact_state_id]))
+            valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
+            if valid_pending_jobs_df.empty:
+                plan.add(CreateJobTask(artifact_state=artifact_state, priority=self.priority))
+            else:
+                pending_jobs_to_delete_df.drop(valid_pending_jobs_df.index, inplace=True)
+        if not pending_jobs_to_delete_df.empty:
+            plan.add(DeleteJobsTask(jobs_df=pending_jobs_to_delete_df))
         return plan
 
     def backfill(self) -> int:

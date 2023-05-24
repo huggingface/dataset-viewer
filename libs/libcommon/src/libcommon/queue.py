@@ -192,6 +192,8 @@ class Job(Document):
                 "config": self.config,
                 "split": self.split,
                 "priority": self.priority.value,
+                "status": self.status.value,
+                "created_at": self.created_at,
             }
         )
 
@@ -340,6 +342,24 @@ class Queue:
         existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
         return job_dicts
 
+    def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
+        """Cancel jobs from the queue.
+
+        If the job ids are not valid, they are ignored.
+
+        Args:
+            job_ids (`list[str]`): The list of job ids to cancel.
+
+        Returns:
+            `int`: The number of canceled jobs
+        """
+        try:
+            existing = Job.objects(pk__in=job_ids)
+            existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            return existing.count()
+        except Exception:
+            return 0
+
     def _get_next_waiting_job_for_priority(
         self,
         priority: Priority,
@@ -467,6 +487,11 @@ class Queue:
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
+    def _start_job(self, job: Job) -> Job:
+        # could be a method of Job
+        job.update(started_at=get_datetime(), status=Status.STARTED)
+        return job
+
     def start_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
     ) -> JobInfo:
@@ -490,7 +515,7 @@ class Queue:
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
-        next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
+        self._start_job(next_waiting_job)
         if job_types_blocked and next_waiting_job.type in job_types_blocked:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
@@ -636,7 +661,23 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
-                "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
+                "priority": pd.Categorical(
+                    [job["priority"] for job in jobs],
+                    ordered=True,
+                    categories=[Priority.LOW.value, Priority.NORMAL.value],
+                ),
+                "status": pd.Categorical(
+                    [job["status"] for job in jobs],
+                    ordered=True,
+                    categories=[
+                        Status.WAITING.value,
+                        Status.STARTED.value,
+                        Status.SUCCESS.value,
+                        Status.ERROR.value,
+                        Status.CANCELLED.value,
+                    ],
+                ),
+                "created_at": pd.Series([job["created_at"] for job in jobs], dtype="datetime64[ns]"),
             }
         )
         # ^ does not seem optimal at all, but I get the types right
