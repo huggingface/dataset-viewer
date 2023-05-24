@@ -70,7 +70,7 @@ def get_job_runner(
             "dataset_ok",
             [
                 UpstreamResponse(
-                    kind="/config-names",
+                    kind="dataset-config-names",
                     dataset="dataset_ok",
                     config=None,
                     http_status=HTTPStatus.OK,
@@ -238,7 +238,7 @@ def get_job_runner(
             "status_error",
             [
                 UpstreamResponse(
-                    kind="/config-names",
+                    kind="dataset-config-names",
                     dataset="status_error",
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
@@ -253,7 +253,7 @@ def get_job_runner(
             "format_error",
             [
                 UpstreamResponse(
-                    kind="/config-names",
+                    kind="dataset-config-names",
                     dataset="format_error",
                     config=None,
                     http_status=HTTPStatus.OK,

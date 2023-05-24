@@ -25,7 +25,7 @@ from worker.job_runners.config.split_names_from_info import (
 from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
 )
-from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
+from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
@@ -82,8 +82,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
                 f" {[processing_step.job_type for processing_step in self.processing_graph.get_processing_steps()]}"
             ) from e
-        if job_type == ConfigNamesJobRunner.get_job_type():
-            return ConfigNamesJobRunner(
+        if job_type == DatasetConfigNamesJobRunner.get_job_type():
+            return DatasetConfigNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -208,7 +208,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             )
 
         supported_job_types = [
-            ConfigNamesJobRunner.get_job_type(),
+            DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),

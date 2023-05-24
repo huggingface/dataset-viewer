@@ -22,7 +22,7 @@ from ..fixtures.hub import get_default_config_split
 class DummyJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/config-names"
+        return "dataset-config-names"
         # ^ borrowing the type, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
