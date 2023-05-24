@@ -42,9 +42,6 @@ def fetch_names(
     return names
 
 
-DFIndex = Union[pd.Index, pd.MultiIndex]
-
-
 @dataclass
 class JobState:
     """The state of a job for a given input."""
