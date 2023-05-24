@@ -10,6 +10,7 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
+    ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -230,6 +231,7 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
+    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -246,4 +248,5 @@ class AppConfig:
             queue=QueueConfig.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
+            parquet_metadata=ParquetMetadataConfig.from_env(),
         )

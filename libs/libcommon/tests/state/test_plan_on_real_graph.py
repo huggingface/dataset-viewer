@@ -11,7 +11,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import Status
 
 from .utils import (
     CONFIG_NAMES,
@@ -130,7 +129,7 @@ def test_plan_job_creation_and_termination() -> None:
         job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
         dataset_git_revision=REVISION_NAME,
     )
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
     dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
     assert_dataset_state(
@@ -146,10 +145,10 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/split-names-from-dataset-info,dataset,revision,config1",
-                "/split-names-from-dataset-info,dataset,revision,config2",
-                "/split-names-from-streaming,dataset,revision,config1",
-                "/split-names-from-streaming,dataset,revision,config2",
+                "config-split-names-from-info,dataset,revision,config1",
+                "config-split-names-from-info,dataset,revision,config2",
+                "config-split-names-from-streaming,dataset,revision,config1",
+                "config-split-names-from-streaming,dataset,revision,config2",
                 "config-info,dataset,revision,config1",
                 "config-info,dataset,revision,config2",
                 "config-opt-in-out-urls-count,dataset,revision,config1",
@@ -158,6 +157,8 @@ def test_plan_job_creation_and_termination() -> None:
                 "config-parquet,dataset,revision,config2",
                 "config-parquet-and-info,dataset,revision,config1",
                 "config-parquet-and-info,dataset,revision,config2",
+                "config-parquet-metadata,dataset,revision,config1",
+                "config-parquet-metadata,dataset,revision,config2",
                 "config-size,dataset,revision,config1",
                 "config-size,dataset,revision,config2",
                 "dataset-info,dataset,revision",
@@ -183,10 +184,10 @@ def test_plan_job_creation_and_termination() -> None:
             ]
         },
         tasks=[
-            "CreateJob,/split-names-from-dataset-info,dataset,revision,config1",
-            "CreateJob,/split-names-from-dataset-info,dataset,revision,config2",
-            "CreateJob,/split-names-from-streaming,dataset,revision,config1",
-            "CreateJob,/split-names-from-streaming,dataset,revision,config2",
+            "CreateJob,config-split-names-from-info,dataset,revision,config1",
+            "CreateJob,config-split-names-from-info,dataset,revision,config2",
+            "CreateJob,config-split-names-from-streaming,dataset,revision,config1",
+            "CreateJob,config-split-names-from-streaming,dataset,revision,config2",
             "CreateJob,config-info,dataset,revision,config1",
             "CreateJob,config-info,dataset,revision,config2",
             "CreateJob,config-opt-in-out-urls-count,dataset,revision,config1",
@@ -195,6 +196,8 @@ def test_plan_job_creation_and_termination() -> None:
             "CreateJob,config-parquet,dataset,revision,config2",
             "CreateJob,config-parquet-and-info,dataset,revision,config1",
             "CreateJob,config-parquet-and-info,dataset,revision,config2",
+            "CreateJob,config-parquet-metadata,dataset,revision,config1",
+            "CreateJob,config-parquet-metadata,dataset,revision,config2",
             "CreateJob,config-size,dataset,revision,config1",
             "CreateJob,config-size,dataset,revision,config2",
         ],

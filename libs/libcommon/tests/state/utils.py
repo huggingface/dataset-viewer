@@ -8,7 +8,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.state import DatasetState
-from libcommon.utils import Status
 
 DATASET_NAME = "dataset"
 
@@ -70,9 +69,13 @@ def assert_dataset_state(
             )
     computed_cache_status = dataset_state.cache_status.as_response()
     for key, value in cache_status.items():
-        assert_equality(computed_cache_status[key], value, key)
-    assert_equality(dataset_state.queue_status.as_response(), queue_status, context="queue_status")
-    assert_equality(dataset_state.plan.as_response(), tasks, context="tasks")
+        assert_equality(computed_cache_status[key], sorted(value), key)
+    assert_equality(
+        dataset_state.queue_status.as_response(),
+        {key: sorted(value) for key, value in queue_status.items()},
+        context="queue_status",
+    )
+    assert_equality(dataset_state.plan.as_response(), sorted(tasks), context="tasks")
 
 
 def put_cache(
@@ -128,7 +131,7 @@ def process_next_job(artifact: str) -> None:
     job_type = artifact.split(",")[0]
     job_info = Queue().start_job(job_types_only=[job_type])
     put_cache(artifact)
-    Queue().finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
 
 def compute_all(

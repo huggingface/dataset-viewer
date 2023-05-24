@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_cached_assets_dir
+from libcommon.storage import StrPath, init_cached_assets_dir, init_parquet_metadata_dir
 from pytest import MonkeyPatch, fixture
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
@@ -49,7 +49,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
         processing_step_names_by_input_type_and_endpoint={
             "/config-names": {"dataset": ["/config-names"]},
             "/splits": {
-                "config": ["/split-names-from-streaming"],
+                "config": ["config-split-names-from-streaming"],
             },
             "/first-rows": {"split": ["split-first-rows-from-streaming"]},
             "/parquet": {"config": ["config-parquet"]},
@@ -133,6 +133,11 @@ def hf_auth_path(app_config: AppConfig) -> str:
 @fixture
 def cached_assets_directory(app_config: AppConfig) -> StrPath:
     return init_cached_assets_dir(app_config.cached_assets.storage_directory)
+
+
+@fixture
+def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
+    return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
 
 
 @fixture

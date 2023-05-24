@@ -76,7 +76,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     dataset, config, split = get_default_config_split(hub_public_csv)
     job_runner = get_job_runner(dataset, config, split, app_config)
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
@@ -139,7 +139,7 @@ def test_number_rows(
 
     if exception_name is None:
         upsert_response(
-            kind="/split-names-from-streaming",
+            kind="config-split-names-from-streaming",
             dataset=dataset,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
@@ -150,7 +150,7 @@ def test_number_rows(
         return
     elif exception_name == "SplitNotFoundError":
         upsert_response(
-            kind="/split-names-from-streaming",
+            kind="config-split-names-from-streaming",
             dataset=dataset,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
@@ -158,7 +158,7 @@ def test_number_rows(
         )
     elif exception_name in {"InfoError", "SplitsNamesError"}:
         upsert_response(
-            kind="/split-names-from-streaming",
+            kind="config-split-names-from-streaming",
             dataset=dataset,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
@@ -212,7 +212,7 @@ def test_truncation(
     )
 
     upsert_response(
-        kind="/split-names-from-streaming",
+        kind="config-split-names-from-streaming",
         dataset=dataset,
         config=config,
         content={"splits": [{"dataset": dataset, "config": config, "split": split}]},

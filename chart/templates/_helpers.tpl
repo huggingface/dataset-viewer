@@ -161,6 +161,15 @@ The cached-assets/ subpath in the NFS
 {{- end }}
 
 {{/*
+The parquet-metadata/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "parquetMetadata.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "parquet-metadata" }}
+{{- end }}
+
+{{/*
 The datasets library will use this directory as a cache
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir

@@ -5,11 +5,11 @@ import logging
 from typing import List, Optional, Set
 
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_valid_datasets
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.prometheus import StepProfiler
 from api.utils import (
     Endpoint,
     UnexpectedError,

@@ -36,6 +36,16 @@ class JobInfo(TypedDict):
     priority: Priority
 
 
+class FlatJobInfo(TypedDict):
+    job_id: str
+    type: str
+    dataset: str
+    revision: str
+    config: Optional[str]
+    split: Optional[str]
+    priority: str
+
+
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 def orjson_default(obj: Any) -> Any:
     if isinstance(obj, bytes):

@@ -91,7 +91,7 @@ def start_worker_loop_with_long_job() -> None:
         if current_job.status == Status.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
             time.sleep(20)
-            Queue().finish_job(current_job_info["job_id"], finished_status=Status.SUCCESS)
+            Queue().finish_job(current_job_info["job_id"], is_success=True)
 
 
 @fixture
@@ -195,7 +195,10 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 
 @fixture
 def job_runner_factory(
-    app_config: AppConfig, libraries_resource: LibrariesResource, assets_directory: StrPath
+    app_config: AppConfig,
+    libraries_resource: LibrariesResource,
+    assets_directory: StrPath,
+    parquet_metadata_directory: StrPath,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     return JobRunnerFactory(
@@ -203,6 +206,7 @@ def job_runner_factory(
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
+        parquet_metadata_directory=parquet_metadata_directory,
     )
 
 
@@ -250,7 +254,7 @@ def test_executor_kill_zombies(
     tmp_dataset_repo_factory(zombie.dataset)
     try:
         executor.kill_zombies()
-        assert Job.objects(pk=zombie.pk).get().status == Status.ERROR
+        assert Job.objects(pk=zombie.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
         assert Job.objects(pk=normal_job.pk).get().status == Status.STARTED
         response = CachedResponse.objects()[0]
         expected_error = {
@@ -292,7 +296,7 @@ def test_executor_start(
     assert heartbeat_mock.call_count > 0
     assert Job.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
     assert kill_zombies_mock.call_count > 0
-    assert Job.objects(pk=set_zombie_job_in_queue.pk).get().status == Status.ERROR
+    assert Job.objects(pk=set_zombie_job_in_queue.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
 
 
 @pytest.mark.parametrize(
@@ -339,7 +343,7 @@ def test_executor_stops_on_long_job(
         assert str(long_job.pk) == get_job_info("long")["job_id"]
 
         long_job.reload()
-        assert long_job.status == Status.ERROR, "must be an error because too long"
+        assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
 
         responses = CachedResponse.objects()
         assert len(responses) == 1

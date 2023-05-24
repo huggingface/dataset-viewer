@@ -5,7 +5,7 @@ import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import exists, init_cached_assets_dir
+from libcommon.storage import exists, init_cached_assets_dir, init_parquet_metadata_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -15,9 +15,9 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.jwt_token import fetch_jwt_public_key
-from api.prometheus import Prometheus
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
+from api.routes.metrics import create_metrics_endpoint
 from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
@@ -33,10 +33,9 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
+    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     if not exists(cached_assets_directory):
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
-
-    prometheus = Prometheus()
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
@@ -95,7 +94,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         ),
         # ^ called by https://github.com/huggingface/model-evaluator
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=prometheus.endpoint),
+        Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
         Route(
             "/webhook",
@@ -111,6 +110,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
+                parquet_metadata_directory=parquet_metadata_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,

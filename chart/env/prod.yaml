@@ -256,7 +256,7 @@ api:
 workers:
   -
     deployName: "all"
-    maxJobsPerNamespace: 5
+    maxJobsPerNamespace: 1
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -272,8 +272,8 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    maxJobsPerNamespace: 2
-    workerJobTypesBlocked: "/config-names,/split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    maxJobsPerNamespace: 1
+    workerJobTypesBlocked: "/config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
@@ -288,7 +288,7 @@ workers:
     tolerations: []
   -
     deployName: "temporal-opt-in-out"
-    maxJobsPerNamespace: 2
+    maxJobsPerNamespace: 1
     workerJobTypesBlocked: ""
     workerJobTypesOnly: "split-opt-in-out-urls-scan"
     nodeSelector:

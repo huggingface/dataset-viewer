@@ -19,7 +19,6 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from admin.config import AppConfig, UvicornConfig
-from admin.prometheus import Prometheus
 from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
@@ -30,6 +29,7 @@ from admin.routes.dataset_state import create_dataset_state_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
+from admin.routes.metrics import create_metrics_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 
 
@@ -58,8 +58,6 @@ def create_app() -> Starlette:
     if not metrics_resource.is_available():
         raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
-    prometheus = Prometheus(processing_graph=processing_graph, assets_directory=assets_directory)
-
     middleware = [
         Middleware(
             CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
@@ -69,7 +67,7 @@ def create_app() -> Starlette:
     ]
     routes = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=prometheus.endpoint),
+        Route("/metrics", endpoint=create_metrics_endpoint(assets_directory=assets_directory)),
         # used in a browser tab to monitor the queue
         Route(
             "/pending-jobs",

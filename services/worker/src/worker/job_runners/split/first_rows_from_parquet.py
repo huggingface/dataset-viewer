@@ -245,7 +245,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     def get_parallel_job_runner() -> JobRunnerInfo:
         return JobRunnerInfo(
             job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-            job_type="/split-names-from-dataset-info",
+            job_type="config-split-names-from-info",
         )
 
     def __init__(

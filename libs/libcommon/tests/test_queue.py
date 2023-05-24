@@ -49,19 +49,19 @@ def test__add_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # and the third one
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
-    queue.finish_job(job_id=other_job_id, finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=other_job_id, is_success=True)
     # finish it
-    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     with pytest.raises(EmptyQueueError):
@@ -98,12 +98,12 @@ def test_upsert_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     with pytest.raises(EmptyQueueError):
@@ -147,10 +147,11 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
     )
 
 
-def check_job(queue: Queue, expected_dataset: str, expected_split: str) -> None:
+def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:
     job_info = queue.start_job()
     assert job_info["params"]["dataset"] == expected_dataset
     assert job_info["params"]["split"] == expected_split
+    assert job_info["priority"] == expected_priority
 
 
 def test_priority_logic() -> None:
@@ -197,17 +198,21 @@ def test_priority_logic() -> None:
         split="split1",
         priority=Priority.LOW,
     )
-    check_job(queue=queue, expected_dataset="dataset1/dataset", expected_split="split1")
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2")
-    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1")
+    check_job(
+        queue=queue, expected_dataset="dataset1/dataset", expected_split="split1", expected_priority=Priority.NORMAL
+    )
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split2", expected_priority=Priority.NORMAL)
+    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ before the other "dataset3" jobs because its priority is higher (it inherited Priority.NORMAL in upsert_job)
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2")
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.NORMAL)
     # ^ same namespace as dataset1/dataset, goes after namespaces without any started job
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1")
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ comes after the other "dataset1" jobs because the last upsert_job call moved its creation date
-    check_job(queue=queue, expected_dataset="dataset2/dataset", expected_split="split1")
+    check_job(
+        queue=queue, expected_dataset="dataset2/dataset", expected_split="split1", expected_priority=Priority.LOW
+    )
     # ^ comes after the other "dataset2" jobs because its priority is lower
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1")
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.LOW)
     # ^ the rest of the rules apply for Priority.LOW jobs
     with pytest.raises(EmptyQueueError):
         queue.start_job()
@@ -252,7 +257,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
         return
     # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
     # finish the first job
-    queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
+    queue.finish_job(job_info["job_id"], is_success=True)
     assert not queue.is_job_in_process(
         job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
     )
@@ -330,7 +335,7 @@ def test_get_dataset_pending_jobs_for_type() -> None:
             for job_type in [test_type, test_another_type]:
                 queue.upsert_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
                 job_info = queue.start_job()
-                queue.finish_job(job_info["job_id"], finished_status=Status.SUCCESS)
+                queue.finish_job(job_info["job_id"], is_success=True)
     for config in test_configs_started:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
@@ -375,28 +380,6 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=0) == []
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
-
-
-def test_queue_kill_zombies() -> None:
-    job_type = "test_type"
-    queue = Queue()
-    with patch("libcommon.queue.get_datetime", get_old_datetime):
-        zombie = queue.upsert_job(
-            job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split1"
-        )
-        queue.start_job(job_types_only=[job_type])
-    another_job = queue.upsert_job(
-        job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split2"
-    )
-    queue.start_job(job_types_only=[job_type])
-
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
-    queue.kill_zombies([zombie.info()])
-    assert queue.get_zombies(max_seconds_without_heartbeat=10) == []
-    zombie.reload()
-    another_job.reload()
-    assert zombie.status == Status.ERROR
-    assert another_job.status == Status.STARTED
 
 
 def test_has_ttl_index_on_finished_at_field() -> None:

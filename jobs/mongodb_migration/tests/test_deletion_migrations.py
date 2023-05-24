@@ -10,19 +10,27 @@ from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
 )
+from libcommon.queue import Job
 from libcommon.resources import MongoResource
+from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
+    get_index_names,
 )
 
 
 def test_cache_deletion_migration(mongo_host: str) -> None:
     kind = "cache_kind"
-    with MongoResource(database="test_cache_delete_migration", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(
+        database="test_cache_delete_migration",
+        host=mongo_host,
+        mongoengine_alias=CACHE_MONGOENGINE_ALIAS,
+    ):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].insert_many([{"kind": kind, "dataset": "dataset", "http_status": 200}])
         assert db[CACHE_COLLECTION_RESPONSES].find_one({"kind": kind})  # Ensure there is at least one record to delete
@@ -41,7 +49,11 @@ def test_cache_deletion_migration(mongo_host: str) -> None:
 
 def test_queue_deletion_migration(mongo_host: str) -> None:
     job_type = "job_type"
-    with MongoResource(database="test_queue_delete_migration", host=mongo_host, mongoengine_alias="queue"):
+    with MongoResource(
+        database="test_queue_delete_migration",
+        host=mongo_host,
+        mongoengine_alias=QUEUE_MONGOENGINE_ALIAS,
+    ):
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].insert_many(
             [
@@ -102,3 +114,32 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
 
         db[METRICS_COLLECTION_JOB_TOTAL_METRIC].drop()
         db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].drop()
+
+
+def test_queue_delete_ttl_index(mongo_host: str) -> None:
+    with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
+        Job(
+            type="test",
+            dataset="test",
+            revision="test",
+            unicity_id="test",
+            namespace="test",
+            created_at=get_datetime(),
+        ).save()
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        assert (
+            len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "finished_at")) == 1
+        )  # Ensure the TTL index exists
+
+        migration = MigrationQueueDeleteTTLIndex(
+            version="20230428145000",
+            description="remove ttl index on field 'finished_at'",
+            field_name="finished_at",
+        )
+        migration.up()
+
+        assert (
+            len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "finished_at")) == 0
+        )  # Ensure the TTL index does not exist anymore
+
+        db[QUEUE_COLLECTION_JOBS].drop()

@@ -2,38 +2,33 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Any
+from typing import Any, List, Mapping, Optional
 
-from libcommon.constants import (
-    CACHE_COLLECTION_RESPONSES,
-    CACHE_MONGOENGINE_ALIAS,
-    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
-    METRICS_COLLECTION_JOB_TOTAL_METRIC,
-    METRICS_MONGOENGINE_ALIAS,
-    QUEUE_COLLECTION_JOBS,
-    QUEUE_MONGOENGINE_ALIAS,
-)
 from mongoengine.connection import get_db
 
-from mongodb_migration.migration import IrreversibleMigrationError, Migration
+from mongodb_migration.migration import (
+    BaseQueueMigration,
+    CacheMigration,
+    IrreversibleMigrationError,
+    MetricsMigration,
+    QueueMigration,
+)
 
 
-class MetricsDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = METRICS_MONGOENGINE_ALIAS
-    COLLECTION_JOB_TOTAL_METRIC: str = METRICS_COLLECTION_JOB_TOTAL_METRIC
-    COLLECTION_CACHE_TOTAL_METRIC: str = METRICS_COLLECTION_CACHE_TOTAL_METRIC
-
-    def __init__(self, job_type: str, cache_kind: str, *args: Any, **kwargs: Any):
-        self.job_type = job_type
-        self.cache_kind = cache_kind
-        super().__init__(*args, **kwargs)
+class MetricsDeletionMigration(MetricsMigration):
+    def __init__(self, job_type: str, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the queue and cache metrics for step '{job_type}'"
+        super().__init__(job_type=job_type, cache_kind=cache_kind, version=version, description=description)
 
     def up(self) -> None:
         logging.info(f"Delete job metrics of type {self.job_type}")
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOB_TOTAL_METRIC].delete_many({"queue": self.job_type})
-        db[self.COLLECTION_CACHE_TOTAL_METRIC].delete_many({"kind": self.cache_kind})
+        result = db[self.COLLECTION_JOB_TOTAL_METRIC].delete_many({"queue": self.job_type})
+        logging.info(f"{result.deleted_count} deleted job metrics")
+        result = db[self.COLLECTION_CACHE_TOTAL_METRIC].delete_many({"kind": self.cache_kind})
+        logging.info(f"{result.deleted_count} deleted cache metrics")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -48,20 +43,19 @@ class MetricsDeletionMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class CacheDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = CACHE_MONGOENGINE_ALIAS
-    COLLECTION_RESPONSES: str = CACHE_COLLECTION_RESPONSES
-
-    def __init__(self, cache_kind: str, *args: Any, **kwargs: Any):
-        self.cache_kind = cache_kind
-        super().__init__(*args, **kwargs)
+class CacheDeletionMigration(CacheMigration):
+    def __init__(self, cache_kind: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the cache entries of kind '{cache_kind}'"
+        super().__init__(cache_kind=cache_kind, version=version, description=description)
 
     def up(self) -> None:
         logging.info(f"Delete cache entries of kind {self.cache_kind}")
         db = get_db(self.MONGOENGINE_ALIAS)
 
         # delete existing documents
-        db[self.COLLECTION_RESPONSES].delete_many({"kind": self.cache_kind})
+        result = db[self.COLLECTION_RESPONSES].delete_many({"kind": self.cache_kind})
+        logging.info(f"{result.deleted_count} deleted cache entries")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -74,19 +68,18 @@ class CacheDeletionMigration(Migration):
             raise ValueError(f"Found documents with kind {self.cache_kind}")
 
 
-class QueueDeletionMigration(Migration):
-    MONGOENGINE_ALIAS: str = QUEUE_MONGOENGINE_ALIAS
-    COLLECTION_JOBS: str = QUEUE_COLLECTION_JOBS
-
-    def __init__(self, job_type: str, *args: Any, **kwargs: Any):
-        self.job_type = job_type
-        super().__init__(*args, **kwargs)
+class QueueDeletionMigration(QueueMigration):
+    def __init__(self, job_type: str, version: str, description: Optional[str] = None):
+        if not description:
+            description = f"delete the jobs of type '{job_type}'"
+        super().__init__(job_type=job_type, version=version, description=description)
 
     def up(self) -> None:
         logging.info(f"Delete jobs of type {self.job_type}")
 
         db = get_db(self.MONGOENGINE_ALIAS)
-        db[self.COLLECTION_JOBS].delete_many({"type": self.job_type})
+        result = db[self.COLLECTION_JOBS].delete_many({"type": self.job_type})
+        logging.info(f"{result.deleted_count} deleted jobs")
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -97,3 +90,45 @@ class QueueDeletionMigration(Migration):
         db = get_db(self.MONGOENGINE_ALIAS)
         if db[self.COLLECTION_JOBS].count_documents({"type": self.job_type}):
             raise ValueError(f"Found documents with type {self.job_type}")
+
+
+def get_index_names(index_information: Mapping[str, Any], field_name: str) -> List[str]:
+    return [
+        name
+        for name, value in index_information.items()
+        if isinstance(value, dict)
+        and "expireAfterSeconds" in value
+        and "key" in value
+        and value["key"] == [(field_name, 1)]
+    ]
+
+
+class MigrationQueueDeleteTTLIndex(BaseQueueMigration):
+    def __init__(self, version: str, description: str, field_name: str):
+        super().__init__(version=version, description=description)
+        self.field_name = field_name
+
+    def up(self) -> None:
+        logging.info(
+            f"Delete ttl index on field {self.field_name}. Mongoengine will create it again with a different TTL"
+            " parameter"
+        )
+
+        db = get_db(self.MONGOENGINE_ALIAS)
+        collection = db[self.COLLECTION_JOBS]
+        ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
+        if len(ttl_index_names) != 1:
+            raise ValueError(f"Expected 1 ttl index on field {self.field_name}, found {len(ttl_index_names)}")
+        collection.drop_index(ttl_index_names[0])
+
+    def down(self) -> None:
+        raise IrreversibleMigrationError("This migration does not support rollback")
+
+    def validate(self) -> None:
+        logging.info("Check that the index does not exists anymore")
+
+        db = get_db(self.MONGOENGINE_ALIAS)
+        collection = db[self.COLLECTION_JOBS]
+        ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
+        if len(ttl_index_names) > 0:
+            raise ValueError(f"Found TTL index for field {self.field_name}")

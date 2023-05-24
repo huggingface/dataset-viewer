@@ -52,9 +52,10 @@ services:
       dockerfile: services/api/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: common
+      service: api
     volumes:
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
       CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
@@ -62,6 +63,7 @@ services:
       CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER-100}
       CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER-200}
       CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER: ${CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER-10000}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       # service
       API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
       API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://huggingface.co/api/keys/jwt}
@@ -87,6 +89,7 @@ services:
       dockerfile: services/worker/Dockerfile
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -106,6 +109,7 @@ services:
       PARQUET_AND_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_INFO_SUPPORTED_DATASETS-}
       PARQUET_AND_INFO_TARGET_REVISION: ${PARQUET_AND_INFO_TARGET_REVISION-refs/convert/parquet}
       PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
       # ^ note: the datasets cache is automatically added, so no need to add it here
       OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER: ${OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER-10}
@@ -138,3 +142,4 @@ volumes:
   parquet-datasets-cache:
   parquet-modules-cache:
   parquet-numba-cache:
+  parquet-metadata:

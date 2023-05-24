@@ -23,7 +23,7 @@ from worker.utils import (
 def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitNamesResponse, float]:
     """
     Get the response of /splits for one specific dataset on huggingface.co
-    computed from responses cached in /split-names-from-dataset-info or /split-names-from-streaming steps.
+    computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
@@ -47,7 +47,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     if any(not isinstance(config_name, str) for config_name in config_names):
         raise PreviousStepFormatError("Previous step '/config-names' did not return a list of config names.")
 
-    split_names_cache_kinds = ["/split-names-from-dataset-info", "/split-names-from-streaming"]
+    split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:
         splits: List[SplitItem] = []
         pending: List[ConfigItem] = []

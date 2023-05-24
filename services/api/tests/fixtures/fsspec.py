@@ -1,5 +1,6 @@
 # type: ignore
 import posixpath
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -115,3 +116,4 @@ def tmpfs(tmp_path_factory, mock_fsspec):
     tmp_fs_dir = tmp_path_factory.mktemp("tmpfs")
     with patch.object(TmpDirFileSystem, "tmp_dir", tmp_fs_dir):
         yield TmpDirFileSystem()
+    shutil.rmtree(tmp_fs_dir)
