@@ -71,7 +71,7 @@ def assert_dataset_state(
     for key, value in cache_status.items():
         assert_equality(computed_cache_status[key], sorted(value), key)
     assert_equality(
-        dataset_state.queue_status.as_response(),
+        dataset_state.get_queue_status().as_response(),
         {key: sorted(value) for key, value in queue_status.items()},
         context="queue_status",
     )

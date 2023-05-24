@@ -511,7 +511,6 @@ class DatasetState:
     config_states: List[ConfigState] = field(init=False)
     artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
     cache_status: CacheStatus = field(init=False)
-    queue_status: QueueStatus = field(init=False)
     plan: Plan = field(init=False)
     should_be_backfilled: bool = field(init=False)
 
@@ -606,12 +605,6 @@ class DatasetState:
                 context=f"dataset={self.dataset}",
             ):
                 self.cache_status = self._get_cache_status()
-            with StepProfiler(
-                method="DatasetState.__post_init__",
-                step="_get_queue_status",
-                context=f"dataset={self.dataset}",
-            ):
-                self.queue_status = self._get_queue_status()
             with StepProfiler(
                 method="DatasetState.__post_init__",
                 step="_create_plan",
@@ -723,20 +716,17 @@ class DatasetState:
 
         return cache_status
 
-    def _get_queue_status(self) -> QueueStatus:
-        queue_status = QueueStatus()
-
-        for processing_step in self.processing_graph.get_topologically_ordered_processing_steps():
-            artifact_states = self._get_artifact_states_for_step(processing_step)
-            for artifact_state in artifact_states:
-                if artifact_state.job_state.is_in_process:
-                    queue_status.in_process[artifact_state.id] = artifact_state
-
-        return queue_status
+    def get_queue_status(self) -> QueueStatus:
+        return QueueStatus(
+            {
+                artifact_state.id: artifact_state
+                for processing_step in self.processing_graph.get_topologically_ordered_processing_steps()
+                for artifact_state in self._get_artifact_states_for_step(processing_step)
+            }
+        )
 
     def _create_plan(self) -> Plan:
         plan = Plan()
-        # remaining_in_process_artifact_state_ids = list(self.queue_status.in_process.keys())
         pending_jobs_to_delete_df = self.pending_jobs_df.copy()
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
@@ -774,6 +764,6 @@ class DatasetState:
             "dataset": self.dataset,
             "revision": self.revision,
             "cache_status": self.cache_status.as_response(),
-            "queue_status": self.queue_status.as_response(),
+            "queue_status": self.get_queue_status().as_response(),
             "plan": self.plan.as_response(),
         }
