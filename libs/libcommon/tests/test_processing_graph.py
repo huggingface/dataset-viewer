@@ -170,7 +170,12 @@ def graph() -> ProcessingGraph:
             ["dataset-config-names", "config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
         ),
-        ("config-size", ["dataset-size"], ["config-parquet-and-info"], ["dataset-config-names", "config-parquet-and-info"]),
+        (
+            "config-size",
+            ["dataset-size"],
+            ["config-parquet-and-info"],
+            ["dataset-config-names", "config-parquet-and-info"],
+        ),
         (
             "dataset-size",
             [],
