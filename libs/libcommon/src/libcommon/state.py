@@ -454,10 +454,11 @@ class DeleteJobsTask(Task):
             step="all",
             context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
-            if Queue().cancel_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist()) != len(self.jobs_df):
+            cancelled_jobs_count = Queue().cancel_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
+            if cancelled_jobs_count != len(self.jobs_df):
                 raise ValueError(
                     f"Something went wrong when cancelling jobs: {len(self.jobs_df)} jobs were supposed to be"
-                    f" cancelled, but {len(self.jobs_df)} were cancelled."
+                    f" cancelled, but {cancelled_jobs_count} were cancelled."
                 )
 
 
