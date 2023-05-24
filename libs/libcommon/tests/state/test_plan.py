@@ -789,40 +789,6 @@ def test_plan_incoherent_state(
     )
 
 
-# df = pd.DataFrame(
-#     {
-#         "priority": pd.Categorical(
-#             ["low", "low", "low", "normal", "normal"],
-#             ordered=True,
-#             # categories=[Priority.LOW.value, Priority.NORMAL.value],
-#             categories=["low", "normal"],
-#         ),
-#         "status": pd.Categorical(
-#             ["waiting", "waiting", "started", "waiting", "started"],
-#             ordered=True,
-#             categories=[
-#                 "waiting",
-#                 "started",
-#                 "success",
-#                 "error",
-#                 "cancelled"
-#                 # Status.WAITING.value,
-#                 # Status.STARTED.value,
-#                 # Status.SUCCESS.value,
-#                 # Status.ERROR.value,
-#                 # Status.CANCELLED.value,
-#             ],
-#         ),
-#         "created_at": [
-#             pd.Timestamp("20130101"),
-#             pd.Timestamp("20130102"),
-#             pd.Timestamp("20130103"),
-#             pd.Timestamp("20130104"),
-#             pd.Timestamp("20130105"),
-#         ],
-#     }
-# )
-
 JobSpec = Tuple[Priority, Status, Optional[datetime]]
 
 OLD = datetime.strptime("20000101", "%Y%m%d")
