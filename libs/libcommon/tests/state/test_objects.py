@@ -223,7 +223,7 @@ def test_artifact_state() -> None:
         config=config,
         split=split,
         processing_step=processing_step,
-        pending_jobs_df=Queue().get_pending_jobs_df(dataset=dataset, revision=revision),
+        pending_jobs_df=Queue().get_pending_jobs_df(dataset=dataset),
         cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
