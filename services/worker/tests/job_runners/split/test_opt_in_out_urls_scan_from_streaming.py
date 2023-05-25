@@ -26,6 +26,7 @@ from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     check_spawning,
 )
 from worker.resources import LibrariesResource
+from worker.utils import ImageUrlColumnsResponse
 
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
@@ -83,10 +84,10 @@ def get_job_runner(
     return _get_job_runner
 
 
-IMAGE_URL_COLUMNS_RESPONSE_EMPTY = {"columns": []}
+IMAGE_URL_COLUMNS_RESPONSE_EMPTY: ImageUrlColumnsResponse = {"columns": []}
 
 
-IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA = {"columns": ["col"]}
+IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA: ImageUrlColumnsResponse = {"columns": ["col"]}
 
 
 DEFAULT_EMPTY_RESPONSE = {
