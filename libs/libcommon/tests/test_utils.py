@@ -3,7 +3,7 @@
 
 import pytest
 
-from libcommon.utils import inputs_to_string
+from libcommon.utils import inputs_to_string, is_image_url
 
 
 @pytest.mark.parametrize(
@@ -22,3 +22,16 @@ from libcommon.utils import inputs_to_string
 def test_inputs_to_string(dataset: str, revision: str, config: str, split: str, prefix: str, expected: str) -> None:
     result = inputs_to_string(dataset=dataset, revision=revision, config=config, split=split, prefix=prefix)
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("Some text", False),
+        ("http://test", False),
+        ("http://test/file.png", True),
+        ("https://test/file.jpg", True),
+    ],
+)
+def test_is_image_url(text: str, expected: bool) -> None:
+    assert is_image_url(text=text) == expected

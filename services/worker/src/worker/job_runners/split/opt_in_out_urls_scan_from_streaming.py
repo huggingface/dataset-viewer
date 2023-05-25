@@ -18,7 +18,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, is_image_url
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
@@ -157,8 +157,7 @@ def compute_opt_in_out_urls_scan_response(
         urls_count = sum(
             1
             for row in first_rows
-            if isinstance(row["row"].get(string_column), str)
-            and (row["row"][string_column].startswith("https://") or row["row"][string_column].startswith("http://"))
+            if isinstance(row["row"].get(string_column), str) and is_image_url(text=row["row"][string_column])
         )
         if urls_count and urls_count / len(first_rows) > 0.5:
             urls_columns.append(string_column)

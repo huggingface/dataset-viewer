@@ -3,6 +3,7 @@
 
 import base64
 import enum
+import mimetypes
 from datetime import datetime, timezone
 from typing import Any, Optional, TypedDict
 
@@ -83,3 +84,9 @@ def inputs_to_string(
     if prefix is not None:
         result = f"{prefix},{result}"
     return result
+
+
+def is_image_url(text: str) -> bool:
+    is_url = text.startswith("https://") or text.startswith("http://")
+    (mime_type, _) = mimetypes.guess_type(text)
+    return is_url and mime_type is not None and mime_type.startswith("image/")

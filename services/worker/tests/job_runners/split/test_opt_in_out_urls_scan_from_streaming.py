@@ -83,7 +83,7 @@ def get_job_runner(
     return _get_job_runner
 
 
-FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS = {
+FIRST_ROWS_WITHOUT_STR_COLUMNS = {
     "features": [
         {
             "feature_idx": 0,
@@ -114,7 +114,44 @@ FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS = {
 }
 
 
-FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
+FIRST_ROWS_WITHOUT_IMAGE_URL_COLUMNS = {
+    "features": [
+        {
+            "feature_idx": 0,
+            "name": "col1",
+            "type": {
+                "dtype": "string",
+                "_type": "Value",
+            },
+        },
+    ],
+    "rows": [
+        {"row_idx": 0, "row": {"col": "http://testurl.test/test_document.txt"}, "truncated_cells": []},
+        {"row_idx": 1, "row": {"col": "http://testurl.test/test"}, "truncated_cells": []},
+    ],
+}
+
+
+FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_WITHOUT_OPT_IN_OUT = {
+    "features": [
+        {
+            "feature_idx": 0,
+            "name": "col",
+            "type": {
+                "dtype": "string",
+                "_type": "Value",
+            },
+        }
+    ],
+    "rows": [
+        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
+        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.png"}, "truncated_cells": []},
+        {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
+    ],
+}
+
+
+FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT = {
     "features": [
         {
             "feature_idx": 0,
@@ -129,8 +166,21 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         {"row_idx": 0, "row": {"col": "http://testurl.test/test_image-optOut.jpg"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
         {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
-        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image3-optIn.jpg"}, "truncated_cells": []},
+        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image3-optIn.png"}, "truncated_cells": []},
     ],
+}
+
+
+DEFAULT_EMPTY_RESPONSE = {
+    "has_urls_columns": False,
+    "num_scanned_rows": 0,
+    "opt_in_urls": [],
+    "opt_out_urls": [],
+    "urls_columns": [],
+    "num_opt_out_urls": 0,
+    "num_opt_in_urls": 0,
+    "num_urls": 0,
+    "full_scan": None,
 }
 
 
@@ -140,28 +190,18 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "public",
             100_000,
-            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
-            {
-                "has_urls_columns": False,
-                "num_scanned_rows": 0,
-                "opt_in_urls": [],
-                "opt_out_urls": [],
-                "urls_columns": [],
-                "num_opt_out_urls": 0,
-                "num_opt_in_urls": 0,
-                "num_urls": 0,
-                "full_scan": None,
-            },
+            FIRST_ROWS_WITHOUT_STR_COLUMNS,
+            DEFAULT_EMPTY_RESPONSE,
         ),
         (
             "spawning_opt_in_out",
             100_000,  # dataset has less rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
                 "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                    {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
                 "opt_out_urls": [
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
@@ -176,7 +216,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "spawning_opt_in_out",
             3,  # dataset has more rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 3,
@@ -194,12 +234,12 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "spawning_opt_in_out",
             4,  # dataset has same amount of rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
                 "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                    {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
                 "opt_out_urls": [
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
@@ -210,6 +250,18 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
                 "num_urls": 4,
                 "full_scan": True,
             },
+        ),
+        (
+            "spawning_opt_in_out",
+            100_000,
+            FIRST_ROWS_WITHOUT_IMAGE_URL_COLUMNS,
+            DEFAULT_EMPTY_RESPONSE,
+        ),
+        (
+            "spawning_opt_in_out",
+            100_000,
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_WITHOUT_OPT_IN_OUT,
+            DEFAULT_EMPTY_RESPONSE,
         ),
     ],
 )
@@ -261,14 +313,14 @@ def test_compute(
         (
             "info_error",
             10,
-            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            FIRST_ROWS_WITHOUT_STR_COLUMNS,
             HTTPStatus.OK,
             "InfoError",
         ),
         (
             "too_many_columns",
             0,
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT,
             HTTPStatus.OK,
             "TooManyColumnsError",
         ),
@@ -327,7 +379,7 @@ def test_compute_error_from_spawning(
         dataset=dataset,
         config=config,
         split=split,
-        content=FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+        content=FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT,
         dataset_git_revision="dataset_git_revision",
         job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
         progress=1.0,
