@@ -108,7 +108,6 @@ def get_cache_entry_from_steps(
             revision=revision,
             error_codes_to_retry=ERROR_CODES_TO_RETRY,
             priority=Priority.NORMAL,
-            # TODO: move Priority outside from queue.py (to remove dependency to this file)
         )
         artifact_ids = [
             Artifact(
@@ -116,16 +115,19 @@ def get_cache_entry_from_steps(
             ).id
             for processing_step in processing_steps
         ]
-        should_exist = any(
-            artifact_id in dataset_state.queue_status.in_process for artifact_id in artifact_ids
-        ) or any(
-            f"CreateJob,{artifact_id}" in task.id for task in dataset_state.plan.tasks for artifact_id in artifact_ids
+
+        # backfill if needed, and refresh the state
+        dataset_state.backfill()
+        dataset_state = DatasetState(
+            dataset=dataset,
+            processing_graph=processing_graph,
+            revision=revision,
+            error_codes_to_retry=ERROR_CODES_TO_RETRY,
+            priority=Priority.NORMAL,
         )
 
-        # use the opportunity to backfill if needed
-        dataset_state.backfill()
-
-        if should_exist:
+        # if a job to create the artifact is in progress, raise ResponseNotReadyError
+        if any(artifact_id in dataset_state.get_queue_status().in_process for artifact_id in artifact_ids):
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )

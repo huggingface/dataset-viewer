@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import List, Set
+from datetime import datetime
+from typing import List, Optional, Set, Tuple
 
 import pytest
 
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.utils import Priority, Status
 
 from .utils import (
     DATASET_NAME,
@@ -14,6 +17,7 @@ from .utils import (
     assert_dataset_state,
     compute_all,
     get_dataset_state,
+    process_all_jobs,
     process_next_job,
     put_cache,
 )
@@ -69,6 +73,18 @@ ARTIFACT_SA_1_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SP
 ARTIFACT_SA_2_1 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_1}"
 ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_2}"
 
+
+# Graph to test only one step
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#
+PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset"},
+    }
+)
 
 # Graph to test siblings, children, grand-children, multiple parents
 #
@@ -200,7 +216,7 @@ def test_initial_state(
             "up_to_date": [],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -219,7 +235,7 @@ def test_da_is_computed(
     processing_graph: ProcessingGraph,
     cache_is_empty: List[str],
 ) -> None:
-    put_cache(ARTIFACT_DA)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -235,7 +251,7 @@ def test_da_is_computed(
             "up_to_date": [ARTIFACT_DA],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -252,8 +268,8 @@ def test_ca_1_is_computed(
     processing_graph: ProcessingGraph,
     cache_is_empty: List[str],
 ) -> None:
-    put_cache(ARTIFACT_DA)
-    put_cache(ARTIFACT_CA_1)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+    put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -269,7 +285,7 @@ def test_ca_1_is_computed(
             "up_to_date": [ARTIFACT_CA_1, ARTIFACT_DA],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in cache_is_empty],
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
 
 
@@ -313,7 +329,7 @@ def test_plan_one_job_creation_and_termination(
             "up_to_date": [],
         },
         queue_status={"in_process": []},
-        tasks=[f"CreateJob,{name}" for name in new_1],
+        tasks=[f"CreateJobs,{len(new_1)}"],
     )
 
     dataset_state.backfill()
@@ -335,7 +351,7 @@ def test_plan_one_job_creation_and_termination(
         tasks=[],
     )
 
-    process_next_job(ARTIFACT_DA)
+    process_next_job()
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -351,7 +367,7 @@ def test_plan_one_job_creation_and_termination(
             "up_to_date": [ARTIFACT_DA],
         },
         queue_status={"in_process": in_process_2},
-        tasks=[f"CreateJob,{name}" for name in new_2],
+        tasks=[f"CreateJobs,{len(new_2)}"] if new_2 else [],
     )
 
 
@@ -396,7 +412,7 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
                 "up_to_date": up_to_date,
             },
             queue_status={"in_process": []},
-            tasks=[f"CreateJob,{name}" for name in in_process],
+            tasks=[f"CreateJobs,{len(in_process)}"] if in_process else [],
         )
 
         dataset_state.backfill()
@@ -416,9 +432,7 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
             tasks=[],
         )
 
-        for artifact in in_process:
-            # note that they are updated in topological order (manually, in parametrize)
-            process_next_job(artifact)
+        process_all_jobs()
 
 
 @pytest.mark.parametrize(
@@ -478,7 +492,7 @@ def test_plan_retry_error_and_outdated_by_parent(
     error_codes_to_retry = [error_code]
     compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
 
-    put_cache(ARTIFACT_DA, error_code=error_code)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
     # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
     # the cache entries (also the jobs, if any - not here) should be deleted.
     # they are still here, and haunting the database
@@ -497,7 +511,7 @@ def test_plan_retry_error_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -528,7 +542,7 @@ def test_plan_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -542,7 +556,7 @@ def test_plan_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent)}"],
     )
 
 
@@ -572,7 +586,7 @@ def test_plan_job_runner_version_and_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA, use_old_job_runner_version=True)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, use_old_job_runner_version=True)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -586,7 +600,7 @@ def test_plan_job_runner_version_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -616,7 +630,7 @@ def test_plan_git_revision_and_outdated_by_parent(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_DA_OTHER_REVISION)
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -630,7 +644,7 @@ def test_plan_git_revision_and_outdated_by_parent(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{ARTIFACT_DA}"] + [f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
     )
 
 
@@ -662,7 +676,7 @@ def test_plan_fan_in_updated(
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
-    put_cache(ARTIFACT_SA_1_1)
+    put_cache(step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1)
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -676,7 +690,7 @@ def test_plan_fan_in_updated(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_outdated_by_parent]),
+        tasks=[f"CreateJobs,{len(is_outdated_by_parent)}"],
     )
 
 
@@ -739,7 +753,20 @@ def test_plan_incoherent_state(
     unknown: List[str],
 ) -> None:
     for artifact in initial:
-        put_cache(artifact=artifact)
+        if artifact == ARTIFACT_SA_1_1:
+            put_cache(
+                step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1
+            )
+        elif artifact == ARTIFACT_CA_1:
+            put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
+        elif artifact == ARTIFACT_DA:
+            put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+        elif artifact == ARTIFACT_DD:
+            put_cache(step=STEP_DD, dataset=DATASET_NAME, revision=REVISION_NAME)
+        elif artifact == ARTIFACT_DI:
+            put_cache(step=STEP_DI, dataset=DATASET_NAME, revision=REVISION_NAME)
+        else:
+            raise NotImplementedError()
 
     dataset_state = get_dataset_state(processing_graph=processing_graph)
     assert_dataset_state(
@@ -753,7 +780,7 @@ def test_plan_incoherent_state(
             "up_to_date": up_to_date,
         },
         queue_status={"in_process": []},
-        tasks=sorted([f"CreateJob,{name}" for name in is_empty]),
+        tasks=[f"CreateJobs,{len(is_empty)}"],
     )
 
     compute_all(processing_graph=processing_graph)
@@ -772,3 +799,220 @@ def test_plan_incoherent_state(
         queue_status={"in_process": []},
         tasks=[],
     )
+
+
+JobSpec = Tuple[Priority, Status, Optional[datetime]]
+
+OLD = datetime.strptime("20000101", "%Y%m%d")
+NEW = datetime.strptime("20000102", "%Y%m%d")
+LOW_WAITING_OLD = (Priority.LOW, Status.WAITING, OLD)
+LOW_WAITING_NEW = (Priority.LOW, Status.WAITING, NEW)
+LOW_STARTED_OLD = (Priority.LOW, Status.STARTED, OLD)
+LOW_STARTED_NEW = (Priority.LOW, Status.STARTED, NEW)
+NORMAL_WAITING_OLD = (Priority.NORMAL, Status.WAITING, OLD)
+NORMAL_WAITING_NEW = (Priority.NORMAL, Status.WAITING, NEW)
+NORMAL_STARTED_OLD = (Priority.NORMAL, Status.STARTED, OLD)
+NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
+
+
+@pytest.mark.parametrize(
+    "existing_jobs,expected_create_job,expected_delete_jobs,expected_jobs_after_backfill",
+    [
+        ([], True, False, [(Priority.LOW, Status.WAITING, None)]),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+                NORMAL_STARTED_OLD,
+                NORMAL_STARTED_NEW,
+            ],
+            False,
+            True,
+            [NORMAL_STARTED_OLD],
+        ),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+                NORMAL_STARTED_NEW,
+            ],
+            False,
+            True,
+            [NORMAL_STARTED_NEW],
+        ),
+        (
+            [
+                LOW_WAITING_OLD,
+                LOW_WAITING_NEW,
+                LOW_STARTED_OLD,
+                LOW_STARTED_NEW,
+                NORMAL_WAITING_OLD,
+                NORMAL_WAITING_NEW,
+            ],
+            False,
+            True,
+            [LOW_STARTED_OLD],
+        ),
+        (
+            [LOW_WAITING_OLD, LOW_WAITING_NEW, LOW_STARTED_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
+            False,
+            True,
+            [LOW_STARTED_NEW],
+        ),
+        (
+            [LOW_WAITING_OLD, LOW_WAITING_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
+            False,
+            True,
+            [NORMAL_WAITING_OLD],
+        ),
+        ([LOW_WAITING_OLD, LOW_WAITING_NEW, NORMAL_WAITING_NEW], False, True, [NORMAL_WAITING_NEW]),
+        ([LOW_WAITING_OLD, LOW_WAITING_NEW], False, True, [LOW_WAITING_OLD]),
+        ([LOW_WAITING_NEW], False, False, [LOW_WAITING_NEW]),
+        ([LOW_WAITING_NEW] * 5, False, True, [LOW_WAITING_NEW]),
+    ],
+)
+def test_delete_jobs(
+    existing_jobs: List[JobSpec],
+    expected_create_job: bool,
+    expected_delete_jobs: bool,
+    expected_jobs_after_backfill: List[JobSpec],
+) -> None:
+    processing_graph = PROCESSING_GRAPH_ONE_STEP
+
+    queue = Queue()
+    for job_spec in existing_jobs:
+        (priority, status, created_at) = job_spec
+        job = queue._add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
+        if created_at is not None:
+            job.created_at = created_at
+            job.save()
+        if status is Status.STARTED:
+            queue._start_job(job)
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph)
+    expected_in_process = [ARTIFACT_DA] if existing_jobs else []
+    if expected_create_job:
+        if expected_delete_jobs:
+            raise NotImplementedError()
+        expected_tasks = ["CreateJobs,1"]
+    elif expected_delete_jobs:
+        expected_tasks = [f"DeleteJobs,{len(existing_jobs) - 1}"]
+    else:
+        expected_tasks = []
+
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": expected_in_process},
+        tasks=expected_tasks,
+    )
+
+    dataset_state.backfill()
+
+    job_dicts = queue.get_dataset_pending_jobs_for_type(dataset=DATASET_NAME, job_type=STEP_DA)
+    assert len(job_dicts) == len(expected_jobs_after_backfill)
+    for job_dict, expected_job_spec in zip(job_dicts, expected_jobs_after_backfill):
+        (priority, status, created_at) = expected_job_spec
+        assert job_dict["priority"] == priority.value
+        assert job_dict["status"] == status.value
+        if created_at is not None:
+            assert job_dict["created_at"] == created_at
+
+
+def test_multiple_revisions() -> None:
+    processing_graph = PROCESSING_GRAPH_ONE_STEP
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": []},
+        tasks=["CreateJobs,1"],
+    )
+
+    # create the job for the first revision
+    dataset_state.backfill()
+
+    # the job is in process, no other job is created for the same revision
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": [ARTIFACT_DA]},
+        tasks=[],
+    )
+
+    # create the job for the second revision: the first job is deleted
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": []},
+        tasks=["DeleteJobs,1", "CreateJobs,1"],
+    )
+    dataset_state.backfill()
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": [ARTIFACT_DA_OTHER_REVISION]},
+        tasks=[],
+    )
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    assert len(pending_jobs_df) == 1
+    assert not (pending_jobs_df["revision"] == REVISION_NAME).any()
+    assert (pending_jobs_df["revision"] == OTHER_REVISION_NAME).all()

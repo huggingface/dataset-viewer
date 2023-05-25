@@ -210,14 +210,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
     ).is_success
 
 
-@pytest.mark.parametrize(
-    "has_pending_job,expected_is_in_process",
-    [
-        (False, False),
-        (True, True),
-    ],
-)
-def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> None:
+def test_artifact_state() -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
     config = None
@@ -230,13 +223,13 @@ def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> 
         config=config,
         split=split,
         processing_step=processing_step,
-        has_pending_job=has_pending_job,
+        pending_jobs_df=Queue().get_pending_jobs_df(dataset=dataset),
         cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
-    assert artifact_state.job_state.is_in_process is expected_is_in_process
+    assert not artifact_state.job_state.is_in_process
 
 
 def test_split_state() -> None:

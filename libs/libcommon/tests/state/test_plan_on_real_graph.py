@@ -64,15 +64,7 @@ def test_plan_job_creation_and_termination() -> None:
         # The queue is empty, so no step is in process.
         queue_status={"in_process": []},
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
-        tasks=[
-            "CreateJob,dataset-config-names,dataset,revision",
-            "CreateJob,dataset-info,dataset,revision",
-            "CreateJob,dataset-is-valid,dataset,revision",
-            "CreateJob,dataset-opt-in-out-urls-count,dataset,revision",
-            "CreateJob,dataset-parquet,dataset,revision",
-            "CreateJob,dataset-size,dataset,revision",
-            "CreateJob,dataset-split-names,dataset,revision",
-        ],
+        tasks=["CreateJobs,7"],
     )
 
     dataset_state.backfill()
@@ -183,22 +175,5 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-split-names,dataset,revision",
             ]
         },
-        tasks=[
-            "CreateJob,config-split-names-from-info,dataset,revision,config1",
-            "CreateJob,config-split-names-from-info,dataset,revision,config2",
-            "CreateJob,config-split-names-from-streaming,dataset,revision,config1",
-            "CreateJob,config-split-names-from-streaming,dataset,revision,config2",
-            "CreateJob,config-info,dataset,revision,config1",
-            "CreateJob,config-info,dataset,revision,config2",
-            "CreateJob,config-opt-in-out-urls-count,dataset,revision,config1",
-            "CreateJob,config-opt-in-out-urls-count,dataset,revision,config2",
-            "CreateJob,config-parquet,dataset,revision,config1",
-            "CreateJob,config-parquet,dataset,revision,config2",
-            "CreateJob,config-parquet-and-info,dataset,revision,config1",
-            "CreateJob,config-parquet-and-info,dataset,revision,config2",
-            "CreateJob,config-parquet-metadata,dataset,revision,config1",
-            "CreateJob,config-parquet-metadata,dataset,revision,config2",
-            "CreateJob,config-size,dataset,revision,config1",
-            "CreateJob,config-size,dataset,revision,config2",
-        ],
+        tasks=["CreateJobs,16"],
     )
