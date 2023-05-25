@@ -126,7 +126,7 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner
     datasets_base_path = job_runner.base_datasets_cache
     job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
-    assert "dummy-job-runner" in str(datasets.config.HF_DATASETS_CACHE)
+    assert "dummy-job-runner-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     job_runner.unset_cache()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 
