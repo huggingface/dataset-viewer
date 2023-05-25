@@ -159,7 +159,7 @@ def compute_opt_in_out_urls_scan_response(
             for row in first_rows
             if isinstance(row["row"].get(string_column), str) and is_image_url(text=row["row"][string_column])
         )
-        if urls_count and urls_count / len(first_rows) > 0.5:
+        if urls_count and urls_count / len(first_rows) > 0.3:
             urls_columns.append(string_column)
 
     if not urls_columns:
