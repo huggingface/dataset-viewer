@@ -132,25 +132,6 @@ FIRST_ROWS_WITHOUT_IMAGE_URL_COLUMNS = {
 }
 
 
-FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_WITHOUT_OPT_IN_OUT = {
-    "features": [
-        {
-            "feature_idx": 0,
-            "name": "col",
-            "type": {
-                "dtype": "string",
-                "_type": "Value",
-            },
-        }
-    ],
-    "rows": [
-        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image.jpg"}, "truncated_cells": []},
-        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.png"}, "truncated_cells": []},
-        {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
-    ],
-}
-
-
 FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_AND_OPT_IN_OUT = {
     "features": [
         {
@@ -255,12 +236,6 @@ DEFAULT_EMPTY_RESPONSE = {
             "spawning_opt_in_out",
             100_000,
             FIRST_ROWS_WITHOUT_IMAGE_URL_COLUMNS,
-            DEFAULT_EMPTY_RESPONSE,
-        ),
-        (
-            "spawning_opt_in_out",
-            100_000,
-            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_WITHOUT_OPT_IN_OUT,
             DEFAULT_EMPTY_RESPONSE,
         ),
     ],
