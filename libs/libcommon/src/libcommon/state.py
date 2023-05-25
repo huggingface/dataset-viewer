@@ -486,11 +486,8 @@ class DatasetState:
                 step="get_pending_jobs_df",
                 context=f"dataset={self.dataset}",
             ):
-                self.pending_jobs_df = Queue().get_pending_jobs_df(dataset=self.dataset, revision=self.revision)
-                self.pending_jobs_df = self.pending_jobs_df[
-                    (self.pending_jobs_df["dataset"] == self.dataset)
-                    & (self.pending_jobs_df["revision"] == self.revision)
-                ]
+                self.pending_jobs_df = Queue().get_pending_jobs_df(dataset=self.dataset)
+                self.pending_jobs_df = self.pending_jobs_df[(self.pending_jobs_df["dataset"] == self.dataset)]
                 # ^ safety check
             with StepProfiler(
                 method="DatasetState.__post_init__", step="get_cache_entries_df", context=f"dataset={self.dataset}"
@@ -513,7 +510,8 @@ class DatasetState:
                         split=None,
                         error_codes_to_retry=self.error_codes_to_retry,
                         pending_jobs_df=self.pending_jobs_df[
-                            (self.pending_jobs_df["config"].isnull())
+                            (self.pending_jobs_df["revision"] == self.revision)
+                            & (self.pending_jobs_df["config"].isnull())
                             & (self.pending_jobs_df["split"].isnull())
                             & (self.pending_jobs_df["type"] == processing_step.job_type)
                         ],
@@ -555,7 +553,10 @@ class DatasetState:
                         config=config_name,
                         processing_graph=self.processing_graph,
                         error_codes_to_retry=self.error_codes_to_retry,
-                        pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["config"] == config_name],
+                        pending_jobs_df=self.pending_jobs_df[
+                            (self.pending_jobs_df["revision"] == self.revision)
+                            & (self.pending_jobs_df["config"] == config_name)
+                        ],
                         cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name],
                     )
                     for config_name in self.config_names
@@ -717,6 +718,7 @@ class DatasetState:
             else:
                 pending_jobs_to_delete_df.drop(valid_pending_jobs_df.index, inplace=True)
         # Better keep this order: delete, then create
+        # Note that all the pending jobs for other revisions will be deleted
         if not pending_jobs_to_delete_df.empty:
             plan.add(DeleteJobsTask(jobs_df=pending_jobs_to_delete_df))
         if job_infos_to_create:

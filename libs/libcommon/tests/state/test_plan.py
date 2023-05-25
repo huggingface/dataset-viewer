@@ -934,3 +934,85 @@ def test_delete_jobs(
         assert job_dict["status"] == status.value
         if created_at is not None:
             assert job_dict["created_at"] == created_at
+
+
+def test_multiple_revisions() -> None:
+    processing_graph = PROCESSING_GRAPH_ONE_STEP
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": []},
+        tasks=["CreateJobs,1"],
+    )
+
+    # create the job for the first revision
+    dataset_state.backfill()
+
+    # the job is in process, no other job is created for the same revision
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": [ARTIFACT_DA]},
+        tasks=[],
+    )
+
+    # create the job for the second revision: the first job is deleted
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": []},
+        tasks=["DeleteJobs,1", "CreateJobs,1"],
+    )
+    dataset_state.backfill()
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=[],
+        split_names_in_first_config=[],
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [],
+        },
+        queue_status={"in_process": [ARTIFACT_DA_OTHER_REVISION]},
+        tasks=[],
+    )
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    assert len(pending_jobs_df) == 1
+    assert not (pending_jobs_df["revision"] == REVISION_NAME).any()
+    assert (pending_jobs_df["revision"] == OTHER_REVISION_NAME).all()

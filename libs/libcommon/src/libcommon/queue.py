@@ -719,12 +719,9 @@ class Queue:
         )
         # ^ does not seem optimal at all, but I get the types right
 
-    def get_pending_jobs_df(self, dataset: str, revision: str) -> pd.DataFrame:
+    def get_pending_jobs_df(self, dataset: str) -> pd.DataFrame:
         return self._get_df(
-            [
-                job.flat_info()
-                for job in Job.objects(dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED])
-            ]
+            [job.flat_info() for job in Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])]
         )
 
     # special reports
