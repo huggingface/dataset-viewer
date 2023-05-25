@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 import logging
 from asyncio import Semaphore, create_task, run, wait
@@ -18,7 +18,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.utils import JobInfo, is_image_url
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
@@ -26,7 +26,6 @@ from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
     OptUrl,
-    SplitFirstRowsResponse,
     get_previous_step_or_raise,
     get_rows_or_raise,
 )
@@ -114,25 +113,16 @@ def compute_opt_in_out_urls_scan_response(
     if not spawning_token:
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
 
-    # get the first rows from previous job
+    # get image url columns from previous job
     upstream_response = get_previous_step_or_raise(
-        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
+        kinds=["split-image-url-columns"],
         dataset=dataset,
         config=config,
         split=split,
     )
     try:
-        first_rows_response = upstream_response.response
-        upstream_response_content = SplitFirstRowsResponse(
-            dataset=dataset,
-            config=config,
-            split=split,
-            features=first_rows_response["content"]["features"],
-            rows=first_rows_response["content"]["rows"],
-        )
-
-        features = upstream_response_content["features"]
-        first_rows = upstream_response_content["rows"]
+        image_url_columns_response = upstream_response.response
+        image_url_columns = image_url_columns_response["content"]["columns"]
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
@@ -149,20 +139,7 @@ def compute_opt_in_out_urls_scan_response(
             cause=err,
         ) from err
 
-    # look for URLs columns using the first rows
-    string_type_dict = {"dtype": "string", "_type": "Value"}
-    string_columns = [feature["name"] for feature in features if feature["type"] == string_type_dict]
-    urls_columns = []
-    for string_column in string_columns:
-        urls_count = sum(
-            1
-            for row in first_rows
-            if isinstance(row["row"].get(string_column), str) and is_image_url(text=row["row"][string_column])
-        )
-        if urls_count and urls_count / len(first_rows) > 0.3:
-            urls_columns.append(string_column)
-
-    if not urls_columns:
+    if not image_url_columns:
         return OptInOutUrlsScanResponse(
             urls_columns=[],
             opt_in_urls=[],
@@ -175,9 +152,9 @@ def compute_opt_in_out_urls_scan_response(
             full_scan=None,
         )
 
-    if len(urls_columns) > columns_max_number:
+    if len(image_url_columns) > columns_max_number:
         raise TooManyColumnsError(
-            f"The number of columns ({len(urls_columns)}) exceeds the maximum supported number of columns to scan"
+            f"The number of columns ({len(image_url_columns)}) exceeds the maximum supported number of columns to scan"
             f" ({columns_max_number})."
         )
 
@@ -189,13 +166,13 @@ def compute_opt_in_out_urls_scan_response(
         info=info,
         rows_max_number=rows_max_number,
         use_auth_token=use_auth_token,
-        column_names=urls_columns,
+        column_names=image_url_columns,
     )
     rows = rows_content["rows"]
 
     # get the urls
     num_scanned_rows = len(rows)
-    urls = [row[urls_column] for row in rows for urls_column in urls_columns]
+    urls = [row[urls_column] for row in rows for urls_column in image_url_columns]
 
     # scan the urls
     opt_in_urls_indices, opt_out_urls_indices = run(
@@ -212,23 +189,23 @@ def compute_opt_in_out_urls_scan_response(
     opt_in_urls = [
         OptUrl(
             url=urls[url_idx],
-            row_idx=url_idx // len(urls_columns),
-            column_name=urls_columns[url_idx % len(urls_columns)],
+            row_idx=url_idx // len(image_url_columns),
+            column_name=image_url_columns[url_idx % len(image_url_columns)],
         )
         for url_idx in opt_in_urls_indices
     ]
     opt_out_urls = [
         OptUrl(
             url=urls[url_idx],
-            row_idx=url_idx // len(urls_columns),
-            column_name=urls_columns[url_idx % len(urls_columns)],
+            row_idx=url_idx // len(image_url_columns),
+            column_name=image_url_columns[url_idx % len(image_url_columns)],
         )
         for url_idx in opt_out_urls_indices
     ]
 
     # return scan result
     return OptInOutUrlsScanResponse(
-        urls_columns=urls_columns,
+        urls_columns=image_url_columns,
         opt_in_urls=opt_in_urls,
         opt_out_urls=opt_out_urls,
         num_opt_in_urls=len(opt_in_urls),
@@ -267,8 +244,6 @@ class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
         self.urls_scan_config = app_config.urls_scan
 
     def compute(self) -> CompleteJobResult:
-        if self.config is None or self.split is None:
-            raise ValueError("config and split are required")
         return CompleteJobResult(
             compute_opt_in_out_urls_scan_response(
                 dataset=self.dataset,
