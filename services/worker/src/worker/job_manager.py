@@ -143,15 +143,13 @@ class JobManager:
             Queue().finish_job(job_id=self.job_id, is_success=False)
             logging.debug("the job raised an exception, don't update the cache")
             return
-        # else, update the cache and backfill the dataset
+        # else, update the cache, stop the job and backfill the dataset
         self.set_cache(job_result["output"])
         logging.debug("the job output has been written to the cache.")
+        Queue().finish_job(job_id=self.job_id, is_success=job_result["is_success"])
+        logging.debug("the job has been finished.")
         self.backfill()
         logging.debug("the dataset has been backfilled.")
-        # ^ possibly the job was finished by the backfilling
-        if Queue().is_job_started(job_id=self.job_id):
-            logging.debug("the job was not finished by the backfilling, finish it")
-            Queue().finish_job(job_id=self.job_id, is_success=job_result["is_success"])
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
