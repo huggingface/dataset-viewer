@@ -629,30 +629,22 @@ class Queue:
             return False
         return True
 
-    def finish_job(self, job_id: str, is_success: bool) -> bool:
+    def finish_job(self, job_id: str) -> None:
         """Finish a job in the queue.
 
-        The job is moved from the started state to the success or error state.
+        The job is deleted from the database.
 
         Args:
             job_id (`str`, required): id of the job
-            is_success (`bool`, required): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
-            finished_at) before finishing
+            `None`
         """
         try:
-            job = self._get_started_job(job_id=job_id)
+            Job.objects(pk=job_id).delete()
         except DoesNotExist:
             logging.error(f"job {job_id} does not exist. Aborting.")
-            return False
-        except StartedJobError as e:
-            logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
-            return False
-        finished_status = Status.SUCCESS if is_success else Status.ERROR
-        job.update(finished_at=get_datetime(), status=finished_status)
-        return True
+            return
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None

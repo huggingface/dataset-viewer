@@ -41,11 +41,6 @@ class JobOutput(TypedDict):
     progress: Optional[float]
 
 
-class JobResult(TypedDict):
-    is_success: bool
-    output: Optional[JobOutput]
-
-
 class JobManager:
     """
     A job manager is a class that handles a job runner compute, for a specific processing step.
@@ -121,37 +116,27 @@ class JobManager:
     def critical(self, msg: str) -> None:
         self.log(level=logging.CRITICAL, msg=msg)
 
-    def run_job(self) -> JobResult:
+    def run_job(self) -> Optional[JobOutput]:
         try:
-            job_result: JobResult = self.process()
+            return self.process()
         except Exception:
-            job_result = {
-                "is_success": False,
-                "output": None,
-            }
-        result_str = "SUCCESS" if job_result["is_success"] else "ERROR"
-        self.debug(f"job output with {result_str} - {self}")
-        return job_result
+            return None
 
-    def finish(self, job_result: JobResult) -> None:
+    def finish(self, job_output: Optional[JobOutput]) -> None:
         # check if the job is still in started status
         if not Queue().is_job_started(job_id=self.job_id):
             logging.debug("the job was cancelled, don't update the cache")
             return
         # if the job raised an exception, finish it and return
-        if not job_result["output"]:
-            Queue().finish_job(job_id=self.job_id, is_success=False)
+        if not job_output:
+            Queue().finish_job(job_id=self.job_id)
             logging.debug("the job raised an exception, don't update the cache")
             return
         # else, update the cache and backfill the dataset
-        self.set_cache(job_result["output"])
+        self.set_cache(output=job_output)
         logging.debug("the job output has been written to the cache.")
         self.backfill()
         logging.debug("the dataset has been backfilled.")
-        # ^ possibly the job was finished by the backfilling
-        if Queue().is_job_started(job_id=self.job_id):
-            logging.debug("the job was not finished by the backfilling, finish it")
-            Queue().finish_job(job_id=self.job_id, is_success=job_result["is_success"])
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
@@ -175,7 +160,7 @@ class JobManager:
 
     def process(
         self,
-    ) -> JobResult:
+    ) -> Optional[JobOutput]:
         self.info(f"compute {self}")
         try:
             try:
@@ -204,19 +189,16 @@ class JobManager:
                 " is valid"
             )
             return {
-                "is_success": True,
-                "output": {
-                    "content": content,
-                    "http_status": HTTPStatus.OK,
-                    "error_code": None,
-                    "details": None,
-                    "progress": job_result.progress,
-                },
+                "content": content,
+                "http_status": HTTPStatus.OK,
+                "error_code": None,
+                "details": None,
+                "progress": job_result.progress,
             }
         except DatasetNotFoundError:
             # To avoid filling the cache, we don't save this error. Otherwise, DoS is possible.
             self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
-            return {"is_success": False, "output": None}
+            return None
         except CachedArtifactError as err:
             # A previous step (cached artifact required by the job runner) is an error. We copy the cached entry,
             # so that users can see the underlying error (they are not interested in the internals of the graph).
@@ -224,27 +206,21 @@ class JobManager:
             # to debug if needed.
             self.debug(f"response for job_info={self.job_info} had an error from a previous step")
             return {
-                "is_success": False,
-                "output": {
-                    "content": err.cache_entry_with_details["content"],
-                    "http_status": err.cache_entry_with_details["http_status"],
-                    "error_code": err.cache_entry_with_details["error_code"],
-                    "details": err.enhanced_details,
-                    "progress": None,
-                },
+                "content": err.cache_entry_with_details["content"],
+                "http_status": err.cache_entry_with_details["http_status"],
+                "error_code": err.cache_entry_with_details["error_code"],
+                "details": err.enhanced_details,
+                "progress": None,
             }
         except Exception as err:
             e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
             self.debug(f"response for job_info={self.job_info} had an error")
             return {
-                "is_success": False,
-                "output": {
-                    "content": dict(e.as_response()),
-                    "http_status": e.status_code,
-                    "error_code": e.code,
-                    "details": dict(e.as_response_with_cause()),
-                    "progress": None,
-                },
+                "content": dict(e.as_response()),
+                "http_status": e.status_code,
+                "error_code": e.code,
+                "details": dict(e.as_response_with_cause()),
+                "progress": None,
             }
 
     def backfill(self) -> None:
@@ -279,15 +255,12 @@ class JobManager:
         )
         error = JobManagerCrashedError(message=message, cause=cause)
         self.finish(
-            job_result={
-                "is_success": False,
-                "output": {
-                    "content": dict(error.as_response()),
-                    "http_status": error.status_code,
-                    "error_code": error.code,
-                    "details": dict(error.as_response_with_cause()),
-                    "progress": None,
-                },
+            job_output={
+                "content": dict(error.as_response()),
+                "http_status": error.status_code,
+                "error_code": error.code,
+                "details": dict(error.as_response_with_cause()),
+                "progress": None,
             }
         )
 
@@ -299,14 +272,11 @@ class JobManager:
         )
         error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
         self.finish(
-            job_result={
-                "is_success": False,
-                "output": {
-                    "content": dict(error.as_response()),
-                    "http_status": error.status_code,
-                    "error_code": error.code,
-                    "details": dict(error.as_response_with_cause()),
-                    "progress": None,
-                },
+            job_output={
+                "content": dict(error.as_response()),
+                "http_status": error.status_code,
+                "error_code": error.code,
+                "details": dict(error.as_response_with_cause()),
+                "progress": None,
             }
         )

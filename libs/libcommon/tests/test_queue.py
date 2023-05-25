@@ -49,19 +49,19 @@ def test__add_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # and the third one
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
-    queue.finish_job(job_id=other_job_id, is_success=True)
+    queue.finish_job(job_id=other_job_id)
     # finish it
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     with pytest.raises(EmptyQueueError):
@@ -98,12 +98,12 @@ def test_upsert_job() -> None:
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     # process the second job
     job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
     with pytest.raises(EmptyQueueError):
@@ -293,7 +293,7 @@ def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
         return
     # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
     # finish the first job
-    queue.finish_job(job_info["job_id"], is_success=True)
+    queue.finish_job(job_info["job_id"])
     assert not queue.is_job_in_process(
         job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
     )
@@ -371,7 +371,7 @@ def test_get_dataset_pending_jobs_for_type() -> None:
             for job_type in [test_type, test_another_type]:
                 queue.upsert_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
                 job_info = queue.start_job()
-                queue.finish_job(job_info["job_id"], is_success=True)
+                queue.finish_job(job_info["job_id"])
     for config in test_configs_started:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:

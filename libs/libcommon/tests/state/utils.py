@@ -131,7 +131,7 @@ def process_next_job() -> None:
         config=job_info["params"]["config"],
         split=job_info["params"]["split"],
     )
-    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
+    Queue().finish_job(job_id=job_info["job_id"])
 
 
 def process_all_jobs() -> None:

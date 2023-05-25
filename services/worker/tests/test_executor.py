@@ -91,7 +91,7 @@ def start_worker_loop_with_long_job() -> None:
         if current_job.status == Status.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
             time.sleep(20)
-            Queue().finish_job(current_job_info["job_id"], is_success=True)
+            Queue().finish_job(current_job_info["job_id"])
 
 
 @fixture
