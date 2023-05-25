@@ -88,5 +88,5 @@ def inputs_to_string(
 
 def is_image_url(text: str) -> bool:
     is_url = text.startswith("https://") or text.startswith("http://")
-    (mime_type, _) = mimetypes.guess_type(text)
+    (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
     return is_url and mime_type is not None and mime_type.startswith("image/")
