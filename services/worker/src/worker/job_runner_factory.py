@@ -40,6 +40,7 @@ from worker.job_runners.split.first_rows_from_parquet import (
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
+from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.opt_in_out_urls_count import (
     SplitOptInOutUrlsCountJobRunner,
 )
@@ -179,7 +180,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 app_config=self.app_config,
             )
-
+        if job_type == SplitImageUrlColumnsJobRunner.get_job_type():
+            return SplitImageUrlColumnsJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
         if job_type == SplitOptInOutUrlsScanJobRunner.get_job_type():
             return SplitOptInOutUrlsScanJobRunner(
                 job_info=job_info,
@@ -221,6 +227,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigSplitNamesFromInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
+            SplitImageUrlColumnsJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),

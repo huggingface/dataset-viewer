@@ -128,6 +128,10 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_out_urls: List[OptUrl]
 
 
+class ImageUrlColumnsResponse(TypedDict):
+    columns: List[str]
+
+
 Row = Mapping[str, Any]
 
 
