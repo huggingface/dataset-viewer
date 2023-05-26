@@ -222,7 +222,7 @@ def graph() -> ProcessingGraph:
             ["split-opt-in-out-urls-count"],
             ["split-image-url-columns"],
             [
-                "/config-names",
+                "dataset-config-names",
                 "config-split-names-from-streaming",
                 "config-split-names-from-info",
                 "config-info",
