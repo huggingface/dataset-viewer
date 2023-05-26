@@ -350,10 +350,12 @@ class Queue:
                     revision=job_info["params"]["revision"],
                     config=job_info["params"]["config"],
                     split=job_info["params"]["split"],
+                    partition=job_info["params"]["partition"],
                     unicity_id=inputs_to_string(
                         dataset=job_info["params"]["dataset"],
                         config=job_info["params"]["config"],
                         split=job_info["params"]["split"],
+                        partition=job_info["params"]["partition"],
                         prefix=job_info["type"],
                     ),
                     namespace=job_info["params"]["dataset"].split("/")[0],
@@ -686,7 +688,13 @@ class Queue:
         return True
 
     def is_job_in_process(
-        self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
+        self,
+        job_type: str,
+        dataset: str,
+        revision: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        partition: Optional[str] = None,
     ) -> bool:
         """Check if a job is in process (waiting or started).
 
@@ -707,6 +715,7 @@ class Queue:
                 revision=revision,
                 config=config,
                 split=split,
+                partition=partition,
                 status__in=[Status.WAITING, Status.STARTED],
             ).count()
             > 0

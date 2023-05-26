@@ -108,6 +108,7 @@ def test_fetch_names(
             fetch_names(
                 dataset=DATASET_NAME,
                 config=CONFIG_NAME_1,
+                split=None,
                 cache_kinds=cache_kinds,
                 names_field=NAMES_FIELD,
                 name_field=NAME_FIELD,
@@ -116,6 +117,7 @@ def test_fetch_names(
         names = fetch_names(
             dataset=DATASET_NAME,
             config=CONFIG_NAME_1,
+            split=None,
             cache_kinds=cache_kinds,
             names_field=NAMES_FIELD,
             name_field=NAME_FIELD,

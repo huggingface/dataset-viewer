@@ -28,12 +28,16 @@ from libcommon.utils import JobInfo, Priority, inputs_to_string
 
 
 def fetch_names(
-    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
+    dataset: str,
+    config: Optional[str],
+    split: Optional[str],
+    cache_kinds: List[str],
+    names_field: str,
+    name_field: str,
 ) -> List[str]:
     """Fetch a list of names from the database."""
     names = []
-
-    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+    best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config, split=split)
     for name_item in best_response.response["content"][names_field]:
         name = name_item[name_field]
         if not isinstance(name, str):
@@ -308,14 +312,8 @@ class SplitState:
                 split=self.split,
                 partition=None,
                 error_codes_to_retry=self.error_codes_to_retry,
-                pending_jobs_df=self.pending_jobs_df[
-                    (self.pending_jobs_df["partition"].isnull())
-                    & (self.pending_jobs_df["type"] == processing_step.job_type)
-                ],
-                cache_entries_df=self.cache_entries_df[
-                    (self.cache_entries_df["partition"].isnull())
-                    & (self.cache_entries_df["kind"] == processing_step.cache_kind)
-                ],
+                pending_jobs_df=self.pending_jobs_df[(self.pending_jobs_df["type"] == processing_step.job_type)],
+                cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
         }
@@ -324,6 +322,7 @@ class SplitState:
             self.partitions = fetch_names(
                 dataset=self.dataset,
                 config=self.config,
+                split=self.split,
                 cache_kinds=[
                     processing_step.cache_kind
                     for processing_step in self.processing_graph.get_split_partitions_processing_steps()
@@ -396,9 +395,7 @@ class ConfigState:
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
                     ],
                     cache_entries_df=self.cache_entries_df[
-                        (self.cache_entries_df["split"].isnull())
-                        & (self.cache_entries_df["partition"].isnull())
-                        & (self.cache_entries_df["kind"] == processing_step.cache_kind)
+                        (self.cache_entries_df["kind"] == processing_step.cache_kind)
                     ],
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
@@ -413,6 +410,7 @@ class ConfigState:
                 self.split_names = fetch_names(
                     dataset=self.dataset,
                     config=self.config,
+                    split=None,
                     cache_kinds=[
                         processing_step.cache_kind
                         for processing_step in self.processing_graph.get_config_split_names_processing_steps()
@@ -633,6 +631,7 @@ class DatasetState:
                     self.config_names = fetch_names(
                         dataset=self.dataset,
                         config=None,
+                        split=None,
                         cache_kinds=[
                             processing_step.cache_kind
                             for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
