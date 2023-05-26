@@ -121,13 +121,13 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-first-rows-from-parquet",
-            ["dataset-is-valid", "split-opt-in-out-urls-scan"],
+            ["dataset-is-valid", "split-image-url-columns"],
             ["config-parquet"],
             ["config-parquet", "dataset-config-names", "config-parquet-and-info"],
         ),
         (
             "split-first-rows-from-streaming",
-            ["dataset-is-valid", "split-opt-in-out-urls-scan"],
+            ["dataset-is-valid", "split-image-url-columns"],
             [
                 "config-split-names-from-streaming",
                 "config-split-names-from-info",
@@ -203,8 +203,8 @@ def graph() -> ProcessingGraph:
             ],
         ),
         (
-            "split-opt-in-out-urls-scan",
-            ["split-opt-in-out-urls-count"],
+            "split-image-url-columns",
+            ["split-opt-in-out-urls-scan"],
             ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
             [
                 "dataset-config-names",
@@ -215,6 +215,22 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-streaming",
                 "config-parquet",
                 "split-first-rows-from-parquet",
+            ],
+        ),
+        (
+            "split-opt-in-out-urls-scan",
+            ["split-opt-in-out-urls-count"],
+            ["split-image-url-columns"],
+            [
+                "dataset-config-names",
+                "config-split-names-from-streaming",
+                "config-split-names-from-info",
+                "config-info",
+                "config-parquet-and-info",
+                "split-first-rows-from-streaming",
+                "config-parquet",
+                "split-first-rows-from-parquet",
+                "split-image-url-columns",
             ],
         ),
         (
@@ -231,6 +247,7 @@ def graph() -> ProcessingGraph:
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-first-rows-from-parquet",
+                "split-image-url-columns",
             ],
         ),
         (
@@ -248,6 +265,7 @@ def graph() -> ProcessingGraph:
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-first-rows-from-parquet",
+                "split-image-url-columns",
             ],
         ),
         (
@@ -266,6 +284,7 @@ def graph() -> ProcessingGraph:
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-first-rows-from-parquet",
+                "split-image-url-columns",
             ],
         ),
     ],
