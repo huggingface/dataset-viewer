@@ -54,6 +54,7 @@ def get_job_runner(
                     "revision": "revision",
                     "config": config,
                     "split": split,
+                    "partition": None,
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,

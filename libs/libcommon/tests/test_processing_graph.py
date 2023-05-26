@@ -291,7 +291,7 @@ def graph() -> ProcessingGraph:
             "split-partitions",
             [],
             ["config-size"],
-            ["config-size", "/config-names", "config-parquet-and-info"],
+            ["config-size", "dataset-config-names", "config-parquet-and-info"],
         ),
     ],
 )

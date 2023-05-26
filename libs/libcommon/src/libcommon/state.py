@@ -170,6 +170,7 @@ class Artifact:
         revision: str,
         config: Optional[str],
         split: Optional[str],
+        partition: Optional[str],
         processing_step_name: str,
     ) -> str:
         return inputs_to_string(
@@ -177,6 +178,7 @@ class Artifact:
             revision=revision,
             config=config,
             split=split,
+            partition=partition,
             prefix=processing_step_name,
         )
 
@@ -200,7 +202,6 @@ class ArtifactState(Artifact):
             revision=self.revision,
             config=self.config,
             split=self.split,
-            is_in_process=self.has_pending_job,
             partition=self.partition,
             pending_jobs_df=self.pending_jobs_df,
         )
@@ -262,7 +263,7 @@ class PartitionState:
                 split=self.split,
                 partition=self.partition,
                 error_codes_to_retry=self.error_codes_to_retry,
-                has_pending_job=(self.pending_jobs_df["type"] == processing_step.job_type).any(),
+                pending_jobs_df=self.pending_jobs_df[(self.pending_jobs_df["type"] == processing_step.job_type)],
                 cache_entries_df=self.cache_entries_df[(self.cache_entries_df["kind"] == processing_step.cache_kind)],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="partition")
@@ -307,13 +308,13 @@ class SplitState:
                 split=self.split,
                 partition=None,
                 error_codes_to_retry=self.error_codes_to_retry,
-                has_pending_job=(
+                pending_jobs_df=self.pending_jobs_df[
                     (self.pending_jobs_df["partition"].isnull())
                     & (self.pending_jobs_df["type"] == processing_step.job_type)
-                ).any(),
+                ],
                 cache_entries_df=self.cache_entries_df[
-                    (self.cache_entries_df["kind"] == processing_step.cache_kind)
-                    & (self.cache_entries_df["partition"].isnull())
+                    (self.cache_entries_df["partition"].isnull())
+                    & (self.cache_entries_df["kind"] == processing_step.cache_kind)
                 ],
             )
             for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="split")
@@ -391,10 +392,13 @@ class ConfigState:
                     error_codes_to_retry=self.error_codes_to_retry,
                     pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["split"].isnull())
+                        & (self.pending_jobs_df["partition"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
                     ],
                     cache_entries_df=self.cache_entries_df[
-                        self.cache_entries_df["kind"] == processing_step.cache_kind
+                        (self.cache_entries_df["split"].isnull())
+                        & (self.cache_entries_df["partition"].isnull())
+                        & (self.cache_entries_df["kind"] == processing_step.cache_kind)
                     ],
                 )
                 for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="config")
@@ -590,87 +594,87 @@ class DatasetState:
                 self.cache_entries_df = self.cache_entries_df[self.cache_entries_df["dataset"] == self.dataset]
                 # ^ safety check
 
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="get_dataset_level_artifact_states",
-            context=f"dataset={self.dataset}",
-        ):
-            self.artifact_state_by_step = {
-                processing_step.name: ArtifactState(
-                    processing_step=processing_step,
-                    dataset=self.dataset,
-                    revision=self.revision,
-                    config=None,
-                    split=None,
-                    partition=None,
-                    error_codes_to_retry=self.error_codes_to_retry,
-                    has_pending_job=(
-                        (self.pending_jobs_df["config"].isnull())
-                        & (self.pending_jobs_df["split"].isnull())
-                        & (self.pending_jobs_df["type"] == processing_step.job_type)
-                    ).any(),
-                    cache_entries_df=self.cache_entries_df[
-                        (self.cache_entries_df["kind"] == processing_step.cache_kind)
-                        & (self.cache_entries_df["config"].isnull())
-                        & (self.cache_entries_df["split"].isnull())
-                    ],
-                )
-                for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
-            }
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="get_config_names",
-            context=f"dataset={self.dataset}",
-        ):
-            try:
-                self.config_names = fetch_names(
-                    dataset=self.dataset,
-                    config=None,
-                    cache_kinds=[
-                        processing_step.cache_kind
-                        for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
-                    ],
-                    names_field="config_names",
-                    name_field="config",
-                )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
-            except Exception:
-                self.config_names = []
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="get_config_states",
-            context=f"dataset={self.dataset}",
-        ):
-            self.config_states = [
-                ConfigState(
-                    dataset=self.dataset,
-                    revision=self.revision,
-                    config=config_name,
-                    processing_graph=self.processing_graph,
-                    error_codes_to_retry=self.error_codes_to_retry,
-                    pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["config"] == config_name],
-                    cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name],
-                )
-                for config_name in self.config_names
-            ]
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="_get_cache_status",
-            context=f"dataset={self.dataset}",
-        ):
-            self.cache_status = self._get_cache_status()
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="_get_queue_status",
-            context=f"dataset={self.dataset}",
-        ):
-            self.queue_status = self._get_queue_status()
-        with StepProfiler(
-            method="DatasetState.__post_init__",
-            step="_create_plan",
-            context=f"dataset={self.dataset}",
-        ):
-            self.plan = self._create_plan()
-        self.should_be_backfilled = len(self.plan.tasks) > 0
+            with StepProfiler(
+                method="DatasetState.__post_init__",
+                step="get_dataset_level_artifact_states",
+                context=f"dataset={self.dataset}",
+            ):
+                self.artifact_state_by_step = {
+                    processing_step.name: ArtifactState(
+                        processing_step=processing_step,
+                        dataset=self.dataset,
+                        revision=self.revision,
+                        config=None,
+                        split=None,
+                        partition=None,
+                        error_codes_to_retry=self.error_codes_to_retry,
+                        pending_jobs_df=self.pending_jobs_df[
+                            (self.pending_jobs_df["revision"] == self.revision)
+                            & (self.pending_jobs_df["config"].isnull())
+                            & (self.pending_jobs_df["split"].isnull())
+                            & (self.pending_jobs_df["partition"].isnull())
+                            & (self.pending_jobs_df["type"] == processing_step.job_type)
+                        ],
+                        cache_entries_df=self.cache_entries_df[
+                            (self.cache_entries_df["kind"] == processing_step.cache_kind)
+                            & (self.cache_entries_df["config"].isnull())
+                            & (self.cache_entries_df["split"].isnull())
+                            & (self.cache_entries_df["partition"].isnull())
+                        ],
+                    )
+                    for processing_step in self.processing_graph.get_input_type_processing_steps(input_type="dataset")
+                }
+            with StepProfiler(
+                method="DatasetState.__post_init__",
+                step="get_config_names",
+                context=f"dataset={self.dataset}",
+            ):
+                try:
+                    self.config_names = fetch_names(
+                        dataset=self.dataset,
+                        config=None,
+                        cache_kinds=[
+                            processing_step.cache_kind
+                            for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
+                        ],
+                        names_field="config_names",
+                        name_field="config",
+                    )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+                except Exception:
+                    self.config_names = []
+            with StepProfiler(
+                method="DatasetState.__post_init__",
+                step="get_config_states",
+                context=f"dataset={self.dataset}",
+            ):
+                self.config_states = [
+                    ConfigState(
+                        dataset=self.dataset,
+                        revision=self.revision,
+                        config=config_name,
+                        processing_graph=self.processing_graph,
+                        error_codes_to_retry=self.error_codes_to_retry,
+                        pending_jobs_df=self.pending_jobs_df[
+                            (self.pending_jobs_df["revision"] == self.revision)
+                            & (self.pending_jobs_df["config"] == config_name)
+                        ],
+                        cache_entries_df=self.cache_entries_df[self.cache_entries_df["config"] == config_name],
+                    )
+                    for config_name in self.config_names
+                ]
+            with StepProfiler(
+                method="DatasetState.__post_init__",
+                step="_get_cache_status",
+                context=f"dataset={self.dataset}",
+            ):
+                self.cache_status = self._get_cache_status()
+            with StepProfiler(
+                method="DatasetState.__post_init__",
+                step="_create_plan",
+                context=f"dataset={self.dataset}",
+            ):
+                self.plan = self._create_plan()
+            self.should_be_backfilled = len(self.plan.tasks) > 0
 
     def _get_artifact_states_for_step(
         self,
@@ -840,6 +844,7 @@ class DatasetState:
                             "revision": self.revision,
                             "config": artifact_state.config,
                             "split": artifact_state.split,
+                            "partition": artifact_state.partition,
                         },
                         "priority": self.priority,
                     }
