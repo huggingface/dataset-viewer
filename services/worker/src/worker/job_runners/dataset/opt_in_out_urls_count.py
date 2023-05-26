@@ -20,7 +20,7 @@ from worker.utils import (
 def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"get opt-in-out-urls-count for dataset={dataset}")
 
-    config_names_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    config_names_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")

@@ -206,4 +206,13 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-dataset-info",
                 version="20230524095902",
             ),
+            CacheRenamingMigration(
+                cache_kind="/config-names", new_cache_kind="dataset-config-names", version="20230524192200"
+            ),
+            QueueRenamingMigration(
+                job_type="/config-names",
+                new_job_type="dataset-config-names",
+                version="20230524192300",
+            ),
+            MetricsDeletionMigration(job_type="/config-names", cache_kind="/config-names", version="20230524192400"),
         ]

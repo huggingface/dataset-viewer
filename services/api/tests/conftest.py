@@ -47,7 +47,7 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
     return EndpointConfig(
         processing_step_names_by_input_type_and_endpoint={
-            "/config-names": {"dataset": ["/config-names"]},
+            "/config-names": {"dataset": ["dataset-config-names"]},
             "/splits": {
                 "config": ["config-split-names-from-streaming"],
             },

@@ -10,7 +10,6 @@ from environs import Env
 
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_INFO_VERSION,
-    PROCESSING_STEP_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
@@ -18,6 +17,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_SIZE_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_IS_VALID_VERSION,
     PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -202,14 +202,14 @@ class MetricsConfig:
 class ProcessingGraphConfig:
     specification: ProcessingGraphSpecification = field(
         default_factory=lambda: {
-            "/config-names": {
+            "dataset-config-names": {
                 "input_type": "dataset",
                 "provides_dataset_config_names": True,
-                "job_runner_version": PROCESSING_STEP_CONFIG_NAMES_VERSION,
+                "job_runner_version": PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
             },
             "config-split-names-from-streaming": {
                 "input_type": "config",
-                "triggered_by": "/config-names",
+                "triggered_by": "dataset-config-names",
                 "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
             },
@@ -221,7 +221,7 @@ class ProcessingGraphConfig:
             },
             "config-parquet-and-info": {
                 "input_type": "config",
-                "triggered_by": "/config-names",
+                "triggered_by": "dataset-config-names",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
             },
             "config-parquet": {
@@ -243,7 +243,7 @@ class ProcessingGraphConfig:
             },
             "dataset-parquet": {
                 "input_type": "dataset",
-                "triggered_by": ["config-parquet", "/config-names"],
+                "triggered_by": ["config-parquet", "dataset-config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_PARQUET_VERSION,
             },
             "config-info": {
@@ -253,7 +253,7 @@ class ProcessingGraphConfig:
             },
             "dataset-info": {
                 "input_type": "dataset",
-                "triggered_by": ["config-info", "/config-names"],
+                "triggered_by": ["config-info", "dataset-config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
             },
             "config-split-names-from-info": {
@@ -269,7 +269,7 @@ class ProcessingGraphConfig:
             },
             "dataset-size": {
                 "input_type": "dataset",
-                "triggered_by": ["config-size", "/config-names"],
+                "triggered_by": ["config-size", "dataset-config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_SIZE_VERSION,
             },
             "dataset-split-names": {
@@ -277,7 +277,7 @@ class ProcessingGraphConfig:
                 "triggered_by": [
                     "config-split-names-from-info",
                     "config-split-names-from-streaming",
-                    "/config-names",
+                    "dataset-config-names",
                 ],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
@@ -311,7 +311,7 @@ class ProcessingGraphConfig:
             },
             "dataset-opt-in-out-urls-count": {
                 "input_type": "dataset",
-                "triggered_by": ["/config-names", "config-opt-in-out-urls-count"],
+                "triggered_by": ["dataset-config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
         }

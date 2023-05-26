@@ -6,7 +6,7 @@ from typing import List, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
+from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
@@ -22,16 +22,16 @@ class ConfigNameItem(TypedDict):
     config: str
 
 
-class ConfigNamesResponse(TypedDict):
+class DatasetConfigNamesResponse(TypedDict):
     config_names: List[ConfigNameItem]
 
 
 def compute_config_names_response(
     dataset: str,
     hf_token: Optional[str] = None,
-) -> ConfigNamesResponse:
+) -> DatasetConfigNamesResponse:
     """
-    Get the response of /config-names for one specific dataset on huggingface.co.
+    Get the response of dataset-config-names for one specific dataset on huggingface.co.
     Dataset can be private or gated if you pass an acceptable token.
 
     It is assumed that the dataset exists and can be accessed using the token.
@@ -43,7 +43,7 @@ def compute_config_names_response(
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
-        `ConfigNamesResponse`: An object with the list of config names.
+        `DatasetConfigNamesResponse`: An object with the list of config names.
     Raises the following errors:
         - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
@@ -68,17 +68,17 @@ def compute_config_names_response(
         ) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
-    return ConfigNamesResponse(config_names=config_name_items)
+    return DatasetConfigNamesResponse(config_names=config_name_items)
 
 
-class ConfigNamesJobRunner(DatasetCachedJobRunner):
+class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/config-names"
+        return "dataset-config-names"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_NAMES_VERSION
+        return PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

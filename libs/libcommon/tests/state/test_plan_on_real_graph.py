@@ -6,7 +6,7 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.config import ProcessingGraphConfig
-from libcommon.constants import PROCESSING_STEP_CONFIG_NAMES_VERSION
+from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -49,7 +49,7 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/config-names,dataset,revision",
+                "dataset-config-names,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -81,7 +81,7 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
-                "/config-names,dataset,revision",
+                "dataset-config-names,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -96,7 +96,7 @@ def test_plan_job_creation_and_termination() -> None:
         # the jobs have been created and are in process
         queue_status={
             "in_process": [
-                "/config-names,dataset,revision",
+                "dataset-config-names,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -109,8 +109,8 @@ def test_plan_job_creation_and_termination() -> None:
         tasks=[],
     )
 
-    # we simulate the job for "/config-names,dataset,revision" has finished
-    job_info = Queue().start_job(job_types_only=["/config-names"])
+    # we simulate the job for "dataset-config-names,dataset,revision" has finished
+    job_info = Queue().start_job(job_types_only=["dataset-config-names"])
     upsert_response(
         kind=job_info["type"],
         dataset=job_info["params"]["dataset"],
@@ -118,7 +118,7 @@ def test_plan_job_creation_and_termination() -> None:
         split=job_info["params"]["split"],
         content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
-        job_runner_version=PROCESSING_STEP_CONFIG_NAMES_VERSION,
+        job_runner_version=PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
         dataset_git_revision=REVISION_NAME,
     )
     Queue().finish_job(job_id=job_info["job_id"], is_success=True)
@@ -130,7 +130,7 @@ def test_plan_job_creation_and_termination() -> None:
         config_names=CONFIG_NAMES,
         # The split names are not yet known
         split_names_in_first_config=[],
-        # The "/config-names" step is up-to-date
+        # The "dataset-config-names" step is up-to-date
         # Config-level artifacts are empty and ready to be filled (even if some of their parents are still missing)
         # The split-level artifacts are still missing, because the splits names are not yet known, for any config.
         cache_status={
@@ -162,9 +162,9 @@ def test_plan_job_creation_and_termination() -> None:
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
-            "up_to_date": ["/config-names,dataset,revision"],
+            "up_to_date": ["dataset-config-names,dataset,revision"],
         },
-        # the job "/config-names,dataset,revision" is no more in process
+        # the job "dataset-config-names,dataset,revision" is no more in process
         queue_status={
             "in_process": [
                 "dataset-info,dataset,revision",
