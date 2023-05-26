@@ -797,3 +797,7 @@ def test_cached_artifact_error() -> None:
             "split": split,
         },
     }
+
+
+def test_get_revision() -> None:
+    ...

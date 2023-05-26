@@ -719,9 +719,26 @@ class Queue:
         )
         # ^ does not seem optimal at all, but I get the types right
 
-    def get_pending_jobs_df(self, dataset: str) -> pd.DataFrame:
+    def get_pending_jobs_df(self, dataset: str, job_types: Optional[List[str]] = None) -> pd.DataFrame:
+        filters = {}
+        if job_types:
+            filters["type__in"] = job_types
         return self._get_df(
-            [job.flat_info() for job in Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])]
+            [
+                job.flat_info()
+                for job in Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters)
+            ]
+        )
+
+    def has_pending_jobs_df(self, dataset: str, revision: str, job_types: Optional[List[str]] = None) -> bool:
+        filters = {}
+        if job_types:
+            filters["type__in"] = job_types
+        return (
+            Job.objects(
+                dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED], **filters
+            ).count()
+            > 0
         )
 
     # special reports

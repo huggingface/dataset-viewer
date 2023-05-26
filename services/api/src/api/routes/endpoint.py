@@ -14,7 +14,7 @@ from libcommon.simple_cache import (
     CacheEntry,
     get_best_response,
 )
-from libcommon.state import Artifact, DatasetState
+from libcommon.state import Artifact, DatasetState, Orchestrator
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -100,34 +100,14 @@ def get_cache_entry_from_steps(
             # ^ TODO: the revision could be in the cache (new processing step)
         except Exception as e:
             raise ResponseNotFoundError("Not found.") from e
-        ERROR_CODES_TO_RETRY: List[str] = []
-        # ^ TODO: pass error_codes_to_retry? or set them in the processing graph?
-        dataset_state = DatasetState(
-            dataset=dataset,
-            processing_graph=processing_graph,
-            revision=revision,
-            error_codes_to_retry=ERROR_CODES_TO_RETRY,
-            priority=Priority.NORMAL,
-        )
-        artifact_ids = [
-            Artifact(
-                processing_step=processing_step, dataset=dataset, revision=revision, config=config, split=split
-            ).id
+        could_exist = any(
+            Orchestrator(dataset=dataset, processing_graph=processing_graph).could_artifact_exist(
+                processing_step_name=processing_step.name, revision=revision
+            )
             for processing_step in processing_steps
-        ]
-
-        # backfill if needed, and refresh the state
-        dataset_state.backfill()
-        dataset_state = DatasetState(
-            dataset=dataset,
-            processing_graph=processing_graph,
-            revision=revision,
-            error_codes_to_retry=ERROR_CODES_TO_RETRY,
-            priority=Priority.NORMAL,
         )
-
         # if a job to create the artifact is in progress, raise ResponseNotReadyError
-        if any(artifact_id in dataset_state.get_queue_status().in_process for artifact_id in artifact_ids):
+        if could_exist:
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )

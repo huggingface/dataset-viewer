@@ -654,7 +654,10 @@ def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
     # ^ does not seem optimal at all, but I get the types right
 
 
-def get_cache_entries_df(dataset: str) -> pd.DataFrame:
+def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) -> pd.DataFrame:
+    filters = {}
+    if cache_kinds:
+        filters["kind__in"] = cache_kinds
     return _get_df(
         [
             {
@@ -669,7 +672,7 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "progress": response.progress,
                 "updated_at": response.updated_at,
             }
-            for response in CachedResponse.objects(dataset=dataset).only(
+            for response in CachedResponse.objects(dataset=dataset, **filters).only(
                 "kind",
                 "dataset",
                 "config",
@@ -683,6 +686,18 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
             )
         ]
     )
+
+
+def get_revision(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> Optional[str]:
+    try:
+        first_cached_response = (
+            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            .only("dataset_git_revision")
+            .first()
+        )
+        return None if first_cached_response is None else first_cached_response.dataset_git_revision
+    except DoesNotExist:
+        return None
 
 
 # only for the tests
