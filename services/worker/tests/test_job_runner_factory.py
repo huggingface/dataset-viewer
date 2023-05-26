@@ -21,7 +21,7 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
 @pytest.mark.parametrize(
     "job_type,expected_job_runner",
     [
-        ("/config-names", "ConfigNamesJobRunner"),
+        ("dataset-config-names", "DatasetConfigNamesJobRunner"),
         ("split-first-rows-from-streaming", "SplitFirstRowsFromStreamingJobRunner"),
         ("config-parquet-and-info", "ConfigParquetAndInfoJobRunner"),
         ("config-parquet", "ConfigParquetJobRunner"),

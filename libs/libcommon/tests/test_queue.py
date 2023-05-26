@@ -147,6 +147,42 @@ def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remain
     )
 
 
+@pytest.mark.parametrize(
+    "jobs_ids,job_ids_to_cancel,expected_canceled_number",
+    [
+        (["a", "b"], ["a", "b"], 2),
+        (["a", "b"], ["a"], 1),
+        (["a"], ["a", "b"], 1),
+    ],
+)
+def test_cancel_jobs_by_job_id(
+    jobs_ids: List[str], job_ids_to_cancel: List[str], expected_canceled_number: int
+) -> None:
+    test_type = "test_type"
+    queue = Queue()
+
+    # we cannot really set job_id, so, we create jobs and get their job id, using dataset as a proxy
+    real_job_ids_to_cancel = []
+    for job_id in list(set(jobs_ids + job_ids_to_cancel)):
+        job = queue._add_job(job_type=test_type, dataset=job_id, revision="test_revision")
+        if job_id in job_ids_to_cancel:
+            real_job_id = job.info()["job_id"]
+            real_job_ids_to_cancel.append(real_job_id)
+        if job_id not in jobs_ids:
+            # delete the job, in order to simulate that it did never exist (we just wanted a valid job_id)
+            job.delete()
+
+    queue.start_job()
+    canceled_number = queue.cancel_jobs_by_job_id(job_ids=real_job_ids_to_cancel)
+    assert canceled_number == expected_canceled_number
+
+
+def test_cancel_jobs_by_job_id_wrong_format() -> None:
+    queue = Queue()
+
+    assert queue.cancel_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
+
+
 def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected_priority: Priority) -> None:
     job_info = queue.start_job()
     assert job_info["params"]["dataset"] == expected_dataset

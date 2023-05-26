@@ -132,7 +132,7 @@ def test_compute(
     dataset = hub_datasets["public"]["name"]
     config = hub_datasets["public"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        "/config-names",
+        "dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets["public"]["config_names_response"],
@@ -156,7 +156,7 @@ def test_compute_legacy_configs(
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=hub_public_legacy_configs,
         http_status=HTTPStatus.OK,
         content={
@@ -188,7 +188,7 @@ def test_compute_legacy_configs(
     assert orig_repo_configs == original_configs
     # then change the set of dataset configs (remove "second")
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=hub_public_legacy_configs,
         http_status=HTTPStatus.OK,
         content={
@@ -410,7 +410,7 @@ def test_not_supported_if_big(
     dataset = hub_datasets["big"]["name"]
     config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets["big"]["config_names_response"],
@@ -430,7 +430,7 @@ def test_supported_if_gated(
     dataset = hub_datasets["gated"]["name"]
     config = hub_datasets["gated"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        "/config-names",
+        "dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets["gated"]["config_names_response"],
@@ -450,7 +450,7 @@ def test_not_supported_if_gated_with_extra_fields(
     dataset = hub_datasets["gated_extra_fields"]["name"]
     config = hub_datasets["gated_extra_fields"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets["gated_extra_fields"]["config_names_response"],
@@ -470,7 +470,7 @@ def test_blocked(
     dataset = hub_datasets["jsonl"]["name"]
     config = hub_datasets["jsonl"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets["jsonl"]["config_names_response"],
@@ -495,7 +495,7 @@ def test_compute_splits_response_simple_csv_ok(
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
-        "/config-names",
+        "dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
         content=hub_datasets[name]["config_names_response"],
@@ -559,7 +559,7 @@ def test_compute_splits_response_simple_csv_error(
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
-        ("public", "CachedResponseNotFound", None),  # no cache for /config-names -> CachedResponseNotFound
+        ("public", "CachedResponseNotFound", None),  # no cache for dataset-config-names -> CachedResponseNotFound
     ],
 )
 def test_compute_splits_response_simple_csv_error_2(
@@ -599,7 +599,7 @@ def test_previous_step_error(
     config = hub_datasets["public"]["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     upsert_response(
-        "/config-names",
+        "dataset-config-names",
         dataset=dataset,
         http_status=upstream_status,
         content=upstream_content,

@@ -39,13 +39,13 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
     logging.info(f"get dataset split names for dataset={dataset}")
 
     # Get the config names from the previous steps
-    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]
     if "config_names" not in content:
-        raise PreviousStepFormatError("'/config-names' did not return the expected content: 'config_names'.")
+        raise PreviousStepFormatError("'dataset-config-names' did not return the expected content: 'config_names'.")
     config_names = [config_name_item["config"] for config_name_item in content["config_names"]]
     if any(not isinstance(config_name, str) for config_name in config_names):
-        raise PreviousStepFormatError("Previous step '/config-names' did not return a list of config names.")
+        raise PreviousStepFormatError("Previous step 'dataset-config-names' did not return a list of config names.")
 
     split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:

@@ -11,12 +11,12 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
+from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasets
 
-GetJobRunner = Callable[[str, AppConfig], ConfigNamesJobRunner]
+GetJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJobRunner]
 
 
 @pytest.fixture
@@ -28,19 +28,19 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-    ) -> ConfigNamesJobRunner:
-        processing_step_name = ConfigNamesJobRunner.get_job_type()
+    ) -> DatasetConfigNamesJobRunner:
+        processing_step_name = DatasetConfigNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": ConfigNamesJobRunner.get_job_runner_version(),
+                    "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
                 }
             }
         )
-        return ConfigNamesJobRunner(
+        return DatasetConfigNamesJobRunner(
             job_info={
-                "type": ConfigNamesJobRunner.get_job_type(),
+                "type": DatasetConfigNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": "revision",

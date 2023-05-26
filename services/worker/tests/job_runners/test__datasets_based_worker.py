@@ -22,7 +22,7 @@ from ..fixtures.hub import get_default_config_split
 class DummyJobRunner(DatasetsBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "/config-names"
+        return "dummy-job-runner"
         # ^ borrowing the type, so that the processing step exists and the job runner can be initialized
         # refactoring libcommon.processing_graph might help avoiding this
 
@@ -82,18 +82,18 @@ def get_job_runner(
 @pytest.mark.parametrize(
     "dataset,config,split,expected",
     [
-        ("user/dataset", "config", "split", "2022-11-07-12-34-56--config-names-user-dataset-ea3b2aed"),
+        ("user/dataset", "config", "split", "2022-11-07-12-34-56-dummy-job-runner-user-dataset-93f0f1a3"),
         # Every parameter variation changes the hash, hence the subdirectory
-        ("user/dataset", None, "split", "2022-11-07-12-34-56--config-names-user-dataset-4fc26b9d"),
-        ("user/dataset", "config2", "split", "2022-11-07-12-34-56--config-names-user-dataset-2c462406"),
-        ("user/dataset", "config", None, "2022-11-07-12-34-56--config-names-user-dataset-6567ff22"),
-        ("user/dataset", "config", "split2", "2022-11-07-12-34-56--config-names-user-dataset-a8785e1b"),
+        ("user/dataset", None, "split", "2022-11-07-12-34-56-dummy-job-runner-user-dataset-0083afc6"),
+        ("user/dataset", "config2", "split", "2022-11-07-12-34-56-dummy-job-runner-user-dataset-a180e0a8"),
+        ("user/dataset", "config", None, "2022-11-07-12-34-56-dummy-job-runner-user-dataset-77f9f489"),
+        ("user/dataset", "config", "split2", "2022-11-07-12-34-56-dummy-job-runner-user-dataset-6ab6a389"),
         # The subdirectory length is truncated, and it always finishes with the hash
         (
             "very_long_dataset_name_0123456789012345678901234567890123456789012345678901234567890123456789",
             "config",
             "split",
-            "2022-11-07-12-34-56--config-names-very_long_dataset_name_0123456-ee38189d",
+            "2022-11-07-12-34-56-dummy-job-runner-very_long_dataset_name_0123-d9070011",
         ),
     ],
 )
@@ -127,7 +127,7 @@ def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner
     datasets_base_path = job_runner.base_datasets_cache
     job_runner.set_cache()
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
-    assert "-config-names-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
+    assert "dummy-job-runner-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
     job_runner.unset_cache()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
 

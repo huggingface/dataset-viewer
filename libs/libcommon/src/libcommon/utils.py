@@ -3,6 +3,7 @@
 
 import base64
 import enum
+import mimetypes
 from datetime import datetime, timezone
 from typing import Any, Optional, TypedDict
 
@@ -46,6 +47,8 @@ class FlatJobInfo(TypedDict):
     split: Optional[str]
     partition: Optional[str]
     priority: str
+    status: str
+    created_at: datetime
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
@@ -86,3 +89,9 @@ def inputs_to_string(
     if prefix is not None:
         result = f"{prefix},{result}"
     return result
+
+
+def is_image_url(text: str) -> bool:
+    is_url = text.startswith("https://") or text.startswith("http://")
+    (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
+    return is_url and mime_type is not None and mime_type.startswith("image/")

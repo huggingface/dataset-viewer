@@ -146,7 +146,7 @@ def test_compute_progress(
     # we could also have tested if dataset-info has a response (it's one case among many, see
     # libcommon.simple_cache.get_best_response)
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         content={
             "config_names": [
@@ -188,7 +188,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     # we could also have tested if dataset-info has a response (it's one case among many, see
     # libcommon.simple_cache.get_best_response)
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         content={
             "config_names": [
@@ -230,7 +230,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     dataset = "error"
     config = "error"
     upsert_response(
-        kind="/config-names",
+        kind="dataset-config-names",
         dataset=dataset,
         content={
             "config_names": [

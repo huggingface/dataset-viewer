@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
@@ -108,7 +108,6 @@ def get_cache_entry_from_steps(
             revision=revision,
             error_codes_to_retry=ERROR_CODES_TO_RETRY,
             priority=Priority.NORMAL,
-            # TODO: move Priority outside from queue.py (to remove dependency to this file)
         )
         artifact_ids = [
             Artifact(
@@ -121,22 +120,59 @@ def get_cache_entry_from_steps(
             ).id
             for processing_step in processing_steps
         ]
-        should_exist = any(
-            artifact_id in dataset_state.queue_status.in_process for artifact_id in artifact_ids
-        ) or any(
-            f"CreateJob,{artifact_id}" in task.id for task in dataset_state.plan.tasks for artifact_id in artifact_ids
+
+        # backfill if needed, and refresh the state
+        dataset_state.backfill()
+        dataset_state = DatasetState(
+            dataset=dataset,
+            processing_graph=processing_graph,
+            revision=revision,
+            error_codes_to_retry=ERROR_CODES_TO_RETRY,
+            priority=Priority.NORMAL,
         )
 
-        # use the opportunity to backfill if needed
-        dataset_state.backfill()
-
-        if should_exist:
+        # if a job to create the artifact is in progress, raise ResponseNotReadyError
+        if any(artifact_id in dataset_state.get_queue_status().in_process for artifact_id in artifact_ids):
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )
         else:
             raise ResponseNotFoundError("Not found.")
     return best_response.response
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+class OptInOutUrlsCountResponse(TypedDict):
+    urls_columns: List[str]
+    num_opt_in_urls: int
+    num_opt_out_urls: int
+    num_urls: int
+    num_scanned_rows: int
+    has_urls_columns: bool
+    full_scan: Optional[bool]
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+HARD_CODED_OPT_IN_OUT_URLS = {
+    "laion/laion2B-en": OptInOutUrlsCountResponse(
+        urls_columns=["URL"],
+        num_opt_in_urls=5,
+        num_opt_out_urls=42785281,
+        num_urls=2322161807,
+        num_scanned_rows=0,  # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+    "kakaobrain/coyo-700m": OptInOutUrlsCountResponse(
+        urls_columns=["url"],
+        num_opt_in_urls=2,
+        num_opt_out_urls=4691511,
+        num_urls=746972269,
+        num_scanned_rows=0,  # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+}
 
 
 class InputTypeValidator(ABC):
@@ -290,6 +326,16 @@ def create_endpoint(
                     )
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
+                    # TODO: remove once full scan is implemented for spawning urls scan
+                    if (
+                        endpoint_name == "/opt-in-out-urls"
+                        and validator.input_type == "dataset"
+                        and dataset in HARD_CODED_OPT_IN_OUT_URLS
+                    ):
+                        return get_json_ok_response(
+                            content=HARD_CODED_OPT_IN_OUT_URLS[dataset], max_age=max_age_long, revision=revision
+                        )
+
                     result = get_cache_entry_from_steps(
                         processing_steps=processing_steps,
                         dataset=dataset,
