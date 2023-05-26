@@ -29,6 +29,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_SPLIT_PARTITIONS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -319,6 +320,11 @@ class ProcessingGraphConfig:
                 "input_type": "dataset",
                 "triggered_by": ["dataset-config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
+            },
+            "split-partitions": {
+                "input_type": "split",
+                "triggered_by": ["config-size"],
+                "job_runner_version": PROCESSING_STEP_SPLIT_PARTITIONS_VERSION,
             },
         }
     )

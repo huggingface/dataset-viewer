@@ -172,7 +172,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-size",
-            ["dataset-size"],
+            ["dataset-size", "split-partitions"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
@@ -286,6 +286,12 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-parquet",
                 "split-image-url-columns",
             ],
+        ),
+        (
+            "split-partitions",
+            [],
+            ["config-size"],
+            ["dataset-config-names", "config-size", "config-parquet-and-info"],
         ),
     ],
 )

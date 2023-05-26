@@ -140,6 +140,18 @@ class RowsContent(TypedDict):
     all_fetched: bool
 
 
+class Partition(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    partition: str
+
+
+class PartitionsReponse(TypedDict):
+    num_rows: int
+    partitions: List[Partition]
+
+
 # TODO: separate functions from common classes and named dicts otherwise this file will continue growing
 
 
@@ -417,3 +429,10 @@ def get_previous_step_or_raise(
             cache_entry_with_details=best_response.response,
         )
     return best_response
+
+
+PARTITIONS_SEPARATOR = "-"
+
+
+def partition_to_string(partition_start: int, partition_end: int) -> str:
+    return f"{partition_start}{PARTITIONS_SEPARATOR}{partition_end}"
