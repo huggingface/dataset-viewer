@@ -15,12 +15,36 @@ from worker.utils import (
     get_previous_step_or_raise,
 )
 
+STRING_FEATURE_DTYPE = "string"
+VALUE_FEATURE_TYPE = "Value"
+URL_COLUMN_RATION = 0.3
+
 
 def compute_image_url_columns(
     dataset: str,
     config: str,
     split: str,
 ) -> ImageUrlColumnsResponse:
+    """
+    Get the response of split-image-url-columns cache for a specific split of a dataset from huggingface.co.
+    The response is not used directly in the API but it is an input for split-opt-in-out-urls-scan processing step.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            A configuration name.
+        split (`str`):
+            A split name.
+    Returns:
+        [`ImageUrlColumnsResponse`]: The list of image url columns.
+    Raises the following errors:
+        - [`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        - [`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+    """
     logging.info(f"get image-url-columns for dataset={dataset} config={config} split={split}")
 
     # get the first rows from previous job
@@ -45,9 +69,22 @@ def compute_image_url_columns(
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    # look for URLs columns using the first rows
-    string_type_dict = {"dtype": "string", "_type": "Value"}
-    string_columns = [feature["name"] for feature in features if feature["type"] == string_type_dict]
+    # look for image URLs columns using the first rows
+    string_columns = [
+        feature["name"]
+        for feature in features
+        if "dtype" in feature["type"]
+        and "_type" in feature["type"]
+        and feature["type"]["dtype"] == STRING_FEATURE_DTYPE
+        and feature["type"]["_type"] == VALUE_FEATURE_TYPE
+    ]
+
+    first_rows_size = len(first_rows)
+    if first_rows_size == 0:
+        return ImageUrlColumnsResponse(
+            columns=[],
+        )
+
     urls_columns = []
     for string_column in string_columns:
         urls_count = sum(
@@ -55,7 +92,7 @@ def compute_image_url_columns(
             for row in first_rows
             if isinstance(row["row"].get(string_column), str) and is_image_url(text=row["row"][string_column])
         )
-        if urls_count and urls_count / len(first_rows) > 0.3:
+        if urls_count and urls_count / first_rows_size > URL_COLUMN_RATION:
             urls_columns.append(string_column)
 
     return ImageUrlColumnsResponse(

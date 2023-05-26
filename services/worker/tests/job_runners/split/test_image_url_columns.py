@@ -16,6 +16,7 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
+from worker.utils import ImageUrlColumnsResponse
 
 from ...fixtures.hub import get_default_config_split
 
@@ -133,23 +134,46 @@ FIRST_ROWS_WITH_IMAGE_URL_COLUMNS = {
 }
 
 
+FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_NO_ROWS = {
+    "features": [
+        {
+            "feature_idx": 0,
+            "name": "col",
+            "type": {
+                "dtype": "string",
+                "_type": "Value",
+            },
+        },
+    ],
+    "rows": [],
+}
+
+
+DEFAULT_EMPTY_CONTENT: ImageUrlColumnsResponse = {"columns": []}
+
+
 @pytest.mark.parametrize(
     "dataset,upstream_content,expected_content",
     [
         (
             "no_str_columns",
             FIRST_ROWS_WITHOUT_STR_COLUMNS,
-            {"columns": []},
+            DEFAULT_EMPTY_CONTENT,
         ),
         (
             "no_image_url_columns",
             FIRST_ROWS_WITHOUT_IMAGE_URL_COLUMNS,
-            {"columns": []},
+            DEFAULT_EMPTY_CONTENT,
         ),
         (
             "image_url_columns",
             FIRST_ROWS_WITH_IMAGE_URL_COLUMNS,
             {"columns": ["col"]},
+        ),
+        (
+            "image_url_columns_no_rows",
+            FIRST_ROWS_WITH_IMAGE_URL_COLUMNS_NO_ROWS,
+            DEFAULT_EMPTY_CONTENT,
         ),
     ],
 )

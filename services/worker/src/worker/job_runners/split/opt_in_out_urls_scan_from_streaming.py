@@ -107,6 +107,52 @@ def compute_opt_in_out_urls_scan_response(
     max_requests_per_second: int,
     spawning_url: str,
 ) -> OptInOutUrlsScanResponse:
+    """
+    Get the response of split-opt-in-out-urls-scan cache for a specific split of a dataset from huggingface.co.
+    The response is not used directly in the API but it is an input for config-opt-in-out-urls-scan processing step.
+    Note that only image URLs are scanned, see image_url_columns.py for details about the detection heuristic.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            A configuration name.
+        split (`str`):
+            A split name.
+        hf_token (`str` or `None`):
+            An authentication token (See https://huggingface.co/settings/token)
+        rows_max_number (`int`):
+            The maximum number of rows of the response.
+        columns_max_number (`int`):
+            The maximum number of supported columns.
+        urls_number_per_batch (`int`):
+            The number of batch URLs to be sent to spawning service.
+        spawning_token (`str` or `None`):
+            An authentication token to use spawning service (See https://api.spawning.ai/spawning-api)
+        max_concurrent_requests_number (`int`):
+            The maximum number of requests to be processed concurrently.
+        max_requests_per_second (`int`):
+            The maximum number of requests to be processed by second.
+        spawning_url (`str`):
+            Spawgning API URL
+
+    Returns:
+        [`OptInOutUrlsScanResponse`]
+    Raises the following errors:
+        - [`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        - [`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+        - [`libcommon.exceptions.InfoError`]
+          If the config info could not be obtained using the datasets library.
+        - [`libcommon.exceptions.TooManyColumnsError`]
+          If the number of columns (features) exceeds the maximum supported number of columns.
+        - [`libcommon.exceptions.StreamingRowsError`]
+          If the split rows could not be obtained using the datasets library in streaming mode.
+        - [`libcommon.exceptions.NormalRowsError`]
+          If the split rows could not be obtained using the datasets library in normal mode.
+    """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
@@ -223,6 +269,8 @@ class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-opt-in-out-urls-scan"
+
+    # ^ TODO: Change step name referring to image URLs scan specifically.
 
     @staticmethod
     def get_job_runner_version() -> int:
