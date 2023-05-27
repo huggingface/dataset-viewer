@@ -262,6 +262,8 @@ class JobManager:
         error = JobManagerExceededMaximumDurationError(message=message, cause=cause)
         self.finish(
             job_result={
+                "job_info": self.job_info,
+                "job_runner_version": self.job_runner.get_job_runner_version(),
                 "is_success": False,
                 "output": {
                     "content": dict(error.as_response()),

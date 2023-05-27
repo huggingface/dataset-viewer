@@ -11,7 +11,11 @@ from typing import Any, Dict, List, Mapping, Optional, Set, TypedDict, Union
 
 import pandas as pd
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist
+from libcommon.processing_graph import (
+    ProcessingGraph,
+    ProcessingStep,
+    ProcessingStepDoesNotExist,
+)
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
@@ -22,7 +26,6 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.utils import JobInfo, Priority, inputs_to_string
-
 
 # TODO: use the term Artifact elsewhere in the code (a Step should produce one or several Artifacts, depending on the
 # input level: one, one per dataset, one per config, or one per split)
@@ -915,8 +918,8 @@ class DatasetState:
                             dataset=self.dataset,
                             config=None,
                             cache_kinds=[
-                                processing_step.cache_kind
-                                for processing_step in self.processing_graph.get_dataset_config_names_processing_steps()
+                                step.cache_kind
+                                for step in self.processing_graph.get_dataset_config_names_processing_steps()
                             ],
                             names_field="config_names",
                             name_field="config",
