@@ -9,7 +9,10 @@ from mongodb_migration.deletion_migrations import (
     MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
 )
-from mongodb_migration.index_deletion_migrations import QueueIndexDeletionMigration
+from mongodb_migration.index_deletion_migrations import (
+    CacheIndexDeletionMigration,
+    QueueIndexDeletionMigration,
+)
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
 from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
@@ -233,8 +236,12 @@ class MigrationsCollector:
                     ("config", 1),
                     ("split", 1),
                     ("status", 1),
-                    ("revision", 1),
                     ("priority", 1),
                 ],
+            ),
+            CacheIndexDeletionMigration(
+                version="20230529112300",
+                description="remove index without partition",
+                index_definition=[("kind", 1), ("dataset", 1), ("config", 1), ("split", 1)],
             ),
         ]
