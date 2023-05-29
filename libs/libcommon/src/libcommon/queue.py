@@ -157,7 +157,6 @@ class Job(Document):
             "revision": self.revision,
             "config": self.config,
             "split": self.split,
-            "partition": self.partition,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
             "priority": self.priority.value,
