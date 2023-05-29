@@ -167,19 +167,19 @@ class MigrationsCollector:
             MigrationQueueAddRevisionToJob(
                 version="20230516101500", description="add 'revision' field to jobs in queue database"
             ),
-            # QueueIndexDeletionMigration(
-            #     version="20230516101600",
-            #     description="remove index without revision",
-            #     index_definition=[
-            #         ("type", 1),
-            #         ("dataset", 1),
-            #         ("revision", 1),
-            #         ("config", 1),
-            #         ("split", 1),
-            #         ("status", 1),
-            #         ("priority", 1),
-            #     ],
-            # ),
+            QueueIndexDeletionMigration(
+                version="20230516101600",
+                description="remove index without revision",
+                index_definition=[
+                    ("type", 1),
+                    ("dataset", 1),
+                    ("revision", 1),
+                    ("config", 1),
+                    ("split", 1),
+                    ("status", 1),
+                    ("priority", 1),
+                ],
+            ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-streaming",
                 new_cache_kind="config-split-names-from-streaming",
@@ -195,13 +195,13 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-streaming",
                 version="20230522094400",
             ),
-            # MigrationQueueDeleteTTLIndex(
-            #     version="20230523171700",
-            #     description=(
-            #         "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
-            #     ),
-            #     field_name="finished_at",
-            # ),
+            MigrationQueueDeleteTTLIndex(
+                version="20230523171700",
+                description=(
+                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
+                ),
+                field_name="finished_at",
+            ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-dataset-info",
                 new_cache_kind="config-split-names-from-info",
