@@ -9,6 +9,7 @@ from mongodb_migration.deletion_migrations import (
     MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
 )
+from mongodb_migration.index_deletion_migrations import QueueIndexDeletionMigration
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
 from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
@@ -40,9 +41,6 @@ from mongodb_migration.migrations._20230511110700_queue_delete_skipped_jobs impo
 )
 from mongodb_migration.migrations._20230516101500_queue_job_add_revision import (
     MigrationQueueAddRevisionToJob,
-)
-from mongodb_migration.migrations._20230516101600_queue_delete_index_without_revision import (
-    MigrationQueueDeleteIndexWithoutRevision,
 )
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
@@ -166,9 +164,19 @@ class MigrationsCollector:
             MigrationQueueAddRevisionToJob(
                 version="20230516101500", description="add 'revision' field to jobs in queue database"
             ),
-            MigrationQueueDeleteIndexWithoutRevision(
-                version="20230516101600", description="remove index without revision"
-            ),
+            # QueueIndexDeletionMigration(
+            #     version="20230516101600",
+            #     description="remove index without revision",
+            #     index_definition=[
+            #         ("type", 1),
+            #         ("dataset", 1),
+            #         ("revision", 1),
+            #         ("config", 1),
+            #         ("split", 1),
+            #         ("status", 1),
+            #         ("priority", 1),
+            #     ],
+            # ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-streaming",
                 new_cache_kind="config-split-names-from-streaming",
@@ -184,13 +192,13 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-streaming",
                 version="20230522094400",
             ),
-            MigrationQueueDeleteTTLIndex(
-                version="20230523171700",
-                description=(
-                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
-                ),
-                field_name="finished_at",
-            ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="20230523171700",
+            #     description=(
+            #         "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
+            #     ),
+            #     field_name="finished_at",
+            # ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-dataset-info",
                 new_cache_kind="config-split-names-from-info",
@@ -215,4 +223,18 @@ class MigrationsCollector:
                 version="20230524192300",
             ),
             MetricsDeletionMigration(job_type="/config-names", cache_kind="/config-names", version="20230524192400"),
+            QueueIndexDeletionMigration(
+                version="20230529103700",
+                description="remove index without partition",
+                index_definition=[
+                    ("type", 1),
+                    ("dataset", 1),
+                    ("revision", 1),
+                    ("config", 1),
+                    ("split", 1),
+                    ("status", 1),
+                    ("revision", 1),
+                    ("priority", 1),
+                ],
+            ),
         ]

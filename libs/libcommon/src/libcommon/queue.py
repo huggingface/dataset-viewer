@@ -60,6 +60,7 @@ class JobDict(TypedDict):
     revision: str
     config: Optional[str]
     split: Optional[str]
+    partition: Optional[str]
     unicity_id: str
     namespace: str
     priority: str
@@ -102,6 +103,7 @@ class Job(Document):
         revision (`str`): The git revision of the dataset.
         config (`str`, optional): The config on which to apply the job.
         split (`str`, optional): The split on which to apply the job.
+        partition (`str`, optional): The partition on which to apply the job.
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
@@ -122,7 +124,7 @@ class Job(Document):
             "status",
             ("type", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "revision", "config", "split", "status", "priority"),
+            ("type", "dataset", "revision", "config", "split", "status", "partition", "priority"),
             ("priority", "status", "created_at", "namespace", "unicity_id"),
             ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
@@ -139,6 +141,7 @@ class Job(Document):
     revision = StringField(required=True)
     config = StringField()
     split = StringField()
+    partition = StringField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     priority = EnumField(Priority, default=Priority.NORMAL)
@@ -155,6 +158,7 @@ class Job(Document):
             "revision": self.revision,
             "config": self.config,
             "split": self.split,
+            "partition": self.partition,
             "unicity_id": self.unicity_id,
             "namespace": self.namespace,
             "priority": self.priority.value,
@@ -177,6 +181,7 @@ class Job(Document):
                     "revision": self.revision,
                     "config": self.config,
                     "split": self.split,
+                    # TODO: Add partition field
                 },
                 "priority": self.priority,
             }
@@ -191,6 +196,7 @@ class Job(Document):
                 "revision": self.revision,
                 "config": self.config,
                 "split": self.split,
+                "partition": self.partition,
                 "priority": self.priority.value,
                 "status": self.status.value,
                 "created_at": self.created_at,
@@ -205,7 +211,7 @@ class Queue:
     the jobs. You can create multiple Queue objects, it has no effect on the database.
 
     It's a FIFO queue, with the following properties:
-    - a job is identified by its input arguments: unicity_id (type, dataset, config and split, NOT revision)
+    - a job is identified by its input arguments: unicity_id (type, dataset, config, split and partition NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
     - a job can be in the queue multiple times in the other states (success, error, cancelled)
@@ -236,6 +242,7 @@ class Queue:
         revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add a job to the queue in the waiting state.
@@ -247,7 +254,8 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The split on which to apply the job.
+            partition (`str`, optional): The partition on which to apply the job.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
@@ -258,7 +266,8 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
+            partition=partition,
+            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, partition=partition, prefix=job_type),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -272,6 +281,7 @@ class Queue:
         revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         priority: Priority = Priority.NORMAL,
     ) -> Job:
         """Add, or update, a job to the queue in the waiting state.
@@ -285,7 +295,8 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The split on which to apply the job.
+            partition (`str`, optional): The partition on which to apply the job.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
 
         Returns: the job
@@ -295,12 +306,13 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
+            partition=partition,
             statuses_to_cancel=[Status.WAITING],
         )
         if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
             priority = Priority.NORMAL
         return self._add_job(
-            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
+            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, partition=partition, priority=priority
         )
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
@@ -322,10 +334,12 @@ class Queue:
                     revision=job_info["params"]["revision"],
                     config=job_info["params"]["config"],
                     split=job_info["params"]["split"],
+                    partition=None, #TODO: pass partition when available in job_info
                     unicity_id=inputs_to_string(
                         dataset=job_info["params"]["dataset"],
                         config=job_info["params"]["config"],
                         split=job_info["params"]["split"],
+                        partition=None, #TODO: pass partition when available in job_info
                         prefix=job_info["type"],
                     ),
                     namespace=job_info["params"]["dataset"].split("/")[0],
@@ -346,6 +360,7 @@ class Queue:
         dataset: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
+        partition: Optional[str] = None,
         statuses_to_cancel: Optional[List[Status]] = None,
     ) -> List[JobDict]:
         """Cancel jobs from the queue.
@@ -359,7 +374,8 @@ class Queue:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
+            split (`str`, optional): The split on which to apply the job.
+            partition (`str`, optional): The partition on which to apply the job.
             statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
                 [Status.WAITING, Status.STARTED].
 
@@ -373,6 +389,7 @@ class Queue:
             dataset=dataset,
             config=config,
             split=split,
+            partition=partition,
             status__in=statuses_to_cancel,
         )
         job_dicts = [job.to_dict() for job in existing]
@@ -440,7 +457,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority")
+            .only("type", "dataset", "revision", "config", "split", "partition", "priority")
             .no_cache()
             .first()
         )
@@ -483,7 +500,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority")
+                .only("type", "dataset", "revision", "config", "split", "partition", "priority")
                 .no_cache()
                 .first()
             )
@@ -655,7 +672,7 @@ class Queue:
         return True
 
     def is_job_in_process(
-        self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
+        self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None, partition: Optional[str] = None,
     ) -> bool:
         """Check if a job is in process (waiting or started).
 
@@ -665,6 +682,7 @@ class Queue:
             revision (`str`, required): dataset git revision
             config (`str`, optional): config name. Defaults to None.
             split (`str`, optional): split name. Defaults to None.
+            partition (`str`, optional): partition range. Defaults to None.
 
         Returns:
             `bool`: whether the job is in process (waiting or started)
@@ -676,6 +694,7 @@ class Queue:
                 revision=revision,
                 config=config,
                 split=split,
+                partition=partition,
                 status__in=[Status.WAITING, Status.STARTED],
             ).count()
             > 0
@@ -686,7 +705,7 @@ class Queue:
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.upsert_job(
-                job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
+                job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split, partition=job.partition
             )
 
     def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
@@ -698,6 +717,7 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
+                "partition": pd.Series([job["partition"] for job in jobs], dtype="str"),
                 "priority": pd.Categorical(
                     [job["priority"] for job in jobs],
                     ordered=True,

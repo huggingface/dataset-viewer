@@ -57,10 +57,12 @@ class QueueMigration(BaseQueueMigration):
         super().__init__(version=version, description=description)
 
 
-class CacheMigration(Migration):
+class BaseCacheMigration(Migration):
     MONGOENGINE_ALIAS: str = CACHE_MONGOENGINE_ALIAS
     COLLECTION_RESPONSES: str = CACHE_COLLECTION_RESPONSES
 
+
+class CacheMigration(BaseCacheMigration):
     def __init__(self, cache_kind: str, version: str, description: str):
         self.cache_kind = cache_kind
         super().__init__(version=version, description=description)
