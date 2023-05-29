@@ -261,9 +261,7 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(
-                dataset=dataset, config=config, split=split, prefix=job_type
-            ),
+            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
