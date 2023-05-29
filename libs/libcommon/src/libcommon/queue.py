@@ -196,7 +196,6 @@ class Job(Document):
                 "revision": self.revision,
                 "config": self.config,
                 "split": self.split,
-                "partition": self.partition,
                 "priority": self.priority.value,
                 "status": self.status.value,
                 "created_at": self.created_at,
@@ -267,7 +266,9 @@ class Queue:
             config=config,
             split=split,
             partition=partition,
-            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, partition=partition, prefix=job_type),
+            unicity_id=inputs_to_string(
+                dataset=dataset, config=config, split=split, partition=partition, prefix=job_type
+            ),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -312,7 +313,13 @@ class Queue:
         if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
             priority = Priority.NORMAL
         return self._add_job(
-            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, partition=partition, priority=priority
+            job_type=job_type,
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            partition=partition,
+            priority=priority,
         )
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
@@ -334,12 +341,12 @@ class Queue:
                     revision=job_info["params"]["revision"],
                     config=job_info["params"]["config"],
                     split=job_info["params"]["split"],
-                    partition=None, #TODO: pass partition when available in job_info
+                    partition=None,  # TODO: pass partition when available in job_info
                     unicity_id=inputs_to_string(
                         dataset=job_info["params"]["dataset"],
                         config=job_info["params"]["config"],
                         split=job_info["params"]["split"],
-                        partition=None, #TODO: pass partition when available in job_info
+                        partition=None,  # TODO: pass partition when available in job_info
                         prefix=job_info["type"],
                     ),
                     namespace=job_info["params"]["dataset"].split("/")[0],
@@ -672,7 +679,13 @@ class Queue:
         return True
 
     def is_job_in_process(
-        self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None, partition: Optional[str] = None,
+        self,
+        job_type: str,
+        dataset: str,
+        revision: str,
+        config: Optional[str] = None,
+        split: Optional[str] = None,
+        partition: Optional[str] = None,
     ) -> bool:
         """Check if a job is in process (waiting or started).
 
@@ -705,7 +718,12 @@ class Queue:
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.upsert_job(
-                job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split, partition=job.partition
+                job_type=job.type,
+                dataset=job.dataset,
+                revision=job.revision,
+                config=job.config,
+                split=job.split,
+                partition=job.partition,
             )
 
     def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
@@ -717,7 +735,6 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
-                "partition": pd.Series([job["partition"] for job in jobs], dtype="str"),
                 "priority": pd.Categorical(
                     [job["priority"] for job in jobs],
                     ordered=True,

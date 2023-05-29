@@ -83,7 +83,7 @@ def inputs_to_string(
         if split is not None:
             result = f"{result},{split}"
             if partition is not None:
-                    result = f"{result},{partition}"
+                result = f"{result},{partition}"
     if prefix is not None:
         result = f"{prefix},{result}"
     return result

@@ -86,10 +86,11 @@ class CachedResponse(Document):
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
 
-    kind = StringField(required=True, unique_with=["dataset", "config", "split"])
+    kind = StringField(required=True, unique_with=["dataset", "config", "split", "partition"])
     dataset = StringField(required=True)
     config = StringField()
     split = StringField()
+    partition = StringField()
 
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
@@ -105,7 +106,7 @@ class CachedResponse(Document):
         "collection": CACHE_COLLECTION_RESPONSES,
         "db_alias": CACHE_MONGOENGINE_ALIAS,
         "indexes": [
-            ("kind", "dataset", "config", "split"),
+            ("kind", "dataset", "config", "split", "partition"),
             ("dataset", "kind", "http_status"),
             ("kind", "http_status", "dataset"),
             ("kind", "http_status", "error_code"),
@@ -121,6 +122,7 @@ class CachedResponse(Document):
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
 CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
+CachedResponse.partition.required = False  # type: ignore
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
