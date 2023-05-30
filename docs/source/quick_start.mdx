@@ -5,6 +5,7 @@ In this quickstart, you'll learn how to use the Datasets Server's REST API to:
 - Check whether a dataset on the Hub is functional.
 - Return the configuration and splits of a dataset.
 - Preview the first 100 rows of a dataset.
+- Download slices of rows of a dataset.
 - Access the dataset as parquet files.
 
 Each feature is served through an endpoint summarized in the table below:
@@ -14,7 +15,8 @@ Each feature is served through an endpoint summarized in the table below:
 | [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |
 | [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
-| [/first-rows](./first-rows) | GET    | Get the columns (with data type) and first rows of a dataset split.              | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+| [/first-rows](./first-rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+| [/rows](./rows)             | GET    | Get a slice of rows a dataset split.                                             | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                     |
 
 There is no installation or setup required to use Datasets Server.
@@ -246,6 +248,53 @@ curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&c
 ```
 </curl>
 </inferencesnippet>
+
+## Download slices of a dataset
+
+The `/rows` endpoint returns a JSON list of a slice of rows of a dataset at any given location (offset).
+It also returns the types of data features ("columns" data types).
+You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the offset and length of the slice you'd like to download:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100 \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+You can download slices of 100 rows maximum at a time.
+
+## Access parquet files
 
 ## Access parquet files
 
