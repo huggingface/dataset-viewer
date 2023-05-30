@@ -222,6 +222,91 @@
         },
         "required": true
       },
+      "X-Error-Code-rows-401": {
+        "description": "A string that identifies the underlying error for 401 on /rows.",
+        "schema": {
+          "type": "string",
+          "enum": ["ExternalUnauthenticatedError"]
+        },
+        "examples": {
+          "ExternalUnauthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible without authentication (private or gated). Please check the spelling of the dataset name or retry with authentication.",
+            "value": "ExternalUnauthenticatedError"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-rows-404": {
+        "description": "A string that identifies the underlying error for 404 on /rows.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ExternalAuthenticatedError",
+            "DatasetNotFoundError",
+            "ConfigNotFoundError",
+            "SplitNotFoundError",
+            "RowsResponseNotFound"
+          ]
+        },
+        "examples": {
+          "ExternalAuthenticatedError": {
+            "summary": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials.",
+            "value": "ExternalAuthenticatedError"
+          },
+          "DatasetNotFoundError": {
+            "summary": "The dataset does not exist on the Hub.",
+            "value": "DatasetNotFoundError"
+          },
+          "ConfigNotFoundError": {
+            "summary": "config yyy does not exist for dataset xxx",
+            "value": "ConfigNotFoundError"
+          },
+          "SplitNotFoundError": {
+            "summary": "The config or the split does not exist in the dataset",
+            "value": "SplitNotFoundError"
+          },
+          "RowsResponseNotFound": {
+            "summary": "Not found.",
+            "value": "RowsResponseNotFound"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-rows-422": {
+        "description": "A string that identifies the underlying error for 422 on /rows.",
+        "schema": {
+          "type": "string",
+          "enum": ["MissingRequiredParameter"]
+        },
+        "examples": {
+          "MissingRequiredParameter": {
+            "summary": "Parameters 'dataset', 'config', 'split', 'offset' and 'length' are required",
+            "value": "MissingRequiredParameter"
+          }
+        },
+        "required": true
+      },
+      "X-Error-Code-rows-500": {
+        "description": "A string that identifies the underlying error for 500 on /first-rows.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "RowsPostProcessingError",
+            "UnexpectedError"
+          ]
+        },
+        "examples": {
+          "RowsPostProcessingError": {
+            "summary": "Server error while post-processing the split rows. Please report the issue.",
+            "value": "RowsPostProcessingError"
+          },
+          "UnexpectedError": {
+            "summary": "Unexpected error.",
+            "value": "UnexpectedError"
+          }
+        },
+        "required": true
+      },
       "X-Error-Code-valid-500": {
         "description": "A string that identifies the underlying error for 500 on /valid.",
         "schema": {
@@ -373,6 +458,20 @@
           }
         }
       },
+      "RowsResponse": {
+        "type": "object",
+        "required": ["features", "rows"],
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FeatureItem" }
+          },
+          "rows": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FirstRowItem" }
+          }
+        }
+      },
       "FeatureItem": {
         "type": "object",
         "required": ["feature_idx", "name", "type"],
@@ -416,7 +515,7 @@
       },
       "ValueFeature": {
         "type": "object",
-        "required": ["id", "_type", "dtype"],
+        "required": ["_type", "dtype"],
         "properties": {
           "id": {
             "type": "string",
@@ -462,7 +561,7 @@
       },
       "ClassLabelFeature": {
         "type": "object",
-        "required": ["id", "_type", "num_classes", "names"],
+        "required": ["_type", "names"],
         "properties": {
           "id": {
             "type": "string",
@@ -486,7 +585,7 @@
       },
       "ArrayXDFeature": {
         "type": "object",
-        "required": ["id", "_type", "shape"],
+        "required": ["_type", "shape"],
         "properties": {
           "id": {
             "type": "string",
@@ -508,7 +607,7 @@
       },
       "TranslationFeature": {
         "type": "object",
-        "required": ["id", "_type", "languages"],
+        "required": ["_type", "languages"],
         "properties": {
           "id": {
             "type": "string",
@@ -529,7 +628,7 @@
       },
       "TranslationVariableLanguagesFeature": {
         "type": "object",
-        "required": ["id", "_type", "num_languages", "languages"],
+        "required": ["_type", "languages"],
         "properties": {
           "id": {
             "type": "string",
@@ -553,7 +652,7 @@
       },
       "SequenceFeature": {
         "type": "object",
-        "required": ["id", "_type", "length", "feature"],
+        "required": ["_type", "feature"],
         "properties": {
           "id": {
             "type": "string",
@@ -586,7 +685,7 @@
       },
       "AudioFeature": {
         "type": "object",
-        "required": ["id", "_type", "sampling_rate", "mono", "decode"],
+        "required": ["_type", "sampling_rate"],
         "properties": {
           "id": {
             "type": "string",
@@ -610,7 +709,7 @@
       },
       "ImageFeature": {
         "type": "object",
-        "required": ["id", "_type", "decode"],
+        "required": ["_type"],
         "properties": {
           "id": {
             "type": "string",
@@ -1298,7 +1397,6 @@
                           "name": "text",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1308,7 +1406,6 @@
                           "type": {
                             "num_classes": 2,
                             "names": ["neg", "pos"],
-                            "id": null,
                             "_type": "ClassLabel"
                           }
                         }
@@ -1361,7 +1458,6 @@
                           "name": "start",
                           "type": {
                             "dtype": "timestamp[s]",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1371,11 +1467,8 @@
                           "type": {
                             "feature": {
                               "dtype": "float32",
-                              "id": null,
                               "_type": "Value"
                             },
-                            "length": -1,
-                            "id": null,
                             "_type": "Sequence"
                           }
                         },
@@ -1385,11 +1478,8 @@
                           "type": {
                             "feature": {
                               "dtype": "uint64",
-                              "id": null,
                               "_type": "Value"
                             },
-                            "length": -1,
-                            "id": null,
                             "_type": "Sequence"
                           }
                         },
@@ -1400,15 +1490,10 @@
                             "feature": {
                               "feature": {
                                 "dtype": "float32",
-                                "id": null,
                                 "_type": "Value"
                               },
-                              "length": -1,
-                              "id": null,
                               "_type": "Sequence"
                             },
-                            "length": -1,
-                            "id": null,
                             "_type": "Sequence"
                           }
                         },
@@ -1417,7 +1502,6 @@
                           "name": "item_id",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         }
@@ -1481,8 +1565,6 @@
                           "feature_idx": 0,
                           "name": "imageA",
                           "type": {
-                            "decode": true,
-                            "id": null,
                             "_type": "Image"
                           }
                         },
@@ -1490,8 +1572,6 @@
                           "feature_idx": 1,
                           "name": "imageB",
                           "type": {
-                            "decode": true,
-                            "id": null,
                             "_type": "Image"
                           }
                         }
@@ -1576,7 +1656,6 @@
                           "name": "client_id",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1585,7 +1664,6 @@
                           "name": "path",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1594,9 +1672,6 @@
                           "name": "audio",
                           "type": {
                             "sampling_rate": 48000,
-                            "mono": true,
-                            "decode": true,
-                            "id": null,
                             "_type": "Audio"
                           }
                         },
@@ -1605,7 +1680,6 @@
                           "name": "sentence",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1614,7 +1688,6 @@
                           "name": "up_votes",
                           "type": {
                             "dtype": "int64",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1623,7 +1696,6 @@
                           "name": "down_votes",
                           "type": {
                             "dtype": "int64",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1632,7 +1704,6 @@
                           "name": "age",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1641,7 +1712,6 @@
                           "name": "gender",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1650,7 +1720,6 @@
                           "name": "accent",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1659,7 +1728,6 @@
                           "name": "locale",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         },
@@ -1668,7 +1736,6 @@
                           "name": "segment",
                           "type": {
                             "dtype": "string",
-                            "id": null,
                             "_type": "Value"
                           }
                         }
@@ -2023,6 +2090,661 @@
                     "summary": "the response is not ready yet.",
                     "value": {
                       "error": "The list of the first rows is not ready yet. Please retry later."
+                    }
+                  },
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Unexpected error."
+                    }
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal": {
+                    "summary": "internal error",
+                    "value": {
+                      "error": "Internal Server Error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rows": {
+      "get": {
+        "summary": "A slice of rows of a split",
+        "description": "The list of rows of a dataset split at a given slice location (offset).",
+        "externalDocs": {
+          "description": "See rows (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/rows"
+        },
+        "operationId": "listRows",
+        "security": [
+          {},
+          {
+            "HuggingFaceCookie": []
+          },
+          {
+            "HuggingFaceToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset",
+            "in": "query",
+            "description": "The identifier of the dataset on the Hub.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "glue": { "summary": "a canonical dataset", "value": "glue" },
+              "Helsinki-NLP/tatoeba_mt": {
+                "summary": "a namespaced dataset",
+                "value": "Helsinki-NLP/tatoeba_mt"
+              }
+            }
+          },
+          {
+            "name": "config",
+            "in": "query",
+            "description": "The dataset configuration (or subset).",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "cola": {
+                "summary": "a subset of the glue dataset",
+                "value": "cola"
+              },
+              "yangdong/ecqa": {
+                "summary": "the default configuration given by the 🤗 Datasets library",
+                "value": "yangdong--ecqa"
+              }
+            }
+          },
+          {
+            "name": "split",
+            "in": "query",
+            "description": "The split name.",
+            "required": true,
+            "schema": { "type": "string" },
+            "examples": {
+              "train": {
+                "summary": "train split",
+                "value": "train"
+              },
+              "test": {
+                "summary": "test split",
+                "value": "test"
+              },
+              "validation": {
+                "summary": "validation split",
+                "value": "validation"
+              }
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "The offset of the slice.",
+            "required": true,
+            "schema": { "type": "integer" },
+            "examples": {
+              "0": {
+                "summary": "from the beginning",
+                "value": 0
+              },
+              "100": {
+                "summary": "from the row at index 100",
+                "value": 100
+              }
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "description": "The length of the slice",
+            "required": true,
+            "schema": { "type": "integer" },
+            "examples": {
+              "100": {
+                "summary": "a slice of 100 rows",
+                "value": 100
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows of the requested slice.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RowsResponse"
+                },
+                "examples": {
+                  "imdb": {
+                    "summary": "text, and label column (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "text",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "label",
+                          "type": {
+                            "num_classes": 2,
+                            "names": ["neg", "pos"],
+                            "_type": "ClassLabel"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 0,
+                          "row": {
+                            "text": "I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S. customs if it ever tried to enter this country, therefore being a fan of films considered \"controversial\" I really had to see this for myself.<br /><br />The plot is centered around a young Swedish drama student named Lena who wants to learn everything she can about life. In particular she wants to focus her attentions to making some sort of documentary on what the average Swede thought about certain political issues such as the Vietnam War and race issues in the United States. In between asking politicians and ordinary denizens of Stockholm about their opinions on politics, she has sex with her drama teacher, classmates, and married men.<br /><br />What kills me about I AM CURIOUS-YELLOW is that 40 years ago, this was considered pornographic. Really, the sex and nudity scenes are few and far between, even then it's not shot like some cheaply made porno. While my countrymen mind find it shocking, in reality sex and nudity are a major staple in Swedish cinema. Even Ingmar Bergman, arguably their answer to good old boy John Ford, had sex scenes in his films.<br /><br />I do commend the filmmakers for the fact that any sex shown in the film is shown for artistic purposes rather than just to shock people and make money to be shown in pornographic theaters in America. I AM CURIOUS-YELLOW is a good film for anyone wanting to study the meat and potatoes (no pun intended) of Swedish cinema. But really, this film doesn't have much of a plot.",
+                            "label": 0
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 1,
+                          "row": {
+                            "text": "\"I Am Curious: Yellow\" is a risible and pretentious steaming pile. It doesn't matter what one's political views are because this film can hardly be taken seriously on any level. As for the claim that frontal male nudity is an automatic NC-17, that isn't true. I've seen R-rated films with male nudity. Granted, they only offer some fleeting views, but where are the R-rated films with gaping vulvas and flapping labia? Nowhere, because they don't exist. The same goes for those crappy cable shows: schlongs swinging in the breeze but not a clitoris in sight. And those pretentious indie movies like The Brown Bunny, in which we're treated to the site of Vincent Gallo's throbbing johnson, but not a trace of pink visible on Chloe Sevigny. Before crying (or implying) \"double-standard\" in matters of nudity, the mentally obtuse should take into account one unavoidably obvious anatomical difference between men and women: there are no genitals on display when actresses appears nude, and the same cannot be said for a man. In fact, you generally won't see female genitals in an American film in anything short of porn or explicit erotica. This alleged double-standard is less a double standard than an admittedly depressing ability to come to terms culturally with the insides of women's bodies.",
+                            "label": 0
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 2,
+                          "row": {
+                            "text": "If only to avoid making this type of film in the future. This film is interesting as an experiment but tells no cogent story.<br /><br />One might feel virtuous for sitting thru it because it touches on so many IMPORTANT issues but it does so without any discernable motive. The viewer comes away with no new perspectives (unless one comes up with one while one's mind wanders, as it will invariably do during this pointless film).<br /><br />One might better spend one's time staring out a window at a tree growing.<br /><br />",
+                            "label": 0
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "text": "This film was probably inspired by Godard's Masculin, féminin and I urge you to see that film instead.<br /><br />The film has two strong elements and those are, (1) the realistic acting (2) the impressive, undeservedly good, photo. Apart from that, what strikes me most is the endless stream of silliness. Lena Nyman has to be most annoying actress in the world. She acts so stupid and with all the nudity in this film,...it's unattractive. Comparing to Godard's film, intellectuality has been replaced with stupidity. Without going too far on this subject, I would say that follows from the difference in ideals between the French and the Swedish society.<br /><br />A movie of its time, and place. 2/10.",
+                            "label": 0
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "image": {
+                    "summary": "a column with images (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "imageA",
+                          "type": {
+                            "_type": "Image"
+                          }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "imageB",
+                          "type": {
+                            "_type": "Image"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 0,
+                          "row": {
+                            "imageA": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            },
+                            "imageB": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            }
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 1,
+                          "row": {
+                            "imageA": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            },
+                            "imageB": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            }
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 2,
+                          "row": {
+                            "imageA": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            },
+                            "imageB": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            }
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "imageA": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageA/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            },
+                            "imageB": {
+                              "url": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/3/imageB/image.jpg",
+                              "height": 256,
+                              "width": 256
+                            }
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  },
+                  "audio": {
+                    "summary": "a column with audio files (only 3 rows are shown for brevity)",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "client_id",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "path",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 2,
+                          "name": "audio",
+                          "type": {
+                            "sampling_rate": 48000,
+                            "_type": "Audio"
+                          }
+                        },
+                        {
+                          "feature_idx": 3,
+                          "name": "sentence",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 4,
+                          "name": "up_votes",
+                          "type": {
+                            "dtype": "int64",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 5,
+                          "name": "down_votes",
+                          "type": {
+                            "dtype": "int64",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 6,
+                          "name": "age",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 7,
+                          "name": "gender",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 8,
+                          "name": "accent",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 9,
+                          "name": "locale",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        },
+                        {
+                          "feature_idx": 10,
+                          "name": "segment",
+                          "type": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 0,
+                          "row": {
+                            "client_id": "04960d53cc851eeb6d93f21a09e09ab36fe16943acb226ced1211d7250ab2f1b9a1d655c1cc03d50006e396010851ad52d4c53f49dd77b080b01c4230704c68d",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/0/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Why does Melissandre look like she wants to consume Jon Snow on the ride up the wall?",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "fourties",
+                            "gender": "male",
+                            "accent": "United States English",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 1,
+                          "row": {
+                            "client_id": "f9f1f96bae1390dfe61ff298abb90975c079e913c712d57d97307ed797469eac446abb149daaad24cacffcc24e1e3275fefeb97f977eb74ce2233e0e5c1d437e",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/1/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "\"I'm getting them for twelve dollars a night.\"",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 2,
+                          "row": {
+                            "client_id": "a6c7706a220eeea7ee3687c1122fe7ac17962d2449d25b6db37cc41cdaace442683e11945b6f581e73941c3083cd4eecfafc938840459cd8c571dae7774ee687",
+                            "path": null,
+                            "audio": [
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.mp3",
+                                "type": "audio/mpeg"
+                              },
+                              {
+                                "src": "https://datasets-server.us.dev.moon.huggingface.tech/cached-assets/mozilla-foundation/common_voice_9_0/--/en/train/2/audio/audio.wav",
+                                "type": "audio/wav"
+                              }
+                            ],
+                            "sentence": "Tower of strength",
+                            "up_votes": 2,
+                            "down_votes": 0,
+                            "age": "",
+                            "gender": "",
+                            "accent": "",
+                            "locale": "en",
+                            "segment": ""
+                          },
+                          "truncated_cells": []
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "If the external authentication step on the Hugging Face Hub failed, and no authentication mechanism has been provided. Retry with authentication.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-rows-401"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please check the spelling of the dataset name or retry with authentication."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is gated.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please check the spelling of the dataset name or retry with authentication."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible without authentication (private or gated). Please check the spelling of the dataset name or retry with authentication."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "If the repository to download from cannot be found, or if the config or split does not exist in the dataset. Note that this may be because the dataset doesn't exist, or because it is set to `private` and you do not have access.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-rows-404"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "inexistent-dataset": {
+                    "summary": "The dataset does not exist, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
+                    }
+                  },
+                  "gated-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
+                    }
+                  },
+                  "private-dataset": {
+                    "summary": "The dataset is private, while authentication was provided in the request.",
+                    "value": {
+                      "error": "The dataset does not exist, or is not accessible with the current credentials (private or gated). Please check the spelling of the dataset name or retry with other authentication credentials."
+                    }
+                  },
+                  "inexistent-config": {
+                    "summary": "The config does not exist in the dataset.",
+                    "value": { "error": "Not found." }
+                  },
+                  "inexistent-split": {
+                    "summary": "The soplit does not exist in the dataset.",
+                    "value": { "error": "Not found." }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Some of the `dataset`, `config`, `split`, `offset` or `length` parameters have not been provided or are invalid.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-rows-422"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-dataset": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "missing-config": {
+                    "summary": "The config parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "missing-split": {
+                    "summary": "The split parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "empty-dataset": {
+                    "summary": "The dataset parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "empty-config": {
+                    "summary": "The config parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "empty-split": {
+                    "summary": "The split parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'split', 'config' and 'dataset' are required"
+                    }
+                  },
+                  "negative-offset": {
+                    "summary": "The offset must be positive.",
+                    "value": {
+                      "error": "Offset must be positive"
+                    }
+                  },
+                  "negative-length": {
+                    "summary": "The length must be positive.",
+                    "value": {
+                      "error": "Length must be positive"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-rows-500"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "not-ready": {
+                    "summary": "the response is not ready yet.",
+                    "value": {
+                      "error": "The list of rows is not ready yet. Please retry later."
                     }
                   },
                   "internal": {
