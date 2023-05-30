@@ -12,15 +12,15 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority, Status
 
 from .utils import (
+    CONFIG_NAME_1,
+    CONFIG_NAME_2,
+    CONFIG_NAMES,
     DATASET_NAME,
+    PARTITION_1,
     REVISION_NAME,
     SPLIT_NAME_1,
     SPLIT_NAME_2,
     SPLIT_NAMES,
-    CONFIG_NAME_1,
-    CONFIG_NAME_2,
-    CONFIG_NAMES,
-    PARTITION_1,
     assert_dataset_state,
     compute_all,
     get_dataset_state,
@@ -158,15 +158,15 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
 #    +-------+
 #    | CA    |
 #    +-------+
-#      |   
-#      |   
-#      ⩚         
-#    +-------+ 
-#    | SA    | 
-#    +-------+ 
-#      ⩛   
-#      |   
-#      |   
+#      |
+#      |
+#      ⩚
+#    +-------+
+#    | SA    |
+#    +-------+
+#      ⩛
+#      |
+#      |
 #    +-------+
 #    | PA    |
 #    +-------+
@@ -319,7 +319,6 @@ def test_ca_1_is_computed(
         queue_status={"in_process": []},
         tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
-
 
 
 @pytest.mark.parametrize(
