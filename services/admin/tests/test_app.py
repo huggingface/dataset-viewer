@@ -100,7 +100,7 @@ def test_cache_reports(
     first_step = processing_graph.get_processing_steps()[0]
     path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.request("get", f"/cache-reports{path}{cursor_str}")
+    response = client.request("get", f"/cache-reports/{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)
@@ -128,7 +128,7 @@ def test_cache_reports_with_content(
     first_step = processing_graph.get_processing_steps()[0]
     path = first_step.cache_kind
     cursor_str = f"?cursor={cursor}" if cursor else ""
-    response = client.request("get", f"/cache-reports-with-content{path}{cursor_str}")
+    response = client.request("get", f"/cache-reports-with-content/{path}{cursor_str}")
     assert response.status_code == http_status
     if error_code:
         assert isinstance(response.json()["error"], str)

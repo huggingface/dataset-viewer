@@ -58,7 +58,7 @@ def create_force_refresh_endpoint(
                 if not are_valid_parameters([config, split, partition]):
                     raise MissingRequiredParameterError("Parameters 'config', 'split' and 'partition' are required")
 
-            logging.info(f"/force-refresh{job_type}, {dataset=}, {config=}, {split=}, {partition=}")
+            logging.info(f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
