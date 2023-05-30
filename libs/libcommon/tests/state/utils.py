@@ -25,9 +25,15 @@ SPLIT_NAMES_CONTENT = {
     "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
 }
 
+PARTITION_1 = "0-99"
+PARTITIONS = [PARTITION_1]
+PARTITIONS_CONTENT = {
+    "partitions": [
+        {"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": SPLIT_NAME_1, "partition": partition}
+        for partition in PARTITIONS
+    ]
+}
 
-# DATASET_GIT_REVISION = "dataset_git_revision"
-# OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
 JOB_RUNNER_VERSION = 1
 
 
@@ -84,6 +90,7 @@ def put_cache(
     revision: str,
     config: Optional[str] = None,
     split: Optional[str] = None,
+    partition: Optional[str] = None,
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
 ) -> None:
@@ -93,14 +100,21 @@ def put_cache(
         content = CONFIG_NAMES_CONTENT
         config = None
         split = None
+        partition = None
     elif not split:
         if not step.startswith("config-"):
             raise ValueError("Unexpected artifact: should start with config-")
         content = SPLIT_NAMES_CONTENT
         split = None
-    else:
+        partition = None
+    elif not partition:
         if not step.startswith("split-"):
             raise ValueError("Unexpected artifact: should start with split-")
+        content = PARTITIONS_CONTENT
+        partition = None
+    else:
+        if not step.startswith("partition-"):
+            raise ValueError("Unexpected artifact: should start with partition-")
         content = {}
 
     if error_code:
@@ -114,6 +128,7 @@ def put_cache(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         content=content,
         http_status=http_status,
         job_runner_version=JOB_RUNNER_VERSION - 1 if use_old_job_runner_version else JOB_RUNNER_VERSION,

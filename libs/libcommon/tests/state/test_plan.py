@@ -14,6 +14,13 @@ from libcommon.utils import Priority, Status
 from .utils import (
     DATASET_NAME,
     REVISION_NAME,
+    SPLIT_NAME_1,
+    SPLIT_NAME_2,
+    SPLIT_NAMES,
+    CONFIG_NAME_1,
+    CONFIG_NAME_2,
+    CONFIG_NAMES,
+    PARTITION_1,
     assert_dataset_state,
     compute_all,
     get_dataset_state,
@@ -23,19 +30,6 @@ from .utils import (
 )
 
 OTHER_REVISION_NAME = f"other_{REVISION_NAME}"
-
-CONFIG_NAME_1 = "config1"
-CONFIG_NAME_2 = "config2"
-CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
-CONFIG_NAMES_CONTENT = {"config_names": [{"config": config_name} for config_name in CONFIG_NAMES]}
-
-SPLIT_NAME_1 = "split1"
-SPLIT_NAME_2 = "split2"
-SPLIT_NAMES = [SPLIT_NAME_1, SPLIT_NAME_2]
-SPLIT_NAMES_CONTENT = {
-    "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
-}
-
 
 STEP_DA = "dataset-a"
 STEP_DB = "dataset-b"
@@ -73,6 +67,8 @@ ARTIFACT_SA_1_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SP
 ARTIFACT_SA_2_1 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_1}"
 ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_2}"
 
+STEP_PA = "partition-a"
+ARTIFACT_PA_1_1 = f"{STEP_PA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SPLIT_NAME_1},{PARTITION_1}"
 
 # Graph to test only one step
 #
@@ -149,6 +145,42 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
         STEP_DE: {"input_type": "dataset", "triggered_by": STEP_CA},  # fan-in (C -> D)
         STEP_CB: {"input_type": "config", "triggered_by": STEP_SA},  # fan-in (S -> C)
         STEP_DF: {"input_type": "dataset", "triggered_by": STEP_SA},  # fan-in (S -> D)
+    }
+)
+
+# Graph to test lineal
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#      |
+#      ⩚
+#    +-------+
+#    | CA    |
+#    +-------+
+#      |   
+#      |   
+#      ⩚         
+#    +-------+ 
+#    | SA    | 
+#    +-------+ 
+#      ⩛   
+#      |   
+#      |   
+#    +-------+
+#    | PA    |
+#    +-------+
+#
+PROCESSING_GRAPH_LINEAL = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_CA: {
+            "input_type": "config",
+            "triggered_by": STEP_DA,
+            "provides_config_split_names": True,
+        },
+        STEP_SA: {"input_type": "split", "triggered_by": STEP_CA, "provides_split_partitions": True},
+        STEP_PA: {"input_type": "partition", "triggered_by": STEP_SA},
     }
 )
 
@@ -283,6 +315,42 @@ def test_ca_1_is_computed(
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
             "up_to_date": [ARTIFACT_CA_1, ARTIFACT_DA],
+        },
+        queue_status={"in_process": []},
+        tasks=[f"CreateJobs,{len(cache_is_empty)}"],
+    )
+
+
+
+@pytest.mark.parametrize(
+    "processing_graph,cache_is_empty",
+    [
+        (
+            PROCESSING_GRAPH_LINEAL,
+            [ARTIFACT_CA_2, ARTIFACT_SA_1_2, ARTIFACT_PA_1_1],
+        ),
+    ],
+)
+def test_sa_1_is_computed(
+    processing_graph: ProcessingGraph,
+    cache_is_empty: List[str],
+) -> None:
+    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+    put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
+    put_cache(step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1)
+
+    dataset_state = get_dataset_state(processing_graph=processing_graph)
+    assert_dataset_state(
+        dataset_state=dataset_state,
+        config_names=CONFIG_NAMES,
+        split_names_in_first_config=SPLIT_NAMES,
+        cache_status={
+            "cache_has_different_git_revision": [],
+            "cache_is_outdated_by_parent": [],
+            "cache_is_empty": cache_is_empty,
+            "cache_is_error_to_retry": [],
+            "cache_is_job_runner_obsolete": [],
+            "up_to_date": [ARTIFACT_SA_1_1, ARTIFACT_CA_1, ARTIFACT_DA],
         },
         queue_status={"in_process": []},
         tasks=[f"CreateJobs,{len(cache_is_empty)}"],

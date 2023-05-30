@@ -19,6 +19,7 @@ from libcommon.state import (
     CacheState,
     ConfigState,
     DatasetState,
+    PartitionState,
     SplitState,
     fetch_names,
 )
@@ -28,6 +29,7 @@ from .utils import (
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
     DATASET_NAME,
+    PARTITION_1,
     REVISION_NAME,
     SPLIT_NAME_1,
     SPLIT_NAMES,
@@ -54,11 +56,13 @@ NAMES_RESPONSE_OK = ResponseSpec(
 STEP_DATASET_A = "dataset-a"
 STEP_CONFIG_B = "config-b"
 STEP_SPLIT_C = "split-c"
+STEP_PARTITION_D = "partition-d"
 PROCESSING_GRAPH = ProcessingGraph(
     processing_graph_specification={
         STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
         STEP_CONFIG_B: {"input_type": "config", "provides_config_split_names": True, "triggered_by": STEP_DATASET_A},
-        STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
+        STEP_SPLIT_C: {"input_type": "split", "provides_split_partitions": True, "triggered_by": STEP_CONFIG_B},
+        STEP_PARTITION_D: {"input_type": "partition", "triggered_by": STEP_SPLIT_C},
     }
 )
 RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -126,77 +130,96 @@ def test_fetch_names(
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,cache_kind",
+    "dataset,config,split,partition,cache_kind",
     [
-        (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
+        (DATASET_NAME, None, None, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, None, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, PARTITION_1, CACHE_KIND),
     ],
 )
-def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
+def test_cache_state_exists(
+    dataset: str, config: Optional[str], split: Optional[str], partition: Optional[str], cache_kind: str
+) -> None:
     assert not CacheState(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).exists
     upsert_response(
-        kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
+        kind=cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        partition=partition,
+        content={},
+        http_status=HTTPStatus.OK,
     )
     assert CacheState(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).exists
-    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
+    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split, partition=partition)
     assert not CacheState(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).exists
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split,cache_kind",
+    "dataset,config,split,partition,cache_kind",
     [
-        (DATASET_NAME, None, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, None, CACHE_KIND),
-        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, CACHE_KIND),
+        (DATASET_NAME, None, None, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, None, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, None, CACHE_KIND),
+        (DATASET_NAME, CONFIG_NAME_1, SPLIT_NAME_1, PARTITION_1, CACHE_KIND),
     ],
 )
-def test_cache_state_is_success(dataset: str, config: Optional[str], split: Optional[str], cache_kind: str) -> None:
+def test_cache_state_is_success(
+    dataset: str, config: Optional[str], split: Optional[str], partition: Optional[str], cache_kind: str
+) -> None:
     assert not CacheState(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
-    ).is_success
-    upsert_response(
-        kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
-    )
-    assert CacheState(
-        dataset=dataset,
-        config=config,
-        split=split,
-        cache_kind=cache_kind,
-        cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).is_success
     upsert_response(
         kind=cache_kind,
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    assert CacheState(
+        dataset=dataset,
+        config=config,
+        split=split,
+        partition=partition,
+        cache_kind=cache_kind,
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    ).is_success
+    upsert_response(
+        kind=cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        partition=partition,
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
@@ -204,18 +227,18 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).is_success
-    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
+    delete_response(kind=cache_kind, dataset=dataset, config=config, split=split, partition=partition)
     assert not CacheState(
         dataset=dataset,
         config=config,
         split=split,
+        partition=partition,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     ).is_success
 
 
@@ -224,6 +247,7 @@ def test_artifact_state() -> None:
     revision = REVISION_NAME
     config = None
     split = None
+    partition = None
     processing_step_name = "dataset-a"
     processing_step = PROCESSING_GRAPH.get_processing_step(processing_step_name)
     artifact_state = ArtifactState(
@@ -231,12 +255,48 @@ def test_artifact_state() -> None:
         revision=revision,
         config=config,
         split=split,
+        partition=partition,
         processing_step=processing_step,
         pending_jobs_df=Queue().get_pending_jobs_df(dataset=dataset),
         cache_entries_df=get_cache_entries_df(dataset=dataset),
-        partition=None,
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
+    assert not artifact_state.cache_state.exists
+    assert not artifact_state.cache_state.is_success
+    assert not artifact_state.job_state.is_in_process
+
+
+def test_partition_state() -> None:
+    dataset = DATASET_NAME
+    revision = REVISION_NAME
+    config = CONFIG_NAME_1
+    split = SPLIT_NAME_1
+    partition = PARTITION_1
+    expected_partition_processing_step_name = "partition-d"
+    partition_state = PartitionState(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        partition=partition,
+        processing_graph=PROCESSING_GRAPH,
+        pending_jobs_df=Queue()._get_df(jobs=[]),
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    )
+
+    assert partition_state.dataset == dataset
+    assert partition_state.revision == revision
+    assert partition_state.config == config
+    assert partition_state.split == split
+    assert partition_state.partition == partition
+
+    assert len(partition_state.artifact_state_by_step) == 1
+    assert expected_partition_processing_step_name in partition_state.artifact_state_by_step
+    artifact_state = partition_state.artifact_state_by_step[expected_partition_processing_step_name]
+    assert (
+        artifact_state.id
+        == f"{expected_partition_processing_step_name},{dataset},{revision},{config},{split},{partition}"
+    )
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
     assert not artifact_state.job_state.is_in_process
