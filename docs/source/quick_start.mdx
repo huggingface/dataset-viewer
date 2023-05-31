@@ -15,7 +15,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |
 | [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
-| [/first-rows](./first-rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+| [/first-rows](./first_rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
 | [/rows](./rows)             | GET    | Get a slice of rows of a dataset split.                                          | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                     |
 
