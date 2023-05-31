@@ -44,7 +44,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10",
+        "https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -60,7 +60,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10 \
+curl https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10 \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -198,5 +198,5 @@ If a certain asset is not available, you may have to call `/rows` again.
 
 ## Truncated responses
 
-Unlike `/first-rows`, there is currently no truncation in `/rows`.
+Unlike `/rows`, there is currently no truncation in `/rows`.
 The `truncated_cells` field is still there but is always empty.
