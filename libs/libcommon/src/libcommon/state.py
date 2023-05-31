@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
