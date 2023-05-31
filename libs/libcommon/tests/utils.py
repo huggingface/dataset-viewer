@@ -42,8 +42,164 @@ PROCESSING_GRAPH = ProcessingGraph(
 )
 
 
-# DATASET_GIT_REVISION = "dataset_git_revision"
-# OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
+OTHER_REVISION_NAME = f"other_{REVISION_NAME}"
+
+CONFIG_NAME_1 = "config1"
+CONFIG_NAME_2 = "config2"
+CONFIG_NAMES = [CONFIG_NAME_1, CONFIG_NAME_2]
+CONFIG_NAMES_CONTENT = {"config_names": [{"config": config_name} for config_name in CONFIG_NAMES]}
+
+SPLIT_NAME_1 = "split1"
+SPLIT_NAME_2 = "split2"
+SPLIT_NAMES = [SPLIT_NAME_1, SPLIT_NAME_2]
+SPLIT_NAMES_CONTENT = {
+    "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
+}
+
+
+STEP_DA = "dataset-a"
+STEP_DB = "dataset-b"
+STEP_DC = "dataset-c"
+STEP_DD = "dataset-d"
+STEP_DE = "dataset-e"
+STEP_DF = "dataset-f"
+STEP_DG = "dataset-g"
+STEP_DH = "dataset-h"
+STEP_DI = "dataset-i"
+
+ARTIFACT_DA = f"{STEP_DA},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DA_OTHER_REVISION = f"{STEP_DA},{DATASET_NAME},{OTHER_REVISION_NAME}"
+ARTIFACT_DB = f"{STEP_DB},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DC = f"{STEP_DC},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DD = f"{STEP_DD},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DE = f"{STEP_DE},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DF = f"{STEP_DF},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DG = f"{STEP_DG},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DH = f"{STEP_DH},{DATASET_NAME},{REVISION_NAME}"
+ARTIFACT_DI = f"{STEP_DI},{DATASET_NAME},{REVISION_NAME}"
+
+STEP_CA = "config-a"
+STEP_CB = "config-b"
+
+ARTIFACT_CA_1 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1}"
+ARTIFACT_CA_2 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2}"
+ARTIFACT_CB_1 = f"{STEP_CB},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1}"
+ARTIFACT_CB_2 = f"{STEP_CB},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2}"
+
+STEP_SA = "split-a"
+
+ARTIFACT_SA_1_1 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SPLIT_NAME_1}"
+ARTIFACT_SA_1_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1},{SPLIT_NAME_2}"
+ARTIFACT_SA_2_1 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_1}"
+ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SPLIT_NAME_2}"
+
+
+# Graph to test only one step
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#
+PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset"},
+    }
+)
+
+# Graph to test siblings, children, grand-children, multiple parents
+#
+#    +-------+ +-------+
+#    | DA    | | DB    |
+#    +-------+ +-------+
+#      |        |
+#      |   +----+
+#      |   |    |
+#    +-------+  |
+#    | DC    |  |
+#    +-------+  |
+#      |        |
+#      |   +----+
+#      |   |
+#    +-------+
+#    | DD    |
+#    +-------+
+#
+PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_DB: {"input_type": "dataset"},  # sibling
+        STEP_DC: {"input_type": "dataset", "triggered_by": [STEP_DA, STEP_DB]},  # child
+        STEP_DD: {"input_type": "dataset", "triggered_by": [STEP_DB, STEP_DC]},  # grandchild
+    }
+)
+
+# Graph to test fan-in, fan-out
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#      |
+#      ⩚
+#    +-------+
+#    | CA    |
+#    +-------+
+#      |   ⩛
+#      |   +-----+
+#      ⩚         |
+#    +-------+ +-------+
+#    | SA    | | DE    |
+#    +-------+ +-------+
+#      ⩛   ⩛
+#      |   +-----+
+#      |         |
+#    +-------+ +-------+
+#    | CB    | | DF    |
+#    +-------+ +-------+
+#
+PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_CA: {
+            "input_type": "config",
+            "triggered_by": STEP_DA,
+            "provides_config_split_names": True,
+        },  # fan-out (D->C)
+        STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},  # fan-out (C -> S)
+        # is fan-out (D -> S) possible? (we need the list of split names anyway)
+        STEP_DE: {"input_type": "dataset", "triggered_by": STEP_CA},  # fan-in (C -> D)
+        STEP_CB: {"input_type": "config", "triggered_by": STEP_SA},  # fan-in (S -> C)
+        STEP_DF: {"input_type": "dataset", "triggered_by": STEP_SA},  # fan-in (S -> D)
+    }
+)
+
+# Graph to test parallel steps (ie. two steps that compute the same thing, and abort if the other already exists)
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#      |
+#      +---------+
+#      |         |
+#    +-------+ +-------+
+#    | DG    | | DH    |
+#    +-------+ +-------+
+#      |         |
+#      +---------+
+#      |
+#    +-------+
+#    | DI    |
+#    +-------+
+#
+PROCESSING_GRAPH_PARALLEL = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_DG: {"input_type": "dataset", "triggered_by": STEP_DA},
+        STEP_DH: {"input_type": "dataset", "triggered_by": STEP_DA},
+        STEP_DI: {"input_type": "dataset", "triggered_by": [STEP_DG, STEP_DH]},
+    }
+)
+
+
 JOB_RUNNER_VERSION = 1
 
 

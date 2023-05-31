@@ -247,18 +247,23 @@ class AfterJobPlan(Plan):
         split: Optional[str],
     ) -> None:
         # ignore unrelated jobs
+        config_mask = (
+            self.pending_jobs_df["config"].isnull() if config is None else self.pending_jobs_df["config"] == config
+        )
+        split_mask = (
+            self.pending_jobs_df["split"].isnull() if split is None else self.pending_jobs_df["split"] == split
+        )
+
         unrelated_jobs_mask = (self.pending_jobs_df["type"] == next_processing_step.job_type) & (
-            (self.pending_jobs_df["dataset"] != self.dataset)
-            | (self.pending_jobs_df["config"] != config)
-            | (self.pending_jobs_df["split"] != split)
+            (self.pending_jobs_df["dataset"] != self.dataset) | (~config_mask) | (~split_mask)
         )
         self.pending_jobs_df = self.pending_jobs_df[~unrelated_jobs_mask]
 
         jobs_mask = (
             (self.pending_jobs_df["type"] == next_processing_step.job_type)
             & (self.pending_jobs_df["dataset"] == self.dataset)
-            & (self.pending_jobs_df["config"] == config)
-            & (self.pending_jobs_df["split"] == split)
+            & (config_mask)
+            & (split_mask)
         )
         ok_jobs_mask = jobs_mask & (self.pending_jobs_df["revision"] == self.revision)
         if ok_jobs_mask.any():
