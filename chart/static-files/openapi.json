@@ -2193,7 +2193,8 @@
             "name": "offset",
             "in": "query",
             "description": "The offset of the slice.",
-            "required": true,
+            "default": 0,
+            "minimum": 0,
             "schema": { "type": "integer" },
             "examples": {
               "0": {
@@ -2210,7 +2211,9 @@
             "name": "length",
             "in": "query",
             "description": "The length of the slice",
-            "required": true,
+            "default": 100,
+            "minimum": 0,
+            "maximum": 100, 
             "schema": { "type": "integer" },
             "examples": {
               "100": {
@@ -2238,7 +2241,7 @@
                 },
                 "examples": {
                   "imdb": {
-                    "summary": "text, and label column (only 3 rows are shown for brevity)",
+                    "summary": "text, and label column (only 4 rows are shown for brevity)",
                     "value": {
                       "features": [
                         {
@@ -2296,7 +2299,7 @@
                     }
                   },
                   "image": {
-                    "summary": "a column with images (only 3 rows are shown for brevity)",
+                    "summary": "a column with images (only 4 rows are shown for brevity)",
                     "value": {
                       "features": [
                         {
@@ -2383,7 +2386,7 @@
                     }
                   },
                   "audio": {
-                    "summary": "a column with audio files (only 3 rows are shown for brevity)",
+                    "summary": "a column with audio files (only 4 rows are shown for brevity)",
                     "value": {
                       "features": [
                         {
