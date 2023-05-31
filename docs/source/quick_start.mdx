@@ -16,7 +16,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
 | [/first-rows](./first-rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
-| [/rows](./rows)             | GET    | Get a slice of rows a dataset split.                                             | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
+| [/rows](./rows)             | GET    | Get a slice of rows of a dataset split.                                          | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                     |
 
 There is no installation or setup required to use Datasets Server.
@@ -259,7 +259,7 @@ You should specify the dataset name, configuration name (you can find out the co
 <python>
 ```python
 import requests
-API_URL = "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100"
+API_URL = "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10"
 def query():
     response = requests.get(API_URL)
     return response.json()
@@ -271,7 +271,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100",
+        "https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10",
         {
             method: "GET"
         }
@@ -286,7 +286,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=0&length=100 \
+curl https://datasets-server.huggingface.co/rows?dataset=rotten_tomatoes&config=default&split=train&offset=150&length=10 \
         -X GET
 ```
 </curl>
