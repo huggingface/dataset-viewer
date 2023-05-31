@@ -31,12 +31,12 @@ def create_dataset_backfill_plan_endpoint(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
-    async def dataset_backfill_plan_endpoint(request: Request) -> Response:
+    async def dataset_state_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
             if not are_valid_parameters([dataset]) or not dataset:
                 raise MissingRequiredParameterError("Parameter 'dataset' is required")
-            logging.info(f"/dataset-backfill-plan, dataset={dataset}")
+            logging.info(f"/dataset-state, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
@@ -55,4 +55,4 @@ def create_dataset_backfill_plan_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
 
-    return dataset_backfill_plan_endpoint
+    return dataset_state_endpoint

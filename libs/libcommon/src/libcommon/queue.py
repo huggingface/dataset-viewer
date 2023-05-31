@@ -730,16 +730,11 @@ class Queue:
             ]
         )
 
-    def has_pending_jobs_df(self, dataset: str, revision: str, job_types: Optional[List[str]] = None) -> bool:
+    def has_pending_jobs(self, dataset: str, job_types: Optional[List[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return (
-            Job.objects(
-                dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED], **filters
-            ).count()
-            > 0
-        )
+        return Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:

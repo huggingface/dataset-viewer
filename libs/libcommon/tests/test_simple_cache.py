@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -20,6 +20,7 @@ from libcommon.simple_cache import (
     InvalidLimit,
     delete_dataset_responses,
     delete_response,
+    fetch_names,
     get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
@@ -33,6 +34,8 @@ from libcommon.simple_cache import (
     get_validity_by_kind,
     upsert_response,
 )
+
+from .utils import CONFIG_NAME_1, CONTENT_ERROR, DATASET_NAME
 
 
 @pytest.fixture(autouse=True)
@@ -799,5 +802,56 @@ def test_cached_artifact_error() -> None:
     }
 
 
-def test_get_revision() -> None:
-    ...
+class ResponseSpec(TypedDict):
+    content: Mapping[str, Any]
+    http_status: HTTPStatus
+
+
+CACHE_KIND_A = "cache_kind_a"
+CACHE_KIND_B = "cache_kind_b"
+NAMES = ["name_1", "name_2", "name_3"]
+NAME_FIELD = "name"
+NAMES_FIELD = "names"
+NAMES_RESPONSE_OK = ResponseSpec(
+    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
+)
+RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@pytest.mark.parametrize(
+    "cache_kinds,response_spec_by_kind,expected_names",
+    [
+        ([], {}, []),
+        ([CACHE_KIND_A], {}, []),
+        ([CACHE_KIND_A], {CACHE_KIND_A: RESPONSE_ERROR}, []),
+        ([CACHE_KIND_A], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: RESPONSE_ERROR}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: NAMES_RESPONSE_OK}, NAMES),
+        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: RESPONSE_ERROR, CACHE_KIND_B: RESPONSE_ERROR}, []),
+    ],
+)
+def test_fetch_names(
+    cache_kinds: List[str],
+    response_spec_by_kind: Mapping[str, Mapping[str, Any]],
+    expected_names: List[str],
+) -> None:
+    for kind, response_spec in response_spec_by_kind.items():
+        upsert_response(
+            kind=kind,
+            dataset=DATASET_NAME,
+            config=CONFIG_NAME_1,
+            split=None,
+            content=response_spec["content"],
+            http_status=response_spec["http_status"],
+        )
+    assert (
+        fetch_names(
+            dataset=DATASET_NAME,
+            config=CONFIG_NAME_1,
+            cache_kinds=cache_kinds,
+            names_field=NAMES_FIELD,
+            name_field=NAME_FIELD,
+        )
+        == expected_names
+    )

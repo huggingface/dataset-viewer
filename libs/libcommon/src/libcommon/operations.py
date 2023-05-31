@@ -3,9 +3,9 @@
 
 import logging
 
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import delete_dataset_responses
-from libcommon.state import Orchestrator
 from libcommon.utils import Priority
 
 
@@ -27,7 +27,7 @@ def backfill_dataset(
     Returns: None.
     """
     logging.debug(f"backfill {dataset=} {revision=} {priority=}")
-    Orchestrator(dataset=dataset, processing_graph=processing_graph).set_revision(
+    DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph).set_revision(
         revision=revision, priority=priority, error_codes_to_retry=[]
     )
 

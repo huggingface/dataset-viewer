@@ -688,16 +688,40 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) 
     )
 
 
-def get_revision(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> Optional[str]:
+def has_some_cache(dataset: str) -> bool:
+    return CachedResponse.objects(dataset=dataset).count() > 0
+
+
+def fetch_names(
+    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
+) -> List[str]:
+    """
+    Fetch a list of names from the cache database.
+
+    If no entry is found in cache, return an empty list. Exceptions are silently caught.
+
+    Args:
+        dataset (str): The dataset name.
+        config (Optional[str]): The config name. Only needed for split names.
+        cache_kinds (List[str]): The cache kinds to fetch, eg ["dataset-config-names"],
+          or ["config-split-names-from-streaming", "config-split-names-from-info"].
+        names_field (str): The name of the field containing the list of names, eg: "config_names", or "splits".
+        name_field (str): The name of the field containing the name, eg: "config", or "split".
+
+    Returns:
+        List[str]: The list of names.
+    """
     try:
-        first_cached_response = (
-            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-            .only("dataset_git_revision")
-            .first()
-        )
-        return None if first_cached_response is None else first_cached_response.dataset_git_revision
-    except DoesNotExist:
-        return None
+        names = []
+        best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+        for name_item in best_response.response["content"][names_field]:
+            name = name_item[name_field]
+            if not isinstance(name, str):
+                raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")
+            names.append(name)
+        return names
+    except Exception:
+        return []
 
 
 # only for the tests

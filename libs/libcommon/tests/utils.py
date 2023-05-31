@@ -4,10 +4,10 @@
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
+from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
-from libcommon.state import DatasetState
 
 DATASET_NAME = "dataset"
 
@@ -26,18 +26,34 @@ SPLIT_NAMES_CONTENT = {
 }
 
 
+CACHE_KIND = "cache_kind"
+CONTENT_ERROR = {"error": "error"}
+JOB_TYPE = "job_type"
+
+STEP_DATASET_A = "dataset-a"
+STEP_CONFIG_B = "config-b"
+STEP_SPLIT_C = "split-c"
+PROCESSING_GRAPH = ProcessingGraph(
+    processing_graph_specification={
+        STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
+        STEP_CONFIG_B: {"input_type": "config", "provides_config_split_names": True, "triggered_by": STEP_DATASET_A},
+        STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
+    }
+)
+
+
 # DATASET_GIT_REVISION = "dataset_git_revision"
 # OTHER_DATASET_GIT_REVISION = "other_dataset_git_revision"
 JOB_RUNNER_VERSION = 1
 
 
-def get_dataset_state(
+def get_dataset_backfill_plan(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
-) -> DatasetState:
-    return DatasetState(
+) -> DatasetBackfillPlan:
+    return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
@@ -52,8 +68,8 @@ def assert_equality(value: Any, expected: Any, context: Optional[str] = None) ->
     assert value == expected, report
 
 
-def assert_dataset_state(
-    dataset_state: DatasetState,
+def assert_dataset_backfill_plan(
+    dataset_backfill_plan: DatasetBackfillPlan,
     cache_status: Dict[str, List[str]],
     queue_status: Dict[str, List[str]],
     tasks: List[str],
@@ -61,21 +77,25 @@ def assert_dataset_state(
     split_names_in_first_config: Optional[List[str]] = None,
 ) -> None:
     if config_names is not None:
-        assert_equality(dataset_state.config_names, config_names, context="config_names")
-        assert_equality(len(dataset_state.config_states), len(config_names), context="config_states")
+        assert_equality(dataset_backfill_plan.dataset_state.config_names, config_names, context="config_names")
+        assert_equality(
+            len(dataset_backfill_plan.dataset_state.config_states), len(config_names), context="config_states"
+        )
         if len(config_names) and split_names_in_first_config is not None:
             assert_equality(
-                dataset_state.config_states[0].split_names, split_names_in_first_config, context="split_names"
+                dataset_backfill_plan.dataset_state.config_states[0].split_names,
+                split_names_in_first_config,
+                context="split_names",
             )
-    computed_cache_status = dataset_state.cache_status.as_response()
+    computed_cache_status = dataset_backfill_plan.cache_status.as_response()
     for key, value in cache_status.items():
         assert_equality(computed_cache_status[key], sorted(value), key)
     assert_equality(
-        dataset_state.get_queue_status().as_response(),
+        dataset_backfill_plan.get_queue_status().as_response(),
         {key: sorted(value) for key, value in queue_status.items()},
         context="queue_status",
     )
-    assert_equality(dataset_state.plan.as_response(), sorted(tasks), context="tasks")
+    assert_equality(dataset_backfill_plan.as_response(), sorted(tasks), context="tasks")
 
 
 def put_cache(
@@ -150,17 +170,17 @@ def compute_all(
     revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
 ) -> None:
-    dataset_state = get_dataset_state(processing_graph, dataset, revision, error_codes_to_retry)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
     max_runs = 100
-    while dataset_state.should_be_backfilled and max_runs >= 0:
+    while len(dataset_backfill_plan.tasks) > 0 and max_runs >= 0:
         if max_runs == 0:
             raise ValueError("Too many runs")
         max_runs -= 1
-        dataset_state.backfill()
-        for task in dataset_state.plan.tasks:
+        dataset_backfill_plan.run()
+        for task in dataset_backfill_plan.tasks:
             task_type, sep, num = task.id.partition(",")
             if sep is None:
                 raise ValueError(f"Unexpected task id {task.id}: should contain a comma")
             if task_type == "CreateJobs":
                 process_all_jobs()
-        dataset_state = get_dataset_state(processing_graph, dataset, revision, error_codes_to_retry)
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)

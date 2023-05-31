@@ -14,9 +14,9 @@ from libcommon.utils import Priority, Status
 from .utils import (
     DATASET_NAME,
     REVISION_NAME,
-    assert_dataset_state,
+    assert_dataset_backfill_plan,
     compute_all,
-    get_dataset_state,
+    get_dataset_backfill_plan,
     process_all_jobs,
     process_next_job,
     put_cache,
@@ -202,9 +202,9 @@ def test_initial_state(
     processing_graph: ProcessingGraph,
     cache_is_empty: List[str],
 ) -> None:
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -237,9 +237,9 @@ def test_da_is_computed(
 ) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=CONFIG_NAMES,
         split_names_in_first_config=[],
         cache_status={
@@ -271,9 +271,9 @@ def test_ca_1_is_computed(
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
     put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=CONFIG_NAMES,
         split_names_in_first_config=SPLIT_NAMES,
         cache_status={
@@ -315,9 +315,9 @@ def test_ca_1_is_computed(
 def test_plan_one_job_creation_and_termination(
     processing_graph: ProcessingGraph, new_1: List[str], in_process_2: List[str], new_2: List[str]
 ) -> None:
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -332,11 +332,11 @@ def test_plan_one_job_creation_and_termination(
         tasks=[f"CreateJobs,{len(new_1)}"],
     )
 
-    dataset_state.backfill()
+    dataset_backfill_plan.run()
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -353,9 +353,9 @@ def test_plan_one_job_creation_and_termination(
 
     process_next_job()
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=CONFIG_NAMES,
         split_names_in_first_config=[],
         cache_status={
@@ -400,9 +400,9 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
         up_to_date = sorted(previous_artifacts - artifacts_to_backfill)
         previous_artifacts = artifacts_to_backfill.union(previous_artifacts)
 
-        dataset_state = get_dataset_state(processing_graph=processing_graph)
-        assert_dataset_state(
-            dataset_state=dataset_state,
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+        assert_dataset_backfill_plan(
+            dataset_backfill_plan=dataset_backfill_plan,
             cache_status={
                 "cache_has_different_git_revision": [],
                 "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -415,11 +415,11 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
             tasks=[f"CreateJobs,{len(in_process)}"] if in_process else [],
         )
 
-        dataset_state.backfill()
+        dataset_backfill_plan.run()
 
-        dataset_state = get_dataset_state(processing_graph=processing_graph)
-        assert_dataset_state(
-            dataset_state=dataset_state,
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+        assert_dataset_backfill_plan(
+            dataset_backfill_plan=dataset_backfill_plan,
             cache_status={
                 "cache_has_different_git_revision": [],
                 "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -461,9 +461,9 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
 def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: List[str]) -> None:
     compute_all(processing_graph=processing_graph)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
@@ -498,9 +498,11 @@ def test_plan_retry_error_and_outdated_by_parent(
     # they are still here, and haunting the database
     # TODO: Not supported yet
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(
+        processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
+    )
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         cache_status={
             "cache_has_different_git_revision": [],
@@ -544,9 +546,9 @@ def test_plan_outdated_by_parent(
 
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -588,9 +590,9 @@ def test_plan_job_runner_version_and_outdated_by_parent(
 
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, use_old_job_runner_version=True)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -632,9 +634,9 @@ def test_plan_git_revision_and_outdated_by_parent(
 
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=OTHER_REVISION_NAME)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [ARTIFACT_DA],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -678,9 +680,9 @@ def test_plan_fan_in_updated(
 
     put_cache(step=STEP_SA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1, split=SPLIT_NAME_1)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
@@ -768,9 +770,9 @@ def test_plan_incoherent_state(
         else:
             raise NotImplementedError()
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
@@ -785,9 +787,9 @@ def test_plan_incoherent_state(
 
     compute_all(processing_graph=processing_graph)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
             "cache_is_outdated_by_parent": [],
@@ -897,7 +899,7 @@ def test_delete_jobs(
         if status is Status.STARTED:
             queue._start_job(job)
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     expected_in_process = [ARTIFACT_DA] if existing_jobs else []
     if expected_create_job:
         if expected_delete_jobs:
@@ -908,8 +910,8 @@ def test_delete_jobs(
     else:
         expected_tasks = []
 
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -924,7 +926,7 @@ def test_delete_jobs(
         tasks=expected_tasks,
     )
 
-    dataset_state.backfill()
+    dataset_backfill_plan.run()
 
     job_dicts = queue.get_dataset_pending_jobs_for_type(dataset=DATASET_NAME, job_type=STEP_DA)
     assert len(job_dicts) == len(expected_jobs_after_backfill)
@@ -939,9 +941,9 @@ def test_delete_jobs(
 def test_multiple_revisions() -> None:
     processing_graph = PROCESSING_GRAPH_ONE_STEP
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -957,12 +959,12 @@ def test_multiple_revisions() -> None:
     )
 
     # create the job for the first revision
-    dataset_state.backfill()
+    dataset_backfill_plan.run()
 
     # the job is in process, no other job is created for the same revision
-    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=REVISION_NAME)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph, revision=REVISION_NAME)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -978,9 +980,9 @@ def test_multiple_revisions() -> None:
     )
 
     # create the job for the second revision: the first job is deleted
-    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={
@@ -994,11 +996,11 @@ def test_multiple_revisions() -> None:
         queue_status={"in_process": []},
         tasks=["DeleteJobs,1", "CreateJobs,1"],
     )
-    dataset_state.backfill()
+    dataset_backfill_plan.run()
 
-    dataset_state = get_dataset_state(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph, revision=OTHER_REVISION_NAME)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],
         split_names_in_first_config=[],
         cache_status={

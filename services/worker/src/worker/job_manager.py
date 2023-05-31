@@ -15,14 +15,14 @@ from libcommon.exceptions import (
     TooBigContentError,
     UnexpectedError,
 )
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
     CachedArtifactError,
     DoesNotExist,
     get_response_without_content_params,
 )
-from libcommon.state import JobResult, Orchestrator
-from libcommon.utils import JobInfo, JobParams, Priority, orjson_dumps
+from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
@@ -121,7 +121,7 @@ class JobManager:
         return job_result
 
     def finish(self, job_result: JobResult) -> None:
-        Orchestrator(
+        DatasetOrchestrator(
             dataset=self.job_params["dataset"],
             processing_graph=self.processing_graph,
         ).finish_job(job_result=job_result)

@@ -7,6 +7,7 @@ from http import HTTPStatus
 from typing import List, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import get_dataset_git_revision
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
@@ -14,7 +15,7 @@ from libcommon.simple_cache import (
     CacheEntry,
     get_best_response,
 )
-from libcommon.state import Orchestrator
+from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -72,12 +73,6 @@ def get_cache_entry_from_steps(
     If no successful result is found, it will return the last one even if it's an error,
     Checks if job is still in progress by each processing step in case of no entry found.
     Raises:
-        - [`libcommon.exceptions.AskAccessHubRequestError`]
-          if the request to the Hub to get access to the dataset failed or timed out.
-        - [`libcommon.exceptions.DatasetInfoHubRequestError`]
-          if the request to the Hub to get the dataset info failed or timed out.
-        - [`libcommon.exceptions.DatasetError`]
-          if the dataset could not be accessed or is not supported
         - [`~utils.ResponseNotFoundError`]
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
@@ -88,30 +83,36 @@ def get_cache_entry_from_steps(
     kinds = [processing_step.cache_kind for processing_step in processing_steps]
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        # The cache is missing. Look if the job is in progress, or if it should be backfilled.
-        try:
-            revision = get_dataset_git_revision(
-                dataset=dataset,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
+        dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+        if not dataset_orchestrator.has_some_cache():
+            # We have to check if the dataset exists and is supported
+            try:
+                revision = get_dataset_git_revision(
+                    dataset=dataset,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    hf_timeout_seconds=hf_timeout_seconds,
+                )
+            except Exception as e:
+                # The dataset is not supported
+                raise ResponseNotFoundError("Not found.") from e
+            # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
+            # and tell the user to retry.
+            dataset_orchestrator.set_revision(revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[])
+            raise ResponseNotReadyError(
+                "The server is busier than usual and the response is not ready yet. Please retry later."
             )
-            # ^ TODO: the revision could be in the cache (new processing step)
-        except Exception as e:
-            raise ResponseNotFoundError("Not found.") from e
-        could_exist = any(
-            Orchestrator(dataset=dataset, processing_graph=processing_graph).could_artifact_exist(
-                processing_step_name=processing_step.name, revision=revision
-            )
-            for processing_step in processing_steps
-        )
-        # if a job to create the artifact is in progress, raise ResponseNotReadyError
-        if could_exist:
+        elif dataset_orchestrator.could_artifacts_exist(
+            processing_step_names=[processing_step.name for processing_step in processing_steps]
+        ):
+            # some jobs are still in progress, the cache entries could exist in the future
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )
         else:
+            # no pending job: the cache entry will not be created
             raise ResponseNotFoundError("Not found.")
+
     return best_response.response
 
 
