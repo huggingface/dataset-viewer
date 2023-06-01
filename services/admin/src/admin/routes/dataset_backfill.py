@@ -6,8 +6,9 @@ from typing import Optional
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.state import DatasetState
+from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -43,13 +44,10 @@ def create_dataset_backfill_endpoint(
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
             )
-            dataset_state = DatasetState(
-                dataset=dataset, processing_graph=processing_graph, revision=dataset_git_revision
-            )
-            dataset_state.backfill()
-            tasks_list = ", ".join(dataset_state.plan.as_response())
+            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+            dataset_orchestrator.backfill(revision=dataset_git_revision, priority=Priority.NORMAL)
             return get_json_ok_response(
-                {"status": "ok", "message": f"Backfilling dataset. Tasks: {tasks_list}"},
+                {"status": "ok", "message": "Backfilling dataset."},
                 max_age=0,
             )
         except CustomError as e:

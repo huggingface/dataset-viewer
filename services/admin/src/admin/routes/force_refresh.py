@@ -48,7 +48,7 @@ def create_force_refresh_endpoint(
                 split = request.query_params.get("split")
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
-            logging.info(f"/force-refresh{job_type}, dataset={dataset}, config={config}, split={split}")
+            logging.info(f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(external_auth_url=external_auth_url, request=request, organization=organization)

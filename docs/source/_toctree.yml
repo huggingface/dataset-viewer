@@ -12,8 +12,10 @@
     title: List splits and configurations
   - local: first_rows
     title: Preview a dataset
+  - local: rows
+    title: Download slices of rows
   - local: parquet
-    title: List Parquet file
+    title: List Parquet files
   - local: parquet_process
     title: Query datasets from Datasets Server
 - title: Conceptual Guides

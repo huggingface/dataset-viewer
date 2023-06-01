@@ -28,5 +28,5 @@ style:
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "poetry run pip-audit --ignore-vuln GHSA-282v-666c-3fvg -r <(poetry export -f requirements.txt --with dev  | sed '/^kenlm @/d' |sed '/^torch @/d' | sed '/^torchaudio @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d')"
+	bash -c "poetry run pip-audit --ignore-vuln GHSA-282v-666c-3fvg -r <(poetry export -f requirements.txt --with dev  | sed '/^kenlm @/d' |sed '/^torch @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d')"
 # ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"
