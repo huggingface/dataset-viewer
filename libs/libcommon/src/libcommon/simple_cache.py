@@ -671,7 +671,10 @@ def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
     # ^ does not seem optimal at all, but I get the types right
 
 
-def get_cache_entries_df(dataset: str) -> pd.DataFrame:
+def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) -> pd.DataFrame:
+    filters = {}
+    if cache_kinds:
+        filters["kind__in"] = cache_kinds
     return _get_df(
         [
             {
@@ -686,7 +689,7 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
                 "progress": response.progress,
                 "updated_at": response.updated_at,
             }
-            for response in CachedResponse.objects(dataset=dataset).only(
+            for response in CachedResponse.objects(dataset=dataset, **filters).only(
                 "kind",
                 "dataset",
                 "config",
@@ -700,6 +703,42 @@ def get_cache_entries_df(dataset: str) -> pd.DataFrame:
             )
         ]
     )
+
+
+def has_some_cache(dataset: str) -> bool:
+    return CachedResponse.objects(dataset=dataset).count() > 0
+
+
+def fetch_names(
+    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
+) -> List[str]:
+    """
+    Fetch a list of names from the cache database.
+
+    If no entry is found in cache, return an empty list. Exceptions are silently caught.
+
+    Args:
+        dataset (str): The dataset name.
+        config (Optional[str]): The config name. Only needed for split names.
+        cache_kinds (List[str]): The cache kinds to fetch, eg ["dataset-config-names"],
+          or ["config-split-names-from-streaming", "config-split-names-from-info"].
+        names_field (str): The name of the field containing the list of names, eg: "config_names", or "splits".
+        name_field (str): The name of the field containing the name, eg: "config", or "split".
+
+    Returns:
+        List[str]: The list of names.
+    """
+    try:
+        names = []
+        best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
+        for name_item in best_response.response["content"][names_field]:
+            name = name_item[name_field]
+            if not isinstance(name, str):
+                raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")
+            names.append(name)
+        return names
+    except Exception:
+        return []
 
 
 # only for the tests
