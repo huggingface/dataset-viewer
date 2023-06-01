@@ -262,7 +262,7 @@ class DatasetState:
 
     def __post_init__(self) -> None:
         with StepProfiler(
-            method="DatasetBackfillPlan.__post_init__",
+            method="DatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
             context=f"dataset={self.dataset}",
         ):
@@ -290,7 +290,7 @@ class DatasetState:
             }
 
             with StepProfiler(
-                method="DatasetBackfillPlan.__post_init__",
+                method="DatasetState.__post_init__",
                 step="get_config_names",
                 context=f"dataset={self.dataset}",
             ):
@@ -305,7 +305,7 @@ class DatasetState:
                 )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
             with StepProfiler(
-                method="DatasetBackfillPlan.__post_init__",
+                method="DatasetState.__post_init__",
                 step="get_config_states",
                 context=f"dataset={self.dataset}",
             ):
@@ -332,7 +332,7 @@ class FirstStepsDatasetState(DatasetState):
 
     def __post_init__(self) -> None:
         with StepProfiler(
-            method="DatasetBackfillPlan.__post_init__",
+            method="FirstStepsDatasetState.__post_init__",
             step="get_dataset_level_artifact_states",
             context=f"dataset={self.dataset}",
         ):
