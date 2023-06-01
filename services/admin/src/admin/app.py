@@ -25,7 +25,7 @@ from admin.routes.cache_reports_with_content import (
 )
 from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
-from admin.routes.dataset_state import create_dataset_state_endpoint
+from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
@@ -90,8 +90,8 @@ def create_app() -> Starlette:
             methods=["POST"],
         ),
         Route(
-            "/dataset-state",
-            endpoint=create_dataset_state_endpoint(
+            "/dataset-backfill-plan",
+            endpoint=create_dataset_backfill_plan_endpoint(
                 processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -119,7 +119,7 @@ def create_app() -> Starlette:
         routes.extend(
             [
                 Route(
-                    f"/force-refresh{job_type}",
+                    f"/force-refresh/{job_type}",
                     endpoint=create_force_refresh_endpoint(
                         input_type=input_type,
                         job_type=job_type,
@@ -131,7 +131,7 @@ def create_app() -> Starlette:
                     methods=["POST"],
                 ),
                 Route(
-                    f"/cache-reports{cache_kind}",
+                    f"/cache-reports/{cache_kind}",
                     endpoint=create_cache_reports_endpoint(
                         cache_kind=cache_kind,
                         cache_reports_num_results=app_config.admin.cache_reports_num_results,
@@ -141,7 +141,7 @@ def create_app() -> Starlette:
                     ),
                 ),
                 Route(
-                    f"/cache-reports-with-content{cache_kind}",
+                    f"/cache-reports-with-content/{cache_kind}",
                     endpoint=create_cache_reports_with_content_endpoint(
                         cache_kind=cache_kind,
                         cache_reports_with_content_num_results=app_config.admin.cache_reports_with_content_num_results,
@@ -151,7 +151,7 @@ def create_app() -> Starlette:
                     ),
                 ),
                 Route(
-                    f"/cancel-jobs{job_type}",
+                    f"/cancel-jobs/{job_type}",
                     endpoint=create_cancel_jobs_endpoint(
                         job_type=job_type,
                         external_auth_url=app_config.admin.external_auth_url,

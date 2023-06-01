@@ -16,8 +16,8 @@ from .utils import (
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
     REVISION_NAME,
-    assert_dataset_state,
-    get_dataset_state,
+    assert_dataset_backfill_plan,
+    get_dataset_backfill_plan,
 )
 
 PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
@@ -35,9 +35,9 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 
 def test_plan_job_creation_and_termination() -> None:
     # we launch all the backfill tasks
-    dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         # The config names are not yet known
         config_names=[],
         # The split names are not yet known
@@ -67,11 +67,11 @@ def test_plan_job_creation_and_termination() -> None:
         tasks=["CreateJobs,7"],
     )
 
-    dataset_state.backfill()
+    dataset_backfill_plan.run()
 
-    dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         # The config names are not yet known
         config_names=[],
         # The split names are not yet known
@@ -123,9 +123,9 @@ def test_plan_job_creation_and_termination() -> None:
     )
     Queue().finish_job(job_id=job_info["job_id"], is_success=True)
 
-    dataset_state = get_dataset_state(processing_graph=PROCESSING_GRAPH)
-    assert_dataset_state(
-        dataset_state=dataset_state,
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    assert_dataset_backfill_plan(
+        dataset_backfill_plan=dataset_backfill_plan,
         # The config names are now known
         config_names=CONFIG_NAMES,
         # The split names are not yet known
