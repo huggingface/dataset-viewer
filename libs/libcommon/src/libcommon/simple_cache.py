@@ -400,6 +400,23 @@ def get_best_response(
     return best_response_candidates[max_index]
 
 
+def get_previous_step_or_raise(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> BestResponse:
+    """Get the previous step from the cache, or raise an exception if it failed."""
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if best_response.response["http_status"] != HTTPStatus.OK:
+        raise CachedArtifactError(
+            message="The previous step failed.",
+            kind=best_response.kind,
+            dataset=dataset,
+            config=config,
+            split=split,
+            cache_entry_with_details=best_response.response,
+        )
+    return best_response
+
+
 def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
