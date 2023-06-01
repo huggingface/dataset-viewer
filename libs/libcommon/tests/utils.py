@@ -5,9 +5,10 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
 from libcommon.orchestrator import DatasetBackfillPlan
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
+from libcommon.utils import JobInfo, Priority
 
 DATASET_NAME = "dataset"
 
@@ -340,3 +341,18 @@ def compute_all(
             if task_type == "CreateJobs":
                 process_all_jobs()
         dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
+
+
+def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
+    dataset, revision, config, split, processing_step_name = Artifact.parse_id(artifact_id)
+    return JobInfo(
+        job_id="job_id",
+        params={
+            "dataset": dataset,
+            "config": config,
+            "split": split,
+            "revision": revision,
+        },
+        type=processing_step_name,
+        priority=Priority.NORMAL,
+    )

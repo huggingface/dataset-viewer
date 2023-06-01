@@ -7,12 +7,11 @@ from typing import List
 import pytest
 
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue
+from libcommon.processing_graph import Artifact, ProcessingGraph
+from libcommon.queue import Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response_params
-from libcommon.state import Artifact
-from libcommon.utils import JobInfo, Priority
+from libcommon.simple_cache import CachedResponse, upsert_response_params
+from libcommon.utils import JobOutput, JobResult, Priority, Status
 
 from .utils import (
     ARTIFACT_CA_1,
@@ -20,6 +19,8 @@ from .utils import (
     ARTIFACT_DA,
     ARTIFACT_DB,
     ARTIFACT_DC,
+    ARTIFACT_DD,
+    ARTIFACT_DE,
     ARTIFACT_DG,
     ARTIFACT_DH,
     CONFIG_NAMES_CONTENT,
@@ -30,8 +31,11 @@ from .utils import (
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
     REVISION_NAME,
+    STEP_CB,
     STEP_DA,
-    STEP_DG,
+    STEP_DC,
+    STEP_DD,
+    artifact_id_to_job_info,
 )
 
 
@@ -58,17 +62,7 @@ def test_after_job_plan(
     processing_graph: ProcessingGraph,
     artifacts_to_create: List[str],
 ) -> None:
-    job_info: JobInfo = {
-        "job_id": "job_id",
-        "params": {
-            "dataset": DATASET_NAME,
-            "config": None,
-            "split": None,
-            "revision": REVISION_NAME,
-        },
-        "type": STEP_DA,
-        "priority": Priority.NORMAL,
-    }
+    job_info = artifact_id_to_job_info(ARTIFACT_DA)
     # put the cache (to be able to get the config names - case PROCESSING_GRAPH_FAN_IN_OUT)
     upsert_response_params(
         # inputs
@@ -108,35 +102,10 @@ def test_after_job_plan(
 
 
 def test_after_job_plan_delete() -> None:
-    job_info: JobInfo = {
-        "job_id": "job_id",
-        "params": {
-            "dataset": DATASET_NAME,
-            "config": None,
-            "split": None,
-            "revision": REVISION_NAME,
-        },
-        "type": STEP_DA,
-        "priority": Priority.NORMAL,
-    }
+    job_info = artifact_id_to_job_info(ARTIFACT_DA)
     # create two jobs for DG, and none for DH
     # one job should be deleted for DG, and one should be created for DH
-    Queue().create_jobs(
-        [
-            {
-                "job_id": "job_id",
-                "params": {
-                    "dataset": DATASET_NAME,
-                    "config": None,
-                    "split": None,
-                    "revision": REVISION_NAME,
-                },
-                "type": STEP_DG,
-                "priority": Priority.NORMAL,
-            }
-        ]
-        * 2
-    )
+    Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DG)] * 2)
 
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
@@ -158,6 +127,64 @@ def test_after_job_plan_delete() -> None:
         for _, row in pending_jobs_df.iterrows()
     ]
     assert artifact_ids == [ARTIFACT_DG, ARTIFACT_DH]
+
+
+@pytest.mark.parametrize(
+    "processing_graph,artifacts_to_create",
+    [
+        (PROCESSING_GRAPH_ONE_STEP, []),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DC]),
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_CA_1, ARTIFACT_CA_2]),
+        (PROCESSING_GRAPH_PARALLEL, [ARTIFACT_DG, ARTIFACT_DH]),
+    ],
+)
+def test_finish_job(
+    processing_graph: ProcessingGraph,
+    artifacts_to_create: List[str],
+) -> None:
+    Queue()._add_job(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+    )
+    job_info = Queue().start_job()
+    job_result = JobResult(
+        job_info=job_info,
+        job_runner_version=JOB_RUNNER_VERSION,
+        is_success=True,
+        output=JobOutput(
+            content=CONFIG_NAMES_CONTENT,
+            http_status=HTTPStatus.OK,
+            error_code=None,
+            details=None,
+            progress=1.0,
+        ),
+    )
+    dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
+    dataset_orchestrator.finish_job(job_result=job_result)
+
+    assert Job.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
+
+    done_job = Job.objects(dataset=DATASET_NAME, status=Status.SUCCESS)
+    assert done_job.count() == 1
+
+    waiting_jobs = Job.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    assert waiting_jobs.count() == len(artifacts_to_create)
+    assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
+
+    assert CachedResponse.objects(dataset=DATASET_NAME).count() == 1
+    cached_response = CachedResponse.objects(dataset=DATASET_NAME).first()
+    assert cached_response
+    assert cached_response.content == CONFIG_NAMES_CONTENT
+    assert cached_response.http_status == HTTPStatus.OK
+    assert cached_response.error_code is None
+    assert cached_response.details == {}
+    assert cached_response.progress == 1.0
+    assert cached_response.job_runner_version == JOB_RUNNER_VERSION
+    assert cached_response.dataset_git_revision == REVISION_NAME
 
 
 @pytest.mark.parametrize(
@@ -206,22 +233,7 @@ def test_set_revision_handle_existing_jobs(
     first_artifacts: List[str],
 ) -> None:
     # create two pending jobs for DA
-    Queue().create_jobs(
-        [
-            {
-                "job_id": "job_id",
-                "params": {
-                    "dataset": DATASET_NAME,
-                    "config": None,
-                    "split": None,
-                    "revision": REVISION_NAME,
-                },
-                "type": STEP_DA,
-                "priority": Priority.NORMAL,
-            }
-        ]
-        * 2
-    )
+    Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
 
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.set_revision(revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[])
@@ -239,3 +251,26 @@ def test_set_revision_handle_existing_jobs(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(first_artifacts)
+
+
+@pytest.mark.parametrize(
+    "processing_graph,pending_artifacts,processing_step_names,expected_has_pending_ancestor_jobs",
+    [
+        (PROCESSING_GRAPH_ONE_STEP, [ARTIFACT_DA], [STEP_DA], True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DA, ARTIFACT_DB], [STEP_DA], True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DB], [STEP_DD], True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DD], [STEP_DC], False),
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DA], [STEP_CB], True),
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DE], [STEP_CB], False),
+    ],
+)
+def test_has_pending_ancestor_jobs(
+    processing_graph: ProcessingGraph,
+    pending_artifacts: List[str],
+    processing_step_names: List[str],
+    expected_has_pending_ancestor_jobs: bool,
+) -> None:
+    Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])
+
+    dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
+    assert dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names) == expected_has_pending_ancestor_jobs

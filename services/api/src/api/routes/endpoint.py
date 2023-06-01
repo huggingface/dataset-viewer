@@ -102,7 +102,7 @@ def get_cache_entry_from_steps(
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )
-        elif dataset_orchestrator.could_artifacts_exist(
+        elif dataset_orchestrator.has_pending_ancestor_jobs(
             processing_step_names=[processing_step.name for processing_step in processing_steps]
         ):
             # some jobs are still in progress, the cache entries could exist in the future

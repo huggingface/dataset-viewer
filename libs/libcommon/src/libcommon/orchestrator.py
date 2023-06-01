@@ -654,13 +654,13 @@ class DatasetOrchestrator:
             progress=output["progress"],
         )
         logging.debug("the job output has been written to the cache.")
+        # finish the job
+        Queue().finish_job(job_id=job_info["job_id"], is_success=job_result["is_success"])
+        logging.debug("the job has been finished.")
         # trigger the next steps
         plan = AfterJobPlan(job_info=job_info, processing_graph=self.processing_graph)
         plan.run()
         logging.debug("jobs have been created for the next steps.")
-        # finish the job
-        Queue().finish_job(job_id=job_info["job_id"], is_success=job_result["is_success"])
-        logging.debug("the job has been finished.")
 
     def has_some_cache(self) -> bool:
         """
@@ -671,11 +671,13 @@ class DatasetOrchestrator:
         """
         return has_some_cache(dataset=self.dataset)
 
-    def could_artifacts_exist(self, processing_step_names: List[str]) -> bool:
+    def has_pending_ancestor_jobs(self, processing_step_names: List[str]) -> bool:
         """
-        Check if artifacts could exist in the cache. This method is used when a cache entry is missing in the API,
-          to return a 404 error, saying that the artifact does not exist, or a 500 error, saying that the artifact
-            should exist and will soon be available (retry).
+        Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
+          in the cache in the future. This method is used when a cache entry is missing in the API,
+          to return a:
+           - 404 error, saying that the artifact does not exist,
+           - or a 500 error, saying that the artifact could be available soon (retry).
 
         It is implemented by checking if a job exists for the artifacts or one of their ancestors.
 

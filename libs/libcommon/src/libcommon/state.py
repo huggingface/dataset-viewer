@@ -7,10 +7,9 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntryMetadata, fetch_names
-from libcommon.utils import inputs_to_string
 
 # TODO: assets, cached_assets, parquet files
 
@@ -104,55 +103,6 @@ class CacheState:
         if self.cache_entry_metadata["job_runner_version"] is None:
             return True
         return self.cache_entry_metadata["job_runner_version"] < self.job_runner_version
-
-
-@dataclass
-class Artifact:
-    """An artifact."""
-
-    processing_step: ProcessingStep
-    dataset: str
-    revision: str
-    config: Optional[str]
-    split: Optional[str]
-
-    id: str = field(init=False)
-
-    def __post_init__(self) -> None:
-        if self.processing_step.input_type == "dataset":
-            if self.config is not None or self.split is not None:
-                raise ValueError("Step input type is dataset, but config or split is not None")
-        elif self.processing_step.input_type == "config":
-            if self.config is None or self.split is not None:
-                raise ValueError("Step input type is config, but config is None or split is not None")
-        elif self.processing_step.input_type == "split":
-            if self.config is None or self.split is None:
-                raise ValueError("Step input type is split, but config or split is None")
-        else:
-            raise ValueError(f"Invalid step input type: {self.processing_step.input_type}")
-        self.id = Artifact.get_id(
-            dataset=self.dataset,
-            revision=self.revision,
-            config=self.config,
-            split=self.split,
-            processing_step_name=self.processing_step.name,
-        )
-
-    @staticmethod
-    def get_id(
-        dataset: str,
-        revision: str,
-        config: Optional[str],
-        split: Optional[str],
-        processing_step_name: str,
-    ) -> str:
-        return inputs_to_string(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            prefix=processing_step_name,
-        )
 
 
 @dataclass
