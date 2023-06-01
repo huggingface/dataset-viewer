@@ -4829,24 +4829,6 @@ type = "url"
 url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl"
 
 [[package]]
-name = "torchaudio"
-version = "0.13.1+cpu"
-description = "An audio package for PyTorch"
-category = "main"
-optional = false
-python-versions = "*"
-files = [
-    {file = "torchaudio-0.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl", hash = "sha256:0f89fb3f6ecf894e4a287eb07fe41b07a5d2f8450d2c2ca62b994dedba63fefd"},
-]
-
-[package.dependencies]
-torch = "1.13.1"
-
-[package.source]
-type = "url"
-url = "https://download.pytorch.org/whl/cpu/torchaudio-0.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl"
-
-[[package]]
 name = "tqdm"
 version = "4.65.0"
 description = "Fast, Extensible Progress Meter"
@@ -5552,4 +5534,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "8e35d1ceeba93fb8ec45e61c77b2a05b7845fa222b63533febb2dac05aa8f6b0"
+content-hash = "2f52f4ddc58bd0d21fd3d85723705e8392d13a6f2f468146b8947c950887950e"
