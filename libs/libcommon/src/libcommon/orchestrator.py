@@ -58,6 +58,7 @@ class QueueStatus:
 @dataclass
 class Task(ABC):
     id: str = field(init=False)
+    long_id: str = field(init=False)
 
     @abstractmethod
     def run(self) -> None:
@@ -71,6 +72,8 @@ class CreateJobsTask(Task):
     def __post_init__(self) -> None:
         # for debug and testing
         self.id = f"CreateJobs,{len(self.job_infos)}"
+        types = [job_info["type"] for job_info in self.job_infos]
+        self.long_id = f"CreateJobs,{types}"
 
     def run(self) -> None:
         with StepProfiler(
@@ -93,6 +96,8 @@ class DeleteJobsTask(Task):
     def __post_init__(self) -> None:
         # for debug and testing
         self.id = f"DeleteJobs,{len(self.jobs_df)}"
+        types = [row["type"] for _, row in self.jobs_df.iterrows()]
+        self.long_id = f"DeleteJobs,{types}"
 
     def run(self) -> None:
         with StepProfiler(
@@ -128,7 +133,7 @@ class Plan:
             The number of tasks that were run.
         """
         for idx, task in enumerate(self.tasks):
-            logging.debug(f"Running task [{idx} : {len(self.tasks)}]: {task.id}")
+            logging.debug(f"Running task [{idx}/{len(self.tasks)}]: {task.long_id}")
             task.run()
         return len(self.tasks)
 
@@ -169,6 +174,10 @@ class AfterJobPlan(Plan):
             next_processing_steps = self.processing_graph.get_children(processing_step.name)
         except ProcessingStepDoesNotExist as e:
             raise ValueError(f"Processing step with job type: {job_type} does not exist") from e
+
+        if len(next_processing_steps) == 0:
+            # no next processing step, nothing to do
+            return
 
         # get the list of pending jobs for the children
         # note that it can contain a lot of unrelated jobs, we will clean after
@@ -222,7 +231,7 @@ class AfterJobPlan(Plan):
                             processing_step.cache_kind
                             for processing_step in self.processing_graph.get_config_split_names_processing_steps()
                         ],
-                        names_field="split_names",
+                        names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
