@@ -211,7 +211,7 @@ with gr.Blocks() as demo:
     
     def get_backfill_plan(token, dataset):
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-state?dataset={dataset}", headers=headers, timeout=60)
+        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-backfill-plan?dataset={dataset}", headers=headers, timeout=60)
         if response.status_code != 200:
             return {
                 backfill_message: gr.update(value=f"❌ Failed to get backfill plan for {dataset} (error {response.status_code})", visible=True),
@@ -219,8 +219,8 @@ with gr.Blocks() as demo:
                 backfill_execute_button: gr.update( visible=False),
                 backfill_execute_error: gr.update( visible=False)
             }
-        dataset_state = response.json()
-        tasks_df = pd.DataFrame(dataset_state["plan"])
+        tasks = response.json()
+        tasks_df = pd.DataFrame(tasks)
         has_tasks = len(tasks_df) > 0
         return {
             backfill_message: gr.update(

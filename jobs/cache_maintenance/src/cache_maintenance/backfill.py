@@ -5,8 +5,9 @@ import logging
 from typing import List, Optional
 
 from libcommon.dataset import get_supported_dataset_infos
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.state import DatasetState
+from libcommon.utils import Priority
 
 
 def backfill_cache(
@@ -42,13 +43,12 @@ def backfill_cache(
             logging.warning(f"dataset revision not found for {dataset_info}")
             # should not occur
             continue
-        dataset_state = DatasetState(
-            dataset=dataset,
-            processing_graph=processing_graph,
+        dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+        created_jobs = dataset_orchestrator.backfill(
             revision=str(dataset_info.sha),
+            priority=Priority.LOW,
             error_codes_to_retry=error_codes_to_retry,
         )
-        created_jobs = dataset_state.backfill()
         if created_jobs > 0:
             backfilled_datasets += 1
         total_created_jobs += created_jobs

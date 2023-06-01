@@ -174,12 +174,9 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     assert dataset_child_jobs[0]["split"] is None
     assert dataset_child_jobs[0]["priority"] is priority.value
     dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
-    assert len(dataset_unrelated_jobs) == 1
-    assert dataset_unrelated_jobs[0]["dataset"] == "dataset"
-    assert dataset_unrelated_jobs[0]["revision"] == "revision"
-    assert dataset_unrelated_jobs[0]["config"] is None
-    assert dataset_unrelated_jobs[0]["split"] is None
-    assert dataset_unrelated_jobs[0]["priority"] is priority.value
+    assert len(dataset_unrelated_jobs) == 0
+    # ^ the dataset-unrelated job is not triggered by the dummy job, so it should not be created
+
     # check that no config level jobs have been created, because the config names are not known
     config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=Status.WAITING)
     assert len(config_child_jobs) == 0

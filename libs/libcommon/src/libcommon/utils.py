@@ -5,7 +5,8 @@ import base64
 import enum
 import mimetypes
 from datetime import datetime, timezone
-from typing import Any, Optional, TypedDict
+from http import HTTPStatus
+from typing import Any, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -47,6 +48,21 @@ class FlatJobInfo(TypedDict):
     priority: str
     status: str
     created_at: datetime
+
+
+class JobOutput(TypedDict):
+    content: Mapping[str, Any]
+    http_status: HTTPStatus
+    error_code: Optional[str]
+    details: Optional[Mapping[str, Any]]
+    progress: Optional[float]
+
+
+class JobResult(TypedDict):
+    job_info: JobInfo
+    job_runner_version: int
+    is_success: bool
+    output: Optional[JobOutput]
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
