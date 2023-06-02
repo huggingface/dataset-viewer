@@ -116,6 +116,7 @@ CacheableErrorCode = Literal[
     "TooManyColumnsError",
     "UnexpectedError",
     "UnsupportedExternalFilesError",
+    "UnsupportedIndexableColumnsError",
 ]
 
 
@@ -513,3 +514,10 @@ class NoIndexableColumnsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
+
+
+class UnsupportedIndexableColumnsError(CacheableError):
+    """Raised when some unsupported indexable columns present."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedIndexableColumnsError", cause, True)

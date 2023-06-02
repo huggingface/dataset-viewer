@@ -16,7 +16,6 @@ from starlette_prometheus import PrometheusMiddleware
 from api.config import AppConfig, EndpointConfig, UvicornConfig
 from api.jwt_token import fetch_jwt_public_key
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.fts import create_fts_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.metrics import create_metrics_endpoint
 from api.routes.rows import create_rows_endpoint
@@ -118,17 +117,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-            ),
-        ),
-        Route(
-            "/fts",
-            endpoint=create_fts_endpoint(
-                processing_graph=processing_graph,
-                cached_assets_directory=cached_assets_directory,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),

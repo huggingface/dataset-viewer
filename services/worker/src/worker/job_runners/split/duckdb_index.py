@@ -9,6 +9,7 @@ from libcommon.exceptions import (
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
+    UnsupportedIndexableColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
@@ -26,6 +27,7 @@ from worker.utils import (
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_DB_NAME = "index.db"
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
 
 
 def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_directory: StrPath) -> IndexRowsResponse:
@@ -57,6 +59,15 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     if not string_columns:
         raise NoIndexableColumnsError("No string columns available to index.")
 
+    # look for image, audio and binary columns, if present, raise exeception do not supported yet and index everything
+    if any(
+        feature["name"]
+        for feature in features
+        if "_type" in feature["type"]
+        and feature["type"]["_type"] in UNSUPPORTED_FEATURES_MAGIC_STRINGS
+    ):
+        raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
+
     # get list of parquet urls
     config_parquet = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
@@ -69,7 +80,6 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     # create duckdb index location
-    # TODO: Need to manage re index, maybe delete folder/file or perform a table drop/delete?
     split_path, dir_path = create_index_dir_split(
         dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
     )
@@ -84,13 +94,15 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
 
     # index
     con = duckdb.connect(str(db_location))
-    con.sql("CREATE SEQUENCE serial START 1;")
-    # TODO: We need a sequence id column for Full text search, maybe there is a better way
-    filter_columns = ",".join(string_columns)  # TODO: What if already exists an id? need to create an identity column
-    con.sql(
-        f"CREATE TABLE data AS SELECT nextval('serial') AS id, {filter_columns} FROM read_parquet({parquet_urls});"
-    )
-    con.sql("PRAGMA create_fts_index('data', 'id', '*');")
+    con.sql("CREATE OR REPLACE SEQUENCE serial START 1;")
+
+    # TODO: What if already exists an __id field? need to create an identity column, maybe some random name?
+    con.sql(f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM read_parquet({parquet_urls});")
+    con.sql("PRAGMA drop_fts_index('data');")
+    
+    # TODO: by default, 'porter' stemmer is being used, we might need to use a specific one by dataset language in the future
+    # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
+    con.sql("PRAGMA create_fts_index('data', '__id', '*');")
 
     return IndexRowsResponse(duckdb_db_name=duck_db_name)
 
