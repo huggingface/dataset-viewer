@@ -301,7 +301,7 @@ def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
 
 
 def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> None:
-    required_by_dataset_viewer = ["split-first-rows-from-streaming"]
+    required_by_dataset_viewer = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
     assert_lists_are_equal(graph.get_processing_steps_required_by_dataset_viewer(), required_by_dataset_viewer)
 
 

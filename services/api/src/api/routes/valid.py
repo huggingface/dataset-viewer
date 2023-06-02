@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional, Set
+from typing import List
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -19,19 +19,16 @@ from api.utils import (
 
 
 def get_valid(processing_graph: ProcessingGraph) -> List[str]:
-    # a dataset is considered valid if at least one response for PROCESSING_STEPS_FOR_VALID
-    # is valid.
-    datasets: Optional[Set[str]] = None
-    for processing_step in processing_graph.get_processing_steps_required_by_dataset_viewer():
-        kind_datasets = get_valid_datasets(kind=processing_step.cache_kind)
-        if datasets is None:
-            # first iteration fills the set of datasets
-            datasets = kind_datasets
-        else:
-            # next iterations remove the datasets that miss a required processing step
-            datasets.intersection_update(kind_datasets)
+    # a dataset is considered valid if at least one response of any of the
+    # "required_by_dataset_viewer" steps is valid.
+    processing_steps = processing_graph.get_processing_steps_required_by_dataset_viewer()
+    if not processing_steps:
+        return []
+    datasets = set.union(
+        *[get_valid_datasets(kind=processing_step.cache_kind) for processing_step in processing_steps]
+    )
     # note that the list is sorted alphabetically for consistency
-    return [] if datasets is None else sorted(datasets)
+    return sorted(datasets)
 
 
 def create_valid_endpoint(
