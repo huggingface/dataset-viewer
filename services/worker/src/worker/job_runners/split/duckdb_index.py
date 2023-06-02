@@ -63,8 +63,7 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     if any(
         feature["name"]
         for feature in features
-        if "_type" in feature["type"]
-        and feature["type"]["_type"] in UNSUPPORTED_FEATURES_MAGIC_STRINGS
+        if "_type" in feature["type"] and feature["type"]["_type"] in UNSUPPORTED_FEATURES_MAGIC_STRINGS
     ):
         raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
 
@@ -99,8 +98,8 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     # TODO: What if already exists an __id field? need to create an identity column, maybe some random name?
     con.sql(f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM read_parquet({parquet_urls});")
     con.sql("PRAGMA drop_fts_index('data');")
-    
-    # TODO: by default, 'porter' stemmer is being used, we might need to use a specific one by dataset language in the future
+
+    # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
     con.sql("PRAGMA create_fts_index('data', '__id', '*');")
 
