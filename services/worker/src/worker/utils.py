@@ -132,6 +132,10 @@ class ImageUrlColumnsResponse(TypedDict):
     columns: List[str]
 
 
+class IndexRowsResponse(TypedDict):
+    duckdb_db_name: str
+
+
 Row = Mapping[str, Any]
 
 

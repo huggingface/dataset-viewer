@@ -19,6 +19,7 @@ starlette = "^0.27.0"
 starlette-prometheus = "^0.9.0"
 uvicorn = "^0.20.0"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
+duckdb = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

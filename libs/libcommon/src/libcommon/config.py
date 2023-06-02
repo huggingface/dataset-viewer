@@ -29,6 +29,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+    PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -101,6 +102,22 @@ class ParquetMetadataConfig:
         with env.prefixed("PARQUET_METADATA_"):
             return cls(
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=PARQUET_METADATA_STORAGE_DIRECTORY),
+            )
+
+
+DUCKDB_INDEX_STORAGE_DIRECTORY = None
+
+
+@dataclass(frozen=True)
+class DuckDbIndexConfig:
+    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "ParquetMetadataConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DUCKDB_INDEX_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
             )
 
 
@@ -320,6 +337,13 @@ class ProcessingGraphConfig:
                 "triggered_by": ["dataset-config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
             },
+            "split-duckdb-index": {
+                "input_type": "split",
+                "triggered_by": [
+                    "split-first-rows-from-streaming", "split-first-rows-from-parquet", "config-parquet",
+                ],
+                "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
+            }
         }
     )
 
