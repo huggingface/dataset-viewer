@@ -40,14 +40,43 @@ def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> 
         ({step_1: {}}, []),
         ({step_1: {"required_by_dataset_viewer": True}}, ["dataset"]),
         ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, []),
+        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, ["dataset"]),
     ],
 )
-def test_one_step(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
+def test_one_dataset(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
     dataset = "dataset"
     processing_graph = ProcessingGraph(processing_graph_specification)
     processing_step = processing_graph.get_processing_step(step_1)
     upsert_response(kind=processing_step.cache_kind, dataset=dataset, content={}, http_status=HTTPStatus.OK)
+    assert get_valid(processing_graph=processing_graph) == expected_valid
+
+
+@pytest.mark.parametrize(
+    "processing_graph_specification,expected_valid",
+    [
+        ({step_1: {}, step_2: {}}, []),
+        ({step_1: {"required_by_dataset_viewer": True}, step_2: {}}, ["dataset1"]),
+        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, ["dataset2"]),
+        (
+            {step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}},
+            ["dataset1", "dataset2"],
+        ),
+    ],
+)
+def test_two_datasets(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
+    processing_graph = ProcessingGraph(processing_graph_specification)
+    upsert_response(
+        kind=processing_graph.get_processing_step(step_1).cache_kind,
+        dataset="dataset1",
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=processing_graph.get_processing_step(step_2).cache_kind,
+        dataset="dataset2",
+        content={},
+        http_status=HTTPStatus.OK,
+    )
     assert get_valid(processing_graph=processing_graph) == expected_valid
 
 
