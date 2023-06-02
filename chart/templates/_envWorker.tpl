@@ -42,14 +42,14 @@
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE
   value: {{ .Values.parquetAndInfo.commitMessage | quote }}
 - name: PARQUET_AND_INFO_COMMITTER_HF_TOKEN
-  {{- if .Values.secrets.userHfToken.fromSecret }}
+  {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.secrets.userHfToken.secretName | quote }}
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
       key: HF_TOKEN
       optional: false
   {{- else }}
-  value: {{ .Values.secrets.userHfToken.value }}
+  value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
 - name: PARQUET_AND_INFO_MAX_DATASET_SIZE
   value: {{ .Values.parquetAndInfo.maxDatasetSize | quote }}

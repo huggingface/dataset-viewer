@@ -74,10 +74,10 @@ secrets:
     fromSecret: true
     secretName: ""
     value: ""
-  userHfToken:
-    fromSecret: false
-    secretName: "hf-token-francky"
-    value: hf_
+  appParquetConverterHfToken:
+    fromSecret: true
+    secretName: ""
+    value: ""
   hfWebhookSecret:
     fromSecret: false
     secretName: "webhook-secret"
