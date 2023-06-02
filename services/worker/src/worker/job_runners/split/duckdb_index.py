@@ -28,6 +28,13 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_DB_NAME = "index.db"
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
+CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
+DROP_INDEX_COMMAND = "PRAGMA drop_fts_index('data');"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*');"
+CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
+INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
+LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
+# TODO: What if __id field already exist?
 
 
 def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_directory: StrPath) -> IndexRowsResponse:
@@ -86,22 +93,20 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     db_location = dir_path / DUCKDB_DEFAULT_DB_NAME
 
     # configure duckdb extensions
-    duckdb.execute("INSTALL 'httpfs';")
-    duckdb.execute("LOAD 'httpfs';")
-    duckdb.execute("INSTALL 'fts';")
-    duckdb.execute("LOAD 'fts';")
+    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
+    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
+    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
+    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
     # index
     con = duckdb.connect(str(db_location))
-    con.sql("CREATE OR REPLACE SEQUENCE serial START 1;")
-
-    # TODO: What if already exists an __id field? need to create an identity column, maybe some random name?
-    con.sql(f"CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM read_parquet({parquet_urls});")
-    con.sql("PRAGMA drop_fts_index('data');")
+    con.sql(CREATE_SEQUENCE_COMMAND)
+    con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")
+    con.sql(DROP_INDEX_COMMAND)
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
-    con.sql("PRAGMA create_fts_index('data', '__id', '*');")
+    con.sql(CREATE_INDEX_COMMAND)
 
     return IndexRowsResponse(duckdb_db_name=duck_db_name)
 

@@ -207,6 +207,9 @@ parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/parquet-metadata"
 
+duckDBIndex:
+  # Directory on the shared storage (duckdb db files used for datasets indexing)
+  storageDirectory: "/duckdb-index"
 
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"
