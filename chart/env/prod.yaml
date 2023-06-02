@@ -58,7 +58,7 @@ secrets:
     secretName: "hf-token"
   appParquetConverterHfToken:
     fromSecret: true
-    secretName: "datasets-server-parquet-converter-hf-token"
+    secretName: "parquet-converter-hf-token"
   hfWebhookSecret:
     fromSecret: true
     secretName: "webhook-secret"
