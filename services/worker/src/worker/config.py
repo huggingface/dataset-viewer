@@ -9,11 +9,11 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
+    DuckDbIndexConfig,
     LogConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
-    DuckDbIndexConfig,
 )
 
 WORKER_CONTENT_MAX_BYTES = 10_000_000

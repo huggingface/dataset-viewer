@@ -12,8 +12,8 @@ from appdirs import user_cache_dir  # type:ignore
 from libcommon.constants import (
     ASSETS_CACHE_APPNAME,
     CACHED_ASSETS_CACHE_APPNAME,
-    PARQUET_METADATA_CACHE_APPNAME,
     DUCKDB_INDEX_CACHE_APPNAME,
+    PARQUET_METADATA_CACHE_APPNAME,
 )
 
 StrPath = Union[str, PathLike[str]]

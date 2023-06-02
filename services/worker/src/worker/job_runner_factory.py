@@ -34,6 +34,7 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
+from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
@@ -47,7 +48,7 @@ from worker.job_runners.split.opt_in_out_urls_count import (
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobRunner,
 )
-from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
+
 
 class BaseJobRunnerFactory(ABC):
     """

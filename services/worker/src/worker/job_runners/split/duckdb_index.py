@@ -5,7 +5,11 @@ import logging
 
 import duckdb
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
-from libcommon.exceptions import ParquetResponseEmptyError, PreviousStepFormatError, NoIndexableColumnsError
+from libcommon.exceptions import (
+    NoIndexableColumnsError,
+    ParquetResponseEmptyError,
+    PreviousStepFormatError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
@@ -22,6 +26,7 @@ from worker.utils import (
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_DB_NAME = "index.db"
+
 
 def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_directory: StrPath) -> IndexRowsResponse:
     logging.info(f"get index-rows for dataset={dataset} config={config} split={split}")
@@ -68,7 +73,7 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     split_path, dir_path = create_index_dir_split(
         dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
     )
-    duck_db_name = split_path / DUCKDB_DEFAULT_DB_NAME
+    duck_db_name = f"{split_path}/{DUCKDB_DEFAULT_DB_NAME}"
     db_location = dir_path / DUCKDB_DEFAULT_DB_NAME
 
     # configure duckdb extensions
@@ -76,7 +81,6 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     duckdb.execute("LOAD 'httpfs';")
     duckdb.execute("INSTALL 'fts';")
     duckdb.execute("LOAD 'fts';")
-    logging.info(str(db_location))
 
     # index
     con = duckdb.connect(str(db_location))
@@ -88,9 +92,7 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     )
     con.sql("PRAGMA create_fts_index('data', 'id', '*');")
 
-    return IndexRowsResponse(
-        duckdb_db_name=str(duck_db_name)
-    )
+    return IndexRowsResponse(duckdb_db_name=duck_db_name)
 
 
 class SplitDuckDbIndexJobRunner(SplitJobRunner):
@@ -124,6 +126,6 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                assets_directory=self.assets_directory,
+                duckdb_index_directory=self.duckdb_index_directory,
             )
         )

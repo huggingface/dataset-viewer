@@ -8,7 +8,12 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_assets_dir, init_parquet_metadata_dir
+from libcommon.storage import (
+    StrPath,
+    init_assets_dir,
+    init_duckdb_index_dir,
+    init_parquet_metadata_dir,
+)
 from pytest import MonkeyPatch, fixture
 
 from worker.config import AppConfig
@@ -112,6 +117,11 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
     return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
+
+
+@fixture
+def duckdb_index_directory(app_config: AppConfig) -> StrPath:
+    return init_duckdb_index_dir(app_config.duckdb_index.storage_directory)
 
 
 @fixture

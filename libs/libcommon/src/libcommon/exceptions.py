@@ -100,6 +100,7 @@ CacheableErrorCode = Literal[
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
     "MissingSpawningTokenError",
+    "NoIndexableColumnsError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",

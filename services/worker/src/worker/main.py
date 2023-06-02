@@ -6,7 +6,11 @@ import tempfile
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import init_assets_dir, init_parquet_metadata_dir, init_duckdb_index_dir
+from libcommon.storage import (
+    init_assets_dir,
+    init_duckdb_index_dir,
+    init_parquet_metadata_dir,
+)
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor

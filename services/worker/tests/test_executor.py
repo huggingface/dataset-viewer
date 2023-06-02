@@ -199,6 +199,7 @@ def job_runner_factory(
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    duckdb_index_directory: StrPath,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     return JobRunnerFactory(
@@ -207,6 +208,7 @@ def job_runner_factory(
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
         parquet_metadata_directory=parquet_metadata_directory,
+        duckdb_index_directory=duckdb_index_directory,
     )
 
 
