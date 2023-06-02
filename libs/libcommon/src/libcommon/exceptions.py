@@ -73,7 +73,6 @@ class CustomError(LoggedError):
 
 
 CacheableErrorCode = Literal[
-    "AskAccessHubRequestError",
     "ConfigNamesError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
@@ -94,8 +93,6 @@ CacheableErrorCode = Literal[
     "ExternalServerError",
     "FeaturesError",
     "FileSystemError",
-    "GatedDisabledError",
-    "GatedExtraFieldsError",
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
@@ -131,19 +128,6 @@ class CacheableError(CustomError):
     ):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
-        )
-
-
-class AskAccessHubRequestError(CacheableError):
-    """Raised when the request to the Hub's ask-access endpoint times out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="AskAccessHubRequestError",
-            cause=cause,
-            disclose_cause=False,
         )
 
 
@@ -303,32 +287,6 @@ class FileSystemError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
-
-
-class GatedDisabledError(CacheableError):
-    """Raised when the dataset is gated, but disabled."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedDisabledError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class GatedExtraFieldsError(CacheableError):
-    """Raised when the dataset is gated, with extra fields."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedExtraFieldsError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 class InfoError(CacheableError):

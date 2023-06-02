@@ -379,7 +379,6 @@ def test_raise_if_not_supported(
                 config=config,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                committer_hf_token=app_config.parquet_and_info.committer_hf_token,
                 revision="main",
                 max_dataset_size=app_config.parquet_and_info.max_dataset_size,
                 supported_datasets=[dataset] if in_list else ["another_dataset"],
@@ -391,7 +390,6 @@ def test_raise_if_not_supported(
             config=config,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
-            committer_hf_token=app_config.parquet_and_info.committer_hf_token,
             revision="main",
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
             supported_datasets=[dataset] if in_list else ["another_dataset"],
@@ -438,26 +436,6 @@ def test_supported_if_gated(
     response = job_runner.compute()
     assert response
     assert response.content
-
-
-def test_not_supported_if_gated_with_extra_fields(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    hub_datasets: HubDatasets,
-) -> None:
-    # Access request should fail because extra fields in gated datasets are not supported
-    dataset = hub_datasets["gated_extra_fields"]["name"]
-    config = hub_datasets["gated_extra_fields"]["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        kind="dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_datasets["gated_extra_fields"]["config_names_response"],
-    )
-    job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CustomError) as e:
-        job_runner.compute()
-    assert e.typename == "GatedExtraFieldsError"
 
 
 def test_blocked(
@@ -525,7 +503,6 @@ def test_compute_splits_response_simple_csv_ok(
 @pytest.mark.parametrize(
     "name,error_code,cause",
     [
-        ("gated_extra_fields", "GatedExtraFieldsError", "HTTPError"),
         ("private", "DatasetNotFoundError", None),
     ],
 )

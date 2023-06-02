@@ -196,15 +196,6 @@ def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def hub_gated_extra_fields_csv(csv_path: str, extra_fields_readme: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(
-        prefix="csv_extra_fields_gated", file_paths=[csv_path, extra_fields_readme], gated="auto"
-    )
-    yield repo_id
-    delete_hub_dataset_repo(repo_id=repo_id)
-
-
-@pytest.fixture(scope="session")
 def hub_public_audio(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="audio", dataset=datasets["audio"])
     yield repo_id
@@ -522,7 +513,6 @@ def hub_datasets(
     hub_private_csv: str,
     hub_gated_csv: str,
     hub_public_jsonl: str,
-    hub_gated_extra_fields_csv: str,
     hub_public_audio: str,
     hub_public_image: str,
     hub_public_images_list: str,
@@ -586,15 +576,6 @@ def hub_datasets(
             "splits_response": create_splits_response(hub_public_jsonl),
             "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
             "parquet_and_info_response": None,
-        },
-        "gated_extra_fields": {
-            "name": hub_gated_extra_fields_csv,
-            "config_names_response": create_config_names_response(hub_gated_extra_fields_csv),
-            "splits_response": create_splits_response(hub_gated_extra_fields_csv),
-            "first_rows_response": create_first_rows_response(hub_gated_extra_fields_csv, DATA_cols, DATA_rows),
-            "parquet_and_info_response": create_parquet_and_info_response(
-                dataset=hub_gated_extra_fields_csv, data_type="csv"
-            ),
         },
         "audio": {
             "name": hub_public_audio,
