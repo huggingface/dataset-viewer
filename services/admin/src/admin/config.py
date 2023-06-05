@@ -41,6 +41,7 @@ ADMIN_CACHE_REPORTS_NUM_RESULTS = 100
 ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS = 100
 ADMIN_EXTERNAL_AUTH_URL = None
 ADMIN_HF_ORGANIZATION = None
+ADMIN_HF_TIMEOUT_SECONDS = 0.2
 ADMIN_HF_WHOAMI_PATH = "/api/whoami-v2"
 ADMIN_MAX_AGE = 10
 
@@ -51,6 +52,7 @@ class AdminConfig:
     cache_reports_with_content_num_results: int = ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
     external_auth_url: Optional[str] = ADMIN_EXTERNAL_AUTH_URL  # not documented
     hf_organization: Optional[str] = ADMIN_HF_ORGANIZATION
+    hf_timeout_seconds: Optional[float] = ADMIN_HF_TIMEOUT_SECONDS
     hf_whoami_path: str = ADMIN_HF_WHOAMI_PATH
     max_age: int = ADMIN_MAX_AGE
 
@@ -69,6 +71,7 @@ class AdminConfig:
                 ),
                 external_auth_url=external_auth_url,
                 hf_organization=env.str(name="HF_ORGANIZATION", default=ADMIN_HF_ORGANIZATION),
+                hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=ADMIN_HF_TIMEOUT_SECONDS),
                 hf_whoami_path=hf_whoami_path,
                 max_age=env.int(name="MAX_AGE", default=ADMIN_MAX_AGE),
             )

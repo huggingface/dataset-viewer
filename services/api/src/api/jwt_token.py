@@ -74,11 +74,11 @@ def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> str:
         raise ValueError("Payload from moon must be a list of JWK formatted keys.")
     try:
         key = expected_algorithm.from_jwk(keys[0])
-        if not isinstance(expected_algorithm, ASYMMETRIC_ALGORITHMS):
-            return key.decode("utf-8")  # type: ignore[no-any-return]
+        if not isinstance(expected_algorithm, ASYMMETRIC_ALGORITHMS) or isinstance(key, bytes):
+            return key.decode("utf-8")
         if not is_public_key(key):
             raise RuntimeError("Failed to parse JWT key: the provided key is a private key")
-        return key.public_bytes(  # type: ignore[no-any-return]
+        return key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode("utf-8")

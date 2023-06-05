@@ -39,7 +39,12 @@ def create_dataset_backfill_plan_endpoint(
             logging.info(f"/dataset-backfill-plan, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
+            auth_check(
+                external_auth_url=external_auth_url,
+                request=request,
+                organization=organization,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
 
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
