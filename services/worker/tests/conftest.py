@@ -20,7 +20,6 @@ from .constants import (
     CI_HUB_ENDPOINT,
     CI_PARQUET_CONVERTER_APP_TOKEN,
     CI_URL_TEMPLATE,
-    CI_USER_TOKEN,
 )
 
 
