@@ -25,13 +25,19 @@ def create_cache_reports_endpoint(
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def cache_reports_endpoint(request: Request) -> Response:
         try:
             cursor = request.query_params.get("cursor") or ""
             logging.info(f"Cache reports for {cache_kind}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
+            auth_check(
+                external_auth_url=external_auth_url,
+                request=request,
+                organization=organization,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
             try:
                 return get_json_ok_response(
                     get_cache_reports(

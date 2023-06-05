@@ -76,6 +76,7 @@ def create_app() -> Starlette:
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
         ),
         Route(
@@ -86,6 +87,7 @@ def create_app() -> Starlette:
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
             methods=["POST"],
         ),
@@ -98,6 +100,7 @@ def create_app() -> Starlette:
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
         ),
         Route(
@@ -107,6 +110,7 @@ def create_app() -> Starlette:
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
         ),
     ]
@@ -127,6 +131,7 @@ def create_app() -> Starlette:
                         hf_token=app_config.common.hf_token,
                         external_auth_url=app_config.admin.external_auth_url,
                         organization=app_config.admin.hf_organization,
+                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
                     methods=["POST"],
                 ),
@@ -138,6 +143,7 @@ def create_app() -> Starlette:
                         max_age=app_config.admin.max_age,
                         external_auth_url=app_config.admin.external_auth_url,
                         organization=app_config.admin.hf_organization,
+                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
                 ),
                 Route(
@@ -148,6 +154,7 @@ def create_app() -> Starlette:
                         max_age=app_config.admin.max_age,
                         external_auth_url=app_config.admin.external_auth_url,
                         organization=app_config.admin.hf_organization,
+                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
                 ),
                 Route(
@@ -156,6 +163,7 @@ def create_app() -> Starlette:
                         job_type=job_type,
                         external_auth_url=app_config.admin.external_auth_url,
                         organization=app_config.admin.hf_organization,
+                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
                     methods=["POST"],
                 ),
