@@ -2,31 +2,40 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from functools import partial
+from typing import List, Optional
 
 import duckdb
+from datasets import Features
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
+    FileSystemError,
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     UnsupportedIndexableColumnsError,
+    SplitNotFoundError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.index_utils import create_index_dir_split
+from pyarrow.parquet import ParquetFile
+from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import (
     CompleteJobResult,
     IndexRowsResponse,
+    get_hf_fs,
+    get_hf_parquet_uris,
     get_previous_step_or_raise,
 )
 
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
-DUCKDB_DEFAULT_DB_NAME = "index.db"
+DUCKDB_DEFAULT_INDEX_FILENAME = "index.db"
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
 DROP_INDEX_COMMAND = "PRAGMA drop_fts_index('data');"
@@ -37,21 +46,56 @@ LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 # TODO: What if __id field already exist?
 
 
-def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_directory: StrPath) -> IndexRowsResponse:
+def compute_index_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    duckdb_index_directory: StrPath,
+    hf_token: Optional[str],
+) -> IndexRowsResponse:
     logging.info(f"get index-rows for dataset={dataset} config={config} split={split}")
 
-    # get the first rows from previous job
-    upstream_response = get_previous_step_or_raise(
-        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
-        dataset=dataset,
-        config=config,
-        split=split,
+    # validate split
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
     )
     try:
-        first_rows = upstream_response.response["content"]
-        features = first_rows["features"]
-    except KeyError as e:
+        splits_content = split_names_best_response.response["content"]["splits"]
+    except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
+
+    if split not in [split_item["split"] for split_item in splits_content]:
+        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
+
+    # get parquet content
+    config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
+
+    try:
+        parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
+        sources = sorted(
+            f"{config}/{parquet_file['filename']}"
+            for parquet_file in parquet_files_content
+            if parquet_file["split"] == split and parquet_file["config"] == config
+        )
+        if not sources:
+            raise ParquetResponseEmptyError("No parquet files found.")
+    except Exception as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
+
+    logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
+
+    fs = get_hf_fs(hf_token=hf_token)
+    source_uris = get_hf_parquet_uris(sources, dataset=dataset)
+    desc = f"{dataset}/{config}/{split}"
+    try:
+        parquet_files: List[ParquetFile] = thread_map(
+            partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
+        )
+    except Exception as e:
+        raise FileSystemError(f"Could not read the parquet files: {e}") from e
+
+    # get the features
+    features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
 
     # look for string columns using the first rows
     string_columns = [
@@ -74,11 +118,8 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     ):
         raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
 
-    # get list of parquet urls
-    config_parquet = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
-        parquet_files = config_parquet.response["content"]["parquet_files"]
-        parquet_urls = [content["url"] for content in parquet_files if content["split"] == split]
+        parquet_urls = [content["url"] for content in parquet_files_content if content["split"] == split]
 
         if not parquet_urls:
             raise ParquetResponseEmptyError("No parquet files found.")
@@ -89,8 +130,8 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     split_path, dir_path = create_index_dir_split(
         dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
     )
-    duck_db_name = f"{split_path}/{DUCKDB_DEFAULT_DB_NAME}"
-    db_location = dir_path / DUCKDB_DEFAULT_DB_NAME
+    duckdb_index_filename = f"{split_path}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    db_location = dir_path / DUCKDB_DEFAULT_INDEX_FILENAME
 
     # configure duckdb extensions
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
@@ -108,7 +149,7 @@ def compute_index_rows(dataset: str, config: str, split: str, duckdb_index_direc
     # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
     con.sql(CREATE_INDEX_COMMAND)
 
-    return IndexRowsResponse(duckdb_db_name=duck_db_name)
+    return IndexRowsResponse(duckdb_index_filename=duckdb_index_filename)
 
 
 class SplitDuckDbIndexJobRunner(SplitJobRunner):
@@ -143,5 +184,6 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
                 config=self.config,
                 split=self.split,
                 duckdb_index_directory=self.duckdb_index_directory,
+                hf_token=self.app_config.common.hf_token,
             )
         )

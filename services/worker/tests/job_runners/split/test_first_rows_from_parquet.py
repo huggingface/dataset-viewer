@@ -107,9 +107,9 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.job_runners.split.first_rows_from_parquet.get_hf_fs") as mock_read:
+    with patch("worker.utils.get_hf_fs") as mock_read:
         with patch(
-            "worker.job_runners.split.first_rows_from_parquet.get_hf_parquet_uris",
+            "worker.utils.get_hf_parquet_uris",
             side_effect=mock_get_hf_parquet_uris,
         ):
             initial_location = os.getcwd()

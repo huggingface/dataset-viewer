@@ -7,6 +7,7 @@ import logging
 import time
 import warnings
 from dataclasses import dataclass, field
+from functools import lru_cache
 from http import HTTPStatus
 from typing import (
     Any,
@@ -28,6 +29,9 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
+from huggingface_hub import HfFileSystem
+from huggingface_hub.hf_file_system import safe_quote
+from libcommon.constants import PARQUET_REVISION
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.simple_cache import BestResponse, CachedArtifactError, get_best_response
 from libcommon.utils import orjson_dumps
@@ -133,7 +137,7 @@ class ImageUrlColumnsResponse(TypedDict):
 
 
 class IndexRowsResponse(TypedDict):
-    duckdb_db_name: str
+    duckdb_index_filename: str
 
 
 Row = Mapping[str, Any]
@@ -421,3 +425,27 @@ def get_previous_step_or_raise(
             cache_entry_with_details=best_response.response,
         )
     return best_response
+
+
+@lru_cache(maxsize=128)
+def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
+    """Get the Hugging Face filesystem.
+
+    Args:
+        hf_token (Optional[str]): The token to access the filesystem.
+    Returns:
+        HfFileSystem: The Hugging Face filesystem.
+    """
+    return HfFileSystem(token=hf_token)
+
+
+def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
+    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
+
+    Args:
+        paths (List[str]): List of paths.
+        dataset (str): The dataset name.
+    Returns:
+        List[str]: List of Parquet URIs.
+    """
+    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]

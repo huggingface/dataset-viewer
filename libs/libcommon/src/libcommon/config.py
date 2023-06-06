@@ -341,8 +341,8 @@ class ProcessingGraphConfig:
             "split-duckdb-index": {
                 "input_type": "split",
                 "triggered_by": [
-                    "split-first-rows-from-streaming",
-                    "split-first-rows-from-parquet",
+                    "config-split-names-from-info",
+                    "config-split-names-from-streaming",
                     "config-parquet",
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,

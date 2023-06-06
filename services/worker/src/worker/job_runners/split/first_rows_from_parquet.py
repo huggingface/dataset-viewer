@@ -2,15 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from functools import lru_cache, partial
+from functools import partial
 from typing import List, Optional
 
 import pyarrow as pa
 from datasets import Features
-from huggingface_hub import HfFileSystem
-from huggingface_hub.hf_file_system import safe_quote
 from libcommon.constants import (
-    PARQUET_REVISION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
@@ -38,6 +35,8 @@ from worker.utils import (
     RowItem,
     SplitFirstRowsResponse,
     create_truncated_row_items,
+    get_hf_fs,
+    get_hf_parquet_uris,
     get_json_size,
     get_previous_step_or_raise,
     to_features_list,
@@ -70,30 +69,6 @@ def transform_rows(
         }
         for row_idx, row in enumerate(rows)
     ]
-
-
-@lru_cache(maxsize=128)
-def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
-    """Get the Hugging Face filesystem.
-
-    Args:
-        hf_token (Optional[str]): The token to access the filesystem.
-    Returns:
-        HfFileSystem: The Hugging Face filesystem.
-    """
-    return HfFileSystem(token=hf_token)
-
-
-def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
-
-    Args:
-        paths (List[str]): List of paths.
-        dataset (str): The dataset name.
-    Returns:
-        List[str]: List of Parquet URIs.
-    """
-    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
 
 
 def compute_first_rows_response(
