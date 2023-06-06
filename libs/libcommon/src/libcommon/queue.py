@@ -192,6 +192,8 @@ class Job(Document):
                 "config": self.config,
                 "split": self.split,
                 "priority": self.priority.value,
+                "status": self.status.value,
+                "created_at": self.created_at,
             }
         )
 
@@ -301,6 +303,43 @@ class Queue:
             job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
         )
 
+    def create_jobs(self, job_infos: List[JobInfo]) -> int:
+        """Creates jobs in the queue.
+
+        They are created in the waiting state.
+
+        Args:
+            job_infos (`List[JobInfo]`): The jobs to be created.
+
+        Returns:
+            `int`: The number of created jobs. 0 if we had an exception.
+        """
+        try:
+            jobs = [
+                Job(
+                    type=job_info["type"],
+                    dataset=job_info["params"]["dataset"],
+                    revision=job_info["params"]["revision"],
+                    config=job_info["params"]["config"],
+                    split=job_info["params"]["split"],
+                    unicity_id=inputs_to_string(
+                        dataset=job_info["params"]["dataset"],
+                        config=job_info["params"]["config"],
+                        split=job_info["params"]["split"],
+                        prefix=job_info["type"],
+                    ),
+                    namespace=job_info["params"]["dataset"].split("/")[0],
+                    priority=job_info["priority"],
+                    created_at=get_datetime(),
+                    status=Status.WAITING,
+                )
+                for job_info in job_infos
+            ]
+            job_ids = Job.objects.insert(jobs, load_bulk=False)
+            return len(job_ids)
+        except Exception:
+            return 0
+
     def cancel_jobs(
         self,
         job_type: str,
@@ -339,6 +378,24 @@ class Queue:
         job_dicts = [job.to_dict() for job in existing]
         existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
         return job_dicts
+
+    def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
+        """Cancel jobs from the queue.
+
+        If the job ids are not valid, they are ignored.
+
+        Args:
+            job_ids (`list[str]`): The list of job ids to cancel.
+
+        Returns:
+            `int`: The number of canceled jobs
+        """
+        try:
+            existing = Job.objects(pk__in=job_ids)
+            existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            return existing.count()
+        except Exception:
+            return 0
 
     def _get_next_waiting_job_for_priority(
         self,
@@ -467,6 +524,11 @@ class Queue:
             f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
         )
 
+    def _start_job(self, job: Job) -> Job:
+        # could be a method of Job
+        job.update(started_at=get_datetime(), status=Status.STARTED)
+        return job
+
     def start_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
     ) -> JobInfo:
@@ -490,7 +552,7 @@ class Queue:
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
-        next_waiting_job.update(started_at=get_datetime(), status=Status.STARTED)
+        self._start_job(next_waiting_job)
         if job_types_blocked and next_waiting_job.type in job_types_blocked:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
@@ -636,18 +698,43 @@ class Queue:
                 "revision": pd.Series([job["revision"] for job in jobs], dtype="str"),
                 "config": pd.Series([job["config"] for job in jobs], dtype="str"),
                 "split": pd.Series([job["split"] for job in jobs], dtype="str"),
-                "priority": pd.Series([job["priority"] for job in jobs], dtype="category"),
+                "priority": pd.Categorical(
+                    [job["priority"] for job in jobs],
+                    ordered=True,
+                    categories=[Priority.LOW.value, Priority.NORMAL.value],
+                ),
+                "status": pd.Categorical(
+                    [job["status"] for job in jobs],
+                    ordered=True,
+                    categories=[
+                        Status.WAITING.value,
+                        Status.STARTED.value,
+                        Status.SUCCESS.value,
+                        Status.ERROR.value,
+                        Status.CANCELLED.value,
+                    ],
+                ),
+                "created_at": pd.Series([job["created_at"] for job in jobs], dtype="datetime64[ns]"),
             }
         )
         # ^ does not seem optimal at all, but I get the types right
 
-    def get_pending_jobs_df(self, dataset: str, revision: str) -> pd.DataFrame:
+    def get_pending_jobs_df(self, dataset: str, job_types: Optional[List[str]] = None) -> pd.DataFrame:
+        filters = {}
+        if job_types:
+            filters["type__in"] = job_types
         return self._get_df(
             [
                 job.flat_info()
-                for job in Job.objects(dataset=dataset, revision=revision, status__in=[Status.WAITING, Status.STARTED])
+                for job in Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters)
             ]
         )
+
+    def has_pending_jobs(self, dataset: str, job_types: Optional[List[str]] = None) -> bool:
+        filters = {}
+        if job_types:
+            filters["type__in"] = job_types
+        return Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:

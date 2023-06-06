@@ -56,9 +56,9 @@ secrets:
   appHfToken:
     fromSecret: true
     secretName: "hf-token"
-  userHfToken:
+  appParquetConverterHfToken:
     fromSecret: true
-    secretName: "hf-token-francky"
+    secretName: "parquet-converter-hf-token"
   hfWebhookSecret:
     fromSecret: true
     secretName: "webhook-secret"
@@ -256,7 +256,7 @@ api:
 workers:
   -
     deployName: "all"
-    maxJobsPerNamespace: 1
+    maxJobsPerNamespace: 5
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -272,28 +272,12 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    maxJobsPerNamespace: 1
-    workerJobTypesBlocked: "/config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    maxJobsPerNamespace: 2
+    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 4
-    resources:
-      requests:
-        cpu: 200m
-        memory: "100Mi"
-      limits:
-        cpu: 2
-        memory: "1Gi"
-    tolerations: []
-  -
-    deployName: "temporal-opt-in-out"
-    maxJobsPerNamespace: 1
-    workerJobTypesBlocked: ""
-    workerJobTypesOnly: "split-opt-in-out-urls-scan"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 20
     resources:
       requests:
         cpu: 200m

@@ -10,7 +10,7 @@ matplotlib = "^3.7.0"
 requests = "^2.31.0"
 pygraphviz = "~1.10"
 python = "3.9.15"
-huggingface-hub = "^0.14.1"
+huggingface-hub = "^0.15.1"
 duckdb = "^0.6.1"
 libcommon = { path = "../../libs/libcommon", develop=true }
 

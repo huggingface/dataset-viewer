@@ -38,7 +38,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
     """
     logging.info(f"get parquet files for dataset={dataset}")
 
-    config_names_best_response = get_previous_step_or_raise(kinds=["/config-names"], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")

@@ -2,11 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any, List, Mapping, Optional, TypedDict
+from typing import Optional
 
 import pytest
 
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
@@ -20,48 +19,21 @@ from libcommon.state import (
     ConfigState,
     DatasetState,
     SplitState,
-    fetch_names,
 )
 
 from .utils import (
+    CACHE_KIND,
     CONFIG_NAME_1,
     CONFIG_NAMES,
     CONFIG_NAMES_CONTENT,
     DATASET_NAME,
+    JOB_RUNNER_VERSION,
+    PROCESSING_GRAPH,
     REVISION_NAME,
     SPLIT_NAME_1,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
 )
-
-
-class ResponseSpec(TypedDict):
-    content: Mapping[str, Any]
-    http_status: HTTPStatus
-
-
-CACHE_KIND = "cache_kind"
-CACHE_KIND_A = "cache_kind_a"
-CACHE_KIND_B = "cache_kind_b"
-CONTENT_ERROR = {"error": "error"}
-JOB_TYPE = "job_type"
-NAME_FIELD = "name"
-NAMES = ["name_1", "name_2", "name_3"]
-NAMES_FIELD = "names"
-NAMES_RESPONSE_OK = ResponseSpec(
-    content={NAMES_FIELD: [{NAME_FIELD: name} for name in NAMES]}, http_status=HTTPStatus.OK
-)
-STEP_DATASET_A = "dataset-a"
-STEP_CONFIG_B = "config-b"
-STEP_SPLIT_C = "split-c"
-PROCESSING_GRAPH = ProcessingGraph(
-    processing_graph_specification={
-        STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
-        STEP_CONFIG_B: {"input_type": "config", "provides_config_split_names": True, "triggered_by": STEP_DATASET_A},
-        STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
-    }
-)
-RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @pytest.fixture(autouse=True)
@@ -72,55 +44,6 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-@pytest.mark.parametrize(
-    "cache_kinds,response_spec_by_kind,expected_names",
-    [
-        ([], {}, None),
-        ([CACHE_KIND_A], {}, None),
-        ([CACHE_KIND_A], {CACHE_KIND_A: RESPONSE_ERROR}, None),
-        ([CACHE_KIND_A], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: RESPONSE_ERROR}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: RESPONSE_ERROR, CACHE_KIND_B: RESPONSE_ERROR}, None),
-    ],
-)
-def test_fetch_names(
-    cache_kinds: List[str],
-    response_spec_by_kind: Mapping[str, Mapping[str, Any]],
-    expected_names: Optional[List[str]],
-) -> None:
-    raises = expected_names is None
-    for kind, response_spec in response_spec_by_kind.items():
-        upsert_response(
-            kind=kind,
-            dataset=DATASET_NAME,
-            config=CONFIG_NAME_1,
-            split=None,
-            content=response_spec["content"],
-            http_status=response_spec["http_status"],
-        )
-
-    if raises:
-        with pytest.raises(Exception):
-            fetch_names(
-                dataset=DATASET_NAME,
-                config=CONFIG_NAME_1,
-                cache_kinds=cache_kinds,
-                names_field=NAMES_FIELD,
-                name_field=NAME_FIELD,
-            )
-    else:
-        names = fetch_names(
-            dataset=DATASET_NAME,
-            config=CONFIG_NAME_1,
-            cache_kinds=cache_kinds,
-            names_field=NAMES_FIELD,
-            name_field=NAME_FIELD,
-        )
-        assert names == expected_names
 
 
 @pytest.mark.parametrize(
@@ -138,6 +61,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).exists
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
@@ -148,6 +72,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).exists
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
     assert not CacheState(
@@ -156,6 +81,7 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).exists
 
 
@@ -174,6 +100,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).is_success
     upsert_response(
         kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
@@ -184,6 +111,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).is_success
     upsert_response(
         kind=cache_kind,
@@ -199,6 +127,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).is_success
     delete_response(kind=cache_kind, dataset=dataset, config=config, split=split)
     assert not CacheState(
@@ -207,17 +136,11 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         cache_kind=cache_kind,
         cache_entries_df=get_cache_entries_df(dataset=dataset),
+        job_runner_version=JOB_RUNNER_VERSION,
     ).is_success
 
 
-@pytest.mark.parametrize(
-    "has_pending_job,expected_is_in_process",
-    [
-        (False, False),
-        (True, True),
-    ],
-)
-def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> None:
+def test_artifact_state() -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
     config = None
@@ -230,13 +153,13 @@ def test_artifact_state(has_pending_job: bool, expected_is_in_process: bool) -> 
         config=config,
         split=split,
         processing_step=processing_step,
-        has_pending_job=has_pending_job,
+        pending_jobs_df=Queue().get_pending_jobs_df(dataset=dataset),
         cache_entries_df=get_cache_entries_df(dataset=dataset),
     )
     assert artifact_state.id == f"{processing_step_name},{dataset},{revision}"
     assert not artifact_state.cache_state.exists
     assert not artifact_state.cache_state.is_success
-    assert artifact_state.job_state.is_in_process is expected_is_in_process
+    assert not artifact_state.job_state.is_in_process
 
 
 def test_split_state() -> None:
@@ -334,7 +257,13 @@ def test_dataset_state_as_dict() -> None:
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
     )
-    dataset_state = DatasetState(dataset=dataset, revision=revision, processing_graph=PROCESSING_GRAPH)
+    dataset_state = DatasetState(
+        dataset=dataset,
+        revision=revision,
+        processing_graph=PROCESSING_GRAPH,
+        pending_jobs_df=Queue()._get_df(jobs=[]),
+        cache_entries_df=get_cache_entries_df(dataset=dataset),
+    )
 
     assert dataset_state.dataset == dataset
     assert dataset_state.revision == revision

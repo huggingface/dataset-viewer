@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from asyncio import Semaphore
 from dataclasses import replace
@@ -11,7 +11,7 @@ import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+    PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.exceptions import ExternalServerError
@@ -26,6 +26,7 @@ from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     check_spawning,
 )
 from worker.resources import LibrariesResource
+from worker.utils import ImageUrlColumnsResponse
 
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasets, get_default_config_split
@@ -83,54 +84,22 @@ def get_job_runner(
     return _get_job_runner
 
 
-FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS = {
-    "features": [
-        {
-            "feature_idx": 0,
-            "name": "col1",
-            "type": {
-                "dtype": "int64",
-                "_type": "Value",
-            },
-        },
-        {
-            "feature_idx": 1,
-            "name": "col2",
-            "type": {
-                "dtype": "int64",
-                "_type": "Value",
-            },
-        },
-        {
-            "feature_idx": 2,
-            "name": "col3",
-            "type": {
-                "dtype": "float64",
-                "_type": "Value",
-            },
-        },
-    ],
-    "rows": [],
-}
+IMAGE_URL_COLUMNS_RESPONSE_EMPTY: ImageUrlColumnsResponse = {"columns": []}
 
 
-FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
-    "features": [
-        {
-            "feature_idx": 0,
-            "name": "col",
-            "type": {
-                "dtype": "string",
-                "_type": "Value",
-            },
-        }
-    ],
-    "rows": [
-        {"row_idx": 0, "row": {"col": "http://testurl.test/test_image-optOut.jpg"}, "truncated_cells": []},
-        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image2.jpg"}, "truncated_cells": []},
-        {"row_idx": 2, "row": {"col": "other"}, "truncated_cells": []},
-        {"row_idx": 1, "row": {"col": "http://testurl.test/test_image3-optIn.jpg"}, "truncated_cells": []},
-    ],
+IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA: ImageUrlColumnsResponse = {"columns": ["col"]}
+
+
+DEFAULT_EMPTY_RESPONSE = {
+    "has_urls_columns": False,
+    "num_scanned_rows": 0,
+    "opt_in_urls": [],
+    "opt_out_urls": [],
+    "urls_columns": [],
+    "num_opt_out_urls": 0,
+    "num_opt_in_urls": 0,
+    "num_urls": 0,
+    "full_scan": None,
 }
 
 
@@ -140,28 +109,18 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "public",
             100_000,
-            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
-            {
-                "has_urls_columns": False,
-                "num_scanned_rows": 0,
-                "opt_in_urls": [],
-                "opt_out_urls": [],
-                "urls_columns": [],
-                "num_opt_out_urls": 0,
-                "num_opt_in_urls": 0,
-                "num_urls": 0,
-                "full_scan": None,
-            },
+            IMAGE_URL_COLUMNS_RESPONSE_EMPTY,
+            DEFAULT_EMPTY_RESPONSE,
         ),
         (
             "spawning_opt_in_out",
             100_000,  # dataset has less rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
                 "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                    {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
                 "opt_out_urls": [
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
@@ -176,7 +135,7 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "spawning_opt_in_out",
             3,  # dataset has more rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 3,
@@ -194,12 +153,12 @@ FIRST_ROWS_WITH_OPT_IN_OUT_URLS = {
         (
             "spawning_opt_in_out",
             4,  # dataset has same amount of rows
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             {
                 "has_urls_columns": True,
                 "num_scanned_rows": 4,
                 "opt_in_urls": [
-                    {"url": "http://testurl.test/test_image3-optIn.jpg", "row_idx": 3, "column_name": "col"}
+                    {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
                 "opt_out_urls": [
                     {"url": "http://testurl.test/test_image-optOut.jpg", "row_idx": 0, "column_name": "col"}
@@ -230,13 +189,13 @@ def test_compute(
         replace(app_config, urls_scan=replace(app_config.urls_scan, rows_max_number=rows_max_number)),
     )
     upsert_response(
-        kind="split-first-rows-from-streaming",
+        kind="split-image-url-columns",
         dataset=dataset,
         config=config,
         split=split,
         content=upstream_content,
         dataset_git_revision="dataset_git_revision",
-        job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+        job_runner_version=PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
@@ -261,14 +220,14 @@ def test_compute(
         (
             "info_error",
             10,
-            FIRST_ROWS_WITHOUT_OPT_IN_OUT_URLS,
+            IMAGE_URL_COLUMNS_RESPONSE_EMPTY,
             HTTPStatus.OK,
             "InfoError",
         ),
         (
             "too_many_columns",
             0,
-            FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+            IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             HTTPStatus.OK,
             "TooManyColumnsError",
         ),
@@ -295,7 +254,7 @@ def test_compute_failed(
     )
     if dataset != "doesnotexist":
         upsert_response(
-            kind="split-first-rows-from-streaming",
+            kind="split-image-url-columns",
             dataset=dataset,
             config=config,
             split=split,
@@ -323,11 +282,11 @@ def test_compute_error_from_spawning(
         replace(app_config, urls_scan=replace(app_config.urls_scan, spawning_url="wrong_url")),
     )
     upsert_response(
-        kind="split-first-rows-from-streaming",
+        kind="split-image-url-columns",
         dataset=dataset,
         config=config,
         split=split,
-        content=FIRST_ROWS_WITH_OPT_IN_OUT_URLS,
+        content=IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
         dataset_git_revision="dataset_git_revision",
         job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
         progress=1.0,

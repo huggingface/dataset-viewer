@@ -3,8 +3,10 @@
 
 import base64
 import enum
+import mimetypes
 from datetime import datetime, timezone
-from typing import Any, Optional, TypedDict
+from http import HTTPStatus
+from typing import Any, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -44,6 +46,23 @@ class FlatJobInfo(TypedDict):
     config: Optional[str]
     split: Optional[str]
     priority: str
+    status: str
+    created_at: datetime
+
+
+class JobOutput(TypedDict):
+    content: Mapping[str, Any]
+    http_status: HTTPStatus
+    error_code: Optional[str]
+    details: Optional[Mapping[str, Any]]
+    progress: Optional[float]
+
+
+class JobResult(TypedDict):
+    job_info: JobInfo
+    job_runner_version: int
+    is_success: bool
+    output: Optional[JobOutput]
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
@@ -81,3 +100,9 @@ def inputs_to_string(
     if prefix is not None:
         result = f"{prefix},{result}"
     return result
+
+
+def is_image_url(text: str) -> bool:
+    is_url = text.startswith("https://") or text.startswith("http://")
+    (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
+    return is_url and mime_type is not None and mime_type.startswith("image/")

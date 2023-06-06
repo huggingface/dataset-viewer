@@ -4,9 +4,10 @@
 import logging
 from abc import ABC, abstractmethod
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Tuple
+from typing import List, Mapping, Optional, Tuple, TypedDict
 
 from libcommon.dataset import get_dataset_git_revision
+from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
@@ -14,7 +15,6 @@ from libcommon.simple_cache import (
     CacheEntry,
     get_best_response,
 )
-from libcommon.state import Artifact, DatasetState
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -73,12 +73,6 @@ def get_cache_entry_from_steps(
     If no successful result is found, it will return the last one even if it's an error,
     Checks if job is still in progress by each processing step in case of no entry found.
     Raises:
-        - [`libcommon.exceptions.AskAccessHubRequestError`]
-          if the request to the Hub to get access to the dataset failed or timed out.
-        - [`libcommon.exceptions.DatasetInfoHubRequestError`]
-          if the request to the Hub to get the dataset info failed or timed out.
-        - [`libcommon.exceptions.DatasetError`]
-          if the dataset could not be accessed or is not supported
         - [`~utils.ResponseNotFoundError`]
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
@@ -89,49 +83,71 @@ def get_cache_entry_from_steps(
     kinds = [processing_step.cache_kind for processing_step in processing_steps]
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        # The cache is missing. Look if the job is in progress, or if it should be backfilled.
-        try:
-            revision = get_dataset_git_revision(
-                dataset=dataset,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
+        dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+        if not dataset_orchestrator.has_some_cache():
+            # We have to check if the dataset exists and is supported
+            try:
+                revision = get_dataset_git_revision(
+                    dataset=dataset,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    hf_timeout_seconds=hf_timeout_seconds,
+                )
+            except Exception as e:
+                # The dataset is not supported
+                raise ResponseNotFoundError("Not found.") from e
+            # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
+            # and tell the user to retry.
+            dataset_orchestrator.set_revision(revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[])
+            raise ResponseNotReadyError(
+                "The server is busier than usual and the response is not ready yet. Please retry later."
             )
-            # ^ TODO: the revision could be in the cache (new processing step)
-        except Exception as e:
-            raise ResponseNotFoundError("Not found.") from e
-        ERROR_CODES_TO_RETRY: List[str] = []
-        # ^ TODO: pass error_codes_to_retry? or set them in the processing graph?
-        dataset_state = DatasetState(
-            dataset=dataset,
-            processing_graph=processing_graph,
-            revision=revision,
-            error_codes_to_retry=ERROR_CODES_TO_RETRY,
-            priority=Priority.NORMAL,
-            # TODO: move Priority outside from queue.py (to remove dependency to this file)
-        )
-        artifact_ids = [
-            Artifact(
-                processing_step=processing_step, dataset=dataset, revision=revision, config=config, split=split
-            ).id
-            for processing_step in processing_steps
-        ]
-        should_exist = any(
-            artifact_id in dataset_state.queue_status.in_process for artifact_id in artifact_ids
-        ) or any(
-            f"CreateJob,{artifact_id}" in task.id for task in dataset_state.plan.tasks for artifact_id in artifact_ids
-        )
-
-        # use the opportunity to backfill if needed
-        dataset_state.backfill()
-
-        if should_exist:
+        elif dataset_orchestrator.has_pending_ancestor_jobs(
+            processing_step_names=[processing_step.name for processing_step in processing_steps]
+        ):
+            # some jobs are still in progress, the cache entries could exist in the future
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )
         else:
+            # no pending job: the cache entry will not be created
             raise ResponseNotFoundError("Not found.")
+
     return best_response.response
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+class OptInOutUrlsCountResponse(TypedDict):
+    urls_columns: List[str]
+    num_opt_in_urls: int
+    num_opt_out_urls: int
+    num_urls: int
+    num_scanned_rows: int
+    has_urls_columns: bool
+    full_scan: Optional[bool]
+
+
+# TODO: remove once full scan is implemented for spawning urls scan
+HARD_CODED_OPT_IN_OUT_URLS = {
+    "laion/laion2B-en": OptInOutUrlsCountResponse(
+        urls_columns=["URL"],
+        num_opt_in_urls=5,
+        num_opt_out_urls=42785281,
+        num_urls=2322161807,
+        num_scanned_rows=0,  # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+    "kakaobrain/coyo-700m": OptInOutUrlsCountResponse(
+        urls_columns=["url"],
+        num_opt_in_urls=2,
+        num_opt_out_urls=4691511,
+        num_urls=746972269,
+        num_scanned_rows=0,  # It is unknown but leaving with 0 for now since UI validates non null
+        has_urls_columns=True,
+        full_scan=True,
+    ),
+}
 
 
 class InputTypeValidator(ABC):
@@ -285,6 +301,16 @@ def create_endpoint(
                     )
                 # getting result based on processing steps
                 with StepProfiler(method="processing_step_endpoint", step="get cache entry", context=context):
+                    # TODO: remove once full scan is implemented for spawning urls scan
+                    if (
+                        endpoint_name == "/opt-in-out-urls"
+                        and validator.input_type == "dataset"
+                        and dataset in HARD_CODED_OPT_IN_OUT_URLS
+                    ):
+                        return get_json_ok_response(
+                            content=HARD_CODED_OPT_IN_OUT_URLS[dataset], max_age=max_age_long, revision=revision
+                        )
+
                     result = get_cache_entry_from_steps(
                         processing_steps=processing_steps,
                         dataset=dataset,

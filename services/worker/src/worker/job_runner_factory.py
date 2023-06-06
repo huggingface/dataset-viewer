@@ -25,7 +25,7 @@ from worker.job_runners.config.split_names_from_info import (
 from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
 )
-from worker.job_runners.dataset.config_names import ConfigNamesJobRunner
+from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
@@ -41,6 +41,7 @@ from worker.job_runners.split.first_rows_from_parquet import (
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
+from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.opt_in_out_urls_count import (
     SplitOptInOutUrlsCountJobRunner,
 )
@@ -83,8 +84,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
                 f" {[processing_step.job_type for processing_step in self.processing_graph.get_processing_steps()]}"
             ) from e
-        if job_type == ConfigNamesJobRunner.get_job_type():
-            return ConfigNamesJobRunner(
+        if job_type == DatasetConfigNamesJobRunner.get_job_type():
+            return DatasetConfigNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -180,7 +181,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 app_config=self.app_config,
             )
-
+        if job_type == SplitImageUrlColumnsJobRunner.get_job_type():
+            return SplitImageUrlColumnsJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
         if job_type == SplitOptInOutUrlsScanJobRunner.get_job_type():
             return SplitOptInOutUrlsScanJobRunner(
                 job_info=job_info,
@@ -216,7 +222,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             )
 
         supported_job_types = [
-            ConfigNamesJobRunner.get_job_type(),
+            DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
             SplitFirstRowsFromStreamingJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),
@@ -229,6 +235,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigSplitNamesFromInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
+            SplitImageUrlColumnsJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),

@@ -29,6 +29,7 @@ jobs:
           API_HF_JWT_ALGORITHM: "EdDSA"
           API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
           # ^ it's not tested in the e2e tests, but it's good to ensure we're able to fetch it at least.
+          ADMIN_HF_TIMEOUT_SECONDS: "10"
           API_HF_TIMEOUT_SECONDS: "10"
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
@@ -38,7 +39,7 @@ jobs:
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
           FIRST_ROWS_MAX_NUMBER: "4"
-          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "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"
+          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
@@ -68,6 +69,7 @@ jobs:
           API_HF_JWT_ALGORITHM: "EdDSA"
           API_HF_JWT_PUBLIC_KEY_URL: "https://hub-ci.huggingface.co/api/keys/jwt"
           # ^ it's not tested in the e2e tests, but it's good to ensure we're able to fetch it at least.
+          ADMIN_HF_TIMEOUT_SECONDS: "10"
           API_HF_TIMEOUT_SECONDS: "10"
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
@@ -77,7 +79,7 @@ jobs:
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
           FIRST_ROWS_MAX_NUMBER: "4"
-          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "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"
+          PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS : "1"
