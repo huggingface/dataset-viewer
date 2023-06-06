@@ -3,12 +3,23 @@
 
 import logging
 from functools import partial
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Set
+from urllib.parse import quote
 
 import duckdb
 from datasets import Features
+from huggingface_hub._commit_api import (
+    CommitOperation,
+    CommitOperationAdd,
+    CommitOperationDelete,
+)
+from huggingface_hub.hf_api import HfApi, RepoFile
+from huggingface_hub.utils._errors import RepositoryNotFoundError
+from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
+    DatasetNotFoundError,
     FileSystemError,
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
@@ -17,7 +28,7 @@ from libcommon.exceptions import (
     UnsupportedIndexableColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, remove_dir
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.index_utils import create_index_dir_split
 from pyarrow.parquet import ParquetFile
@@ -33,6 +44,7 @@ from worker.utils import (
     get_previous_step_or_raise,
 )
 
+DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.db"
@@ -45,12 +57,48 @@ LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 # TODO: What if __id field already exist?
 
 
+def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
+    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
+
+
+def create_index_item(
+    repo_file: RepoFile,
+    dataset: str,
+    config: str,
+    split: str,
+    hf_endpoint: str,
+    target_revision: str,
+    url_template: str,
+) -> IndexRowsResponse:
+    if repo_file.size is None:
+        raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+    return {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "url": hf_hub_url(
+            repo_id=dataset,
+            filename=repo_file.rfilename,
+            hf_endpoint=hf_endpoint,
+            revision=target_revision,
+            url_template=url_template,
+        ),
+        "filename": Path(repo_file.rfilename).name,
+        "size": repo_file.size,
+    }
+
+
 def compute_index_rows(
     dataset: str,
     config: str,
     split: str,
     duckdb_index_directory: StrPath,
+    target_revision: str,
+    hf_endpoint: str,
+    commit_message: str,
+    url_template: str,
     hf_token: Optional[str],
+    committer_hf_token: Optional[str],
 ) -> IndexRowsResponse:
     logging.info(f"get index-rows for dataset={dataset} config={config} split={split}")
 
@@ -125,7 +173,6 @@ def compute_index_rows(
     split_path, dir_path = create_index_dir_split(
         dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
     )
-    duckdb_index_filename = f"{split_path}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
     db_location = dir_path / DUCKDB_DEFAULT_INDEX_FILENAME
 
     # configure duckdb extensions
@@ -143,10 +190,74 @@ def compute_index_rows(
     # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
     con.sql(CREATE_INDEX_COMMAND)
 
-    return IndexRowsResponse(duckdb_index_filename=duckdb_index_filename)
+    # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
+    hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
+    committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
+
+    try:
+        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
+        if all(ref.ref != target_revision for ref in refs.converts):
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
+            )
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    except Exception as e:
+        # TODO: improve error handling
+        logging.error(str(e))
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+    previous_index = f"{config}/{split}-{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    delete_operations: List[CommitOperation] = []
+    if previous_index in all_repo_files:
+        delete_operations.append(CommitOperationDelete(path_in_repo=previous_index))
+        logging.debug(f"{delete_operations=}")
+
+    # send the files to the target revision
+    add_operations: List[CommitOperation] = [
+        CommitOperationAdd(
+            path_in_repo=f"{config}/{split}-{DUCKDB_DEFAULT_INDEX_FILENAME}", path_or_fileobj=db_location
+        )
+    ]
+    logging.debug(f"{add_operations=}")
+
+    # TODO: Delete local index file
+    committer_hf_api.create_commit(
+        repo_id=dataset,
+        repo_type=DATASET_TYPE,
+        revision=target_revision,
+        operations=delete_operations + add_operations,
+        commit_message=commit_message,
+        parent_commit=target_dataset_info.sha,
+    )
+
+    # call the API again to get the list of parquet files
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+    repo_files = [
+        repo_file
+        for repo_file in target_dataset_info.siblings
+        if repo_file.rfilename.startswith(f"{config}/{split}") and repo_file.rfilename.endswith(".db")
+    ]
+    if len(repo_files) != 1:
+        # TODO: improve exception type
+        raise Exception("NO FILE WAS UPLOADED TO BRANCH")
+    index_file = repo_files[0]
+
+    remove_dir(dir_path)
+    return create_index_item(
+        repo_file=index_file,
+        dataset=dataset,
+        config=config,
+        split=split,
+        hf_endpoint=hf_endpoint,
+        target_revision=target_revision,
+        url_template=url_template,
+    )
 
 
 class SplitDuckDbIndexJobRunner(SplitJobRunner):
+    duckdb_index_config: DuckDbIndexConfig
     duckdb_index_directory: StrPath
 
     def __init__(
@@ -162,6 +273,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
             processing_step=processing_step,
         )
         self.duckdb_index_directory = duckdb_index_directory
+        self.duckdb_index_config = app_config.duckdb_index
 
     @staticmethod
     def get_job_type() -> str:
@@ -179,5 +291,10 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
                 split=self.split,
                 duckdb_index_directory=self.duckdb_index_directory,
                 hf_token=self.app_config.common.hf_token,
+                url_template=self.duckdb_index_config.url_template,
+                commit_message=self.duckdb_index_config.commit_message,
+                committer_hf_token=self.duckdb_index_config.committer_hf_token,
+                hf_endpoint=self.app_config.common.hf_endpoint,
+                target_revision=self.duckdb_index_config.target_revision,
             )
         )

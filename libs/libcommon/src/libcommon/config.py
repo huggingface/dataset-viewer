@@ -106,11 +106,19 @@ class ParquetMetadataConfig:
 
 
 DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
+DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
+DUCKDB_INDEX_TARGET_REVISION = "duckdb/index"
+DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
     storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
+    committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
+    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
+    url_template: str = DUCKDB_INDEX_URL_TEMPLATE
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -118,6 +126,10 @@ class DuckDbIndexConfig:
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
+                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
+                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
+                url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
             )
 
 

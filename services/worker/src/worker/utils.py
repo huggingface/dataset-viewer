@@ -137,7 +137,12 @@ class ImageUrlColumnsResponse(TypedDict):
 
 
 class IndexRowsResponse(TypedDict):
-    duckdb_index_filename: str
+    dataset: str
+    config: str
+    split: str
+    url: str
+    filename: str
+    size: int
 
 
 Row = Mapping[str, Any]
