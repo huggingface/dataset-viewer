@@ -13,8 +13,8 @@ from libcommon.exceptions import (
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
-    UnsupportedIndexableColumnsError,
     SplitNotFoundError,
+    UnsupportedIndexableColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
@@ -38,8 +38,7 @@ VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.db"
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-DROP_INDEX_COMMAND = "PRAGMA drop_fts_index('data');"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*');"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
@@ -98,23 +97,19 @@ def compute_index_rows(
     features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
 
     # look for string columns using the first rows
-    string_columns = [
-        feature["name"]
-        for feature in features
-        if "dtype" in feature["type"]
-        and "_type" in feature["type"]
-        and feature["type"]["dtype"] == STRING_FEATURE_DTYPE
-        and feature["type"]["_type"] == VALUE_FEATURE_TYPE
-    ]
+    string_columns = [column for column, feature in features.items() if STRING_FEATURE_DTYPE in str(feature)]
 
     if not string_columns:
         raise NoIndexableColumnsError("No string columns available to index.")
 
     # look for image, audio and binary columns, if present, raise exeception do not supported yet and index everything
     if any(
-        feature["name"]
-        for feature in features
-        if "_type" in feature["type"] and feature["type"]["_type"] in UNSUPPORTED_FEATURES_MAGIC_STRINGS
+        feature
+        for feature in features.values()
+        if next(
+            (feature_type for feature_type in UNSUPPORTED_FEATURES_MAGIC_STRINGS if feature_type in str(feature)), None
+        )
+        is not None
     ):
         raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
 
@@ -143,7 +138,6 @@ def compute_index_rows(
     con = duckdb.connect(str(db_location))
     con.sql(CREATE_SEQUENCE_COMMAND)
     con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")
-    con.sql(DROP_INDEX_COMMAND)
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
