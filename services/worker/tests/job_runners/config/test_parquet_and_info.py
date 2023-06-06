@@ -17,6 +17,7 @@ from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import (
     CustomError,
     DatasetInBlockListError,
+    DatasetManualDownloadError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,
     DatasetWithTooBigExternalFilesError,
@@ -35,6 +36,7 @@ from worker.job_runners.config.parquet_and_info import (
     parse_repo_filename,
     raise_if_blocked,
     raise_if_not_supported,
+    raise_if_requires_manual_download,
     raise_if_too_big_from_datasets,
     raise_if_too_big_from_external_data_files,
     raise_if_too_big_from_hub,
@@ -228,6 +230,17 @@ def test_raise_if_blocked(dataset: str, blocked: List[str], raises: bool) -> Non
             raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
     else:
         raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
+
+
+def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_config: AppConfig) -> None:
+    with pytest.raises(DatasetManualDownloadError):
+        raise_if_requires_manual_download(
+            hub_public_manual_download,
+            "default",
+            hf_endpoint=app_config.common.hf_endpoint,
+            hf_token=app_config.common.hf_token,
+            revision="main",
+        )
 
 
 @pytest.mark.parametrize(

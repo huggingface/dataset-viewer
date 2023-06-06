@@ -243,6 +243,13 @@ def hub_public_legacy_configs(dataset_script_with_two_configs_path: str) -> Iter
 
 
 @pytest.fixture(scope="session")
+def hub_public_manual_download(dataset_script_with_manual_download_path: str) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="manual_download", file_paths=[dataset_script_with_manual_download_path])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="spawning_opt_in_out", dataset=datasets["spawning_opt_in_out"])
     yield repo_id

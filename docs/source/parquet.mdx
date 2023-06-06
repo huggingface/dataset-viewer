@@ -2,6 +2,12 @@
 
 Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), Datasets Server automatically converts every public dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific `ref/convert/parquet` branch (like this `amazon_polarity` [branch](https://huggingface.co/datasets/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example).
 
+<Tip>
+
+In order for Datasets Server to generate a Parquet version of a dataset, the dataset must be *public* and it must be *less than 5GB* in size.
+
+</Tip>
+
 This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
 The `/parquet` endpoint accepts the dataset name as its query parameter:
