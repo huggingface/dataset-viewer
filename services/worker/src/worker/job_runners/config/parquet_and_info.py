@@ -406,6 +406,13 @@ def raise_if_not_supported(
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision
     )
+    raise_if_requires_manual_download(
+        dataset=dataset,
+        config=config,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        revision=revision,
+    )
     if dataset in supported_datasets:
         return
     raise_if_too_big_from_datasets(
