@@ -298,7 +298,7 @@ def raise_if_requires_manual_download(
     hf_endpoint: str,
     hf_token: Optional[str],
     revision: str,
-):
+) -> None:
     """
     Raise an error if the dataset requires manual download.
 
