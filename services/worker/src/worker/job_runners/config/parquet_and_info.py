@@ -18,6 +18,7 @@ import numpy as np
 import requests
 from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
 from datasets.builder import DatasetBuilder
+from datasets.builder import ManualDownloadError as _ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.utils.file_utils import (
@@ -43,6 +44,7 @@ from libcommon.constants import (
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetInBlockListError,
+    DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetRevisionNotFoundError,
     DatasetTooBigFromDatasetsError,
@@ -288,6 +290,59 @@ def raise_if_too_big_from_datasets(
             f" per the datasets library) exceeds the maximum supported size ({max_dataset_size} B). Please report the"
             " issue."
         )
+
+
+def raise_if_requires_manual_download(
+    dataset: str,
+    config: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    revision: str,
+):
+    """
+    Raise an error if the dataset requires manual download.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            Dataset configuration name.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co").
+        hf_token (`str`, *optional*):
+            An app authentication token with read access to all the datasets.
+        revision (`str`):
+            The git revision (e.g. "main" or sha) of the dataset.
+
+    Returns:
+        `None`
+
+    Raises:
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
+            If the datasets.config.HF_ENDPOINT is not set to the expected value.
+        [`libcommon.exceptions.DatasetManualDownloadError`]:
+            If the dataset requires manual download.
+    """
+    if datasets.config.HF_ENDPOINT != hf_endpoint:
+        raise ValueError(
+            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
+            f" '{hf_endpoint}'."
+        )
+    builder = load_dataset_builder(
+        dataset,
+        name=config,
+        revision=revision,
+        use_auth_token=hf_token,
+    )
+    try:
+        builder._check_manual_download(
+            StreamingDownloadManager(
+                base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
+            )
+        )
+    except _ManualDownloadError as err:
+        raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
 
 
 def raise_if_not_supported(
