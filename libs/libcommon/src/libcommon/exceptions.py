@@ -76,6 +76,7 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
+    "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
     "DatasetRevisionEmptyError",
@@ -156,6 +157,13 @@ class DatasetInfoHubRequestError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
+
+
+class DatasetManualDownloadError(CacheableError):
+    """Raised when the dataset requires manual download."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetManualDownloadError", cause, True)
 
 
 class DatasetModuleNotInstalledError(CacheableError):
