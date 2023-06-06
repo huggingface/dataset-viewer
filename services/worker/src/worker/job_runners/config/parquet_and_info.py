@@ -17,8 +17,7 @@ import datasets.info
 import numpy as np
 import requests
 from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
-from datasets.builder import DatasetBuilder
-from datasets.builder import ManualDownloadError
+from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.utils.file_utils import (
