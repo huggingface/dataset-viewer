@@ -76,6 +76,7 @@ CacheableErrorCode = Literal[
     "ConfigNamesError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
+    "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
     "DatasetRevisionEmptyError",
