@@ -74,10 +74,10 @@ secrets:
     fromSecret: true
     secretName: ""
     value: ""
-  userHfToken:
-    fromSecret: false
-    secretName: "hf-token-francky"
-    value: hf_
+  appParquetConverterHfToken:
+    fromSecret: true
+    secretName: ""
+    value: ""
   hfWebhookSecret:
     fromSecret: false
     secretName: "webhook-secret"
@@ -324,6 +324,8 @@ admin:
   cacheReportsNumResults: 100
   # Number of reports in /cache-reports-with-content/... endpoints
   cacheReportsWithContentNumResults: 100
+  # the timeout in seconds for the requests to the Hugging Face Hub.
+  hfTimeoutSeconds: "0.2"
   # The path of the whoami service on the hub.
   hfWhoamiPath: "/api/whoami-v2"
   # Number of seconds to set in the `max-age` header on technical endpoints

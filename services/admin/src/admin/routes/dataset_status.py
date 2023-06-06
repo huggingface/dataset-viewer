@@ -27,6 +27,7 @@ def create_dataset_status_endpoint(
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def dataset_status_endpoint(request: Request) -> Response:
         try:
@@ -36,7 +37,12 @@ def create_dataset_status_endpoint(
             logging.info(f"/dataset-status, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
+            auth_check(
+                external_auth_url=external_auth_url,
+                request=request,
+                organization=organization,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
             queue = Queue()
             return get_json_ok_response(
                 {
