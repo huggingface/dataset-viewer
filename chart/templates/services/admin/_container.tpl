@@ -20,6 +20,8 @@
     value: {{ .Values.admin.cacheReportsNumResults | quote }}
   - name: ADMIN_CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS
     value: {{ .Values.admin.cacheReportsWithContentNumResults | quote }}
+  - name: ADMIN_HF_TIMEOUT_SECONDS
+    value: {{ .Values.admin.hfTimeoutSeconds | quote }}
   - name: ADMIN_HF_WHOAMI_PATH
     value: {{ .Values.admin.hfWhoamiPath | quote }}
   - name: ADMIN_MAX_AGE
