@@ -391,6 +391,8 @@ def raise_if_not_supported(
           any other error when asking access
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+          If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
@@ -686,6 +688,8 @@ def compute_config_parquet_and_info_response(
             If the previous step gave an error.
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+          If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
