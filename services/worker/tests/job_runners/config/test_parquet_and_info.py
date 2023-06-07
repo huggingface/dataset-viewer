@@ -281,21 +281,16 @@ def test_raise_if_too_big_from_datasets(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    dataset_info = get_dataset_info_or_raise(
-        dataset=dataset,
-        hf_endpoint=app_config.common.hf_endpoint,
-        hf_token=app_config.common.hf_token,
-        revision="main",
-    )
+    builder = load_dataset_builder(dataset)
     if raises:
         with pytest.raises(DatasetTooBigFromDatasetsError):
             raise_if_too_big_from_datasets(
-                info=dataset_info,
+                info=builder.info,
                 max_dataset_size=app_config.parquet_and_info.max_dataset_size,
             )
     else:
         raise_if_too_big_from_datasets(
-            info=dataset_info,
+            info=builder.info,
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
         )
 
