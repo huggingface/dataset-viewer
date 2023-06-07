@@ -111,7 +111,10 @@ def compute_first_rows_response(
             partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
         )
     except Exception as e:
-        raise FileSystemError(f"Could not read the parquet files: {e}") from e
+        raise e
+        # print(f"ERROR")
+        # print(str(e))
+        # raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
     # get the features
     features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
