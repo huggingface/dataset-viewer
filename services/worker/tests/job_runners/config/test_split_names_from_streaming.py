@@ -5,7 +5,7 @@ from dataclasses import replace
 from typing import Callable
 
 import pytest
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
@@ -13,6 +13,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
+    compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
 
@@ -119,3 +120,12 @@ def test_compute_split_names_from_streaming_response(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
+
+
+def test_compute_split_names_from_streaming_response_raises(
+    hub_public_manual_download: str, app_config: AppConfig
+) -> None:
+    with pytest.raises(DatasetManualDownloadError):
+        compute_split_names_from_streaming_response(
+            hub_public_manual_download, "default", hf_token=app_config.common.hf_token
+        )
