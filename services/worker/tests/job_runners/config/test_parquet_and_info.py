@@ -12,7 +12,7 @@ import datasets.info
 import pandas as pd
 import pytest
 import requests
-from datasets import Audio, Features, Image, Value
+from datasets import Audio, Features, Image, Value, load_dataset_builder
 from huggingface_hub.hf_api import HfApi
 from libcommon.exceptions import (
     CustomError,
@@ -233,13 +233,12 @@ def test_raise_if_blocked(dataset: str, blocked: List[str], raises: bool) -> Non
 
 
 def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_config: AppConfig) -> None:
+    builder = load_dataset_builder(hub_public_manual_download)
     with pytest.raises(DatasetManualDownloadError):
         raise_if_requires_manual_download(
-            hub_public_manual_download,
-            "default",
+            builder=builder,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
-            revision="main",
         )
 
 
@@ -276,30 +275,23 @@ def test_raise_if_too_big_from_hub(
     [("public", False), ("big", True)],
 )
 def test_raise_if_too_big_from_datasets(
+    hf_api: HfApi,
     hub_datasets: HubDatasets,
     name: str,
     raises: bool,
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
+    dataset_info = hf_api.dataset_info(dataset)
     if raises:
         with pytest.raises(DatasetTooBigFromDatasetsError):
             raise_if_too_big_from_datasets(
-                dataset=dataset,
-                config=config,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                revision="main",
+                info=dataset_info,
                 max_dataset_size=app_config.parquet_and_info.max_dataset_size,
             )
     else:
         raise_if_too_big_from_datasets(
-            dataset=dataset,
-            config=config,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-            revision="main",
+            info=dataset_info,
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
         )
 
@@ -378,35 +370,36 @@ def test_raise_if_too_many_external_files(
     ],
 )
 def test_raise_if_not_supported(
+    hf_api: HfApi,
     hub_datasets: HubDatasets,
     app_config: AppConfig,
     in_list: bool,
     raises: bool,
 ) -> None:
     dataset = hub_datasets["big"]["name"]
-    config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
+    dataset_info = hf_api.dataset_info(dataset)
+    builder = load_dataset_builder(dataset)
+
     if raises:
         with pytest.raises(DatasetTooBigFromDatasetsError):
             raise_if_not_supported(
-                dataset=dataset,
-                config=config,
+                dataset_info=dataset_info,
+                builder=builder,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                revision="main",
                 max_dataset_size=app_config.parquet_and_info.max_dataset_size,
+                max_external_data_files=app_config.parquet_and_info.max_external_data_files,
                 supported_datasets=[dataset] if in_list else ["another_dataset"],
-                blocked_datasets=[],
             )
     else:
         raise_if_not_supported(
-            dataset=dataset,
-            config=config,
+            dataset_info=dataset_info,
+            builder=builder,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
-            revision="main",
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
+            max_external_data_files=app_config.parquet_and_info.max_external_data_files,
             supported_datasets=[dataset] if in_list else ["another_dataset"],
-            blocked_datasets=[],
         )
 
 
