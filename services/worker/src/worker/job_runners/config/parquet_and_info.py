@@ -613,7 +613,7 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
         return None
 
 
-def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationAdd]:
+def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     """Copy parquet files by copying the git LFS pointer files"""
     data_files = builder.config.data_files
     if not data_files:
