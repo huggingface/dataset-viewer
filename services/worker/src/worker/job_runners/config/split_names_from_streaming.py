@@ -5,12 +5,17 @@ import logging
 from typing import List, Optional, Union
 
 from datasets import get_dataset_split_names
+from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
-from libcommon.exceptions import EmptyDatasetError, SplitNamesFromStreamingError
+from libcommon.exceptions import (
+    DatasetManualDownloadError,
+    EmptyDatasetError,
+    SplitNamesFromStreamingError,
+)
 
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
 from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
@@ -45,6 +50,8 @@ def compute_split_names_from_streaming_response(
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
     Raises the following errors:
+        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+          If the dataset requires manual download.
         - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
         - [`libcommon.exceptions.SplitsNamesError`]
@@ -58,6 +65,8 @@ def compute_split_names_from_streaming_response(
             {"dataset": dataset, "config": config, "split": str(split)}
             for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
         ]
+    except ManualDownloadError as err:
+        raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except Exception as err:
