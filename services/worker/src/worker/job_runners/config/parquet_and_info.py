@@ -827,7 +827,6 @@ def compute_config_parquet_and_info_response(
         )
         parquet_operations = convert_to_parquet(builder)
 
-
     # create the target revision if we managed to get the parquet files and it does not exist yet
     # (clone from initial commit to avoid cloning all repo's files)
     try:
