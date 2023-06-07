@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import contextlib
 import glob
 import logging
 import re
@@ -358,8 +357,8 @@ def raise_if_not_supported(
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
         max_external_data_files (`int`):
-            The maximum number of external data files (i.e. not hosted on HF). If the dataset is under the limit (which means that the files
-            can be fetched), it will be allowed.
+            The maximum number of external data files (i.e. not hosted on HF).
+            If the dataset is under the limit (which means that the files can be fetched), it will be allowed.
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
@@ -850,7 +849,8 @@ def compute_config_parquet_and_info_response(
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     logging.debug(f"{delete_operations=}")
 
-    # create the target revision if we managed to get the parquet files and it does not exist yet (clone from initial commit to avoid cloning all repo's files)
+    # create the target revision if we managed to get the parquet files and it does not exist yet
+    # (clone from initial commit to avoid cloning all repo's files)
     try:
         if all(ref.ref != target_revision for ref in refs.converts):
             initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
