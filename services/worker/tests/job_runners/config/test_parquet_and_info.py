@@ -275,14 +275,18 @@ def test_raise_if_too_big_from_hub(
     [("public", False), ("big", True)],
 )
 def test_raise_if_too_big_from_datasets(
-    hf_api: HfApi,
     hub_datasets: HubDatasets,
     name: str,
     raises: bool,
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    dataset_info = hf_api.dataset_info(dataset)
+    dataset_info = get_dataset_info_or_raise(
+        dataset=dataset,
+        hf_endpoint=app_config.common.hf_endpoint,
+        hf_token=app_config.common.hf_token,
+        revision="main",
+    )
     if raises:
         with pytest.raises(DatasetTooBigFromDatasetsError):
             raise_if_too_big_from_datasets(
@@ -370,14 +374,18 @@ def test_raise_if_too_many_external_files(
     ],
 )
 def test_raise_if_not_supported(
-    hf_api: HfApi,
     hub_datasets: HubDatasets,
     app_config: AppConfig,
     in_list: bool,
     raises: bool,
 ) -> None:
     dataset = hub_datasets["big"]["name"]
-    dataset_info = hf_api.dataset_info(dataset)
+    dataset_info = get_dataset_info_or_raise(
+        dataset=dataset,
+        hf_endpoint=app_config.common.hf_endpoint,
+        hf_token=app_config.common.hf_token,
+        revision="main",
+    )
     builder = load_dataset_builder(dataset)
 
     if raises:
