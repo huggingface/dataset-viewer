@@ -16,10 +16,11 @@ import datasets.config
 import datasets.info
 import numpy as np
 import requests
-from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
+from datasets import DownloadConfig, load_dataset_builder
 from datasets.builder import DatasetBuilder, ManualDownloadError
-from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.data_files import EmptyDatasetError as _EmptyDatasetError, Url
 from datasets.download import StreamingDownloadManager
+from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.utils.file_utils import (
     get_authentication_headers_for_url,
     http_head,
@@ -30,6 +31,7 @@ from datasets.utils.py_utils import asdict, map_nested
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
+    CommitOperationCopy,
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
@@ -211,6 +213,18 @@ def get_dataset_info_or_raise(
     return dataset_info
 
 
+def is_parquet_builder_with_hub_files(builder: DatasetBuilder, hf_endpoint: str) -> bool:
+    if not isinstance(builder, ParquetBuilder) or not builder.config.data_files:
+        return False
+    for split in builder.config.data_files:
+        for data_file in builder.config.data_files[split]:
+            if not isinstance(data_file, Url):
+                return False
+            if not data_file.startswith(hf_endpoint + "/datasets/" + str(builder.repo_id) + "/"):
+                return False
+    return True
+
+
 def raise_if_too_big_from_hub(
     dataset_info: DatasetInfo,
     max_dataset_size: int,
@@ -240,11 +254,7 @@ def raise_if_too_big_from_hub(
 
 
 def raise_if_too_big_from_datasets(
-    dataset: str,
-    config: str,
-    hf_endpoint: str,
-    hf_token: Optional[str],
-    revision: str,
+    info: datasets.DatasetInfo,
     max_dataset_size: int,
 ) -> None:
     """
@@ -252,17 +262,8 @@ def raise_if_too_big_from_datasets(
     sizes given by the datasets library
 
     Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        config (`str`):
-            Dataset configuration name
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
-            An app authentication token with read access to all the datasets.
-        revision (`str`):
-            The git revision (e.g. "main" or sha) of the dataset
+        info (`datasets.DatasetInfo`):
+            Dataset info from the datasets library
         max_dataset_size (`int`):
             The maximum size of the dataset in bytes
     Returns:
@@ -274,15 +275,7 @@ def raise_if_too_big_from_datasets(
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
     """
-    if datasets.config.HF_ENDPOINT != hf_endpoint:
-        raise ValueError(
-            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
-            f" '{hf_endpoint}'."
-        )
-    dataset_size = 0
-    with contextlib.suppress(Exception):
-        info = get_dataset_config_info(path=dataset, config_name=config, revision=revision, use_auth_token=hf_token)
-        dataset_size = info.dataset_size if info.dataset_size is not None else 0
+    dataset_size = info.dataset_size if info.dataset_size is not None else 0
     if dataset_size > max_dataset_size:
         raise DatasetTooBigFromDatasetsError(
             f"The dataset is too big to be converted to Parquet. The size of the dataset ({dataset_size} B, as given"
@@ -292,27 +285,20 @@ def raise_if_too_big_from_datasets(
 
 
 def raise_if_requires_manual_download(
-    dataset: str,
-    config: str,
+    builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
-    revision: str,
 ) -> None:
     """
     Raise an error if the dataset requires manual download.
 
     Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        config (`str`):
-            Dataset configuration name.
+        builder (`datasets.builder.DatasetBuilder`):
+            A dataset builder instance to check.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co").
         hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
-        revision (`str`):
-            The git revision (e.g. "main" or sha) of the dataset.
 
     Returns:
         `None`
@@ -328,12 +314,6 @@ def raise_if_requires_manual_download(
             f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
             f" '{hf_endpoint}'."
         )
-    builder = load_dataset_builder(
-        dataset,
-        name=config,
-        revision=revision,
-        use_auth_token=hf_token,
-    )
     try:
         builder._check_manual_download(
             StreamingDownloadManager(
@@ -341,18 +321,17 @@ def raise_if_requires_manual_download(
             )
         )
     except ManualDownloadError as err:
-        raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
+        raise DatasetManualDownloadError(f"dataset={builder.repo_id} requires manual download.", cause=err) from err
 
 
 def raise_if_not_supported(
-    dataset: str,
-    config: str,
+    dataset_info: DatasetInfo,
+    builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
-    revision: str,
     supported_datasets: List[str],
-    blocked_datasets: List[str],
     max_dataset_size: int,
+    max_external_data_files: int,
 ) -> None:
     """
     Raise an error if the dataset is not supported:
@@ -361,11 +340,10 @@ def raise_if_not_supported(
     - if the dataset is too big, and not in the list of supported datasets
 
     Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        config (`str`):
-            Dataset configuration name
+        dataset_info (`DatasetInfo`):
+            The dataset info
+        builder (`datasets.builder.DatasetBuilder`):
+            A dataset builder instance to check.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
@@ -375,21 +353,16 @@ def raise_if_not_supported(
         supported_datasets (`List[str]`):
             The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
             (saving the blocked datasets).
-        blocked_datasets (`List[str]`):
-            The list of blocked datasets. If empty, no dataset is blocked.
         max_dataset_size (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
+            can be fetched), it will be allowed.
+        max_external_data_files (`int`):
+            The maximum number of external data files (i.e. not hosted on HF). If the dataset is under the limit (which means that the files
             can be fetched), it will be allowed.
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     Raises the following errors:
-        - [`libcommon.exceptions.DatasetNotFoundError`]:
-          if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
-        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
-          any other error when asking access
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
@@ -400,31 +373,45 @@ def raise_if_not_supported(
         - [`libcommon.exceptions.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the repository
           files sizes given by the Hub.
+        - [`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
+          If the dataset has too many external files to be converted to parquet
+        - [`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
+          If the dataset is too big external files be converted to parquet
+        - [`libcommon.exceptions.UnsupportedExternalFilesError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-            If the datasets.config.HF_ENDPOINT is not set to the expected value
+          If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
-    raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
-    dataset_info = get_dataset_info_or_raise(
-        dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision
-    )
+    if datasets.config.HF_ENDPOINT != hf_endpoint:
+        raise ValueError(
+            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
+            f" '{hf_endpoint}'."
+        )
     raise_if_requires_manual_download(
-        dataset=dataset,
-        config=config,
+        builder=builder,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
-        revision=revision,
     )
-    if dataset in supported_datasets:
-        return
-    raise_if_too_big_from_datasets(
-        dataset=dataset,
-        config=config,
-        hf_endpoint=hf_endpoint,
-        hf_token=hf_token,
-        revision=revision,
-        max_dataset_size=max_dataset_size,
-    )
-    raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
+    if builder.repo_id not in supported_datasets:
+        raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
+        raise_if_too_big_from_external_data_files(
+            builder=builder,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
+            hf_token=hf_token,
+        )
+        raise_if_too_big_from_datasets(
+            builder.info,
+            max_dataset_size=max_dataset_size,
+        )
 
 
 class EmptySplitsError(Exception):
@@ -625,6 +612,57 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
     else:
         return None
 
+def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationAdd]:
+    """Copy parquet files by copying the git LFS pointer files"""
+    data_files = builder.config.data_files
+    if not data_files:
+        raise EmptyDatasetError("Empty parquet data_files")
+    parquet_operations = []
+    for split in data_files:
+        num_shards = len(data_files[split])
+        for shard_idx, data_file in enumerate(data_files[split]):
+            src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split("/", 1)
+
+            # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
+            parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
+
+            if num_shards > 1:
+                path_in_repo = f"{builder.config.name}/{parquet_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet"
+            else:
+                path_in_repo = f"{builder.config.name}/{parquet_name}-{split}.parquet"
+
+            parquet_operations.append(CommitOperationCopy(src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision))
+    return parquet_operations
+
+
+def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
+    """Download and prepare the dataset as parquet files"""
+    # prepare the parquet files locally
+    local_parquet_files: List[ParquetFile] = []
+    writer_batch_size = get_writer_batch_size(builder.info)
+    if writer_batch_size is not None and (
+        builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
+    ):
+        builder._writer_batch_size = writer_batch_size
+    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+    local_parquet_files.extend(
+        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
+        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
+    )
+
+    # - get parquet files for current config
+    config_files_to_add: Dict[str, str] = {
+        parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files
+    }
+
+    # send the files to the target revision
+    parquet_operations: List[CommitOperationAdd] = [
+        CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
+        for file, local_file in config_files_to_add.items()
+    ]
+    logging.debug(f"{parquet_operations=}")
+    return parquet_operations
+
 
 def compute_config_parquet_and_info_response(
     dataset: str,
@@ -722,16 +760,7 @@ def compute_config_parquet_and_info_response(
     """
     logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
 
-    raise_if_not_supported(
-        dataset=dataset,
-        config=config,
-        hf_endpoint=hf_endpoint,
-        hf_token=hf_token,
-        revision=source_revision,
-        supported_datasets=supported_datasets,
-        blocked_datasets=blocked_datasets,
-        max_dataset_size=max_dataset_size,
-    )
+    raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"
@@ -750,12 +779,16 @@ def compute_config_parquet_and_info_response(
     config_names = {config_name_item["config"] for config_name_item in config_names_content["config_names"]}
     if config not in config_names:
         raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
-
+    
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-
-    # prepare the parquet files locally
-    local_parquet_files: List[ParquetFile] = []
+    
+    # check if the repo exists and get the list of refs
+    try:
+        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
+    
     download_config = DownloadConfig(delete_extracted=True)
     try:
         builder = load_dataset_builder(
@@ -767,43 +800,29 @@ def compute_config_parquet_and_info_response(
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
-    writer_batch_size = get_writer_batch_size(builder.info)
-    if writer_batch_size is not None and (
-        builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
-    ):
-        builder._writer_batch_size = writer_batch_size
-    raise_if_too_big_from_external_data_files(
-        builder=builder,
-        max_dataset_size=max_dataset_size,
-        max_external_data_files=max_external_data_files,
-        hf_token=hf_token,
-    )
-    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+
+    if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
+        parquet_operations = copy_parquet_files(builder)
+    else:
+        dataset_info = get_dataset_info_or_raise(
+            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision
+        )
+        raise_if_not_supported(
+            dataset_info=dataset_info,
+            builder=builder,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            supported_datasets=supported_datasets,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
+        )
+        parquet_operations = convert_to_parquet(builder)
+
     dataset_info = asdict(builder.info)
-    local_parquet_files.extend(
-        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=config)
-        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
-    )
-
-    # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
-    try:
-        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
-        if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
-            committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
-            )
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - get repo parquet files
     all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
     repo_parquet_files: Set[str] = {file for file in all_repo_files if file.endswith(".parquet")}
-    # - get parquet files for current config
-    config_files_to_add: Dict[str, str] = {
-        parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files
-    }
     # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
     #   we exclude files of current config because otherwise outdated files might be preserved
     files_to_ignore: Set[str] = {
@@ -816,22 +835,26 @@ def compute_config_parquet_and_info_response(
     #   - parquet files obtained for current config at this processing step,
     #   - parquet files belonging to other existing configs
     #   - .gitattributes
+    config_files_to_add = [operation.path for operation in parquet_operations]
     files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     logging.debug(f"{delete_operations=}")
 
-    # send the files to the target revision
-    add_operations: List[CommitOperation] = [
-        CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
-        for file, local_file in config_files_to_add.items()
-    ]
-    logging.debug(f"{add_operations=}")
+    # create the target revision if we managed to get the parquet files and it does not exist yet (clone from initial commit to avoid cloning all repo's files)
+    try:
+        if all(ref.ref != target_revision for ref in refs.converts):
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
+            )
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
     committer_hf_api.create_commit(
         repo_id=dataset,
         repo_type=DATASET_TYPE,
         revision=target_revision,
-        operations=delete_operations + add_operations,
+        operations=delete_operations + parquet_operations,
         commit_message=commit_message,
         parent_commit=target_dataset_info.sha,
     )
