@@ -855,7 +855,7 @@ def compute_config_parquet_and_info_response(
     #   - parquet files obtained for current config at this processing step,
     #   - parquet files belonging to other existing configs
     #   - .gitattributes
-    config_files_to_add = [operation.path for operation in parquet_operations]
+    config_files_to_add = [operation.path_in_repo for operation in parquet_operations]
     files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     logging.debug(f"{delete_operations=}")
