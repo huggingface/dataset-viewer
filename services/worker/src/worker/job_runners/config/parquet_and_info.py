@@ -18,7 +18,8 @@ import numpy as np
 import requests
 from datasets import DownloadConfig, load_dataset_builder
 from datasets.builder import DatasetBuilder, ManualDownloadError
-from datasets.data_files import EmptyDatasetError as _EmptyDatasetError, Url
+from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.data_files import Url
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.utils.file_utils import (
@@ -612,6 +613,7 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
     else:
         return None
 
+
 def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     """Copy parquet files by copying the git LFS pointer files"""
     data_files = builder.config.data_files
@@ -621,17 +623,25 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     for split in data_files:
         num_shards = len(data_files[split])
         for shard_idx, data_file in enumerate(data_files[split]):
-            src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split("/", 1)
+            src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split(
+                "/", 1
+            )
 
             # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
             parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
 
             if num_shards > 1:
-                path_in_repo = f"{builder.config.name}/{parquet_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet"
+                path_in_repo = (
+                    f"{builder.config.name}/{parquet_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet"
+                )
             else:
                 path_in_repo = f"{builder.config.name}/{parquet_name}-{split}.parquet"
 
-            parquet_operations.append(CommitOperationCopy(src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision))
+            parquet_operations.append(
+                CommitOperationCopy(
+                    src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision
+                )
+            )
     return parquet_operations
 
 
@@ -779,16 +789,16 @@ def compute_config_parquet_and_info_response(
     config_names = {config_name_item["config"] for config_name_item in config_names_content["config_names"]}
     if config not in config_names:
         raise ConfigNamesError(f"{config=} does not exist in {dataset=}")
-    
+
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    
+
     # check if the repo exists and get the list of refs
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    
+
     download_config = DownloadConfig(delete_extracted=True)
     try:
         builder = load_dataset_builder(
