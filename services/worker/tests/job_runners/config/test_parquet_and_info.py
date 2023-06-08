@@ -6,7 +6,6 @@ from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
-from unittest.mock import patch
 
 import datasets.builder
 import datasets.info
