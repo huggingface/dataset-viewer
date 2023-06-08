@@ -155,11 +155,16 @@ class ParquetIndexWithoutMetadata:
         )
         if not sources:
             raise ParquetResponseEmptyError("No parquet files found.")
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="get the Hub's dataset filesystem"):
+        with StepProfiler(
+            method="parquet_index_without_metadata.from_parquet_file_items", step="get the Hub's dataset filesystem"
+        ):
             fs = get_hf_fs(hf_token=hf_token)
         with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="get the source URIs"):
             source_uris = get_hf_parquet_uris(sources, dataset=dataset)
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="get one parquet reader per parquet file"):
+        with StepProfiler(
+            method="parquet_index_without_metadata.from_parquet_file_items",
+            step="get one parquet reader per parquet file",
+        ):
             desc = f"{dataset}/{config}/{split}"
             try:
                 parquet_files: List[pq.ParquetFile] = thread_map(
@@ -167,13 +172,17 @@ class ParquetIndexWithoutMetadata:
                 )
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="get the dataset's features"):
+        with StepProfiler(
+            method="parquet_index_without_metadata.from_parquet_file_items", step="get the dataset's features"
+        ):
             features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features, unsupported_features_magic_strings=unsupported_features_magic_strings
             )
 
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group offsets"):
+        with StepProfiler(
+            method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group offsets"
+        ):
             row_group_offsets = np.cumsum(
                 [
                     parquet_file.metadata.row_group(group_id).num_rows
@@ -181,7 +190,9 @@ class ParquetIndexWithoutMetadata:
                     for group_id in range(parquet_file.metadata.num_row_groups)
                 ]
             )
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group readers"):
+        with StepProfiler(
+            method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group readers"
+        ):
             row_group_readers: List[Callable[[], pa.Table]] = [
                 partial(parquet_file.read_row_group, i=group_id, columns=supported_columns)
                 for parquet_file in parquet_files
@@ -291,7 +302,10 @@ class ParquetIndexWithMetadata:
         if not parquet_file_metadata_items:
             raise ParquetResponseEmptyError("No parquet files found.")
 
-        with StepProfiler(method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the index from parquet metadata"):
+        with StepProfiler(
+            method="parquet_index_with_metadata.from_parquet_metadata_items",
+            step="get the index from parquet metadata",
+        ):
             try:
                 parquet_files_metadata = sorted(
                     parquet_file_metadata_items, key=lambda parquet_file_metadata: parquet_file_metadata["filename"]
@@ -306,7 +320,9 @@ class ParquetIndexWithMetadata:
             except Exception as e:
                 raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
 
-        with StepProfiler(method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"):
+        with StepProfiler(
+            method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"
+        ):
             features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features,
