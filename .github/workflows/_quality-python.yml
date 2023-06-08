@@ -49,4 +49,4 @@ jobs:
       - name: Run bandit
         run: poetry run bandit -r src
       - name: Run pip-audit
-        run: bash -c "poetry run pip-audit --ignore-vuln GHSA-282v-666c-3fvg -r <(poetry export -f requirements.txt --with dev | sed '/^kenlm @/d' | sed '/^torch @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d' | sed 's/^huggingface-hub.*/huggingface-hub==0.15.1 ; python_full_version == "3.9.15" --hash=sha256:05b0fb0abbf1f625dfee864648ac3049fe225ac4371c7bafaca0c2d3a2f83445 --hash=sha256:a61b7d1a7769fe10119e730277c72ab99d95c48d86a3d6da3e9f3d0f632a4081/')"
+        run: bash -c "poetry run pip-audit --ignore-vuln GHSA-282v-666c-3fvg -r <(poetry export -f requirements.txt --with dev | sed '/^kenlm @/d' | sed '/^torch @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d' | sed 's/^huggingface-hub @ git.*/huggingface-hub==0.15.1 ; python_full_version == \"3.9.15\" --hash=sha256:05b0fb0abbf1f625dfee864648ac3049fe225ac4371c7bafaca0c2d3a2f83445 --hash=sha256:a61b7d1a7769fe10119e730277c72ab99d95c48d86a3d6da3e9f3d0f632a4081/')"
