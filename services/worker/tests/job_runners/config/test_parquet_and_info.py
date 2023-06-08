@@ -408,6 +408,7 @@ def test_supported_if_big_parquet(
     hub_datasets: HubDatasets,
 ) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
+    # but still supported since it's made of parquet files
     # dataset = hub_public_big
     dataset = hub_datasets["big"]["name"]
     config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
@@ -420,7 +421,11 @@ def test_supported_if_big_parquet(
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     assert response
-    assert response.content
+    content = response.content
+    assert content
+    assert len(content["parquet_files"]) == 1
+    assert_content_is_equal(content, hub_datasets["big"]["parquet_and_info_response"])
+
 
 
 def test_not_supported_if_big_non_parquet(
@@ -429,7 +434,7 @@ def test_not_supported_if_big_non_parquet(
     hub_datasets: HubDatasets,
 ) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
-    # dataset = hub_public_big
+    # dataset = hub_public_big_csv
     dataset = hub_datasets["big-csv"]["name"]
     config = hub_datasets["big-csv"]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
