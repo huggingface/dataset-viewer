@@ -256,7 +256,6 @@ api:
 workers:
   -
     deployName: "all"
-    maxJobsPerNamespace: 1000
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -272,7 +271,6 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    maxJobsPerNamespace: 1000
     workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
     workerJobTypesOnly: ""
     nodeSelector:

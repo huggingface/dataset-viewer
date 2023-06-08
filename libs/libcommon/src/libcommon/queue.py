@@ -212,22 +212,7 @@ class Queue:
     - a job has a priority (two levels: NORMAL and LOW)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
-    - no more than `max_jobs_per_namespace` started jobs can exist for the same namespace
-
-    Args:
-        max_jobs_per_namespace (`int`): Maximum number of started jobs for the same namespace. We call a namespace the
-          part of the dataset name that is before the `/` separator (user or organization). If `/` is not present,
-          which is the case for the "canonical" datasets, the namespace is the dataset name.
-          0 or a negative value are ignored. Defaults to None.
     """
-
-    def __init__(
-        self,
-        max_jobs_per_namespace: Optional[int] = None,
-    ):
-        self.max_jobs_per_namespace = (
-            None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
-        )
 
     def _add_job(
         self,
@@ -408,7 +393,6 @@ class Queue:
         For a given priority, get the waiting job with the oldest creation date:
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
-          - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
@@ -453,20 +437,14 @@ class Queue:
         # all the waiting jobs, if any, are for namespaces that already have started jobs.
         #
         # Let's:
-        # - exclude the waiting jobs for datasets that already have too many started jobs (max_jobs_per_namespace)
         # - exclude the waiting jobs which unicity_id is already in a started job
         # and, among the remaining waiting jobs, let's:
         # - select the oldest waiting job for the namespace with the least number of started jobs
         started_unicity_ids = {job.unicity_id for job in started_jobs.only("unicity_id")}
         descending_frequency_namespace_counts = [
-            [namespace, count]
-            for namespace, count in Counter(started_job_namespaces).most_common()
-            if self.max_jobs_per_namespace is None or count < self.max_jobs_per_namespace
+            [namespace, count] for namespace, count in Counter(started_job_namespaces).most_common()
         ]
-        logging.debug(
-            f"Descending frequency namespace counts, with less than {self.max_jobs_per_namespace} started jobs:"
-            f" {descending_frequency_namespace_counts}"
-        )
+        logging.debug(f"Descending frequency namespace counts: {descending_frequency_namespace_counts}")
         descending_frequency_namespace_groups = [
             [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
         ]
@@ -489,10 +467,7 @@ class Queue:
             )
             if next_waiting_job is not None:
                 return next_waiting_job
-        raise EmptyQueueError(
-            f"no job available with the priority (within the limit of {self.max_jobs_per_namespace} started jobs per"
-            " namespace)"
-        )
+        raise EmptyQueueError("no job available with the priority")
 
     def get_next_waiting_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
@@ -503,7 +478,6 @@ class Queue:
         - among the highest priority jobs,
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
-          - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
@@ -520,9 +494,7 @@ class Queue:
                 return self._get_next_waiting_job_for_priority(
                     priority=priority, job_types_blocked=job_types_blocked, job_types_only=job_types_only
                 )
-        raise EmptyQueueError(
-            f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
-        )
+        raise EmptyQueueError("no job available")
 
     def _start_job(self, job: Job) -> Job:
         # could be a method of Job
