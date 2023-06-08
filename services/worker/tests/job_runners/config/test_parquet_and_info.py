@@ -427,7 +427,6 @@ def test_supported_if_big_parquet(
     assert_content_is_equal(content, hub_datasets["big"]["parquet_and_info_response"])
 
 
-
 def test_not_supported_if_big_non_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
