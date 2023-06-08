@@ -134,7 +134,7 @@ class Job(Document):
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,
-                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR]}},
+                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
             },
         ],
     }
