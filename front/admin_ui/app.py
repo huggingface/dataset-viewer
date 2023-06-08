@@ -273,7 +273,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
                 refresh_split_name = refresh_split_name.strip()
                 params["split"] = refresh_split_name
             params = urllib.parse.urlencode(params)
-            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh{refresh_type}?{params}", headers=headers, timeout=60)
+            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}", headers=headers, timeout=60)
             if response.status_code == 200:
                 result = f"[{refresh_dataset_name}] ✅ Added processing step to the queue: '{refresh_type}'"
                 if refresh_config_name:
