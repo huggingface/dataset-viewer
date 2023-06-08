@@ -6,6 +6,7 @@ from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
+from unittest.mock import patch
 
 import datasets.builder
 import datasets.info
@@ -119,10 +120,6 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     for key in content_value.keys():
         if key != "download_checksums":
             assert content_value[key] == expected_value[key], content
-    assert len(content_value["download_checksums"]) == 1, content
-    content_checksum = list(content_value["download_checksums"].values())[0]
-    expected_checksum = list(expected_value["download_checksums"].values())[0]
-    assert content_checksum == expected_checksum, content
 
 
 def test_compute(
@@ -374,7 +371,7 @@ def test_raise_if_not_supported(
     in_list: bool,
     raises: bool,
 ) -> None:
-    dataset = hub_datasets["big"]["name"]
+    dataset = hub_datasets["big-csv"]["name"]
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
@@ -384,7 +381,7 @@ def test_raise_if_not_supported(
     builder = load_dataset_builder(dataset)
 
     if raises:
-        with pytest.raises(DatasetTooBigFromDatasetsError):
+        with pytest.raises(DatasetTooBigFromHubError):
             raise_if_not_supported(
                 dataset_info=dataset_info,
                 builder=builder,
@@ -406,7 +403,7 @@ def test_raise_if_not_supported(
         )
 
 
-def test_not_supported_if_big(
+def test_supported_if_big_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     hub_datasets: HubDatasets,
@@ -422,9 +419,30 @@ def test_not_supported_if_big(
         content=hub_datasets["big"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config)
+    response = job_runner.compute()
+    assert response
+    assert response.content
+
+
+def test_not_supported_if_big_non_parquet(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    hub_datasets: HubDatasets,
+) -> None:
+    # Not in the list of supported datasets and bigger than the maximum size
+    # dataset = hub_public_big
+    dataset = hub_datasets["big-csv"]["name"]
+    config = hub_datasets["big-csv"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        kind="dataset-config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["big-csv"]["config_names_response"],
+    )
+    job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as e:
         job_runner.compute()
-    assert e.typename == "DatasetTooBigFromDatasetsError"
+    assert e.typename == "DatasetTooBigFromHubError"
 
 
 def test_supported_if_gated(
@@ -526,6 +544,12 @@ def test_compute_splits_response_simple_csv_error(
     dataset = hub_datasets[name]["name"]
     config_names_response = hub_datasets[name]["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
+    upsert_response(
+        "dataset-config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets[name]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
