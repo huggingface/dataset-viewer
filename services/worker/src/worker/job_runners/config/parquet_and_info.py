@@ -833,7 +833,7 @@ def compute_config_parquet_and_info_response(
         if all(ref.ref != target_revision for ref in refs.converts):
             initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
             committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
