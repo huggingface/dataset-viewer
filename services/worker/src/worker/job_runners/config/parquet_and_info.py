@@ -17,7 +17,7 @@ import datasets.info
 import numpy as np
 import requests
 from datasets import DownloadConfig, get_dataset_config_info, load_dataset_builder
-from datasets.builder import DatasetBuilder
+from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.utils.file_utils import (
@@ -40,10 +40,10 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
-from libcommon.dataset import ask_access
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetInBlockListError,
+    DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetRevisionNotFoundError,
     DatasetTooBigFromDatasetsError,
@@ -291,12 +291,64 @@ def raise_if_too_big_from_datasets(
         )
 
 
+def raise_if_requires_manual_download(
+    dataset: str,
+    config: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    revision: str,
+) -> None:
+    """
+    Raise an error if the dataset requires manual download.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        config (`str`):
+            Dataset configuration name.
+        hf_endpoint (`str`):
+            The Hub endpoint (for example: "https://huggingface.co").
+        hf_token (`str`, *optional*):
+            An app authentication token with read access to all the datasets.
+        revision (`str`):
+            The git revision (e.g. "main" or sha) of the dataset.
+
+    Returns:
+        `None`
+
+    Raises:
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
+            If the datasets.config.HF_ENDPOINT is not set to the expected value.
+        [`libcommon.exceptions.DatasetManualDownloadError`]:
+            If the dataset requires manual download.
+    """
+    if datasets.config.HF_ENDPOINT != hf_endpoint:
+        raise ValueError(
+            f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
+            f" '{hf_endpoint}'."
+        )
+    builder = load_dataset_builder(
+        dataset,
+        name=config,
+        revision=revision,
+        use_auth_token=hf_token,
+    )
+    try:
+        builder._check_manual_download(
+            StreamingDownloadManager(
+                base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
+            )
+        )
+    except ManualDownloadError as err:
+        raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
+
+
 def raise_if_not_supported(
     dataset: str,
     config: str,
     hf_endpoint: str,
     hf_token: Optional[str],
-    committer_hf_token: Optional[str],
     revision: str,
     supported_datasets: List[str],
     blocked_datasets: List[str],
@@ -305,7 +357,7 @@ def raise_if_not_supported(
     """
     Raise an error if the dataset is not supported:
     - if the dataset is in the list of blocked datasets
-    - if the dataset cannot be accessed (does not exist, gated with extra fields, private)
+    - if the dataset cannot be accessed (does not exist, private)
     - if the dataset is too big, and not in the list of supported datasets
 
     Args:
@@ -318,10 +370,6 @@ def raise_if_not_supported(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str`, `optional`):
             An app authentication token with read access to all the datasets.
-        committer_hf_token (`str`, `optional`):
-            A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
-            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
-            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
         supported_datasets (`List[str]`):
@@ -336,20 +384,14 @@ def raise_if_not_supported(
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     Raises the following errors:
-        - [`libcommon.exceptions.AskAccessHubRequestError`]
-          if the request to the Hub to get access to the dataset failed or timed out.
         - [`libcommon.exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
-        - [`libcommon.exceptions.GatedDisabledError`]
-          if the dataset is gated, but disabled.
-          or if the dataset is private (private datasets are not supported by the datasets server).
-        - [`libcommon.exceptions.GatedExtraFieldsError`]
-          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
-          dataset because there is no easy way to get the list of extra fields.
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
           any other error when asking access
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+          If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
@@ -362,9 +404,15 @@ def raise_if_not_supported(
             If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
-    ask_access(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=committer_hf_token)
     dataset_info = get_dataset_info_or_raise(
         dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=revision
+    )
+    raise_if_requires_manual_download(
+        dataset=dataset,
+        config=config,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        revision=revision,
     )
     if dataset in supported_datasets:
         return
@@ -607,9 +655,8 @@ def compute_config_parquet_and_info_response(
         hf_token (`str`, `optional`):
             An app authentication token with read access to all the datasets.
         committer_hf_token (`str`, `optional`):
-            A user authentication token (See https://huggingface.co/settings/token) with write access. It must:
-            - be part of the `huggingface` organization (to create the ref/convert/parquet "branch")
-            - be part of the `datasets-maintainers` organization (to push to the ref/convert/parquet "branch")
+            An app authentication token with write access. It must be part of the `datasets-maintainers`
+              organization (to create the ref/convert/parquet "branch" and push to it)
         source_revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset used to prepare the parquet files
         target_revision (`str`):
@@ -632,22 +679,16 @@ def compute_config_parquet_and_info_response(
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
     Raises the following errors:
-        - [`libcommon.exceptions.AskAccessHubRequestError`]
-          if the request to the Hub to get access to the dataset failed or timed out.
         - [`libcommon.exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
-        - [`libcommon.exceptions.GatedDisabledError`]
-          if the dataset is gated, but disabled.
-          or if the dataset is private (private datasets are not supported by the datasets server).
-        - [`libcommon.exceptions.GatedExtraFieldsError`]
-          if the dataset is gated, with extra fields. Programmatic access is not implemented for this type of
-          dataset because there is no easy way to get the list of extra fields.
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
           any other error when asking access
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+          If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
@@ -686,7 +727,6 @@ def compute_config_parquet_and_info_response(
         config=config,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
-        committer_hf_token=committer_hf_token,
         revision=source_revision,
         supported_datasets=supported_datasets,
         blocked_datasets=blocked_datasets,

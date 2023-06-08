@@ -147,3 +147,38 @@ def dataset_script_with_two_configs_path(tmp_path_factory: pytest.TempPathFactor
     with open(path, "w", newline="") as f:
         f.write(DATASET_SCRIPT_WITH_TWO_CONFIGS)
     return path
+
+
+DATASET_SCRIPT_WITH_MANUAL_DOWNLOAD = """
+import os
+
+import datasets
+from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
+
+
+class DummyDatasetManualDownload(datasets.GeneratorBasedBuilder):
+
+    @property
+    def manual_download_instructions(self):
+        return "To use DummyDatasetManualDownload you have to download it manually."
+
+    def _info(self) -> DatasetInfo:
+        return DatasetInfo(features=Features({"text": Value("string")}))
+
+    def _split_generators(self, dl_manager):
+        return [
+            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
+        ]
+
+    def _generate_examples(self, text, **kwargs):
+        for i in range(1000):
+            yield i, {"text": text}
+"""
+
+
+@pytest.fixture(scope="session")
+def dataset_script_with_manual_download_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
+    with open(path, "w", newline="") as f:
+        f.write(DATASET_SCRIPT_WITH_MANUAL_DOWNLOAD)
+    return path

@@ -73,10 +73,10 @@ class CustomError(LoggedError):
 
 
 CacheableErrorCode = Literal[
-    "AskAccessHubRequestError",
     "ConfigNamesError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
+    "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
     "DatasetRevisionEmptyError",
@@ -94,8 +94,6 @@ CacheableErrorCode = Literal[
     "ExternalServerError",
     "FeaturesError",
     "FileSystemError",
-    "GatedDisabledError",
-    "GatedExtraFieldsError",
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
@@ -134,19 +132,6 @@ class CacheableError(CustomError):
         )
 
 
-class AskAccessHubRequestError(CacheableError):
-    """Raised when the request to the Hub's ask-access endpoint times out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="AskAccessHubRequestError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
 class ConfigNamesError(CacheableError):
     """Raised when the config names could not be fetched."""
 
@@ -172,6 +157,13 @@ class DatasetInfoHubRequestError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
+
+
+class DatasetManualDownloadError(CacheableError):
+    """Raised when the dataset requires manual download."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetManualDownloadError", cause, True)
 
 
 class DatasetModuleNotInstalledError(CacheableError):
@@ -303,32 +295,6 @@ class FileSystemError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
-
-
-class GatedDisabledError(CacheableError):
-    """Raised when the dataset is gated, but disabled."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedDisabledError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
-class GatedExtraFieldsError(CacheableError):
-    """Raised when the dataset is gated, with extra fields."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="GatedExtraFieldsError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 class InfoError(CacheableError):

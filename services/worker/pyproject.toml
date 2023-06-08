@@ -14,7 +14,7 @@ bs4 = "^0.0.1"
 conllu = "^4.5.2"
 environs = "^9.5.0"
 gdown = "^4.6.3"
-huggingface-hub = "^0.14.1"
+huggingface-hub = "^0.15.1"
 kenlm = { git = "https://github.com/kpu/kenlm", branch = "master" }
 kss = "^2.6.0"
 libcommon = {path = "../../libs/libcommon", develop = true}

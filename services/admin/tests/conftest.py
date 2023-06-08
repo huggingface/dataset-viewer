@@ -30,6 +30,7 @@ def monkeypatch_session(hf_endpoint: str, hf_token: str) -> Iterator[MonkeyPatch
     monkeypatch_session.setenv("METRICS_MONGO_DATABASE", "datasets_server_metrics_test")
     monkeypatch_session.setenv("COMMON_HF_ENDPOINT", hf_endpoint)
     monkeypatch_session.setenv("COMMON_HF_TOKEN", hf_token)
+    monkeypatch_session.setenv("ADMIN_HF_TIMEOUT_SECONDS", "10")
     yield monkeypatch_session
     monkeypatch_session.undo()
 

@@ -56,9 +56,9 @@ secrets:
   appHfToken:
     fromSecret: true
     secretName: "hf-token"
-  userHfToken:
+  appParquetConverterHfToken:
     fromSecret: true
-    secretName: "hf-token-francky"
+    secretName: "parquet-converter-hf-token"
   hfWebhookSecret:
     fromSecret: true
     secretName: "webhook-secret"
@@ -256,12 +256,12 @@ api:
 workers:
   -
     deployName: "all"
-    maxJobsPerNamespace: 5
+    maxJobsPerNamespace: 20
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 20
+    replicas: 80
     resources:
       requests:
         cpu: 1
@@ -278,22 +278,6 @@ workers:
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 4
-    resources:
-      requests:
-        cpu: 200m
-        memory: "100Mi"
-      limits:
-        cpu: 2
-        memory: "1Gi"
-    tolerations: []
-  -
-    deployName: "temporal-opt-in-out"
-    maxJobsPerNamespace: 5
-    workerJobTypesBlocked: ""
-    workerJobTypesOnly: "split-opt-in-out-urls-scan"
-    nodeSelector:
-      role-datasets-server-worker: "true"
-    replicas: 20
     resources:
       requests:
         cpu: 200m

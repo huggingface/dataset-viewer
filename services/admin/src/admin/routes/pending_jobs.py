@@ -24,12 +24,18 @@ def create_pending_jobs_endpoint(
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
     async def pending_jobs_endpoint(request: Request) -> Response:
         logging.info("/pending-jobs")
         try:
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(external_auth_url=external_auth_url, request=request, organization=organization)
+            auth_check(
+                external_auth_url=external_auth_url,
+                request=request,
+                organization=organization,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
             queue = Queue()
             return get_json_ok_response(
                 {
