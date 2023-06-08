@@ -45,7 +45,7 @@ class DatasetsBasedJobRunner(JobRunner):
         self.base_datasets_cache = hf_datasets_cache
 
     def get_cache_subdirectory(self, digits: int = 14) -> str:
-        random_str = f"{random.randrange(10**(digits - 1), 10**digits)}"
+        random_str = f"{random.randrange(10**(digits - 1), 10**digits)}"  # nosec B311
         # TODO: Refactor, need a way to generate payload based only on provided params
         payload = (
             random_str,
