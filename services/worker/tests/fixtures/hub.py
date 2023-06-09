@@ -227,7 +227,9 @@ def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 @pytest.fixture(scope="session")
 def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="big-no-info", dataset=datasets["big"])
-    hf_api.delete_file("README.md", repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md")
+    hf_api.delete_file(
+        "README.md", repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md", token=CI_USER_TOKEN
+    )
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
