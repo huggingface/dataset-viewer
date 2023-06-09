@@ -61,7 +61,6 @@ def test_process_next_job(
         job_runner_factory=factory,
         library_cache_paths=libraries_resource.storage_paths,
         app_config=app_config,
-        max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
         state_file_path=worker_state_file_path,
         processing_graph=test_processing_graph,
     )

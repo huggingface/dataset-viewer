@@ -41,9 +41,6 @@ class Loop:
             The paths of the library caches. Used to check if the disk is full.
         worker_config (`WorkerConfig`):
             Worker configuration.
-        max_jobs_per_namespace (`int`):
-            The maximum number of jobs that can be processed per namespace. If a namespace has more jobs, the loop will
-            wait until some jobs are finished.
         state_file_path (`str`):
             The path of the file where the state of the loop will be saved.
     """
@@ -51,13 +48,12 @@ class Loop:
     job_runner_factory: BaseJobRunnerFactory
     library_cache_paths: set[str]
     app_config: AppConfig
-    max_jobs_per_namespace: int
     processing_graph: ProcessingGraph
     state_file_path: str
     storage_paths: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.queue = Queue(max_jobs_per_namespace=self.max_jobs_per_namespace)
+        self.queue = Queue()
         self.storage_paths = set(self.app_config.worker.storage_paths).union(self.library_cache_paths)
 
     def has_memory(self) -> bool:
