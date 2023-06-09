@@ -618,7 +618,7 @@ def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[s
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
-    """Fill the builder DatasetInfo from the copeid parquet files"""
+    """Fill the builder DatasetInfo from the copied parquet files"""
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
