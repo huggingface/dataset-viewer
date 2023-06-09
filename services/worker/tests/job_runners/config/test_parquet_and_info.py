@@ -35,7 +35,6 @@ from worker.job_runners.config.parquet_and_info import (
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
-    raise_if_not_supported,
     raise_if_requires_manual_download,
     raise_if_too_big_from_datasets,
     raise_if_too_big_from_external_data_files,
