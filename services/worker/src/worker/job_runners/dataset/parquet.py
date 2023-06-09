@@ -7,12 +7,16 @@ from typing import List, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import (
+    DoesNotExist,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.config.parquet import ConfigParquetResponse
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
+from worker.utils import JobResult, PreviousJob
 
 
 class DatasetParquetResponse(TypedDict):

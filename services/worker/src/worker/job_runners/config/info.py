@@ -3,9 +3,10 @@ from typing import Any, Dict, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
+from libcommon.simple_cache import get_previous_step_or_raise
 
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import CompleteJobResult, get_previous_step_or_raise
+from worker.utils import CompleteJobResult
 
 
 class ConfigInfoResponse(TypedDict):

@@ -111,7 +111,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
                 parquet_metadata_directory=parquet_metadata_directory,
-                hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_key=hf_jwt_public_key,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,

@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import os
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, List, Generator
+from typing import Callable, Generator, List
 from unittest.mock import patch
 from datasets import Dataset
 import pytest
+from datasets import Dataset
+from fsspec import AbstractFileSystem
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority
-from fsspec import AbstractFileSystem
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_parquet import (
@@ -28,6 +28,7 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJob
 @pytest.fixture
 def get_job_runner(
     assets_directory: StrPath,
+    parquet_metadata_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -41,7 +42,11 @@ def get_job_runner(
         processing_graph = ProcessingGraph(
             {
                 "dataset-level": {"input_type": "dataset"},
-                "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
+                "config-level": {
+                    "input_type": "config",
+                    "triggered_by": "dataset-level",
+                    "provides_config_parquet": True,
+                },
                 processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
@@ -63,14 +68,27 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
+            processing_graph=processing_graph,
             assets_directory=assets_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
 
 
+@pytest.fixture
+def ds() -> Dataset:
+    return Dataset.from_dict({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+
+@pytest.fixture
+def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
+    with tmpfs.open("config/dataset-split.parquet", "wb") as f:
+        ds.to_parquet(f)
+    yield tmpfs
+
+
 def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    print("----------------------------->>>")
     return paths
 
 @pytest.fixture
@@ -80,13 +98,7 @@ def ds() -> Dataset:
 @pytest.fixture
 def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
     with tmpfs.open("config/dataset-split.parquet", "wb") as f:
-        print("---->AAAA")
-        try:
-            ds.to_parquet(f)
-        except Exception as e:
-            print("-------------->CCCCCCCCCCCC")
-            print(str(e))
-        print("---->BBBB")
+        ds.to_parquet(f)
     yield tmpfs
 
 
@@ -107,36 +119,33 @@ def test_compute(
     error_code: str,
 ) -> None:
     dataset, config, split = "dataset", "config", "split"
+
+    config_parquet_content = {
+        "parquet_files": [
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "url": "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/dataset-split.parquet",  # noqa: E501
+                "filename": "dataset-split.parquet",
+                "size": 128,
+            }
+        ]
+    }
+
     upsert_response(
-        kind="config-parquet",
+        kind="config-level",
         dataset=dataset,
         config=config,
-        content={
-            "parquet_files": [
-                {
-                    "dataset": dataset,
-                    "config": config,
-                    "split": split,
-                    "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/{config}/{dataset}-{split}.parquet",  # noqa: E501
-                    "filename": f"{dataset}-{split}.parquet",
-                    "size": 1000,
-                }
-            ]
-        },
+        content=config_parquet_content,
         http_status=HTTPStatus.OK,
     )
 
-    with patch("worker.utils.get_hf_fs", return_value=ds_fs):
+    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_fs):
         with patch(
-            "worker.utils.get_hf_parquet_uris",
+            "libcommon.parquet_utils.get_hf_parquet_uris",
             side_effect=mock_get_hf_parquet_uris,
         ):
-            # initial_location = os.getcwd()
-            # os.chdir("tests/job_runners/split")
-            # # TODO:  Make localsystem by relative path
-            # fs = LocalFileSystem()
-            # mock_read.return_value = fs
-            # ^ Mocking file system with local file
             job_runner = get_job_runner(
                 dataset,
                 config,
@@ -172,7 +181,7 @@ def test_compute(
                 assert response["features"][0]["feature_idx"] == 0
                 assert response["features"][0]["name"] == "col1"
                 assert response["features"][0]["type"]["_type"] == "Value"
-                assert response["features"][0]["type"]["dtype"] == "int32"
+                assert response["features"][0]["type"]["dtype"] == "int64"
                 assert response["features"][1]["feature_idx"] == 1
                 assert response["features"][1]["name"] == "col2"
                 assert response["features"][1]["type"]["_type"] == "Value"
@@ -186,4 +195,3 @@ def test_compute(
                 assert response["rows"][2]["row_idx"] == 2
                 assert response["rows"][2]["truncated_cells"] == []
                 assert response["rows"][2]["row"] == {"col1": 3, "col2": "c"}
-            # os.chdir(initial_location)

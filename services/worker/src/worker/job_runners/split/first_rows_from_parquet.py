@@ -2,29 +2,23 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from functools import partial
-from typing import List, Optional
+from typing import List
 
-import pyarrow as pa
 from datasets import Features
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.exceptions import (
-    FileSystemError,
-    ParquetResponseEmptyError,
-    PreviousStepFormatError,
     RowsPostProcessingError,
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.processing_graph import ProcessingStep
+from libcommon.parquet_utils import Indexer
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
-from pyarrow.parquet import ParquetFile
-from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
@@ -38,7 +32,6 @@ from worker.utils import (
     get_hf_fs,
     get_hf_parquet_uris,
     get_json_size,
-    get_previous_step_or_raise,
     to_features_list,
 )
 
@@ -76,49 +69,24 @@ def compute_first_rows_response(
     config: str,
     split: str,
     assets_base_url: str,
-    hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
     assets_directory: StrPath,
+    indexer: Indexer,
 ) -> SplitFirstRowsResponse:
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
 
-    # first ensure the tuple (dataset, config, split) exists on the Hub
+    rows_index = indexer.get_rows_index(
+        dataset=dataset,
+        config=config,
+        split=split,
+    )
 
-    config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
-    try:
-        parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        sources = sorted(
-            f"{config}/{parquet_file['filename']}"
-            for parquet_file in parquet_files_content
-            if parquet_file["split"] == split and parquet_file["config"] == config
-        )
-        if not sources:
-            raise ParquetResponseEmptyError("No parquet files found.")
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
-
-    logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
-
-    fs = get_hf_fs(hf_token=hf_token)
-    source_uris = get_hf_parquet_uris(sources, dataset=dataset)
-    desc = f"{dataset}/{config}/{split}"
-    try:
-        parquet_files: List[ParquetFile] = thread_map(
-            partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
-        )
-    except Exception as e:
-        raise e
-        # print(f"ERROR")
-        # print(str(e))
-        # raise FileSystemError(f"Could not read the parquet files: {e}") from e
-
-    # get the features
-    features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
-
+    # validate the features
+    features = rows_index.parquet_index.features
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
@@ -144,28 +112,7 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    num_rows = 0
-    last_row_group_id = 0
-    row_group_readers = []
-    for parquet_file in parquet_files:
-        for group_id in range(parquet_file.metadata.num_row_groups):
-            last_row_group_id = group_id
-            row_group_readers.append(partial(parquet_file.read_row_group, i=group_id))
-            if num_rows + parquet_file.metadata.row_group(group_id).num_rows >= rows_max_number:
-                num_rows = rows_max_number
-                break
-            else:
-                num_rows += parquet_file.metadata.row_group(group_id).num_rows
-        else:
-            continue
-        break
-
-    if len(row_group_readers) == 0:
-        raise ParquetResponseEmptyError("No parquet files found.")
-
-    pa_table = pa.concat_tables([row_group_readers[i]() for i in range(last_row_group_id + 1)])
-    result = pa_table.slice(0, num_rows)
-
+    pa_table = rows_index.query(offset=0, length=rows_max_number)
     rows = [
         RowItem(
             {
@@ -174,7 +121,7 @@ def compute_first_rows_response(
                 "truncated_cells": [],
             }
         )
-        for idx, row in enumerate(result.to_pylist())
+        for idx, row in enumerate(pa_table.to_pylist())
     ]
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
@@ -210,6 +157,7 @@ def compute_first_rows_response(
 class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
+    indexed: Indexer
 
     @staticmethod
     def get_job_type() -> str:
@@ -231,7 +179,9 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
         assets_directory: StrPath,
+        parquet_metadata_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -241,6 +191,14 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
+        self.parquet_metadata_directory = parquet_metadata_directory
+        self.indexer = Indexer(
+            processing_graph=processing_graph,
+            hf_token=self.app_config.common.hf_token,
+            parquet_metadata_directory=parquet_metadata_directory,
+            unsupported_features_magic_strings=[],
+            all_columns_supported_datasets_allow_list="all",
+        )
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -250,11 +208,11 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 split=self.split,
                 assets_base_url=self.assets_base_url,
                 assets_directory=self.assets_directory,
-                hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,
                 rows_min_number=self.first_rows_config.min_number,
                 columns_max_number=self.first_rows_config.columns_max_number,
+                indexer=self.indexer,
             )
         )

@@ -18,5 +18,3 @@ jobs:
       pr_number: ${{ github.event.number }}
       package: datasets-server
       additional_args: --not_python_module
-    secrets:
-      token: ${{ secrets.HUGGINGFACE_PUSH }}
