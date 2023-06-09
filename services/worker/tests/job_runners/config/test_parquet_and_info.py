@@ -358,52 +358,6 @@ def test_raise_if_too_many_external_files(
         )
 
 
-@pytest.mark.parametrize(
-    "in_list,raises",
-    [
-        (True, False),
-        (False, True),
-    ],
-)
-def test_raise_if_not_supported(
-    hub_datasets: HubDatasets,
-    app_config: AppConfig,
-    in_list: bool,
-    raises: bool,
-) -> None:
-    dataset = hub_datasets["big-csv"]["name"]
-    dataset_info = get_dataset_info_for_supported_datasets(
-        dataset=dataset,
-        hf_endpoint=app_config.common.hf_endpoint,
-        hf_token=app_config.common.hf_token,
-        revision="main",
-        files_metadata=True,
-    )
-    builder = load_dataset_builder(dataset)
-
-    if raises:
-        with pytest.raises(DatasetTooBigFromHubError):
-            raise_if_not_supported(
-                dataset_info=dataset_info,
-                builder=builder,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                max_dataset_size=app_config.parquet_and_info.max_dataset_size,
-                max_external_data_files=app_config.parquet_and_info.max_external_data_files,
-                supported_datasets=[dataset] if in_list else ["another_dataset"],
-            )
-    else:
-        raise_if_not_supported(
-            dataset_info=dataset_info,
-            builder=builder,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-            max_dataset_size=app_config.parquet_and_info.max_dataset_size,
-            max_external_data_files=app_config.parquet_and_info.max_external_data_files,
-            supported_datasets=[dataset] if in_list else ["another_dataset"],
-        )
-
-
 def test_supported_if_big_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,

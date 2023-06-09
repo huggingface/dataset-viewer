@@ -815,7 +815,7 @@ def compute_config_parquet_and_info_response(
 
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
-        fill_builder_info(builder)
+        fill_builder_info(builder, hf_token=hf_token)
     else:
         dataset_info = get_dataset_info_for_supported_datasets(
             dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
@@ -826,7 +826,6 @@ def compute_config_parquet_and_info_response(
                 builder=builder,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
-                supported_datasets=supported_datasets,
                 max_dataset_size=max_dataset_size,
                 max_external_data_files=max_external_data_files,
             )
