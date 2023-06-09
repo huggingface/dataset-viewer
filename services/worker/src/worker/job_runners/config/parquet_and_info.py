@@ -648,7 +648,6 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
                 builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
                 builder.info.download_size += sum(sizes)
                 builder.info.dataset_size += approx_num_bytes
-        
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:

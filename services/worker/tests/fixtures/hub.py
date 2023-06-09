@@ -227,7 +227,7 @@ def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 @pytest.fixture(scope="session")
 def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="big-no-info", dataset=datasets["big"])
-    hf_api.delete_file('README.md', repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md")
+    hf_api.delete_file("README.md", repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md")
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -399,7 +399,9 @@ def create_dataset_info_response_for_audio() -> Any:
     }
 
 
-def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]) -> Any:
+def create_parquet_and_info_response(
+    dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]
+) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
     filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
