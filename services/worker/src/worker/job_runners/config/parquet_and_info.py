@@ -623,32 +623,32 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
     fs = HTTPFileSystem()
-    builder.info.dataset_size = 0
-    builder.info.download_size = 0
-    builder.info.splits = SplitDict()
-    for split in data_files:
-        try:
-            parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
-                data_files[split],
-                unit="pq",
-                disable=True,
-            )
-            parquet_files, sizes = zip(*parquet_files_and_sizes)
-        except Exception as e:
-            raise FileSystemError(f"Could not read the parquet files: {e}") from e
-        if parquet_files:
-            if builder.info.features is None:
-                builder.info.features = Features.from_arrow_schema(parquet_files[0].schema_arrow)
-            num_bytes = sum(
-                parquet_file.metadata.row_group(i).total_byte_size
-                for parquet_file in parquet_files
-                for i in range(parquet_file.metadata.num_row_groups)
-            )
-            num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
-            builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples))
-            builder.info.download_size += sum(sizes)
-            builder.info.dataset_size += num_bytes
+    if not builder.info.splits or not builder.info.download_size:
+        builder.info.splits = SplitDict()
+        builder.info.dataset_size = 0
+        for split in data_files:
+            try:
+                parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
+                    partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                    data_files[split],
+                    unit="pq",
+                    disable=True,
+                )
+                parquet_files, sizes = zip(*parquet_files_and_sizes)
+            except Exception as e:
+                raise FileSystemError(f"Could not read the parquet files: {e}") from e
+            if parquet_files:
+                first_pf = parquet_files[0]
+                if builder.info.features is None:
+                    builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
+                first_row_group = first_pf.read_row_group(0)
+                compression_ratio = first_row_group.nbytes / first_row_group.num_rows
+                num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+                approx_num_bytes = int(compression_ratio * num_examples)
+                builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
+                builder.info.download_size += sum(sizes)
+                builder.info.dataset_size += approx_num_bytes
+        
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:

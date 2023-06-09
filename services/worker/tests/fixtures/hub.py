@@ -225,6 +225,14 @@ def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="big-no-info", dataset=datasets["big"])
+    hf_api.delete_file('README.md', repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md")
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_big_csv(big_csv_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="big-csv", file_paths=[big_csv_path])
     yield repo_id
@@ -363,6 +371,21 @@ def create_dataset_info_response_for_big_parquet() -> Any:
     }
 
 
+def create_dataset_info_response_for_big_parquet_no_info() -> Any:
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": BIG_cols,
+        "splits": {
+            "train": {"name": "train", "num_bytes": 12345, "num_examples": len(BIG_rows), "dataset_name": None}
+        },
+        "download_size": BIG_PARQUET_FILE,
+        "dataset_size": 12345,
+    }
+
+
 def create_dataset_info_response_for_audio() -> Any:
     return {
         "description": "",
@@ -376,7 +399,7 @@ def create_dataset_info_response_for_audio() -> Any:
     }
 
 
-def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "audio", "big_parquet"]) -> Any:
+def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
     filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
@@ -387,6 +410,8 @@ def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "au
         else create_dataset_info_response_for_audio()
         if data_type == "audio"
         else create_dataset_info_response_for_big_parquet()
+        if data_type == "big_parquet"
+        else create_dataset_info_response_for_big_parquet_no_info()
     )
     return {
         "parquet_files": [
@@ -555,6 +580,7 @@ def hub_datasets(
     hub_public_image: str,
     hub_public_images_list: str,
     hub_public_big: str,
+    hub_public_big_no_info: str,
     hub_public_big_csv: str,
     hub_public_external_files: str,
     hub_public_spawning_opt_in_out: str,
@@ -650,6 +676,15 @@ def hub_datasets(
             "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
             "parquet_and_info_response": create_parquet_and_info_response(
                 dataset=hub_public_big, data_type="big_parquet"
+            ),
+        },
+        "big-no-info": {
+            "name": hub_public_big_no_info,
+            "config_names_response": create_config_names_response(hub_public_big_no_info),
+            "splits_response": create_splits_response(hub_public_big_no_info),
+            "first_rows_response": create_first_rows_response(hub_public_big_no_info, BIG_cols, BIG_rows),
+            "parquet_and_info_response": create_parquet_and_info_response(
+                dataset=hub_public_big_no_info, data_type="big_parquet_no_info"
             ),
         },
         "big-csv": {
