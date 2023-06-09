@@ -14,6 +14,7 @@ import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
 from huggingface_hub.hf_api import HfApi
+from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     CustomError,
     DatasetInBlockListError,
@@ -31,7 +32,6 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
-    get_dataset_info_or_raise,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
@@ -249,11 +249,12 @@ def test_raise_if_too_big_from_hub(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    dataset_info = get_dataset_info_or_raise(
+    dataset_info = get_dataset_info_for_supported_datasets(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
         revision="main",
+        files_metadata=True,
     )
     if raises:
         with pytest.raises(DatasetTooBigFromHubError):
@@ -371,11 +372,12 @@ def test_raise_if_not_supported(
     raises: bool,
 ) -> None:
     dataset = hub_datasets["big-csv"]["name"]
-    dataset_info = get_dataset_info_or_raise(
+    dataset_info = get_dataset_info_for_supported_datasets(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
         revision="main",
+        files_metadata=True,
     )
     builder = load_dataset_builder(dataset)
 
