@@ -16,12 +16,13 @@ import datasets.info
 import numpy as np
 import pyarrow.parquet as pq
 import requests
-from datasets import DownloadConfig, load_dataset_builder, Features
+from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.data_files import Url
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
+from datasets.splits import SplitDict, SplitInfo
 from datasets.utils.file_utils import (
     get_authentication_headers_for_url,
     http_head,
@@ -29,7 +30,6 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from datasets.splits import SplitDict, SplitInfo
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
@@ -629,7 +629,10 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
     for split in data_files:
         try:
             parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token), data_files[split], unit="pq", disable=True
+                partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                data_files[split],
+                unit="pq",
+                disable=True,
             )
             parquet_files, sizes = zip(*parquet_files_and_sizes)
         except Exception as e:
@@ -637,7 +640,11 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
         if parquet_files:
             if builder.info.features is None:
                 builder.info.features = Features.from_arrow_schema(parquet_files[0].schema_arrow)
-            num_bytes = sum(parquet_file.metadata.row_group(i).total_byte_size for parquet_file in parquet_files for i in range(parquet_file.metadata.num_row_groups))
+            num_bytes = sum(
+                parquet_file.metadata.row_group(i).total_byte_size
+                for parquet_file in parquet_files
+                for i in range(parquet_file.metadata.num_row_groups)
+            )
             num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
             builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples))
             builder.info.download_size += sum(sizes)
@@ -652,7 +659,9 @@ def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
         builder._writer_batch_size = writer_batch_size
-    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir and it fills the info
+    builder.download_and_prepare(
+        file_format="parquet"
+    )  # the parquet files are stored in the cache dir and it fills the info
     local_parquet_files = [
         ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
