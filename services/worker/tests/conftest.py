@@ -140,4 +140,4 @@ def another_processing_step(test_processing_graph: ProcessingGraph) -> Processin
 
 
 # Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub"]
+pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.files", "tests.fixtures.hub", "tests.fixtures.fsspec"]
