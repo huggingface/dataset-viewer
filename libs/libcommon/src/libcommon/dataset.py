@@ -99,7 +99,11 @@ def get_dataset_info_for_supported_datasets(
     """
     try:
         dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
-            repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, revision=revision, files_metadata=files_metadata
+            repo_id=dataset,
+            token=hf_token,
+            timeout=hf_timeout_seconds,
+            revision=revision,
+            files_metadata=files_metadata,
         )
     except CustomError as err:
         raise err
