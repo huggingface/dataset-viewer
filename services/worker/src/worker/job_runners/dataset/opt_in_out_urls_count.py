@@ -7,14 +7,14 @@ from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import (
+    DoesNotExist,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import (
-    JobResult,
-    OptInOutUrlsCountResponse,
-    get_previous_step_or_raise,
-)
+from worker.utils import JobResult, OptInOutUrlsCountResponse
 
 
 def compute_opt_in_out_urls_count_response(dataset: str) -> Tuple[OptInOutUrlsCountResponse, float]:

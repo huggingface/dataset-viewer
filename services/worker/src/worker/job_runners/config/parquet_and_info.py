@@ -59,11 +59,12 @@ from libcommon.exceptions import (
     UnsupportedExternalFilesError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult, get_previous_step_or_raise
+from worker.utils import CompleteJobResult
 
 
 class ParquetFileItem(TypedDict):
