@@ -42,12 +42,12 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
+from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
-    DatasetRevisionNotFoundError,
     DatasetTooBigFromDatasetsError,
     DatasetTooBigFromHubError,
     DatasetWithTooBigExternalFilesError,
@@ -169,48 +169,6 @@ def raise_if_blocked(
             "The parquet conversion has been disabled for this dataset for now. Please open an issue in"
             " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
         )
-
-
-def get_dataset_info_or_raise(
-    dataset: str,
-    hf_endpoint: str,
-    hf_token: Optional[str],
-    revision: str,
-) -> DatasetInfo:
-    """
-    Return the dataset info if possible.
-    Raise an error if the dataset cannot be accessed (does not exist, gated with extra fields, private)
-
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
-            An app authentication token with read access to all the datasets.
-        revision (`str`):
-            The git revision (e.g. "main" or sha) of the dataset
-    Returns:
-        `DatasetInfo`: The dataset info
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetNotFoundError`]
-          If the repository to download from cannot be found. This may be because it doesn't exist,
-          or because it is set to `private` and you do not have access.
-        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
-          If the revision does not exist or cannot be accessed using the token.
-    """
-    try:
-        dataset_info = HfApi(endpoint=hf_endpoint, token=hf_token).dataset_info(
-            repo_id=dataset, revision=revision, files_metadata=True
-        )
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except RevisionNotFoundError as err:
-        raise DatasetRevisionNotFoundError("The dataset revision does not exist on the Hub.") from err
-    if dataset_info.private:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.")
-    return dataset_info
 
 
 def is_parquet_builder_with_hub_files(builder: DatasetBuilder, hf_endpoint: str) -> bool:
@@ -808,8 +766,8 @@ def compute_config_parquet_and_info_response(
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
     else:
-        dataset_info = get_dataset_info_or_raise(
-            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision
+        dataset_info = get_dataset_info_for_supported_datasets(
+            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
         )
         if dataset not in supported_datasets:
             raise_if_not_supported(

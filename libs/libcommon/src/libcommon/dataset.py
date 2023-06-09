@@ -61,6 +61,8 @@ def get_dataset_info_for_supported_datasets(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    revision: Optional[str] = None,
+    files_metadata: bool = False,
 ) -> DatasetInfo:
     """
     Get the DatasetInfo of the dataset, after checking if it's supported (no private datasets).
@@ -74,6 +76,12 @@ def get_dataset_info_for_supported_datasets(
             An authentication token (See https://huggingface.co/settings/token)
         hf_timeout_seconds (`float`, *optional*, defaults to None):
             The timeout in seconds for the request to the Hub.
+        revision (`str`, *optional*, defaults to None):
+            The revision of the dataset repository from which to get the
+            information.
+        files_metadata (`bool`, *optional*, defaults to False):
+            Whether or not to retrieve metadata for files in the repository
+            (size, LFS metadata, etc). Defaults to `False`.
     Returns:
         `DatasetInfo`: the dataset info.
     Raises the following errors:
@@ -91,7 +99,7 @@ def get_dataset_info_for_supported_datasets(
     """
     try:
         dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
-            repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds
+            repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, revision=revision, files_metadata=files_metadata
         )
     except CustomError as err:
         raise err
