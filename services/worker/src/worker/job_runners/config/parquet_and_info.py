@@ -329,7 +329,6 @@ def raise_if_not_supported(
     builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
-    supported_datasets: List[str],
     max_dataset_size: int,
     max_external_data_files: int,
 ) -> None:
@@ -350,9 +349,6 @@ def raise_if_not_supported(
             An app authentication token with read access to all the datasets.
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
-        supported_datasets (`List[str]`):
-            The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
-            (saving the blocked datasets).
         max_dataset_size (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
@@ -400,18 +396,17 @@ def raise_if_not_supported(
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
     )
-    if builder.repo_id not in supported_datasets:
-        raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
-        raise_if_too_big_from_external_data_files(
-            builder=builder,
-            max_dataset_size=max_dataset_size,
-            max_external_data_files=max_external_data_files,
-            hf_token=hf_token,
-        )
-        raise_if_too_big_from_datasets(
-            builder.info,
-            max_dataset_size=max_dataset_size,
-        )
+    raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
+    raise_if_too_big_from_external_data_files(
+        builder=builder,
+        max_dataset_size=max_dataset_size,
+        max_external_data_files=max_external_data_files,
+        hf_token=hf_token,
+    )
+    raise_if_too_big_from_datasets(
+        builder.info,
+        max_dataset_size=max_dataset_size,
+    )
 
 
 class EmptySplitsError(Exception):
@@ -816,15 +811,16 @@ def compute_config_parquet_and_info_response(
         dataset_info = get_dataset_info_or_raise(
             dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision
         )
-        raise_if_not_supported(
-            dataset_info=dataset_info,
-            builder=builder,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            supported_datasets=supported_datasets,
-            max_dataset_size=max_dataset_size,
-            max_external_data_files=max_external_data_files,
-        )
+        if dataset not in supported_datasets:
+            raise_if_not_supported(
+                dataset_info=dataset_info,
+                builder=builder,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                supported_datasets=supported_datasets,
+                max_dataset_size=max_dataset_size,
+                max_external_data_files=max_external_data_files,
+            )
         parquet_operations = convert_to_parquet(builder)
 
     # create the target revision if we managed to get the parquet files and it does not exist yet
