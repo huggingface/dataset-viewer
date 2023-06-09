@@ -14,8 +14,9 @@ import datasets
 import datasets.config
 import datasets.info
 import numpy as np
+import pyarrow.parquet as pq
 import requests
-from datasets import DownloadConfig, load_dataset_builder
+from datasets import DownloadConfig, load_dataset_builder, Features
 from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.data_files import Url
@@ -28,6 +29,8 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
+from datasets.splits import SplitDict, SplitInfo
+from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -58,11 +61,13 @@ from libcommon.exceptions import (
     ExternalFilesSizeRequestError,
     ExternalFilesSizeRequestHTTPError,
     ExternalFilesSizeRequestTimeoutError,
+    FileSystemError,
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
+from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
@@ -606,15 +611,48 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     return parquet_operations
 
 
+def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
+    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    f = fs.open(url, headers=headers)
+    return pq.ParquetFile(f), f.size
+
+
+def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
+    """Fill the builder DatasetInfo from the copeid parquet files"""
+    data_files = builder.config.data_files
+    if not data_files:
+        raise EmptyDatasetError("Empty parquet data_files")
+    fs = HTTPFileSystem()
+    builder.info.dataset_size = 0
+    builder.info.download_size = 0
+    builder.info.splits = SplitDict()
+    for split in data_files:
+        try:
+            parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
+                partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token), data_files[split], unit="pq", disable=True
+            )
+            parquet_files, sizes = zip(*parquet_files_and_sizes)
+        except Exception as e:
+            raise FileSystemError(f"Could not read the parquet files: {e}") from e
+        if parquet_files:
+            if builder.info.features is None:
+                builder.info.features = Features.from_arrow_schema(parquet_files[0].schema_arrow)
+            num_bytes = sum(parquet_file.metadata.row_group(i).total_byte_size for parquet_file in parquet_files for i in range(parquet_file.metadata.num_row_groups))
+            num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+            builder.info.splits.add(SplitInfo(split, num_bytes=num_bytes, num_examples=num_examples))
+            builder.info.download_size += sum(sizes)
+            builder.info.dataset_size += num_bytes
+
+
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
-    """Download and prepare the dataset as parquet files"""
+    """Download and prepare the dataset as parquet files and fills the builder info"""
     # prepare the parquet files locally
     writer_batch_size = get_writer_batch_size(builder.info)
     if writer_batch_size is not None and (
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
         builder._writer_batch_size = writer_batch_size
-    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
+    builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir and it fills the info
     local_parquet_files = [
         ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
@@ -768,6 +806,7 @@ def compute_config_parquet_and_info_response(
 
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
+        fill_builder_info(builder)
     else:
         dataset_info = get_dataset_info_for_supported_datasets(
             dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
