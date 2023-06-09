@@ -95,7 +95,8 @@ class ParquetFile:
         self.local_dir = local_dir
         self.config = config
 
-    def repo_file(self) -> str:
+    @property
+    def path_in_repo(self) -> str:
         return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
 
 
@@ -608,27 +609,21 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     """Download and prepare the dataset as parquet files"""
     # prepare the parquet files locally
-    local_parquet_files: List[ParquetFile] = []
     writer_batch_size = get_writer_batch_size(builder.info)
     if writer_batch_size is not None and (
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
         builder._writer_batch_size = writer_batch_size
     builder.download_and_prepare(file_format="parquet")  # the parquet files are stored in the cache dir
-    local_parquet_files.extend(
+    local_parquet_files = [
         ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
         for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
-    )
-
-    # - get parquet files for current config
-    config_files_to_add: Dict[str, str] = {
-        parquet_file.repo_file(): parquet_file.local_file for parquet_file in local_parquet_files
-    }
+    ]
 
     # send the files to the target revision
     parquet_operations: List[CommitOperationAdd] = [
-        CommitOperationAdd(path_in_repo=file, path_or_fileobj=local_file)
-        for file, local_file in config_files_to_add.items()
+        CommitOperationAdd(path_in_repo=parquet_file.path_in_repo, path_or_fileobj=parquet_file.local_file)
+        for parquet_file in local_parquet_files
     ]
     logging.debug(f"{parquet_operations=}")
     return parquet_operations
