@@ -792,7 +792,7 @@ def compute_config_parquet_and_info_response(
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
-    dataset_info = asdict(builder.info)
+    builder_info = asdict(builder.info)
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - get repo parquet files
     all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
@@ -846,7 +846,7 @@ def compute_config_parquet_and_info_response(
             )
             for repo_file in repo_files
         ],
-        dataset_info=dataset_info,
+        dataset_info=builder_info,
     )
 
 
