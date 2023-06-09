@@ -46,10 +46,6 @@ class ParquetFileItem(TypedDict):
     size: int
 
 
-httpfs = HTTPFileSystem()
-session = asyncio.run(httpfs.set_session())
-
-
 class ParquetFileMetadataItem(TypedDict):
     dataset: str
     config: str
@@ -252,6 +248,8 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
         ):
+            httpfs = HTTPFileSystem()
+            session = asyncio.run(httpfs.set_session())
             parquet_files = [
                 pq.ParquetFile(
                     HTTPFile(httpfs, url, session=session, size=size, loop=httpfs.loop, cache_type=None),

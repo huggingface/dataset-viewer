@@ -14,7 +14,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet import Indexer
+from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo

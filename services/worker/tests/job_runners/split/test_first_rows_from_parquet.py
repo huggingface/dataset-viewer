@@ -131,9 +131,9 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    with patch("libcommon.parquet.get_hf_fs", return_value=ds_fs):
+    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_fs):
         with patch(
-            "libcommon.parquet.get_hf_parquet_uris",
+            "libcommon.parquet_utils.get_hf_parquet_uris",
             side_effect=mock_get_hf_parquet_uris,
         ):
             job_runner = get_job_runner(

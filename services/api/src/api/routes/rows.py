@@ -12,7 +12,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 import pyarrow as pa
 from datasets import Features
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.parquet import Indexer, StrPath
+from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.viewer_utils.asset import (
