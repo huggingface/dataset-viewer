@@ -17,8 +17,6 @@
   {{ include "envDatasetsBased" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/%s/datasets" .Values.cacheDirectory .workerValues.deployName | quote }}
-  - name: QUEUE_MAX_JOBS_PER_NAMESPACE
-    value: {{ .workerValues.maxJobsPerNamespace | quote }}
   - name: WORKER_JOB_TYPES_BLOCKED
     value: {{ .workerValues.workerJobTypesBlocked | quote }}
   - name: WORKER_JOB_TYPES_ONLY

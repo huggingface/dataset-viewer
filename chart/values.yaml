@@ -111,8 +111,6 @@ cache:
   mongoDatabase: "datasets_server_cache"
 
 queue:
-  # Maximum number of jobs running at the same time for the same namespace
-  maxJobsPerNamespace: 1
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
@@ -394,8 +392,6 @@ workers:
   -
     # name of the deployment
     deployName: "all"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
     # job types that this worker will not process
     workerJobTypesBlocked: ""
     # job types that this worker can process

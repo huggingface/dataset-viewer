@@ -13,7 +13,6 @@ services:
       CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
       # queue
-      QUEUE_MAX_JOBS_PER_NAMESPACE: ${QUEUE_MAX_JOBS_PER_NAMESPACE-1}
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://mongodb} # use mongo container by default
       QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
       # metrics
