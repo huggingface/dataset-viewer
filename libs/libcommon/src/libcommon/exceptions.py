@@ -85,6 +85,7 @@ CacheableErrorCode = Literal[
     "DatasetTooBigFromHubError",
     "DatasetWithTooBigExternalFilesError",
     "DatasetWithTooManyExternalFilesError",
+    "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
     "EmptyDatasetError",
     "ExternalFilesSizeRequestConnectionError",
@@ -222,10 +223,17 @@ class DatasetWithTooBigExternalFilesError(CacheableError):
 
 
 class DatasetWithTooManyExternalFilesError(CacheableError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
+    """Raised when the number of external data files of a dataset is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
+
+
+class DatasetWithTooManyParquetFilesError(CacheableError):
+    """Raised when the number of parquet files of a dataset is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyParquetFilesError", cause, True)
 
 
 class DisabledViewerError(CacheableError):
