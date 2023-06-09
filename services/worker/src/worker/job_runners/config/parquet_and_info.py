@@ -35,7 +35,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
-from huggingface_hub.utils._errors import RepositoryNotFoundError, RevisionNotFoundError
+from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
