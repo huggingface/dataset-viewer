@@ -159,14 +159,12 @@ class CacheConfig:
             )
 
 
-QUEUE_MAX_JOBS_PER_NAMESPACE = 1
 QUEUE_MONGO_DATABASE = "datasets_server_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass(frozen=True)
 class QueueConfig:
-    max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
@@ -175,7 +173,6 @@ class QueueConfig:
         env = Env(expand_vars=True)
         with env.prefixed("QUEUE_"):
             return cls(
-                max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
