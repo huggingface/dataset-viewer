@@ -254,51 +254,6 @@ def test_priority_logic() -> None:
         queue.start_job()
 
 
-@pytest.mark.parametrize("max_jobs_per_namespace", [(None), (-5), (0), (1), (2)])
-def test_max_jobs_per_namespace(max_jobs_per_namespace: Optional[int]) -> None:
-    test_type = "test_type"
-    test_dataset = "test_dataset"
-    test_revision = "test_revision"
-    test_config = "test_config"
-    queue = Queue(max_jobs_per_namespace=max_jobs_per_namespace)
-    queue.upsert_job(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
-    )
-    assert queue.is_job_in_process(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
-    )
-    queue.upsert_job(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split2"
-    )
-    queue.upsert_job(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split3"
-    )
-    job_info = queue.start_job()
-    assert job_info["params"]["dataset"] == test_dataset
-    assert job_info["params"]["revision"] == test_revision
-    assert job_info["params"]["config"] == test_config
-    assert job_info["params"]["split"] == "split1"
-    assert queue.is_job_in_process(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
-    )
-    if max_jobs_per_namespace == 1:
-        with pytest.raises(EmptyQueueError):
-            queue.start_job()
-        return
-    job_info_2 = queue.start_job()
-    assert job_info_2["params"]["split"] == "split2"
-    if max_jobs_per_namespace == 2:
-        with pytest.raises(EmptyQueueError):
-            queue.start_job()
-        return
-    # max_jobs_per_namespace <= 0 and max_jobs_per_namespace == None are the same
-    # finish the first job
-    queue.finish_job(job_info["job_id"], is_success=True)
-    assert not queue.is_job_in_process(
-        job_type=test_type, dataset=test_dataset, revision=test_revision, config=test_config, split="split1"
-    )
-
-
 @pytest.mark.parametrize(
     "job_type,job_types_blocked,job_types_only,should_raise",
     [
@@ -319,7 +274,7 @@ def test_job_types_only(
 ) -> None:
     test_dataset = "test_dataset"
     test_revision = "test_revision"
-    queue = Queue(max_jobs_per_namespace=100)
+    queue = Queue()
     queue.upsert_job(job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None)
     assert queue.is_job_in_process(
         job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None
@@ -357,7 +312,7 @@ def test_count_by_status() -> None:
 
 
 def test_get_dataset_pending_jobs_for_type() -> None:
-    queue = Queue(max_jobs_per_namespace=100)
+    queue = Queue()
     test_type = "test_type"
     test_another_type = "test_another_type"
     test_dataset = "test_dataset"
