@@ -85,6 +85,7 @@ CacheableErrorCode = Literal[
     "DatasetTooBigFromHubError",
     "DatasetWithTooBigExternalFilesError",
     "DatasetWithTooManyExternalFilesError",
+    "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
     "EmptyDatasetError",
     "ExternalFilesSizeRequestConnectionError",
