@@ -29,8 +29,6 @@ from worker.utils import (
     RowItem,
     SplitFirstRowsResponse,
     create_truncated_row_items,
-    get_hf_fs,
-    get_hf_parquet_uris,
     get_json_size,
     to_features_list,
 )

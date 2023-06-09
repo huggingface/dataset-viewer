@@ -27,9 +27,6 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
-from huggingface_hub import HfFileSystem
-from huggingface_hub.hf_file_system import safe_quote
-from libcommon.constants import PARQUET_REVISION
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.utils import orjson_dumps
 

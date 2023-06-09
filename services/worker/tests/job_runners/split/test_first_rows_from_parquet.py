@@ -5,7 +5,7 @@ from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable, Generator, List
 from unittest.mock import patch
-from datasets import Dataset
+
 import pytest
 from datasets import Dataset
 from fsspec import AbstractFileSystem
@@ -91,29 +91,19 @@ def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSyste
 def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
     return paths
 
-@pytest.fixture
-def ds() -> Dataset:
-    return Dataset.from_dict({"text": ["Hello there", "General Kenobi"]})
-
-@pytest.fixture
-def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
-    with tmpfs.open("config/dataset-split.parquet", "wb") as f:
-        ds.to_parquet(f)
-    yield tmpfs
-
 
 @pytest.mark.parametrize(
     "rows_max_bytes,columns_max_number,error_code",
     [
         (0, 10, "TooBigContentError"),  # too small limit, even with truncation
-        # (1_000, 1, "TooManyColumnsError"),  # too small columns limit
-        # (1_000, 10, None),
+        (1_000, 1, "TooManyColumnsError"),  # too small columns limit
+        (1_000, 10, None),
     ],
 )
 def test_compute(
+    ds_fs: AbstractFileSystem,
     get_job_runner: GetJobRunner,
     app_config: AppConfig,
-    ds_fs: AbstractFileSystem,
     rows_max_bytes: int,
     columns_max_number: int,
     error_code: str,

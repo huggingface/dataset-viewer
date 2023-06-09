@@ -27,7 +27,9 @@ from libcommon.exceptions import (
     SplitNotFoundError,
     UnsupportedIndexableColumnsError,
 )
+from libcommon.parquet_utils import get_hf_fs, get_hf_parquet_uris
 from libcommon.processing_graph import ProcessingStep
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath, remove_dir
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.index_utils import create_index_dir_split
@@ -36,13 +38,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import (
-    CompleteJobResult,
-    IndexRowsResponse,
-    get_hf_fs,
-    get_hf_parquet_uris,
-    get_previous_step_or_raise,
-)
+from worker.utils import CompleteJobResult, IndexRowsResponse
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
