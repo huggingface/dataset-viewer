@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache, partial
 from os import PathLike
-from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -55,6 +55,28 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
+
+
+class HTTPFileSystemSession(object):
+    _singleton: Optional["HTTPFileSystemSession"] = None
+
+    @classmethod
+    def get_instance(cls) -> "HTTPFileSystemSession":
+        if cls._singleton is None:
+            HTTPFileSystemSession()
+        return cast("HTTPFileSystemSession", HTTPFileSystemSession._singleton)
+
+    def __new__(cls) -> "HTTPFileSystemSession":
+        if HTTPFileSystemSession._singleton is not None:
+            raise RuntimeError(
+                "cannot initialize another instance of HTTPFileSystemSession, use .get_instance() instead"
+            )
+        return super(HTTPFileSystemSession, cls).__new__(cls)
+
+    def __init__(self) -> None:
+        HTTPFileSystemSession._singleton = self
+        self.httpfs = HTTPFileSystem()
+        self.session = asyncio.run(self.httpfs.set_session())
 
 
 def get_supported_unsupported_columns(
@@ -248,8 +270,9 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
         ):
-            httpfs = HTTPFileSystem()
-            session = asyncio.run(httpfs.set_session())
+            httpFileSystemSession = HTTPFileSystemSession.get_instance()
+            session = httpFileSystemSession.session
+            httpfs = httpFileSystemSession.httpfs
             parquet_files = [
                 pq.ParquetFile(
                     HTTPFile(httpfs, url, session=session, size=size, loop=httpfs.loop, cache_type=None),
