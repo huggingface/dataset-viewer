@@ -47,7 +47,7 @@ def guard_int(x: Any) -> int:
 class ProcessingStepSpecification(TypedDict, total=False):
     input_type: InputType
     triggered_by: Union[List[str], str, None]
-    required_by_dataset_viewer: Literal[True]
+    enables_preview: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
     provides_config_split_names: bool
@@ -134,7 +134,7 @@ class ProcessingGraph:
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, List[str]] = field(init=False)
     _first_processing_steps: List[ProcessingStep] = field(init=False)
-    _processing_steps_required_by_dataset_viewer: List[ProcessingStep] = field(init=False)
+    _processing_steps_enables_preview: List[ProcessingStep] = field(init=False)
     _config_split_names_processing_steps: List[ProcessingStep] = field(init=False)
     _config_parquet_processing_steps: List[ProcessingStep] = field(init=False)
     _config_parquet_metadata_processing_steps: List[ProcessingStep] = field(init=False)
@@ -179,7 +179,7 @@ class ProcessingGraph:
                 raise ValueError(f"Processing step {name} is defined twice.")
             _nx_graph.add_node(
                 name,
-                required_by_dataset_viewer=specification.get("required_by_dataset_viewer", False),
+                enables_preview=specification.get("enables_preview", False),
                 provides_dataset_config_names=provides_dataset_config_names,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
@@ -213,9 +213,9 @@ class ProcessingGraph:
         ]
         if any(processing_step.input_type != "dataset" for processing_step in self._first_processing_steps):
             raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
-        self._processing_steps_required_by_dataset_viewer = [
+        self._processing_steps_enables_preview = [
             self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="required_by_dataset_viewer")
+            for (processing_step_name, required) in _nx_graph.nodes(data="enables_preview")
             if required
         ]
         self._config_parquet_processing_steps = [
@@ -370,17 +370,17 @@ class ProcessingGraph:
         """
         return copy_processing_steps_list(self._first_processing_steps)
 
-    def get_processing_steps_required_by_dataset_viewer(self) -> List[ProcessingStep]:
+    def get_processing_steps_enables_preview(self) -> List[ProcessingStep]:
         """
-        Get the processing steps required by the dataset viewer.
+        Get the processing steps that enable the dataset preview (first rows).
 
         The returned processing steps are copies of the original ones, so that they can be modified without affecting
         the original ones.
 
         Returns:
-            List[ProcessingStep]: The list of processing steps required by the dataset viewer
+            List[ProcessingStep]: The list of processing steps that enable the dataset preview
         """
-        return copy_processing_steps_list(self._processing_steps_required_by_dataset_viewer)
+        return copy_processing_steps_list(self._processing_steps_enables_preview)
 
     def get_config_parquet_processing_steps(self) -> List[ProcessingStep]:
         """

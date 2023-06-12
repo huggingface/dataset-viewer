@@ -20,8 +20,8 @@ from api.utils import (
 
 def get_valid(processing_graph: ProcessingGraph) -> List[str]:
     # a dataset is considered valid if at least one response of any of the
-    # "required_by_dataset_viewer" steps is valid.
-    processing_steps = processing_graph.get_processing_steps_required_by_dataset_viewer()
+    # "enables_preview" steps is valid.
+    processing_steps = processing_graph.get_processing_steps_enables_preview()
     if not processing_steps:
         return []
     datasets = set.union(

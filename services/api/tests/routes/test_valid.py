@@ -26,7 +26,7 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
     [
         {},
         {step_1: {}},
-        {step_1: {"required_by_dataset_viewer": True}},
+        {step_1: {"enables_preview": True}},
     ],
 )
 def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> None:
@@ -38,9 +38,9 @@ def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> 
     "processing_graph_specification,expected_valid",
     [
         ({step_1: {}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}}, ["dataset"]),
-        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, ["dataset"]),
+        ({step_1: {"enables_preview": True}}, ["dataset"]),
+        ({step_1: {}, step_2: {"enables_preview": True}}, []),
+        ({step_1: {"enables_preview": True}, step_2: {"enables_preview": True}}, ["dataset"]),
     ],
 )
 def test_one_dataset(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
@@ -55,10 +55,10 @@ def test_one_dataset(processing_graph_specification: ProcessingGraphSpecificatio
     "processing_graph_specification,expected_valid",
     [
         ({step_1: {}, step_2: {}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {}}, ["dataset1"]),
-        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, ["dataset2"]),
+        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset1"]),
+        ({step_1: {}, step_2: {"enables_preview": True}}, ["dataset2"]),
         (
-            {step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}},
+            {step_1: {"enables_preview": True}, step_2: {"enables_preview": True}},
             ["dataset1", "dataset2"],
         ),
     ],
@@ -93,7 +93,7 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
         ),
         (
             {
-                dataset_step: {"required_by_dataset_viewer": True},
+                dataset_step: {"enables_preview": True},
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
@@ -105,7 +105,7 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
                 config_step: {
                     "input_type": "config",
                     "triggered_by": dataset_step,
-                    "required_by_dataset_viewer": True,
+                    "enables_preview": True,
                 },
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
@@ -115,19 +115,19 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
             {
                 dataset_step: {},
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
-                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
+                split_step: {"input_type": "split", "triggered_by": config_step, "enables_preview": True},
             },
             ["dataset"],
         ),
         (
             {
-                dataset_step: {"required_by_dataset_viewer": True},
+                dataset_step: {"enables_preview": True},
                 config_step: {
                     "input_type": "config",
                     "triggered_by": dataset_step,
-                    "required_by_dataset_viewer": True,
+                    "enables_preview": True,
                 },
-                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
+                split_step: {"input_type": "split", "triggered_by": config_step, "enables_preview": True},
             },
             ["dataset"],
         ),
@@ -163,7 +163,7 @@ def test_three_steps(processing_graph_specification: ProcessingGraphSpecificatio
 
 
 def test_errors() -> None:
-    processing_graph = ProcessingGraph({dataset_step: {"required_by_dataset_viewer": True}})
+    processing_graph = ProcessingGraph({dataset_step: {"enables_preview": True}})
     dataset_a = "dataset_a"
     dataset_b = "dataset_b"
     dataset_c = "dataset_c"
