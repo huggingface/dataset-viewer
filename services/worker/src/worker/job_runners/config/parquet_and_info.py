@@ -626,6 +626,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
     fs = HTTPFileSystem()
     if not builder.info.splits or not builder.info.download_size:
         builder.info.splits = SplitDict()
+        builder.info.download_size = 0
         builder.info.dataset_size = 0
         for split in data_files:
             try:
