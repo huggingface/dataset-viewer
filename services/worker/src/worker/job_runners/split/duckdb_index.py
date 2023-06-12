@@ -54,9 +54,9 @@ UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
+# TODO: What if __id field already exist?
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
-# TODO: What if __id field already exist?
 
 
 def create_index_item(

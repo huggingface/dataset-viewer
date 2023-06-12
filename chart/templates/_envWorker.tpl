@@ -84,5 +84,21 @@
   value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
-
+# specific to 'split-duckdb-index' job runner
+- name: DUCKDB_INDEX_COMMIT_MESSAGE
+  value: {{ .Values.duckDBIndex.commitMessage | quote }}
+- name: DUCKDB_INDEX_COMMITTER_HF_TOKEN
+  {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
+      key: HF_TOKEN
+      optional: false
+  {{- else }}
+  value: {{ .Values.secrets.appParquetConverterHfToken.value }}
+  {{- end }}
+- name: DUCKDB_INDEX_TARGET_REVISION
+  value: {{ .Values.duckDBIndex.targetRevision | quote }}
+- name: DUCKDB_INDEX_URL_TEMPLATE
+  value: {{ .Values.duckDBIndex.urlTemplate | quote }}
 {{- end -}}
