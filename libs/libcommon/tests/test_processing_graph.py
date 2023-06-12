@@ -305,6 +305,11 @@ def test_default_graph_enables_preview(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_processing_steps_enables_preview(), enables_preview)
 
 
+def test_default_graph_enables_viewer(graph: ProcessingGraph) -> None:
+    enables_viewer = ["config-size"]
+    assert_lists_are_equal(graph.get_processing_steps_enables_viewer(), enables_viewer)
+
+
 def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_dataset_config_names_processing_steps(), ["dataset-config-names"])
 

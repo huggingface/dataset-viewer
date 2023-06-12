@@ -264,6 +264,7 @@ class ProcessingGraphConfig:
             "config-size": {
                 "input_type": "config",
                 "triggered_by": "config-parquet-and-info",
+                "enables_viewer": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {
