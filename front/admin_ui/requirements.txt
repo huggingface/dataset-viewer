@@ -1,7 +1,7 @@
-gradio==3.28.1
+gradio==3.34.0
 libcommon @ git+https://github.com/huggingface/datasets-server@main#subdirectory=libs/libcommon
 matplotlib>=3.7.0
 pygraphviz==1.10
 requests>=2.28.1
 huggingface-hub~=0.15.1
-duckdb~=0.6.1
+duckdb~=0.8.0
