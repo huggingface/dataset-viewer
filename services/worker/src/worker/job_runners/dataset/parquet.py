@@ -14,9 +14,8 @@ from libcommon.simple_cache import (
 )
 
 from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob
+from worker.utils import JobResult, ParquetFileItem, PreviousJob
 
 
 class DatasetParquetResponse(TypedDict):

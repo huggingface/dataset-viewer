@@ -20,12 +20,12 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
 from worker.job_runners.config.parquet_metadata import (
     ConfigParquetMetadataJobRunner,
     ConfigParquetMetadataResponse,
     ParquetFileMetadataItem,
 )
+from worker.utils import ParquetFileItem
 
 
 @pytest.fixture(autouse=True)

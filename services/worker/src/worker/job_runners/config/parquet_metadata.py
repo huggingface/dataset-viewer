@@ -5,7 +5,6 @@ import logging
 from functools import partial
 from typing import List, Optional, TypedDict
 
-from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
 from libcommon.exceptions import (
@@ -23,8 +22,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.utils import CompleteJobResult
+from worker.utils import CompleteJobResult, ParquetFileItem, get_parquet_file
 
 
 class ParquetFileMetadataItem(TypedDict):
@@ -40,11 +38,6 @@ class ParquetFileMetadataItem(TypedDict):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: List[ParquetFileMetadataItem]
-
-
-def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
-    return ParquetFile(fs.open(url, headers=headers))
 
 
 def compute_parquet_metadata_response(

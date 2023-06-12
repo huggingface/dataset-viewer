@@ -8,7 +8,6 @@ from functools import partial
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
-from urllib.parse import quote
 
 import datasets
 import datasets.config
@@ -72,16 +71,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult
-
-
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
+from worker.utils import CompleteJobResult, ParquetFileItem, hf_hub_url
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
@@ -104,12 +94,6 @@ class ParquetFile:
     @property
     def path_in_repo(self) -> str:
         return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
-
-
-# TODO: use huggingface_hub's hf_hub_url after
-# https://github.com/huggingface/huggingface_hub/issues/1082
-def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
-    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
 p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")

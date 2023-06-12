@@ -16,10 +16,8 @@ from worker.job_runners.config.parquet import (
     ConfigParquetJobRunner,
     ConfigParquetResponse,
 )
-from worker.job_runners.config.parquet_and_info import (
-    ConfigParquetAndInfoResponse,
-    ParquetFileItem,
-)
+from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoResponse
+from worker.utils import ParquetFileItem
 
 
 @pytest.fixture(autouse=True)

@@ -143,4 +143,18 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
+        "duckdb_index": Dataset.from_pandas(
+            pd.DataFrame(
+                {
+                    "text": [
+                        "foo",
+                        "bar",
+                        "foobar",
+                        "- Hello there !",
+                        "- General Kenobi !",
+                    ]
+                },
+                dtype=pd.StringDtype(storage="python"),
+            )
+        ),
     }

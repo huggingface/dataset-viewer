@@ -9,8 +9,7 @@ from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.utils import CompleteJobResult
+from worker.utils import CompleteJobResult, ParquetFileItem
 
 
 class ConfigParquetResponse(TypedDict):

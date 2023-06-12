@@ -18,6 +18,7 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import quote
 
 from datasets import (
     Dataset,
@@ -27,8 +28,11 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
+from datasets.utils.file_utils import get_authentication_headers_for_url
+from fsspec.implementations.http import HTTPFileSystem
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.utils import orjson_dumps
+from pyarrow.parquet import ParquetFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -145,6 +149,15 @@ Row = Mapping[str, Any]
 class RowsContent(TypedDict):
     rows: List[Row]
     all_fetched: bool
+
+
+class ParquetFileItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    url: str
+    filename: str
+    size: int
 
 
 # TODO: separate functions from common classes and named dicts otherwise this file will continue growing
@@ -407,3 +420,14 @@ def get_rows_or_raise(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
             ) from err
+
+
+# TODO: use huggingface_hub's hf_hub_url after
+# https://github.com/huggingface/huggingface_hub/issues/1082
+def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
+    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
+
+
+def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
+    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    return ParquetFile(fs.open(url, headers=headers))

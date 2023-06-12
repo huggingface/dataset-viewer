@@ -101,6 +101,7 @@ CacheableErrorCode = Literal[
     "MissingSpawningTokenError",
     "NoIndexableColumnsError",
     "NormalRowsError",
+    "NotAvailableIndexFileError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
     "PreviousStepFormatError",
@@ -495,3 +496,10 @@ class UnsupportedIndexableColumnsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedIndexableColumnsError", cause, True)
+
+
+class NotAvailableIndexFileError(CacheableError):
+    """Raised when no duckdb index file was found for split."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NotAvailableIndexFileError", cause, False)

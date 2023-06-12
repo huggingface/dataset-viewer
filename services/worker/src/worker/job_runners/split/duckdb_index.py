@@ -5,10 +5,10 @@ import logging
 from functools import partial
 from pathlib import Path
 from typing import List, Optional, Set
-from urllib.parse import quote
 
 import duckdb
 from datasets import Features
+from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -22,12 +22,12 @@ from libcommon.exceptions import (
     DatasetNotFoundError,
     FileSystemError,
     NoIndexableColumnsError,
+    NotAvailableIndexFileError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitNotFoundError,
     UnsupportedIndexableColumnsError,
 )
-from libcommon.parquet_utils import get_hf_fs, get_hf_parquet_uris
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath, remove_dir
@@ -38,7 +38,13 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import CompleteJobResult, IndexRowsResponse
+from worker.utils import (
+    CompleteJobResult,
+    IndexRowsResponse,
+    ParquetFileItem,
+    get_parquet_file,
+    hf_hub_url,
+)
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
@@ -51,10 +57,6 @@ CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial')
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 # TODO: What if __id field already exist?
-
-
-def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
-    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
 def create_index_item(
@@ -96,7 +98,7 @@ def compute_index_rows(
     hf_token: Optional[str],
     committer_hf_token: Optional[str],
 ) -> IndexRowsResponse:
-    logging.info(f"get index-rows for dataset={dataset} config={config} split={split}")
+    logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
 
     # validate split
     split_names_best_response = get_previous_step_or_raise(
@@ -112,27 +114,22 @@ def compute_index_rows(
 
     # get parquet content
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
-
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        sources = sorted(
-            f"{config}/{parquet_file['filename']}"
-            for parquet_file in parquet_files_content
-            if parquet_file["split"] == split and parquet_file["config"] == config
-        )
-        if not sources:
+        parquet_file_items: List[ParquetFileItem] = [
+            parquet_file_item for parquet_file_item in parquet_files_content if parquet_file_item["config"] == config
+        ]
+        if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
-    logging.debug(f"Found {len(sources)} parquet files for {dataset=}, {config=}, {split=}: {sources}")
-
-    fs = get_hf_fs(hf_token=hf_token)
-    source_uris = get_hf_parquet_uris(sources, dataset=dataset)
-    desc = f"{dataset}/{config}/{split}"
+    fs = HTTPFileSystem()
+    source_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
+    desc = f"{dataset}/{config}"
     try:
         parquet_files: List[ParquetFile] = thread_map(
-            partial(ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
+            partial(get_parquet_file, fs=fs, hf_token=hf_token), source_urls, desc=desc, unit="pq", disable=True
         )
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -166,7 +163,7 @@ def compute_index_rows(
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     # create duckdb index location
-    split_path, dir_path = create_index_dir_split(
+    dir_path = create_index_dir_split(
         dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
     )
     db_location = dir_path / DUCKDB_DEFAULT_INDEX_FILENAME
@@ -189,36 +186,28 @@ def compute_index_rows(
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-
+    index_file_location = f"{config}/{dataset}-{split}.db"
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
             initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
             committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-    except Exception as e:
-        # TODO: improve error handling
-        logging.error(str(e))
+
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
-    previous_index = f"{config}/{split}-{DUCKDB_DEFAULT_INDEX_FILENAME}"
     delete_operations: List[CommitOperation] = []
-    if previous_index in all_repo_files:
-        delete_operations.append(CommitOperationDelete(path_in_repo=previous_index))
-        logging.debug(f"{delete_operations=}")
+    if index_file_location in all_repo_files:
+        delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
 
     # send the files to the target revision
     add_operations: List[CommitOperation] = [
-        CommitOperationAdd(
-            path_in_repo=f"{config}/{split}-{DUCKDB_DEFAULT_INDEX_FILENAME}", path_or_fileobj=db_location
-        )
+        CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_location)
     ]
-    logging.debug(f"{add_operations=}")
 
-    # TODO: Delete local index file
     committer_hf_api.create_commit(
         repo_id=dataset,
         repo_type=DATASET_TYPE,
@@ -231,18 +220,19 @@ def compute_index_rows(
     # call the API again to get the list of parquet files
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     repo_files = [
-        repo_file
-        for repo_file in target_dataset_info.siblings
-        if repo_file.rfilename.startswith(f"{config}/{split}") and repo_file.rfilename.endswith(".db")
+        repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
     ]
+
+    if not repo_files:
+        raise NotAvailableIndexFileError("No index file was found")
+
     if len(repo_files) != 1:
-        # TODO: improve exception type
-        raise Exception("NO FILE WAS UPLOADED TO BRANCH")
-    index_file = repo_files[0]
+        logging.warning(f"Found {len(repo_files)} index files, should be only 1")
 
     remove_dir(dir_path)
+    # remove index file since it is no more used and is stored in NFS
     return create_index_item(
-        repo_file=index_file,
+        repo_file=repo_files[0],
         dataset=dataset,
         config=config,
         split=split,
