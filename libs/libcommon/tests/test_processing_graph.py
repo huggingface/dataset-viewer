@@ -300,9 +300,14 @@ def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_first_processing_steps(), roots)
 
 
-def test_default_graph_required_by_dataset_viewer(graph: ProcessingGraph) -> None:
-    required_by_dataset_viewer = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
-    assert_lists_are_equal(graph.get_processing_steps_required_by_dataset_viewer(), required_by_dataset_viewer)
+def test_default_graph_enables_preview(graph: ProcessingGraph) -> None:
+    enables_preview = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
+    assert_lists_are_equal(graph.get_processing_steps_enables_preview(), enables_preview)
+
+
+def test_default_graph_enables_viewer(graph: ProcessingGraph) -> None:
+    enables_viewer = ["config-size"]
+    assert_lists_are_equal(graph.get_processing_steps_enables_viewer(), enables_viewer)
 
 
 def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
