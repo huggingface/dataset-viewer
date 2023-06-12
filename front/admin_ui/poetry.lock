@@ -1264,6 +1264,7 @@ pytz = "^2020.1"
 requests = "^2.31.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+tqdm = "^4.65.0"
 
 [package.source]
 type = "directory"
