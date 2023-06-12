@@ -13,6 +13,9 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Sequence,
+    Tuple,
+    Type,
     TypedDict,
     TypeVar,
     Union,
@@ -285,34 +288,39 @@ def create_truncated_row_items(
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
+RETRY_ON: Tuple[Type[Exception]] = (Exception,)
 
 
-def retry(func: FuncT) -> FuncT:
+class retry:
     """retries with an increasing sleep before every attempt"""
-    SLEEPS = [1, 7, 70, 7 * 60, 70 * 60]
-    MAX_ATTEMPTS = len(SLEEPS)
 
-    @functools.wraps(func)
-    def decorator(*args: Any, **kwargs: Any) -> Any:
-        attempt = 0
-        last_err = None
-        while attempt < MAX_ATTEMPTS:
-            try:
-                """always sleep before calling the function. It will prevent rate limiting in the first place"""
-                duration = SLEEPS[attempt]
-                logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
-                time.sleep(duration)
-                return func(*args, **kwargs)
-            except ConnectionError as err:
-                logging.info("Got a ConnectionError, possibly due to rate limiting. Let's retry.")
-                last_err = err
-                attempt += 1
-        raise RuntimeError(f"Give up after {attempt} attempts with ConnectionError") from last_err
+    def __init__(self, sleeps: Sequence[int] = RETRY_SLEEPS, on: Sequence[Type[Exception]] = RETRY_ON) -> None:
+        self.sleeps = sleeps
+        self.on = on
 
-    return cast(FuncT, decorator)
+    def __call__(self, func: FuncT) -> FuncT:
+        @functools.wraps(func)
+        def decorator(*args: Any, **kwargs: Any) -> Any:
+            attempt = 0
+            last_err = None
+            while attempt < len(self.sleeps):
+                try:
+                    """always sleep before calling the function. It will prevent rate limiting in the first place"""
+                    duration = self.sleeps[attempt]
+                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                    time.sleep(duration)
+                    return func(*args, **kwargs)
+                except tuple(self.on) as err:
+                    logging.info(f"Got a {type(err)}. Let's retry.")
+                    last_err = err
+                    attempt += 1
+            raise RuntimeError(f"Give up after {attempt} attempts with {type(last_err)}") from last_err
+
+        return cast(FuncT, decorator)
 
 
-@retry
+@retry(on=[ConnectionError])
 def get_rows(
     dataset: str,
     config: str,

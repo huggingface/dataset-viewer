@@ -37,8 +37,8 @@ from huggingface_hub._commit_api import (
     CommitOperationCopy,
     CommitOperationDelete,
 )
-from huggingface_hub.hf_api import DatasetInfo, HfApi, RepoFile
-from huggingface_hub.utils._errors import RepositoryNotFoundError
+from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
+from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
@@ -72,7 +72,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult
+from worker.utils import CompleteJobResult, retry
 
 
 class ParquetFileItem(TypedDict):
@@ -677,6 +677,144 @@ def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     return parquet_operations
 
 
+def create_commits(
+    hf_api: HfApi,
+    repo_id: str,
+    operations: List[CommitOperation],
+    *,
+    commit_message: str,
+    revision: Optional[str] = None,
+    parent_commit: Optional[str] = None,
+    max_operations_per_commit: int = 500,
+) -> List[CommitInfo]:
+    """
+    Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
+
+    Args:
+        hf_api (`huggingface_hub.HfApi`)
+        repo_id (`str`):
+            The repository in which the commit will be created, for example:
+            `"username/my_dataset"`
+
+        operations (`Iterable` of [`huggingface_hub.hf_api.CommitOperation`]):
+            An iterable of operations to include in the commit, either:
+
+                - [`huggingface_hub.hf_api.CommitOperationAdd`] to upload a file
+                - [`huggingface_hub.hf_api.CommitOperationDelete`] to delete a file
+                - [`huggingface_hub.hf_api.CommitOperationCopy`] to copy a file
+
+        commit_message (`str`):
+            The summary (first line) of the commit that will be created.
+
+        commit_description (`str`, *optional*):
+            The description of the commit that will be created
+
+        token (`str`, *optional*):
+            Authentication token, obtained with `HfApi.login` method. Will
+            default to the stored token.
+
+        repo_type (`str`, *optional*):
+            Set to `"dataset"` or `"space"` if uploading to a dataset or
+            space, `None` or `"model"` if uploading to a model. Default is
+            `None`.
+
+        revision (`str`, *optional*):
+            The git revision to commit from. Defaults to the head of the `"main"` branch.
+
+        parent_commit (`str`, *optional*):
+            The OID / SHA of the parent commit, as a hexadecimal string.
+            Shorthands (7 first characters) are also supported. If specified and `create_pr` is `False`,
+            the commit will fail if `revision` does not point to `parent_commit`. If specified and `create_pr`
+            is `True`, the pull request will be created from `parent_commit`. Specifying `parent_commit`
+            ensures the repo has not changed before committing the changes, and can be especially useful
+            if the repo is updated / committed to concurrently.
+
+    Returns:
+        [`List[huggingface_hub.CommitInfo]`]:
+            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
+            url, pr url, commit message,...).
+
+    Raises:
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If commit message is empty.
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If parent commit is not a valid commit OID.
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If the Hub API returns an HTTP 400 error (bad request)
+        [`huggingface_hub.utils.RepositoryNotFoundError`]:
+            If repository is not found (error 404): wrong repo_id/repo_type, private
+            but not authenticated or repo does not exist.
+        [`huggingface_hub.utils.HfHubHTTPError`]:
+            If another commit happened after `parent_commit` or in between the commits.
+
+    <Tip warning={true}>
+
+    `create_commits` assumes that the repo already exists on the Hub. If you get a
+    Client error 404, please make sure you are authenticated and that `repo_id` and
+    `repo_type` are set correctly. If repo does not exist, create it first using
+    [`~hf_api.create_repo`].
+
+    </Tip>
+    """
+    commit_infos: List[CommitInfo] = []
+    offsets = range(0, len(operations), max_operations_per_commit)
+    for commit_idx, offset in enumerate(offsets):
+        batch_msg = f" (step {commit_idx + 1} of {len(offsets)})" if len(offsets) > 1 else ""
+        commit_infos.append(
+            hf_api.create_commit(
+                repo_id=repo_id,
+                repo_type=DATASET_TYPE,
+                revision=revision,
+                operations=operations[offset : offset + max_operations_per_commit],
+                commit_message=commit_message + batch_msg,
+                parent_commit=parent_commit if not commit_infos else commit_infos[-1].oid,
+            )
+        )
+    return commit_infos
+
+
+@retry(on=[ConnectionError, HfHubHTTPError])
+def commit_parquet_conversion(
+    hf_api: HfApi,
+    committer_hf_api: HfApi,
+    dataset: str,
+    config: str,
+    parquet_operations: List[CommitOperation],
+    config_names: Set[str],
+    target_revision: Optional[str],
+    commit_message: str,
+) -> List[CommitInfo]:
+    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+    # - get repo parquet files
+    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+    repo_parquet_files: Set[str] = {file for file in all_repo_files if file.endswith(".parquet")}
+    # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
+    #   we exclude files of current config because otherwise outdated files might be preserved
+    files_to_ignore: Set[str] = {
+        file
+        for other_config in config_names.difference({config})
+        for file in repo_parquet_files
+        if file.startswith(f"{other_config}/")
+    }.union({".gitattributes"})
+    # - get files to be deleted - all files except for:
+    #   - parquet files obtained for current config at this processing step,
+    #   - parquet files belonging to other existing configs
+    #   - .gitattributes
+    config_files_to_add = [operation.path_in_repo for operation in parquet_operations]
+    files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
+    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    logging.debug(f"{delete_operations=}")
+
+    return create_commits(
+        committer_hf_api,
+        repo_id=dataset,
+        revision=target_revision,
+        operations=delete_operations + parquet_operations,
+        commit_message=commit_message,
+        parent_commit=target_dataset_info.sha,
+    )
+
+
 def compute_config_parquet_and_info_response(
     dataset: str,
     config: str,
@@ -843,35 +981,15 @@ def compute_config_parquet_and_info_response(
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
-    builder_info = asdict(builder.info)
-    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    # - get repo parquet files
-    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
-    repo_parquet_files: Set[str] = {file for file in all_repo_files if file.endswith(".parquet")}
-    # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
-    #   we exclude files of current config because otherwise outdated files might be preserved
-    files_to_ignore: Set[str] = {
-        file
-        for other_config in config_names.difference({config})
-        for file in repo_parquet_files
-        if file.startswith(f"{other_config}/")
-    }.union({".gitattributes"})
-    # - get files to be deleted - all files except for:
-    #   - parquet files obtained for current config at this processing step,
-    #   - parquet files belonging to other existing configs
-    #   - .gitattributes
-    config_files_to_add = [operation.path_in_repo for operation in parquet_operations]
-    files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
-    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
-    logging.debug(f"{delete_operations=}")
-
-    committer_hf_api.create_commit(
-        repo_id=dataset,
-        repo_type=DATASET_TYPE,
-        revision=target_revision,
-        operations=delete_operations + parquet_operations,
+    commit_parquet_conversion(
+        hf_api=hf_api,
+        committer_hf_api=committer_hf_api,
+        dataset=dataset,
+        config=config,
+        parquet_operations=parquet_operations,
+        config_names=config_names,
+        target_revision=target_revision,
         commit_message=commit_message,
-        parent_commit=target_dataset_info.sha,
     )
 
     # call the API again to get the list of parquet files
@@ -897,7 +1015,7 @@ def compute_config_parquet_and_info_response(
             )
             for repo_file in repo_files
         ],
-        dataset_info=builder_info,
+        dataset_info=asdict(builder.info),
     )
 
 
