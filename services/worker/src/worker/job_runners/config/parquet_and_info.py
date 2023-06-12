@@ -765,7 +765,7 @@ def create_commits(
                 repo_id=repo_id,
                 repo_type=DATASET_TYPE,
                 revision=revision,
-                operations=operations[offset : offset + max_operations_per_commit],
+                operations=operations[offset : offset + max_operations_per_commit],  # noqa: E203
                 commit_message=commit_message + batch_msg,
                 parent_commit=parent_commit if not commit_infos else commit_infos[-1].oid,
             )
