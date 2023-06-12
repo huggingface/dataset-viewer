@@ -168,7 +168,7 @@ with gr.Blocks() as demo:
         if response.status_code == 200:
             dataset_status = response.json()
             cached_responses_df = pd.DataFrame([{
-                    "type": job_type,
+                    "kind": cached_response["kind"],
                     "dataset": cached_response["dataset"],
                     "config": cached_response["config"],
                     "split": cached_response["split"],
@@ -184,8 +184,9 @@ with gr.Blocks() as demo:
                 for cached_response in content["cached_responses"]
             ])
             jobs_df = pd.DataFrame([{
-                    "type": job_type,
+                    "type": job["type"],
                     "dataset": job["dataset"],
+                    "revision": job["revision"],
                     "config": job["config"],
                     "split": job["split"],
                     "namespace": job["namespace"],
