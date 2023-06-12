@@ -117,7 +117,9 @@ def compute_index_rows(
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
         parquet_file_items: List[ParquetFileItem] = [
-            parquet_file_item for parquet_file_item in parquet_files_content if parquet_file_item["config"] == config
+            parquet_file_item
+            for parquet_file_item in parquet_files_content
+            if parquet_file_item["config"] == config and parquet_file_item["split"] == split
         ]
         if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
@@ -125,11 +127,11 @@ def compute_index_rows(
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     fs = HTTPFileSystem()
-    source_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
+    parquet_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
     desc = f"{dataset}/{config}"
     try:
         parquet_files: List[ParquetFile] = thread_map(
-            partial(get_parquet_file, fs=fs, hf_token=hf_token), source_urls, desc=desc, unit="pq", disable=True
+            partial(get_parquet_file, fs=fs, hf_token=hf_token), parquet_urls, desc=desc, unit="pq", disable=True
         )
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -143,7 +145,7 @@ def compute_index_rows(
     if not string_columns:
         raise NoIndexableColumnsError("No string columns available to index.")
 
-    # look for image, audio and binary columns, if present, raise exeception do not supported yet and index everything
+    # look for image, audio and binary columns, if present, raise exeception (not supported yet)
     if any(
         feature
         for feature in features.values()
@@ -153,14 +155,6 @@ def compute_index_rows(
         is not None
     ):
         raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
-
-    try:
-        parquet_urls = [content["url"] for content in parquet_files_content if content["split"] == split]
-
-        if not parquet_urls:
-            raise ParquetResponseEmptyError("No parquet files found.")
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     # create duckdb index location
     dir_path = create_index_dir_split(
@@ -174,7 +168,7 @@ def compute_index_rows(
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
-    # index
+    # index all columns
     con = duckdb.connect(str(db_location))
     con.sql(CREATE_SEQUENCE_COMMAND)
     con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")

@@ -281,6 +281,13 @@ def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def hub_public_text_image(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="text_image", dataset=datasets["text_image"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -514,6 +521,26 @@ def get_IMAGE_rows(dataset: str) -> Any:
     ]
 
 
+TEXT_IMAGE_cols = {
+    "col": {"_type": "Image"},
+    "text": {"_type": "Value", "dtype": "string"},
+}
+
+
+def get_TEXT_IMAGE_rows(dataset: str) -> Any:
+    dataset, config, split = get_default_config_split(dataset)
+    return [
+        {
+            "col": {
+                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+                "height": 480,
+                "width": 640,
+            },
+            "text": "This is a text",
+        }
+    ]
+
+
 IMAGES_LIST_cols = {
     "col": [{"_type": "Image"}],
 }
@@ -596,6 +623,7 @@ def hub_datasets(
     hub_public_external_files: str,
     hub_public_spawning_opt_in_out: str,
     hub_public_duckdb_index: str,
+    hub_public_text_image: str,
 ) -> HubDatasets:
     return {
         "does_not_exist": {
@@ -730,5 +758,14 @@ def hub_datasets(
             "parquet_and_info_response": create_parquet_and_info_response(
                 dataset=hub_public_duckdb_index, data_type="csv"
             ),
+        },
+        "text_image": {
+            "name": hub_public_text_image,
+            "config_names_response": create_config_names_response(hub_public_text_image),
+            "splits_response": create_splits_response(hub_public_text_image),
+            "first_rows_response": create_first_rows_response(
+                hub_public_text_image, TEXT_IMAGE_cols, get_TEXT_IMAGE_rows(hub_public_text_image)
+            ),
+            "parquet_and_info_response": None,
         },
     }
