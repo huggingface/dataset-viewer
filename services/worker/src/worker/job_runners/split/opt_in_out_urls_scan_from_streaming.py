@@ -18,6 +18,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
@@ -26,7 +27,6 @@ from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
     OptUrl,
-    get_previous_step_or_raise,
     get_rows_or_raise,
 )
 

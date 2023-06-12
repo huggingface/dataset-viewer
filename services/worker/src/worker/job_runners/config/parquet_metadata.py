@@ -14,6 +14,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
@@ -23,7 +24,7 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.utils import CompleteJobResult, get_previous_step_or_raise
+from worker.utils import CompleteJobResult
 
 
 class ParquetFileMetadataItem(TypedDict):

@@ -12,20 +12,19 @@ import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
+from libcommon.parquet_utils import (
+    Indexer,
+    ParquetIndexWithMetadata,
+    ParquetIndexWithoutMetadata,
+    RowsIndex,
+)
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
 from api.config import AppConfig
-from api.routes.rows import (
-    Indexer,
-    ParquetIndexWithMetadata,
-    ParquetIndexWithoutMetadata,
-    RowsIndex,
-    clean_cached_assets,
-    create_response,
-)
+from api.routes.rows import clean_cached_assets, create_response
 
 
 @pytest.fixture(autouse=True)
@@ -248,7 +247,6 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
 def indexer(app_config: AppConfig, processing_graph: ProcessingGraph, parquet_metadata_directory: StrPath) -> Indexer:
     return Indexer(
         processing_graph=processing_graph,
-        hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
     )
@@ -265,16 +263,16 @@ def rows_index(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
-        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
             yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
 
 
 def test_indexer_get_rows_index(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet: dict[str, Any]
 ) -> None:
-    with patch("api.routes.rows.get_hf_fs", return_value=ds_fs):
-        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_fs):
+        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
             index = indexer.get_rows_index("ds", "plain_text", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
     assert index.parquet_index.features == ds.features
@@ -292,8 +290,8 @@ def test_indexer_get_rows_index_sharded(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet: dict[str, Any],
 ) -> None:
-    with patch("api.routes.rows.get_hf_fs", return_value=ds_sharded_fs):
-        with patch("api.routes.rows.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
+    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_sharded_fs):
+        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
             index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
     assert index.parquet_index.features == ds_sharded.features
@@ -322,7 +320,7 @@ def rows_index_with_parquet_metadata(
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
     with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
-        with patch("api.routes.rows.HTTPFile", return_value=f):
+        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
 
 
@@ -330,7 +328,7 @@ def test_indexer_get_rows_index_with_parquet_metadata(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet_metadata: dict[str, Any]
 ) -> None:
     with ds_fs.open("plain_text/ds-train.parquet") as f:
-        with patch("api.routes.rows.HTTPFile", return_value=f):
+        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             index = indexer.get_rows_index("ds", "plain_text", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
@@ -351,7 +349,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
     with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
-        with patch("api.routes.rows.HTTPFile", return_value=f):
+        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features

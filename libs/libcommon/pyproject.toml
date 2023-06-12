@@ -24,6 +24,7 @@ pytz = "^2020.1"
 requests = "^2.31.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+tqdm = "^4.65.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
@@ -69,6 +70,8 @@ module = [
     "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
+    "tqdm.*",
+    "fsspec.*",
 ]
 # ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true

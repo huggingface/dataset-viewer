@@ -25,6 +25,8 @@ HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
+PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig().specification)
+
 pending_jobs_df = None
 
 def healthcheck():
@@ -40,8 +42,7 @@ def healthcheck():
 
 
 def draw_graph(width, height):
-    config = ProcessingGraphConfig()
-    graph = ProcessingGraph(config.specification)._nx_graph
+    graph = PROCESSING_GRAPH._nx_graph
 
     pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
     fig = plt.figure(figsize=(width, height))
@@ -78,7 +79,8 @@ with gr.Blocks() as demo:
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
             with gr.Tab("Refresh dataset"):
-                refresh_type = gr.Textbox(label="Processing step type", placeholder="split-first-rows-from-streaming")
+                job_types = [processing_step.job_type for processing_step in PROCESSING_GRAPH.get_topologically_ordered_processing_steps()]
+                refresh_type = gr.Dropdown(job_types, multiselect=False, label="job type", value=job_types[0])
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
                 refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
@@ -168,7 +170,7 @@ with gr.Blocks() as demo:
         if response.status_code == 200:
             dataset_status = response.json()
             cached_responses_df = pd.DataFrame([{
-                    "type": job_type,
+                    "kind": cached_response["kind"],
                     "dataset": cached_response["dataset"],
                     "config": cached_response["config"],
                     "split": cached_response["split"],
@@ -184,8 +186,9 @@ with gr.Blocks() as demo:
                 for cached_response in content["cached_responses"]
             ])
             jobs_df = pd.DataFrame([{
-                    "type": job_type,
+                    "type": job["type"],
                     "dataset": job["dataset"],
+                    "revision": job["revision"],
                     "config": job["config"],
                     "split": job["split"],
                     "namespace": job["namespace"],

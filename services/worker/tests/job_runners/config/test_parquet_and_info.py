@@ -12,8 +12,9 @@ import datasets.info
 import pandas as pd
 import pytest
 import requests
-from datasets import Audio, Features, Image, Value
+from datasets import Audio, Features, Image, Value, load_dataset_builder
 from huggingface_hub.hf_api import HfApi
+from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     CustomError,
     DatasetInBlockListError,
@@ -31,11 +32,9 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
-    get_dataset_info_or_raise,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
-    raise_if_not_supported,
     raise_if_requires_manual_download,
     raise_if_too_big_from_datasets,
     raise_if_too_big_from_external_data_files,
@@ -119,10 +118,6 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     for key in content_value.keys():
         if key != "download_checksums":
             assert content_value[key] == expected_value[key], content
-    assert len(content_value["download_checksums"]) == 1, content
-    content_checksum = list(content_value["download_checksums"].values())[0]
-    expected_checksum = list(expected_value["download_checksums"].values())[0]
-    assert content_checksum == expected_checksum, content
 
 
 def test_compute(
@@ -233,13 +228,12 @@ def test_raise_if_blocked(dataset: str, blocked: List[str], raises: bool) -> Non
 
 
 def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_config: AppConfig) -> None:
+    builder = load_dataset_builder(hub_public_manual_download)
     with pytest.raises(DatasetManualDownloadError):
         raise_if_requires_manual_download(
-            hub_public_manual_download,
-            "default",
+            builder=builder,
             hf_endpoint=app_config.common.hf_endpoint,
             hf_token=app_config.common.hf_token,
-            revision="main",
         )
 
 
@@ -254,11 +248,12 @@ def test_raise_if_too_big_from_hub(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    dataset_info = get_dataset_info_or_raise(
+    dataset_info = get_dataset_info_for_supported_datasets(
         dataset=dataset,
         hf_endpoint=app_config.common.hf_endpoint,
         hf_token=app_config.common.hf_token,
         revision="main",
+        files_metadata=True,
     )
     if raises:
         with pytest.raises(DatasetTooBigFromHubError):
@@ -282,24 +277,16 @@ def test_raise_if_too_big_from_datasets(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_datasets[name]["name"]
-    config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
+    builder = load_dataset_builder(dataset)
     if raises:
         with pytest.raises(DatasetTooBigFromDatasetsError):
             raise_if_too_big_from_datasets(
-                dataset=dataset,
-                config=config,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                revision="main",
+                info=builder.info,
                 max_dataset_size=app_config.parquet_and_info.max_dataset_size,
             )
     else:
         raise_if_too_big_from_datasets(
-            dataset=dataset,
-            config=config,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-            revision="main",
+            info=builder.info,
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
         )
 
@@ -370,52 +357,13 @@ def test_raise_if_too_many_external_files(
         )
 
 
-@pytest.mark.parametrize(
-    "in_list,raises",
-    [
-        (True, False),
-        (False, True),
-    ],
-)
-def test_raise_if_not_supported(
-    hub_datasets: HubDatasets,
-    app_config: AppConfig,
-    in_list: bool,
-    raises: bool,
-) -> None:
-    dataset = hub_datasets["big"]["name"]
-    config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
-    if raises:
-        with pytest.raises(DatasetTooBigFromDatasetsError):
-            raise_if_not_supported(
-                dataset=dataset,
-                config=config,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                revision="main",
-                max_dataset_size=app_config.parquet_and_info.max_dataset_size,
-                supported_datasets=[dataset] if in_list else ["another_dataset"],
-                blocked_datasets=[],
-            )
-    else:
-        raise_if_not_supported(
-            dataset=dataset,
-            config=config,
-            hf_endpoint=app_config.common.hf_endpoint,
-            hf_token=app_config.common.hf_token,
-            revision="main",
-            max_dataset_size=app_config.parquet_and_info.max_dataset_size,
-            supported_datasets=[dataset] if in_list else ["another_dataset"],
-            blocked_datasets=[],
-        )
-
-
-def test_not_supported_if_big(
+def test_supported_if_big_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     hub_datasets: HubDatasets,
 ) -> None:
     # Not in the list of supported datasets and bigger than the maximum size
+    # but still supported since it's made of parquet files
     # dataset = hub_public_big
     dataset = hub_datasets["big"]["name"]
     config = hub_datasets["big"]["config_names_response"]["config_names"][0]["config"]
@@ -426,9 +374,33 @@ def test_not_supported_if_big(
         content=hub_datasets["big"]["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config)
+    response = job_runner.compute()
+    assert response
+    content = response.content
+    assert content
+    assert len(content["parquet_files"]) == 1
+    assert_content_is_equal(content, hub_datasets["big"]["parquet_and_info_response"])
+
+
+def test_not_supported_if_big_non_parquet(
+    app_config: AppConfig,
+    get_job_runner: GetJobRunner,
+    hub_datasets: HubDatasets,
+) -> None:
+    # Not in the list of supported datasets and bigger than the maximum size
+    # dataset = hub_public_big_csv
+    dataset = hub_datasets["big-csv"]["name"]
+    config = hub_datasets["big-csv"]["config_names_response"]["config_names"][0]["config"]
+    upsert_response(
+        kind="dataset-config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets["big-csv"]["config_names_response"],
+    )
+    job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as e:
         job_runner.compute()
-    assert e.typename == "DatasetTooBigFromDatasetsError"
+    assert e.typename == "DatasetTooBigFromHubError"
 
 
 def test_supported_if_gated(
@@ -530,6 +502,12 @@ def test_compute_splits_response_simple_csv_error(
     dataset = hub_datasets[name]["name"]
     config_names_response = hub_datasets[name]["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
+    upsert_response(
+        "dataset-config-names",
+        dataset=dataset,
+        http_status=HTTPStatus.OK,
+        content=hub_datasets[name]["config_names_response"],
+    )
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
