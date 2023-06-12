@@ -691,36 +691,30 @@ def create_commits(
     Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
 
     Args:
-        hf_api (`huggingface_hub.HfApi`)
+        hf_api (`huggingface_hub.HfApi`):
+            The HfApi to use to commit the operations.
         repo_id (`str`):
             The repository in which the commit will be created, for example:
             `"username/my_dataset"`
-
         operations (`Iterable` of [`huggingface_hub.hf_api.CommitOperation`]):
             An iterable of operations to include in the commit, either:
 
                 - [`huggingface_hub.hf_api.CommitOperationAdd`] to upload a file
                 - [`huggingface_hub.hf_api.CommitOperationDelete`] to delete a file
                 - [`huggingface_hub.hf_api.CommitOperationCopy`] to copy a file
-
         commit_message (`str`):
             The summary (first line) of the commit that will be created.
-
         commit_description (`str`, *optional*):
             The description of the commit that will be created
-
         token (`str`, *optional*):
             Authentication token, obtained with `HfApi.login` method. Will
             default to the stored token.
-
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
             space, `None` or `"model"` if uploading to a model. Default is
             `None`.
-
         revision (`str`, *optional*):
             The git revision to commit from. Defaults to the head of the `"main"` branch.
-
         parent_commit (`str`, *optional*):
             The OID / SHA of the parent commit, as a hexadecimal string.
             Shorthands (7 first characters) are also supported. If specified and `create_pr` is `False`,
@@ -728,12 +722,10 @@ def create_commits(
             is `True`, the pull request will be created from `parent_commit`. Specifying `parent_commit`
             ensures the repo has not changed before committing the changes, and can be especially useful
             if the repo is updated / committed to concurrently.
-
     Returns:
         [`List[huggingface_hub.CommitInfo]`]:
             List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
             url, pr url, commit message,...).
-
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If commit message is empty.
@@ -746,15 +738,6 @@ def create_commits(
             but not authenticated or repo does not exist.
         [`huggingface_hub.utils.HfHubHTTPError`]:
             If another commit happened after `parent_commit` or in between the commits.
-
-    <Tip warning={true}>
-
-    `create_commits` assumes that the repo already exists on the Hub. If you get a
-    Client error 404, please make sure you are authenticated and that `repo_id` and
-    `repo_type` are set correctly. If repo does not exist, create it first using
-    [`~hf_api.create_repo`].
-
-    </Tip>
     """
     commit_infos: List[CommitInfo] = []
     offsets = range(0, len(operations), max_operations_per_commit)
@@ -773,17 +756,59 @@ def create_commits(
     return commit_infos
 
 
-@retry(on=[ConnectionError, HfHubHTTPError])
+@retry(on=[HfHubHTTPError])
 def commit_parquet_conversion(
     hf_api: HfApi,
     committer_hf_api: HfApi,
     dataset: str,
     config: str,
-    parquet_operations: List[CommitOperation],
     config_names: Set[str],
-    target_revision: Optional[str],
+    parquet_operations: List[CommitOperation],
     commit_message: str,
+    target_revision: Optional[str],
 ) -> List[CommitInfo]:
+    """
+    Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
+
+    Args:
+        hf_api (`huggingface_hub.HfApi`):
+            The HfApi to get the dataset info.
+        committer_hf_api (`huggingface_hub.HfApi`):
+            The HfApi to use to commit the operations.
+        dataset (`str`):
+            The dataset in which the commit will be created, for example:
+            `"username/my_dataset"`
+        config (`str`):
+            The dataset configuration.
+        config_names (`List[str]`):
+            The list of all the configurations of this dataset. This is used to clean
+            the other fiels and directories in the repo, if any.
+        parquet_operations (`List[huggingface_hub.hf_api.CommitOperation]`):
+            List of commit operation for the parquet conversion. It could be
+            file additions or file copies for example.
+        commit_message (`str`):
+            The summary (first line) of the commit that will be created.
+        target_revision (`str`, *optional*):
+            The git revision to commit from. Defaults to the head of the `"main"` branch.
+    Returns:
+        [`List[huggingface_hub.CommitInfo]`]:
+            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
+            url, pr url, commit message,...).
+    Raises:
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If commit message is empty.
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If parent commit is not a valid commit OID.
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If the Hub API returns an HTTP 400 error (bad request)
+        [`huggingface_hub.utils.RepositoryNotFoundError`]:
+            If repository is not found (error 404): wrong repo_id/repo_type, private
+            but not authenticated or repo does not exist.
+        [`RuntimeError`]: If it fails after several retries.
+            The retry fails can come from:
+            [`huggingface_hub.utils.HfHubHTTPError`]:
+                If another commit happened after `parent_commit` or in between the commits.
+    """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - get repo parquet files
     all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
