@@ -157,11 +157,4 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
-        "text_image": other(
-            {
-                "col": str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
-                "text": "This is a text",
-            },
-            {"col": Image(), "text": Value(dtype="string")},
-        ),
     }

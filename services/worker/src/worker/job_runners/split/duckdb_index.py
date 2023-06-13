@@ -2,13 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from functools import partial
 from pathlib import Path
 from typing import List, Optional, Set
 
 import duckdb
-from datasets import Features
-from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -20,30 +17,25 @@ from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
     DatasetNotFoundError,
-    FileSystemError,
     NoIndexableColumnsError,
     NotAvailableIndexFileError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitNotFoundError,
-    UnsupportedIndexableColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
-from pyarrow.parquet import ParquetFile
-from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
-from worker.utils import CompleteJobResult, get_parquet_file, hf_hub_url
+from worker.utils import CompleteJobResult, hf_hub_url
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.db"
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio", "Image"]
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
@@ -78,49 +70,47 @@ def compute_index_rows(
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
 
-    # get parquet content
-    config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
-    try:
-        parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        parquet_file_items: List[SplitHubFile] = [
-            parquet_file_item
-            for parquet_file_item in parquet_files_content
-            if parquet_file_item["config"] == config and parquet_file_item["split"] == split
-        ]
-        if not parquet_file_items:
-            raise ParquetResponseEmptyError("No parquet files found.")
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.") from e
-
-    fs = HTTPFileSystem()
-    parquet_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
-    desc = f"{dataset}/{config}"
-    try:
-        parquet_files: List[ParquetFile] = thread_map(
-            partial(get_parquet_file, fs=fs, hf_token=hf_token), parquet_urls, desc=desc, unit="pq", disable=True
+    # get parquet urls and dataset_info
+    config_parquet_and_info_step = "config-parquet-and-info"
+    parquet_and_info_best_response = get_previous_step_or_raise(
+        kinds=[config_parquet_and_info_step],
+        dataset=dataset,
+        config=config,
+    )
+    content_parquet_and_info = parquet_and_info_best_response.response["content"]
+    if "parquet_files" not in content_parquet_and_info:
+        raise PreviousStepFormatError(
+            f"previous step '{config_parquet_and_info_step} doesn't return expected field: 'parquet_files'"
         )
-    except Exception as e:
-        raise FileSystemError(f"Could not read the parquet files: {e}") from e
+
+    if "dataset_info" not in content_parquet_and_info:
+        raise PreviousStepFormatError(
+            f"previous step '{config_parquet_and_info_step} doesn't return expected field: 'dataset_info'"
+        )
+
+    parquet_urls = [
+        parquet_file["url"]
+        for parquet_file in content_parquet_and_info["parquet_files"]
+        if parquet_file["config"] == config and parquet_file["split"] == split
+    ]
+
+    if not parquet_urls:
+        raise ParquetResponseEmptyError("No parquet files found.")
 
     # get the features
-    features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
+    features = content_parquet_and_info["dataset_info"].get("features", [])
 
     # look for string columns using the first rows
-    string_columns = [column for column, feature in features.items() if STRING_FEATURE_DTYPE in str(feature)]
-
+    string_columns = [
+        column
+        for column, feature in features.items()
+        if "dtype" in feature
+        and "_type" in feature
+        and feature["dtype"] == STRING_FEATURE_DTYPE
+        and feature["_type"] == VALUE_FEATURE_TYPE
+    ]
     if not string_columns:
         raise NoIndexableColumnsError("No string columns available to index.")
-
-    # look for image, audio and binary columns, if present, raise exception (not supported yet)
-    if any(
-        feature
-        for feature in features.values()
-        if next(
-            (feature_type for feature_type in UNSUPPORTED_FEATURES_MAGIC_STRINGS if feature_type in str(feature)), None
-        )
-        is not None
-    ):
-        raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
 
     # configure duckdb extensions
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
@@ -172,7 +162,7 @@ def compute_index_rows(
         parent_commit=target_dataset_info.sha,
     )
 
-    # call the API again to get the list of parquet files
+    # call the API again to get the index file
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     repo_files = [
         repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
@@ -187,6 +177,7 @@ def compute_index_rows(
     repo_file = repo_files[0]
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+
     return SplitHubFile(
         dataset=dataset,
         config=config,

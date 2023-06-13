@@ -121,8 +121,7 @@ def get_parquet_job_runner(
     "hub_dataset_name,expected_error_code",
     [
         ("duckdb_index", None),
-        ("text_image", "UnsupportedIndexableColumnsError"),
-        ("public", "NoIndexableColumnsError"),
+        ("public", "NoIndexableColumnsError"),  # dataset does not have string columns to index
     ],
 )
 def test_compute(
@@ -159,7 +158,7 @@ def test_compute(
     config_parquet = parquet_response.content
 
     upsert_response(
-        "config-parquet",
+        "config-parquet-and-info",
         dataset=dataset,
         config=config,
         http_status=HTTPStatus.OK,
