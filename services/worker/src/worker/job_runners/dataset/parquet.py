@@ -12,14 +12,15 @@ from libcommon.simple_cache import (
     get_previous_step_or_raise,
     get_response,
 )
+from libcommon.utils import SplitHubFile
 
 from worker.job_runners.config.parquet import ConfigParquetResponse
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, ParquetFileItem, PreviousJob
+from worker.utils import JobResult, PreviousJob
 
 
 class DatasetParquetResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+    parquet_files: List[SplitHubFile]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
 
@@ -47,7 +48,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
-        parquet_files: list[ParquetFileItem] = []
+        parquet_files: list[SplitHubFile] = []
         total = 0
         pending = []
         failed = []

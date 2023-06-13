@@ -66,16 +66,16 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult, ParquetFileItem, hf_hub_url
+from worker.utils import CompleteJobResult, hf_hub_url
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+    parquet_files: List[SplitHubFile]
     dataset_info: Dict[str, Any]
 
 
@@ -118,7 +118,7 @@ def create_parquet_file_item(
     hf_endpoint: str,
     target_revision: str,
     url_template: str,
-) -> ParquetFileItem:
+) -> SplitHubFile:
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
     _, split = parse_repo_filename(repo_file.rfilename)

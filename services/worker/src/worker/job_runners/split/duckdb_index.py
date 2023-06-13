@@ -14,7 +14,7 @@ from huggingface_hub._commit_api import (
     CommitOperationAdd,
     CommitOperationDelete,
 )
-from huggingface_hub.hf_api import HfApi, RepoFile
+from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
@@ -31,20 +31,14 @@ from libcommon.exceptions import (
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath, remove_dir
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, SplitHubFile
 from libcommon.viewer_utils.index_utils import create_index_dir_split
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import (
-    CompleteJobResult,
-    IndexRowsResponse,
-    ParquetFileItem,
-    get_parquet_file,
-    hf_hub_url,
-)
+from worker.utils import CompleteJobResult, get_parquet_file, hf_hub_url
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
@@ -59,33 +53,6 @@ INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 
 
-def create_index_item(
-    repo_file: RepoFile,
-    dataset: str,
-    config: str,
-    split: str,
-    hf_endpoint: str,
-    target_revision: str,
-    url_template: str,
-) -> IndexRowsResponse:
-    if repo_file.size is None:
-        raise ValueError(f"Cannot get size of {repo_file.rfilename}")
-    return {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "url": hf_hub_url(
-            repo_id=dataset,
-            filename=repo_file.rfilename,
-            hf_endpoint=hf_endpoint,
-            revision=target_revision,
-            url_template=url_template,
-        ),
-        "filename": Path(repo_file.rfilename).name,
-        "size": repo_file.size,
-    }
-
-
 def compute_index_rows(
     dataset: str,
     config: str,
@@ -97,7 +64,7 @@ def compute_index_rows(
     url_template: str,
     hf_token: Optional[str],
     committer_hf_token: Optional[str],
-) -> IndexRowsResponse:
+) -> SplitHubFile:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
 
     # validate split
@@ -116,7 +83,7 @@ def compute_index_rows(
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        parquet_file_items: List[ParquetFileItem] = [
+        parquet_file_items: List[SplitHubFile] = [
             parquet_file_item
             for parquet_file_item in parquet_files_content
             if parquet_file_item["config"] == config and parquet_file_item["split"] == split
@@ -225,14 +192,23 @@ def compute_index_rows(
 
     remove_dir(dir_path)
     # remove index file since it is no more used and is stored in NFS
-    return create_index_item(
-        repo_file=repo_files[0],
+
+    repo_file = repo_files[0]
+    if repo_file.size is None:
+        raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+    return SplitHubFile(
         dataset=dataset,
         config=config,
         split=split,
-        hf_endpoint=hf_endpoint,
-        target_revision=target_revision,
-        url_template=url_template,
+        url=hf_hub_url(
+            repo_id=dataset,
+            filename=repo_file.rfilename,
+            hf_endpoint=hf_endpoint,
+            revision=target_revision,
+            url_template=url_template,
+        ),
+        filename=Path(repo_file.rfilename).name,
+        size=repo_file.size,
     )
 
 

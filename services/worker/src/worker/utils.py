@@ -134,30 +134,12 @@ class ImageUrlColumnsResponse(TypedDict):
     columns: List[str]
 
 
-class IndexRowsResponse(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
 Row = Mapping[str, Any]
 
 
 class RowsContent(TypedDict):
     rows: List[Row]
     all_fetched: bool
-
-
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
 
 
 # TODO: separate functions from common classes and named dicts otherwise this file will continue growing
