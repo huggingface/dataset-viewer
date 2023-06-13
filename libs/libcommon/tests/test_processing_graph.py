@@ -83,6 +83,7 @@ def graph() -> ProcessingGraph:
                 "config-parquet",
                 "config-info",
                 "config-size",
+                "split-duckdb-index",
             ],
             ["dataset-config-names"],
             ["dataset-config-names"],
@@ -148,7 +149,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-parquet",
-            ["config-parquet-metadata", "split-first-rows-from-parquet", "dataset-parquet", "split-duckdb-index"],
+            ["config-parquet-metadata", "split-first-rows-from-parquet", "dataset-parquet"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
@@ -296,13 +297,12 @@ def graph() -> ProcessingGraph:
         (
             "split-duckdb-index",
             [],
-            ["config-parquet", "config-split-names-from-streaming", "config-split-names-from-info"],
+            ["config-parquet-and-info", "config-split-names-from-streaming", "config-split-names-from-info"],
             [
                 "config-split-names-from-streaming",
                 "config-split-names-from-info",
                 "config-parquet-and-info",
                 "config-info",
-                "config-parquet",
                 "dataset-config-names",
             ],
         ),
