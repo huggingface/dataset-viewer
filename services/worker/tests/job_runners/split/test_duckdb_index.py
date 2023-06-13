@@ -174,8 +174,10 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
+        job_runner.pre_compute()
         response = job_runner.compute()
         assert response
         content = response.content
         assert content["url"] is not None
         assert content["filename"] is not None
+        job_runner.post_compute()

@@ -30,14 +30,13 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.storage import StrPath, remove_dir
+from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
-from libcommon.viewer_utils.index_utils import create_index_dir_split
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
-from worker.job_runners.split.split_job_runner import SplitJobRunner
+from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult, get_parquet_file, hf_hub_url
 
 DATASET_TYPE = "dataset"
@@ -57,7 +56,7 @@ def compute_index_rows(
     dataset: str,
     config: str,
     split: str,
-    duckdb_index_directory: StrPath,
+    duckdb_index_file_directory: StrPath,
     target_revision: str,
     hf_endpoint: str,
     commit_message: str,
@@ -123,12 +122,6 @@ def compute_index_rows(
     ):
         raise UnsupportedIndexableColumnsError("Unsupported feature types for indexing.")
 
-    # create duckdb index location
-    dir_path = create_index_dir_split(
-        dataset=dataset, config=config, split=split, index_directory=duckdb_index_directory
-    )
-    db_location = dir_path / DUCKDB_DEFAULT_INDEX_FILENAME
-
     # configure duckdb extensions
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
@@ -136,6 +129,7 @@ def compute_index_rows(
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
     # index all columns
+    db_location = f"{duckdb_index_file_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
     con = duckdb.connect(str(db_location))
     con.sql(CREATE_SEQUENCE_COMMAND)
     con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")
@@ -190,9 +184,6 @@ def compute_index_rows(
     if len(repo_files) != 1:
         logging.warning(f"Found {len(repo_files)} index files, should be only 1")
 
-    remove_dir(dir_path)
-    # remove index file since it is no more used and is stored in NFS
-
     repo_file = repo_files[0]
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
@@ -212,9 +203,8 @@ def compute_index_rows(
     )
 
 
-class SplitDuckDbIndexJobRunner(SplitJobRunner):
+class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
     duckdb_index_config: DuckDbIndexConfig
-    duckdb_index_directory: StrPath
 
     def __init__(
         self,
@@ -227,8 +217,8 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
+            hf_datasets_cache=Path(duckdb_index_directory).resolve(),
         )
-        self.duckdb_index_directory = duckdb_index_directory
         self.duckdb_index_config = app_config.duckdb_index
 
     @staticmethod
@@ -245,7 +235,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                duckdb_index_directory=self.duckdb_index_directory,
+                duckdb_index_file_directory=self.datasets_cache,
                 hf_token=self.app_config.common.hf_token,
                 url_template=self.duckdb_index_config.url_template,
                 commit_message=self.duckdb_index_config.commit_message,

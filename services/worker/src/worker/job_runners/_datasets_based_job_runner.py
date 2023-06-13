@@ -23,7 +23,6 @@ class DatasetsBasedJobRunner(JobRunner):
 
     datasets_based_config: DatasetsBasedConfig
     base_datasets_cache: Path
-
     # the datasets library cache directories (for data, downloads, extraction, NOT for modules)
     # the job runner should have only one running job at the same time, then it should
     # be safe to use a global variable (and to set the datasets cache globally)
