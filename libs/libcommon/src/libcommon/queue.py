@@ -3,21 +3,25 @@
 
 import contextlib
 import logging
+import time
 import types
 from collections import Counter
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Optional, Type, TypedDict, TypeVar
+from types import TracebackType
+from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
 
 import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
+from mongoengine.errors import NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
+    QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
@@ -196,6 +200,53 @@ class Job(Document):
                 "created_at": self.created_at,
             }
         )
+
+
+class Lock(Document):
+    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS}
+    key = StringField(primary_key=True)
+    job_id = StringField()
+
+    created_at = DateTimeField(required=True)
+    updated_at = DateTimeField()
+
+    objects = QuerySetManager["Lock"]()
+
+
+class lock:
+    def __init__(self, key: str, job_id: str) -> None:
+        self.key = key
+        self.job_id = job_id
+
+    def acquire(self, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
+        try:
+            Lock(key=self.key, job_id=self.job_id, created_at=get_datetime()).save()
+        except NotUniqueError:
+            pass
+        for sleep in sleeps:
+            acquired = (
+                Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
+                    job_id=self.job_id, updated_at=get_datetime()
+                )
+                > 0
+            )
+            if acquired:
+                return
+            logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+            time.sleep(sleep)
+        raise TimeoutError("lock couldn't be acquired")
+
+    def release(self) -> None:
+        Lock.objects(key=self.key, job_id=self.job_id).update(job_id=None, updated_at=get_datetime())
+
+    def __enter__(self) -> None:
+        self.acquire()
+
+    def __exit__(
+        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+    ) -> Literal[False]:
+        self.release()
+        return False
 
 
 class Queue:
@@ -815,6 +866,7 @@ class Queue:
 def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     Job.drop_collection()  # type: ignore
+    Lock.drop_collection()  # type: ignore
 
 
 # explicit re-export
