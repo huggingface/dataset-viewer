@@ -56,7 +56,7 @@ def compute_index_rows(
     dataset: str,
     config: str,
     split: str,
-    duckdb_index_file_directory: StrPath,
+    duckdb_index_file_directory: Optional[Path],
     target_revision: str,
     hf_endpoint: str,
     commit_message: str,
