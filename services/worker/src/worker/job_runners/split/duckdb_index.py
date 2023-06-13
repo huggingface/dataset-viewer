@@ -145,7 +145,7 @@ def compute_index_rows(
     if not string_columns:
         raise NoIndexableColumnsError("No string columns available to index.")
 
-    # look for image, audio and binary columns, if present, raise exeception (not supported yet)
+    # look for image, audio and binary columns, if present, raise exception (not supported yet)
     if any(
         feature
         for feature in features.values()
@@ -174,7 +174,7 @@ def compute_index_rows(
     con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
-    # see https://duckdb.org/docs/extensions/full_text_search.html for more deails about 'stemmer' parameter
+    # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
     con.sql(CREATE_INDEX_COMMAND)
 
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
