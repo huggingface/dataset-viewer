@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, List, Literal, Tuple, TypedDict, Union
 
 import duckdb
-import polars as pl
 from libcommon.constants import PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 # from libcommon.exceptions import SplitWithTooBigParquetError
@@ -14,11 +13,16 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 from libcommon.simple_cache import get_previous_step_or_raise
 from tqdm import tqdm
+import numpy as np
 
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult
+
+
+INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
+FLOAT_DTYPES = ["float16", "float32", "float64"]
 
 
 SplitBasicStatsJobRunnerErrorCode = Literal["PreviousStepFormatError"]
@@ -29,7 +33,7 @@ class Histogram(TypedDict):
     bin_edges: List[float]
 
 
-class ContinuousStatsItem(TypedDict):
+class NumericalStatsItem(TypedDict):
     min: float
     max: float
     mean: float
@@ -46,31 +50,20 @@ class CategoricalStatsItem(TypedDict):
 class StatsPerColumnItem(TypedDict):
     column_name: str
     column_type: str
-    # column_dtype: str
-    column_stats: Union[ContinuousStatsItem, CategoricalStatsItem]
+    column_dtype: str
+    column_stats: Union[NumericalStatsItem, CategoricalStatsItem]
 
 
 class SplitBasicStatsResponse(TypedDict):
     basic_stats: List[StatsPerColumnItem]
 
 
-def compute_integer_stats(con, column_name, urls):
-    query = f"""
-    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}), 
-    stddev_samp({column_name}) FROM read_parquet({urls});
-    """
-    minimum, maximum, mean, median, std = con.sql(query).fetchall()[0]
-    if minimum == 0 and maximum < 20:
-        pass
-
-
-def compute_continuous_stats(con, column_name, urls, n_bins):
-    query = f"""
-    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}), 
-    stddev_samp({column_name}) FROM read_parquet({urls});
-    """
-    minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
-    bin_size = (maximum - minimum) / n_bins
+def compute_histogram(
+    con,
+    column_name: str,
+    urls: List[str],
+    bin_size: int,
+) -> Histogram:
     hist_query = f"""
     SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) as count 
     FROM read_parquet({urls}) 
@@ -79,8 +72,27 @@ def compute_continuous_stats(con, column_name, urls, n_bins):
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())
-    histogram = Histogram(hist=list(hist), bin_edges=list(bins))
-    return ContinuousStatsItem(
+    return Histogram(hist=list(hist), bin_edges=list(bins))
+
+
+def compute_numerical_stats(con, column_name, urls, n_bins, dtype):
+    query = f"""
+    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}), 
+    stddev_samp({column_name}) FROM read_parquet({urls});
+    """
+    minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
+    if dtype in FLOAT_DTYPES:
+        bin_size = (maximum - minimum) / n_bins
+    elif dtype in INTEGER_DTYPES:
+        if maximum - minimum < n_bins:
+            bin_size = 1
+        else:
+            bin_size = int(np.round((maximum - minimum) / n_bins))
+    else:
+        raise ValueError("Incorrect dtype, only .")
+
+    histogram = compute_histogram(con, column_name, urls, bin_size=bin_size)
+    return NumericalStatsItem(
         min=minimum,
         max=maximum,
         mean=mean,
@@ -112,7 +124,7 @@ def compute_basic_stats_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
-    logging.info(f"Compute statistics for {dataset=}, {config=}, {split=}")
+    logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
 
     previous_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(
@@ -127,7 +139,6 @@ def compute_basic_stats_response(
     if "dataset_info" not in content_parquet_and_info:
         raise PreviousStepFormatError(f"previous step '{previous_step} doesn't return expected field: 'dataset_info'")
 
-    # compute for ClassLabels (we are sure that these are discrete categories)
     basic_stats: List[StatsPerColumnItem] = []
     split_parquet_files = [
         parquet_file
@@ -151,9 +162,10 @@ def compute_basic_stats_response(
         feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
     }
 
+    # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
         logging.info(f"Compute statistics for categorical features")
-    for feature_name, feature in categorical_features.items():
+    for feature_name, feature in tqdm(categorical_features.items()):
         logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
         column_stats = compute_categorical_stats(con, feature_name, class_label_names, parquet_files_urls)
@@ -161,16 +173,28 @@ def compute_basic_stats_response(
             StatsPerColumnItem(column_name=feature_name, column_type="class_label", column_stats=column_stats)
         )
 
-    logging.info(f"Compute statistics for numerical features: min, max, mean, median, std, histogram")
-
-    # compute for numerical features  # TODO: maybe consider integers to be categorical? if not many unique values
-    df_polars = pl.scan_parquet(parquet_files_urls[0])  # scan first parquet file to get list of numerical cols
-    numerical_columns = df_polars.select([pl.col(pl.FLOAT_DTYPES)] + [pl.col(pl.INTEGER_DTYPES)]).columns  # .schema
-    for column_name in tqdm(numerical_columns):
-        logging.debug(f"Compute statistics for numerical feature {column_name}")
-        column_stats = compute_continuous_stats(con, column_name, parquet_files_urls, n_bins=histogram_num_bins)
+    numerical_columns = {
+        feature_name: feature for feature_name, feature in features.items()
+        if feature.get("_type") == "Value" and feature.get("dtype") in INTEGER_DTYPES + FLOAT_DTYPES
+    }
+    if numerical_columns:
+        logging.info(f"Compute statistics for numerical features: min, max, mean, median, std, histogram")
+    for feature_name, feature in tqdm(numerical_columns.items()):
+        feature_dtype = feature["dtype"]
+        column_stats = compute_numerical_stats(
+            con,
+            feature_name,
+            parquet_files_urls,
+            n_bins=histogram_num_bins,
+            dtype=feature_dtype,
+        )
         basic_stats.append(
-            StatsPerColumnItem(column_name=feature_name, column_type="numerical", column_stats=column_stats)
+            StatsPerColumnItem(
+                column_name=feature_name,
+                column_type="float" if feature_dtype in FLOAT_DTYPES else "int",
+                column_dtype=feature_dtype,
+                column_stats=column_stats
+            )
         )
 
     return SplitBasicStatsResponse(basic_stats=basic_stats)
