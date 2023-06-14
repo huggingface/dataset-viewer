@@ -6,6 +6,9 @@ name: Delete doc comment trigger
 on:
   pull_request:
     types: [closed]
+    paths:
+      - "docs/**"
+      - ".github/workflows/doc-pr-delete-trigger.yml"
 
 jobs:
   delete:
