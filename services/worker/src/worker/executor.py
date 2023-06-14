@@ -36,8 +36,8 @@ async def every(
         if stop_on is not None and out == stop_on:
             break
         delay = (
-            seconds if isinstance(seconds, float) else seconds[0] + (seconds[1] - seconds[0]) * random()
-        )  # nosec B311
+            seconds if isinstance(seconds, float) else seconds[0] + (seconds[1] - seconds[0]) * random()  # nosec B311
+        )
         await asyncio.sleep(delay)
 
 
