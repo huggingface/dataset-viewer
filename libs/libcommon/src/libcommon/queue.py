@@ -216,7 +216,8 @@ class Lock(Document):
 class lock:
     """
     Provides a simple way of inter-worker communication using a MongoDB lock.
-    A lock is used to indicate another worker of your application that a resource or working directory is currently used in a job.
+    A lock is used to indicate another worker of your application that a resource
+    or working directory is currently used in a job.
 
     Example of usage:
 
