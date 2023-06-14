@@ -106,7 +106,7 @@ class WorkerExecutor:
             )
         )
         loop.run_until_complete(
-            every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1, stop_on=False)
+            every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1.0, stop_on=False)
         )
         if exceptions:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
