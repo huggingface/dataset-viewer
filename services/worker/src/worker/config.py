@@ -203,25 +203,26 @@ class ParquetAndInfoConfig:
             )
 
 
-BASIC_STATS_HISTOGRAM_NUM_BINS = 10
-BASIC_STATS_MAX_PARQUET_SIZE_BYTES = 100_000_000
+DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS = 10
+DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES = 100_000_000
 
 
 @dataclass(frozen=True)
-class BasicStatsConfig:
-    histogram_num_bins: int = BASIC_STATS_HISTOGRAM_NUM_BINS
-    max_parquet_size_bytes: int = BASIC_STATS_MAX_PARQUET_SIZE_BYTES
+class DescriptiveStatsConfig:
+    histogram_num_bins: int = DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
+    max_parquet_size_bytes: int = DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
 
     @classmethod
-    def from_env(cls) -> "BasicStatsConfig":
+    def from_env(cls) -> "DescriptiveStatsConfig":
         env = Env(expand_vars=True)
-        with env.prefixed("BASIC_STATS_"):
+        with env.prefixed("DESCRIPTIVE_STATS_"):
             return cls(
                 histogram_num_bins=env.int(
-                    name="HISTOGRAM_NUM_BINS", default=BASIC_STATS_HISTOGRAM_NUM_BINS,
+                    name="HISTOGRAM_NUM_BINS",
+                    default=DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS,
                 ),
                 max_parquet_size_bytes=env.int(
-                    name="MAX_PARQUET_SIZE_BYTES", default=BASIC_STATS_MAX_PARQUET_SIZE_BYTES
+                    name="MAX_PARQUET_SIZE_BYTES", default=DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
                 ),
             )
 
@@ -255,7 +256,7 @@ class AppConfig:
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    basic_stats: BasicStatsConfig = field(default_factory=BasicStatsConfig)
+    descriptive_stats: DescriptiveStatsConfig = field(default_factory=DescriptiveStatsConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -273,5 +274,5 @@ class AppConfig:
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
-            basic_stats=BasicStatsConfig.from_env(),
+            descriptive_stats=DescriptiveStatsConfig.from_env(),
         )

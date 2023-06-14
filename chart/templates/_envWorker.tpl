@@ -84,9 +84,9 @@
   value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
-# specific to 'split-basic-stats'
-- name: BASIC_STATS_HISTOGRAM_NUM_BINS
-  value: {{ .Values.basicStats.histogramNumBins | quote }}
-- name: BASIC_STATS_MAX_PARQUET_SIZE_BYTES
-  value: {{ .Values.basicStats.maxParquetSizeBytes | quote }}
+# specific to 'split-descriptive-stats'
+- name: DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
+  value: {{ .Values.descriptiveStats.histogramNumBins | quote }}
+- name: DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
+  value: {{ .Values.descriptiveStats.maxParquetSizeBytes | quote }}
 {{- end -}}

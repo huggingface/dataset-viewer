@@ -34,7 +34,7 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
-from worker.job_runners.split.basic_stats import SplitBasicStatsJobRunner
+from worker.job_runners.split.descriptive_stats import SplitDescriptiveStatsJobRunner
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
@@ -215,8 +215,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
             )
-        if job_type == SplitBasicStatsJobRunner.get_job_type():
-            return SplitBasicStatsJobRunner(
+        if job_type == SplitDescriptiveStatsJobRunner.get_job_type():
+            return SplitDescriptiveStatsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
@@ -242,6 +242,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
-            SplitBasicStatsJobRunner.get_job_type(),
+            SplitDescriptiveStatsJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

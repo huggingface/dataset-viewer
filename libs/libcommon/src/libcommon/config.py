@@ -29,7 +29,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-    PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION,
+    PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -281,14 +281,14 @@ class ProcessingGraphConfig:
                 ],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
             },
-            "split-basic-stats": {
+            "split-descriptive-stats": {
                 "input_type": "split",
                 "triggered_by": [
                     "config-parquet-and-info",
                     "config-split-names-from-streaming",
                     "config-split-names-from-info"
                 ],
-                "job_runner_version": PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION,
+                "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
             },
             "dataset-is-valid": {
                 "input_type": "dataset",

@@ -206,7 +206,7 @@ parquetMetadata:
   storageDirectory: "/parquet-metadata"
 
 
-basicStats:
+descriptiveStats:
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.

@@ -148,7 +148,7 @@ class EndpointConfig:
             "/is-valid": {
                 "dataset": ["dataset-is-valid"],
             },
-            "/stats": {"split": ["split-basic-stats"]},
+            "/stats": {"split": ["split-descriptive-stats"]},
         }
     )
 

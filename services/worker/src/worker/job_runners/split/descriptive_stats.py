@@ -6,26 +6,25 @@ from pathlib import Path
 from typing import Dict, List, Literal, Tuple, TypedDict, Union
 
 import duckdb
-from libcommon.constants import PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION
+import numpy as np
+from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
 from libcommon.exceptions import PreviousStepFormatError
+
 # from libcommon.exceptions import SplitWithTooBigParquetError
 from libcommon.processing_graph import ProcessingStep
-from libcommon.utils import JobInfo
 from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.utils import JobInfo
 from tqdm import tqdm
-import numpy as np
-
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult
 
-
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 
 
-SplitBasicStatsJobRunnerErrorCode = Literal["PreviousStepFormatError"]
+SplitDescriptiveStatsJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class Histogram(TypedDict):
@@ -54,8 +53,8 @@ class StatsPerColumnItem(TypedDict):
     column_stats: Union[NumericalStatsItem, CategoricalStatsItem]
 
 
-class SplitBasicStatsResponse(TypedDict):
-    basic_stats: List[StatsPerColumnItem]
+class SplitDescriptiveStatsResponse(TypedDict):
+    stats: List[StatsPerColumnItem]
 
 
 def compute_histogram(
@@ -109,17 +108,18 @@ def compute_categorical_stats(con, column_name, class_label_names, urls):
     categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
     logging.debug(f"Statistics for {column_name} computed")
     return CategoricalStatsItem(
-        n_unique=len(categories), frequencies={class_label_names[cat]: freq for cat, freq in categories},
+        n_unique=len(categories),
+        frequencies={class_label_names[cat]: freq for cat, freq in categories},
     )
 
 
-def compute_basic_stats_response(
+def compute_descriptive_stats_response(
     dataset: str,
     config: str,
     split: str,
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
-) -> SplitBasicStatsResponse:
+) -> SplitDescriptiveStatsResponse:
     con = duckdb.connect()
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
@@ -139,7 +139,7 @@ def compute_basic_stats_response(
     if "dataset_info" not in content_parquet_and_info:
         raise PreviousStepFormatError(f"previous step '{previous_step} doesn't return expected field: 'dataset_info'")
 
-    basic_stats: List[StatsPerColumnItem] = []
+    stats: List[StatsPerColumnItem] = []
     split_parquet_files = [
         parquet_file
         for parquet_file in content_parquet_and_info["parquet_files"]
@@ -164,17 +164,23 @@ def compute_basic_stats_response(
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
-        logging.info(f"Compute statistics for categorical features")
+        logging.info("Compute statistics for categorical features")
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
         column_stats = compute_categorical_stats(con, feature_name, class_label_names, parquet_files_urls)
-        basic_stats.append(
-            StatsPerColumnItem(column_name=feature_name, column_type="class_label", column_stats=column_stats)
+        stats.append(
+            StatsPerColumnItem(
+                column_name=feature_name,
+                column_type="class_label",
+                column_dtype=feature["dtype"],
+                column_stats=column_stats
+            )
         )
 
     numerical_columns = {
-        feature_name: feature for feature_name, feature in features.items()
+        feature_name: feature
+        for feature_name, feature in features.items()
         if feature.get("_type") == "Value" and feature.get("dtype") in INTEGER_DTYPES + FLOAT_DTYPES
     }
     if numerical_columns:
@@ -188,19 +194,19 @@ def compute_basic_stats_response(
             n_bins=histogram_num_bins,
             dtype=feature_dtype,
         )
-        basic_stats.append(
+        stats.append(
             StatsPerColumnItem(
                 column_name=feature_name,
                 column_type="float" if feature_dtype in FLOAT_DTYPES else "int",
                 column_dtype=feature_dtype,
-                column_stats=column_stats
+                column_stats=column_stats,
             )
         )
 
-    return SplitBasicStatsResponse(basic_stats=basic_stats)
+    return SplitDescriptiveStatsResponse(stats=stats)
 
 
-class SplitBasicStatsJobRunner(SplitCachedJobRunner):
+class SplitDescriptiveStatsJobRunner(SplitCachedJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -214,23 +220,23 @@ class SplitBasicStatsJobRunner(SplitCachedJobRunner):
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
-        self.basic_stats_config = app_config.basic_stats
+        self.descriptive_stats_config = app_config.descriptive_stats
 
     @staticmethod
     def get_job_type() -> str:
-        return "split-basic-stats"
+        return "split-descriptive-stats"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_BASIC_STATS_VERSION
+        return PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_basic_stats_response(
+            compute_descriptive_stats_response(
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                histogram_num_bins=self.basic_stats_config.histogram_num_bins,
-                max_parquet_size_bytes=self.basic_stats_config.max_parquet_size_bytes
+                histogram_num_bins=self.descriptive_stats_config.histogram_num_bins,
+                max_parquet_size_bytes=self.descriptive_stats_config.max_parquet_size_bytes,
             )
         )
