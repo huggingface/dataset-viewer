@@ -5,8 +5,7 @@ name: Delete doc comment trigger
 
 on:
   pull_request:
-    types: [ closed ]
-
+    types: [closed]
 
 jobs:
   delete:

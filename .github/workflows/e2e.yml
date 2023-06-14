@@ -8,26 +8,26 @@ on:
     branches:
       - main
     paths:
-      - 'e2e/**'
-      - 'libs/**'
-      - 'services/**'
-      - 'chart/static-files/openapi.json'
-      - '.github/workflows/_e2e_tests.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/e2e.yml'
-      - 'tools/Python.mk'
-      - 'tools/docker-compose-datasets-server.yml'
+      - "e2e/**"
+      - "libs/**"
+      - "services/**"
+      - "chart/static-files/openapi.json"
+      - ".github/workflows/_e2e_tests.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/e2e.yml"
+      - "tools/Python.mk"
+      - "tools/docker-compose-datasets-server.yml"
   pull_request:
     paths:
-      - 'e2e/**'
-      - 'libs/**'
-      - 'services/**'
-      - 'chart/static-files/openapi.json'
-      - '.github/workflows/_e2e_tests.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/e2e.yml'
-      - 'tools/Python.mk'
-      - 'tools/docker-compose-datasets-server.yml'
+      - "e2e/**"
+      - "libs/**"
+      - "services/**"
+      - "chart/static-files/openapi.json"
+      - ".github/workflows/_e2e_tests.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/e2e.yml"
+      - "tools/Python.mk"
+      - "tools/docker-compose-datasets-server.yml"
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
