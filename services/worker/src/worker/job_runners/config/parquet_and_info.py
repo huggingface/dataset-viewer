@@ -681,7 +681,6 @@ def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     return parquet_operations
 
 
-@retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])
 def create_commits(
     hf_api: HfApi,
     repo_id: str,
@@ -750,8 +749,9 @@ def create_commits(
     offsets = range(0, len(operations), max_operations_per_commit)
     for commit_idx, offset in enumerate(offsets):
         batch_msg = f" (step {commit_idx + 1} of {len(offsets)})" if len(offsets) > 1 else ""
+        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])(hf_api.create_commit)
         commit_infos.append(
-            hf_api.create_commit(
+            retry_create_commit(
                 repo_id=repo_id,
                 repo_type=DATASET_TYPE,
                 revision=revision,
@@ -853,8 +853,9 @@ def commit_parquet_conversion(
                 parent_commit=target_dataset_info.sha,
             )
     else:
+        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])(hf_api.create_commit)
         return [
-            committer_hf_api.create_commit(
+            retry_create_commit(
                 committer_hf_api,
                 repo_id=dataset,
                 revision=target_revision,
