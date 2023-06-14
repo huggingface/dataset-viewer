@@ -98,6 +98,7 @@ CacheableErrorCode = Literal[
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
+    "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NormalRowsError",
     "ParameterMissingError",
@@ -234,6 +235,13 @@ class DatasetWithTooManyParquetFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyParquetFilesError", cause, True)
+
+
+class LockedDatasetTimeoutError(CacheableError):
+    """Raised when a dataset is locked by another job."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "LockedDatasetTimeoutError", cause, True)
 
 
 class DisabledViewerError(CacheableError):

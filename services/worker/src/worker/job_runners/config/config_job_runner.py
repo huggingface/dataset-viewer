@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 from pathlib import Path
 
 from libcommon.exceptions import ParameterMissingError
@@ -48,3 +49,7 @@ class ConfigCachedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
             app_config=app_config,
             processing_step=processing_step,
         )
+
+    @classmethod
+    def get_lock_key(cls, dataset: str) -> str:
+        return json.dumps({"type": cls.get_job_type(), "dataset": dataset})

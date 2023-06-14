@@ -4,6 +4,7 @@
 import glob
 import logging
 import re
+from contextlib import AbstractContextManager, nullcontext
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -62,10 +63,12 @@ from libcommon.exceptions import (
     ExternalFilesSizeRequestHTTPError,
     ExternalFilesSizeRequestTimeoutError,
     FileSystemError,
+    LockedDatasetTimeoutError,
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo
 from tqdm.contrib.concurrent import thread_map
@@ -91,6 +94,7 @@ class ConfigParquetAndInfoResponse(TypedDict):
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
+MAX_OPERATIONS_PER_COMMIT = 500
 
 
 class ParquetFile:
@@ -685,7 +689,7 @@ def create_commits(
     commit_message: str,
     revision: Optional[str] = None,
     parent_commit: Optional[str] = None,
-    max_operations_per_commit: int = 500,
+    max_operations_per_commit: int = MAX_OPERATIONS_PER_COMMIT,
 ) -> List[CommitInfo]:
     """
     Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
@@ -722,6 +726,8 @@ def create_commits(
             is `True`, the pull request will be created from `parent_commit`. Specifying `parent_commit`
             ensures the repo has not changed before committing the changes, and can be especially useful
             if the repo is updated / committed to concurrently.
+        max_operations_per_commit (`int`, *optional*):
+            The ma number of operations per commit, to avoid time out errors from the Hub. Defaults to 500.
     Returns:
         [`List[huggingface_hub.CommitInfo]`]:
             List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
@@ -758,6 +764,7 @@ def create_commits(
 
 @retry(on=[HfHubHTTPError])
 def commit_parquet_conversion(
+    job_id: str,
     hf_api: HfApi,
     committer_hf_api: HfApi,
     dataset: str,
@@ -771,6 +778,8 @@ def commit_parquet_conversion(
     Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
 
     Args:
+        job_id (`str`):
+            The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.
         hf_api (`huggingface_hub.HfApi`):
             The HfApi to get the dataset info.
         committer_hf_api (`huggingface_hub.HfApi`):
@@ -825,22 +834,37 @@ def commit_parquet_conversion(
     #   - parquet files obtained for current config at this processing step,
     #   - parquet files belonging to other existing configs
     #   - .gitattributes
-    config_files_to_add = [operation.path_in_repo for operation in parquet_operations]
-    files_to_delete = all_repo_files - set(config_files_to_add).union(files_to_ignore)
+    files_to_add = [operation.path_in_repo for operation in parquet_operations]
+    files_to_delete = all_repo_files - set(files_to_add).union(files_to_ignore)
     delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
     logging.debug(f"{delete_operations=}")
 
-    return create_commits(
-        committer_hf_api,
-        repo_id=dataset,
-        revision=target_revision,
-        operations=delete_operations + parquet_operations,
-        commit_message=commit_message,
-        parent_commit=target_dataset_info.sha,
-    )
+    operations = delete_operations + parquet_operations
+    if len(operations) > MAX_OPERATIONS_PER_COMMIT:
+        lock_key = ConfigParquetAndInfoJobRunner.get_lock_key(dataset=dataset)
+        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        with lock(key=lock_key, job_id=job_id, sleeps=sleeps):
+            return create_commits(
+                committer_hf_api,
+                repo_id=dataset,
+                revision=target_revision,
+                operations=operations,
+                commit_message=commit_message,
+                parent_commit=target_dataset_info.sha,
+            )
+    else:
+        committer_hf_api.create_commit(
+            committer_hf_api,
+            repo_id=dataset,
+            revision=target_revision,
+            operations=operations,
+            commit_message=commit_message,
+            parent_commit=target_dataset_info.sha,
+        )
 
 
 def compute_config_parquet_and_info_response(
+    job_id: str,
     dataset: str,
     config: str,
     hf_endpoint: str,
@@ -859,6 +883,8 @@ def compute_config_parquet_and_info_response(
     Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
     Args:
+        job_id (`str`):
+            The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
@@ -1006,16 +1032,20 @@ def compute_config_parquet_and_info_response(
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
-    commit_parquet_conversion(
-        hf_api=hf_api,
-        committer_hf_api=committer_hf_api,
-        dataset=dataset,
-        config=config,
-        parquet_operations=parquet_operations,
-        config_names=config_names,
-        target_revision=target_revision,
-        commit_message=commit_message,
-    )
+    try:
+        commit_parquet_conversion(
+            job_id=job_id,
+            hf_api=hf_api,
+            committer_hf_api=committer_hf_api,
+            dataset=dataset,
+            config=config,
+            parquet_operations=parquet_operations,
+            config_names=config_names,
+            target_revision=target_revision,
+            commit_message=commit_message,
+        )
+    except TimeoutError as err:
+        raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
 
     # call the API again to get the list of parquet files
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
@@ -1069,10 +1099,12 @@ class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info
+        self.job_id = job_info["job_id"]
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
+                job_id=self.job_id,
                 dataset=self.dataset,
                 config=self.config,
                 hf_endpoint=self.app_config.common.hf_endpoint,

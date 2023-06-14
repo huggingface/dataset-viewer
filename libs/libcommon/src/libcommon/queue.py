@@ -213,7 +213,7 @@ class Lock(Document):
     objects = QuerySetManager["Lock"]()
 
 
-class lock:
+class lock(contextlib.AbstractContextManager["lock"]):
     """
     Provides a simple way of inter-worker communication using a MongoDB lock.
     A lock is used to indicate another worker of your application that a resource
