@@ -24,12 +24,12 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
+    PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-    PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
 )
 from libcommon.processing_graph import ProcessingGraphSpecification
 
@@ -286,7 +286,7 @@ class ProcessingGraphConfig:
                 "triggered_by": [
                     "config-parquet-and-info",
                     "config-split-names-from-streaming",
-                    "config-split-names-from-info"
+                    "config-split-names-from-info",
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
             },

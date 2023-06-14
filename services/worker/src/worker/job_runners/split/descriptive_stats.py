@@ -58,26 +58,30 @@ class SplitDescriptiveStatsResponse(TypedDict):
 
 
 def compute_histogram(
-    con,
+    con: duckdb.DuckDBPyConnection,
     column_name: str,
     urls: List[str],
     bin_size: int,
 ) -> Histogram:
     hist_query = f"""
-    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) as count 
-    FROM read_parquet({urls}) 
-    GROUP BY 1 
-    ORDER BY 1;
+    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) as count
+     FROM read_parquet({urls}) GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())
     return Histogram(hist=list(hist), bin_edges=list(bins))
 
 
-def compute_numerical_stats(con, column_name, urls, n_bins, dtype):
+def compute_numerical_stats(
+    con: duckdb.DuckDBPyConnection,
+    column_name: str,
+    urls: List[str],
+    n_bins: int,
+    dtype: str,
+) -> NumericalStatsItem:
     query = f"""
-    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}), 
-    stddev_samp({column_name}) FROM read_parquet({urls});
+    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
+     stddev_samp({column_name}) FROM read_parquet({urls});
     """
     minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
@@ -101,7 +105,12 @@ def compute_numerical_stats(con, column_name, urls, n_bins, dtype):
     )
 
 
-def compute_categorical_stats(con, column_name, class_label_names, urls):
+def compute_categorical_stats(
+    con: duckdb.DuckDBPyConnection,
+    column_name: str,
+    class_label_names: List[str],
+    urls: List[str],
+) -> CategoricalStatsItem:
     query = f"""
     SELECT {column_name}, COUNT(*) from read_parquet({urls}) GROUP BY {column_name};
     """
@@ -168,13 +177,15 @@ def compute_descriptive_stats_response(
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
-        column_stats = compute_categorical_stats(con, feature_name, class_label_names, parquet_files_urls)
+        cat_column_stats: CategoricalStatsItem = compute_categorical_stats(
+            con, feature_name, class_label_names, parquet_files_urls
+        )
         stats.append(
             StatsPerColumnItem(
                 column_name=feature_name,
                 column_type="class_label",
                 column_dtype=feature["dtype"],
-                column_stats=column_stats
+                column_stats=cat_column_stats,
             )
         )
 
@@ -184,10 +195,10 @@ def compute_descriptive_stats_response(
         if feature.get("_type") == "Value" and feature.get("dtype") in INTEGER_DTYPES + FLOAT_DTYPES
     }
     if numerical_columns:
-        logging.info(f"Compute statistics for numerical features: min, max, mean, median, std, histogram")
+        logging.info("Compute min, max, mean, median, std, histogram for numerical features. ")
     for feature_name, feature in tqdm(numerical_columns.items()):
         feature_dtype = feature["dtype"]
-        column_stats = compute_numerical_stats(
+        num_column_stats: NumericalStatsItem = compute_numerical_stats(
             con,
             feature_name,
             parquet_files_urls,
@@ -199,7 +210,7 @@ def compute_descriptive_stats_response(
                 column_name=feature_name,
                 column_type="float" if feature_dtype in FLOAT_DTYPES else "int",
                 column_dtype=feature_dtype,
-                column_stats=column_stats,
+                column_stats=num_column_stats,
             )
         )
 
