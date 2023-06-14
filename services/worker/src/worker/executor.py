@@ -5,7 +5,8 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Callable, Optional
+from random import random
+from typing import Any, Callable, Optional, Tuple, Union
 
 import orjson
 from filelock import FileLock
@@ -24,13 +25,20 @@ START_WORKER_LOOP_PATH = start_worker_loop.__file__
 
 
 async def every(
-    func: Callable[..., Optional[Any]], *args: Any, seconds: int, stop_on: Optional[Any] = None, **kwargs: Any
+    func: Callable[..., Optional[Any]],
+    *args: Any,
+    seconds: Union[float, Tuple[float, float]],
+    stop_on: Optional[Any] = None,
+    **kwargs: Any,
 ) -> None:
     while True:
         out = func(*args, **kwargs)
         if stop_on is not None and out == stop_on:
             break
-        await asyncio.sleep(seconds)
+        delay = (
+            seconds if isinstance(seconds, float) else seconds[0] + (seconds[1] - seconds[0]) * random()
+        )  # nosec B311
+        await asyncio.sleep(delay)
 
 
 class BadWorkerState(RuntimeError):
@@ -78,12 +86,23 @@ class WorkerExecutor:
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.app_config.worker.heartbeat_interval_seconds))
-        loop.create_task(every(self.kill_zombies, seconds=self.app_config.worker.kill_zombies_interval_seconds))
+        loop.create_task(
+            every(
+                self.kill_zombies,
+                seconds=(
+                    self.app_config.worker.kill_zombies_interval_seconds * 0.5,
+                    self.app_config.worker.kill_zombies_interval_seconds * 1.5,
+                ),
+            )
+        )
         loop.create_task(
             every(
                 self.kill_long_job,
                 worker_loop_executor=worker_loop_executor,
-                seconds=self.app_config.worker.kill_long_job_interval_seconds,
+                seconds=(
+                    self.app_config.worker.kill_long_job_interval_seconds * 0.5,
+                    self.app_config.worker.kill_long_job_interval_seconds * 1.5,
+                ),
             )
         )
         loop.run_until_complete(
