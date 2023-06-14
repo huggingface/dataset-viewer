@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from pathlib import Path
 from typing import List, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
@@ -14,10 +13,7 @@ from libcommon.exceptions import (
     DatasetWithTooManyConfigsError,
     EmptyDatasetError,
 )
-from libcommon.processing_graph import ProcessingStep
-from libcommon.utils import JobInfo
 
-from worker.config import AppConfig, ConfigNamesConfig
 from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
 from worker.utils import CompleteJobResult
 
@@ -85,8 +81,6 @@ def compute_config_names_response(
 
 
 class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
-    config_names_config: ConfigNamesConfig
-
     @staticmethod
     def get_job_type() -> str:
         return "dataset-config-names"
@@ -95,26 +89,11 @@ class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 
-    def __init__(
-        self,
-        job_info: JobInfo,
-        app_config: AppConfig,
-        processing_step: ProcessingStep,
-        hf_datasets_cache: Path,
-    ) -> None:
-        super().__init__(
-            job_info=job_info,
-            app_config=app_config,
-            processing_step=processing_step,
-            hf_datasets_cache=hf_datasets_cache,
-        )
-        self.config_names_config = app_config.config_names
-
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_config_names_response(
                 dataset=self.dataset,
                 hf_token=self.app_config.common.hf_token,
-                max_number=self.config_names_config.max_number,
+                max_number=self.app_config.config_names.max_number,
             )
         )
