@@ -783,7 +783,7 @@ class Queue:
             return
         job.update(last_heartbeat=get_datetime())
 
-    def get_zombies(self, max_seconds_without_heartbeat: int) -> List[JobInfo]:
+    def get_zombies(self, max_seconds_without_heartbeat: float) -> List[JobInfo]:
         """Get the zombie jobs.
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.
