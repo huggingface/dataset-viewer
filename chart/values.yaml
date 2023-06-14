@@ -206,6 +206,12 @@ parquetMetadata:
   storageDirectory: "/parquet-metadata"
 
 
+basicStats:
+  # fixed number of bins for histogram count
+  histogramNumBins: 10
+  # the maximum size of the split parquets.
+  maxParquetSizeBytes: "100_000_000"
+
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"
 

@@ -97,6 +97,8 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
+basicStats:
+  maxParquetSizeBytes: "1_000_000_000"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
