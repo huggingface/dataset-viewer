@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from pathlib import Path
 from typing import List, Optional, TypedDict, Union
 
 from datasets import get_dataset_config_names
@@ -10,9 +11,13 @@ from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
+    DatasetWithTooManyConfigsError,
     EmptyDatasetError,
 )
+from libcommon.processing_graph import ProcessingStep
+from libcommon.utils import JobInfo
 
+from worker.config import AppConfig, ConfigNamesConfig
 from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
 from worker.utils import CompleteJobResult
 
@@ -28,6 +33,7 @@ class DatasetConfigNamesResponse(TypedDict):
 
 def compute_config_names_response(
     dataset: str,
+    max_number: int,
     hf_token: Optional[str] = None,
 ) -> DatasetConfigNamesResponse:
     """
@@ -68,10 +74,19 @@ def compute_config_names_response(
         ) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+
+    number_of_configs = len(config_name_items)
+    if number_of_configs > max_number:
+        raise DatasetWithTooManyConfigsError(
+            f"The maximun number of configs allowed is {max_number}, dataset has {number_of_configs} configs."
+        )
+
     return DatasetConfigNamesResponse(config_names=config_name_items)
 
 
 class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
+    config_names_config: ConfigNamesConfig
+
     @staticmethod
     def get_job_type() -> str:
         return "dataset-config-names"
@@ -80,7 +95,26 @@ class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        hf_datasets_cache: Path,
+    ) -> None:
+        super().__init__(
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+            hf_datasets_cache=hf_datasets_cache,
+        )
+        self.config_names_config = app_config.config_names
+
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_config_names_response(dataset=self.dataset, hf_token=self.app_config.common.hf_token)
+            compute_config_names_response(
+                dataset=self.dataset,
+                hf_token=self.app_config.common.hf_token,
+                max_number=self.config_names_config.max_number,
+            )
         )

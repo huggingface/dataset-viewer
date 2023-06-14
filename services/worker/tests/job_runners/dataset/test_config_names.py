@@ -3,6 +3,7 @@
 
 from dataclasses import replace
 from typing import Callable
+from unittest.mock import patch
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -64,6 +65,21 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     response = job_runner.compute()
     content = response.content
     assert len(content["config_names"]) == 1
+
+
+def test_compute_too_many_configs(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+    dataset = "dataset"
+    max_number_of_configs = 2
+    job_runner = get_job_runner(
+        dataset,
+        replace(app_config, config_names=replace(app_config.config_names, max_number=max_number_of_configs)),
+    )
+
+    too_many_configs = ["config_1", "config_2", "config_3"]
+    with patch("worker.job_runners.dataset.config_names.get_dataset_config_names", return_value=too_many_configs):
+        with pytest.raises(CustomError) as exc_info:
+            job_runner.compute()
+        assert exc_info.value.code == "DatasetWithTooManyConfigsError"
 
 
 @pytest.mark.parametrize(
