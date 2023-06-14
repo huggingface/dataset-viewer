@@ -853,14 +853,16 @@ def commit_parquet_conversion(
                 parent_commit=target_dataset_info.sha,
             )
     else:
-        committer_hf_api.create_commit(
-            committer_hf_api,
-            repo_id=dataset,
-            revision=target_revision,
-            operations=operations,
-            commit_message=commit_message,
-            parent_commit=target_dataset_info.sha,
-        )
+        return [
+            committer_hf_api.create_commit(
+                committer_hf_api,
+                repo_id=dataset,
+                revision=target_revision,
+                operations=operations,
+                commit_message=commit_message,
+                parent_commit=target_dataset_info.sha,
+            )
+        ]
 
 
 def compute_config_parquet_and_info_response(
