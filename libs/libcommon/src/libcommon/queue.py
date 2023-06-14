@@ -214,16 +214,40 @@ class Lock(Document):
 
 
 class lock:
-    def __init__(self, key: str, job_id: str) -> None:
+    """
+    Provides a simple way of inter-worker communication using a MondoDB lock.
+    A lock is used to indicate another worker of your application that a resource or working directory is currently used in a job.
+
+    Example of usage:
+
+    ```python
+    key = json.dumps({"type": job.type, "dataset": job.dataset})
+    with lock(key=key, job_id=job.pk):
+        ...
+    ```
+
+    Or using a try/except:
+
+    ```python
+    try:
+        key = json.dumps({"type": job.type, "dataset": job.dataset})
+        lock(key=key, job_id=job.pk).acquire()
+    except TimeoutError:
+        ...
+    ```
+    """
+
+    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
         self.key = key
         self.job_id = job_id
+        self.sleeps = sleeps
 
-    def acquire(self, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
+    def acquire(self) -> None:
         try:
             Lock(key=self.key, job_id=self.job_id, created_at=get_datetime()).save()
         except NotUniqueError:
             pass
-        for sleep in sleeps:
+        for sleep in self.sleeps:
             acquired = (
                 Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
                     job_id=self.job_id, updated_at=get_datetime()
@@ -239,8 +263,9 @@ class lock:
     def release(self) -> None:
         Lock.objects(key=self.key, job_id=self.job_id).update(job_id=None, updated_at=get_datetime())
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> "lock":
         self.acquire()
+        return self
 
     def __exit__(
         self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]

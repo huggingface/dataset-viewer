@@ -105,6 +105,8 @@ class MongoResource(Resource):
         disconnect(alias=self.mongoengine_alias)
 
     def __reduce__(self) -> tuple[Any, ...]:
+        # Needed to be able to use the resource in subprocesses in tests (e.g. tests/test_queue.py::test_lock).
+        # This is because the _client in not picklable.
         return (MongoResource, (self.database, self.host, self.mongoengine_alias, self.server_selection_timeout_ms))
 
 
