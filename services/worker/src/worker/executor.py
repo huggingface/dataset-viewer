@@ -27,7 +27,7 @@ START_WORKER_LOOP_PATH = start_worker_loop.__file__
 async def every(
     func: Callable[..., Optional[Any]],
     *args: Any,
-    seconds: Union[int, Tuple[float, float]],
+    seconds: Union[float, Tuple[float, float]],
     stop_on: Optional[Any] = None,
     **kwargs: Any,
 ) -> None:
