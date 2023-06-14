@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Literal, Tuple, TypedDict, Union
+from typing import Dict, List, Literal, Tuple, TypedDict, Union, Optional
 
 import duckdb
 import numpy as np
@@ -19,6 +19,9 @@ from tqdm import tqdm
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult
+
+
+DECIMALS = 5
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -49,7 +52,7 @@ class CategoricalStatsItem(TypedDict):
 class StatsPerColumnItem(TypedDict):
     column_name: str
     column_type: str
-    column_dtype: str
+    column_dtype: Optional[str]
     column_stats: Union[NumericalStatsItem, CategoricalStatsItem]
 
 
@@ -68,8 +71,9 @@ def compute_histogram(
      FROM read_parquet({urls}) GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
-    bins, hist = zip(*con.sql(hist_query).fetchall())
-    return Histogram(hist=list(hist), bin_edges=list(bins))
+    bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
+    bins = np.round(bins, DECIMALS).tolist()
+    return Histogram(hist=list(hist), bin_edges=bins)
 
 
 def compute_numerical_stats(
@@ -85,14 +89,16 @@ def compute_numerical_stats(
     """
     minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
-        bin_size = (maximum - minimum) / n_bins
+        bin_size = np.round((maximum - minimum) / n_bins, decimals=DECIMALS).item()
+        minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     elif dtype in INTEGER_DTYPES:
         if maximum - minimum < n_bins:
             bin_size = 1
         else:
             bin_size = int(np.round((maximum - minimum) / n_bins))
+        mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
-        raise ValueError("Incorrect dtype, only .")
+        raise ValueError("Incorrect dtype, only integers and float are allowed. ")
 
     histogram = compute_histogram(con, column_name, urls, bin_size=bin_size)
     return NumericalStatsItem(
@@ -184,7 +190,7 @@ def compute_descriptive_stats_response(
             StatsPerColumnItem(
                 column_name=feature_name,
                 column_type="class_label",
-                column_dtype=feature["dtype"],
+                column_dtype=None,  # should be some int?
                 column_stats=cat_column_stats,
             )
         )
