@@ -681,7 +681,7 @@ def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     return parquet_operations
 
 
-@retry(on=[HfHubHTTPError])
+@retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])
 def create_commits(
     hf_api: HfApi,
     repo_id: str,
