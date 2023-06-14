@@ -111,6 +111,7 @@ CacheableErrorCode = Literal[
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
     "SplitNotFoundError",
+    "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
     "TooManyColumnsError",
@@ -495,3 +496,10 @@ class NotAvailableIndexFileError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NotAvailableIndexFileError", cause, False)
+
+
+class SplitWithTooBigParquetError(CacheableError):
+    """Raised when the split parquet size (sum of parquet sizes given) is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)

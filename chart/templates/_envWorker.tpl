@@ -102,4 +102,6 @@
   value: {{ .Values.duckDBIndex.targetRevision | quote }}
 - name: DUCKDB_INDEX_URL_TEMPLATE
   value: {{ .Values.duckDBIndex.urlTemplate | quote }}
+- name: DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+  value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
 {{- end -}}

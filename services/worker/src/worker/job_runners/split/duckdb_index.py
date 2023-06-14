@@ -22,6 +22,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitNotFoundError,
+    SplitWithTooBigParquetError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -35,7 +36,7 @@ from worker.utils import CompleteJobResult, hf_hub_url
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
-DUCKDB_DEFAULT_INDEX_FILENAME = "index.db"
+DUCKDB_DEFAULT_INDEX_FILENAME = "duckdb_index.db"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
@@ -54,6 +55,7 @@ def compute_index_rows(
     commit_message: str,
     url_template: str,
     hf_token: Optional[str],
+    max_parquet_size_bytes: int,
     committer_hf_token: Optional[str],
 ) -> SplitHubFile:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
@@ -88,11 +90,21 @@ def compute_index_rows(
             f"previous step '{config_parquet_and_info_step} doesn't return expected field: 'dataset_info'"
         )
 
-    parquet_urls = [
-        parquet_file["url"]
+    split_parquet_files = [
+        parquet_file
         for parquet_file in content_parquet_and_info["parquet_files"]
         if parquet_file["config"] == config and parquet_file["split"] == split
     ]
+
+    split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
+
+    if split_parquets_size > max_parquet_size_bytes:
+        raise SplitWithTooBigParquetError(
+            f"The indexing is limited to split parquets under {max_parquet_size_bytes} bytes. "
+            f"Current size of sum of split parquets is {split_parquets_size} bytes."
+        )
+
+    parquet_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
 
     if not parquet_urls:
         raise ParquetResponseEmptyError("No parquet files found.")
@@ -131,7 +143,7 @@ def compute_index_rows(
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    index_file_location = f"{config}/{dataset}-{split}.db"
+    index_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
@@ -233,5 +245,6 @@ class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
+                max_parquet_size_bytes=self.duckdb_index_config.max_parquet_size_bytes,
             )
         )

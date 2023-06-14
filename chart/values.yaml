@@ -210,11 +210,12 @@ duckDBIndex:
   storageDirectory: "/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
-  # the git revision of the dataset where to store the duckdb index file. Defaults to `duckdb/index`.
-  targetRevision: "duckdb/index"
+  # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/parquet`.
+  targetRevision: "refs/convert/parquet"
   # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
-
+  # the maximum size of the split parquets.
+  maxParquetSizeBytes: "100_000_000"
 
 # Directory where the cache data will be stored
 cacheDirectory: "/datasets-server-cache"
