@@ -27,7 +27,7 @@ START_WORKER_LOOP_PATH = start_worker_loop.__file__
 async def every(
     func: Callable[..., Optional[Any]],
     *args: Any,
-    seconds: Union[float, Tuple[float, float]],
+    seconds: Union[int, Tuple[float, float]],
     stop_on: Optional[Any] = None,
     **kwargs: Any,
 ) -> None:
@@ -36,7 +36,7 @@ async def every(
         if stop_on is not None and out == stop_on:
             break
         delay = (
-            seconds if isinstance(seconds, float) else seconds[0] + (seconds[1] - seconds[0]) * random()  # nosec B311
+            seconds[0] + (seconds[1] - seconds[0]) * random() if isinstance(seconds, tuple) else seconds  # nosec B311
         )
         await asyncio.sleep(delay)
 
