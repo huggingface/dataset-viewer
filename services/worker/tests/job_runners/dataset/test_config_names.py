@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import replace
-from typing import Callable, List
+from typing import Callable
 from unittest.mock import patch
 
 import pytest
@@ -68,18 +68,18 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
 
 
 @pytest.mark.parametrize(
-    "configs,error_code",
+    "max_number_of_configs,error_code",
     [
-        (["config_1"], None),
-        (["config_1", "config_2"], None),
-        (["config_1", "config_2", "config_3"], "DatasetWithTooManyConfigsError"),
+        (1, "DatasetWithTooManyConfigsError"),
+        (2, None),
+        (3, None),
     ],
 )
 def test_compute_too_many_configs(
-    app_config: AppConfig, get_job_runner: GetJobRunner, configs: List[str], error_code: str
+    app_config: AppConfig, get_job_runner: GetJobRunner, max_number_of_configs: int, error_code: str
 ) -> None:
     dataset = "dataset"
-    max_number_of_configs = 2
+    configs = ["config_1", "config_2"]
     job_runner = get_job_runner(
         dataset,
         replace(app_config, config_names=replace(app_config.config_names, max_number=max_number_of_configs)),
