@@ -5,8 +5,8 @@ name: chart PR
 on:
   pull_request:
     paths:
-      - 'chart/**'
-      - '.github/workflows/chart-pr.yml'
+      - "chart/**"
+      - ".github/workflows/chart-pr.yml"
 jobs:
   code-quality-helm:
     runs-on: ubuntu-latest

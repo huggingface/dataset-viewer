@@ -15,16 +15,16 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.7
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
 
-    - name: Install requirements
-      run: |
-        pip install PyGithub
-    - name: Close stale issues
-      run: |
-        python tools/stale.py
+      - name: Install requirements
+        run: |
+          pip install PyGithub
+      - name: Close stale issues
+        run: |
+          python tools/stale.py

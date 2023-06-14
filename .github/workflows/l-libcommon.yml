@@ -8,18 +8,18 @@ on:
     branches:
       - main
     paths:
-      - 'libs/libcommon/**'
-      - '.github/workflows/l-libcommon.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
+      - "libs/libcommon/**"
+      - ".github/workflows/l-libcommon.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
   pull_request:
     paths:
-      - 'libs/libcommon/**'
-      - '.github/workflows/l-libcommon.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
+      - "libs/libcommon/**"
+      - ".github/workflows/l-libcommon.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
