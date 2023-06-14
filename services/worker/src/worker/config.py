@@ -37,17 +37,17 @@ def get_empty_str_list() -> List[str]:
 @dataclass(frozen=True)
 class WorkerConfig:
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
-    heartbeat_interval_seconds: int = WORKER_HEARTBEAT_INTERVAL_SECONDS
+    heartbeat_interval_seconds: float = WORKER_HEARTBEAT_INTERVAL_SECONDS
     job_types_blocked: list[str] = field(default_factory=get_empty_str_list)
     job_types_only: list[str] = field(default_factory=get_empty_str_list)
-    kill_long_job_interval_seconds: int = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
-    kill_zombies_interval_seconds: int = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
+    kill_long_job_interval_seconds: float = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
+    kill_zombies_interval_seconds: float = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
     max_disk_usage_pct: int = WORKER_MAX_DISK_USAGE_PCT
-    max_job_duration_seconds: int = WORKER_MAX_JOB_DURATION_SECONDS
+    max_job_duration_seconds: float = WORKER_MAX_JOB_DURATION_SECONDS
     max_load_pct: int = WORKER_MAX_LOAD_PCT
     max_memory_pct: int = WORKER_MAX_MEMORY_PCT
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
-    sleep_seconds: int = WORKER_SLEEP_SECONDS
+    sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
     storage_paths: List[str] = field(default_factory=get_empty_str_list)
 
@@ -57,25 +57,25 @@ class WorkerConfig:
         with env.prefixed("WORKER_"):
             return cls(
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
-                heartbeat_interval_seconds=env.int(
+                heartbeat_interval_seconds=env.float(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
                 job_types_blocked=env.list(name="JOB_TYPES_BLOCKED", default=get_empty_str_list()),
                 job_types_only=env.list(name="JOB_TYPES_ONLY", default=get_empty_str_list()),
-                kill_long_job_interval_seconds=env.int(
+                kill_long_job_interval_seconds=env.float(
                     name="KILL_LONG_JOB_INTERVAL_SECONDS", default=WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
                 ),
-                kill_zombies_interval_seconds=env.int(
+                kill_zombies_interval_seconds=env.float(
                     name="KILL_ZOMBIES_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
                 ),
                 max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_MAX_DISK_USAGE_PCT),
-                max_job_duration_seconds=env.int(
+                max_job_duration_seconds=env.float(
                     name="MAX_JOB_DURATION_SECONDS", default=WORKER_MAX_JOB_DURATION_SECONDS
                 ),
                 max_load_pct=env.int(name="MAX_LOAD_PCT", default=WORKER_MAX_LOAD_PCT),
                 max_memory_pct=env.int(name="MAX_MEMORY_PCT", default=WORKER_MAX_MEMORY_PCT),
                 max_missing_heartbeats=env.int(name="MAX_MISSING_HEARTBEATS", default=WORKER_MAX_MISSING_HEARTBEATS),
-                sleep_seconds=env.int(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
+                sleep_seconds=env.float(name="SLEEP_SECONDS", default=WORKER_SLEEP_SECONDS),
                 state_file_path=env.str(
                     name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
                 ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor

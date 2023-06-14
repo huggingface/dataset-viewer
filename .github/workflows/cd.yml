@@ -86,7 +86,7 @@ jobs:
   deploy-dev-and-prod:
     if: ${{ endsWith(github.ref, '/main') }}
     runs-on: ubuntu-latest
-    needs: [ build-and-push-images ]
+    needs: [build-and-push-images]
     environment: production
     steps:
       - name: Checkout sources
