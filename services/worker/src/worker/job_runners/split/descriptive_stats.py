@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Literal, Tuple, TypedDict, Union, Optional
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
@@ -20,7 +20,6 @@ from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult
 
-
 DECIMALS = 5
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
@@ -36,6 +35,8 @@ class Histogram(TypedDict):
 
 
 class NumericalStatsItem(TypedDict):
+    nan_count: int
+    nan_prop: float
     min: float
     max: float
     mean: float
@@ -45,6 +46,8 @@ class NumericalStatsItem(TypedDict):
 
 
 class CategoricalStatsItem(TypedDict):
+    nan_count: int
+    nan_prop: float
     n_unique: int
     frequencies: Dict[str, int]
 
@@ -57,6 +60,7 @@ class StatsPerColumnItem(TypedDict):
 
 
 class SplitDescriptiveStatsResponse(TypedDict):
+    num_examples: int
     stats: List[StatsPerColumnItem]
 
 
@@ -67,13 +71,19 @@ def compute_histogram(
     bin_size: int,
 ) -> Histogram:
     hist_query = f"""
-    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) as count
+    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) FILTER (WHERE {column_name} IS NOT NULL)
      FROM read_parquet({urls}) GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
+    bins, hist = list(bins), list(hist)
+    if None in bins:  # if there are None values in column
+        # it should be always the last element since we order in query but just in case
+        none_idx = bins.index(None)
+        bins.pop(none_idx)
+        hist.pop(none_idx)
     bins = np.round(bins, DECIMALS).tolist()
-    return Histogram(hist=list(hist), bin_edges=bins)
+    return Histogram(hist=hist, bin_edges=bins)
 
 
 def compute_numerical_stats(
@@ -81,6 +91,7 @@ def compute_numerical_stats(
     column_name: str,
     urls: List[str],
     n_bins: int,
+    n_samples: int,
     dtype: str,
 ) -> NumericalStatsItem:
     query = f"""
@@ -99,9 +110,14 @@ def compute_numerical_stats(
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
         raise ValueError("Incorrect dtype, only integers and float are allowed. ")
+    nan_query = f"SELECT COUNT(*) FILTER (WHERE {column_name} IS NULL) FROM read_parquet({urls});"
+    nan_count = duckdb.query(nan_query).fetchall()[0][0]
+    nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
     histogram = compute_histogram(con, column_name, urls, bin_size=bin_size)
     return NumericalStatsItem(
+        nan_count=nan_count,
+        nan_prop=nan_prop,
         min=minimum,
         max=maximum,
         mean=mean,
@@ -114,17 +130,28 @@ def compute_numerical_stats(
 def compute_categorical_stats(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    class_label_names: List[str],
     urls: List[str],
+    class_label_names: List[str],
+    n_samples: int,
 ) -> CategoricalStatsItem:
     query = f"""
     SELECT {column_name}, COUNT(*) from read_parquet({urls}) GROUP BY {column_name};
     """
     categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
+
     logging.debug(f"Statistics for {column_name} computed")
+    frequencies, nan_count = {}, 0
+    for cat_id, freq in categories:
+        if cat_id is not None:
+            frequencies[class_label_names[cat_id]] = freq
+        else:
+            nan_count = freq
+    nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     return CategoricalStatsItem(
+        nan_count=nan_count,
+        nan_prop=nan_prop,
         n_unique=len(categories),
-        frequencies={class_label_names[cat]: freq for cat, freq in categories},
+        frequencies=frequencies,
     )
 
 
@@ -172,6 +199,7 @@ def compute_descriptive_stats_response(
 
     parquet_files_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
 
+    num_examples = content_parquet_and_info["dataset_info"]["splits"][split]["num_examples"]
     features = content_parquet_and_info["dataset_info"].get("features", [])
     categorical_features = {
         feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
@@ -184,7 +212,7 @@ def compute_descriptive_stats_response(
         logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
         cat_column_stats: CategoricalStatsItem = compute_categorical_stats(
-            con, feature_name, class_label_names, parquet_files_urls
+            con, feature_name, class_label_names=class_label_names, n_samples=num_examples, urls=parquet_files_urls
         )
         stats.append(
             StatsPerColumnItem(
@@ -207,8 +235,9 @@ def compute_descriptive_stats_response(
         num_column_stats: NumericalStatsItem = compute_numerical_stats(
             con,
             feature_name,
-            parquet_files_urls,
+            urls=parquet_files_urls,
             n_bins=histogram_num_bins,
+            n_samples=num_examples,
             dtype=feature_dtype,
         )
         stats.append(
@@ -220,7 +249,7 @@ def compute_descriptive_stats_response(
             )
         )
 
-    return SplitDescriptiveStatsResponse(stats=stats)
+    return SplitDescriptiveStatsResponse(num_examples=num_examples, stats=stats)
 
 
 class SplitDescriptiveStatsJobRunner(SplitCachedJobRunner):
