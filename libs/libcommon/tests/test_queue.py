@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import os
 from datetime import datetime, timedelta
+from multiprocessing import Pool
+from pathlib import Path
 from typing import List, Optional
 from unittest.mock import patch
 
@@ -9,7 +12,7 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
-from libcommon.queue import EmptyQueueError, Job, Queue
+from libcommon.queue import EmptyQueueError, Job, Lock, Queue, lock
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import Priority, Status, get_datetime
 
@@ -383,3 +386,30 @@ def test_has_ttl_index_on_finished_at_field() -> None:
     ttl_index_name = ttl_index_names[0]
     assert ttl_index_name == "finished_at_1"
     assert Job._get_collection().index_information()[ttl_index_name]["expireAfterSeconds"] == QUEUE_TTL_SECONDS
+
+
+def increment(tmp_file: Path) -> None:
+    with open(tmp_file, "r") as f:
+        current = int(f.read() or 0)
+    with open(tmp_file, "w") as f:
+        f.write(str(current + 1))
+
+
+def locked_increment(tmp_file: Path) -> None:
+    with lock(key="test_lock", job_id=str(os.getpid())):
+        increment(tmp_file)
+
+
+def test_lock(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: QueueMongoResource) -> None:
+    tmp_file = Path(tmp_path_factory.mktemp("test_lock") / "tmp.txt")
+    tmp_file.touch()
+    max_parallel_jobs = 4
+    num_jobs = 42
+
+    with Pool(max_parallel_jobs, initializer=queue_mongo_resource.allocate) as pool:
+        pool.map(locked_increment, [tmp_file] * num_jobs)
+
+    expected = num_jobs
+    with open(tmp_file, "r") as f:
+        assert int(f.read()) == expected
+    Lock.objects(key="test_lock").delete()

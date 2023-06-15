@@ -8,12 +8,12 @@ on:
     branches:
       - main
     paths:
-      - 'chart/static-files/opanapi.json'
-      - '.github/workflows/openapi.yml'
+      - "chart/static-files/opanapi.json"
+      - ".github/workflows/openapi.yml"
   pull_request:
     paths:
-      - 'chart/static-files/opanapi.json'
-      - '.github/workflows/openapi.yml'
+      - "chart/static-files/opanapi.json"
+      - ".github/workflows/openapi.yml"
 env:
   python-version: 3.9.15
   poetry-version: 1.4.0
@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.python-version }}
-          cache: 'poetry'
+          cache: "poetry"
           cache-dependency-path: |
             ${{ env.working-directory }}/poetry.lock
       - name: Install dependencies

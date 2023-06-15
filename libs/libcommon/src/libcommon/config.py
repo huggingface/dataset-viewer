@@ -215,7 +215,7 @@ class ProcessingGraphConfig:
             "split-first-rows-from-streaming": {
                 "input_type": "split",
                 "triggered_by": ["config-split-names-from-streaming", "config-split-names-from-info"],
-                "required_by_dataset_viewer": True,
+                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
             "config-parquet-and-info": {
@@ -238,7 +238,7 @@ class ProcessingGraphConfig:
             "split-first-rows-from-parquet": {
                 "input_type": "split",
                 "triggered_by": "config-parquet",
-                "required_by_dataset_viewer": True,
+                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
             },
             "dataset-parquet": {
@@ -265,6 +265,7 @@ class ProcessingGraphConfig:
             "config-size": {
                 "input_type": "config",
                 "triggered_by": "config-parquet-and-info",
+                "enables_viewer": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {
