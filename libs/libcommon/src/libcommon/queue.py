@@ -23,6 +23,7 @@ from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
+    QUEUE_TTL_SECONDS,
 )
 from libcommon.utils import (
     FlatJobInfo,
@@ -134,6 +135,11 @@ class Job(Document):
             ("status", "namespace", "priority", "type", "created_at"),
             ("status", "namespace", "unicity_id", "priority", "type", "created_at"),
             "-created_at",
+            {
+                "fields": ["finished_at"],
+                "expireAfterSeconds": QUEUE_TTL_SECONDS,
+                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
+            },
         ],
     }
     type = StringField(required=True)
