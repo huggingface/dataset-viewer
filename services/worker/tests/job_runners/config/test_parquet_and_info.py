@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
+from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
@@ -45,6 +46,14 @@ from worker.resources import LibrariesResource
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
+
+
+@contextmanager
+def blocked(app_config: AppConfig, repo_id: str) -> Iterator[None]:
+    app_config.parquet_and_info.blocked_datasets.append(repo_id)
+    yield
+    app_config.parquet_and_info.blocked_datasets.remove(repo_id)
+
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
@@ -415,7 +424,7 @@ def test_blocked(
     hub_reponses_jsonl: HubDatasetTest,
 ) -> None:
     # In the list of blocked datasets
-    with patch.object(app_config.parquet_and_info, "blocked_datasets", [hub_reponses_jsonl["name"]]):
+    with blocked(app_config, repo_id=hub_reponses_jsonl["name"]):
         dataset = hub_reponses_jsonl["name"]
         config = hub_reponses_jsonl["config_names_response"]["config_names"][0]["config"]
         upsert_response(
