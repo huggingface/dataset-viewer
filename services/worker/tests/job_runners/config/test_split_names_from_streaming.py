@@ -17,7 +17,7 @@ from worker.job_runners.config.split_names_from_streaming import (
 )
 from worker.resources import LibrariesResource
 
-from ...fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasetTest, get_default_config_split
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesFromStreamingJobRunner]
 
@@ -88,7 +88,12 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     ],
 )
 def test_compute_split_names_from_streaming_response(
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_audio: HubDatasetTest,
+    hub_reponses_gated: HubDatasetTest,
+    hub_reponses_private: HubDatasetTest,
+    hub_reponses_empty: HubDatasetTest,
+    hub_reponses_does_not_exist: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -96,6 +101,14 @@ def test_compute_split_names_from_streaming_response(
     cause: str,
     app_config: AppConfig,
 ) -> None:
+    hub_datasets = {
+        "public": hub_reponses_public,
+        "audio": hub_reponses_audio,
+        "gated": hub_reponses_gated,
+        "private": hub_reponses_private,
+        "empty": hub_reponses_empty,
+        "does_not_exist": hub_reponses_does_not_exist,
+    }
     dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
     expected_configs_response = hub_datasets[name]["splits_response"]
     job_runner = get_job_runner(
