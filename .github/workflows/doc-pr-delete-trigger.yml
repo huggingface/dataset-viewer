@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: Delete doc comment trigger
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - "docs/**"
+      - ".github/workflows/doc-pr-delete-trigger.yml"
+
+jobs:
+  delete:
+    uses: huggingface/doc-builder/.github/workflows/delete_doc_comment_trigger.yml@main
+    with:
+      pr_number: ${{ github.event.number }}

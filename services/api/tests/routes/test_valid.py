@@ -6,7 +6,7 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecifica
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 
 from api.config import AppConfig
-from api.routes.valid import get_valid
+from api.routes.valid import ValidDatasets
 
 dataset_step = "dataset-step"
 config_step = "config-step"
@@ -26,44 +26,70 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
     [
         {},
         {step_1: {}},
-        {step_1: {"required_by_dataset_viewer": True}},
+        {step_1: {"enables_preview": True}},
     ],
 )
 def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
-    assert get_valid(processing_graph=processing_graph) == []
+    valid_datasets = ValidDatasets(processing_graph=processing_graph)
+    assert valid_datasets.content == {"valid": [], "preview": [], "viewer": []}
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
     [
-        ({step_1: {}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}}, ["dataset"]),
-        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}}, ["dataset"]),
+        ({step_1: {}, step_2: {}}, [], [], []),
+        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset"], [], ["dataset"]),
+        ({step_1: {}, step_2: {"enables_preview": True}}, [], [], []),
+        ({step_1: {"enables_viewer": True}, step_2: {}}, [], ["dataset"], ["dataset"]),
+        ({step_1: {}, step_2: {"enables_viewer": True}}, [], [], []),
+        ({step_1: {"enables_preview": True, "enables_viewer": True}, step_2: {}}, [], ["dataset"], ["dataset"]),
     ],
 )
-def test_one_dataset(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
+def test_one_dataset(
+    processing_graph_specification: ProcessingGraphSpecification,
+    expected_preview: List[str],
+    expected_viewer: List[str],
+    expected_valid: List[str],
+) -> None:
     dataset = "dataset"
     processing_graph = ProcessingGraph(processing_graph_specification)
     processing_step = processing_graph.get_processing_step(step_1)
     upsert_response(kind=processing_step.cache_kind, dataset=dataset, content={}, http_status=HTTPStatus.OK)
-    assert get_valid(processing_graph=processing_graph) == expected_valid
+    valid_datasets = ValidDatasets(processing_graph=processing_graph)
+    assert valid_datasets.content == {
+        "valid": expected_valid,
+        "preview": expected_preview,
+        "viewer": expected_viewer,
+    }
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
     [
-        ({step_1: {}, step_2: {}}, []),
-        ({step_1: {"required_by_dataset_viewer": True}, step_2: {}}, ["dataset1"]),
-        ({step_1: {}, step_2: {"required_by_dataset_viewer": True}}, ["dataset2"]),
+        ({step_1: {}, step_2: {}}, [], [], []),
+        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset1"], [], ["dataset1"]),
+        ({step_1: {}, step_2: {"enables_preview": True}}, ["dataset2"], [], ["dataset2"]),
         (
-            {step_1: {"required_by_dataset_viewer": True}, step_2: {"required_by_dataset_viewer": True}},
+            {step_1: {"enables_preview": True}, step_2: {"enables_preview": True}},
+            ["dataset1", "dataset2"],
+            [],
+            ["dataset1", "dataset2"],
+        ),
+        (
+            {step_1: {"enables_preview": True}, step_2: {"enables_viewer": True}},
+            ["dataset1"],
+            ["dataset2"],
             ["dataset1", "dataset2"],
         ),
     ],
 )
-def test_two_datasets(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
+def test_two_datasets(
+    processing_graph_specification: ProcessingGraphSpecification,
+    expected_preview: List[str],
+    expected_viewer: List[str],
+    expected_valid: List[str],
+) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
     upsert_response(
         kind=processing_graph.get_processing_step(step_1).cache_kind,
@@ -77,11 +103,16 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert get_valid(processing_graph=processing_graph) == expected_valid
+    valid_datasets = ValidDatasets(processing_graph=processing_graph)
+    assert valid_datasets.content == {
+        "valid": expected_valid,
+        "preview": expected_preview,
+        "viewer": expected_viewer,
+    }
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
     [
         (
             {
@@ -90,13 +121,17 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
             [],
+            [],
+            [],
         ),
         (
             {
-                dataset_step: {"required_by_dataset_viewer": True},
+                dataset_step: {"enables_preview": True},
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
+            ["dataset"],
+            [],
             ["dataset"],
         ),
         (
@@ -105,35 +140,60 @@ def test_two_datasets(processing_graph_specification: ProcessingGraphSpecificati
                 config_step: {
                     "input_type": "config",
                     "triggered_by": dataset_step,
-                    "required_by_dataset_viewer": True,
+                    "enables_preview": True,
                 },
                 split_step: {"input_type": "split", "triggered_by": config_step},
             },
+            ["dataset"],
+            [],
             ["dataset"],
         ),
         (
             {
                 dataset_step: {},
                 config_step: {"input_type": "config", "triggered_by": dataset_step},
-                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
+                split_step: {"input_type": "split", "triggered_by": config_step, "enables_preview": True},
             },
+            ["dataset"],
+            [],
             ["dataset"],
         ),
         (
             {
-                dataset_step: {"required_by_dataset_viewer": True},
+                dataset_step: {"enables_preview": True},
                 config_step: {
                     "input_type": "config",
                     "triggered_by": dataset_step,
-                    "required_by_dataset_viewer": True,
+                    "enables_preview": True,
                 },
-                split_step: {"input_type": "split", "triggered_by": config_step, "required_by_dataset_viewer": True},
+                split_step: {"input_type": "split", "triggered_by": config_step, "enables_preview": True},
             },
+            ["dataset"],
+            [],
+            ["dataset"],
+        ),
+        (
+            {
+                dataset_step: {},
+                config_step: {
+                    "input_type": "config",
+                    "triggered_by": dataset_step,
+                    "enables_viewer": True,
+                },
+                split_step: {"input_type": "split", "triggered_by": config_step, "enables_preview": True},
+            },
+            [],
+            ["dataset"],
             ["dataset"],
         ),
     ],
 )
-def test_three_steps(processing_graph_specification: ProcessingGraphSpecification, expected_valid: List[str]) -> None:
+def test_three_steps(
+    processing_graph_specification: ProcessingGraphSpecification,
+    expected_preview: List[str],
+    expected_viewer: List[str],
+    expected_valid: List[str],
+) -> None:
     dataset = "dataset"
     config = "config"
     split = "split"
@@ -159,11 +219,16 @@ def test_three_steps(processing_graph_specification: ProcessingGraphSpecificatio
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert get_valid(processing_graph=processing_graph) == expected_valid
+    valid_datasets = ValidDatasets(processing_graph=processing_graph)
+    assert valid_datasets.content == {
+        "valid": expected_valid,
+        "preview": expected_preview,
+        "viewer": expected_viewer,
+    }
 
 
 def test_errors() -> None:
-    processing_graph = ProcessingGraph({dataset_step: {"required_by_dataset_viewer": True}})
+    processing_graph = ProcessingGraph({dataset_step: {"enables_preview": True}})
     dataset_a = "dataset_a"
     dataset_b = "dataset_b"
     dataset_c = "dataset_c"
@@ -171,4 +236,15 @@ def test_errors() -> None:
     upsert_response(kind=cache_kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=cache_kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=cache_kind, dataset=dataset_c, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
-    assert get_valid(processing_graph=processing_graph) == [dataset_a, dataset_b]
+    valid_datasets = ValidDatasets(processing_graph=processing_graph)
+    assert valid_datasets.content == {
+        "valid": [
+            dataset_a,
+            dataset_b,
+        ],
+        "preview": [
+            dataset_a,
+            dataset_b,
+        ],
+        "viewer": [],
+    }

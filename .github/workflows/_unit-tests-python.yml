@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 name: Launch Python unit tests
-on: 
+on:
   workflow_call:
     inputs:
       working-directory:
@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.python-version }}
-          cache: 'poetry'
+          cache: "poetry"
           cache-dependency-path: |
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
@@ -45,7 +45,7 @@ jobs:
         env:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           QUEUE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
-          METRICS_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}          
+          METRICS_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           DATABASE_MIGRATIONS_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
           CI_SPAWNING_TOKEN: ${{ secrets.CI_SPAWNING_TOKEN }}
         run: poetry run python -m pytest -s --cov=./ --cov-report=xml:./coverage.xml --cov-report=term tests

@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 appdirs = "^1.4.4"
-datasets = { extras = ["audio", "vision"], version = "^2.12.0" }
+datasets = {version = "^2.13.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.15.1"
 mongo-types = "0.15.1"
@@ -24,6 +24,7 @@ pytz = "^2020.1"
 requests = "^2.31.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
+tqdm = "^4.65.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
@@ -69,6 +70,8 @@ module = [
     "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
+    "tqdm.*",
+    "fsspec.*",
 ]
 # ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true

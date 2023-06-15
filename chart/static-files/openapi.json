@@ -290,10 +290,7 @@
         "description": "A string that identifies the underlying error for 500 on /first-rows.",
         "schema": {
           "type": "string",
-          "enum": [
-            "RowsPostProcessingError",
-            "UnexpectedError"
-          ]
+          "enum": ["RowsPostProcessingError", "UnexpectedError"]
         },
         "examples": {
           "RowsPostProcessingError": {
@@ -896,11 +893,20 @@
       },
       "ValidResponse": {
         "type": "object",
-        "required": ["valid"],
+        "required": ["preview", "viewer", "valid"],
         "properties": {
-          "valid": {
+          "preview": {
             "type": "array",
             "items": { "type": "string" }
+          },
+          "viewer": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "valid": {
+            "type": "array",
+            "items": { "type": "string" },
+            "deprecated": true
           }
         }
       },
@@ -2213,7 +2219,7 @@
             "description": "The length of the slice",
             "default": 100,
             "minimum": 0,
-            "maximum": 100, 
+            "maximum": 100,
             "schema": { "type": "integer" },
             "examples": {
               "100": {
@@ -3146,9 +3152,9 @@
     "/valid": {
       "get": {
         "summary": "Valid datasets",
-        "description": "The list of the Hub datasets that work without an error (for /splits and /first-rows).",
+        "description": "The lists of the Hub datasets that work without an error, by type. It lists the datasets that have a Dataset Viewer (i.e. have been converted to Parquet format, and can be paginated) and the datasets that only have the Dataset Preview (the first 100 rows).",
         "externalDocs": {
-          "description": "See  Valid datasets (Hub docs)",
+          "description": "See Valid datasets (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/valid"
         },
         "operationId": "listValidDatasets",
@@ -3173,6 +3179,15 @@
                   "valid": {
                     "summary": "list of datasets",
                     "value": {
+                      "preview": [
+                        "0n1xus/codexglue",
+                        "0x7194633/rupile",
+                        "AHussain0418/day2_data"
+                      ],
+                      "viewer": [
+                        "0n1xus/pytorrent-standalone",
+                        "51la5/keyword-extraction"
+                      ],
                       "valid": [
                         "0n1xus/codexglue",
                         "0n1xus/pytorrent-standalone",

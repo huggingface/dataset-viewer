@@ -8,20 +8,20 @@ on:
     branches:
       - main
     paths:
-      - 'jobs/mongodb_migration/**'
-      - 'libs/libcommon/**'
-      - '.github/workflows/j-migration.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
+      - "jobs/mongodb_migration/**"
+      - "libs/libcommon/**"
+      - ".github/workflows/j-migration.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
   pull_request:
     paths:
-      - 'jobs/mongodb_migration/**'
-      - 'libs/libcommon/**'
-      - '.github/workflows/j-migration.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
+      - "jobs/mongodb_migration/**"
+      - "libs/libcommon/**"
+      - ".github/workflows/j-migration.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

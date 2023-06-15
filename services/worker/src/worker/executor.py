@@ -5,7 +5,8 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Callable, Optional
+from random import random
+from typing import Any, Callable, Optional, Tuple, Union
 
 import orjson
 from filelock import FileLock
@@ -24,13 +25,20 @@ START_WORKER_LOOP_PATH = start_worker_loop.__file__
 
 
 async def every(
-    func: Callable[..., Optional[Any]], *args: Any, seconds: int, stop_on: Optional[Any] = None, **kwargs: Any
+    func: Callable[..., Optional[Any]],
+    *args: Any,
+    seconds: Union[float, Tuple[float, float]],
+    stop_on: Optional[Any] = None,
+    **kwargs: Any,
 ) -> None:
     while True:
         out = func(*args, **kwargs)
         if stop_on is not None and out == stop_on:
             break
-        await asyncio.sleep(seconds)
+        delay = (
+            seconds[0] + (seconds[1] - seconds[0]) * random() if isinstance(seconds, tuple) else seconds  # nosec B311
+        )
+        await asyncio.sleep(delay)
 
 
 class BadWorkerState(RuntimeError):
@@ -78,16 +86,27 @@ class WorkerExecutor:
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.app_config.worker.heartbeat_interval_seconds))
-        loop.create_task(every(self.kill_zombies, seconds=self.app_config.worker.kill_zombies_interval_seconds))
+        loop.create_task(
+            every(
+                self.kill_zombies,
+                seconds=(
+                    self.app_config.worker.kill_zombies_interval_seconds * 0.5,
+                    self.app_config.worker.kill_zombies_interval_seconds * 1.5,
+                ),
+            )
+        )
         loop.create_task(
             every(
                 self.kill_long_job,
                 worker_loop_executor=worker_loop_executor,
-                seconds=self.app_config.worker.kill_long_job_interval_seconds,
+                seconds=(
+                    self.app_config.worker.kill_long_job_interval_seconds * 0.5,
+                    self.app_config.worker.kill_long_job_interval_seconds * 1.5,
+                ),
             )
         )
         loop.run_until_complete(
-            every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1, stop_on=False)
+            every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1.0, stop_on=False)
         )
         if exceptions:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
@@ -132,7 +151,11 @@ class WorkerExecutor:
         if worker_state and worker_state["current_job_info"]:
             long_job = worker_state["current_job_info"]
             last_updated = worker_state["last_updated"]
-            if last_updated + timedelta(seconds=self.app_config.worker.max_job_duration_seconds) <= get_datetime():
+            coefficient = 10 if long_job["params"]["dataset"] == "cerebras/SlimPajama-627B" else 1
+            if (
+                last_updated + timedelta(seconds=coefficient * self.app_config.worker.max_job_duration_seconds)
+                <= get_datetime()
+            ):
                 _duration_seconds = int((get_datetime() - last_updated).total_seconds())
                 logging.warning(
                     f"Job {long_job} exceeded maximum duration of"

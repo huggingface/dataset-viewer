@@ -3,21 +3,25 @@
 
 import contextlib
 import logging
+import time
 import types
 from collections import Counter
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
-from typing import Generic, List, Optional, Type, TypedDict, TypeVar
+from types import TracebackType
+from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
 
 import pandas as pd
 import pytz
 from mongoengine import Document, DoesNotExist
+from mongoengine.errors import NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
+    QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
@@ -202,6 +206,79 @@ class Job(Document):
         )
 
 
+class Lock(Document):
+    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "job_id")]}
+    key = StringField(primary_key=True)
+    job_id = StringField()
+
+    created_at = DateTimeField(required=True)
+    updated_at = DateTimeField()
+
+    objects = QuerySetManager["Lock"]()
+
+
+class lock:
+    """
+    Provides a simple way of inter-worker communication using a MongoDB lock.
+    A lock is used to indicate another worker of your application that a resource
+    or working directory is currently used in a job.
+
+    Example of usage:
+
+    ```python
+    key = json.dumps({"type": job.type, "dataset": job.dataset})
+    with lock(key=key, job_id=job.pk):
+        ...
+    ```
+
+    Or using a try/except:
+
+    ```python
+    try:
+        key = json.dumps({"type": job.type, "dataset": job.dataset})
+        lock(key=key, job_id=job.pk).acquire()
+    except TimeoutError:
+        ...
+    ```
+    """
+
+    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
+        self.key = key
+        self.job_id = job_id
+        self.sleeps = sleeps
+
+    def acquire(self) -> None:
+        try:
+            Lock(key=self.key, job_id=self.job_id, created_at=get_datetime()).save()
+        except NotUniqueError:
+            pass
+        for sleep in self.sleeps:
+            acquired = (
+                Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
+                    job_id=self.job_id, updated_at=get_datetime()
+                )
+                > 0
+            )
+            if acquired:
+                return
+            logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+            time.sleep(sleep)
+        raise TimeoutError("lock couldn't be acquired")
+
+    def release(self) -> None:
+        Lock.objects(key=self.key, job_id=self.job_id).update(job_id=None, updated_at=get_datetime())
+
+    def __enter__(self) -> "lock":
+        self.acquire()
+        return self
+
+    def __exit__(
+        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+    ) -> Literal[False]:
+        self.release()
+        return False
+
+
 class Queue:
     """A queue manages jobs.
 
@@ -216,22 +293,7 @@ class Queue:
     - a job has a priority (two levels: NORMAL and LOW)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
-    - no more than `max_jobs_per_namespace` started jobs can exist for the same namespace
-
-    Args:
-        max_jobs_per_namespace (`int`): Maximum number of started jobs for the same namespace. We call a namespace the
-          part of the dataset name that is before the `/` separator (user or organization). If `/` is not present,
-          which is the case for the "canonical" datasets, the namespace is the dataset name.
-          0 or a negative value are ignored. Defaults to None.
     """
-
-    def __init__(
-        self,
-        max_jobs_per_namespace: Optional[int] = None,
-    ):
-        self.max_jobs_per_namespace = (
-            None if max_jobs_per_namespace is None or max_jobs_per_namespace < 1 else max_jobs_per_namespace
-        )
 
     def _add_job(
         self,
@@ -412,7 +474,6 @@ class Queue:
         For a given priority, get the waiting job with the oldest creation date:
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
-          - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
@@ -457,20 +518,14 @@ class Queue:
         # all the waiting jobs, if any, are for namespaces that already have started jobs.
         #
         # Let's:
-        # - exclude the waiting jobs for datasets that already have too many started jobs (max_jobs_per_namespace)
         # - exclude the waiting jobs which unicity_id is already in a started job
         # and, among the remaining waiting jobs, let's:
         # - select the oldest waiting job for the namespace with the least number of started jobs
         started_unicity_ids = {job.unicity_id for job in started_jobs.only("unicity_id")}
         descending_frequency_namespace_counts = [
-            [namespace, count]
-            for namespace, count in Counter(started_job_namespaces).most_common()
-            if self.max_jobs_per_namespace is None or count < self.max_jobs_per_namespace
+            [namespace, count] for namespace, count in Counter(started_job_namespaces).most_common()
         ]
-        logging.debug(
-            f"Descending frequency namespace counts, with less than {self.max_jobs_per_namespace} started jobs:"
-            f" {descending_frequency_namespace_counts}"
-        )
+        logging.debug(f"Descending frequency namespace counts: {descending_frequency_namespace_counts}")
         descending_frequency_namespace_groups = [
             [item[0] for item in data] for (_, data) in groupby(descending_frequency_namespace_counts, itemgetter(1))
         ]
@@ -493,10 +548,7 @@ class Queue:
             )
             if next_waiting_job is not None:
                 return next_waiting_job
-        raise EmptyQueueError(
-            f"no job available with the priority (within the limit of {self.max_jobs_per_namespace} started jobs per"
-            " namespace)"
-        )
+        raise EmptyQueueError("no job available with the priority")
 
     def get_next_waiting_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
@@ -507,7 +559,6 @@ class Queue:
         - among the highest priority jobs,
         - among the datasets that still have no started job.
         - if none, among the datasets that have the least started jobs:
-          - in the limit of `max_jobs_per_namespace` jobs per namespace
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
@@ -524,9 +575,7 @@ class Queue:
                 return self._get_next_waiting_job_for_priority(
                     priority=priority, job_types_blocked=job_types_blocked, job_types_only=job_types_only
                 )
-        raise EmptyQueueError(
-            f"no job available (within the limit of {self.max_jobs_per_namespace} started jobs per namespace)"
-        )
+        raise EmptyQueueError("no job available")
 
     def _start_job(self, job: Job) -> Job:
         # could be a method of Job
@@ -815,7 +864,7 @@ class Queue:
             return
         job.update(last_heartbeat=get_datetime())
 
-    def get_zombies(self, max_seconds_without_heartbeat: int) -> List[JobInfo]:
+    def get_zombies(self, max_seconds_without_heartbeat: float) -> List[JobInfo]:
         """Get the zombie jobs.
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.
@@ -847,6 +896,7 @@ class Queue:
 def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     Job.drop_collection()  # type: ignore
+    Lock.drop_collection()  # type: ignore
 
 
 # explicit re-export

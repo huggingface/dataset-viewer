@@ -57,7 +57,6 @@ if __name__ == "__main__":
         loop = Loop(
             library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
-            max_jobs_per_namespace=app_config.queue.max_jobs_per_namespace,
             state_file_path=state_file_path,
             app_config=app_config,
             processing_graph=processing_graph,

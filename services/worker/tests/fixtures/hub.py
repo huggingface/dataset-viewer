@@ -3,6 +3,7 @@
 
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
+import csv
 import time
 from contextlib import suppress
 from pathlib import Path
@@ -224,6 +225,23 @@ def hub_public_big(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_public_big_no_info(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="big-no-info", dataset=datasets["big"])
+    hf_api.delete_file(
+        "README.md", repo_id=repo_id, repo_type="dataset", commit_message="Delete README.md", token=CI_USER_TOKEN
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_public_big_csv(big_csv_path: str) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="big-csv", file_paths=[big_csv_path])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_external_files(dataset_script_with_external_files_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="external_files", file_paths=[dataset_script_with_external_files_path])
     yield repo_id
@@ -340,6 +358,36 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     }
 
 
+def create_dataset_info_response_for_big_parquet() -> Any:
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": BIG_cols,
+        "splits": {
+            "train": {"name": "train", "num_bytes": 5653946, "num_examples": len(BIG_rows), "dataset_name": None}
+        },
+        "download_size": BIG_PARQUET_FILE,
+        "dataset_size": 5653946,
+    }
+
+
+def create_dataset_info_response_for_big_parquet_no_info() -> Any:
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": BIG_cols,
+        "splits": {
+            "train": {"name": "train", "num_bytes": 12345, "num_examples": len(BIG_rows), "dataset_name": None}
+        },
+        "download_size": BIG_PARQUET_FILE,
+        "dataset_size": 12345,
+    }
+
+
 def create_dataset_info_response_for_audio() -> Any:
     return {
         "description": "",
@@ -347,28 +395,27 @@ def create_dataset_info_response_for_audio() -> Any:
         "homepage": "",
         "license": "",
         "features": AUDIO_cols,
-        "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": "parquet"}},
-        "download_checksums": {
-            "SOME_KEY": {
-                "num_bytes": AUDIO_PARQUET_SIZE,
-                "checksum": None,
-            }
-        },
+        "splits": {"train": {"name": "train", "num_bytes": 54, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
-        "dataset_size": 59,
-        "size_in_bytes": 1443,
+        "dataset_size": 54,
     }
 
 
-def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "audio"]) -> Any:
+def create_parquet_and_info_response(
+    dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]
+) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
     filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
-    size = CSV_PARQUET_SIZE if data_type == "csv" else AUDIO_PARQUET_SIZE
+    size = CSV_PARQUET_SIZE if data_type == "csv" else AUDIO_PARQUET_SIZE if data_type == "audio" else BIG_PARQUET_FILE
     info = (
         create_dataset_info_response_for_csv(dataset, config)
         if data_type == "csv"
         else create_dataset_info_response_for_audio()
+        if data_type == "audio"
+        else create_dataset_info_response_for_big_parquet()
+        if data_type == "big_parquet"
+        else create_dataset_info_response_for_big_parquet_no_info()
     )
     return {
         "parquet_files": [
@@ -389,6 +436,7 @@ def create_parquet_and_info_response(dataset: str, data_type: Literal["csv", "au
 
 CSV_PARQUET_SIZE = 1_866
 AUDIO_PARQUET_SIZE = 1_384
+BIG_PARQUET_FILE = 38_896
 
 DATA_cols = {
     "col_1": {"_type": "Value", "dtype": "int64"},
@@ -485,10 +533,22 @@ def get_IMAGES_LIST_rows(dataset: str) -> Any:
 
 
 BIG_cols = {
-    "col": [{"_type": "Value", "dtype": "string"}],
+    "col": {"_type": "Value", "dtype": "string"},
 }
 
-BIG_rows = ["a" * 1_234 for _ in range(4_567)]
+BIG_rows = [{"col": "a" * 1_234} for _ in range(4_567)]
+
+
+@pytest.fixture(scope="session")
+def big_csv_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "big_dataset.csv")
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(BIG_cols))
+        writer.writeheader()
+        for row in BIG_rows:
+            writer.writerow(row)
+    return path
+
 
 TEXT_cols = {
     "text": {"_type": "Value", "dtype": "string"},
@@ -513,125 +573,187 @@ SPAWNING_OPT_IN_OUT_cols = {
 SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testurl.test/test_image2.jpg", "other"]
 
 
-@pytest.fixture(scope="session")
-def hub_datasets(
-    hub_public_empty: str,
-    hub_public_csv: str,
-    hub_private_csv: str,
-    hub_gated_csv: str,
-    hub_public_jsonl: str,
-    hub_public_audio: str,
-    hub_public_image: str,
-    hub_public_images_list: str,
-    hub_public_big: str,
-    hub_public_external_files: str,
-    hub_public_spawning_opt_in_out: str,
-) -> HubDatasets:
+@pytest.fixture
+def hub_reponses_does_not_exist() -> HubDatasetTest:
     return {
-        "does_not_exist": {
-            "name": "does_not_exist",
-            "config_names_response": None,
-            "splits_response": None,
-            "first_rows_response": None,
-            "parquet_and_info_response": None,
-        },
-        "does_not_exist_config": {
-            "name": "does_not_exist_config",
-            "config_names_response": None,
-            "splits_response": None,
-            "first_rows_response": None,
-            "parquet_and_info_response": None,
-        },
-        "does_not_exist_split": {
-            "name": "does_not_exist_split",
-            "config_names_response": None,
-            "splits_response": None,
-            "first_rows_response": None,
-            "parquet_and_info_response": None,
-        },
-        "empty": {
-            "name": hub_public_empty,
-            "config_names_response": None,
-            "splits_response": None,
-            "first_rows_response": None,
-            "parquet_and_info_response": None,
-        },
-        "public": {
-            "name": hub_public_csv,
-            "config_names_response": create_config_names_response(hub_public_csv),
-            "splits_response": create_splits_response(hub_public_csv),
-            "first_rows_response": create_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
-            "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_csv, data_type="csv"),
-        },
-        "private": {
-            "name": hub_private_csv,
-            "config_names_response": create_config_names_response(hub_private_csv),
-            "splits_response": create_splits_response(hub_private_csv),
-            "first_rows_response": create_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
-            "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_private_csv, data_type="csv"),
-        },
-        "gated": {
-            "name": hub_gated_csv,
-            "config_names_response": create_config_names_response(hub_gated_csv),
-            "splits_response": create_splits_response(hub_gated_csv),
-            "first_rows_response": create_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
-            "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_gated_csv, data_type="csv"),
-        },
-        "jsonl": {
-            "name": hub_public_jsonl,
-            "config_names_response": create_config_names_response(hub_public_jsonl),
-            "splits_response": create_splits_response(hub_public_jsonl),
-            "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
-            "parquet_and_info_response": None,
-        },
-        "audio": {
-            "name": hub_public_audio,
-            "config_names_response": create_config_names_response(hub_public_audio),
-            "splits_response": create_splits_response(hub_public_audio),
-            "first_rows_response": create_first_rows_response(
-                hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
-            ),
-            "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_audio, data_type="audio"),
-        },
-        "image": {
-            "name": hub_public_image,
-            "config_names_response": create_config_names_response(hub_public_image),
-            "splits_response": create_splits_response(hub_public_image),
-            "first_rows_response": create_first_rows_response(
-                hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
-            ),
-            "parquet_and_info_response": None,
-        },
-        "images_list": {
-            "name": hub_public_images_list,
-            "config_names_response": create_config_names_response(hub_public_images_list),
-            "splits_response": create_splits_response(hub_public_images_list),
-            "first_rows_response": create_first_rows_response(
-                hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
-            ),
-            "parquet_and_info_response": None,
-        },
-        "big": {
-            "name": hub_public_big,
-            "config_names_response": create_config_names_response(hub_public_big),
-            "splits_response": create_splits_response(hub_public_big),
-            "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
-            "parquet_and_info_response": None,
-        },
-        "external_files": {
-            "name": hub_public_external_files,
-            "config_names_response": create_config_names_response(hub_public_external_files),
-            "splits_response": create_splits_response(hub_public_external_files),
-            "first_rows_response": create_first_rows_response(hub_public_external_files, TEXT_cols, TEXT_rows),
-            "parquet_and_info_response": None,
-        },
-        "spawning_opt_in_out": {
-            "name": hub_public_spawning_opt_in_out,
-            "config_names_response": create_config_names_response(hub_public_spawning_opt_in_out),
-            "splits_response": create_splits_response(hub_public_spawning_opt_in_out),
-            "first_rows_response": create_first_rows_response(
-                hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
-            ),
-            "parquet_and_info_response": None,
-        },
+        "name": "does_not_exist",
+        "config_names_response": None,
+        "splits_response": None,
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_does_not_exist_config() -> HubDatasetTest:
+    return {
+        "name": "does_not_exist_config",
+        "config_names_response": None,
+        "splits_response": None,
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_does_not_exist_split() -> HubDatasetTest:
+    return {
+        "name": "does_not_exist_split",
+        "config_names_response": None,
+        "splits_response": None,
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_empty(hub_public_empty: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_empty,
+        "config_names_response": None,
+        "splits_response": None,
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_public(hub_public_csv: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_csv,
+        "config_names_response": create_config_names_response(hub_public_csv),
+        "splits_response": create_splits_response(hub_public_csv),
+        "first_rows_response": create_first_rows_response(hub_public_csv, DATA_cols, DATA_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_csv, data_type="csv"),
+    }
+
+
+@pytest.fixture
+def hub_reponses_private(hub_private_csv: str) -> HubDatasetTest:
+    return {
+        "name": hub_private_csv,
+        "config_names_response": create_config_names_response(hub_private_csv),
+        "splits_response": create_splits_response(hub_private_csv),
+        "first_rows_response": create_first_rows_response(hub_private_csv, DATA_cols, DATA_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_private_csv, data_type="csv"),
+    }
+
+
+@pytest.fixture
+def hub_reponses_gated(hub_gated_csv: str) -> HubDatasetTest:
+    return {
+        "name": hub_gated_csv,
+        "config_names_response": create_config_names_response(hub_gated_csv),
+        "splits_response": create_splits_response(hub_gated_csv),
+        "first_rows_response": create_first_rows_response(hub_gated_csv, DATA_cols, DATA_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_gated_csv, data_type="csv"),
+    }
+
+
+@pytest.fixture
+def hub_reponses_jsonl(hub_public_jsonl: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_jsonl,
+        "config_names_response": create_config_names_response(hub_public_jsonl),
+        "splits_response": create_splits_response(hub_public_jsonl),
+        "first_rows_response": create_first_rows_response(hub_public_jsonl, JSONL_cols, JSONL_rows),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_audio(hub_public_audio: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_audio,
+        "config_names_response": create_config_names_response(hub_public_audio),
+        "splits_response": create_splits_response(hub_public_audio),
+        "first_rows_response": create_first_rows_response(
+            hub_public_audio, AUDIO_cols, get_AUDIO_rows(hub_public_audio)
+        ),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_audio, data_type="audio"),
+    }
+
+
+@pytest.fixture
+def hub_reponses_image(hub_public_image: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_image,
+        "config_names_response": create_config_names_response(hub_public_image),
+        "splits_response": create_splits_response(hub_public_image),
+        "first_rows_response": create_first_rows_response(
+            hub_public_image, IMAGE_cols, get_IMAGE_rows(hub_public_image)
+        ),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_images_list(hub_public_images_list: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_images_list,
+        "config_names_response": create_config_names_response(hub_public_images_list),
+        "splits_response": create_splits_response(hub_public_images_list),
+        "first_rows_response": create_first_rows_response(
+            hub_public_images_list, IMAGES_LIST_cols, get_IMAGES_LIST_rows(hub_public_images_list)
+        ),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_big(hub_public_big: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_big,
+        "config_names_response": create_config_names_response(hub_public_big),
+        "splits_response": create_splits_response(hub_public_big),
+        "first_rows_response": create_first_rows_response(hub_public_big, BIG_cols, BIG_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_big, data_type="big_parquet"),
+    }
+
+
+@pytest.fixture
+def hub_reponses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_big_no_info,
+        "config_names_response": create_config_names_response(hub_public_big_no_info),
+        "splits_response": create_splits_response(hub_public_big_no_info),
+        "first_rows_response": create_first_rows_response(hub_public_big_no_info, BIG_cols, BIG_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_big_no_info, data_type="big_parquet_no_info"
+        ),
+    }
+
+
+@pytest.fixture
+def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_big_csv,
+        "config_names_response": create_config_names_response(hub_public_big_csv),
+        "splits_response": create_splits_response(hub_public_big_csv),
+        "first_rows_response": create_first_rows_response(hub_public_big_csv, BIG_cols, BIG_rows),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_external_files(hub_public_external_files: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_external_files,
+        "config_names_response": create_config_names_response(hub_public_external_files),
+        "splits_response": create_splits_response(hub_public_external_files),
+        "first_rows_response": create_first_rows_response(hub_public_external_files, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_spawning_opt_in_out,
+        "config_names_response": create_config_names_response(hub_public_spawning_opt_in_out),
+        "splits_response": create_splits_response(hub_public_spawning_opt_in_out),
+        "first_rows_response": create_first_rows_response(
+            hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
+        ),
+        "parquet_and_info_response": None,
     }

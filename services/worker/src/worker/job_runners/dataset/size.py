@@ -7,11 +7,15 @@ from typing import Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import DoesNotExist, get_response
+from libcommon.simple_cache import (
+    DoesNotExist,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob, get_previous_step_or_raise
+from worker.utils import JobResult, PreviousJob
 
 
 class DatasetSize(TypedDict):

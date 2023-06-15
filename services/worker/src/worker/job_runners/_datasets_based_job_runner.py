@@ -3,8 +3,8 @@
 
 import json
 import logging
+import random
 import re
-from datetime import datetime
 from hashlib import sha1
 from pathlib import Path
 from typing import Optional
@@ -44,18 +44,18 @@ class DatasetsBasedJobRunner(JobRunner):
         self.datasets_based_config = app_config.datasets_based
         self.base_datasets_cache = hf_datasets_cache
 
-    def get_cache_subdirectory(self, date: datetime) -> str:
-        date_str = date.strftime("%Y-%m-%d-%H-%M-%S")
+    def get_cache_subdirectory(self, digits: int = 14) -> str:
+        random_str = f"{random.randrange(10**(digits - 1), 10**digits)}"  # nosec B311
         # TODO: Refactor, need a way to generate payload based only on provided params
         payload = (
-            date_str,
+            random_str,
             self.get_job_type(),
             self.job_info["params"]["dataset"],
             self.job_info["params"]["config"],
             self.job_info["params"]["split"],
         )
         hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        prefix = f"{date_str}-{self.get_job_type()}-{self.job_info['params']['dataset']}"[:64]
+        prefix = f"{random_str}-{self.get_job_type()}-{self.job_info['params']['dataset']}"[:64]
         subdirectory = f"{prefix}-{hash_suffix}"
         return "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
 
@@ -79,7 +79,7 @@ class DatasetsBasedJobRunner(JobRunner):
         self.datasets_cache = None
 
     def set_cache(self) -> None:
-        cache_subdirectory = self.get_cache_subdirectory(date=datetime.now())
+        cache_subdirectory = self.get_cache_subdirectory()
         self.set_datasets_cache(self.base_datasets_cache / cache_subdirectory)
 
     def unset_cache(self) -> None:

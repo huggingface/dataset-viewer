@@ -3,6 +3,7 @@
 
 from dataclasses import replace
 from typing import Callable
+from unittest.mock import patch
 
 import pytest
 from libcommon.exceptions import CustomError
@@ -14,7 +15,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
-from ...fixtures.hub import HubDatasets
+from ...fixtures.hub import HubDatasetTest
 
 GetJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJobRunner]
 
@@ -67,6 +68,33 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
 
 
 @pytest.mark.parametrize(
+    "max_number_of_configs,error_code",
+    [
+        (1, "DatasetWithTooManyConfigsError"),
+        (2, None),
+        (3, None),
+    ],
+)
+def test_compute_too_many_configs(
+    app_config: AppConfig, get_job_runner: GetJobRunner, max_number_of_configs: int, error_code: str
+) -> None:
+    dataset = "dataset"
+    configs = ["config_1", "config_2"]
+    job_runner = get_job_runner(
+        dataset,
+        replace(app_config, config_names=replace(app_config.config_names, max_number=max_number_of_configs)),
+    )
+
+    with patch("worker.job_runners.dataset.config_names.get_dataset_config_names", return_value=configs):
+        if error_code:
+            with pytest.raises(CustomError) as exc_info:
+                job_runner.compute()
+            assert exc_info.value.code == error_code
+        else:
+            assert job_runner.compute() is not None
+
+
+@pytest.mark.parametrize(
     "name,use_token,error_code,cause",
     [
         ("public", False, None, None),
@@ -82,7 +110,12 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_audio: HubDatasetTest,
+    hub_reponses_gated: HubDatasetTest,
+    hub_reponses_private: HubDatasetTest,
+    hub_reponses_empty: HubDatasetTest,
+    hub_reponses_does_not_exist: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -90,6 +123,14 @@ def test_compute_splits_response_simple_csv(
     cause: str,
     app_config: AppConfig,
 ) -> None:
+    hub_datasets = {
+        "public": hub_reponses_public,
+        "audio": hub_reponses_audio,
+        "gated": hub_reponses_gated,
+        "private": hub_reponses_private,
+        "empty": hub_reponses_empty,
+        "does_not_exist": hub_reponses_does_not_exist,
+    }
     dataset = hub_datasets[name]["name"]
     expected_configs_response = hub_datasets[name]["config_names_response"]
     job_runner = get_job_runner(

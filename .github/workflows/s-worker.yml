@@ -8,22 +8,22 @@ on:
     branches:
       - main
     paths:
-      - 'libs/libcommon/**'
-      - 'services/worker/**'
-      - '.github/workflows/s-worker.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
-      - 'vendors/'
+      - "libs/libcommon/**"
+      - "services/worker/**"
+      - ".github/workflows/s-worker.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+      - "vendors/"
   pull_request:
     paths:
-      - 'libs/libcommon/**'
-      - 'services/worker/**'
-      - '.github/workflows/s-worker.yml'
-      - '.github/workflows/_quality-python.yml'
-      - '.github/workflows/_unit-tests-python.yml'
-      - 'tools/docker-compose-mongo.yml'
-      - 'vendors/'
+      - "libs/libcommon/**"
+      - "services/worker/**"
+      - ".github/workflows/s-worker.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+      - "vendors/"
 jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml

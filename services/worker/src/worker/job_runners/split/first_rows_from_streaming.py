@@ -20,6 +20,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
@@ -33,7 +34,6 @@ from worker.utils import (
     SplitFirstRowsResponse,
     create_truncated_row_items,
     get_json_size,
-    get_previous_step_or_raise,
     get_rows_or_raise,
     to_features_list,
 )

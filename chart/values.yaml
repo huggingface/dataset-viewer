@@ -111,8 +111,6 @@ cache:
   mongoDatabase: "datasets_server_cache"
 
 queue:
-  # Maximum number of jobs running at the same time for the same namespace
-  maxJobsPerNamespace: 1
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
@@ -181,6 +179,10 @@ optInOutUrlsScan:
   # the number of grouped urls to be send in every request to spawning 
   spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
   # the URL for spawning requests
+
+configNames:
+  # the max number of configs per dataset
+  maxNumber: 3_000
 
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
@@ -391,8 +393,6 @@ workers:
   -
     # name of the deployment
     deployName: "all"
-    # Maximum number of jobs running at the same time for the same namespace
-    maxJobsPerNamespace: 1
     # job types that this worker will not process
     workerJobTypesBlocked: ""
     # job types that this worker can process

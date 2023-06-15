@@ -158,14 +158,12 @@ class CacheConfig:
             )
 
 
-QUEUE_MAX_JOBS_PER_NAMESPACE = 1
 QUEUE_MONGO_DATABASE = "datasets_server_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass(frozen=True)
 class QueueConfig:
-    max_jobs_per_namespace: int = QUEUE_MAX_JOBS_PER_NAMESPACE
     mongo_database: str = QUEUE_MONGO_DATABASE
     mongo_url: str = QUEUE_MONGO_URL
 
@@ -174,7 +172,6 @@ class QueueConfig:
         env = Env(expand_vars=True)
         with env.prefixed("QUEUE_"):
             return cls(
-                max_jobs_per_namespace=env.int(name="MAX_JOBS_PER_NAMESPACE", default=QUEUE_MAX_JOBS_PER_NAMESPACE),
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
@@ -217,7 +214,7 @@ class ProcessingGraphConfig:
             "split-first-rows-from-streaming": {
                 "input_type": "split",
                 "triggered_by": ["config-split-names-from-streaming", "config-split-names-from-info"],
-                "required_by_dataset_viewer": True,
+                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
             },
             "config-parquet-and-info": {
@@ -240,7 +237,7 @@ class ProcessingGraphConfig:
             "split-first-rows-from-parquet": {
                 "input_type": "split",
                 "triggered_by": "config-parquet",
-                "required_by_dataset_viewer": True,
+                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
             },
             "dataset-parquet": {
@@ -267,6 +264,7 @@ class ProcessingGraphConfig:
             "config-size": {
                 "input_type": "config",
                 "triggered_by": "config-parquet-and-info",
+                "enables_viewer": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
             },
             "dataset-size": {

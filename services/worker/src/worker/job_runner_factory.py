@@ -172,7 +172,9 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 assets_directory=self.assets_directory,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
         if job_type == DatasetIsValidJobRunner.get_job_type():
             return DatasetIsValidJobRunner(

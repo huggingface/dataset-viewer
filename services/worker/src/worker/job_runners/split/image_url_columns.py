@@ -5,6 +5,7 @@ import logging
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION
 from libcommon.exceptions import PreviousStepFormatError
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import is_image_url
 
 from worker.job_runners.split.split_job_runner import SplitJobRunner
@@ -12,7 +13,6 @@ from worker.utils import (
     CompleteJobResult,
     ImageUrlColumnsResponse,
     SplitFirstRowsResponse,
-    get_previous_step_or_raise,
 )
 
 STRING_FEATURE_DTYPE = "string"
