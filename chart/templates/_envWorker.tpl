@@ -84,6 +84,8 @@
   value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
+- name: CONFIG_NAMES_MAX_NUMBER
+  value: {{ .Values.configNames.maxNumber | quote }}
 
 # specific to 'split-duckdb-index' job runner
 - name: DUCKDB_INDEX_COMMIT_MESSAGE

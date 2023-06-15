@@ -218,11 +218,28 @@ class NumbaConfig:
             return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
+CONFIG_NAMES_MAX_NUMBER = 3_000
+
+
+@dataclass(frozen=True)
+class ConfigNamesConfig:
+    max_number: int = CONFIG_NAMES_MAX_NUMBER
+
+    @classmethod
+    def from_env(cls) -> "ConfigNamesConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("CONFIG_NAMES_"):
+            return cls(
+                max_number=env.int(name="MAX_NUMBER", default=CONFIG_NAMES_MAX_NUMBER),
+            )
+
+
 @dataclass(frozen=True)
 class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
+    config_names: ConfigNamesConfig = field(default_factory=ConfigNamesConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
     first_rows: FirstRowsConfig = field(default_factory=FirstRowsConfig)
     log: LogConfig = field(default_factory=LogConfig)
@@ -240,6 +257,7 @@ class AppConfig:
         return cls(
             assets=AssetsConfig.from_env(),
             common=CommonConfig.from_env(),
+            config_names=ConfigNamesConfig.from_env(),
             cache=CacheConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
             first_rows=FirstRowsConfig.from_env(),

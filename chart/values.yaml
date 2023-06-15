@@ -180,6 +180,10 @@ optInOutUrlsScan:
   spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
   # the URL for spawning requests
 
+configNames:
+  # the max number of configs per dataset
+  maxNumber: 3_000
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
