@@ -504,6 +504,8 @@ class SplitWithTooBigParquetError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
+
+
 class DatasetWithTooManyConfigsError(CacheableError):
     """Raised when the number of configs of a dataset exceeded the limit."""
 
