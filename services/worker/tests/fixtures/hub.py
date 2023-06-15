@@ -514,26 +514,6 @@ def get_IMAGE_rows(dataset: str) -> Any:
     ]
 
 
-TEXT_IMAGE_cols = {
-    "col": {"_type": "Image"},
-    "text": {"_type": "Value", "dtype": "string"},
-}
-
-
-def get_TEXT_IMAGE_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
-    return [
-        {
-            "col": {
-                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
-                "height": 480,
-                "width": 640,
-            },
-            "text": "This is a text",
-        }
-    ]
-
-
 IMAGES_LIST_cols = {
     "col": [{"_type": "Image"}],
 }
