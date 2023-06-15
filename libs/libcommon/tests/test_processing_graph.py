@@ -83,6 +83,7 @@ def graph() -> ProcessingGraph:
                 "config-parquet",
                 "config-info",
                 "config-size",
+                "split-descriptive-stats",
             ],
             ["dataset-config-names"],
             ["dataset-config-names"],
@@ -93,13 +94,19 @@ def graph() -> ProcessingGraph:
                 "config-opt-in-out-urls-count",
                 "split-first-rows-from-streaming",
                 "dataset-split-names",
+                "split-descriptive-stats",
             ],
             ["config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
         ),
         (
             "config-split-names-from-streaming",
-            ["split-first-rows-from-streaming", "dataset-split-names", "config-opt-in-out-urls-count"],
+            [
+                "split-first-rows-from-streaming",
+                "dataset-split-names",
+                "split-descriptive-stats",
+                "config-opt-in-out-urls-count"
+            ],
             ["dataset-config-names"],
             ["dataset-config-names"],
         ),
