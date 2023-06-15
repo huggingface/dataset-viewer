@@ -10,6 +10,7 @@ from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
+    DatasetWithTooManyConfigsError,
     EmptyDatasetError,
 )
 
@@ -28,6 +29,7 @@ class DatasetConfigNamesResponse(TypedDict):
 
 def compute_config_names_response(
     dataset: str,
+    max_number: int,
     hf_token: Optional[str] = None,
 ) -> DatasetConfigNamesResponse:
     """
@@ -68,6 +70,13 @@ def compute_config_names_response(
         ) from err
     except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+
+    number_of_configs = len(config_name_items)
+    if number_of_configs > max_number:
+        raise DatasetWithTooManyConfigsError(
+            f"The maximun number of configs allowed is {max_number}, dataset has {number_of_configs} configs."
+        )
+
     return DatasetConfigNamesResponse(config_names=config_name_items)
 
 
@@ -82,5 +91,9 @@ class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_config_names_response(dataset=self.dataset, hf_token=self.app_config.common.hf_token)
+            compute_config_names_response(
+                dataset=self.dataset,
+                hf_token=self.app_config.common.hf_token,
+                max_number=self.app_config.config_names.max_number,
+            )
         )

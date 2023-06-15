@@ -84,6 +84,9 @@
   value: {{ .Values.optInOutUrlsScan.urlsNumberPerBatch | quote }}
 - name: OPT_IN_OUT_URLS_SCAN_SPAWNING_URL
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
+- name: CONFIG_NAMES_MAX_NUMBER
+  value: {{ .Values.configNames.maxNumber | quote }}
+
 # specific to 'split-descriptive-stats'
 - name: DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStats.histogramNumBins | quote }}
