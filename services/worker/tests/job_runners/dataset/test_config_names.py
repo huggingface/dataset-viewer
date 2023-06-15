@@ -14,7 +14,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
-from ...fixtures.hub import HubDatasets
+from ...fixtures.hub import HubDatasetTest
 
 GetJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJobRunner]
 
@@ -82,7 +82,12 @@ def test_compute(app_config: AppConfig, hub_public_csv: str, get_job_runner: Get
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_audio: HubDatasetTest,
+    hub_reponses_gated: HubDatasetTest,
+    hub_reponses_private: HubDatasetTest,
+    hub_reponses_empty: HubDatasetTest,
+    hub_reponses_does_not_exist: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -90,6 +95,14 @@ def test_compute_splits_response_simple_csv(
     cause: str,
     app_config: AppConfig,
 ) -> None:
+    hub_datasets = {
+        "public": hub_reponses_public,
+        "audio": hub_reponses_audio,
+        "gated": hub_reponses_gated,
+        "private": hub_reponses_private,
+        "empty": hub_reponses_empty,
+        "does_not_exist": hub_reponses_does_not_exist,
+    }
     dataset = hub_datasets[name]["name"]
     expected_configs_response = hub_datasets[name]["config_names_response"]
     job_runner = get_job_runner(

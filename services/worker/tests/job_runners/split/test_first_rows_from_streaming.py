@@ -21,7 +21,7 @@ from worker.job_runners.split.first_rows_from_streaming import (
 from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
-from ...fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasetTest, get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromStreamingJobRunner]
 
@@ -113,7 +113,16 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     ],
 )
 def test_number_rows(
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_audio: HubDatasetTest,
+    hub_reponses_image: HubDatasetTest,
+    hub_reponses_image_list: HubDatasetTest,
+    hub_reponses_jsonl: HubDatasetTest,
+    hub_reponses_gated: HubDatasetTest,
+    hub_reponses_private: HubDatasetTest,
+    hub_reponses_empty: HubDatasetTest,
+    hub_reponses_does_not_exist_config: HubDatasetTest,
+    hub_reponses_does_not_exist_split: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -127,6 +136,18 @@ def test_number_rows(
     if hasattr(csv, "_patched_for_streaming") and csv._patched_for_streaming:
         csv._patched_for_streaming = False
 
+    hub_datasets = {
+        "public": hub_reponses_public,
+        "audio": hub_reponses_audio,
+        "image": hub_reponses_image,
+        "image_list": hub_reponses_image_list,
+        "jsonl": hub_reponses_jsonl,
+        "gated": hub_reponses_gated,
+        "private": hub_reponses_private,
+        "empty": hub_reponses_empty,
+        "does_not_exist_config": hub_reponses_does_not_exist_config,
+        "does_not_exist_split": hub_reponses_does_not_exist_split,
+    }
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     dataset, config, split = get_default_config_split(dataset)
@@ -184,7 +205,8 @@ def test_number_rows(
     ],
 )
 def test_truncation(
-    hub_datasets: HubDatasets,
+    hub_public_csv: str,
+    hub_public_big: str,
     get_job_runner: GetJobRunner,
     app_config: AppConfig,
     name: str,
@@ -192,7 +214,8 @@ def test_truncation(
     columns_max_number: int,
     error_code: str,
 ) -> None:
-    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
+    dataset = hub_public_csv if name == "public" else hub_public_big
+    dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(
         dataset,
         config,
