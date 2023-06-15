@@ -2,11 +2,11 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
-from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Callable, Iterator, List, Optional
+from unittest.mock import patch
 
 import datasets.builder
 import datasets.info
@@ -45,18 +45,6 @@ from worker.resources import LibrariesResource
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
-
-
-@contextmanager
-def blocked(repo_ids: list[str]) -> Iterator[pytest.MonkeyPatch]:
-    mp = pytest.MonkeyPatch()
-    mp.setenv(
-        "PARQUET_AND_INFO_BLOCKED_DATASETS",
-        ",".join(repo_ids),
-    )
-    yield mp
-    mp.undo()
-
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
@@ -427,7 +415,7 @@ def test_blocked(
     hub_reponses_jsonl: HubDatasetTest,
 ) -> None:
     # In the list of blocked datasets
-    with blocked(repo_ids=[hub_reponses_jsonl["name"]]):
+    with patch.object(app_config.parquet_and_info, "blocked_datasets", [hub_reponses_jsonl["name"]]):
         dataset = hub_reponses_jsonl["name"]
         config = hub_reponses_jsonl["config_names_response"]["config_names"][0]["config"]
         upsert_response(
