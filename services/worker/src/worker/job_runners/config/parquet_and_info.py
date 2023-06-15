@@ -763,7 +763,6 @@ def create_commits(
 
 
 def commit_parquet_conversion(
-    job_id: str,
     hf_api: HfApi,
     committer_hf_api: HfApi,
     dataset: str,
@@ -777,8 +776,6 @@ def commit_parquet_conversion(
     Creates one or several commits in the given dataset repo, deleting & uploading files as needed.
 
     Args:
-        job_id (`str`):
-            The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.
         hf_api (`huggingface_hub.HfApi`):
             The HfApi to get the dataset info.
         committer_hf_api (`huggingface_hub.HfApi`):
@@ -839,29 +836,14 @@ def commit_parquet_conversion(
     logging.debug(f"{delete_operations=}")
 
     operations = delete_operations + parquet_operations
-    if len(operations) > MAX_OPERATIONS_PER_COMMIT:
-        lock_key = ConfigParquetAndInfoJobRunner.get_lock_key(dataset=dataset)
-        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
-        with lock(key=lock_key, job_id=job_id, sleeps=sleeps):
-            return create_commits(
-                committer_hf_api,
-                repo_id=dataset,
-                revision=target_revision,
-                operations=operations,
-                commit_message=commit_message,
-                parent_commit=target_dataset_info.sha,
-            )
-    else:
-        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])(hf_api.create_commit)
-        return [
-            retry_create_commit(
-                repo_id=dataset,
-                revision=target_revision,
-                operations=operations,
-                commit_message=commit_message,
-                parent_commit=target_dataset_info.sha,
-            )
-        ]
+    return create_commits(
+        committer_hf_api,
+        repo_id=dataset,
+        revision=target_revision,
+        operations=operations,
+        commit_message=commit_message,
+        parent_commit=target_dataset_info.sha,
+    )
 
 
 def compute_config_parquet_and_info_response(
@@ -1034,17 +1016,19 @@ def compute_config_parquet_and_info_response(
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
     try:
-        commit_parquet_conversion(
-            job_id=job_id,
-            hf_api=hf_api,
-            committer_hf_api=committer_hf_api,
-            dataset=dataset,
-            config=config,
-            parquet_operations=parquet_operations,
-            config_names=config_names,
-            target_revision=target_revision,
-            commit_message=commit_message,
-        )
+        lock_key = ConfigParquetAndInfoJobRunner.get_lock_key(dataset=dataset)
+        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        with lock(key=lock_key, job_id=job_id, sleeps=sleeps):
+            commit_parquet_conversion(
+                hf_api=hf_api,
+                committer_hf_api=committer_hf_api,
+                dataset=dataset,
+                config=config,
+                parquet_operations=parquet_operations,
+                config_names=config_names,
+                target_revision=target_revision,
+                commit_message=commit_message,
+            )
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
 
