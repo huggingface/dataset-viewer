@@ -855,7 +855,6 @@ def commit_parquet_conversion(
         retry_create_commit = retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])(hf_api.create_commit)
         return [
             retry_create_commit(
-                committer_hf_api,
                 repo_id=dataset,
                 revision=target_revision,
                 operations=operations,
