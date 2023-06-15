@@ -23,7 +23,6 @@ from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
-    QUEUE_TTL_SECONDS,
 )
 from libcommon.utils import (
     FlatJobInfo,
