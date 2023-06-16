@@ -22,6 +22,7 @@ from typing import (
     cast,
 )
 
+import PIL
 from datasets import (
     Dataset,
     DatasetInfo,
@@ -32,7 +33,6 @@ from datasets import (
 )
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.utils import orjson_dumps
-import PIL
 
 MAX_IMAGE_PIXELS = 1_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
