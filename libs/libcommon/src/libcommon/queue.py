@@ -278,8 +278,17 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return False
 
     @classmethod
-    def git_rev(cls, dataset: str, revision: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
-        key = json.dumps({"dataset": dataset, "revision": revision})
+    def git_branch(cls, dataset: str, branch: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+        """
+        Lock a git branch of a dataset on the hub for read/write
+
+        Args:
+            dataset (`str`): the dataset repository
+            branch (`str`): the branch to lock
+            job_id (`str`): the current job id that holds the lock
+            sleeps (`Sequence[float]`): the time in seconds to sleep between each attempt to acquire the lock
+        """
+        key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, job_id=job_id, sleeps=sleeps)
 
 

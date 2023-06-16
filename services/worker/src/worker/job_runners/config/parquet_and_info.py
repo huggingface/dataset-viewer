@@ -1018,7 +1018,7 @@ def compute_config_parquet_and_info_response(
 
     try:
         sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
-        with lock.git_rev(dataset=dataset, revision=target_revision, job_id=job_id, sleeps=sleeps):
+        with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
             commit_parquet_conversion(
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,
