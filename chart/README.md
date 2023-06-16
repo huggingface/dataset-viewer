@@ -13,21 +13,4 @@ Note that this Helm chart is used to manage the deployment of the `datasets-serv
 
 ## Deploy
 
-To deploy to the `hub-ephemeral` Kubernetes cluster, ensure to first:
-
-- install the tools (aws, kubectl, helm)
-- authenticate with AWS
-- select the `hub-ephemeral` cluster
-
-Dry run:
-
-```shell
-make init
-make diff-dev
-```
-
-Deploy:
-
-```shell
-make upgrade-dev
-```
+To deploy, go to https://cd.internal.huggingface.tech/applications.
