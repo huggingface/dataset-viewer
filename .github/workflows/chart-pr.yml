@@ -19,8 +19,8 @@ jobs:
       - name: Lint chart with default values
         run: helm lint
         working-directory: chart
-      - name: Lint chart with dev values
-        run: helm lint --values env/dev.yaml
+      - name: Lint chart with staging values
+        run: helm lint --values env/staging.yaml
         working-directory: chart
       - name: Lint chart with prod values
         run: helm lint --values env/prod.yaml
