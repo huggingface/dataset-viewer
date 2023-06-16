@@ -1084,12 +1084,11 @@ class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info
-        self.job_id = job_info["job_id"]
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_config_parquet_and_info_response(
-                job_id=self.job_id,
+                job_id=self.job_info["job_id"]
                 dataset=self.dataset,
                 config=self.config,
                 hf_endpoint=self.app_config.common.hf_endpoint,
