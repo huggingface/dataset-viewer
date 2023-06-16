@@ -17,6 +17,7 @@ jobs:
     with:
       commit_sha: ${{ github.sha }}
       package: datasets-server
+      notebook_folder: datasets-server_doc
       additional_args: --not_python_module
     secrets:
       token: ${{ secrets.HUGGINGFACE_PUSH }}
