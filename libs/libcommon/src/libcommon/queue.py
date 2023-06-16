@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
+import json
 import logging
 import time
 import types
@@ -238,7 +239,9 @@ class lock(contextlib.AbstractContextManager["lock"]):
     ```
     """
 
-    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
+    _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
+
+    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> None:
         self.key = key
         self.job_id = job_id
         self.sleeps = sleeps
@@ -273,6 +276,11 @@ class lock(contextlib.AbstractContextManager["lock"]):
     ) -> Literal[False]:
         self.release()
         return False
+
+    @classmethod
+    def git_rev(cls, dataset: str, revision: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+        key = json.dumps({"dataset": dataset, "revision": revision})
+        return cls(key=key, job_id=job_id, sleeps=sleeps)
 
 
 class Queue:
