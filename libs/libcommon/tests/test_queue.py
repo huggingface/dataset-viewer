@@ -376,7 +376,6 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
 
 
-@pytest.mark.skip(reason="temporaly disabled because of index removal")
 def test_has_ttl_index_on_finished_at_field() -> None:
     ttl_index_names = [
         name
