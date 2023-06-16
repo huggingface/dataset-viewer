@@ -73,7 +73,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult, hf_hub_url
+from worker.utils import CompleteJobResult, hf_hub_url, retry
 
 
 class ConfigParquetAndInfoResponse(TypedDict):

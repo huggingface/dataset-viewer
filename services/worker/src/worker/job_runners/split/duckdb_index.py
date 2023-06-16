@@ -17,6 +17,7 @@ from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
     DatasetNotFoundError,
+    LockedDatasetTimeoutError,
     NoIndexableColumnsError,
     NotAvailableIndexFileError,
     ParquetResponseEmptyError,
@@ -25,6 +26,7 @@ from libcommon.exceptions import (
     SplitWithTooBigParquetError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
@@ -46,6 +48,7 @@ LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 
 
 def compute_index_rows(
+    job_id: str,
     dataset: str,
     config: str,
     split: str,
@@ -165,14 +168,19 @@ def compute_index_rows(
         CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_location)
     ]
 
-    committer_hf_api.create_commit(
-        repo_id=dataset,
-        repo_type=DATASET_TYPE,
-        revision=target_revision,
-        operations=delete_operations + add_operations,
-        commit_message=commit_message,
-        parent_commit=target_dataset_info.sha,
-    )
+    try:
+        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+            committer_hf_api.create_commit(
+                repo_id=dataset,
+                repo_type=DATASET_TYPE,
+                revision=target_revision,
+                operations=delete_operations + add_operations,
+                commit_message=commit_message,
+                parent_commit=target_dataset_info.sha,
+            )
+    except TimeoutError as err:
+        raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
 
     # call the API again to get the index file
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
@@ -235,6 +243,7 @@ class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_index_rows(
+                job_id=self.job_info["job_id"],
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
