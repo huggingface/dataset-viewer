@@ -29,7 +29,7 @@ from worker.resources import LibrariesResource
 from worker.utils import ImageUrlColumnsResponse
 
 from ...constants import CI_SPAWNING_TOKEN
-from ...fixtures.hub import HubDatasets, get_default_config_split
+from ...fixtures.hub import HubDatasetTest, get_default_config_split
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunner]
 
@@ -173,7 +173,8 @@ DEFAULT_EMPTY_RESPONSE = {
     ],
 )
 def test_compute(
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_spawning_opt_in_out: HubDatasetTest,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     name: str,
@@ -181,6 +182,7 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
+    hub_datasets = {"public": hub_reponses_public, "spawning_opt_in_out": hub_reponses_spawning_opt_in_out}
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     job_runner = get_job_runner(
         dataset,
@@ -235,7 +237,7 @@ def test_compute(
 )
 def test_compute_failed(
     app_config: AppConfig,
-    hub_datasets: HubDatasets,
+    hub_reponses_spawning_opt_in_out: HubDatasetTest,
     get_job_runner: GetJobRunner,
     dataset: str,
     columns_max_number: int,
@@ -244,7 +246,7 @@ def test_compute_failed(
     exception_name: str,
 ) -> None:
     if dataset == "too_many_columns":
-        dataset = hub_datasets["spawning_opt_in_out"]["name"]
+        dataset = hub_reponses_spawning_opt_in_out["name"]
     dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(
         dataset,

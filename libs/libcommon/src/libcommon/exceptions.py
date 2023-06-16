@@ -85,6 +85,7 @@ CacheableErrorCode = Literal[
     "DatasetTooBigFromHubError",
     "DatasetWithTooBigExternalFilesError",
     "DatasetWithTooManyExternalFilesError",
+    "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
     "EmptyDatasetError",
@@ -487,3 +488,10 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
+
+
+class DatasetWithTooManyConfigsError(CacheableError):
+    """Raised when the number of configs of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
