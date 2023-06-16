@@ -764,3 +764,16 @@ def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hub
         ),
         "parquet_and_info_response": None,
     }
+
+
+@pytest.fixture
+def hub_reponses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index),
+        "splits_response": create_splits_response(hub_public_duckdb_index),
+        "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index, data_type="csv"
+        ),
+    }

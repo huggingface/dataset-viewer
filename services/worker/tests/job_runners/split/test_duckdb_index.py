@@ -16,7 +16,7 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.resources import LibrariesResource
 
-from ...fixtures.hub import HubDatasets
+from ...fixtures.hub import HubDatasetTest
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
 
@@ -128,10 +128,12 @@ def test_compute(
     get_parquet_job_runner: GetParquetJobRunner,
     get_job_runner: GetJobRunner,
     app_config: AppConfig,
-    hub_datasets: HubDatasets,
+    hub_reponses_public: HubDatasetTest,
+    hub_reponses_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: str,
 ) -> None:
+    hub_datasets = {"public": hub_reponses_public, "duckdb_index": hub_reponses_duckdb_index}
     dataset = hub_datasets[hub_dataset_name]["name"]
     config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
