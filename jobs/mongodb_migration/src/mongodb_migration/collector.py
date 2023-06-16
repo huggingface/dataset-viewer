@@ -215,4 +215,11 @@ class MigrationsCollector:
                 version="20230524192300",
             ),
             MetricsDeletionMigration(job_type="/config-names", cache_kind="/config-names", version="20230524192400"),
+            MigrationQueueDeleteTTLIndex(
+                version="20230607154800",
+                description=(
+                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
+                ),
+                field_name="finished_at",
+            ),
         ]
