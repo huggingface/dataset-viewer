@@ -25,6 +25,8 @@ services:
       WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
       WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
       WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # volumes to local source directory for development
     volumes:
       - ../libs/libcommon/src:/src/libs/libcommon/src
