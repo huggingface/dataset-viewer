@@ -47,6 +47,9 @@ from pyarrow.parquet import ParquetFile
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
 
+MAX_IMAGE_PIXELS = 10_000_000_000
+# ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
+
 
 class JobRunnerInfo(TypedDict):
     job_type: str
