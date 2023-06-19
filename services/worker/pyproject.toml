@@ -46,7 +46,6 @@ trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
 wget = "^3.2"
 duckdb = "0.8.1dev480"
-polars = "^0.18.2"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
