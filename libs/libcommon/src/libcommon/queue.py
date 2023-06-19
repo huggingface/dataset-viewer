@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
+import json
 import logging
 import time
 import types
@@ -213,7 +214,7 @@ class Lock(Document):
     objects = QuerySetManager["Lock"]()
 
 
-class lock:
+class lock(contextlib.AbstractContextManager["lock"]):
     """
     Provides a simple way of inter-worker communication using a MongoDB lock.
     A lock is used to indicate another worker of your application that a resource
@@ -238,7 +239,9 @@ class lock:
     ```
     """
 
-    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = (0.05, 0.05, 0.05, 1, 1, 1, 5)) -> None:
+    _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
+
+    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> None:
         self.key = key
         self.job_id = job_id
         self.sleeps = sleeps
@@ -273,6 +276,20 @@ class lock:
     ) -> Literal[False]:
         self.release()
         return False
+
+    @classmethod
+    def git_branch(cls, dataset: str, branch: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+        """
+        Lock a git branch of a dataset on the hub for read/write
+
+        Args:
+            dataset (`str`): the dataset repository
+            branch (`str`): the branch to lock
+            job_id (`str`): the current job id that holds the lock
+            sleeps (`Sequence[float]`): the time in seconds to sleep between each attempt to acquire the lock
+        """
+        key = json.dumps({"dataset": dataset, "branch": branch})
+        return cls(key=key, job_id=job_id, sleeps=sleeps)
 
 
 class Queue:

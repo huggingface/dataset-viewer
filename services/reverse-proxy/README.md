@@ -8,7 +8,7 @@ Note that the template configuration is located in [chart/nginx-templates/](../.
 
 The reverse proxy uses nginx:
 
-- it serves the static assets directly (the API also serves them if required, but it's unnecessary to go through starlette for this, and it generates errors in Safari, see [1](https://github.com/encode/starlette/issues/950) and [2](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6)
+- it serves the static assets directly (the API also serves them if required, but it's unnecessary to go through starlette for this, and it generates errors in Safari, see [1](https://github.com/encode/starlette/issues/950) and [2](https://developer.apple.com/library/archive/documentation/AppleApplications/Reference/SafariWebContent/CreatingVideoforSafarioniPhone/CreatingVideoforSafarioniPhone.html#//apple_ref/doc/uid/TP40006514-SW6))
 - it serves the OpenAPI specification
 - it proxies the other requests to the API
 

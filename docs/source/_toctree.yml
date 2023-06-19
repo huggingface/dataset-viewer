@@ -4,6 +4,8 @@
     title: 🤗 Datasets server
   - local: quick_start
     title: Quickstart
+  - local: analyze_data
+    title: Analyze a dataset on the Hub
 - title: Guides
   sections:
   - local: valid
