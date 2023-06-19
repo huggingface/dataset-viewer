@@ -71,8 +71,8 @@ def compute_histogram(
     bin_size: int,
 ) -> Histogram:
     hist_query = f"""
-    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*) FILTER (WHERE {column_name} IS NOT NULL)
-     FROM read_parquet({urls}) GROUP BY 1 ORDER BY 1;
+    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*)
+     FROM read_parquet({urls}) WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
@@ -110,7 +110,7 @@ def compute_numerical_stats(
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
         raise ValueError("Incorrect dtype, only integers and float are allowed. ")
-    nan_query = f"SELECT COUNT(*) FILTER (WHERE {column_name} IS NULL) FROM read_parquet({urls});"
+    nan_query = f"SELECT COUNT(*) FROM read_parquet({urls}) WHERE {column_name} IS NULL;"
     nan_count = duckdb.query(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
@@ -162,10 +162,6 @@ def compute_descriptive_stats_response(
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatsResponse:
-    con = duckdb.connect()
-    con.sql("INSTALL httpfs")
-    con.sql("LOAD httpfs")
-    con.sql("SET enable_progress_bar=true;")
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
 
     previous_step = "config-parquet-and-info"
@@ -204,6 +200,11 @@ def compute_descriptive_stats_response(
     categorical_features = {
         feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
     }
+
+    con = duckdb.connect("dataset.db")
+    con.sql("INSTALL httpfs")
+    con.sql("LOAD httpfs")
+    con.sql("SET enable_progress_bar=true;")
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
