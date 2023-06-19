@@ -72,7 +72,7 @@ def compute_histogram(
 ) -> Histogram:
     hist_query = f"""
     SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*)
-     FROM read_parquet({urls}) WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
+     FROM read_parquet('local.parquet') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
@@ -96,7 +96,7 @@ def compute_numerical_stats(
 ) -> NumericalStatsItem:
     query = f"""
     SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
-     stddev_samp({column_name}) FROM read_parquet({urls});
+     stddev_samp({column_name}) FROM read_parquet('local.parquet');
     """
     minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
@@ -110,7 +110,7 @@ def compute_numerical_stats(
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
         raise ValueError("Incorrect dtype, only integers and float are allowed. ")
-    nan_query = f"SELECT COUNT(*) FROM read_parquet({urls}) WHERE {column_name} IS NULL;"
+    nan_query = f"SELECT COUNT(*) FROM read_parquet('local.parquet') WHERE {column_name} IS NULL;"
     nan_count = duckdb.query(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
@@ -135,7 +135,7 @@ def compute_categorical_stats(
     n_samples: int,
 ) -> CategoricalStatsItem:
     query = f"""
-    SELECT {column_name}, COUNT(*) from read_parquet({urls}) GROUP BY {column_name};
+    SELECT {column_name}, COUNT(*) from read_parquet('local.parquet') GROUP BY {column_name};
     """
     categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
 
@@ -205,6 +205,10 @@ def compute_descriptive_stats_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
+
+    # store data as local parquet file
+    logging.info("Copying remote data to a local parquet file. ")
+    con.sql(f"COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO 'local.parquet' (FORMAT PARQUET);")
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
