@@ -9,7 +9,6 @@
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
-  {{ include "envDuckDBIndex" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}

@@ -33,7 +33,7 @@ from libcommon.utils import JobInfo, SplitHubFile
 
 from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
-from worker.utils import CompleteJobResult, hf_hub_url
+from worker.utils import CompleteJobResult, create_branch, hf_hub_url
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
@@ -149,28 +149,27 @@ def compute_index_rows(
     index_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
     try:
         refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
-        if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
-            committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
-            )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
-    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
-    delete_operations: List[CommitOperation] = []
-    if index_file_location in all_repo_files:
-        delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
-
-    # send the files to the target revision
-    add_operations: List[CommitOperation] = [
-        CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_location)
-    ]
+    create_branch(
+        dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
+    )
 
     try:
         sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
         with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+            target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+            all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+            delete_operations: List[CommitOperation] = []
+            if index_file_location in all_repo_files:
+                delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+
+            # send the files to the target revision
+            add_operations: List[CommitOperation] = [
+                CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_location)
+            ]
+
             committer_hf_api.create_commit(
                 repo_id=dataset,
                 repo_type=DATASET_TYPE,
@@ -179,20 +178,19 @@ def compute_index_rows(
                 commit_message=commit_message,
                 parent_commit=target_dataset_info.sha,
             )
+
+            # call the API again to get the index file
+            target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
 
-    # call the API again to get the index file
-    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     repo_files = [
         repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
     ]
 
-    if not repo_files:
-        raise NotAvailableIndexFileError("No index file was found")
-
-    if len(repo_files) != 1:
+    if not repo_files or len(repo_files) != 1:
         logging.warning(f"Found {len(repo_files)} index files, should be only 1")
+        raise NotAvailableIndexFileError("No index file was found")
 
     repo_file = repo_files[0]
     if repo_file.size is None:

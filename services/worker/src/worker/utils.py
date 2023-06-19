@@ -33,7 +33,13 @@ from datasets import (
 )
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.exceptions import NormalRowsError, StreamingRowsError
+from huggingface_hub.hf_api import GitRefs, HfApi
+from huggingface_hub.utils._errors import RepositoryNotFoundError
+from libcommon.exceptions import (
+    DatasetNotFoundError,
+    NormalRowsError,
+    StreamingRowsError,
+)
 from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
 
@@ -421,3 +427,17 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
 def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
     headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
     return ParquetFile(fs.open(url, headers=headers))
+
+
+DATASET_TYPE = "dataset"
+
+
+def create_branch(dataset: str, target_revision: str, refs: GitRefs, hf_api: HfApi, committer_hf_api: HfApi) -> None:
+    try:
+        if all(ref.ref != target_revision for ref in refs.converts):
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
+            )
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err

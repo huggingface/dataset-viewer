@@ -106,4 +106,6 @@
   value: {{ .Values.duckDBIndex.urlTemplate | quote }}
 - name: DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
   value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
+- name: DUCKDB_INDEX_STORAGE_DIRECTORY
+  value: {{ .Values.duckDBIndex.storageDirectory | quote }}
 {{- end -}}

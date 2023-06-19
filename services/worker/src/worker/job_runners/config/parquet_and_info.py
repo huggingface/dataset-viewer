@@ -73,7 +73,7 @@ from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
-from worker.utils import CompleteJobResult, hf_hub_url, retry
+from worker.utils import CompleteJobResult, create_branch, hf_hub_url, retry
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
@@ -991,14 +991,9 @@ def compute_config_parquet_and_info_response(
 
     # create the target revision if we managed to get the parquet files and it does not exist yet
     # (clone from initial commit to avoid cloning all repo's files)
-    try:
-        if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
-            committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
-            )
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
+    create_branch(
+        dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
+    )
 
     try:
         sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
