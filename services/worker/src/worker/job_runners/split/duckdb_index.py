@@ -38,7 +38,7 @@ from worker.utils import CompleteJobResult, hf_hub_url
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
-DUCKDB_DEFAULT_INDEX_FILENAME = "duckdb_index.db"
+DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
@@ -115,7 +115,7 @@ def compute_index_rows(
     # get the features
     features = content_parquet_and_info["dataset_info"].get("features", [])
 
-    # look for string columns using the first rows
+    # look for string columns
     string_columns = [
         column
         for column, feature in features.items()

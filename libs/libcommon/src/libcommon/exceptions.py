@@ -500,7 +500,7 @@ class NoIndexableColumnsError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
 
 
-class NotAvailableIndexFileError(CacheableError):
+class DuckDBIndexFileNotFoundError(CacheableError):
     """Raised when no duckdb index file was found for split."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
