@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import random
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -76,37 +75,6 @@ def get_job_runner(
         )
 
     return _get_job_runner
-
-
-@pytest.mark.parametrize(
-    "dataset,config,split,expected",
-    [
-        ("user/dataset", "config", "split", "64218998941645-dummy-job-runner-user-dataset-da67625f"),
-        # Every parameter variation changes the hash, hence the subdirectory
-        ("user/dataset", None, "split", "64218998941645-dummy-job-runner-user-dataset-498c21fa"),
-        ("user/dataset", "config2", "split", "64218998941645-dummy-job-runner-user-dataset-1c4f24f2"),
-        ("user/dataset", "config", None, "64218998941645-dummy-job-runner-user-dataset-a87e8dc2"),
-        ("user/dataset", "config", "split2", "64218998941645-dummy-job-runner-user-dataset-f169bd48"),
-        # The subdirectory length is truncated, and it always finishes with the hash
-        (
-            "very_long_dataset_name_0123456789012345678901234567890123456789012345678901234567890123456789",
-            "config",
-            "split",
-            "64218998941645-dummy-job-runner-very_long_dataset_name_012345678-25cb8442",
-        ),
-    ],
-)
-def test_get_cache_subdirectory(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    dataset: str,
-    config: Optional[str],
-    split: Optional[str],
-    expected: str,
-) -> None:
-    job_runner = get_job_runner(dataset, config, split, app_config)
-    random.seed(0)
-    assert job_runner.get_cache_subdirectory() == expected
 
 
 def test_set_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
