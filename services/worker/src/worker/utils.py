@@ -22,6 +22,7 @@ from typing import (
     cast,
 )
 
+import PIL
 from datasets import (
     Dataset,
     DatasetInfo,
@@ -32,6 +33,9 @@ from datasets import (
 )
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.utils import orjson_dumps
+
+MAX_IMAGE_PIXELS = 1_000_000_000
+# ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
 
 
 class JobRunnerInfo(TypedDict):
@@ -331,6 +335,7 @@ def get_rows(
     column_names: Optional[List[str]] = None,
 ) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
+    PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
     ds = load_dataset(
         dataset,
         name=config,
