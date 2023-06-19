@@ -51,7 +51,7 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 ## Architecture
 
-The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs)), [libs](./libs) and [services](./services):
+The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs), [libs](./libs) and [services](./services):
 
 - [jobs](./jobs) contains the one-time jobs run by Helm before deploying the pods. For now, the only job migrates the databases when needed.
 - [libs](./libs) contains the Python libraries used by the services and workers. For now, the only library is [libcommon](./libs/libcommon), which contains the common code for the services and workers.
@@ -97,7 +97,7 @@ The following environments contain all the modules: reverse proxy, API server, a
 
 ## Quality
 
-The CI checks the quality of the code through a [GitHub action](./.github/workflows/quality.yml). To manually format the code of a job, library, service or worker:
+The CI checks the quality of the code through a [GitHub action](./.github/workflows/_quality-python.yml). To manually format the code of a job, library, service or worker:
 
 ```bash
 make style
