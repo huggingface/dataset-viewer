@@ -629,6 +629,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
         builder.info.download_size = 0
         builder.info.dataset_size = 0
         for split in data_files:
+            split = str(split)  # in case it's a NamedSplit
             try:
                 parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
                     partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
