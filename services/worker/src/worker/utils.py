@@ -44,7 +44,7 @@ from libcommon.exceptions import (
 from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
 
-MAX_IMAGE_PIXELS = 1_000_000_000
+MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
 
 
