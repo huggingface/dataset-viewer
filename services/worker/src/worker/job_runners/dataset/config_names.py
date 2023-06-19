@@ -74,7 +74,7 @@ def compute_config_names_response(
     number_of_configs = len(config_name_items)
     if number_of_configs > max_number:
         raise DatasetWithTooManyConfigsError(
-            f"The maximun number of configs allowed is {max_number}, dataset has {number_of_configs} configs."
+            f"The maximum number of configs allowed is {max_number}, dataset has {number_of_configs} configs."
         )
 
     return DatasetConfigNamesResponse(config_names=config_name_items)
