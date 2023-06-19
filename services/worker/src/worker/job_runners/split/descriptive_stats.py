@@ -20,6 +20,8 @@ from worker.config import AppConfig
 from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
 from worker.utils import CompleteJobResult
 
+PARQUET_FILENAME = "dataset.parquet"
+
 DECIMALS = 5
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
@@ -67,12 +69,12 @@ class SplitDescriptiveStatsResponse(TypedDict):
 def compute_histogram(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    urls: List[str],
+    parquet_filename: Path,
     bin_size: int,
 ) -> Histogram:
     hist_query = f"""
     SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*)
-     FROM read_parquet('local.parquet') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
+     FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
     bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
@@ -89,14 +91,14 @@ def compute_histogram(
 def compute_numerical_stats(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    urls: List[str],
+    parquet_filename: Path,
     n_bins: int,
     n_samples: int,
     dtype: str,
 ) -> NumericalStatsItem:
     query = f"""
     SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
-     stddev_samp({column_name}) FROM read_parquet('local.parquet');
+     stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
     """
     minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
@@ -110,11 +112,11 @@ def compute_numerical_stats(
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
         raise ValueError("Incorrect dtype, only integers and float are allowed. ")
-    nan_query = f"SELECT COUNT(*) FROM read_parquet('local.parquet') WHERE {column_name} IS NULL;"
+    nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
     nan_count = duckdb.query(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
-    histogram = compute_histogram(con, column_name, urls, bin_size=bin_size)
+    histogram = compute_histogram(con, column_name, parquet_filename, bin_size=bin_size)
     return NumericalStatsItem(
         nan_count=nan_count,
         nan_prop=nan_prop,
@@ -130,12 +132,12 @@ def compute_numerical_stats(
 def compute_categorical_stats(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    urls: List[str],
+    parquet_filename: Path,
     class_label_names: List[str],
     n_samples: int,
 ) -> CategoricalStatsItem:
     query = f"""
-    SELECT {column_name}, COUNT(*) from read_parquet('local.parquet') GROUP BY {column_name};
+    SELECT {column_name}, COUNT(*) from read_parquet('{parquet_filename}') GROUP BY {column_name};
     """
     categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
 
@@ -159,6 +161,7 @@ def compute_descriptive_stats_response(
     dataset: str,
     config: str,
     split: str,
+    local_parquet_dir: Optional[Path],
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatsResponse:
@@ -206,9 +209,10 @@ def compute_descriptive_stats_response(
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
 
-    # store data as local parquet file
-    logging.info("Copying remote data to a local parquet file. ")
-    con.sql(f"COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO 'local.parquet' (FORMAT PARQUET);")
+    # store data as local parquet file to query fast
+    local_parquet_path = Path(local_parquet_dir) / PARQUET_FILENAME if local_parquet_dir else Path(PARQUET_FILENAME)
+    logging.info(f"Copying remote data to a local parquet file {local_parquet_path}. ")
+    con.sql(f"COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO '{local_parquet_path}' (FORMAT PARQUET);")
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
@@ -217,7 +221,11 @@ def compute_descriptive_stats_response(
         logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
         cat_column_stats: CategoricalStatsItem = compute_categorical_stats(
-            con, feature_name, class_label_names=class_label_names, n_samples=num_examples, urls=parquet_files_urls
+            con,
+            feature_name,
+            class_label_names=class_label_names,
+            n_samples=num_examples,
+            parquet_filename=local_parquet_path,
         )
         stats.append(
             StatsPerColumnItem(
@@ -240,7 +248,7 @@ def compute_descriptive_stats_response(
         num_column_stats: NumericalStatsItem = compute_numerical_stats(
             con,
             feature_name,
-            urls=parquet_files_urls,
+            parquet_filename=local_parquet_path,
             n_bins=histogram_num_bins,
             n_samples=num_examples,
             dtype=feature_dtype,
@@ -287,6 +295,7 @@ class SplitDescriptiveStatsJobRunner(SplitCachedJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
+                local_parquet_dir=self.datasets_cache,
                 histogram_num_bins=self.descriptive_stats_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_stats_config.max_parquet_size_bytes,
             )
