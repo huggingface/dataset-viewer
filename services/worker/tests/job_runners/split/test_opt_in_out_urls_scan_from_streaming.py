@@ -173,7 +173,7 @@ DEFAULT_EMPTY_RESPONSE = {
     ],
 )
 def test_compute(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     hub_reponses_spawning_opt_in_out: HubDatasetTest,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
@@ -182,7 +182,7 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
-    hub_datasets = {"public": hub_reponses_public, "spawning_opt_in_out": hub_reponses_spawning_opt_in_out}
+    hub_datasets = {"public": hub_responses_public, "spawning_opt_in_out": hub_reponses_spawning_opt_in_out}
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     job_runner = get_job_runner(
         dataset,

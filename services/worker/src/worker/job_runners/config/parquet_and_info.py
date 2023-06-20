@@ -721,7 +721,7 @@ def create_commits(
             ensures the repo has not changed before committing the changes, and can be especially useful
             if the repo is updated / committed to concurrently.
         max_operations_per_commit (`int`, *optional*):
-            The ma number of operations per commit, to avoid time out errors from the Hub. Defaults to 500.
+            The max number of operations per commit, to avoid time out errors from the Hub. Defaults to 500.
     Returns:
         [`List[huggingface_hub.CommitInfo]`]:
             List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
