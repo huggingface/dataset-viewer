@@ -96,11 +96,12 @@ def compute_numerical_stats(
     n_samples: int,
     dtype: str,
 ) -> NumericalStatsItem:
+    logging.debug(f"Compute min, max, mean, median, std for {column_name}")
     query = f"""
     SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
      stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
     """
-    minimum, maximum, mean, median, std = duckdb.query(query).fetchall()[0]
+    minimum, maximum, mean, median, std = con.sql(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
         bin_size = np.round((maximum - minimum) / n_bins, decimals=DECIMALS).item()
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
@@ -113,7 +114,7 @@ def compute_numerical_stats(
     else:
         raise ValueError("Incorrect dtype, only integers and float are allowed. ")
     nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
-    nan_count = duckdb.query(nan_query).fetchall()[0][0]
+    nan_count = con.sql(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
     histogram = compute_histogram(con, column_name, parquet_filename, bin_size=bin_size)
@@ -137,7 +138,7 @@ def compute_categorical_stats(
     n_samples: int,
 ) -> CategoricalStatsItem:
     query = f"""
-    SELECT {column_name}, COUNT(*) from read_parquet('{parquet_filename}') GROUP BY {column_name};
+    SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
     """
     categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
 
