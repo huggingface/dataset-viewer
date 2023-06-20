@@ -332,7 +332,7 @@ class retry:
                     logging.info(f"Got a {type(err)}. Let's retry.")
                     last_err = err
                     attempt += 1
-            raise RuntimeError(f"Give up after {attempt} attempts with {type(last_err)}") from last_err
+            raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err
 
         return cast(FuncT, decorator)
 

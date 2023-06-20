@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Set, Union
 
 import pandas as pd
 
+from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.processing_graph import (
     ProcessingGraph,
     ProcessingStep,
@@ -325,6 +326,8 @@ class DatasetBackfillPlan(Plan):
 
     def __post_init__(self) -> None:
         super().__post_init__()
+        if self.error_codes_to_retry is None:
+            self.error_codes_to_retry = ERROR_CODES_TO_RETRY.split(",")
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",

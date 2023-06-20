@@ -74,6 +74,7 @@ class CustomError(LoggedError):
 
 CacheableErrorCode = Literal[
     "ConfigNamesError",
+    "CreateCommitError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
     "DatasetManualDownloadError",
@@ -143,6 +144,13 @@ class ConfigNamesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
+
+
+class CreateCommitError(CacheableError):
+    """Raised when a commit could not be created on the Hub."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
 
 
 class DatasetInBlockListError(CacheableError):

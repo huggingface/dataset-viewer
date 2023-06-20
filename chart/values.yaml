@@ -128,7 +128,7 @@ worker:
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
   maxDiskUsagePct: 90
   # the maximum duration of a job before it gets stopped for exceeded the maximum duration
-  maxJobDurationSeconds: 1200
+  maxJobDurationSeconds: 2400
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.

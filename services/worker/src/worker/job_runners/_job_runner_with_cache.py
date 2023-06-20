@@ -16,7 +16,7 @@ from worker.config import AppConfig
 from worker.job_runner import JobRunner
 
 
-class CacheDirectoryJobRunner(JobRunner):
+class JobRunnerWithCache(JobRunner):
     """Base class for job runners that use a temporary cache directory."""
 
     base_cache_directory: Path

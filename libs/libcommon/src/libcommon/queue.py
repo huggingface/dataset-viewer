@@ -136,7 +136,11 @@ class Job(Document):
             ("status", "namespace", "priority", "type", "created_at"),
             ("status", "namespace", "unicity_id", "priority", "type", "created_at"),
             "-created_at",
-            {"fields": ["finished_at"], "expireAfterSeconds": QUEUE_TTL_SECONDS},
+            {
+                "fields": ["finished_at"],
+                "expireAfterSeconds": QUEUE_TTL_SECONDS,
+                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
+            },
         ],
     }
     type = StringField(required=True)

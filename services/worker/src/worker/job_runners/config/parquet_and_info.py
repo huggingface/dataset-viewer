@@ -47,6 +47,7 @@ from libcommon.constants import (
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     ConfigNamesError,
+    CreateCommitError,
     DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
@@ -72,8 +73,17 @@ from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import CompleteJobResult, create_branch, hf_hub_url, retry
+
+
+class ParquetFileItem(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    url: str
+    filename: str
+    size: int
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
@@ -726,24 +736,35 @@ def create_commits(
         [`huggingface_hub.utils.RepositoryNotFoundError`]:
             If repository is not found (error 404): wrong repo_id/repo_type, private
             but not authenticated or repo does not exist.
-        [`huggingface_hub.utils.HfHubHTTPError`]:
-            If another commit happened after `parent_commit` or in between the commits.
+        [`libcommon.exceptions.CreateCommitError`]:
+            If one of the commits could not be created on the Hub.
     """
     commit_infos: List[CommitInfo] = []
+    sleeps = [1, 1, 1, 10, 10, 10]
     offsets = range(0, len(operations), max_operations_per_commit)
     for commit_idx, offset in enumerate(offsets):
         batch_msg = f" (step {commit_idx + 1} of {len(offsets)})" if len(offsets) > 1 else ""
-        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=[1, 1, 1, 10, 10, 10])(hf_api.create_commit)
-        commit_infos.append(
-            retry_create_commit(
+        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=sleeps)(hf_api.create_commit)
+        try:
+            commit_info = retry_create_commit(
                 repo_id=repo_id,
                 repo_type=DATASET_TYPE,
                 revision=revision,
                 operations=operations[offset : offset + max_operations_per_commit],  # noqa: E203
                 commit_message=commit_message + batch_msg,
-                parent_commit=parent_commit if not commit_infos else commit_infos[-1].oid,
+                parent_commit=commit_infos[-1].oid if commit_infos else parent_commit,
             )
-        )
+        except RuntimeError as e:
+            if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                raise CreateCommitError(
+                    message=(
+                        f"Commit {commit_idx}/{len(offsets)} could not be created on the Hub (after"
+                        f" {len(sleeps)} attempts)."
+                    ),
+                    cause=e.__cause__,
+                ) from e.__cause__
+            raise e
+        commit_infos.append(commit_info)
     return commit_infos
 
 
@@ -794,10 +815,8 @@ def commit_parquet_conversion(
         [`huggingface_hub.utils.RepositoryNotFoundError`]:
             If repository is not found (error 404): wrong repo_id/repo_type, private
             but not authenticated or repo does not exist.
-        [`RuntimeError`]: If it fails after several retries.
-            The retry fails can come from:
-            [`huggingface_hub.utils.HfHubHTTPError`]:
-                If another commit happened after `parent_commit` or in between the commits.
+        [`libcommon.exceptions.CreateCommitError`]:
+            If one of the commits could not be created on the Hub.
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     # - get repo parquet files
@@ -893,6 +912,8 @@ def compute_config_parquet_and_info_response(
           any other error when asking access
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
+        - [`libcommon.exceptions.CreateCommitError`]:
+          If one of the commits could not be created on the Hub.
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
@@ -1038,7 +1059,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
+class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod
