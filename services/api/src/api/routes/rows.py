@@ -38,10 +38,6 @@ from api.utils import (
 logger = logging.getLogger(__name__)
 
 
-httpfs = HTTPFileSystem()
-session = asyncio.run(httpfs.set_session())
-
-
 MAX_ROWS = 100
 
 
