@@ -16,6 +16,7 @@ from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
+    CachedDirectoryNotInitializedError,
     DatasetNotFoundError,
     LockedDatasetTimeoutError,
     NoIndexableColumnsError,
@@ -32,7 +33,7 @@ from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
 
 from worker.config import AppConfig
-from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
+from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import CompleteJobResult, create_branch, hf_hub_url
 
 DATASET_TYPE = "dataset"
@@ -40,8 +41,8 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', '*', overwrite=1);"
-CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, * FROM"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', {columns}, overwrite=1);"
+CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, {columns} FROM"
 # TODO: What if __id field already exist?
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
@@ -83,49 +84,46 @@ def compute_index_rows(
         config=config,
     )
     content_parquet_and_info = parquet_and_info_best_response.response["content"]
-    if "parquet_files" not in content_parquet_and_info:
+    try:
+        split_parquet_files = [
+            parquet_file
+            for parquet_file in content_parquet_and_info["parquet_files"]
+            if parquet_file["config"] == config and parquet_file["split"] == split
+        ]
+
+        split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
+
+        if split_parquets_size > max_parquet_size_bytes:
+            raise SplitWithTooBigParquetError(
+                f"The indexing is limited to split parquets under {max_parquet_size_bytes} bytes. "
+                f"Current size of sum of split parquets is {split_parquets_size} bytes."
+            )
+
+        parquet_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
+
+        if not parquet_urls:
+            raise ParquetResponseEmptyError("No parquet files found.")
+
+        # get the features
+        features = content_parquet_and_info["dataset_info"]["features"]
+        column_names = ",".join(list(features.keys()))
+
+        # look for string columns
+        string_columns = [
+            column
+            for column, feature in features.items()
+            if "dtype" in feature
+            and "_type" in feature
+            and feature["dtype"] == STRING_FEATURE_DTYPE
+            and feature["_type"] == VALUE_FEATURE_TYPE
+        ]
+        if not string_columns:
+            raise NoIndexableColumnsError("No string columns available to index.")
+
+    except KeyError as e:
         raise PreviousStepFormatError(
-            f"previous step '{config_parquet_and_info_step} doesn't return expected field: 'parquet_files'"
-        )
-
-    if "dataset_info" not in content_parquet_and_info:
-        raise PreviousStepFormatError(
-            f"previous step '{config_parquet_and_info_step} doesn't return expected field: 'dataset_info'"
-        )
-
-    split_parquet_files = [
-        parquet_file
-        for parquet_file in content_parquet_and_info["parquet_files"]
-        if parquet_file["config"] == config and parquet_file["split"] == split
-    ]
-
-    split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
-
-    if split_parquets_size > max_parquet_size_bytes:
-        raise SplitWithTooBigParquetError(
-            f"The indexing is limited to split parquets under {max_parquet_size_bytes} bytes. "
-            f"Current size of sum of split parquets is {split_parquets_size} bytes."
-        )
-
-    parquet_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
-
-    if not parquet_urls:
-        raise ParquetResponseEmptyError("No parquet files found.")
-
-    # get the features
-    features = content_parquet_and_info["dataset_info"].get("features", [])
-
-    # look for string columns
-    string_columns = [
-        column
-        for column, feature in features.items()
-        if "dtype" in feature
-        and "_type" in feature
-        and feature["dtype"] == STRING_FEATURE_DTYPE
-        and feature["_type"] == VALUE_FEATURE_TYPE
-    ]
-    if not string_columns:
-        raise NoIndexableColumnsError("No string columns available to index.")
+            f"Previous step '{config_parquet_and_info_step}' did not return the expected content.", e
+        ) from e
 
     # configure duckdb extensions
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
@@ -134,14 +132,17 @@ def compute_index_rows(
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
     # index all columns
-    db_location = f"{duckdb_index_file_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
-    con = duckdb.connect(str(db_location))
+    if duckdb_index_file_directory is None:
+        raise CachedDirectoryNotInitializedError("Cache directory has not been initialized.")
+    db_path = Path(duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME)
+
+    con = duckdb.connect(str(db_path.resolve()))
     con.sql(CREATE_SEQUENCE_COMMAND)
-    con.sql(f"{CREATE_TABLE_COMMAND} read_parquet({parquet_urls});")
+    con.sql(f"{CREATE_TABLE_COMMAND.format(columns=column_names)} read_parquet({parquet_urls});")
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    con.sql(CREATE_INDEX_COMMAND)
+    con.sql(CREATE_INDEX_COMMAND.format(columns=column_names))
 
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
@@ -167,7 +168,7 @@ def compute_index_rows(
 
             # send the files to the target revision
             add_operations: List[CommitOperation] = [
-                CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_location)
+                CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path)
             ]
 
             committer_hf_api.create_commit(
@@ -212,7 +213,7 @@ def compute_index_rows(
     )
 
 
-class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
+class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
     duckdb_index_config: DuckDbIndexConfig
 
     def __init__(
@@ -226,7 +227,7 @@ class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            hf_datasets_cache=Path(duckdb_index_directory).resolve(),
+            cache_directory=Path(duckdb_index_directory),
         )
         self.duckdb_index_config = app_config.duckdb_index
 
@@ -245,7 +246,7 @@ class SplitDuckDbIndexJobRunner(SplitCachedJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                duckdb_index_file_directory=self.datasets_cache,
+                duckdb_index_file_directory=self.cache_subdirectory,
                 hf_token=self.app_config.common.hf_token,
                 url_template=self.duckdb_index_config.url_template,
                 commit_message=self.duckdb_index_config.commit_message,

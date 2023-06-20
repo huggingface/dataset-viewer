@@ -73,6 +73,7 @@ class CustomError(LoggedError):
 
 
 CacheableErrorCode = Literal[
+    "CachedDirectoryNotInitializedError",
     "ConfigNamesError",
     "CreateCommitError",
     "DatasetInBlockListError",
@@ -527,3 +528,10 @@ class DatasetWithTooManyConfigsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
+
+
+class CachedDirectoryNotInitializedError(CacheableError):
+    """Raised when the cached directory has not been initialized before job compute."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "CachedDirectoryNotInitializedError", cause, True)
