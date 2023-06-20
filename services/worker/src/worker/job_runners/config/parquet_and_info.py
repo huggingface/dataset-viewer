@@ -14,6 +14,7 @@ import datasets
 import datasets.config
 import datasets.info
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
@@ -616,10 +617,12 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     return parquet_operations
 
 
+@retry(on=[pa.ArrowInvalid], sleeps=[1, 1, 1, 10, 10, 10])
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
     headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
     f = fs.open(url, headers=headers)
-    return pq.ParquetFile(f), f.size
+    pf = pq.ParquetFile(f)
+    return pf, f.size
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
