@@ -11,14 +11,16 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners._job_runner_with_datasets_cache import (
+    JobRunnerWithDatasetsCache,
+)
 from worker.resources import LibrariesResource
 from worker.utils import CompleteJobResult
 
 from ..fixtures.hub import get_default_config_split
 
 
-class DummyJobRunner(DatasetsBasedJobRunner):
+class DummyJobRunner(JobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
         return "dummy-job-runner"

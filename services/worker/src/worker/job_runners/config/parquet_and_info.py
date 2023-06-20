@@ -74,7 +74,7 @@ from libcommon.utils import JobInfo
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import CompleteJobResult, retry
 
 
@@ -1071,7 +1071,7 @@ def compute_config_parquet_and_info_response(
     )
 
 
-class ConfigParquetAndInfoJobRunner(ConfigCachedJobRunner):
+class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
     parquet_and_info_config: ParquetAndInfoConfig
 
     @staticmethod

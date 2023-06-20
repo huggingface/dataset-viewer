@@ -9,7 +9,9 @@ from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners._job_runner_with_datasets_cache import (
+    JobRunnerWithDatasetsCache,
+)
 
 
 class DatasetJobRunner(JobRunner):
@@ -27,7 +29,7 @@ class DatasetJobRunner(JobRunner):
         self.dataset = job_info["params"]["dataset"]
 
 
-class DatasetCachedJobRunner(DatasetsBasedJobRunner, DatasetJobRunner):
+class DatasetJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, DatasetJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -35,7 +37,7 @@ class DatasetCachedJobRunner(DatasetsBasedJobRunner, DatasetJobRunner):
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
-        DatasetsBasedJobRunner.__init__(
+        JobRunnerWithDatasetsCache.__init__(
             self=self,
             job_info=job_info,
             app_config=app_config,

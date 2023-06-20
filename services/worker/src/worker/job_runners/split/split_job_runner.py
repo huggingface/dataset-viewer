@@ -8,7 +8,10 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners._job_runner_with_cache import JobRunnerWithCache
+from worker.job_runners._job_runner_with_datasets_cache import (
+    JobRunnerWithDatasetsCache,
+)
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
@@ -27,7 +30,7 @@ class SplitJobRunner(ConfigJobRunner):
         self.split = job_info["params"]["split"]
 
 
-class SplitCachedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
+class SplitJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, SplitJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -35,12 +38,35 @@ class SplitCachedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
-        DatasetsBasedJobRunner.__init__(
+        JobRunnerWithDatasetsCache.__init__(
             self,
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
+        )
+        SplitJobRunner.__init__(
+            self,
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+        )
+
+
+class SplitJobRunnerWithCache(JobRunnerWithCache, SplitJobRunner):
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        cache_directory: Path,
+    ) -> None:
+        JobRunnerWithCache.__init__(
+            self,
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+            cache_directory=cache_directory,
         )
         SplitJobRunner.__init__(
             self,
