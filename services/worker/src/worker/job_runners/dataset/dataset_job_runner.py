@@ -27,7 +27,7 @@ class DatasetJobRunner(JobRunner):
         self.dataset = job_info["params"]["dataset"]
 
 
-class DatasetLibraryBasedJobRunner(DatasetsBasedJobRunner, DatasetJobRunner):
+class DatasetCachedJobRunner(DatasetsBasedJobRunner, DatasetJobRunner):
     def __init__(
         self,
         job_info: JobInfo,

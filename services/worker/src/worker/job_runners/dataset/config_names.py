@@ -14,7 +14,7 @@ from libcommon.exceptions import (
     EmptyDatasetError,
 )
 
-from worker.job_runners.dataset.dataset_job_runner import DatasetLibraryBasedJobRunner
+from worker.job_runners.dataset.dataset_job_runner import DatasetCachedJobRunner
 from worker.utils import CompleteJobResult
 
 
@@ -80,7 +80,7 @@ def compute_config_names_response(
     return DatasetConfigNamesResponse(config_names=config_name_items)
 
 
-class DatasetConfigNamesJobRunner(DatasetLibraryBasedJobRunner):
+class DatasetConfigNamesJobRunner(DatasetCachedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-config-names"

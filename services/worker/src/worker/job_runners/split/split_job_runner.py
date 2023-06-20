@@ -28,7 +28,7 @@ class SplitJobRunner(ConfigJobRunner):
         self.split = job_info["params"]["split"]
 
 
-class SplitLibraryBasedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
+class SplitCachedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -51,7 +51,7 @@ class SplitLibraryBasedJobRunner(DatasetsBasedJobRunner, SplitJobRunner):
         )
 
 
-class SplitCachedJobRunner(CacheDirectoryJobRunner, SplitJobRunner):
+class SplitCacheDirectoryJobRunner(CacheDirectoryJobRunner, SplitJobRunner):
     def __init__(
         self,
         job_info: JobInfo,

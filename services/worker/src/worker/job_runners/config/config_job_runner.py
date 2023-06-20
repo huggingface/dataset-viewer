@@ -27,7 +27,7 @@ class ConfigJobRunner(DatasetJobRunner):
         self.config = job_info["params"]["config"]
 
 
-class ConfigLibraryBasedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
+class ConfigCachedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
