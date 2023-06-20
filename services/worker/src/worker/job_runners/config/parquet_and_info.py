@@ -47,8 +47,8 @@ from libcommon.constants import (
 )
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
-    ConfigNamesError,
     CreateCommitError,
+    ConfigNamesError,
     DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
@@ -919,6 +919,8 @@ def compute_config_parquet_and_info_response(
           any other error when asking access
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
+        - [`libcommon.exceptions.CreateCommitError`]:
+          If one of the commits could not be created on the Hub.
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
