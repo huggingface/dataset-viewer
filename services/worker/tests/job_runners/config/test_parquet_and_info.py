@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
-from huggingface_hub.hf_api import HfApi
+from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     CustomError,
@@ -33,6 +33,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    create_commits,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
@@ -115,15 +116,15 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config = hub_reponses_public["config_names_response"]["config_names"][0]["config"]
+    dataset = hub_responses_public["name"]
+    config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     upsert_response(
         "dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
-        content=hub_reponses_public["config_names_response"],
+        content=hub_responses_public["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
@@ -131,7 +132,7 @@ def test_compute(
     content = response.content
     assert content
     assert len(content["parquet_files"]) == 1
-    assert_content_is_equal(content, hub_reponses_public["parquet_and_info_response"])
+    assert_content_is_equal(content, hub_responses_public["parquet_and_info_response"])
 
 
 def test_compute_legacy_configs(
@@ -443,7 +444,7 @@ def test_blocked(
     ["public", "audio", "gated"],
 )
 def test_compute_splits_response_simple_csv_ok(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     hub_reponses_audio: HubDatasetTest,
     hub_reponses_gated: HubDatasetTest,
     get_job_runner: GetJobRunner,
@@ -451,7 +452,7 @@ def test_compute_splits_response_simple_csv_ok(
     app_config: AppConfig,
     data_df: pd.DataFrame,
 ) -> None:
-    hub_datasets = {"public": hub_reponses_public, "audio": hub_reponses_audio, "gated": hub_reponses_gated}
+    hub_datasets = {"public": hub_responses_public, "audio": hub_reponses_audio, "gated": hub_reponses_gated}
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
@@ -528,15 +529,15 @@ def test_compute_splits_response_simple_csv_error(
     ],
 )
 def test_compute_splits_response_simple_csv_error_2(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     error_code: str,
     cause: str,
     app_config: AppConfig,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config_names_response = hub_reponses_public["config_names_response"]
+    dataset = hub_responses_public["name"]
+    config_names_response = hub_responses_public["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CachedArtifactError):
@@ -556,11 +557,11 @@ def test_previous_step_error(
     upstream_status: HTTPStatus,
     upstream_content: Any,
     exception_name: str,
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     app_config: AppConfig,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config = hub_reponses_public["config_names_response"]["config_names"][0]["config"]
+    dataset = hub_responses_public["name"]
+    config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     upsert_response(
         "dataset-config-names",
@@ -613,3 +614,38 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
 )
 def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
     assert get_writer_batch_size(ds_info) == (100 if has_big_chunks else None)
+
+
+@pytest.mark.parametrize(
+    "max_operations_per_commit,use_parent_commit,expected_num_commits",
+    [(2, False, 1), (1, False, 2), (2, True, 1), (1, True, 2)],
+)
+def test_create_commits(
+    hub_public_legacy_configs: str, max_operations_per_commit: int, use_parent_commit: bool, expected_num_commits: int
+) -> None:
+    NUM_FILES = 2
+    repo_id = hub_public_legacy_configs
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    if use_parent_commit:
+        target_dataset_info = hf_api.dataset_info(repo_id=repo_id, files_metadata=False)
+        parent_commit = target_dataset_info.sha
+    else:
+        parent_commit = None
+    directory = f".test_create_commits_{max_operations_per_commit}_{use_parent_commit}"
+    operations: List[CommitOperationAdd] = [
+        CommitOperationAdd(path_in_repo=f"{directory}/file{i}.txt", path_or_fileobj=f"content{i}".encode("UTF-8"))
+        for i in range(NUM_FILES)
+    ]
+    commit_infos = create_commits(
+        hf_api=hf_api,
+        repo_id=repo_id,
+        operations=operations,
+        commit_message="test",
+        max_operations_per_commit=max_operations_per_commit,
+        parent_commit=parent_commit,
+    )
+    assert len(commit_infos) == expected_num_commits
+    # check that the files were created
+    filenames = hf_api.list_repo_files(repo_id=repo_id, repo_type="dataset")
+    for i in range(NUM_FILES):
+        assert f"{directory}/file{i}.txt" in filenames
