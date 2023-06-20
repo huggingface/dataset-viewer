@@ -25,7 +25,7 @@ GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRun
 
 @pytest.fixture
 def get_job_runner(
-    duckdb_index_directory: StrPath,
+    duckdb_index_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -69,7 +69,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            duckdb_index_directory=duckdb_index_directory,
+            duckdb_index_cache_directory=duckdb_index_cache_directory,
         )
 
     return _get_job_runner
@@ -128,12 +128,12 @@ def test_compute(
     get_parquet_job_runner: GetParquetJobRunner,
     get_job_runner: GetJobRunner,
     app_config: AppConfig,
-    hub_reponses_public: HubDatasetTest,
-    hub_reponses_duckdb_index: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
+    hub_responses_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: str,
 ) -> None:
-    hub_datasets = {"public": hub_reponses_public, "duckdb_index": hub_reponses_duckdb_index}
+    hub_datasets = {"public": hub_responses_public, "duckdb_index": hub_responses_duckdb_index}
     dataset = hub_datasets[hub_dataset_name]["name"]
     config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]

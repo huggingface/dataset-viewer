@@ -11,7 +11,7 @@ from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
     StrPath,
     init_assets_dir,
-    init_duckdb_index_dir,
+    init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
 )
 from pytest import MonkeyPatch, fixture
@@ -126,8 +126,8 @@ def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
 
 
 @fixture
-def duckdb_index_directory(app_config: AppConfig) -> StrPath:
-    return init_duckdb_index_dir(app_config.duckdb_index.storage_directory)
+def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
+    return init_duckdb_index_cache_dir(app_config.duckdb_index.storage_directory)
 
 
 @fixture

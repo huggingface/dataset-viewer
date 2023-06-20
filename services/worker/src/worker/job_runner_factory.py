@@ -74,7 +74,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     hf_datasets_cache: Path
     assets_directory: StrPath
     parquet_metadata_directory: StrPath
-    duckdb_index_directory: StrPath
+    duckdb_index_cache_directory: StrPath
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
@@ -222,7 +222,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
-                duckdb_index_directory=self.duckdb_index_directory,
+                duckdb_index_cache_directory=self.duckdb_index_cache_directory,
             )
 
         supported_job_types = [

@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import (
     init_assets_dir,
-    init_duckdb_index_dir,
+    init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
 )
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
-    duckdb_index_directory = init_duckdb_index_dir(directory=app_config.duckdb_index.storage_directory)
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             assets_directory=assets_directory,
             parquet_metadata_directory=parquet_metadata_directory,
-            duckdb_index_directory=duckdb_index_directory,
+            duckdb_index_cache_directory=duckdb_index_cache_directory,
         )
         loop = Loop(
             library_cache_paths=libraries_resource.storage_paths,

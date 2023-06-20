@@ -41,9 +41,8 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__id', {columns}, overwrite=1);"
-CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __id, {columns} FROM"
-# TODO: What if __id field already exist?
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
+CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 
@@ -221,13 +220,13 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        duckdb_index_directory: StrPath,
+        duckdb_index_cache_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            cache_directory=Path(duckdb_index_directory),
+            cache_directory=Path(duckdb_index_cache_directory),
         )
         self.duckdb_index_config = app_config.duckdb_index
 

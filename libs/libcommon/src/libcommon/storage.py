@@ -82,7 +82,7 @@ def init_parquet_metadata_dir(directory: Optional[StrPath] = None) -> StrPath:
     return init_dir(directory, appname=PARQUET_METADATA_CACHE_APPNAME)
 
 
-def init_duckdb_index_dir(directory: Optional[StrPath] = None) -> StrPath:
+def init_duckdb_index_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
     """Initialize the duckdb index directory.
 
     If directory is None, it will be set to the default duckdb index location on the machine.

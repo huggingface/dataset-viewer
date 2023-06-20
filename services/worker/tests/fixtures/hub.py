@@ -767,7 +767,7 @@ def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hub
 
 
 @pytest.fixture
-def hub_reponses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
+def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
     return {
         "name": hub_public_duckdb_index,
         "config_names_response": create_config_names_response(hub_public_duckdb_index),
