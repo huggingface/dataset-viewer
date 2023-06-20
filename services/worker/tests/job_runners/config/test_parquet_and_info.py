@@ -115,15 +115,15 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config = hub_reponses_public["config_names_response"]["config_names"][0]["config"]
+    dataset = hub_responses_public["name"]
+    config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     upsert_response(
         "dataset-config-names",
         dataset=dataset,
         http_status=HTTPStatus.OK,
-        content=hub_reponses_public["config_names_response"],
+        content=hub_responses_public["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
@@ -131,7 +131,7 @@ def test_compute(
     content = response.content
     assert content
     assert len(content["parquet_files"]) == 1
-    assert_content_is_equal(content, hub_reponses_public["parquet_and_info_response"])
+    assert_content_is_equal(content, hub_responses_public["parquet_and_info_response"])
 
 
 def test_compute_legacy_configs(
@@ -443,7 +443,7 @@ def test_blocked(
     ["public", "audio", "gated"],
 )
 def test_compute_splits_response_simple_csv_ok(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     hub_reponses_audio: HubDatasetTest,
     hub_reponses_gated: HubDatasetTest,
     get_job_runner: GetJobRunner,
@@ -451,7 +451,7 @@ def test_compute_splits_response_simple_csv_ok(
     app_config: AppConfig,
     data_df: pd.DataFrame,
 ) -> None:
-    hub_datasets = {"public": hub_reponses_public, "audio": hub_reponses_audio, "gated": hub_reponses_gated}
+    hub_datasets = {"public": hub_responses_public, "audio": hub_reponses_audio, "gated": hub_reponses_gated}
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     upsert_response(
@@ -528,15 +528,15 @@ def test_compute_splits_response_simple_csv_error(
     ],
 )
 def test_compute_splits_response_simple_csv_error_2(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     error_code: str,
     cause: str,
     app_config: AppConfig,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config_names_response = hub_reponses_public["config_names_response"]
+    dataset = hub_responses_public["name"]
+    config_names_response = hub_responses_public["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CachedArtifactError):
@@ -556,11 +556,11 @@ def test_previous_step_error(
     upstream_status: HTTPStatus,
     upstream_content: Any,
     exception_name: str,
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     app_config: AppConfig,
 ) -> None:
-    dataset = hub_reponses_public["name"]
-    config = hub_reponses_public["config_names_response"]["config_names"][0]["config"]
+    dataset = hub_responses_public["name"]
+    config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
     job_runner = get_job_runner(dataset, config, app_config)
     upsert_response(
         "dataset-config-names",
