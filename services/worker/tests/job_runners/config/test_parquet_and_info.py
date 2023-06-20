@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
-from huggingface_hub.hf_api import HfApi
+from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     CustomError,
@@ -33,6 +33,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    create_commits,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
@@ -613,3 +614,38 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
 )
 def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
     assert get_writer_batch_size(ds_info) == (100 if has_big_chunks else None)
+
+
+@pytest.mark.parametrize(
+    "max_operations_per_commit,use_parent_commit,expected_num_commits",
+    [(2, False, 1), (1, False, 2), (2, True, 1), (1, True, 2)],
+)
+def test_create_commits(
+    hub_public_legacy_configs: str, max_operations_per_commit: int, use_parent_commit: bool, expected_num_commits: int
+) -> None:
+    NUM_FILES = 2
+    repo_id = hub_public_legacy_configs
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    if use_parent_commit:
+        target_dataset_info = hf_api.dataset_info(repo_id=repo_id, files_metadata=False)
+        parent_commit = target_dataset_info.sha
+    else:
+        parent_commit = None
+    directory = f".test_create_commits_{max_operations_per_commit}_{use_parent_commit}"
+    operations: List[CommitOperationAdd] = [
+        CommitOperationAdd(path_in_repo=f"{directory}/file{i}.txt", path_or_fileobj=f"content{i}".encode("UTF-8"))
+        for i in range(NUM_FILES)
+    ]
+    commit_infos = create_commits(
+        hf_api=hf_api,
+        repo_id=repo_id,
+        operations=operations,
+        commit_message="test",
+        max_operations_per_commit=max_operations_per_commit,
+        parent_commit=parent_commit,
+    )
+    assert len(commit_infos) == expected_num_commits
+    # check that the files were created
+    filenames = hf_api.list_repo_files(repo_id=repo_id, repo_type="dataset")
+    for i in range(NUM_FILES):
+        assert f"{directory}/file{i}.txt" in filenames
