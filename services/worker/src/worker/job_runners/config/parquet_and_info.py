@@ -617,12 +617,27 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     return parquet_operations
 
 
-@retry(on=[pa.ArrowInvalid], sleeps=[1, 1, 1, 10, 10, 10])
+class NotAParquetFileError(ValueError):
+    """When a remote parquet file can't be parsed"""
+
+    pass
+
+
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
     headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
     f = fs.open(url, headers=headers)
-    pf = pq.ParquetFile(f)
-    return pf, f.size
+    return pq.ParquetFile(f), f.size
+
+
+def retry_get_parquet_file_and_size(
+    url: str, fs: HTTPFileSystem, hf_token: Optional[str]
+) -> Tuple[pq.ParquetFile, int]:
+    try:
+        sleeps = [1, 1, 1, 10, 10, 10]
+        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
+        return pf, size
+    except RuntimeError as err:
+        raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
@@ -639,7 +654,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
             split = str(split)  # in case it's a NamedSplit
             try:
                 parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                    partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                    partial(retry_get_parquet_file_and_size, fs=fs, hf_token=hf_token),
                     data_files[split],
                     unit="pq",
                     disable=True,
