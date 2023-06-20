@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import random
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -78,60 +77,31 @@ def get_job_runner(
     return _get_job_runner
 
 
-@pytest.mark.parametrize(
-    "dataset,config,split,expected",
-    [
-        ("user/dataset", "config", "split", "64218998941645-dummy-job-runner-user-dataset-da67625f"),
-        # Every parameter variation changes the hash, hence the subdirectory
-        ("user/dataset", None, "split", "64218998941645-dummy-job-runner-user-dataset-498c21fa"),
-        ("user/dataset", "config2", "split", "64218998941645-dummy-job-runner-user-dataset-1c4f24f2"),
-        ("user/dataset", "config", None, "64218998941645-dummy-job-runner-user-dataset-a87e8dc2"),
-        ("user/dataset", "config", "split2", "64218998941645-dummy-job-runner-user-dataset-f169bd48"),
-        # The subdirectory length is truncated, and it always finishes with the hash
-        (
-            "very_long_dataset_name_0123456789012345678901234567890123456789012345678901234567890123456789",
-            "config",
-            "split",
-            "64218998941645-dummy-job-runner-very_long_dataset_name_012345678-25cb8442",
-        ),
-    ],
-)
-def test_get_cache_subdirectory(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    dataset: str,
-    config: Optional[str],
-    split: Optional[str],
-    expected: str,
-) -> None:
-    job_runner = get_job_runner(dataset, config, split, app_config)
-    random.seed(0)
-    assert job_runner.get_cache_subdirectory() == expected
-
-
-def test_set_and_unset_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+def test_set_datasets_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("dataset")
     job_runner = get_job_runner(dataset, config, split, app_config)
-    base_path = job_runner.base_datasets_cache
+    base_path = job_runner.base_cache_directory
     dummy_path = base_path / "dummy"
     job_runner.set_datasets_cache(dummy_path)
-    assert_datasets_cache_path(path=dummy_path, exists=True)
-    job_runner.unset_datasets_cache()
-    assert_datasets_cache_path(path=base_path, exists=True)
+    assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(dummy_path))
 
 
-def test_set_and_unset_cache(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+def test_pre_compute_post_compute(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset, config, split = get_default_config_split("user/dataset")
     job_runner = get_job_runner(dataset, config, split, app_config)
-    datasets_base_path = job_runner.base_datasets_cache
-    job_runner.set_cache()
+    datasets_base_path = job_runner.base_cache_directory
+    job_runner.pre_compute()
+    datasets_cache_subdirectory = job_runner.cache_subdirectory
+    assert_datasets_cache_path(path=datasets_cache_subdirectory, exists=True)
     assert str(datasets.config.HF_DATASETS_CACHE).startswith(str(datasets_base_path))
     assert "dummy-job-runner-user-dataset" in str(datasets.config.HF_DATASETS_CACHE)
-    job_runner.unset_cache()
+    job_runner.post_compute()
     assert_datasets_cache_path(path=datasets_base_path, exists=True)
+    assert_datasets_cache_path(path=datasets_cache_subdirectory, exists=False, equals=False)
 
 
-def assert_datasets_cache_path(path: Path, exists: bool, equals: bool = True) -> None:
+def assert_datasets_cache_path(path: Optional[Path], exists: bool, equals: bool = True) -> None:
+    assert path is not None
     assert path.exists() is exists
     assert (datasets.config.HF_DATASETS_CACHE == path) is equals
     assert (datasets.config.DOWNLOADED_DATASETS_PATH == path / datasets.config.DOWNLOADED_DATASETS_DIR) is equals
