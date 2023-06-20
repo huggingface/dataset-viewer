@@ -10,10 +10,10 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.job_runners._cached_directory_job_runner import CacheDirectoryJobRunner
+from worker.job_runners._job_runner_with_cache import JobRunnerWithCache
 
 
-class DatasetsBasedJobRunner(CacheDirectoryJobRunner):
+class JobRunnerWithDatasetsCache(JobRunnerWithCache):
     """Base class for job runners that use datasets."""
 
     def __init__(
