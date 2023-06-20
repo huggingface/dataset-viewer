@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import pytest
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_MONGOENGINE_ALIAS,
@@ -117,7 +116,6 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
         db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].drop()
 
 
-@pytest.mark.skip(reason="temporaly disabled because of index removal")
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
         Job(
