@@ -26,7 +26,7 @@ from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
+from worker.job_runners.split.split_job_runner import SplitLibraryBasedJobRunner
 from worker.utils import (
     CompleteJobResult,
     JobRunnerInfo,
@@ -258,7 +258,7 @@ def compute_first_rows_response(
     return response
 
 
-class SplitFirstRowsFromStreamingJobRunner(SplitCachedJobRunner):
+class SplitFirstRowsFromStreamingJobRunner(SplitLibraryBasedJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 

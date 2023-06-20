@@ -17,7 +17,7 @@ from libcommon.exceptions import (
     SplitNamesFromStreamingError,
 )
 
-from worker.job_runners.config.config_job_runner import ConfigCachedJobRunner
+from worker.job_runners.config.config_job_runner import ConfigLibraryBasedJobRunner
 from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 
 
@@ -77,7 +77,7 @@ def compute_split_names_from_streaming_response(
     return SplitsList(splits=split_name_items)
 
 
-class ConfigSplitNamesFromStreamingJobRunner(ConfigCachedJobRunner):
+class ConfigSplitNamesFromStreamingJobRunner(ConfigLibraryBasedJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-streaming"
