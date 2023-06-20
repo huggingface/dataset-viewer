@@ -7,7 +7,7 @@
 ```py
 import duckdb
 
-url = "https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet"
+url = "https://huggingface.co/api/datasets/blog_authorship_corpus/parquet/blog_authorship_corpus/train/0.parquet"
 
 con = duckdb.connect()
 con.execute("INSTALL httpfs;")
@@ -22,7 +22,7 @@ var con = db.connect();
 con.exec('INSTALL httpfs');
 con.exec('LOAD httpfs');
 
-const url = "https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet"
+const url = "https://huggingface.co/api/datasets/blog_authorship_corpus/parquet/blog_authorship_corpus/train/0.parquet"
 ```
 </js>
 </inferencesnippet>

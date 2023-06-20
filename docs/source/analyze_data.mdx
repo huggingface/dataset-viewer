@@ -12,22 +12,17 @@ The [Hub](https://huggingface.co/datasets) is home to more than 40,000 datasets 
 
 Let's say you're interested in the average length of the submitted code as it relates to the time complexity. Here's how you can get started. 
 
-Use the `/parquet` endpoint to convert the dataset to a Parquet file and return the URL to it:
+Use the `/api/parquet` endpoint to convert the dataset to a Parquet file and return the URL to it:
 
 ```py
-import requests
-API_URL = "https://datasets-server.huggingface.co/parquet?dataset=codeparrot/codecomplex"
-def query():
-    response = requests.get(API_URL)
-    return response.json()
-data = query()
-print(data)
-{'parquet_files': 
-    [
-        {'dataset': 'codeparrot/codecomplex', 'config': 'codeparrot--codecomplex', 'split': 'train', 'url': 'https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/codeparrot--codecomplex/json-train.parquet', 'filename': 'json-train.parquet', 'size': 4115908}
-    ], 
- 'pending': [], 'failed': []
-}
+>>> import requests
+>>> API_URL = "https://huggingface.co/api/codeparrot/codecomplex/parquet/codeparrot--codecomplex/train"
+>>> def query():
+...     response = requests.get(API_URL)
+...     return response.json()
+>>> urls = query()
+>>> print(urls)
+["https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/codeparrot--codecomplex/json-train.parquet]
 ```
 
 ## Read dataset with Pandas
@@ -37,8 +32,7 @@ With the URL, you can read the Parquet file into a Pandas DataFrame:
 ```py
 import pandas as pd
 
-url = "https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/codeparrot--codecomplex/json-train.parquet"
-df = pd.read_parquet(url)
+df = pd.read_parquet(urls[0])
 df.head(5)
 ```
 

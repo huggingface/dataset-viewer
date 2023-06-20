@@ -11,10 +11,8 @@
 Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from Datasets Server:
 
 ```py
-r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=blog_authorship_corpus")
-j = r.json()
-urls = [f['url'] for f in j['parquet_files'] if f['split'] == 'train']
-urls
+>>> urls = requests.get("https://huggingface.co/api/datasets/blog_authorship_corpus/parquet/blog_authorship_corpus/train").json()
+>>> urls
 ['https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet',
  'https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002.parquet']
 ```

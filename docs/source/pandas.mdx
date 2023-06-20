@@ -8,7 +8,7 @@ To read from a single Parquet file, use the [`read_parquet`](https://pandas.pyda
 import pandas as pd
 
 df = (
-    pd.read_parquet("https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002.parquet")
+    pd.read_parquet("https://huggingface.co/api/datasets/blog_authorship_corpus/parquet/blog_authorship_corpus/train/0.parquet")
     .groupby('horoscope')['text']
     .apply(lambda x: x.str.len().mean())
     .sort_values(ascending=False)
