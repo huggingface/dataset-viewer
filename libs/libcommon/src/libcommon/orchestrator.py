@@ -327,7 +327,7 @@ class DatasetBackfillPlan(Plan):
     def __post_init__(self) -> None:
         super().__post_init__()
         if self.error_codes_to_retry is None:
-            self.error_codes_to_retry = list(ERROR_CODES_TO_RETRY)
+            self.error_codes_to_retry = ERROR_CODES_TO_RETRY.split(",")
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",
