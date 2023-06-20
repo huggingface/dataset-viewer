@@ -41,7 +41,7 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
@@ -136,13 +136,19 @@ def compute_index_rows(
     db_path = Path(duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME)
 
     con = duckdb.connect(str(db_path.resolve()))
+    logging.debug(CREATE_SEQUENCE_COMMAND)
     con.sql(CREATE_SEQUENCE_COMMAND)
-    con.sql(f"{CREATE_TABLE_COMMAND.format(columns=column_names)} read_parquet({parquet_urls});")
+
+    create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} read_parquet({parquet_urls});"
+    logging.debug(create_command_sql)
+    con.sql(create_command_sql)
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    con.sql(CREATE_INDEX_COMMAND.format(columns=column_names))
-
+    logging.debug(CREATE_INDEX_COMMAND)
+    con.sql(CREATE_INDEX_COMMAND)
+    con.close()
+    
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
@@ -167,7 +173,7 @@ def compute_index_rows(
 
             # send the files to the target revision
             add_operations: List[CommitOperation] = [
-                CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path)
+                CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path.resolve())
             ]
 
             committer_hf_api.create_commit(
