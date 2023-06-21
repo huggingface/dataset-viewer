@@ -637,7 +637,10 @@ def retry_get_parquet_file_and_size(
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
         return pf, size
     except RuntimeError as err:
-        raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
+            raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        else:
+            raise err
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
