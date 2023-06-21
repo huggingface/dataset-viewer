@@ -1035,7 +1035,7 @@ def compute_config_parquet_and_info_response(
         parquet_operations = convert_to_parquet(builder)
 
     try:
-        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
         with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
