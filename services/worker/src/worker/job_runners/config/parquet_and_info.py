@@ -14,6 +14,7 @@ import datasets
 import datasets.config
 import datasets.info
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
@@ -616,10 +617,30 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     return parquet_operations
 
 
+class NotAParquetFileError(ValueError):
+    """When a remote parquet file can't be parsed"""
+
+    pass
+
+
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
     headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
     f = fs.open(url, headers=headers)
     return pq.ParquetFile(f), f.size
+
+
+def retry_get_parquet_file_and_size(
+    url: str, fs: HTTPFileSystem, hf_token: Optional[str]
+) -> Tuple[pq.ParquetFile, int]:
+    try:
+        sleeps = [1, 1, 1, 10, 10, 10]
+        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
+        return pf, size
+    except RuntimeError as err:
+        if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
+            raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        else:
+            raise err
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
@@ -636,7 +657,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
             split = str(split)  # in case it's a NamedSplit
             try:
                 parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                    partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                    partial(retry_get_parquet_file_and_size, fs=fs, hf_token=hf_token),
                     data_files[split],
                     unit="pq",
                     disable=True,
