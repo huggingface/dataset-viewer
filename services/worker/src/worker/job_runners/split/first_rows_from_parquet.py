@@ -140,7 +140,7 @@ def compute_first_rows_response(
         ) from err
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    columns_to_keep_untruncated = [col for col, feature in features.items if isinstance(feature, (Image, Audio))]
+    columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
     row_items = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
