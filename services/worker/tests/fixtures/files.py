@@ -149,6 +149,40 @@ def dataset_script_with_two_configs_path(tmp_path_factory: pytest.TempPathFactor
     return path
 
 
+# N = 15
+DATASET_SCRIPT_WITH_N_CONFIGS = """
+import os
+
+import datasets
+from datasets import DatasetInfo, BuilderConfig, Features, Split, SplitGenerator, Value
+
+
+class DummyDataset(datasets.GeneratorBasedBuilder):
+
+    BUILDER_CONFIGS = [BuilderConfig(name="config"+str(i)) for i in range(15)]
+
+    def _info(self) -> DatasetInfo:
+        return DatasetInfo(features=Features({"text": Value("string")}))
+
+    def _split_generators(self, dl_manager):
+        return [
+            SplitGenerator(Split.TRAIN, gen_kwargs={"text": self.config.name}),
+        ]
+
+    def _generate_examples(self, text, **kwargs):
+        for i in range(1000):
+            yield i, {"text": text}
+"""
+
+
+@pytest.fixture(scope="session")
+def dataset_script_with_n_configs_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "{dataset_name}.py")
+    with open(path, "w", newline="") as f:
+        f.write(DATASET_SCRIPT_WITH_N_CONFIGS)
+    return path
+
+
 DATASET_SCRIPT_WITH_MANUAL_DOWNLOAD = """
 import os
 
