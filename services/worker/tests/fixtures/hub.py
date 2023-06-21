@@ -618,7 +618,7 @@ def hub_reponses_empty(hub_public_empty: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_public(hub_public_csv: str) -> HubDatasetTest:
+def hub_responses_public(hub_public_csv: str) -> HubDatasetTest:
     return {
         "name": hub_public_csv,
         "config_names_response": create_config_names_response(hub_public_csv),

@@ -8,7 +8,9 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.job_runners._datasets_based_job_runner import DatasetsBasedJobRunner
+from worker.job_runners._job_runner_with_datasets_cache import (
+    JobRunnerWithDatasetsCache,
+)
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -27,7 +29,7 @@ class ConfigJobRunner(DatasetJobRunner):
         self.config = job_info["params"]["config"]
 
 
-class ConfigCachedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
+class ConfigJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, ConfigJobRunner):
     def __init__(
         self,
         job_info: JobInfo,
@@ -35,7 +37,7 @@ class ConfigCachedJobRunner(DatasetsBasedJobRunner, ConfigJobRunner):
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
-        DatasetsBasedJobRunner.__init__(
+        JobRunnerWithDatasetsCache.__init__(
             self=self,
             job_info=job_info,
             app_config=app_config,

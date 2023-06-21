@@ -22,7 +22,7 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
-from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
+from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
     CompleteJobResult,
     OptInOutUrlsScanResponse,
@@ -263,7 +263,7 @@ def compute_opt_in_out_urls_scan_response(
     )
 
 
-class SplitOptInOutUrlsScanJobRunner(SplitCachedJobRunner):
+class SplitOptInOutUrlsScanJobRunner(SplitJobRunnerWithDatasetsCache):
     urls_scan_config: OptInOutUrlsScanConfig
 
     @staticmethod

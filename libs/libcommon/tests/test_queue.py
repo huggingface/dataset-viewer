@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import json
 import os
 from datetime import datetime, timedelta
 from multiprocessing import Pool
@@ -413,3 +414,29 @@ def test_lock(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: Qu
     with open(tmp_file, "r") as f:
         assert int(f.read()) == expected
     Lock.objects(key="test_lock").delete()
+
+
+def git_branch_locked_increment(tmp_file: Path) -> None:
+    sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+    dataset = "dataset"
+    branch = "refs/convert/parquet"
+    with lock.git_branch(dataset=dataset, branch=branch, job_id=str(os.getpid()), sleeps=sleeps):
+        increment(tmp_file)
+
+
+def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: QueueMongoResource) -> None:
+    tmp_file = Path(tmp_path_factory.mktemp("test_lock") / "tmp.txt")
+    tmp_file.touch()
+    max_parallel_jobs = 5
+    num_jobs = 43
+
+    with Pool(max_parallel_jobs, initializer=queue_mongo_resource.allocate) as pool:
+        pool.map(git_branch_locked_increment, [tmp_file] * num_jobs)
+
+    expected = num_jobs
+    with open(tmp_file, "r") as f:
+        assert int(f.read()) == expected
+    assert Lock.objects().count() == 1
+    assert Lock.objects().get().key == json.dumps({"dataset": "dataset", "branch": "refs/convert/parquet"})
+    assert Lock.objects().get().job_id is None
+    Lock.objects().delete()
