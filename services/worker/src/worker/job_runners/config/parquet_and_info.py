@@ -1004,7 +1004,10 @@ def compute_config_parquet_and_info_response(
 
     # check if the repo exists and get the list of refs
     try:
-        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
+        sleeps = [1, 1, 1, 10, 10]
+        refs = retry(on=[requests.exceptions.ConnectionError], sleeps=sleeps)(hf_api.list_repo_refs)(
+            repo_id=dataset, repo_type=DATASET_TYPE
+        )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
