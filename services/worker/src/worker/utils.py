@@ -198,14 +198,14 @@ def utf8_byte_truncate(text: str, max_bytes: int) -> str:
 
 
 # Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem, min_cell_bytes: int) -> RowItem:
+def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: List[str]) -> RowItem:
     row = {}
     for column_name, cell in row_item["row"].items():
         # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
         # it's done by replacing the cell (which can have any type) by a string with
         # its JSON serialization, and then truncating it to min_cell_bytes
         cell_json = orjson_dumps(cell)
-        if len(cell_json) <= min_cell_bytes:
+        if len(cell_json) <= min_cell_bytes or column_name in columns_to_keep_untruncated:
             row[column_name] = cell
         else:
             cell_json_str = cell_json.decode("utf8", "ignore")
@@ -221,7 +221,9 @@ COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
 
 
 # Mutates row_items, and returns them anyway
-def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int) -> List[RowItem]:
+def truncate_row_items(
+    row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: List[str]
+) -> List[RowItem]:
     # compute the current size
     rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
 
@@ -230,7 +232,9 @@ def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_b
         if rows_bytes < rows_max_bytes:
             break
         previous_size = get_json_size(row_item) + COMMA_SIZE
-        row_item = truncate_row_item(row_item=row_item, min_cell_bytes=min_cell_bytes)
+        row_item = truncate_row_item(
+            row_item=row_item, min_cell_bytes=min_cell_bytes, columns_to_keep_untruncated=columns_to_keep_untruncated
+        )
         new_size = get_json_size(row_item) + COMMA_SIZE
         rows_bytes += new_size - previous_size
     return row_items
@@ -249,6 +253,7 @@ def create_truncated_row_items(
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_min_number: int,
+    columns_to_keep_untruncated: List[str],
 ) -> List[RowItem]:
     row_items = []
     rows_bytes = 0
@@ -274,7 +279,12 @@ def create_truncated_row_items(
         #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
         #     f" ({rows_max_bytes}), they will be truncated"
         # )
-        return truncate_row_items(row_items=row_items, min_cell_bytes=min_cell_bytes, rows_max_bytes=rows_max_bytes)
+        return truncate_row_items(
+            row_items=row_items,
+            min_cell_bytes=min_cell_bytes,
+            rows_max_bytes=rows_max_bytes,
+            columns_to_keep_untruncated=columns_to_keep_untruncated,
+        )
 
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
