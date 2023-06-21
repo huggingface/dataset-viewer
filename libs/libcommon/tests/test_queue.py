@@ -3,6 +3,8 @@
 
 import json
 import os
+import random
+import time
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
@@ -389,11 +391,19 @@ def test_has_ttl_index_on_finished_at_field() -> None:
     assert Job._get_collection().index_information()[ttl_index_name]["expireAfterSeconds"] == QUEUE_TTL_SECONDS
 
 
+def random_sleep() -> None:
+    MAX_SLEEP_MS = 40
+    time.sleep(MAX_SLEEP_MS / 1000 * random.random())
+
+
 def increment(tmp_file: Path) -> None:
+    random_sleep()
     with open(tmp_file, "r") as f:
         current = int(f.read() or 0)
+    random_sleep()
     with open(tmp_file, "w") as f:
         f.write(str(current + 1))
+    random_sleep()
 
 
 def locked_increment(tmp_file: Path) -> None:
