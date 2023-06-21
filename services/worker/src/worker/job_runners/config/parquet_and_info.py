@@ -1039,7 +1039,6 @@ def compute_config_parquet_and_info_response(
         with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
-            print(f"working on {dataset=} {config=}")
             refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(
                 repo_id=dataset, repo_type=DATASET_TYPE
             )
