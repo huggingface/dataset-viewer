@@ -137,13 +137,14 @@ def create_filter_endpoint(
                         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
                     )
                 with StepProfiler(method="filter_endpoint", step="build filter query"):
+                    # TODO: Address possible SQL injection CWE-89
                     query = con.sql(
                         f"""\
                         SELECT {supported_columns}
                         FROM read_parquet({parquet_file_urls})
                         WHERE {where}
                         LIMIT {length}
-                        OFFSET {offset}"""
+                        OFFSET {offset}"""  # nosec B608
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     rows = query.fetchall()
