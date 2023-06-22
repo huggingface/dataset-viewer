@@ -113,7 +113,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     ],
 )
 def test_number_rows(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     hub_reponses_audio: HubDatasetTest,
     hub_reponses_image: HubDatasetTest,
     hub_reponses_images_list: HubDatasetTest,
@@ -137,7 +137,7 @@ def test_number_rows(
         csv._patched_for_streaming = False
 
     hub_datasets = {
-        "public": hub_reponses_public,
+        "public": hub_responses_public,
         "audio": hub_reponses_audio,
         "image": hub_reponses_image,
         "images_list": hub_reponses_images_list,
