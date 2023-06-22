@@ -20,7 +20,7 @@ from libcommon.exceptions import (
     DatasetNotFoundError,
     LockedDatasetTimeoutError,
     NoIndexableColumnsError,
-    NotAvailableIndexFileError,
+    DuckDBIndexFileNotFoundError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitNotFoundError,
@@ -148,7 +148,7 @@ def compute_index_rows(
     logging.debug(CREATE_INDEX_COMMAND)
     con.sql(CREATE_INDEX_COMMAND)
     con.close()
-    
+
     # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
@@ -196,7 +196,7 @@ def compute_index_rows(
 
     if not repo_files or len(repo_files) != 1:
         logging.warning(f"Found {len(repo_files)} index files, should be only 1")
-        raise NotAvailableIndexFileError("No index file was found")
+        raise DuckDBIndexFileNotFoundError("No index file was found")
 
     repo_file = repo_files[0]
     if repo_file.size is None:

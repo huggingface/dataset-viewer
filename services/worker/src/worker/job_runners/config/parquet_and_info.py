@@ -1037,7 +1037,11 @@ def compute_config_parquet_and_info_response(
                 repo_id=dataset, repo_type=DATASET_TYPE
             )
             create_branch(
-                dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
+                dataset=dataset,
+                target_revision=target_revision,
+                refs=refs,
+                hf_api=hf_api,
+                committer_hf_api=committer_hf_api,
             )
 
             # commit the parquet files
