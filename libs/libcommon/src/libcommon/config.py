@@ -285,8 +285,6 @@ class ProcessingGraphConfig:
             "split-descriptive-stats": {
                 "input_type": "split",
                 "triggered_by": [
-                    "config-parquet-and-info",
-                    "config-split-names-from-streaming",
                     "config-split-names-from-info",
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
