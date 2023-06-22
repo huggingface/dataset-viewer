@@ -66,6 +66,11 @@ log:
 # --- common parameters ---
 
 secrets:
+  externalSecret:
+    enabled: false
+    secretName: ""
+    secretStoreName: ""
+    parameters: { }
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"

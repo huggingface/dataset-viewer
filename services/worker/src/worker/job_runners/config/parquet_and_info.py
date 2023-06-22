@@ -13,6 +13,7 @@ import datasets
 import datasets.config
 import datasets.info
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
@@ -609,10 +610,30 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     return parquet_operations
 
 
+class NotAParquetFileError(ValueError):
+    """When a remote parquet file can't be parsed"""
+
+    pass
+
+
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
     headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
     f = fs.open(url, headers=headers)
     return pq.ParquetFile(f), f.size
+
+
+def retry_get_parquet_file_and_size(
+    url: str, fs: HTTPFileSystem, hf_token: Optional[str]
+) -> Tuple[pq.ParquetFile, int]:
+    try:
+        sleeps = [1, 1, 1, 10, 10, 10]
+        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
+        return pf, size
+    except RuntimeError as err:
+        if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
+            raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        else:
+            raise err
 
 
 def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
@@ -629,7 +650,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
             split = str(split)  # in case it's a NamedSplit
             try:
                 parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                    partial(get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                    partial(retry_get_parquet_file_and_size, fs=fs, hf_token=hf_token),
                     data_files[split],
                     unit="pq",
                     disable=True,
@@ -974,12 +995,6 @@ def compute_config_parquet_and_info_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    # check if the repo exists and get the list of refs
-    try:
-        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-
     download_config = DownloadConfig(delete_extracted=True)
     try:
         builder = load_dataset_builder(
@@ -991,6 +1006,8 @@ def compute_config_parquet_and_info_response(
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
+    except FileNotFoundError as err:
+        raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
@@ -1010,15 +1027,20 @@ def compute_config_parquet_and_info_response(
             )
         parquet_operations = convert_to_parquet(builder)
 
-    # create the target revision if we managed to get the parquet files and it does not exist yet
-    # (clone from initial commit to avoid cloning all repo's files)
-    create_branch(
-        dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
-    )
-
     try:
-        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
+        # ^ timeouts after ~7 minutes
         with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+            # create the target revision if we managed to get the parquet files and it does not exist yet
+            # (clone from initial commit to avoid cloning all repo's files)
+            refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(
+                repo_id=dataset, repo_type=DATASET_TYPE
+            )
+            create_branch(
+                dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
+            )
+
+            # commit the parquet files
             commit_parquet_conversion(
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,
@@ -1029,11 +1051,13 @@ def compute_config_parquet_and_info_response(
                 target_revision=target_revision,
                 commit_message=commit_message,
             )
+            # call the API again to get the list of parquet files
+            target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
-    # call the API again to get the list of parquet files
-    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     repo_files = [
         repo_file
         for repo_file in target_dataset_info.siblings

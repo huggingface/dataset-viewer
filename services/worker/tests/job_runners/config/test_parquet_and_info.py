@@ -6,7 +6,9 @@ from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
-from typing import Any, Callable, Iterator, List, Optional
+from multiprocessing import Pool
+from pathlib import Path
+from typing import Any, Callable, Iterator, List, Optional, TypedDict
 
 import datasets.builder
 import datasets.info
@@ -25,12 +27,14 @@ from libcommon.exceptions import (
     DatasetWithTooBigExternalFilesError,
     DatasetWithTooManyExternalFilesError,
 )
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
-from libcommon.utils import Priority
+from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
+from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
     create_commits,
@@ -42,7 +46,9 @@ from worker.job_runners.config.parquet_and_info import (
     raise_if_too_big_from_external_data_files,
     raise_if_too_big_from_hub,
 )
+from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
+from worker.utils import CompleteJobResult
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
@@ -649,3 +655,142 @@ def test_create_commits(
     filenames = hf_api.list_repo_files(repo_id=repo_id, repo_type="dataset")
     for i in range(NUM_FILES):
         assert f"{directory}/file{i}.txt" in filenames
+
+
+GetDatasetConfigNamesJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJobRunner]
+
+
+@pytest.fixture
+def get_dataset_config_names_job_runner(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> GetDatasetConfigNamesJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        app_config: AppConfig,
+    ) -> DatasetConfigNamesJobRunner:
+        processing_step_name = DatasetConfigNamesJobRunner.get_job_type()
+        processing_graph = ProcessingGraph(
+            {
+                processing_step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                }
+            }
+        )
+        return DatasetConfigNamesJobRunner(
+            job_info={
+                "type": DatasetConfigNamesJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": None,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+            },
+            app_config=app_config,
+            processing_step=processing_graph.get_processing_step(processing_step_name),
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_job_runner
+
+
+class JobRunnerArgs(TypedDict):
+    dataset: str
+    revision: str
+    config: str
+    app_config: AppConfig
+    tmp_path: Path
+
+
+def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
+    config = job_runner_args["config"]
+    dataset = job_runner_args["dataset"]
+    revision = job_runner_args["revision"]
+    app_config = job_runner_args["app_config"]
+    tmp_path = job_runner_args["tmp_path"]
+    job_runner = ConfigParquetAndInfoJobRunner(
+        job_info=JobInfo(
+            job_id=f"job_{config}",
+            type="config-parquet-and-info",
+            params=JobParams(dataset=dataset, revision=revision, config=config, split=None),
+            priority=Priority.NORMAL,
+        ),
+        app_config=app_config,
+        processing_step=ProcessingStep(
+            name="config-parquet-and-info",
+            input_type="config",
+            job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+        ),
+        hf_datasets_cache=tmp_path,
+    )
+    return job_runner.compute()
+
+
+def test_concurrency(
+    hub_public_n_configs: str,
+    app_config: AppConfig,
+    tmp_path: Path,
+    get_dataset_config_names_job_runner: GetDatasetConfigNamesJobRunner,
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    """
+    Test that multiple job runners (to compute config-parquet-and-info) can run in parallel,
+    without having conflicts when sending commits to the Hub.
+    For this test, we need a lot of configs for the same dataset (say 20) and one job runner for each.
+    Ideally we would try for both quick and slow jobs.
+    """
+    repo_id = hub_public_n_configs
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
+    revision = hf_api.dataset_info(repo_id=repo_id, files_metadata=False).sha
+    if revision is None:
+        raise ValueError(f"Could not find revision for dataset {repo_id}")
+
+    # fill the cache for the step dataset-config-names, required by the job_runner
+    # it's a lot of code 😅
+    job_info = JobInfo(
+        job_id="not_used",
+        type="dataset-config-names",
+        params=JobParams(dataset=repo_id, revision=revision, config=None, split=None),
+        priority=Priority.NORMAL,
+    )
+    queue = Queue()
+    queue.create_jobs([job_info])
+    job_info = queue.start_job(job_types_only=["dataset-config-names"])
+    job_manager = JobManager(
+        job_info=job_info,
+        app_config=app_config,
+        processing_graph=ProcessingGraph(
+            {
+                "dataset-config-names": {
+                    "input_type": "dataset",
+                    "provides_dataset_config_names": True,
+                    "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                }
+            }
+        ),
+        job_runner=get_dataset_config_names_job_runner(repo_id, app_config),
+    )
+    job_result = job_manager.run_job()
+    job_manager.finish(job_result=job_result)
+    if not job_result["output"]:
+        raise ValueError("Could not get config names")
+    configs = [str(config_name["config"]) for config_name in job_result["output"]["content"]["config_names"]]
+
+    # launch the job runners
+    NUM_JOB_RUNNERS = 10
+    with Pool(NUM_JOB_RUNNERS) as pool:
+        pool.map(
+            launch_job_runner,
+            [
+                JobRunnerArgs(
+                    dataset=repo_id, revision=revision, config=config, app_config=app_config, tmp_path=tmp_path
+                )
+                for config in configs
+            ],
+        )
