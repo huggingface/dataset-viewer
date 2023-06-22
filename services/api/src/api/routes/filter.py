@@ -73,9 +73,9 @@ def create_filter_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                with StepProfiler(method="filter_endpoint", step="get config-parquet-metadata from cache"):
+                with StepProfiler(method="filter_endpoint", step="get parquet file metadata items from cache"):
                     parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
-                        dataset=dataset, config=config, processing_graph=processing_graph
+                        dataset=dataset, config=config, split=split, processing_graph=processing_graph
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = {"status": "ok"}
@@ -90,7 +90,7 @@ def create_filter_endpoint(
 
 
 def get_config_parquet_metadata_from_cache(
-    dataset: str, config: str, processing_graph: ProcessingGraph
+    dataset: str, config: str, split: str, processing_graph: ProcessingGraph
 ) -> tuple[list[ParquetFileMetadataItem], Optional[str]]:
     config_parquet_metadata_processing_steps = processing_graph.get_config_parquet_metadata_processing_steps()
     if not config_parquet_metadata_processing_steps:
@@ -107,5 +107,8 @@ def get_config_parquet_metadata_from_cache(
         raise UnexpectedError("Could not get the list of parquet files metadata.") from e
     response = result.response
     revision = response["dataset_git_revision"]
-    parquet_files_metadata = response["content"]["parquet_files_metadata"]
-    return parquet_files_metadata, revision
+    parquet_file_metadata_items = response["content"]["parquet_files_metadata"]
+    parquet_file_metadata_items = [
+        item for item in parquet_file_metadata_items if item["split"] == split and item["config"] == config
+    ]
+    return parquet_file_metadata_items, revision
