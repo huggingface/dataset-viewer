@@ -2,9 +2,12 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import os.path
 from typing import Optional
 
-from libcommon.parquet_utils import ParquetFileMetadataItem
+import pyarrow.parquet as pq
+from datasets import Features
+from libcommon.parquet_utils import ParquetFileMetadataItem, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -32,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 def create_filter_endpoint(
     processing_graph: ProcessingGraph,
+    parquet_metadata_directory: StrPath,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -77,6 +81,11 @@ def create_filter_endpoint(
                     parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
                         dataset=dataset, config=config, split=split, processing_graph=processing_graph
                     )
+                with StepProfiler(method="filter_endpoint", step="get features"):
+                    features = get_features_from_parquet_file_metadata(
+                        parquet_file_metadata_item=parquet_file_metadata_items[0],
+                        parquet_metadata_directory=parquet_metadata_directory,
+                    )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = {"status": "ok"}
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
@@ -112,3 +121,12 @@ def get_config_parquet_metadata_from_cache(
         item for item in parquet_file_metadata_items if item["split"] == split and item["config"] == config
     ]
     return parquet_file_metadata_items, revision
+
+
+def get_features_from_parquet_file_metadata(
+    parquet_file_metadata_item: ParquetFileMetadataItem, parquet_metadata_directory: StrPath
+):
+    parquet_file_metadata_path = os.path.join(
+        parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
+    )
+    return Features.from_arrow_schema(pq.read_schema(parquet_file_metadata_path))
