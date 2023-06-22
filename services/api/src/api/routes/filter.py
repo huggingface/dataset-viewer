@@ -3,7 +3,7 @@
 
 import logging
 import os.path
-from typing import Any, Optional, TypedDict
+from typing import Any, Mapping, Optional, TypedDict
 
 import duckdb
 import pyarrow.parquet as pq
@@ -16,6 +16,7 @@ from libcommon.parquet_utils import (
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -39,6 +40,27 @@ MAX_ROWS = 100
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 
 
+Feature = Mapping[str, Any]
+
+
+# TODO: duplicated
+class FeatureItem(TypedDict):
+    feature_idx: int
+    name: str
+    type: Feature
+
+
+# TODO: duplicated
+Row = Mapping[str, Any]
+
+
+# TODO: duplicated
+class RowItem(TypedDict):
+    row_idx: int
+    row: Mapping[str, Any]
+    truncated_cells: list[str]
+
+
 class Table(TypedDict):
     columns: list[str]
     rows: list[list[Any]]
@@ -54,6 +76,8 @@ con.execute("LOAD httpfs;")
 
 def create_filter_endpoint(
     processing_graph: ProcessingGraph,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -108,7 +132,7 @@ def create_filter_endpoint(
                         parquet_metadata_directory=parquet_metadata_directory,
                     )
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                    supported_columns, _ = get_supported_unsupported_columns(
                         features,
                         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
                     )
@@ -125,7 +149,16 @@ def create_filter_endpoint(
                     rows = query.fetchall()
                     table: Table = {"columns": query.columns, "rows": rows}
                 with StepProfiler(method="filter_endpoint", step="create response"):
-                    response = {"status": "ok"}
+                    response = create_response(
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        cached_assets_base_url=cached_assets_base_url,
+                        cached_assets_directory=cached_assets_directory,
+                        table=table,
+                        offset=offset,
+                        features=features,
+                    )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
@@ -168,3 +201,104 @@ def get_features_from_parquet_file_metadata(
         parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
     )
     return Features.from_arrow_schema(pq.read_schema(parquet_file_metadata_path))
+
+
+# TODO: duplicated in /rows except Table
+def create_response(
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    table: Table,
+    offset: int,
+    features: Features,
+) -> Any:
+    return {
+        "features": to_features_list(features),
+        "rows": to_rows_list(
+            table,
+            dataset,
+            config,
+            split,
+            cached_assets_base_url,
+            cached_assets_directory,
+            offset,
+            features,
+        ),
+    }
+
+
+# TODO: duplicated in /rows
+def to_features_list(features: Features) -> list[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]
+
+
+# TODO: duplicated in /rows except Table
+def to_rows_list(
+    table: Table,
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    features: Features,
+) -> list[RowItem]:
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    transformed_rows = transform_rows(
+        dataset=dataset,
+        config=config,
+        split=split,
+        table=table,
+        features=features,
+        cached_assets_base_url=cached_assets_base_url,
+        cached_assets_directory=cached_assets_directory,
+        offset=offset,
+    )
+    return [
+        {
+            "row_idx": idx + offset,
+            "row": row,
+            "truncated_cells": [],
+        }
+        for idx, row in enumerate(transformed_rows)
+    ]
+
+
+# TODO: duplicated in /rows except Table
+def transform_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    table: Table,
+    features: Features,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+) -> list[Row]:
+    return [
+        {
+            featureName: get_cell_value(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=offset + row_idx,
+                cell=row[table["columns"].index(featureName)] if featureName in table["columns"] else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=cached_assets_base_url,
+                assets_directory=cached_assets_directory,
+            )
+            for (featureName, fieldType) in features.items()
+        }
+        for row_idx, row in enumerate(table["rows"])
+    ]
