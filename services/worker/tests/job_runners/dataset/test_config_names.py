@@ -110,7 +110,7 @@ def test_compute_too_many_configs(
     ],
 )
 def test_compute_splits_response_simple_csv(
-    hub_reponses_public: HubDatasetTest,
+    hub_responses_public: HubDatasetTest,
     hub_reponses_audio: HubDatasetTest,
     hub_reponses_gated: HubDatasetTest,
     hub_reponses_private: HubDatasetTest,
@@ -124,7 +124,7 @@ def test_compute_splits_response_simple_csv(
     app_config: AppConfig,
 ) -> None:
     hub_datasets = {
-        "public": hub_reponses_public,
+        "public": hub_responses_public,
         "audio": hub_reponses_audio,
         "gated": hub_reponses_gated,
         "private": hub_reponses_private,

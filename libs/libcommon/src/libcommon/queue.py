@@ -136,7 +136,11 @@ class Job(Document):
             ("status", "namespace", "priority", "type", "created_at"),
             ("status", "namespace", "unicity_id", "priority", "type", "created_at"),
             "-created_at",
-            {"fields": ["finished_at"], "expireAfterSeconds": QUEUE_TTL_SECONDS},
+            {
+                "fields": ["finished_at"],
+                "expireAfterSeconds": QUEUE_TTL_SECONDS,
+                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
+            },
         ],
     }
     type = StringField(required=True)
@@ -247,25 +251,29 @@ class lock(contextlib.AbstractContextManager["lock"]):
         self.sleeps = sleeps
 
     def acquire(self) -> None:
-        try:
-            Lock(key=self.key, job_id=self.job_id, created_at=get_datetime()).save()
-        except NotUniqueError:
-            pass
         for sleep in self.sleeps:
-            acquired = (
+            try:
                 Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
-                    job_id=self.job_id, updated_at=get_datetime()
+                    upsert=True,
+                    write_concern={"w": "majority", "fsync": True},
+                    read_concern={"level": "majority"},
+                    job_id=self.job_id,
+                    updated_at=get_datetime(),
                 )
-                > 0
-            )
-            if acquired:
                 return
-            logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
-            time.sleep(sleep)
+            except NotUniqueError:
+                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+                time.sleep(sleep)
         raise TimeoutError("lock couldn't be acquired")
 
     def release(self) -> None:
-        Lock.objects(key=self.key, job_id=self.job_id).update(job_id=None, updated_at=get_datetime())
+        Lock.objects(key=self.key, job_id=self.job_id).update(
+            upsert=True,
+            write_concern={"w": "majority", "fsync": True},
+            read_concern={"level": "majority"},
+            job_id=None,
+            updated_at=get_datetime(),
+        )
 
     def __enter__(self) -> "lock":
         self.acquire()

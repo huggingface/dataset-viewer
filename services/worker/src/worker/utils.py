@@ -34,7 +34,7 @@ from datasets import (
 from libcommon.exceptions import NormalRowsError, StreamingRowsError
 from libcommon.utils import orjson_dumps
 
-MAX_IMAGE_PIXELS = 1_000_000_000
+MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
 
 
@@ -319,7 +319,7 @@ class retry:
                     logging.info(f"Got a {type(err)}. Let's retry.")
                     last_err = err
                     attempt += 1
-            raise RuntimeError(f"Give up after {attempt} attempts with {type(last_err)}") from last_err
+            raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err
 
         return cast(FuncT, decorator)
 

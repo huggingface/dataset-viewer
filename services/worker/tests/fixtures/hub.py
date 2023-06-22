@@ -261,6 +261,13 @@ def hub_public_legacy_configs(dataset_script_with_two_configs_path: str) -> Iter
 
 
 @pytest.fixture(scope="session")
+def hub_public_n_configs(dataset_script_with_n_configs_path: str) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="n_configs", file_paths=[dataset_script_with_n_configs_path])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_manual_download(dataset_script_with_manual_download_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="manual_download", file_paths=[dataset_script_with_manual_download_path])
     yield repo_id
@@ -618,7 +625,7 @@ def hub_reponses_empty(hub_public_empty: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_public(hub_public_csv: str) -> HubDatasetTest:
+def hub_responses_public(hub_public_csv: str) -> HubDatasetTest:
     return {
         "name": hub_public_csv,
         "config_names_response": create_config_names_response(hub_public_csv),

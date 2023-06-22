@@ -4,12 +4,9 @@
 # --- common parameters ---
 global:
   huggingface:
-    imageRegistry: ""
-    imagePullSecrets: []
-    privateHub:
-      enabled: false
     ingress:
       domain: us.dev.moon.huggingface.tech
+      # ^ the domain contains "dev", not "staging". We don't change for now.
       subdomains:
         datasetsServer: datasets-server
 
@@ -51,7 +48,7 @@ images:
 
 secrets:
   mongoUrl:
-    fromSecret: false
+    fromSecret: true
     secretName: "mongo-url"
     value: mongo://
   appHfToken:
@@ -75,7 +72,7 @@ monitoring:
   enabled: false
 
 mongodb:
-  enabled: true
+  enabled: false
 
 common:
   # URL of the HuggingFace Hub
@@ -84,6 +81,9 @@ common:
 log:
   # Log level
   level: "DEBUG"
+
+firstRows:
+  maxBytes: "200_000"
 
 parquetAndInfo:
   maxDatasetSize: "500_000_000"
@@ -102,6 +102,10 @@ mongodbMigration:
 cacheMaintenance:
   action: "skip"
   # ^ allowed values are {skip,backfill,upgrade}
+  log:
+    level: "debug"
+  backfill:
+    error_codes_to_retry: ""
   resources:
     requests:
       cpu: 100m
@@ -114,14 +118,15 @@ backfill:
 
 metricsCollector:
   action: "collect-metrics"
-  schedule: "*/5 * * * *"
-  # every five minutes
+  schedule: "*/2 * * * *"
+  # every two minutes
   nodeSelector: {}
   resources:
     requests:
-      cpu: 0
+      cpu: 1
     limits:
-      cpu: 0
+      cpu: 1
+      memory: "512Mi"
   tolerations: []
 
 # --- storage admin (to manually inspect the storage, in /data) ---
@@ -160,8 +165,8 @@ ingress:
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
     external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
-    alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-dev"
-    alb.ingress.kubernetes.io/tags: "Env=dev,Project=datasets-server,Terraform=true"
+    alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-staging"
+    alb.ingress.kubernetes.io/tags: "Env=staging,Project=datasets-server,Terraform=true"
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
     alb.ingress.kubernetes.io/scheme: "internet-facing"

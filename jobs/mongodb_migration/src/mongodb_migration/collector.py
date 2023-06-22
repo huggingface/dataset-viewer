@@ -222,4 +222,11 @@ class MigrationsCollector:
                 ),
                 field_name="finished_at",
             ),
+            MigrationQueueDeleteTTLIndex(
+                version="202306201100",
+                description=(
+                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
+                ),
+                field_name="finished_at",
+            ),
         ]
