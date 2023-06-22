@@ -7,6 +7,7 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 cryptography = "^41.0.1"
+duckdb = "^0.8.1"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
