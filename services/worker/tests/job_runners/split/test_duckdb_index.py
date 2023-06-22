@@ -1,10 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import os
+from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, Optional
 
+import duckdb
 import pytest
+import requests
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -118,10 +122,11 @@ def get_parquet_job_runner(
 
 
 @pytest.mark.parametrize(
-    "hub_dataset_name,expected_error_code",
+    "hub_dataset_name,max_parquet_size_bytes,expected_error_code",
     [
-        ("duckdb_index", None),
-        ("public", "NoIndexableColumnsError"),  # dataset does not have string columns to index
+        ("duckdb_index", None, None),
+        ("duckdb_index", 1_000, "SplitWithTooBigParquetError"),  # parquet size is 2812
+        ("public", None, "NoIndexableColumnsError"),  # dataset does not have string columns to index
     ],
 )
 def test_compute(
@@ -131,6 +136,7 @@ def test_compute(
     hub_responses_public: HubDatasetTest,
     hub_responses_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
+    max_parquet_size_bytes: Optional[int],
     expected_error_code: str,
 ) -> None:
     hub_datasets = {"public": hub_responses_public, "duckdb_index": hub_responses_duckdb_index}
@@ -155,9 +161,21 @@ def test_compute(
         content=splits_response,
     )
 
+    app_config = (
+        app_config
+        if max_parquet_size_bytes is None
+        else replace(
+            app_config, duckdb_index=replace(app_config.duckdb_index, max_parquet_size_bytes=max_parquet_size_bytes)
+        )
+    )
+
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
     parquet_response = parquet_job_runner.compute()
     config_parquet = parquet_response.content
+
+    # simulate more than one parquet file to index
+    extra_parquet_file = config_parquet["parquet_files"][0]
+    config_parquet["parquet_files"].append(extra_parquet_file)
 
     upsert_response(
         "config-parquet-and-info",
@@ -179,6 +197,38 @@ def test_compute(
         response = job_runner.compute()
         assert response
         content = response.content
-        assert content["url"] is not None
-        assert content["filename"] is not None
+        url = content["url"]
+        file_name = content["filename"]
+        assert url is not None
+        assert file_name is not None
         job_runner.post_compute()
+
+        # download locally duckdb index file
+        duckdb_file = requests.get(url)
+        with open(file_name, "wb") as f:
+            f.write(duckdb_file.content)
+
+        duckdb.execute("INSTALL 'fts';")
+        duckdb.execute("LOAD 'fts';")
+        con = duckdb.connect(file_name)
+
+        # validate number of inserted records
+        record_count = con.sql("SELECT COUNT(*) FROM data;").fetchall()
+        assert record_count is not None
+        assert isinstance(record_count, list)
+        assert record_count[0] == (10,)  # dataset has 5 rows but since parquet file was duplicate it is 10
+
+        # perform a search to validate fts feature
+        query = "Lord Vader"
+        result = con.execute(
+            (
+                "SELECT fts_main_data.match_bm25(__hf_index_id, ?) AS score, text FROM data WHERE score IS NOT NULL"
+                " ORDER BY score DESC;"
+            ),
+            [query],
+        )
+        rows = result.df()
+        assert rows is not None
+
+        con.close()
+        os.remove(file_name)

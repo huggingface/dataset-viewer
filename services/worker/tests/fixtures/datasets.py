@@ -147,11 +147,14 @@ def datasets() -> Mapping[str, Dataset]:
             pd.DataFrame(
                 {
                     "text": [
-                        "foo",
-                        "bar",
-                        "foobar",
-                        "- Hello there !",
-                        "- General Kenobi !",
+                        (
+                            "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
+                            " comlink"
+                        ),
+                        "There goes another one.",
+                        "Vader turns round and round in circles as his ship spins into space.",
+                        "We count thirty Rebel ships, Lord Vader.",
+                        "The wingman spots the pirateship coming at him and warns the Dark Lord",
                     ]
                 },
                 dtype=pd.StringDtype(storage="python"),
