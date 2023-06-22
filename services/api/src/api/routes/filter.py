@@ -196,7 +196,7 @@ def get_config_parquet_metadata_from_cache(
 
 def get_features_from_parquet_file_metadata(
     parquet_file_metadata_item: ParquetFileMetadataItem, parquet_metadata_directory: StrPath
-):
+) -> Features:
     parquet_file_metadata_path = os.path.join(
         parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
     )
