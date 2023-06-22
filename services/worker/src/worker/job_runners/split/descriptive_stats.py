@@ -17,7 +17,7 @@ from libcommon.utils import JobInfo
 from tqdm import tqdm
 
 from worker.config import AppConfig
-from worker.job_runners.split.split_job_runner import SplitCachedJobRunner
+from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import CompleteJobResult
 
 PARQUET_FILENAME = "dataset.parquet"
@@ -266,19 +266,19 @@ def compute_descriptive_stats_response(
     return SplitDescriptiveStatsResponse(num_examples=num_examples, stats=stats)
 
 
-class SplitDescriptiveStatsJobRunner(SplitCachedJobRunner):
+class SplitDescriptiveStatsJobRunner(SplitJobRunnerWithCache):
     def __init__(
         self,
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        hf_datasets_cache: Path,
+        cache_directory: Path,
     ):
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            hf_datasets_cache=hf_datasets_cache,
+            cache_directory=cache_directory,
         )
         self.descriptive_stats_config = app_config.descriptive_stats
 
@@ -296,7 +296,7 @@ class SplitDescriptiveStatsJobRunner(SplitCachedJobRunner):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                local_parquet_dir=self.datasets_cache,
+                local_parquet_dir=self.base_cache_directory,
                 histogram_num_bins=self.descriptive_stats_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_stats_config.max_parquet_size_bytes,
             )
