@@ -4,6 +4,7 @@
 import contextlib
 import json
 import logging
+import random
 import time
 import types
 from collections import Counter
@@ -310,6 +311,24 @@ class lock(contextlib.AbstractContextManager["lock"]):
         key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, job_id=job_id, sleeps=sleeps)
 
+    @classmethod
+    def upsert_job(cls) -> "lock":
+        """
+        Lock the upsert_job() function globally
+        """
+        key = "UPSERT_JOB"
+        job_id = str(random.random())  # nosec
+        return cls(key=key, job_id=job_id, sleeps=cls._default_sleeps)
+
+    @classmethod
+    def start_job(cls) -> "lock":
+        """
+        Lock the start_job() function globally
+        """
+        key = "START_JOB"
+        job_id = str(random.random())  # nosec
+        return cls(key=key, job_id=job_id, sleeps=cls._default_sleeps)
+
 
 class Queue:
     """A queue manages jobs.
@@ -377,6 +396,7 @@ class Queue:
         If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
         one.
         Note that the new job inherits the highest priority of the previous waiting jobs.
+        A lock is used to avoid the job to be added multiple times.
 
         Args:
             job_type (`str`): The type of the job
@@ -388,18 +408,19 @@ class Queue:
 
         Returns: the job
         """
-        canceled_jobs = self.cancel_jobs(
-            job_type=job_type,
-            dataset=dataset,
-            config=config,
-            split=split,
-            statuses_to_cancel=[Status.WAITING],
-        )
-        if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
-            priority = Priority.NORMAL
-        return self._add_job(
-            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
-        )
+        with lock.upsert_job():
+            canceled_jobs = self.cancel_jobs(
+                job_type=job_type,
+                dataset=dataset,
+                config=config,
+                split=split,
+                statuses_to_cancel=[Status.WAITING],
+            )
+            if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
+                priority = Priority.NORMAL
+            return self._add_job(
+                job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
+            )
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
         """Creates jobs in the queue.
@@ -619,7 +640,8 @@ class Queue:
     ) -> JobInfo:
         """Start the next job in the queue.
 
-        The job is moved from the waiting state to the started state.
+        The job is moved from the waiting state to the started state. A lock is used to ensure that only one worker
+        can start a job at a time.
 
         Args:
             job_types_blocked: if not None, jobs of the given types are not considered.
@@ -631,22 +653,26 @@ class Queue:
 
         Returns: the job id, the type, the input arguments: dataset, revision, config and split
         """
-        logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
-        next_waiting_job = self.get_next_waiting_job(
-            job_types_blocked=job_types_blocked, job_types_only=job_types_only
-        )
-        logging.debug(f"job found: {next_waiting_job}")
-        # ^ can raise EmptyQueueError
-        self._start_job(next_waiting_job)
-        if job_types_blocked and next_waiting_job.type in job_types_blocked:
-            raise RuntimeError(
-                f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
+
+        with lock.start_job():
+            logging.debug(
+                f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}"
             )
-        if job_types_only and next_waiting_job.type not in job_types_only:
-            raise RuntimeError(
-                f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
+            next_waiting_job = self.get_next_waiting_job(
+                job_types_blocked=job_types_blocked, job_types_only=job_types_only
             )
-        return next_waiting_job.info()
+            logging.debug(f"job found: {next_waiting_job}")
+            # ^ can raise EmptyQueueError
+            self._start_job(next_waiting_job)
+            if job_types_blocked and next_waiting_job.type in job_types_blocked:
+                raise RuntimeError(
+                    f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
+                )
+            if job_types_only and next_waiting_job.type not in job_types_only:
+                raise RuntimeError(
+                    f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
+                )
+            return next_waiting_job.info()
 
     def get_job_with_id(self, job_id: str) -> Job:
         """Get the job for a given job id.
