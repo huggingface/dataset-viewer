@@ -5,7 +5,14 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
-from datasets import Features, IterableDataset, get_dataset_config_info, load_dataset
+from datasets import (
+    Audio,
+    Features,
+    Image,
+    IterableDataset,
+    get_dataset_config_info,
+    load_dataset,
+)
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
@@ -244,11 +251,13 @@ def compute_first_rows_response(
         ) from err
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
+    columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
     row_items = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
+        columns_to_keep_untruncated=columns_to_keep_untruncated,
     )
 
     response = response_features_only
