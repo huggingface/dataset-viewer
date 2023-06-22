@@ -5,6 +5,7 @@ import logging
 import os.path
 from typing import Optional
 
+import duckdb
 import pyarrow.parquet as pq
 from datasets import Features
 from libcommon.parquet_utils import (
@@ -39,6 +40,11 @@ UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 
 
 logger = logging.getLogger(__name__)
+
+# DuckDB connection
+con = duckdb.connect()
+con.execute("INSTALL httpfs;")
+con.execute("LOAD httpfs;")
 
 
 def create_filter_endpoint(
@@ -100,6 +106,15 @@ def create_filter_endpoint(
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
                         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+                    )
+                with StepProfiler(method="filter_endpoint", step="build the filter query"):
+                    query = con.sql(
+                        f"""\
+                        SELECT {supported_columns}
+                        FROM read_parquet({parquet_file_urls})
+                        WHERE {where}
+                        LIMIT {length}
+                        OFFSET {offset}"""
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = {"status": "ok"}
