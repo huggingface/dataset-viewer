@@ -18,9 +18,9 @@ from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
     CachedDirectoryNotInitializedError,
     DatasetNotFoundError,
+    DuckDBIndexFileNotFoundError,
     LockedDatasetTimeoutError,
     NoIndexableColumnsError,
-    DuckDBIndexFileNotFoundError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitNotFoundError,
