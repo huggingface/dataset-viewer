@@ -74,6 +74,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     hf_datasets_cache: Path
     assets_directory: StrPath
     parquet_metadata_directory: StrPath
+    stats_cache_directory: StrPath
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
@@ -220,7 +221,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 processing_step=processing_step,
-                hf_datasets_cache=self.hf_datasets_cache,
+                stats_cache_directory=self.stats_cache_directory,
             )
 
         supported_job_types = [

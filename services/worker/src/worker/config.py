@@ -203,12 +203,14 @@ class ParquetAndInfoConfig:
             )
 
 
+DESCRIPTIVE_STATS_CACHE_DIRECTORY = None
 DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS = 10
 DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES = 100_000_000
 
 
 @dataclass(frozen=True)
 class DescriptiveStatsConfig:
+    cache_directory: Optional[str] = DESCRIPTIVE_STATS_CACHE_DIRECTORY
     histogram_num_bins: int = DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
     max_parquet_size_bytes: int = DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
 
@@ -217,6 +219,7 @@ class DescriptiveStatsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DESCRIPTIVE_STATS_"):
             return cls(
+                cache_directory=env.str(name="STORAGE_DIRECTORY", default=DESCRIPTIVE_STATS_CACHE_DIRECTORY),
                 histogram_num_bins=env.int(
                     name="HISTOGRAM_NUM_BINS",
                     default=DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS,
