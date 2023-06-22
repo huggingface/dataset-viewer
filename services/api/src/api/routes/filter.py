@@ -140,7 +140,7 @@ def create_filter_endpoint(
                     # TODO: Address possible SQL injection CWE-89
                     query = con.sql(
                         f"""\
-                        SELECT {supported_columns}
+                        SELECT {",".join(supported_columns)}
                         FROM read_parquet({parquet_file_urls})
                         WHERE {where}
                         LIMIT {length}
