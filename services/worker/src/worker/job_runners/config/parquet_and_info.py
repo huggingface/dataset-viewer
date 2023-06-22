@@ -1002,12 +1002,6 @@ def compute_config_parquet_and_info_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    # check if the repo exists and get the list of refs
-    try:
-        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-
     download_config = DownloadConfig(delete_extracted=True)
     try:
         builder = load_dataset_builder(
@@ -1019,6 +1013,8 @@ def compute_config_parquet_and_info_response(
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
+    except FileNotFoundError as err:
+        raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
@@ -1038,20 +1034,25 @@ def compute_config_parquet_and_info_response(
             )
         parquet_operations = convert_to_parquet(builder)
 
-    # create the target revision if we managed to get the parquet files and it does not exist yet
-    # (clone from initial commit to avoid cloning all repo's files)
     try:
-        if all(ref.ref != target_revision for ref in refs.converts):
-            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
-            committer_hf_api.create_branch(
-                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
-            )
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
-
-    try:
-        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+        sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
+        # ^ timeouts after ~7 minutes
         with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+            # create the target revision if we managed to get the parquet files and it does not exist yet
+            # (clone from initial commit to avoid cloning all repo's files)
+            refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(
+                repo_id=dataset, repo_type=DATASET_TYPE
+            )
+            if all(ref.ref != target_revision for ref in refs.converts):
+                initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+                committer_hf_api.create_branch(
+                    repo_id=dataset,
+                    branch=target_revision,
+                    repo_type=DATASET_TYPE,
+                    revision=initial_commit,
+                    exist_ok=True,
+                )
+            # commit the parquet files
             commit_parquet_conversion(
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,
@@ -1062,11 +1063,13 @@ def compute_config_parquet_and_info_response(
                 target_revision=target_revision,
                 commit_message=commit_message,
             )
+            # call the API again to get the list of parquet files
+            target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
-    # call the API again to get the list of parquet files
-    target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     repo_files = [
         repo_file
         for repo_file in target_dataset_info.siblings

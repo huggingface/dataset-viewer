@@ -251,28 +251,28 @@ class lock(contextlib.AbstractContextManager["lock"]):
         self.sleeps = sleeps
 
     def acquire(self) -> None:
-        try:
-            Lock(key=self.key, job_id=self.job_id, created_at=get_datetime()).save(
-                write_concern={"w": "majority", "fsync": True}
-            )
-        except NotUniqueError:
-            pass
         for sleep in self.sleeps:
-            acquired = (
+            try:
                 Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
-                    job_id=self.job_id, updated_at=get_datetime(), write_concern={"w": "majority", "fsync": True}
+                    upsert=True,
+                    write_concern={"w": "majority", "fsync": True},
+                    read_concern={"level": "majority"},
+                    job_id=self.job_id,
+                    updated_at=get_datetime(),
                 )
-                > 0
-            )
-            if acquired:
                 return
-            logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
-            time.sleep(sleep)
+            except NotUniqueError:
+                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+                time.sleep(sleep)
         raise TimeoutError("lock couldn't be acquired")
 
     def release(self) -> None:
         Lock.objects(key=self.key, job_id=self.job_id).update(
-            job_id=None, updated_at=get_datetime(), write_concern={"w": "majority", "fsync": True}
+            upsert=True,
+            write_concern={"w": "majority", "fsync": True},
+            read_concern={"level": "majority"},
+            job_id=None,
+            updated_at=get_datetime(),
         )
 
     def __enter__(self) -> "lock":

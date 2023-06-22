@@ -3,6 +3,8 @@
 
 import json
 import os
+import random
+import time
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
@@ -389,15 +391,24 @@ def test_has_ttl_index_on_finished_at_field() -> None:
     assert Job._get_collection().index_information()[ttl_index_name]["expireAfterSeconds"] == QUEUE_TTL_SECONDS
 
 
+def random_sleep() -> None:
+    MAX_SLEEP_MS = 40
+    time.sleep(MAX_SLEEP_MS / 1000 * random.random())
+
+
 def increment(tmp_file: Path) -> None:
+    random_sleep()
     with open(tmp_file, "r") as f:
         current = int(f.read() or 0)
+    random_sleep()
     with open(tmp_file, "w") as f:
         f.write(str(current + 1))
+    random_sleep()
 
 
 def locked_increment(tmp_file: Path) -> None:
-    with lock(key="test_lock", job_id=str(os.getpid())):
+    sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
+    with lock(key="test_lock", job_id=str(os.getpid()), sleeps=sleeps):
         increment(tmp_file)
 
 
@@ -417,7 +428,7 @@ def test_lock(tmp_path_factory: pytest.TempPathFactory, queue_mongo_resource: Qu
 
 
 def git_branch_locked_increment(tmp_file: Path) -> None:
-    sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
+    sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
     dataset = "dataset"
     branch = "refs/convert/parquet"
     with lock.git_branch(dataset=dataset, branch=branch, job_id=str(os.getpid()), sleeps=sleeps):
