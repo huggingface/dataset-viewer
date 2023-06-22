@@ -7,7 +7,11 @@ from typing import Optional
 
 import pyarrow.parquet as pq
 from datasets import Features
-from libcommon.parquet_utils import ParquetFileMetadataItem, StrPath
+from libcommon.parquet_utils import (
+    ParquetFileMetadataItem,
+    StrPath,
+    get_supported_unsupported_columns,
+)
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -28,6 +32,10 @@ from api.utils import (
 
 # TODO: duplicated in /rows
 MAX_ROWS = 100
+
+# TODO: duplicated in /rows
+# audio still has some errors when librosa is imported
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 
 
 logger = logging.getLogger(__name__)
@@ -85,6 +93,11 @@ def create_filter_endpoint(
                     features = get_features_from_parquet_file_metadata(
                         parquet_file_metadata_item=parquet_file_metadata_items[0],
                         parquet_metadata_directory=parquet_metadata_directory,
+                    )
+                with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
+                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                        features,
+                        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = {"status": "ok"}
