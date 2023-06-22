@@ -49,22 +49,31 @@ images:
       tag: sha-fb3399a
 
 secrets:
+  externalSecret:
+    enabled: true
+    secretName: "datasets-server-prod-secrets"
+    secretStoreName: "datasets-server-prod-secretstore"
+    parameters:
+      MONGO_URL: "hub-prod-datasets-server-mongo-url"
+      HF_TOKEN: "hub-prod-datasets-server-hf-token"
+      PARQUET_CONVERTER_HF_TOKEN: "hub-prod-datasets-server-parquet-converter-hf-token"
+      WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
+      SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
   mongoUrl:
     fromSecret: true
-    secretName: "mongo-url"
-    value: mongo://
+    secretName: "datasets-server-prod-secrets"
   appHfToken:
     fromSecret: true
-    secretName: "hf-token"
+    secretName: "datasets-server-prod-secrets"
   appParquetConverterHfToken:
     fromSecret: true
-    secretName: "parquet-converter-hf-token"
+    secretName: "datasets-server-prod-secrets"
   hfWebhookSecret:
     fromSecret: true
-    secretName: "webhook-secret"
+    secretName: "datasets-server-prod-secrets"
   spawningToken:
     fromSecret: true
-    secretName: "spawning-token"
+    secretName: "datasets-server-prod-secrets"
 
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
