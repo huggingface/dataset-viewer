@@ -1034,7 +1034,7 @@ def compute_config_parquet_and_info_response(
     try:
         sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
         # ^ timeouts after ~7 minutes
-        with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+        with lock.git_branch(dataset=dataset, branch=target_revision, owner=job_id, sleeps=sleeps):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
             refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(

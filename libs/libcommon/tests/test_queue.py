@@ -408,7 +408,7 @@ def increment(tmp_file: Path) -> None:
 
 def locked_increment(tmp_file: Path) -> None:
     sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
-    with lock(key="test_lock", job_id=str(os.getpid()), sleeps=sleeps):
+    with lock(key="test_lock", owner=str(os.getpid()), sleeps=sleeps):
         increment(tmp_file)
 
 
@@ -431,7 +431,7 @@ def git_branch_locked_increment(tmp_file: Path) -> None:
     sleeps = [0.05, 0.05, 0.05, 1, 1, 1, 1, 1, 1, 5, 5, 5, 5]
     dataset = "dataset"
     branch = "refs/convert/parquet"
-    with lock.git_branch(dataset=dataset, branch=branch, job_id=str(os.getpid()), sleeps=sleeps):
+    with lock.git_branch(dataset=dataset, branch=branch, owner=str(os.getpid()), sleeps=sleeps):
         increment(tmp_file)
 
 
@@ -449,5 +449,5 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
         assert int(f.read()) == expected
     assert Lock.objects().count() == 1
     assert Lock.objects().get().key == json.dumps({"dataset": "dataset", "branch": "refs/convert/parquet"})
-    assert Lock.objects().get().job_id is None
+    assert Lock.objects().get().owner is None
     Lock.objects().delete()

@@ -220,9 +220,10 @@ class Job(Document):
 
 
 class Lock(Document):
-    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "job_id")]}
+    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "owner")]}
     key = StringField(primary_key=True)
-    job_id = StringField()
+    owner = StringField()
+    job_id = StringField()  # deprecated
 
     created_at = DateTimeField(required=True)
     updated_at = DateTimeField()
@@ -232,15 +233,16 @@ class Lock(Document):
 
 class lock(contextlib.AbstractContextManager["lock"]):
     """
-    Provides a simple way of inter-worker communication using a MongoDB lock.
-    A lock is used to indicate another worker of your application that a resource
+    Provides a simple way of inter-applications communication using a MongoDB lock.
+
+    An example usage is to another worker of your application that a resource
     or working directory is currently used in a job.
 
     Example of usage:
 
     ```python
     key = json.dumps({"type": job.type, "dataset": job.dataset})
-    with lock(key=key, job_id=job.pk):
+    with lock(key=key, owner=job.pk):
         ...
     ```
 
@@ -249,7 +251,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
     ```python
     try:
         key = json.dumps({"type": job.type, "dataset": job.dataset})
-        lock(key=key, job_id=job.pk).acquire()
+        lock(key=key, owner=job.pk).acquire()
     except TimeoutError:
         ...
     ```
@@ -257,33 +259,33 @@ class lock(contextlib.AbstractContextManager["lock"]):
 
     _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
 
-    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> None:
+    def __init__(self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> None:
         self.key = key
-        self.job_id = job_id
+        self.owner = owner
         self.sleeps = sleeps
 
     def acquire(self) -> None:
         for sleep in self.sleeps:
             try:
-                Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
+                Lock.objects(key=self.key, owner__in=[None, self.owner]).update(
                     upsert=True,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
-                    job_id=self.job_id,
+                    owner=self.owner,
                     updated_at=get_datetime(),
                 )
                 return
             except NotUniqueError:
-                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for owner='{self.owner}'")
                 time.sleep(sleep)
         raise TimeoutError("lock couldn't be acquired")
 
     def release(self) -> None:
-        Lock.objects(key=self.key, job_id=self.job_id).update(
+        Lock.objects(key=self.key, owner=self.owner).update(
             upsert=True,
             write_concern={"w": "majority", "fsync": True},
             read_concern={"level": "majority"},
-            job_id=None,
+            owner=None,
             updated_at=get_datetime(),
         )
 
@@ -298,18 +300,18 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return False
 
     @classmethod
-    def git_branch(cls, dataset: str, branch: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+    def git_branch(cls, dataset: str, branch: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
         """
         Lock a git branch of a dataset on the hub for read/write
 
         Args:
             dataset (`str`): the dataset repository
             branch (`str`): the branch to lock
-            job_id (`str`): the current job id that holds the lock
+            owner (`str`): the current job id that holds the lock
             sleeps (`Sequence[float]`): the time in seconds to sleep between each attempt to acquire the lock
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, job_id=job_id, sleeps=sleeps)
+        return cls(key=key, owner=owner, sleeps=sleeps)
 
     @classmethod
     def upsert_job(cls) -> "lock":
@@ -317,8 +319,8 @@ class lock(contextlib.AbstractContextManager["lock"]):
         Lock the upsert_job() function globally
         """
         key = "UPSERT_JOB"
-        job_id = str(random.random())  # nosec
-        return cls(key=key, job_id=job_id, sleeps=cls._default_sleeps)
+        owner = str(random.random())  # nosec
+        return cls(key=key, owner=owner, sleeps=cls._default_sleeps)
 
     @classmethod
     def start_job(cls) -> "lock":
@@ -326,8 +328,8 @@ class lock(contextlib.AbstractContextManager["lock"]):
         Lock the start_job() function globally
         """
         key = "START_JOB"
-        job_id = str(random.random())  # nosec
-        return cls(key=key, job_id=job_id, sleeps=cls._default_sleeps)
+        owner = str(random.random())  # nosec
+        return cls(key=key, owner=owner, sleeps=cls._default_sleeps)
 
 
 class Queue:
