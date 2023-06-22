@@ -3,7 +3,7 @@
 
 import logging
 import os.path
-from typing import Optional
+from typing import Any, Optional, TypedDict
 
 import duckdb
 import pyarrow.parquet as pq
@@ -37,6 +37,11 @@ MAX_ROWS = 100
 # TODO: duplicated in /rows
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
+
+
+class Table(TypedDict):
+    columns: list[str]
+    rows: list[list[Any]]
 
 
 logger = logging.getLogger(__name__)
@@ -107,7 +112,7 @@ def create_filter_endpoint(
                         features,
                         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
                     )
-                with StepProfiler(method="filter_endpoint", step="build the filter query"):
+                with StepProfiler(method="filter_endpoint", step="build filter query"):
                     query = con.sql(
                         f"""\
                         SELECT {supported_columns}
@@ -116,6 +121,9 @@ def create_filter_endpoint(
                         LIMIT {length}
                         OFFSET {offset}"""
                     )
+                with StepProfiler(method="filter_endpoint", step="execute filter query"):
+                    rows = query.fetchall()
+                    table: Table = {"columns": query.columns, "rows": rows}
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = {"status": "ok"}
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
