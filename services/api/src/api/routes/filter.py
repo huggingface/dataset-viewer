@@ -89,6 +89,8 @@ def create_filter_endpoint(
                     parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
                         dataset=dataset, config=config, split=split, processing_graph=processing_graph
                     )
+                with StepProfiler(method="filter_endpoint", step="get parquet file urls"):
+                    parquet_file_urls = [item["url"] for item in parquet_file_metadata_items]
                 with StepProfiler(method="filter_endpoint", step="get features"):
                     features = get_features_from_parquet_file_metadata(
                         parquet_file_metadata_item=parquet_file_metadata_items[0],
