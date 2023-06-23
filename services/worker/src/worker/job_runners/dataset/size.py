@@ -7,10 +7,7 @@ from typing import Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import (
-    get_previous_step_or_raise,
-    get_response,
-)
+from libcommon.simple_cache import get_previous_step_or_raise, get_response
 from mongoengine.errors import DoesNotExist
 
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
