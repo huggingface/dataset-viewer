@@ -20,7 +20,7 @@ from libcommon.viewer_utils.asset import (
 from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
-
+from libcommon.simple_cache import CachedArtifactError
 from api.authentication import auth_check
 from api.utils import (
     ApiCustomError,
@@ -32,6 +32,7 @@ from api.utils import (
     get_json_api_error_response,
     get_json_ok_response,
 )
+from api.routes.endpoint import backfill_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +252,7 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -354,6 +356,20 @@ def create_rows_endpoint(
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
+            except CachedArtifactError as e:
+                config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
+                config_parquet_metadata_processing_steps = (
+                    processing_graph.get_config_parquet_metadata_processing_steps()
+                )
+                
+                backfill_dataset(
+                    processing_steps=config_parquet_metadata_processing_steps + config_parquet_processing_steps,                    
+                    processing_graph=processing_graph,
+                    dataset=dataset,
+                    hf_endpoint=hf_endpoint,
+                    hf_timeout_seconds=hf_timeout_seconds,
+                    hf_token=hf_token,
+                )
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
