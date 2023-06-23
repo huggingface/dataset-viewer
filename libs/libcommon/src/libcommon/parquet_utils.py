@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache, partial
 from os import PathLike
-from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union, cast
+from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -55,28 +55,6 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
-
-
-class HTTPFileSystemSession(object):
-    _singleton: Optional["HTTPFileSystemSession"] = None
-
-    @classmethod
-    def get_instance(cls) -> "HTTPFileSystemSession":
-        if cls._singleton is None:
-            HTTPFileSystemSession()
-        return cast("HTTPFileSystemSession", HTTPFileSystemSession._singleton)
-
-    def __new__(cls) -> "HTTPFileSystemSession":
-        if HTTPFileSystemSession._singleton is not None:
-            raise RuntimeError(
-                "cannot initialize another instance of HTTPFileSystemSession, use .get_instance() instead"
-            )
-        return super(HTTPFileSystemSession, cls).__new__(cls)
-
-    def __init__(self) -> None:
-        HTTPFileSystemSession._singleton = self
-        self.httpfs = HTTPFileSystem()
-        self.session = asyncio.run(self.httpfs.set_session())
 
 
 def get_supported_unsupported_columns(
@@ -234,7 +212,14 @@ class ParquetIndexWithMetadata:
     metadata_paths: List[str]
     num_bytes: List[int]
     num_rows: List[int]
+    httpfs: HTTPFileSystem
     hf_token: Optional[str]
+
+    def __post_init__(self) -> None:
+        if self.httpfs._session is None:
+            self.httpfs_session = asyncio.run(self.httpfs.set_session())
+        else:
+            self.httpfs_session = self.httpfs._session
 
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
@@ -270,12 +255,16 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="load the remote parquet files using metadata from disk"
         ):
-            httpFileSystemSession = HTTPFileSystemSession.get_instance()
-            session = httpFileSystemSession.session
-            httpfs = httpFileSystemSession.httpfs
             parquet_files = [
                 pq.ParquetFile(
-                    HTTPFile(httpfs, url, session=session, size=size, loop=httpfs.loop, cache_type=None),
+                    HTTPFile(
+                        self.httpfs,
+                        url,
+                        session=self.httpfs_session,
+                        size=size,
+                        loop=self.httpfs.loop,
+                        cache_type=None,
+                    ),
                     metadata=pq.read_metadata(metadata_path),
                     pre_buffer=True,
                 )
@@ -317,6 +306,7 @@ class ParquetIndexWithMetadata:
     def from_parquet_metadata_items(
         parquet_file_metadata_items: List[ParquetFileMetadataItem],
         parquet_metadata_directory: StrPath,
+        httpfs: HTTPFileSystem,
         hf_token: Optional[str],
         unsupported_features_magic_strings: List[str] = [],
     ) -> "ParquetIndexWithMetadata":
@@ -357,6 +347,7 @@ class ParquetIndexWithMetadata:
             metadata_paths=metadata_paths,
             num_bytes=num_bytes,
             num_rows=num_rows,
+            httpfs=httpfs,
             hf_token=hf_token,
         )
 
@@ -368,6 +359,7 @@ class RowsIndex:
         config: str,
         split: str,
         processing_graph: ProcessingGraph,
+        httpfs: HfFileSystem,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         unsupported_features_magic_strings: List[str] = [],
@@ -377,6 +369,7 @@ class RowsIndex:
         self.config = config
         self.split = split
         self.processing_graph = processing_graph
+        self.httpfs = httpfs
         self.parquet_index = self._init_parquet_index(
             hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
@@ -400,8 +393,8 @@ class RowsIndex:
                     self.processing_graph.get_config_parquet_metadata_processing_steps()
                 )
 
-                cache_kinds = [step.cache_kind for step in config_parquet_processing_steps]
-                cache_kinds.extend([step.cache_kind for step in config_parquet_metadata_processing_steps])
+                cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
+                cache_kinds.extend([step.cache_kind for step in config_parquet_processing_steps])
 
                 try:
                     result = get_previous_step_or_raise(
@@ -436,6 +429,7 @@ class RowsIndex:
                         if parquet_item["split"] == self.split and parquet_item["config"] == self.config
                     ],
                     parquet_metadata_directory=parquet_metadata_directory,
+                    httpfs=self.httpfs,
                     hf_token=hf_token,
                     unsupported_features_magic_strings=unsupported_features_magic_strings,
                 )
@@ -463,12 +457,14 @@ class Indexer:
         self,
         processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
+        httpfs: HTTPFileSystem,
         unsupported_features_magic_strings: List[str] = [],
         all_columns_supported_datasets_allow_list: Union[Literal["all"], List[str]] = "all",
         hf_token: Optional[str] = None,
     ):
         self.processing_graph = processing_graph
         self.parquet_metadata_directory = parquet_metadata_directory
+        self.httpfs = httpfs
         self.hf_token = hf_token
         self.unsupported_features_magic_strings = unsupported_features_magic_strings
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
@@ -490,6 +486,7 @@ class Indexer:
             config=config,
             split=split,
             processing_graph=self.processing_graph,
+            httpfs=self.httpfs,
             hf_token=self.hf_token,
             parquet_metadata_directory=self.parquet_metadata_directory,
             unsupported_features_magic_strings=unsupported_features_magic_strings,
