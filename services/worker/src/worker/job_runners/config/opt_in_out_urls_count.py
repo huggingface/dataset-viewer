@@ -8,10 +8,10 @@ from typing import Tuple
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    DoesNotExist,
     get_previous_step_or_raise,
     get_response,
 )
+from mongoengine.errors import DoesNotExist
 
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import JobResult, OptInOutUrlsCountResponse
