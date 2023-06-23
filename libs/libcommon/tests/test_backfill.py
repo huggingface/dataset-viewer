@@ -767,7 +767,7 @@ def test_delete_jobs(
     queue = Queue()
     for job_spec in existing_jobs:
         (priority, status, created_at) = job_spec
-        job = queue._add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
+        job = queue.add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
         if created_at is not None:
             job.created_at = created_at
             job.save()

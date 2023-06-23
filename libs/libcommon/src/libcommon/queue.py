@@ -317,24 +317,6 @@ class lock(contextlib.AbstractContextManager["lock"]):
         key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, owner=owner, sleeps=sleeps)
 
-    @classmethod
-    def upsert_job(cls) -> "lock":
-        """
-        Lock the upsert_job() function globally
-        """
-        key = "UPSERT_JOB"
-        owner = str(random.random())  # nosec
-        return cls(key=key, owner=owner, sleeps=cls._default_sleeps)
-
-    @classmethod
-    def start_job(cls) -> "lock":
-        """
-        Lock the start_job() function globally
-        """
-        key = "START_JOB"
-        owner = str(random.random())  # nosec
-        return cls(key=key, owner=owner, sleeps=cls._default_sleeps)
-
 
 class Queue:
     """A queue manages jobs.
@@ -352,7 +334,7 @@ class Queue:
     - datasets and users that already have started jobs are de-prioritized (using namespace)
     """
 
-    def _add_job(
+    def add_job(
         self,
         job_type: str,
         dataset: str,
@@ -363,7 +345,8 @@ class Queue:
     ) -> Job:
         """Add a job to the queue in the waiting state.
 
-        This method should not be called directly. Use `upsert_job` instead.
+        Note that the same "unicity_id" can have multiple jobs in the waiting state, with the same or different
+        revisions and or priorities.
 
         Args:
             job_type (`str`): The type of the job
@@ -387,46 +370,6 @@ class Queue:
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
-
-    def upsert_job(
-        self,
-        job_type: str,
-        dataset: str,
-        revision: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        priority: Priority = Priority.NORMAL,
-    ) -> Job:
-        """Add, or update, a job to the queue in the waiting state.
-
-        If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
-        one.
-        Note that the new job inherits the highest priority of the previous waiting jobs.
-        A lock is used to avoid the job to be added multiple times.
-
-        Args:
-            job_type (`str`): The type of the job
-            dataset (`str`): The dataset on which to apply the job.
-            revision (`str`): The git revision of the dataset.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
-
-        Returns: the job
-        """
-        with lock.upsert_job():
-            canceled_jobs = self.cancel_jobs(
-                job_type=job_type,
-                dataset=dataset,
-                config=config,
-                split=split,
-                statuses_to_cancel=[Status.WAITING],
-            )
-            if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
-                priority = Priority.NORMAL
-            return self._add_job(
-                job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
-            )
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
         """Creates jobs in the queue.
@@ -805,7 +748,7 @@ class Queue:
         """Cancel all started jobs for a given type."""
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.upsert_job(
+            self.add_job(
                 job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
             )
 
