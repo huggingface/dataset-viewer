@@ -10,6 +10,7 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 import pyarrow as pa
 from datasets import Features
+from fsspec.implementations.http import HTTPFileSystem
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -267,11 +268,13 @@ def create_rows_endpoint(
         processing_graph=processing_graph,
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 
     async def rows_endpoint(request: Request) -> Response:
+        await indexer.httpfs.set_session()
         revision: Optional[str] = None
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
