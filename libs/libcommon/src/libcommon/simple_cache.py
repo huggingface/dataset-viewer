@@ -744,7 +744,3 @@ def fetch_names(
 # only for the tests
 def _clean_cache_database() -> None:
     CachedResponse.drop_collection()  # type: ignore
-
-
-# explicit re-export
-__all__ = ["DoesNotExist"]
