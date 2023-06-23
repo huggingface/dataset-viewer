@@ -14,11 +14,10 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse
+from libcommon.simple_cache import CachedResponse, CacheEntryDoesNotExistError
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
-from mongoengine.errors import DoesNotExist
 from pytest import fixture
 
 from worker.config import AppConfig
@@ -111,7 +110,7 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
     job_info = get_job_info()
     try:
         Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+    except CacheEntryDoesNotExistError:
         pass
     created_at = get_datetime()
     job = Job(
@@ -140,7 +139,7 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
     job_info = get_job_info("long")
     try:
         Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+    except CacheEntryDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
     last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_interval_seconds)
@@ -171,7 +170,7 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
     job_info = get_job_info("zombie")
     try:
         Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+    except CacheEntryDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
     job = Job(

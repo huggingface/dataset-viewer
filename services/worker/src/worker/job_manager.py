@@ -19,10 +19,10 @@ from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
     CachedArtifactError,
+    CacheEntryDoesNotExistError,
     get_response_without_content_params,
 )
 from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dumps
-from mongoengine.errors import DoesNotExist
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
@@ -143,7 +143,7 @@ class JobManager:
                     f"Response has already been computed and stored in cache kind: {parallel_cache_kind}. Compute will"
                     " be skipped."
                 )
-        except DoesNotExist:
+        except CacheEntryDoesNotExistError:
             logging.debug(f"no cache found for {parallel_cache_kind}.")
 
     def process(

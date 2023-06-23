@@ -7,8 +7,11 @@ from typing import List, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise, get_response
-from mongoengine.errors import DoesNotExist
+from libcommon.simple_cache import (
+    CacheEntryDoesNotExistError,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.config.parquet import ConfigParquetResponse
 from worker.job_runners.config.parquet_and_info import ParquetFileItem
@@ -54,7 +57,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
             total += 1
             try:
                 response = get_response(kind="config-parquet", dataset=dataset, config=config)
-            except DoesNotExist:
+            except CacheEntryDoesNotExistError:
                 logging.debug("No response found in previous step for this dataset: 'config-parquet' endpoint.")
                 pending.append(
                     PreviousJob(

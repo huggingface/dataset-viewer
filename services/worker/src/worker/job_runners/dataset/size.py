@@ -7,8 +7,11 @@ from typing import Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise, get_response
-from mongoengine.errors import DoesNotExist
+from libcommon.simple_cache import (
+    CacheEntryDoesNotExistError,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -68,7 +71,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
             total += 1
             try:
                 response = get_response(kind="config-size", dataset=dataset, config=config)
-            except DoesNotExist:
+            except CacheEntryDoesNotExistError:
                 logging.debug("No response found in previous step for this dataset: 'config-size' endpoint.")
                 pending.append(
                     PreviousJob(

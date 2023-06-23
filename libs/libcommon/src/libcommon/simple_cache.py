@@ -124,6 +124,10 @@ CachedResponse.config.required = False  # type: ignore
 CachedResponse.split.required = False  # type: ignore
 
 
+class CacheEntryDoesNotExistError(DoesNotExist):
+    pass
+
+
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
 def upsert_response(
     kind: str,
@@ -196,15 +200,18 @@ class CacheEntryWithoutContent(TypedDict):
     job_runner_version: Optional[int]
 
 
-# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+# Note: we let the exceptions throw: it's the responsibility of the caller to manage them
 def get_response_without_content(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryWithoutContent:
-    response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
-        .get()
-    )
+    try:
+        response = (
+            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
+            .get()
+        )
+    except DoesNotExist as e:
+        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -224,15 +231,18 @@ class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
 
 
-# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+# Note: we let the exceptions throw: it's the responsibility of the caller to manage them
 def get_response_metadata(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryMetadata:
-    response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
-        .get()
-    )
+    try:
+        response = (
+            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
+            .get()
+        )
+    except DoesNotExist as e:
+        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
         "http_status": response.http_status,
         "error_code": response.error_code,
@@ -283,13 +293,16 @@ class CachedArtifactError(Exception):
         }
 
 
-# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+# Note: we let the exceptions throw: it's the responsibility of the caller to manage them
 def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
-    response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only("content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
-        .get()
-    )
+    try:
+        response = (
+            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            .only("content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
+            .get()
+        )
+    except DoesNotExist as e:
+        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
         "content": response.content,
         "http_status": response.http_status,
@@ -300,17 +313,26 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     }
 
 
-# Note: we let the exceptions throw (ie DoesNotExist): it's the responsibility of the caller to manage them
+# Note: we let the exceptions throw: it's the responsibility of the caller to manage them
 def get_response_with_details(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> CacheEntryWithDetails:
-    response = (
-        CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
-        .only(
-            "content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "details"
+    try:
+        response = (
+            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            .only(
+                "content",
+                "http_status",
+                "error_code",
+                "job_runner_version",
+                "dataset_git_revision",
+                "progress",
+                "details",
+            )
+            .get()
         )
-        .get()
-    )
+    except DoesNotExist as e:
+        raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
         "content": response.content,
         "http_status": response.http_status,
@@ -330,7 +352,7 @@ def get_response_or_missing_error(
 ) -> CacheEntryWithDetails:
     try:
         response = get_response_with_details(kind=kind, dataset=dataset, config=config, split=split)
-    except DoesNotExist:
+    except CacheEntryDoesNotExistError:
         response = CacheEntryWithDetails(
             content={
                 "error": (

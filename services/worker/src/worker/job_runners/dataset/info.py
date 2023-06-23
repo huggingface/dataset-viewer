@@ -7,8 +7,11 @@ from typing import Any, Dict, List, Tuple, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise, get_response
-from mongoengine.errors import DoesNotExist
+from libcommon.simple_cache import (
+    CacheEntryDoesNotExistError,
+    get_previous_step_or_raise,
+    get_response,
+)
 
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 from worker.utils import JobResult, PreviousJob
@@ -54,7 +57,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
             total += 1
             try:
                 config_response = get_response(kind="config-info", dataset=dataset, config=config)
-            except DoesNotExist:
+            except CacheEntryDoesNotExistError:
                 logging.debug(f"No response found in previous step for {dataset=} {config=}: 'config-info'.")
                 pending.append(
                     PreviousJob(
