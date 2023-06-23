@@ -400,8 +400,8 @@ class RowsIndex:
                     self.processing_graph.get_config_parquet_metadata_processing_steps()
                 )
 
-                cache_kinds = [step.cache_kind for step in config_parquet_processing_steps]
-                cache_kinds.extend([step.cache_kind for step in config_parquet_metadata_processing_steps])
+                cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
+                cache_kinds.extend([step.cache_kind for step in config_parquet_processing_steps])
 
                 try:
                     result = get_previous_step_or_raise(
