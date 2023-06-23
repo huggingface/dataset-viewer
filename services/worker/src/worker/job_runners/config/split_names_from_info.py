@@ -11,8 +11,8 @@ from libcommon.constants import (
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
+from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 
 
 def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsList:

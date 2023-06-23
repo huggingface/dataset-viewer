@@ -12,12 +12,8 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.job_runners.dataset.parquet import (
-    DatasetParquetJobRunner,
-    DatasetParquetResponse,
-)
+from worker.dtos import ConfigParquetResponse, DatasetParquetResponse, ParquetFileItem
+from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 
 from ..utils import UpstreamResponse
 

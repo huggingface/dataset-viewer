@@ -17,8 +17,8 @@ from libcommon.exceptions import (
     SplitNamesFromStreamingError,
 )
 
+from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
 
 
 def compute_split_names_from_streaming_response(

@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.utils import JobResult, JobRunnerInfo
+from worker.dtos import JobResult, JobRunnerInfo
 
 
 class JobRunner(ABC):

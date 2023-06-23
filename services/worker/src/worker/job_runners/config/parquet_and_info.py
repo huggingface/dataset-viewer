@@ -7,7 +7,7 @@ import re
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+from typing import Any, List, Optional, Set, Tuple
 from urllib.parse import quote
 
 import datasets
@@ -75,23 +75,9 @@ from libcommon.utils import JobInfo
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
+from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, ParquetFileItem
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import CompleteJobResult, retry
-
-
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
-class ConfigParquetAndInfoResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
-    dataset_info: Dict[str, Any]
-
+from worker.utils import retry
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation

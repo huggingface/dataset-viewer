@@ -34,6 +34,7 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
@@ -48,7 +49,6 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
-from worker.utils import CompleteJobResult
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest

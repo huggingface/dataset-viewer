@@ -11,9 +11,9 @@ from libcommon.simple_cache import CachedResponse, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import CompleteJobResult
 
 from .fixtures.hub import get_default_config_split
 

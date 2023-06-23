@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional, TypedDict, Union
+from typing import List, Optional, Union
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
@@ -14,19 +14,10 @@ from libcommon.exceptions import (
     EmptyDatasetError,
 )
 
+from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesResponse
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
 )
-from worker.utils import CompleteJobResult
-
-
-class ConfigNameItem(TypedDict):
-    dataset: str
-    config: str
-
-
-class DatasetConfigNamesResponse(TypedDict):
-    config_names: List[ConfigNameItem]
 
 
 def compute_config_names_response(

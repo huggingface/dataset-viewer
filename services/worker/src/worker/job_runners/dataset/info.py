@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, List, Tuple, TypedDict
+from typing import Any, Dict, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -13,14 +13,8 @@ from libcommon.simple_cache import (
     get_response,
 )
 
+from worker.dtos import DatasetInfoResponse, JobResult, PreviousJob
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob
-
-
-class DatasetInfoResponse(TypedDict):
-    dataset_info: Dict[str, Any]
-    pending: List[PreviousJob]
-    failed: List[PreviousJob]
 
 
 def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, float]:
