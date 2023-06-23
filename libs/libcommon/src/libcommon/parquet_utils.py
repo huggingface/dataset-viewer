@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from dataclasses import dataclass
@@ -214,6 +215,12 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
 
+    def __post_init__(self) -> None:
+        if self.httpfs._session is None:
+            self.httpfs_session = asyncio.run(self.httpfs.set_session())
+        else:
+            self.httpfs_session = self.httpfs._session
+
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
 
@@ -253,7 +260,7 @@ class ParquetIndexWithMetadata:
                     HTTPFile(
                         self.httpfs,
                         url,
-                        session=self.httpfs._session,
+                        session=self.httpfs_session,
                         size=size,
                         loop=self.httpfs.loop,
                         cache_type=None,

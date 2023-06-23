@@ -1,4 +1,3 @@
-import asyncio
 import os
 import shutil
 import time
@@ -245,25 +244,17 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
     return config_parquet_content
 
 
-@pytest.fixture(scope="session")
-def httpfs() -> HTTPFileSystem:
-    httpfs = HTTPFileSystem()
-    asyncio.run(httpfs.set_session())
-    return httpfs
-
-
 @pytest.fixture
 def indexer(
     app_config: AppConfig,
     processing_graph: ProcessingGraph,
     parquet_metadata_directory: StrPath,
-    httpfs: HTTPFileSystem,
 ) -> Indexer:
     return Indexer(
         processing_graph=processing_graph,
         hf_token=app_config.common.hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=httpfs,
+        httpfs=HTTPFileSystem(),
     )
 
 
