@@ -11,7 +11,7 @@ from typing import Optional, TypedDict
 import orjson
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import EmptyQueueError, Queue
+from libcommon.queue import EmptyQueueError, LockedJobError, Queue
 from libcommon.utils import JobInfo, get_datetime
 from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
 
@@ -126,9 +126,9 @@ class Loop:
             )
             self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
-        except EmptyQueueError:
+        except (EmptyQueueError, LockedJobError) as e:
             self.set_worker_state(current_job_info=None)
-            logging.debug("no job in the queue")
+            logging.debug(e)
             return False
 
         job_runner = self.job_runner_factory.create_job_runner(job_info)

@@ -97,6 +97,10 @@ class JobDoesNotExistError(DoesNotExist):
     pass
 
 
+class LockedJobError(Exception):
+    pass
+
+
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
@@ -634,7 +638,12 @@ class Queue:
 
     def _start_job(self, job: Job) -> Job:
         # could be a method of Job
-        job.update(started_at=get_datetime(), status=Status.STARTED)
+        try:
+            with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.01]):
+                # ^ fail immediately (after 10ms) if the lock is already taken
+                job.update(started_at=get_datetime(), status=Status.STARTED)
+        except TimeoutError as err:
+            raise LockedJobError(f"job {job.unicity_id} is locked by another worker") from err
         return job
 
     def start_job(
@@ -652,29 +661,27 @@ class Queue:
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
+            LockedJobError: if the job is locked
 
         Returns: the job id, the type, the input arguments: dataset, revision, config and split
         """
 
-        with lock.start_job():
-            logging.debug(
-                f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}"
+        logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
+        next_waiting_job = self.get_next_waiting_job(
+            job_types_blocked=job_types_blocked, job_types_only=job_types_only
+        )
+        logging.debug(f"job found: {next_waiting_job}")
+        # ^ can raise EmptyQueueError
+        self._start_job(job=next_waiting_job)
+        if job_types_blocked and next_waiting_job.type in job_types_blocked:
+            raise RuntimeError(
+                f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
             )
-            next_waiting_job = self.get_next_waiting_job(
-                job_types_blocked=job_types_blocked, job_types_only=job_types_only
+        if job_types_only and next_waiting_job.type not in job_types_only:
+            raise RuntimeError(
+                f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
-            logging.debug(f"job found: {next_waiting_job}")
-            # ^ can raise EmptyQueueError
-            self._start_job(next_waiting_job)
-            if job_types_blocked and next_waiting_job.type in job_types_blocked:
-                raise RuntimeError(
-                    f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
-                )
-            if job_types_only and next_waiting_job.type not in job_types_only:
-                raise RuntimeError(
-                    f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
-                )
-            return next_waiting_job.info()
+        return next_waiting_job.info()
 
     def get_job_with_id(self, job_id: str) -> Job:
         """Get the job for a given job id.
