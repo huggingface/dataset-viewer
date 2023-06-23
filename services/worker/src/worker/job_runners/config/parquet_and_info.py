@@ -197,10 +197,10 @@ def is_parquet_builder_with_hub_files(builder: DatasetBuilder, hf_endpoint: str)
     return True
 
 
-def raise_if_too_big_from_hub(
+def _is_too_big_from_hub(
     dataset_info: DatasetInfo,
     max_dataset_size: int,
-) -> None:
+) -> bool:
     """
     Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
     files sizes given by the Hub.
@@ -210,25 +210,15 @@ def raise_if_too_big_from_hub(
             The dataset info
         max_dataset_size (`int`):
             The maximum size of the dataset in bytes
-    Returns:
-        `None`
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-          files sizes given by the Hub.
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
-    if dataset_size > max_dataset_size:
-        raise DatasetTooBigFromHubError(
-            f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes. "
-            f"Current size of files on the hub is {dataset_size} bytes."
-        )
+    return dataset_size > max_dataset_size:
 
 
-def raise_if_too_big_from_datasets(
+def _is_too_big_from_datasets(
     info: datasets.DatasetInfo,
     max_dataset_size: int,
-) -> None:
+) -> bool:
     """
     Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the configs
     sizes given by the datasets library
@@ -238,22 +228,9 @@ def raise_if_too_big_from_datasets(
             Dataset info from the datasets library
         max_dataset_size (`int`):
             The maximum size of the dataset in bytes
-    Returns:
-        `None`
-    Raises the following errors:
-        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-          If the datasets.config.HF_ENDPOINT is not set to the expected value
-        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
-          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-          sizes given by the datasets library.
     """
     dataset_size = info.dataset_size if info.dataset_size is not None else 0
-    if dataset_size > max_dataset_size:
-        raise DatasetTooBigFromDatasetsError(
-            f"The dataset is too big to be converted to Parquet. The size of the dataset ({dataset_size} B, as given"
-            f" per the datasets library) exceeds the maximum supported size ({max_dataset_size} B). Please report the"
-            " issue."
-        )
+    return dataset_size > max_dataset_size:
 
 
 def raise_if_requires_manual_download(
@@ -296,19 +273,19 @@ def raise_if_requires_manual_download(
         raise DatasetManualDownloadError(f"dataset={builder.repo_id} requires manual download.", cause=err) from err
 
 
-def raise_if_not_supported(
+def is_dataset_too_big(
     dataset_info: DatasetInfo,
     builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
     max_dataset_size: int,
     max_external_data_files: int,
-) -> None:
+) -> bool:
     """
-    Raise an error if the dataset is not supported:
-    - if the dataset is in the list of blocked datasets
-    - if the dataset cannot be accessed (does not exist, private)
-    - if the dataset is too big, and not in the list of supported datasets
+    Check:
+    - the size of the dataset repository
+    - the size in dataset info
+    - the size and number of external files
 
     Args:
         dataset_info (`DatasetInfo`):
@@ -331,20 +308,8 @@ def raise_if_not_supported(
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     Raises the following errors:
-        - [`libcommon.exceptions.DatasetManualDownloadError`]:
-          If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
           If the revision does not exist or cannot be accessed using the token.
-        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
-          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-          sizes given by the datasets library.
-        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
-          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-          files sizes given by the Hub.
-        - [`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
-          If the dataset has too many external files to be converted to parquet
-        - [`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
-          If the dataset is too big external files be converted to parquet
         - [`libcommon.exceptions.UnsupportedExternalFilesError`]
           If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
@@ -363,21 +328,16 @@ def raise_if_not_supported(
             f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
             f" '{hf_endpoint}'."
         )
-    raise_if_requires_manual_download(
-        builder=builder,
-        hf_endpoint=hf_endpoint,
-        hf_token=hf_token,
-    )
-    raise_if_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
-    raise_if_too_big_from_external_data_files(
+    return _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size) or \
+    _is_too_big_from_datasets(
+        builder.info,
+        max_dataset_size=max_dataset_size,
+    ) or \
+    _is_too_big_from_external_data_files(
         builder=builder,
         max_dataset_size=max_dataset_size,
         max_external_data_files=max_external_data_files,
         hf_token=hf_token,
-    )
-    raise_if_too_big_from_datasets(
-        builder.info,
-        max_dataset_size=max_dataset_size,
     )
 
 
@@ -437,13 +397,13 @@ class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
         return urlpath_str
 
 
-def raise_if_too_big_from_external_data_files(
+def _is_too_big_from_external_data_files(
     builder: DatasetBuilder, max_dataset_size: int, max_external_data_files: int, hf_token: Optional[str]
-) -> None:
+) -> bool:
     # Packaged dataset modules only load data files that are inside the dataset repository.
     # No need to check them since they're already caught by `raise_if_too_big_from_hub`
     if type(builder).__module__.startswith("datasets."):
-        return
+        return False
     # For datasets with a loading script however, we need to check the downloaded files
     mock_dl_manager = _MockStreamingDownloadManager(
         base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
@@ -499,10 +459,7 @@ def raise_if_too_big_from_external_data_files(
             ) from error
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
-        raise DatasetWithTooManyExternalFilesError(
-            f"The conversion to parquet is limited to datasets with less than {max_external_data_files} files. "
-            f"However it uses {len(ext_data_files)} data files."
-        )
+        return True
     elif ext_data_files:
         try:
             with ThreadPool(16) as pool:
@@ -511,12 +468,7 @@ def raise_if_too_big_from_external_data_files(
                 for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
                     if size is not None:
                         total_size += size
-                        if total_size > max_dataset_size:
-                            raise DatasetWithTooBigExternalFilesError(
-                                f"The conversion to parquet is limited to datasets under {max_dataset_size} bytes."
-                                f" However {i + 1} data files of {len(ext_data_files)} are already bigger than"
-                                f" {total_size} bytes."
-                            )
+                        return total_size > max_dataset_size
         except requests.exceptions.RequestException as error:
             if isinstance(error, requests.exceptions.HTTPError):
                 raise ExternalFilesSizeRequestHTTPError(
@@ -676,6 +628,10 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
                 builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
                 builder.info.download_size += sum(sizes)
                 builder.info.dataset_size += approx_num_bytes
+
+
+def stream_convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
+    pass
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
@@ -1016,23 +972,31 @@ def compute_config_parquet_and_info_response(
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
+    partial_parquet = False
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
         fill_builder_info(builder, hf_token=hf_token)
     else:
+        raise_if_requires_manual_download(
+            builder=builder,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+        )
         dataset_info = get_dataset_info_for_supported_datasets(
             dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
         )
-        if dataset not in supported_datasets:
-            raise_if_not_supported(
+        if is_dataset_too_big(
                 dataset_info=dataset_info,
                 builder=builder,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 max_dataset_size=max_dataset_size,
-                max_external_data_files=max_external_data_files,
-            )
-        parquet_operations = convert_to_parquet(builder)
+                max_external_data_files=max_external_data_files
+            ):
+            partial_parquet = True
+            parquet_operations = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+        else:
+            parquet_operations = convert_to_parquet(builder)
 
     try:
         sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
