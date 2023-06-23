@@ -76,42 +76,6 @@ def test_add_job() -> None:
 
 
 @pytest.mark.parametrize(
-    "statuses_to_cancel, expected_remaining_number",
-    [
-        (None, 0),
-        ([Status.WAITING], 1),
-        ([Status.WAITING, Status.STARTED], 0),
-        ([Status.STARTED], 1),
-        ([Status.SUCCESS], 2),
-    ],
-)
-def test_cancel_jobs(statuses_to_cancel: Optional[List[Status]], expected_remaining_number: int) -> None:
-    test_type = "test_type"
-    test_dataset = "test_dataset"
-    test_revision_1 = "test_revision_1"
-    test_revision_2 = "test_revision_2"
-    queue = Queue()
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision_1)
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision_2)
-    queue.start_job()
-
-    canceled_job_dicts = queue.cancel_jobs(
-        job_type=test_type, dataset=test_dataset, statuses_to_cancel=statuses_to_cancel
-    )
-    assert len(canceled_job_dicts) == 2 - expected_remaining_number
-
-    if expected_remaining_number == 0:
-        with pytest.raises(EmptyQueueError):
-            queue.start_job()
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_1) == (
-        statuses_to_cancel is not None and Status.STARTED not in statuses_to_cancel
-    )
-    assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision_2) == (
-        statuses_to_cancel is not None and Status.WAITING not in statuses_to_cancel
-    )
-
-
-@pytest.mark.parametrize(
     "jobs_ids,job_ids_to_cancel,expected_canceled_number",
     [
         (["a", "b"], ["a", "b"], 2),

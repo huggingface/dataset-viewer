@@ -408,45 +408,6 @@ class Queue:
         except Exception:
             return 0
 
-    def cancel_jobs(
-        self,
-        job_type: str,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        statuses_to_cancel: Optional[List[Status]] = None,
-    ) -> List[JobDict]:
-        """Cancel jobs from the queue.
-
-        Note that the jobs for all the revisions are canceled.
-
-        Returns the list of canceled jobs (as JobDict, before they are canceled, to be able to know their previous
-        status)
-
-        Args:
-            job_type (`str`): The type of the job
-            dataset (`str`): The dataset on which to apply the job.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
-                [Status.WAITING, Status.STARTED].
-
-        Returns:
-            `list[JobDict]`: The list of canceled jobs
-        """
-        if statuses_to_cancel is None:
-            statuses_to_cancel = [Status.WAITING, Status.STARTED]
-        existing = Job.objects(
-            type=job_type,
-            dataset=dataset,
-            config=config,
-            split=split,
-            status__in=statuses_to_cancel,
-        )
-        job_dicts = [job.to_dict() for job in existing]
-        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        return job_dicts
-
     def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
         """Cancel jobs from the queue.
 
