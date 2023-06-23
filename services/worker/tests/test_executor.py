@@ -12,12 +12,13 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import DoesNotExist, Job, Queue
+from libcommon.queue import Job, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
+from mongoengine.errors import DoesNotExist
 from pytest import fixture
 
 from worker.config import AppConfig

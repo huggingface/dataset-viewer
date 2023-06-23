@@ -4,7 +4,8 @@
 import types
 from typing import Generic, Type, TypeVar
 
-from mongoengine import Document, DoesNotExist
+from mongoengine import Document
+from mongoengine.errors import DoesNotExist
 from mongoengine.fields import StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -55,7 +56,3 @@ class DatabaseMigration(Document):
 def _clean_maintenance_database() -> None:
     """Delete all the jobs in the database"""
     DatabaseMigration.drop_collection()  # type: ignore
-
-
-# explicit re-export
-__all__ = ["DoesNotExist"]

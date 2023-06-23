@@ -15,8 +15,8 @@ from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, 
 
 import pandas as pd
 import pytz
-from mongoengine import Document, DoesNotExist
-from mongoengine.errors import NotUniqueError
+from mongoengine import Document
+from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -918,7 +918,3 @@ def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     Job.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore
-
-
-# explicit re-export
-__all__ = ["DoesNotExist"]

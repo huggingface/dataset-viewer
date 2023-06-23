@@ -19,10 +19,10 @@ from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
     CachedArtifactError,
-    DoesNotExist,
     get_response_without_content_params,
 )
 from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dumps
+from mongoengine.errors import DoesNotExist
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner

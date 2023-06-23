@@ -7,6 +7,7 @@ from time import process_time
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
 import pytest
+from mongoengine.errors import DoesNotExist
 from pymongo.errors import DocumentTooLarge
 
 from libcommon.resources import CacheMongoResource
@@ -15,7 +16,6 @@ from libcommon.simple_cache import (
     CachedResponse,
     CacheReportsPage,
     CacheReportsWithContentPage,
-    DoesNotExist,
     InvalidCursor,
     InvalidLimit,
     delete_dataset_responses,

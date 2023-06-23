@@ -22,7 +22,8 @@ from typing import (
 import pandas as pd
 from bson import ObjectId
 from bson.errors import InvalidId
-from mongoengine import Document, DoesNotExist
+from mongoengine import Document
+from mongoengine.errors import DoesNotExist
 from mongoengine.fields import (
     DateTimeField,
     DictField,
