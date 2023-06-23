@@ -268,7 +268,7 @@ def create_rows_endpoint(
         processing_graph=processing_graph,
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
-        httpfs=HTTPFileSystem(),
+        httpfs=HTTPFileSystem(storage_options={"headers": f"Bearer {hf_token}"}),
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
