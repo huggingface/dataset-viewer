@@ -148,7 +148,7 @@ def create_filter_endpoint(
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     rows = query.fetchall()
-                    table: Table = {"columns": query.columns, "rows": rows}
+                    table: Table = {"columns": supported_columns, "rows": rows}
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
@@ -182,7 +182,6 @@ def get_config_parquet_metadata_from_cache(
             kinds=cache_kinds,
             dataset=dataset,
             config=config,
-            split=None,
         )
     except Exception as e:
         raise UnexpectedError("Could not get the list of parquet files metadata.") from e
