@@ -5,7 +5,6 @@ import types
 from typing import Generic, Type, TypeVar
 
 from mongoengine import Document
-from mongoengine.errors import DoesNotExist
 from mongoengine.fields import StringField
 from mongoengine.queryset.queryset import QuerySet
 
