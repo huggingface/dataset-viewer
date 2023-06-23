@@ -13,6 +13,7 @@ from datasets import Features
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import CachedArtifactError
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
     update_last_modified_date_of_rows_in_assets_dir,
@@ -20,7 +21,7 @@ from libcommon.viewer_utils.asset import (
 from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
-from libcommon.simple_cache import CachedArtifactError
+
 from api.authentication import auth_check
 from api.utils import (
     ApiCustomError,
@@ -31,8 +32,8 @@ from api.utils import (
     are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
+    try_backfill_dataset,
 )
-from api.routes.endpoint import backfill_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -305,12 +306,27 @@ def create_rows_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    rows_index = indexer.get_rows_index(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                    )
-                    revision = rows_index.revision
+                    try:
+                        rows_index = indexer.get_rows_index(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                        )
+                        revision = rows_index.revision
+                    except CachedArtifactError:
+                        config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
+                        config_parquet_metadata_processing_steps = (
+                            processing_graph.get_config_parquet_metadata_processing_steps()
+                        )
+                        try_backfill_dataset(
+                            processing_steps=config_parquet_metadata_processing_steps
+                            + config_parquet_processing_steps,
+                            processing_graph=processing_graph,
+                            dataset=dataset,
+                            hf_endpoint=hf_endpoint,
+                            hf_timeout_seconds=hf_timeout_seconds,
+                            hf_token=hf_token,
+                        )
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="clean cache"):
@@ -356,20 +372,6 @@ def create_rows_endpoint(
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
-            except CachedArtifactError as e:
-                config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
-                config_parquet_metadata_processing_steps = (
-                    processing_graph.get_config_parquet_metadata_processing_steps()
-                )
-                
-                backfill_dataset(
-                    processing_steps=config_parquet_metadata_processing_steps + config_parquet_processing_steps,                    
-                    processing_graph=processing_graph,
-                    dataset=dataset,
-                    hf_endpoint=hf_endpoint,
-                    hf_timeout_seconds=hf_timeout_seconds,
-                    hf_token=hf_token,
-                )
             except Exception as e:
                 error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
