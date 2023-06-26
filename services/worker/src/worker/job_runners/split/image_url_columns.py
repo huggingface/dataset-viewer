@@ -8,12 +8,12 @@ from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import is_image_url
 
-from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import (
+from worker.dtos import (
     CompleteJobResult,
     ImageUrlColumnsResponse,
     SplitFirstRowsResponse,
 )
+from worker.job_runners.split.split_job_runner import SplitJobRunner
 
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"

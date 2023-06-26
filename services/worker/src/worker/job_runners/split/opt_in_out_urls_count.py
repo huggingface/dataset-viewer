@@ -7,8 +7,8 @@ from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERS
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
+from worker.dtos import CompleteJobResult, OptInOutUrlsCountResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import CompleteJobResult, OptInOutUrlsCountResponse
 
 
 def compute_opt_in_out_urls_count_response(

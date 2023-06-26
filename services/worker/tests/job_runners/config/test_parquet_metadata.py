@@ -19,13 +19,13 @@ from libcommon.storage import StrPath
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.job_runners.config.parquet_metadata import (
-    ConfigParquetMetadataJobRunner,
+from worker.dtos import (
     ConfigParquetMetadataResponse,
+    ConfigParquetResponse,
+    ParquetFileItem,
     ParquetFileMetadataItem,
 )
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 
 
 @pytest.fixture(autouse=True)

@@ -5,8 +5,11 @@ import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Literal, Optional
 
+from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.utils import orjson_dumps
+from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.utils import Priority, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -164,6 +167,45 @@ def is_non_empty_string(string: Any) -> bool:
 
 def are_valid_parameters(parameters: List[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
+
+
+def try_backfill_dataset(
+    processing_steps: List[ProcessingStep],
+    dataset: str,
+    processing_graph: ProcessingGraph,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+) -> None:
+    dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+    if not dataset_orchestrator.has_some_cache():
+        # We have to check if the dataset exists and is supported
+        try:
+            revision = get_dataset_git_revision(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
+        except Exception as e:
+            # The dataset is not supported
+            raise ResponseNotFoundError("Not found.") from e
+        # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
+        # and tell the user to retry.
+        dataset_orchestrator.set_revision(revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[])
+        raise ResponseNotReadyError(
+            "The server is busier than usual and the response is not ready yet. Please retry later."
+        )
+    elif dataset_orchestrator.has_pending_ancestor_jobs(
+        processing_step_names=[processing_step.name for processing_step in processing_steps]
+    ):
+        # some jobs are still in progress, the cache entries could exist in the future
+        raise ResponseNotReadyError(
+            "The server is busier than usual and the response is not ready yet. Please retry later."
+        )
+    else:
+        # no pending job: the cache entry will not be created
+        raise ResponseNotFoundError("Not found.")
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

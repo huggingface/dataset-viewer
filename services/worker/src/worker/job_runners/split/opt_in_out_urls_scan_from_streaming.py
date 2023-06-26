@@ -22,13 +22,9 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
+from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import (
-    CompleteJobResult,
-    OptInOutUrlsScanResponse,
-    OptUrl,
-    get_rows_or_raise,
-)
+from worker.utils import get_rows_or_raise
 
 
 async def check_spawning(

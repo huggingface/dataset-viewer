@@ -11,9 +11,9 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_runners._job_runner_with_cache import JobRunnerWithCache
 from worker.resources import LibrariesResource
-from worker.utils import CompleteJobResult
 
 from ..fixtures.hub import get_default_config_split
 

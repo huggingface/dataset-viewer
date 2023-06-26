@@ -9,8 +9,8 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import CompleteJobResult
 
 
 class DummyDatasetJobRunner(DatasetJobRunner):
