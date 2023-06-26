@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Tuple, TypedDict
+from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -12,17 +12,14 @@ from libcommon.simple_cache import (
     get_previous_step_or_raise,
     get_response,
 )
-from libcommon.utils import SplitHubFile
-
-from worker.job_runners.config.parquet import ConfigParquetResponse
+from worker.dtos import (
+    ConfigParquetResponse,
+    DatasetParquetResponse,
+    JobResult,
+    PreviousJob,
+    SplitHubFile,
+)
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob
-
-
-class DatasetParquetResponse(TypedDict):
-    parquet_files: List[SplitHubFile]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
 
 
 def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:

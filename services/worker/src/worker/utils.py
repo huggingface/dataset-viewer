@@ -6,17 +6,14 @@ import itertools
 import logging
 import time
 import warnings
-from dataclasses import dataclass, field
 from typing import (
     Any,
     Callable,
     List,
-    Mapping,
     Optional,
     Sequence,
     Tuple,
     Type,
-    TypedDict,
     TypeVar,
     Union,
     cast,
@@ -44,118 +41,10 @@ from libcommon.exceptions import (
 from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
 
+from worker.dtos import FeatureItem, Row, RowItem, RowsContent
+
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-class JobRunnerInfo(TypedDict):
-    job_type: str
-    job_runner_version: int
-
-
-@dataclass
-class JobResult:
-    content: Mapping[str, Any]
-    progress: float
-
-    def __post_init__(self) -> None:
-        if self.progress < 0.0 or self.progress > 1.0:
-            raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
-
-
-@dataclass
-class CompleteJobResult(JobResult):
-    content: Mapping[str, Any]
-    progress: float = field(init=False, default=1.0)
-
-
-class DatasetItem(TypedDict):
-    dataset: str
-
-
-class ConfigItem(DatasetItem):
-    config: Optional[str]
-
-
-class SplitItem(ConfigItem):
-    split: Optional[str]
-
-
-class SplitsList(TypedDict):
-    splits: List[SplitItem]
-
-
-class FailedConfigItem(ConfigItem):
-    error: Mapping[str, Any]
-
-
-class DatasetSplitNamesResponse(TypedDict):
-    splits: List[SplitItem]
-    pending: List[ConfigItem]
-    failed: List[FailedConfigItem]
-
-
-class PreviousJob(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Mapping[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
-
-
-class SplitFirstRowsResponse(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    features: List[FeatureItem]
-    rows: List[RowItem]
-
-
-class OptUrl(TypedDict):
-    url: str
-    row_idx: int
-    column_name: str
-
-
-class OptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
-    full_scan: Optional[bool]
-
-
-class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
-
-
-class ImageUrlColumnsResponse(TypedDict):
-    columns: List[str]
-
-
-Row = Mapping[str, Any]
-
-
-class RowsContent(TypedDict):
-    rows: List[Row]
-    all_fetched: bool
-
-
-# TODO: separate functions from common classes and named dicts otherwise this file will continue growing
 
 
 # in JSON, dicts do not carry any order, so we need to return a list

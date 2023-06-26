@@ -12,6 +12,7 @@ import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
+from fsspec.implementations.http import HTTPFileSystem
 from libcommon.parquet_utils import (
     Indexer,
     ParquetIndexWithMetadata,
@@ -244,11 +245,16 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
 
 
 @pytest.fixture
-def indexer(app_config: AppConfig, processing_graph: ProcessingGraph, parquet_metadata_directory: StrPath) -> Indexer:
+def indexer(
+    app_config: AppConfig,
+    processing_graph: ProcessingGraph,
+    parquet_metadata_directory: StrPath,
+) -> Indexer:
     return Indexer(
         processing_graph=processing_graph,
         hf_token=app_config.common.hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
     )
 
 

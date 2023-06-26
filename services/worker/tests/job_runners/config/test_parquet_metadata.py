@@ -19,12 +19,13 @@ from libcommon.storage import StrPath
 from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_metadata import (
-    ConfigParquetMetadataJobRunner,
+from worker.dtos import (
     ConfigParquetMetadataResponse,
+    ConfigParquetResponse,
+    SplitHubFile,
     ParquetFileMetadataItem,
 )
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 
 
 @pytest.fixture(autouse=True)

@@ -8,7 +8,7 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Optional, TypedDict
+from typing import Any, Callable, Iterator, List, Optional, Set, TypedDict
 
 import datasets.builder
 import datasets.info
@@ -34,10 +34,12 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
     create_commits,
+    get_delete_operations,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
@@ -48,7 +50,6 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
-from worker.utils import CompleteJobResult
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
@@ -794,3 +795,34 @@ def test_concurrency(
                 for config in configs
             ],
         )
+
+
+@pytest.mark.parametrize(
+    "parquet_files,all_repo_files,config_names,config,deleted_files",
+    [
+        (
+            set(),
+            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet", "c1/index.duckdb"},
+            {"c1", "c2"},
+            "c1",
+            {"dummy", "c1/dummy", "c1/0.parquet"},
+        ),
+        (
+            {"c1/0.parquet"},
+            {"dummy", "c1/dummy", "c1/0.parquet", "c2/0.parquet", "c1/index.duckdb"},
+            {"c1", "c2"},
+            "c1",
+            {"dummy", "c1/dummy"},
+        ),
+    ],
+)
+def test_get_delete_operations(
+    parquet_files: Set[str], all_repo_files: Set[str], config_names: Set[str], config: str, deleted_files: Set[str]
+) -> None:
+    parquet_operations = [
+        CommitOperationAdd(path_in_repo=path_in_repo, path_or_fileobj=b"") for path_in_repo in parquet_files
+    ]
+    delete_operations = get_delete_operations(
+        parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
+    )
+    assert set(delete_operation.path_in_repo for delete_operation in delete_operations) == deleted_files

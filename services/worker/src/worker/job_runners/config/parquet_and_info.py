@@ -74,23 +74,9 @@ from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
+from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, ParquetFileItem
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import CompleteJobResult, create_branch, hf_hub_url, retry
-
-
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
-class ConfigParquetAndInfoResponse(TypedDict):
-    parquet_files: List[SplitHubFile]
-    dataset_info: Dict[str, Any]
-
+from worker.utils import retry, create_branch
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
@@ -789,6 +775,33 @@ def create_commits(
     return commit_infos
 
 
+def get_delete_operations(
+    parquet_operations: List[CommitOperationAdd], all_repo_files: Set[str], config_names: Set[str], config: str
+) -> List[CommitOperationDelete]:
+    # - get files that will be preserved in repo:
+    #   1. parquet files belonging to any other config (otherwise outdated files might be preserved)
+    #   2. duckdb files belonging to any config
+    #   3. .gitattributes
+    pattern_in_any_config_dir = re.compile(f"^({'|'.join(re.escape(conf) for conf in config_names)})/")
+    pattern_in_any_other_config_dir = re.compile(
+        f"^({'|'.join(re.escape(conf) for conf in config_names.difference({config}))})/"
+    )
+    files_to_ignore: Set[str] = {
+        file
+        for file in all_repo_files
+        if (pattern_in_any_other_config_dir.match(file) and file.endswith(".parquet"))
+        or (pattern_in_any_config_dir.match(file) and file.endswith(".duckdb"))
+    }.union({".gitattributes"})
+    # - get files to be deleted - all files except for:
+    #   - the files to be preserved
+    #   - parquet files obtained for current config at this processing step
+    files_to_add = [operation.path_in_repo for operation in parquet_operations]
+    files_to_delete = all_repo_files - set(files_to_add).union(files_to_ignore)
+    delete_operations = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+    logging.debug(f"{delete_operations=}")
+    return delete_operations
+
+
 def commit_parquet_conversion(
     hf_api: HfApi,
     committer_hf_api: HfApi,
@@ -840,26 +853,10 @@ def commit_parquet_conversion(
             If one of the commits could not be created on the Hub.
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    # - get repo parquet files
     all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
-    repo_parquet_files: Set[str] = {file for file in all_repo_files if file.endswith(".parquet")}
-    # - get files that will be preserved in repo: files belonging to other configs and .gitattributes
-    #   we exclude files of current config because otherwise outdated files might be preserved
-    files_to_ignore: Set[str] = {
-        file
-        for other_config in config_names.difference({config})
-        for file in repo_parquet_files
-        if file.startswith(f"{other_config}/")
-    }.union({".gitattributes"})
-    # - get files to be deleted - all files except for:
-    #   - parquet files obtained for current config at this processing step,
-    #   - parquet files belonging to other existing configs
-    #   - .gitattributes
-    files_to_add = [operation.path_in_repo for operation in parquet_operations]
-    files_to_delete = all_repo_files - set(files_to_add).union(files_to_ignore)
-    delete_operations: List[CommitOperation] = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
-    logging.debug(f"{delete_operations=}")
-
+    delete_operations = get_delete_operations(
+        parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
+    )
     operations = delete_operations + parquet_operations
     return create_commits(
         committer_hf_api,

@@ -3,7 +3,7 @@
 
 import logging
 from functools import partial
-from typing import List, Optional, TypedDict
+from typing import List, Optional
 
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
@@ -21,23 +21,12 @@ from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
+from worker.dtos import (
+    CompleteJobResult,
+    ConfigParquetMetadataResponse,
+    ParquetFileMetadataItem,
+)
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import CompleteJobResult, get_parquet_file
-
-
-class ParquetFileMetadataItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-    num_rows: int
-    parquet_metadata_subpath: str
-
-
-class ConfigParquetMetadataResponse(TypedDict):
-    parquet_files_metadata: List[ParquetFileMetadataItem]
 
 
 def compute_parquet_metadata_response(

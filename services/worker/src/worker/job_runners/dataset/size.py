@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple, TypedDict
+from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -13,29 +13,16 @@ from libcommon.simple_cache import (
     get_response,
 )
 
-from worker.job_runners.config.size import ConfigSize, ConfigSizeResponse, SplitSize
+from worker.dtos import (
+    ConfigSize,
+    ConfigSizeResponse,
+    DatasetSize,
+    DatasetSizeResponse,
+    JobResult,
+    PreviousJob,
+    SplitSize,
+)
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult, PreviousJob
-
-
-class DatasetSize(TypedDict):
-    dataset: str
-    num_bytes_original_files: int
-    num_bytes_parquet_files: int
-    num_bytes_memory: int
-    num_rows: int
-
-
-class DatasetSizeContent(TypedDict):
-    dataset: DatasetSize
-    configs: list[ConfigSize]
-    splits: list[SplitSize]
-
-
-class DatasetSizeResponse(TypedDict):
-    size: DatasetSizeContent
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
 
 
 def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:

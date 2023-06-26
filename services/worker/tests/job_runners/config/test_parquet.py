@@ -12,11 +12,12 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import (
-    ConfigParquetJobRunner,
+from worker.dtos import (
+    ConfigParquetAndInfoResponse,
     ConfigParquetResponse,
+    SplitHubFile,
 )
-from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoResponse
+from worker.job_runners.config.parquet import ConfigParquetJobRunner
 
 
 @pytest.fixture(autouse=True)
