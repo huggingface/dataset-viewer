@@ -142,7 +142,7 @@ def test_finish_job(
     processing_graph: ProcessingGraph,
     artifacts_to_create: List[str],
 ) -> None:
-    Queue()._add_job(
+    Queue().add_job(
         dataset=DATASET_NAME,
         revision=REVISION_NAME,
         config=None,

@@ -125,7 +125,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
     assert Job.objects().count() == 0
-    queue.upsert_job(
+    queue.add_job(
         job_type=root_step.job_type,
         dataset="dataset",
         revision="revision",
@@ -195,7 +195,7 @@ def test_job_runner_set_crashed(
 
     queue = Queue()
     assert Job.objects().count() == 0
-    queue.upsert_job(
+    queue.add_job(
         job_type=test_processing_step.job_type,
         dataset=dataset,
         revision=revision,
