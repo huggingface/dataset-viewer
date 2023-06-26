@@ -17,7 +17,6 @@ from huggingface_hub.hf_file_system import safe_quote
 from tqdm.contrib.concurrent import thread_map
 
 from libcommon.constants import PARQUET_REVISION
-from libcommon.exceptions import UnexpectedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -396,18 +395,14 @@ class RowsIndex:
                 cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
                 cache_kinds.extend([step.cache_kind for step in config_parquet_processing_steps])
 
-                try:
-                    result = get_previous_step_or_raise(
-                        kinds=cache_kinds,
-                        dataset=self.dataset,
-                        config=self.config,
-                        split=None,
-                    )
-                    self.revision = result.response["dataset_git_revision"]
-                    content = result.response["content"]
-                except Exception as e:
-                    raise UnexpectedError("Could not get the list of parquet files to fetch the rows from.") from e
-                    # ^ TODO: improve the error, depending on the case
+                result = get_previous_step_or_raise(
+                    kinds=cache_kinds,
+                    dataset=self.dataset,
+                    config=self.config,
+                    split=None,
+                )
+                self.revision = result.response["dataset_git_revision"]
+                content = result.response["content"]
             if content and "parquet_files" in content:
                 return ParquetIndexWithoutMetadata.from_parquet_file_items(
                     [
