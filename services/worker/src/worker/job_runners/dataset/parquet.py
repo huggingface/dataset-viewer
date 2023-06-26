@@ -12,12 +12,13 @@ from libcommon.simple_cache import (
     get_previous_step_or_raise,
     get_response,
 )
+from libcommon.utils import SplitHubFile
+
 from worker.dtos import (
     ConfigParquetResponse,
     DatasetParquetResponse,
     JobResult,
     PreviousJob,
-    SplitHubFile,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 

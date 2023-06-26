@@ -27,6 +27,7 @@ from worker.dtos import (
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import get_parquet_file
 
 
 def compute_parquet_metadata_response(

@@ -7,7 +7,7 @@ import re
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
+from typing import Any, List, Optional, Set, Tuple
 
 import datasets
 import datasets.config
@@ -74,9 +74,9 @@ from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, ParquetFileItem
+from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import retry, create_branch
+from worker.utils import create_branch, hf_hub_url, retry
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation

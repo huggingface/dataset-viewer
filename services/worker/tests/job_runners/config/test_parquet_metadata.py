@@ -22,7 +22,6 @@ from worker.config import AppConfig
 from worker.dtos import (
     ConfigParquetMetadataResponse,
     ConfigParquetResponse,
-    SplitHubFile,
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner

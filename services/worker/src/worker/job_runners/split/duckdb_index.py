@@ -33,8 +33,9 @@ from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import CompleteJobResult, create_branch, hf_hub_url
+from worker.utils import create_branch, hf_hub_url
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"

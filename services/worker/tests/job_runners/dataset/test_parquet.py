@@ -12,7 +12,7 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.dtos import ConfigParquetResponse, DatasetParquetResponse, SplitHubFile
+from worker.dtos import ConfigParquetResponse, DatasetParquetResponse
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 
 from ..utils import UpstreamResponse
