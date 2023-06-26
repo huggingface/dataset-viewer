@@ -263,7 +263,7 @@ class ParquetIndexWithMetadata:
                         size=size,
                         loop=self.httpfs.loop,
                         cache_type=None,
-                        **self.httpfs.kwargs
+                        **self.httpfs.kwargs,
                     ),
                     metadata=pq.read_metadata(metadata_path),
                     pre_buffer=True,
