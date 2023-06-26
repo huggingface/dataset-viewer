@@ -196,7 +196,7 @@ class Job(Document):
         )
 
     @staticmethod
-    def get(job_id: str):
+    def get(job_id: str) -> Job:
         try:
             Job.objects(pk=job_id).get()
         except DoesNotExist as e:
