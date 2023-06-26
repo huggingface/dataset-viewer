@@ -15,6 +15,7 @@ from libcommon.queue import (
     AlreadyStartedError,
     EmptyQueueError,
     LockTimeoutError,
+    NoWaitingJobError,
     Queue,
 )
 from libcommon.utils import JobInfo, get_datetime
@@ -131,7 +132,7 @@ class Loop:
             )
             self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
-        except (EmptyQueueError, AlreadyStartedError, LockTimeoutError) as e:
+        except (EmptyQueueError, AlreadyStartedError, LockTimeoutError, NoWaitingJobError) as e:
             self.set_worker_state(current_job_info=None)
             logging.debug(e)
             return False

@@ -104,6 +104,10 @@ class LockTimeoutError(Exception):
     pass
 
 
+class NoWaitingJobError(Exception):
+    pass
+
+
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
@@ -471,7 +475,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority")
+            .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
             .no_cache()
             .first()
         )
@@ -508,7 +512,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority")
+                .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
                 .no_cache()
                 .first()
             )
@@ -543,13 +547,16 @@ class Queue:
                 )
         raise EmptyQueueError("no job available")
 
-    def _start_job(self, job: Job) -> Job:
-        """Start a job.
+    def _start_newest_job_and_cancel_others(self, job: Job) -> Job:
+        """Start a job (the newest one for unicity_id) and cancel the other ones.
 
         A lock is used to ensure that the job is not started by another worker.
 
         Args:
             job: the job to start
+
+        Returns:
+            the started job
 
         Raises:
             AlreadyStartedError: if the job is already started by another worker.
@@ -560,16 +567,42 @@ class Queue:
         try:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.1] * RETRIES):
-                # check if the job is still waiting
-                job.reload()
-                if job.status != Status.WAITING:
+                # get all the pending jobs for the same unicity_id
+                waiting_jobs = Job.objects(
+                    unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
+                ).order_by("-created_at")
+                datetime = get_datetime()
+                # raise if any job has already been started for unicity_id
+                num_started_jobs = waiting_jobs(status=Status.STARTED).count()
+                if num_started_jobs > 0:
+                    if num_started_jobs > 1:
+                        logging.critical(f"job {job.unicity_id} has been started {num_started_jobs} times. Max is 1.")
                     raise AlreadyStartedError(f"job {job.unicity_id} has been started by another worker")
-                job.update(started_at=get_datetime(), status=Status.STARTED)
+                # get the most recent one
+                first_job = waiting_jobs.first()
+                if not first_job:
+                    raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
+                # start it
+                first_job.update(
+                    started_at=datetime,
+                    status=Status.STARTED,
+                    write_concern={"w": "majority", "fsync": True},
+                    read_concern={"level": "majority"},
+                )
+                # and cancel the other ones, if any
+                for job in waiting_jobs.skip(1):
+                    # TODO: try to do a bulk update (not sure it's possible)
+                    job.update(
+                        finished_at=datetime,
+                        status=Status.CANCELLED,
+                        write_concern={"w": "majority", "fsync": True},
+                        read_concern={"level": "majority"},
+                    )
+                return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
                 f"could not acquire the lock for job {job.unicity_id} after {RETRIES} retries."
             ) from err
-        return job
 
     def start_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
@@ -598,7 +631,6 @@ class Queue:
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
-        self._start_job(job=next_waiting_job)
         if job_types_blocked and next_waiting_job.type in job_types_blocked:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
@@ -607,7 +639,8 @@ class Queue:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
-        return next_waiting_job.info()
+        started_job = self._start_newest_job_and_cancel_others(job=next_waiting_job)
+        return started_job.info()
 
     def get_job_with_id(self, job_id: str) -> Job:
         """Get the job for a given job id.

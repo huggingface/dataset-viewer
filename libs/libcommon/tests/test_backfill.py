@@ -772,7 +772,9 @@ def test_delete_jobs(
             job.created_at = created_at
             job.save()
         if status is Status.STARTED:
-            queue._start_job(job)
+            job.status = Status.STARTED
+            job.started_at = datetime.now()
+            job.save()
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     expected_in_process = [ARTIFACT_DA] if existing_jobs else []

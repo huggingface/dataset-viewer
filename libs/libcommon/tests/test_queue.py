@@ -21,7 +21,9 @@ from libcommon.utils import Priority, Status, get_datetime
 
 
 def get_old_datetime() -> datetime:
-    return get_datetime() - timedelta(days=1)
+    # Beware: the TTL index is set to 10 minutes. So it will delete the finished jobs after 10 minutes.
+    # We have to use a datetime that is not older than 10 minutes.
+    return get_datetime() - timedelta(seconds=(QUEUE_TTL_SECONDS / 2))
 
 
 @pytest.fixture(autouse=True)
@@ -36,21 +38,25 @@ def test_add_job() -> None:
     # get the queue
     queue = Queue()
     # add a job
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # a second call adds a second waiting job
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job2 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    # get and start the first job
+    # get and start a job the second one should have been picked
     job_info = queue.start_job()
+    assert job2.reload().status == Status.STARTED
     assert job_info["type"] == test_type
     assert job_info["params"]["dataset"] == test_dataset
     assert job_info["params"]["revision"] == test_revision
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
+    # and the first job should have been cancelled
+    assert job1.reload().status == Status.CANCELLED
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job3 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    assert job3.status == Status.WAITING
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
@@ -58,10 +64,7 @@ def test_add_job() -> None:
     queue.finish_job(job_id=job_info["job_id"], is_success=True)
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    # process the second job
-    job_info = queue.start_job()
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
-    # and the third one
+    # process the third job
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     # trying to finish another job fails silently (with a log)
