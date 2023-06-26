@@ -13,6 +13,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
 from api.routes.filter import (
+    execute_filter_query,
     get_config_parquet_metadata_from_cache,
     get_features_from_parquet_file_metadata,
 )
@@ -102,3 +103,12 @@ def test_get_features_from_parquet_file_metadata(
         "gender": {"dtype": "string", "_type": "Value"},
         "age": {"dtype": "int64", "_type": "Value"},
     }
+
+
+def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
+    parquet_file_paths = [str(ds_fs.tmp_dir.joinpath(path)) for path in ds_fs.ls("default", detail=False)]
+    columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
+    table = execute_filter_query(
+        columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
+    )
+    assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
