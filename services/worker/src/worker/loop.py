@@ -12,7 +12,7 @@ import orjson
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import (
-    AlreadyStartedError,
+    AlreadyStartedJobError,
     EmptyQueueError,
     LockTimeoutError,
     NoWaitingJobError,
@@ -132,7 +132,7 @@ class Loop:
             )
             self.set_worker_state(current_job_info=job_info)
             logging.debug(f"job assigned: {job_info}")
-        except (EmptyQueueError, AlreadyStartedError, LockTimeoutError, NoWaitingJobError) as e:
+        except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
             self.set_worker_state(current_job_info=None)
             logging.debug(e)
             return False

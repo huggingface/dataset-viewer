@@ -96,7 +96,7 @@ class JobDoesNotExistError(DoesNotExist):
     pass
 
 
-class AlreadyStartedError(Exception):
+class AlreadyStartedJobError(Exception):
     pass
 
 
@@ -559,7 +559,7 @@ class Queue:
             the started job
 
         Raises:
-            AlreadyStartedError: if the job is already started by another worker.
+            AlreadyStartedJobError: if a started job already exist for the same unicity_id.
             LockTimeoutError: if the lock could not be acquired after 20 retries.
         """
         # could be a method of Job
@@ -577,7 +577,7 @@ class Queue:
                 if num_started_jobs > 0:
                     if num_started_jobs > 1:
                         logging.critical(f"job {job.unicity_id} has been started {num_started_jobs} times. Max is 1.")
-                    raise AlreadyStartedError(f"job {job.unicity_id} has been started by another worker")
+                    raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 # get the most recent one
                 first_job = waiting_jobs.first()
                 if not first_job:
@@ -619,7 +619,7 @@ class Queue:
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
-            AlreadyStartedError: if the job is locked
+            AlreadyStartedJobError: if a started job already exist for the same unicity_id
             LockTimeoutError: if the lock cannot be acquired
 
         Returns: the job id, the type, the input arguments: dataset, revision, config and split
