@@ -293,7 +293,6 @@ class lock(contextlib.AbstractContextManager["lock"]):
 
     def release(self) -> None:
         Lock.objects(key=self.key, owner=self.owner).update(
-            upsert=True,
             write_concern={"w": "majority", "fsync": True},
             read_concern={"level": "majority"},
             owner=None,
