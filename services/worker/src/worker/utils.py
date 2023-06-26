@@ -21,6 +21,7 @@ from typing import (
 from urllib.parse import quote
 
 import PIL
+import requests
 from datasets import (
     Dataset,
     DatasetInfo,
@@ -31,7 +32,7 @@ from datasets import (
 )
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
-from huggingface_hub.hf_api import GitRefs, HfApi
+from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.exceptions import (
     DatasetNotFoundError,
@@ -335,9 +336,15 @@ def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> P
 
 DATASET_TYPE = "dataset"
 
+LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
+LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 
-def create_branch(dataset: str, target_revision: str, refs: GitRefs, hf_api: HfApi, committer_hf_api: HfApi) -> None:
+
+def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_hf_api: HfApi) -> None:
     try:
+        refs = retry(on=[requests.exceptions.ConnectionError], sleeps=LIST_REPO_REFS_RETRY_SLEEPS)(
+            hf_api.list_repo_refs
+        )(repo_id=dataset, repo_type=DATASET_TYPE)
         if all(ref.ref != target_revision for ref in refs.converts):
             initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
             committer_hf_api.create_branch(

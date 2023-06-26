@@ -76,7 +76,7 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import create_branch, hf_hub_url, retry
+from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url, retry
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
@@ -1025,18 +1025,15 @@ def compute_config_parquet_and_info_response(
         parquet_operations = convert_to_parquet(builder)
 
     try:
-        sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
         # ^ timeouts after ~7 minutes
-        with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+        with lock.git_branch(
+            dataset=dataset, branch=target_revision, job_id=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
+        ):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
-            refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(
-                repo_id=dataset, repo_type=DATASET_TYPE
-            )
             create_branch(
                 dataset=dataset,
                 target_revision=target_revision,
-                refs=refs,
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,
             )

@@ -73,7 +73,7 @@ class CustomError(LoggedError):
 
 
 CacheableErrorCode = Literal[
-    "CachedDirectoryNotInitializedError",
+    "CacheDirectoryNotInitializedError",
     "ConfigNamesError",
     "CreateCommitError",
     "DatasetInBlockListError",
@@ -138,6 +138,13 @@ class CacheableError(CustomError):
         super().__init__(
             message=message, status_code=status_code, code=code, cause=cause, disclose_cause=disclose_cause
         )
+
+
+class CacheDirectoryNotInitializedError(CacheableError):
+    """Raised when the cache directory has not been initialized before job compute."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "CacheDirectoryNotInitializedError", cause, True)
 
 
 class ConfigNamesError(CacheableError):
@@ -236,6 +243,13 @@ class DatasetWithTooBigExternalFilesError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
 
 
+class DatasetWithTooManyConfigsError(CacheableError):
+    """Raised when the number of configs of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
+
+
 class DatasetWithTooManyExternalFilesError(CacheableError):
     """Raised when the number of external data files of a dataset is too big."""
 
@@ -250,11 +264,11 @@ class DatasetWithTooManyParquetFilesError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyParquetFilesError", cause, True)
 
 
-class LockedDatasetTimeoutError(CacheableError):
-    """Raised when a dataset is locked by another job."""
+class DuckDBIndexFileNotFoundError(CacheableError):
+    """Raised when no duckdb index file was found for split."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "LockedDatasetTimeoutError", cause, True)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DuckDBIndexFileNotFoundError", cause, False)
 
 
 class DisabledViewerError(CacheableError):
@@ -359,6 +373,13 @@ class JobManagerExceededMaximumDurationError(CacheableError):
         )
 
 
+class LockedDatasetTimeoutError(CacheableError):
+    """Raised when a dataset is locked by another job."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "LockedDatasetTimeoutError", cause, True)
+
+
 class MissingSpawningTokenError(CacheableError):
     """Raised when the spawning.ai token is not set."""
 
@@ -371,6 +392,13 @@ class NormalRowsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
+
+
+class NoIndexableColumnsError(CacheableError):
+    """Raised when split does not have string columns to index."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
 
 
 class ParameterMissingError(CacheableError):
@@ -454,6 +482,13 @@ class SplitNotFoundError(CacheableError):
         )
 
 
+class SplitWithTooBigParquetError(CacheableError):
+    """Raised when the split parquet size (sum of parquet sizes given) is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
+
+
 class StreamingRowsError(CacheableError):
     """Raised when the rows could not be fetched in streaming mode."""
 
@@ -500,38 +535,3 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
-
-
-class NoIndexableColumnsError(CacheableError):
-    """Raised when split does not have string columns to index."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
-
-
-class DuckDBIndexFileNotFoundError(CacheableError):
-    """Raised when no duckdb index file was found for split."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DuckDBIndexFileNotFoundError", cause, False)
-
-
-class SplitWithTooBigParquetError(CacheableError):
-    """Raised when the split parquet size (sum of parquet sizes given) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
-
-
-class DatasetWithTooManyConfigsError(CacheableError):
-    """Raised when the number of configs of a dataset exceeded the limit."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
-
-
-class CachedDirectoryNotInitializedError(CacheableError):
-    """Raised when the cached directory has not been initialized before job compute."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "CachedDirectoryNotInitializedError", cause, True)

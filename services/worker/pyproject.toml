@@ -12,6 +12,7 @@ aiohttp = "^3.8.4"
 aiolimiter = "^1.0.0"
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
+duckdb = "^0.8.1"
 environs = "^9.5.0"
 gdown = "^4.6.3"
 huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub", rev = "1055a56b2d2723b55ba4fdf1f3296e04cfd8d6db" }
@@ -45,7 +46,6 @@ transformers = "^4.30.0"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
 wget = "^3.2"
-duckdb = "^0.8.1"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

@@ -187,6 +187,7 @@ def test_compute(
 
     assert parquet_response
     job_runner = get_job_runner(dataset, config, split, app_config)
+    job_runner.pre_compute()
 
     if expected_error_code:
         with pytest.raises(Exception) as e:
@@ -232,3 +233,4 @@ def test_compute(
 
         con.close()
         os.remove(file_name)
+    job_runner.post_compute()

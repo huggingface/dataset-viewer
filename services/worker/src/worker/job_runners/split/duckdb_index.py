@@ -16,7 +16,7 @@ from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
-    CachedDirectoryNotInitializedError,
+    CacheDirectoryNotInitializedError,
     DatasetNotFoundError,
     DuckDBIndexFileNotFoundError,
     LockedDatasetTimeoutError,
@@ -35,7 +35,7 @@ from libcommon.utils import JobInfo, SplitHubFile
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import create_branch, hf_hub_url
+from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
@@ -53,7 +53,7 @@ def compute_index_rows(
     dataset: str,
     config: str,
     split: str,
-    duckdb_index_file_directory: Optional[Path],
+    duckdb_index_file_directory: Path,
     target_revision: str,
     hf_endpoint: str,
     commit_message: str,
@@ -132,9 +132,7 @@ def compute_index_rows(
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
     # index all columns
-    if duckdb_index_file_directory is None:
-        raise CachedDirectoryNotInitializedError("Cache directory has not been initialized.")
-    db_path = Path(duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME)
+    db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
 
     con = duckdb.connect(str(db_path.resolve()))
     logging.debug(CREATE_SEQUENCE_COMMAND)
@@ -150,22 +148,21 @@ def compute_index_rows(
     con.sql(CREATE_INDEX_COMMAND)
     con.close()
 
-    # create the target revision if it does not exist yet (clone from initial commit to avoid cloning all repo's files)
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
     index_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
-    try:
-        refs = hf_api.list_repo_refs(repo_id=dataset, repo_type=DATASET_TYPE)
-    except RepositoryNotFoundError as err:
-        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
-
-    create_branch(
-        dataset=dataset, target_revision=target_revision, refs=refs, hf_api=hf_api, committer_hf_api=committer_hf_api
-    )
 
     try:
-        sleeps = [1, 1, 1, 10, 10, 100, 100, 100, 300]
-        with lock.git_branch(dataset=dataset, branch=target_revision, job_id=job_id, sleeps=sleeps):
+        with lock.git_branch(
+            dataset=dataset, branch=target_revision, job_id=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
+        ):
+            create_branch(
+                dataset=dataset,
+                target_revision=target_revision,
+                hf_api=hf_api,
+                committer_hf_api=committer_hf_api,
+            )
+
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
             delete_operations: List[CommitOperation] = []
@@ -190,6 +187,8 @@ def compute_index_rows(
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub.") from err
 
     repo_files = [
         repo_file for repo_file in target_dataset_info.siblings if repo_file.rfilename == index_file_location
@@ -246,6 +245,8 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         return PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.cache_subdirectory is None:
+            raise CacheDirectoryNotInitializedError("Cache directory has not been initialized.")
         return CompleteJobResult(
             compute_index_rows(
                 job_id=self.job_info["job_id"],
