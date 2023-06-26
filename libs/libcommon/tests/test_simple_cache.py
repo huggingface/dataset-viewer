@@ -13,9 +13,9 @@ from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedResponse,
+    CacheEntryDoesNotExistError,
     CacheReportsPage,
     CacheReportsWithContentPage,
-    DoesNotExist,
     InvalidCursor,
     InvalidLimit,
     delete_dataset_responses,
@@ -138,7 +138,7 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
     get_response(kind=kind, dataset=dataset, config=config, split=split)
 
     delete_dataset_responses(dataset=dataset)
-    with pytest.raises(DoesNotExist):
+    with pytest.raises(CacheEntryDoesNotExistError):
         get_response(kind=kind, dataset=dataset, config=config, split=split)
 
     error_code = "error_code"
@@ -178,7 +178,7 @@ def test_delete_response() -> None:
     get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
     delete_response(kind=kind, dataset=dataset_a, config=config, split=split)
-    with pytest.raises(DoesNotExist):
+    with pytest.raises(CacheEntryDoesNotExistError):
         get_response(kind=kind, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind, dataset=dataset_b, config=config, split=split)
 
@@ -197,9 +197,9 @@ def test_delete_dataset_responses() -> None:
     get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind_a, dataset=dataset_b)
     delete_dataset_responses(dataset=dataset_a)
-    with pytest.raises(DoesNotExist):
+    with pytest.raises(CacheEntryDoesNotExistError):
         get_response(kind=kind_a, dataset=dataset_a)
-    with pytest.raises(DoesNotExist):
+    with pytest.raises(CacheEntryDoesNotExistError):
         get_response(kind=kind_b, dataset=dataset_a, config=config, split=split)
     get_response(kind=kind_a, dataset=dataset_b)
 

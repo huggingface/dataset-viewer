@@ -8,7 +8,7 @@ from typing import Tuple
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    DoesNotExist,
+    CacheEntryDoesNotExistError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -45,7 +45,7 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[Op
                 response = get_response(
                     kind="split-opt-in-out-urls-count", dataset=dataset, config=config, split=split
                 )
-            except DoesNotExist:
+            except CacheEntryDoesNotExistError:
                 logging.debug("No response found in previous step for this dataset: 'split-opt-in-out-urls-count'.")
                 pending += 1
                 continue

@@ -1027,7 +1027,7 @@ def compute_config_parquet_and_info_response(
     try:
         # ^ timeouts after ~7 minutes
         with lock.git_branch(
-            dataset=dataset, branch=target_revision, job_id=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
+            dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)

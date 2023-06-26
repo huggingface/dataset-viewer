@@ -8,7 +8,7 @@ from typing import Tuple
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
-    DoesNotExist,
+    CacheEntryDoesNotExistError,
     get_previous_step_or_raise,
     get_response,
 )
@@ -55,7 +55,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
             total += 1
             try:
                 response = get_response(kind="config-parquet", dataset=dataset, config=config)
-            except DoesNotExist:
+            except CacheEntryDoesNotExistError:
                 logging.debug("No response found in previous step for this dataset: 'config-parquet' endpoint.")
                 pending.append(
                     PreviousJob(

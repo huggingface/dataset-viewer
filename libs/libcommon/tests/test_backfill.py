@@ -767,12 +767,14 @@ def test_delete_jobs(
     queue = Queue()
     for job_spec in existing_jobs:
         (priority, status, created_at) = job_spec
-        job = queue._add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
+        job = queue.add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
         if created_at is not None:
             job.created_at = created_at
             job.save()
         if status is Status.STARTED:
-            queue._start_job(job)
+            job.status = Status.STARTED
+            job.started_at = datetime.now()
+            job.save()
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     expected_in_process = [ARTIFACT_DA] if existing_jobs else []

@@ -154,7 +154,7 @@ def compute_index_rows(
 
     try:
         with lock.git_branch(
-            dataset=dataset, branch=target_revision, job_id=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
+            dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
             create_branch(
                 dataset=dataset,

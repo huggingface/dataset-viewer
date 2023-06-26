@@ -44,6 +44,9 @@ from mongodb_migration.migrations._20230516101500_queue_job_add_revision import 
 from mongodb_migration.migrations._20230516101600_queue_delete_index_without_revision import (
     MigrationQueueDeleteIndexWithoutRevision,
 )
+from mongodb_migration.migrations._20230622131500_lock_add_owner import (
+    MigrationAddOwnerToQueueLock,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -228,5 +231,8 @@ class MigrationsCollector:
                     "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
                 ),
                 field_name="finished_at",
+            ),
+            MigrationAddOwnerToQueueLock(
+                version="20230622131800", description="add 'owner' field copying the job_id value"
             ),
         ]

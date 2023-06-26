@@ -59,7 +59,7 @@ def create_force_refresh_endpoint(
                 hf_timeout_seconds=hf_timeout_seconds,
             )
             revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            Queue().upsert_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
+            Queue().add_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
             return get_json_ok_response(
                 {"status": "ok"},
                 max_age=0,
