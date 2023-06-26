@@ -92,6 +92,10 @@ class EmptyQueueError(Exception):
     pass
 
 
+class JobDoesNotExistError(DoesNotExist):
+    pass
+
+
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
@@ -190,6 +194,13 @@ class Job(Document):
                 "priority": self.priority,
             }
         )
+
+    @staticmethod
+    def get(job_id: str):
+        try:
+            Job.objects(pk=job_id).get()
+        except DoesNotExist as e:
+            raise JobDoesNotExistError(f"Job does not exist: {job_id=}") from e
 
     def flat_info(self) -> FlatJobInfo:
         return FlatJobInfo(
