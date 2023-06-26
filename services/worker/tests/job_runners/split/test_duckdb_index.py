@@ -222,14 +222,20 @@ def test_compute(
         # perform a search to validate fts feature
         query = "Lord Vader"
         result = con.execute(
-            (
-                "SELECT fts_main_data.match_bm25(__hf_index_id, ?) AS score, text FROM data WHERE score IS NOT NULL"
-                " ORDER BY score DESC;"
-            ),
+            "SELECT text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
             [query],
         )
         rows = result.df()
         assert rows is not None
+        assert (rows["text"].eq("Vader turns round and round in circles as his ship spins into space.")).any()
+        assert (rows["text"].eq("The wingman spots the pirateship coming at him and warns the Dark Lord")).any()
+        assert (rows["text"].eq("We count thirty Rebel ships, Lord Vader.")).any()
+        assert (
+            rows["text"].eq(
+                "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink"
+            )
+        ).any()
+        assert not (rows["text"].eq("There goes another one.")).any()
 
         con.close()
         os.remove(file_name)
