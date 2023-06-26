@@ -236,7 +236,7 @@ class Lock(Document):
     owner = StringField()
     job_id = StringField()  # deprecated
 
-    created_at = DateTimeField(required=True)
+    created_at = DateTimeField()
     updated_at = DateTimeField()
 
     objects = QuerySetManager["Lock"]()
