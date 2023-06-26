@@ -4,7 +4,6 @@
 import contextlib
 import json
 import logging
-import random
 import time
 import types
 from collections import Counter
@@ -97,7 +96,11 @@ class JobDoesNotExistError(DoesNotExist):
     pass
 
 
-class LockedJobError(Exception):
+class AlreadyStartedError(Exception):
+    pass
+
+
+class LockTimeoutError(Exception):
     pass
 
 
@@ -541,13 +544,31 @@ class Queue:
         raise EmptyQueueError("no job available")
 
     def _start_job(self, job: Job) -> Job:
+        """Start a job.
+
+        A lock is used to ensure that the job is not started by another worker.
+
+        Args:
+            job: the job to start
+
+        Raises:
+            AlreadyStartedError: if the job is already started by another worker.
+            LockTimeoutError: if the lock could not be acquired after 20 retries.
+        """
         # could be a method of Job
+        RETRIES = 20
         try:
-            with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.01]):
-                # ^ fail immediately (after 10ms) if the lock is already taken
+            # retry for 2 seconds
+            with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.1] * RETRIES):
+                # check if the job is still waiting
+                job.reload()
+                if job.status != Status.WAITING:
+                    raise AlreadyStartedError(f"job {job.unicity_id} has been started by another worker")
                 job.update(started_at=get_datetime(), status=Status.STARTED)
         except TimeoutError as err:
-            raise LockedJobError(f"job {job.unicity_id} is locked by another worker") from err
+            raise LockTimeoutError(
+                f"could not acquire the lock for job {job.unicity_id} after {RETRIES} retries."
+            ) from err
         return job
 
     def start_job(
@@ -565,7 +586,8 @@ class Queue:
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
-            LockedJobError: if the job is locked
+            AlreadyStartedError: if the job is locked
+            LockTimeoutError: if the lock cannot be acquired
 
         Returns: the job id, the type, the input arguments: dataset, revision, config and split
         """
