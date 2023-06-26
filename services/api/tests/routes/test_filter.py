@@ -82,7 +82,7 @@ def ds_config_parquet_metadata(ds_fs: AbstractFileSystem, ds_parquet_metadata_di
 
 def test_get_config_parquet_metadata_from_cache(
     ds_config_parquet_metadata: dict[str, Any], processing_graph: ProcessingGraph
-):
+) -> None:
     dataset, config, split = "ds", "default", "train"
     parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
         dataset=dataset, config=config, split=split, processing_graph=processing_graph
