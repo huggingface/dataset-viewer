@@ -96,8 +96,10 @@ def create_filter_endpoint(
                     split = request.query_params.get("split")
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-                    where = request.query_params.get("where")
                     # TODO: validate where
+                    where = request.query_params.get("where")
+                    if not where:
+                        raise MissingRequiredParameterError("Parameter 'where' is required")
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
                         raise InvalidParameterError(message="Offset must be positive")
@@ -136,19 +138,14 @@ def create_filter_endpoint(
                         features,
                         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
                     )
-                with StepProfiler(method="filter_endpoint", step="build filter query"):
-                    # TODO: Address possible SQL injection CWE-89
-                    query = con.sql(
-                        f"""\
-                        SELECT {",".join(supported_columns)}
-                        FROM read_parquet({parquet_file_urls})
-                        WHERE {where}
-                        LIMIT {length}
-                        OFFSET {offset}"""  # nosec B608
-                    )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
-                    rows = query.fetchall()
-                    table: Table = {"columns": supported_columns, "rows": rows}
+                    table = execute_filter_query(
+                        columns=supported_columns,
+                        parquet_file_urls=parquet_file_urls,
+                        where=where,
+                        limit=length,
+                        offset=offset,
+                    )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
@@ -201,6 +198,22 @@ def get_features_from_parquet_file_metadata(
         parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
     )
     return Features.from_arrow_schema(pq.read_schema(parquet_file_metadata_path))
+
+
+def execute_filter_query(
+    columns: list[str], parquet_file_urls: list[str], where: str, limit: int, offset: int
+) -> Table:
+    # TODO: Address possible SQL injection CWE-89
+    query = con.sql(
+        f"""\
+        SELECT {",".join(columns)}
+        FROM read_parquet({parquet_file_urls})
+        WHERE {where}
+        LIMIT {limit}
+        OFFSET {offset}"""  # nosec B608
+    )
+    rows = query.fetchall()
+    return {"columns": columns, "rows": rows}
 
 
 # TODO: duplicated in /rows except Table
