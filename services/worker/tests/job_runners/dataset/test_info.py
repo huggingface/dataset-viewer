@@ -12,8 +12,8 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.dtos import PreviousJob
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
-from worker.utils import PreviousJob
 
 from ..config.test_info import CONFIG_INFO_1, CONFIG_INFO_2, DATASET_INFO_OK
 from ..utils import UpstreamResponse

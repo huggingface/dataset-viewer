@@ -2,18 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Tuple, TypedDict
+from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.simple_cache import get_validity_by_kind
 
+from worker.dtos import DatasetIsValidResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import JobResult
-
-
-class DatasetIsValidResponse(TypedDict):
-    valid: bool
-
 
 SPLIT_KINDS = ["config-split-names-from-streaming", "config-split-names-from-info"]
 FIRST_ROWS_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]

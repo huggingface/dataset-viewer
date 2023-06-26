@@ -21,12 +21,12 @@ from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.dtos import ImageUrlColumnsResponse
 from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
     SplitOptInOutUrlsScanJobRunner,
     check_spawning,
 )
 from worker.resources import LibrariesResource
-from worker.utils import ImageUrlColumnsResponse
 
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasetTest, get_default_config_split

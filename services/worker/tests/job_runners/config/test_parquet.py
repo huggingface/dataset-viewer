@@ -12,14 +12,12 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import (
-    ConfigParquetJobRunner,
-    ConfigParquetResponse,
-)
-from worker.job_runners.config.parquet_and_info import (
+from worker.dtos import (
     ConfigParquetAndInfoResponse,
+    ConfigParquetResponse,
     ParquetFileItem,
 )
+from worker.job_runners.config.parquet import ConfigParquetJobRunner
 
 
 @pytest.fixture(autouse=True)

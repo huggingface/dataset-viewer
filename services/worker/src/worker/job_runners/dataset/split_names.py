@@ -9,14 +9,14 @@ from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_best_response, get_previous_step_or_raise
 
-from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import (
+from worker.dtos import (
     ConfigItem,
     DatasetSplitNamesResponse,
     FailedConfigItem,
     JobResult,
     SplitItem,
 )
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
 def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitNamesResponse, float]:
