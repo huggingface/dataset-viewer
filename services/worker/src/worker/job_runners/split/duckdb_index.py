@@ -127,19 +127,20 @@ def compute_index_rows(
             f"Previous step '{config_parquet_and_info_step}' did not return the expected content.", e
         ) from e
 
-    # configure duckdb extensions
-    if extensions_directory is not None:
-        duckdb.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
-    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
-    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
-
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
-
     con = duckdb.connect(str(db_path.resolve()))
+
+    # configure duckdb extensions
+    if extensions_directory is not None:
+        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
+    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
+    con.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
+    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
+    con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
+
+
     logging.debug(CREATE_SEQUENCE_COMMAND)
     con.sql(CREATE_SEQUENCE_COMMAND)
 
