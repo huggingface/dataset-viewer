@@ -65,6 +65,15 @@ class JobResult(TypedDict):
     output: Optional[JobOutput]
 
 
+class SplitHubFile(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    url: str
+    filename: str
+    size: int
+
+
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 def orjson_default(obj: Any) -> Any:
     if isinstance(obj, bytes):

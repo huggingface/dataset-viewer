@@ -19,13 +19,12 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority
+from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
 from worker.dtos import (
     ConfigParquetMetadataResponse,
     ConfigParquetResponse,
-    ParquetFileItem,
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
@@ -97,10 +96,10 @@ def get_job_runner(
             HTTPStatus.OK,
             ConfigParquetResponse(
                 parquet_files=[
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],

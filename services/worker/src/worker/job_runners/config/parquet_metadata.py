@@ -5,7 +5,6 @@ import logging
 from functools import partial
 from typing import List, Optional
 
-from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
 from libcommon.exceptions import (
@@ -16,7 +15,7 @@ from libcommon.exceptions import (
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, SplitHubFile
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
@@ -25,15 +24,10 @@ from worker.config import AppConfig
 from worker.dtos import (
     CompleteJobResult,
     ConfigParquetMetadataResponse,
-    ParquetFileItem,
     ParquetFileMetadataItem,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-
-
-def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
-    return ParquetFile(fs.open(url, headers=headers))
+from worker.utils import get_parquet_file
 
 
 def compute_parquet_metadata_response(
@@ -70,7 +64,7 @@ def compute_parquet_metadata_response(
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        parquet_file_items: List[ParquetFileItem] = [
+        parquet_file_items: List[SplitHubFile] = [
             parquet_file_item for parquet_file_item in parquet_files_content if parquet_file_item["config"] == config
         ]
         if not parquet_file_items:

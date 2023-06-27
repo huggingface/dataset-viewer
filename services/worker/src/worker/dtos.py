@@ -4,6 +4,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
+from libcommon.utils import SplitHubFile
+
 
 class JobRunnerInfo(TypedDict):
     job_type: str
@@ -110,14 +112,8 @@ class ConfigInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
 
 
-class ParquetFileItem(SplitItem):
-    url: str
-    filename: str
-    size: int
-
-
 class ConfigParquetAndInfoResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+    parquet_files: List[SplitHubFile]
     dataset_info: Dict[str, Any]
 
 
@@ -134,7 +130,7 @@ class ConfigParquetMetadataResponse(TypedDict):
 
 
 class ConfigParquetResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+    parquet_files: List[SplitHubFile]
 
 
 class ConfigSize(TypedDict):
@@ -183,7 +179,7 @@ class DatasetIsValidResponse(TypedDict):
 
 
 class DatasetParquetResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
+    parquet_files: List[SplitHubFile]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
 

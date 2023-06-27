@@ -9,10 +9,10 @@ from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
-from libcommon.utils import Priority
+from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.dtos import ConfigParquetResponse, DatasetParquetResponse, ParquetFileItem
+from worker.dtos import ConfigParquetResponse, DatasetParquetResponse
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 
 from ..utils import UpstreamResponse
@@ -89,7 +89,7 @@ def get_job_runner(
                     http_status=HTTPStatus.OK,
                     content=ConfigParquetResponse(
                         parquet_files=[
-                            ParquetFileItem(
+                            SplitHubFile(
                                 dataset="ok",
                                 config="config_1",
                                 split="train",
@@ -107,7 +107,7 @@ def get_job_runner(
                     http_status=HTTPStatus.OK,
                     content=ConfigParquetResponse(
                         parquet_files=[
-                            ParquetFileItem(
+                            SplitHubFile(
                                 dataset="ok",
                                 config="config_2",
                                 split="train",
@@ -122,10 +122,10 @@ def get_job_runner(
             None,
             DatasetParquetResponse(
                 parquet_files=[
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_2", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],

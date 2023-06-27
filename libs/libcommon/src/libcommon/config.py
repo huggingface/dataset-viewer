@@ -24,6 +24,7 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
+    PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
@@ -101,6 +102,39 @@ class ParquetMetadataConfig:
         with env.prefixed("PARQUET_METADATA_"):
             return cls(
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=PARQUET_METADATA_STORAGE_DIRECTORY),
+            )
+
+
+DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
+DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
+DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
+DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+
+
+@dataclass(frozen=True)
+class DuckDbIndexConfig:
+    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
+    committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
+    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
+    url_template: str = DUCKDB_INDEX_URL_TEMPLATE
+    max_parquet_size_bytes: int = DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+
+    @classmethod
+    def from_env(cls) -> "DuckDbIndexConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DUCKDB_INDEX_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
+                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
+                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
+                url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
+                max_parquet_size_bytes=env.int(
+                    name="MAX_PARQUET_SIZE_BYTES", default=DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+                ),
             )
 
 
@@ -318,6 +352,13 @@ class ProcessingGraphConfig:
                 "input_type": "dataset",
                 "triggered_by": ["dataset-config-names", "config-opt-in-out-urls-count"],
                 "job_runner_version": PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
+            },
+            "split-duckdb-index": {
+                "input_type": "split",
+                "triggered_by": [
+                    "config-split-names-from-info",
+                ],
+                "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
             },
         }
     )

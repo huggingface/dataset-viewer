@@ -925,11 +925,11 @@
         "properties": {
           "parquet_files": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ParquetFileItem" }
+            "items": { "$ref": "#/components/schemas/SplitHubFile" }
           }
         }
       },
-      "ParquetFileItem": {
+      "SplitHubFile": {
         "type": "object",
         "required": ["dataset", "config", "split", "url", "filename", "size"],
         "properties": {
