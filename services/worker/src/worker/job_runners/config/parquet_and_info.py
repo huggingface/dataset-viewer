@@ -8,6 +8,7 @@ from functools import partial
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from typing import Any, List, Optional, Set, Tuple
+from urllib.parse import unquote
 
 import datasets
 import datasets.config
@@ -577,6 +578,8 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
             src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split(
                 "/", 1
             )
+            src_revision = unquote(src_revision)
+            src_path_in_repo = unquote(src_path_in_repo)
 
             # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
             parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
