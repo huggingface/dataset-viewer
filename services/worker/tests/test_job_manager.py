@@ -11,9 +11,9 @@ from libcommon.simple_cache import CachedResponse, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-from worker.utils import CompleteJobResult
 
 from .fixtures.hub import get_default_config_split
 
@@ -125,7 +125,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
     assert Job.objects().count() == 0
-    queue.upsert_job(
+    queue.add_job(
         job_type=root_step.job_type,
         dataset="dataset",
         revision="revision",
@@ -195,7 +195,7 @@ def test_job_runner_set_crashed(
 
     queue = Queue()
     assert Job.objects().count() == 0
-    queue.upsert_job(
+    queue.add_job(
         job_type=test_processing_step.job_type,
         dataset=dataset,
         revision=revision,

@@ -34,6 +34,7 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
+from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.job_runners.split.descriptive_stats import SplitDescriptiveStatsJobRunner
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
@@ -74,6 +75,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     hf_datasets_cache: Path
     assets_directory: StrPath
     parquet_metadata_directory: StrPath
+    duckdb_index_cache_directory: StrPath
     stats_cache_directory: StrPath
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
@@ -224,6 +226,14 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 stats_cache_directory=self.stats_cache_directory,
             )
 
+        if job_type == SplitDuckDbIndexJobRunner.get_job_type():
+            return SplitDuckDbIndexJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                duckdb_index_cache_directory=self.duckdb_index_cache_directory,
+            )
+
         supported_job_types = [
             DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
@@ -243,6 +253,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
+            SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatsJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

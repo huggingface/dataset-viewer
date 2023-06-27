@@ -143,6 +143,23 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
+        "duckdb_index": Dataset.from_pandas(
+            pd.DataFrame(
+                {
+                    "text": [
+                        (
+                            "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
+                            " comlink"
+                        ),
+                        "There goes another one.",
+                        "Vader turns round and round in circles as his ship spins into space.",
+                        "We count thirty Rebel ships, Lord Vader.",
+                        "The wingman spots the pirateship coming at him and warns the Dark Lord",
+                    ]
+                },
+                dtype=pd.StringDtype(storage="python"),
+            )
+        ),
         "descriptive_stats": Dataset.from_dict(
             {
                 "int_column": [0, 0, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 5, 5, 5, 6, 7, 8, 8, 8],

@@ -2,19 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
+from worker.dtos import CompleteJobResult, ConfigParquetResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.utils import CompleteJobResult
-
-
-class ConfigParquetResponse(TypedDict):
-    parquet_files: List[ParquetFileItem]
 
 
 def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse:

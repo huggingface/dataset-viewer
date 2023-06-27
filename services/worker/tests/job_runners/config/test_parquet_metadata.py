@@ -4,28 +4,33 @@
 import io
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Optional
 from unittest.mock import patch
 
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from fsspec.implementations.http import HTTPFileSystem
+from datasets import Dataset, Features
+from fsspec.implementations.http import HTTPFile, HTTPFileSystem
+from huggingface_hub import hf_hub_url
 from libcommon.exceptions import PreviousStepFormatError
+from libcommon.parquet_utils import ParquetIndexWithMetadata
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority
+from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.job_runners.config.parquet import ConfigParquetResponse
-from worker.job_runners.config.parquet_and_info import ParquetFileItem
-from worker.job_runners.config.parquet_metadata import (
-    ConfigParquetMetadataJobRunner,
+from worker.dtos import (
     ConfigParquetMetadataResponse,
+    ConfigParquetResponse,
     ParquetFileMetadataItem,
 )
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
+
+from ...constants import CI_USER_TOKEN
+from ...fixtures.hub import hf_api
 
 
 @pytest.fixture(autouse=True)
@@ -91,10 +96,10 @@ def get_job_runner(
             HTTPStatus.OK,
             ConfigParquetResponse(
                 parquet_files=[
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url1", filename="filename1", size=0
                     ),
-                    ParquetFileItem(
+                    SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],
@@ -186,3 +191,74 @@ def test_compute(
                 )
                 == pq.ParquetFile(dummy_parquet_buffer).metadata
             )
+
+
+class AuthenticatedHTTPFile(HTTPFile):  # type: ignore
+    last_url: Optional[str] = None
+
+    def __init__(  # type: ignore
+        self,
+        fs,
+        url,
+        session=None,
+        block_size=None,
+        mode="rb",
+        cache_type="bytes",
+        cache_options=None,
+        size=None,
+        loop=None,
+        asynchronous=False,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            fs,
+            url,
+            session=session,
+            block_size=block_size,
+            mode=mode,
+            cache_type=cache_type,
+            cache_options=cache_options,
+            size=size,
+            loop=loop,
+            asynchronous=asynchronous,
+            **kwargs,
+        )
+        assert self.kwargs == {"headers": {"authorization": f"Bearer {CI_USER_TOKEN}"}}
+        AuthenticatedHTTPFile.last_url = url
+
+
+def test_ParquetIndexWithMetadata_query(
+    datasets: Mapping[str, Dataset], hub_public_big: str, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    ds = datasets["big"]
+    httpfs = HTTPFileSystem(headers={"authorization": f"Bearer {CI_USER_TOKEN}"})
+    filename = next(
+        iter(
+            repo_file
+            for repo_file in hf_api.list_repo_files(repo_id=hub_public_big, repo_type="dataset")
+            if repo_file.endswith(".parquet")
+        )
+    )
+    url = hf_hub_url(repo_id=hub_public_big, filename=filename, repo_type="dataset")
+    metadata_path = str(tmp_path_factory.mktemp("test_ParquetIndexWithMetadata_query") / "metadata.parquet")
+    with httpfs.open(url) as f:
+        num_bytes = f.size
+        pf = pq.ParquetFile(url, filesystem=httpfs)
+        num_rows = pf.metadata.num_rows
+        features = Features.from_arrow_schema(pf.schema_arrow)
+        pf.metadata.write_metadata_file(metadata_path)
+    index = ParquetIndexWithMetadata(
+        features=features,
+        supported_columns=list(features),
+        unsupported_columns=[],
+        parquet_files_urls=[url],
+        metadata_paths=[metadata_path],
+        num_rows=[num_rows],
+        num_bytes=[num_bytes],
+        httpfs=httpfs,
+        hf_token=CI_USER_TOKEN,
+    )
+    with patch("libcommon.parquet_utils.HTTPFile", AuthenticatedHTTPFile):
+        out = index.query(offset=0, length=2).to_pydict()
+    assert out == ds[:2]
+    assert AuthenticatedHTTPFile.last_url == url

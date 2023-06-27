@@ -87,6 +87,27 @@
 - name: CONFIG_NAMES_MAX_NUMBER
   value: {{ .Values.configNames.maxNumber | quote }}
 
+# specific to 'split-duckdb-index' job runner
+- name: DUCKDB_INDEX_COMMIT_MESSAGE
+  value: {{ .Values.duckDBIndex.commitMessage | quote }}
+- name: DUCKDB_INDEX_COMMITTER_HF_TOKEN
+  {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.secrets.appParquetConverterHfToken.secretName | quote }}
+      key: HF_TOKEN
+      optional: false
+  {{- else }}
+  value: {{ .Values.secrets.appParquetConverterHfToken.value }}
+  {{- end }}
+- name: DUCKDB_INDEX_TARGET_REVISION
+  value: {{ .Values.duckDBIndex.targetRevision | quote }}
+- name: DUCKDB_INDEX_URL_TEMPLATE
+  value: {{ .Values.duckDBIndex.urlTemplate | quote }}
+- name: DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+  value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
+- name: DUCKDB_INDEX_STORAGE_DIRECTORY
+  value: {{ .Values.duckDBIndex.storageDirectory | quote }}
 # specific to 'split-descriptive-stats'
 - name: DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStats.histogramNumBins | quote }}

@@ -2,43 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import TypedDict
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
+from worker.dtos import CompleteJobResult, ConfigSize, ConfigSizeResponse, SplitSize
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
-from worker.utils import CompleteJobResult
-
-
-class ConfigSize(TypedDict):
-    dataset: str
-    config: str
-    num_bytes_original_files: int
-    num_bytes_parquet_files: int
-    num_bytes_memory: int
-    num_rows: int
-    num_columns: int
-
-
-class SplitSize(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    num_bytes_parquet_files: int
-    num_bytes_memory: int
-    num_rows: int
-    num_columns: int
-
-
-class ConfigSizeContent(TypedDict):
-    config: ConfigSize
-    splits: list[SplitSize]
-
-
-class ConfigSizeResponse(TypedDict):
-    size: ConfigSizeContent
 
 
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:

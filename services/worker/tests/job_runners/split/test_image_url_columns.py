@@ -15,8 +15,8 @@ from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
+from worker.dtos import ImageUrlColumnsResponse
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
-from worker.utils import ImageUrlColumnsResponse
 
 from ...fixtures.hub import get_default_config_split
 

@@ -11,6 +11,7 @@ from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
     StrPath,
     init_assets_dir,
+    init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_stats_cache_dir,
 )
@@ -75,6 +76,7 @@ def set_env_vars(
     mp.setenv("PARQUET_AND_INFO_MAX_DATASET_SIZE", "10_000")
     mp.setenv("PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES", "10")
     mp.setenv("PARQUET_AND_INFO_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
+    mp.setenv("DUCKDB_INDEX_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
     mp.setenv("DATASETS_BASED_HF_DATASETS_CACHE", str(datasets_cache_directory))
     mp.setenv("HF_MODULES_CACHE", str(modules_cache_directory))
     mp.setenv("WORKER_CONTENT_MAX_BYTES", "10_000_000")
@@ -127,6 +129,11 @@ def assets_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
     return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
+
+
+@fixture
+def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
+    return init_duckdb_index_cache_dir(app_config.duckdb_index.storage_directory)
 
 
 @fixture

@@ -9,6 +9,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
+    DuckDbIndexConfig,
     LogConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
@@ -276,6 +277,7 @@ class AppConfig:
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
+    duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
     descriptive_stats: DescriptiveStatsConfig = field(default_factory=DescriptiveStatsConfig)
 
     @classmethod
@@ -295,5 +297,6 @@ class AppConfig:
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
+            duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_stats=DescriptiveStatsConfig.from_env(),
         )

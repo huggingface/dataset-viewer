@@ -282,6 +282,13 @@ def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[
 
 
 @pytest.fixture(scope="session")
+def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="duckdb_index", dataset=datasets["duckdb_index"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_descriptive_stats(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="descriptive_stats", dataset=datasets["descriptive_stats"])
     yield repo_id
@@ -770,6 +777,19 @@ def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hub
             hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
         ),
         "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index),
+        "splits_response": create_splits_response(hub_public_duckdb_index),
+        "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index, data_type="csv"
+        ),
     }
 
 

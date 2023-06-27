@@ -214,6 +214,17 @@ parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/parquet-metadata"
 
+duckDBIndex:
+  # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
+  storageDirectory: "/duckdb-index"
+  # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
+  commitMessage: "Update duckdb index files"
+  # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/parquet`.
+  targetRevision: "refs/convert/parquet"
+  # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
+  urlTemplate: "/datasets/%s/resolve/%s/%s"
+  # the maximum size of the split parquets.
+  maxParquetSizeBytes: "100_000_000"
 
 descriptiveStats:
   # fixed number of bins for histogram count
