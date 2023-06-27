@@ -8,9 +8,13 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 import duckdb
 import numpy as np
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
-from libcommon.exceptions import ComputationError, PreviousStepFormatError
-
-# from libcommon.exceptions import SplitWithTooBigParquetError
+from libcommon.exceptions import (
+    ComputationError,
+    NoSupportedFeaturesError,
+    ParquetResponseEmptyError,
+    PreviousStepFormatError,
+    SplitWithTooBigParquetError,
+)
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -18,8 +22,9 @@ from libcommon.utils import JobInfo
 from tqdm import tqdm
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import CompleteJobResult
+from worker.utils import check_split_exists
 
 PARQUET_FILENAME = "dataset.parquet"
 
@@ -27,6 +32,7 @@ DECIMALS = 5
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
+NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
 
 class Histogram(TypedDict):
@@ -186,50 +192,70 @@ def compute_descriptive_stats_response(
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatsResponse:
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
+    check_split_exists(dataset=dataset, config=config, split=split)
 
-    previous_step = "config-parquet-and-info"
+    config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(
-        kinds=[previous_step],
+        kinds=[config_parquet_and_info_step],
         dataset=dataset,
         config=config,
     )
     content_parquet_and_info = parquet_and_info_best_response.response["content"]
-    if "parquet_files" not in content_parquet_and_info:
-        raise PreviousStepFormatError(f"previous step '{previous_step} doesn't return expected field: 'parquet_files'")
+    try:
+        split_parquet_files = [
+            parquet_file
+            for parquet_file in content_parquet_and_info["parquet_files"]
+            if parquet_file["config"] == config and parquet_file["split"] == split
+        ]
+        dataset_info = content_parquet_and_info["dataset_info"]
+    except KeyError as e:
+        raise PreviousStepFormatError(
+            (
+                f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
+                "'parquet_files' or 'dataset_info'. "
+            ),
+            e,
+        ) from e
 
-    if "dataset_info" not in content_parquet_and_info:
-        raise PreviousStepFormatError(f"previous step '{previous_step} doesn't return expected field: 'dataset_info'")
-
-    stats: List[StatsPerColumnItem] = []
-    split_parquet_files = [
-        parquet_file
-        for parquet_file in content_parquet_and_info["parquet_files"]
-        if parquet_file["config"] == config and parquet_file["split"] == split
-    ]
+    if not split_parquet_files:
+        raise ParquetResponseEmptyError("No parquet files found.")
+    features = dataset_info.get("features")
+    if not features:
+        raise PreviousStepFormatError(
+            f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
+            "no features found in 'dataset_info'. "
+        )
 
     split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
-
     if split_parquets_size > max_parquet_size_bytes:
-        # TODO: raise libcommon.exceptions.SplitWithTooBigParquetError after duckdb-index PR is merged
-        raise ValueError(
+        raise SplitWithTooBigParquetError(
             f"Statistics computation is limited to split parquets under {max_parquet_size_bytes} bytes. "
             f"Current size of sum of split parquets is {split_parquets_size} bytes."
         )
-
     parquet_files_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
 
-    num_examples = content_parquet_and_info["dataset_info"]["splits"][split]["num_examples"]
-    features = content_parquet_and_info["dataset_info"].get("features", [])
+    stats: List[StatsPerColumnItem] = []
+    num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
         feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
     }
+    numerical_features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
+    }
+    if not categorical_features and not numerical_features:
+        raise NoSupportedFeaturesError(
+            "No features for statistics computation type found. Currently supported types are: "
+            f"{NUMERICAL_DTYPES} and ClassLabel. "
+        )
 
     con = duckdb.connect("dataset.db")
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
 
-    # store data as local parquet file to query fast
+    # store data as local parquet file for fast querying
     local_parquet_path = (
         Path(local_parquet_directory) / PARQUET_FILENAME if local_parquet_directory else Path(PARQUET_FILENAME)
     )
@@ -258,14 +284,9 @@ def compute_descriptive_stats_response(
             )
         )
 
-    numerical_columns = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if feature.get("_type") == "Value" and feature.get("dtype") in INTEGER_DTYPES + FLOAT_DTYPES
-    }
-    if numerical_columns:
+    if numerical_features:
         logging.info("Compute min, max, mean, median, std, histogram for numerical features. ")
-    for feature_name, feature in tqdm(numerical_columns.items()):
+    for feature_name, feature in tqdm(numerical_features.items()):
         feature_dtype = feature["dtype"]
         num_column_stats: NumericalStatsItem = compute_numerical_stats(
             con,

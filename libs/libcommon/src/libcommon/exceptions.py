@@ -106,6 +106,7 @@ CacheableErrorCode = Literal[
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NoIndexableColumnsError",
+    "NoSupportedFeaturesError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -400,6 +401,13 @@ class NoIndexableColumnsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
+
+
+class NoSupportedFeaturesError(CacheableError):
+    """Raised when dataset does not have any features which types are supported by a worker's processing pipeline."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoSupportedFeaturesError", cause, True)
 
 
 class ParameterMissingError(CacheableError):

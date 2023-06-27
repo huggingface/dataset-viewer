@@ -20,14 +20,11 @@ from libcommon.constants import (
 from libcommon.exceptions import (
     FeaturesError,
     InfoError,
-    PreviousStepFormatError,
     RowsPostProcessingError,
-    SplitNotFoundError,
     TooBigContentError,
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from libcommon.viewer_utils.features import get_cell_value
@@ -36,6 +33,7 @@ from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult, JobRunnerInfo, Row, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
+    check_split_exists,
     create_truncated_row_items,
     get_json_size,
     get_rows_or_raise,
@@ -145,16 +143,7 @@ def compute_first_rows_response(
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
-    split_names_best_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
-    )
-    try:
-        splits_content = split_names_best_response.response["content"]["splits"]
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if split not in [split_item["split"] for split_item in splits_content]:
-        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
+    check_split_exists(dataset=dataset, config=config, split=split)
     # get the features
     try:
         info = get_dataset_config_info(

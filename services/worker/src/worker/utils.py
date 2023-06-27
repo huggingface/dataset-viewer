@@ -37,8 +37,11 @@ from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.exceptions import (
     DatasetNotFoundError,
     NormalRowsError,
+    PreviousStepFormatError,
+    SplitNotFoundError,
     StreamingRowsError,
 )
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
 
@@ -352,3 +355,26 @@ def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_h
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
+
+
+def check_split_exists(dataset: str, config: str, split: str) -> None:
+    """
+    Check if dataset has a provided split in a provided config. Dataset's splits are taken from the best response
+    of 'config-split-names-from-streaming' and 'config-split-names-from-info' steps' cache.
+    """
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
+    )
+    try:
+        splits_content = split_names_best_response.response["content"]["splits"]
+    except Exception as e:
+        raise PreviousStepFormatError(
+            (
+                "Previous steps 'config-split-names-from-streaming' and 'config-split-names-from-info did not return"
+                " the expected content."
+            ),
+            e,
+        ) from e
+
+    if split not in [split_item["split"] for split_item in splits_content]:
+        raise SplitNotFoundError(f"Split '{split}' does not exist for the config '{config}' of the dataset.")
