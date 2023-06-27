@@ -174,7 +174,7 @@ DEFAULT_EMPTY_RESPONSE = {
 )
 def test_compute(
     hub_responses_public: HubDatasetTest,
-    hub_reponses_spawning_opt_in_out: HubDatasetTest,
+    hub_responses_spawning_opt_in_out: HubDatasetTest,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     name: str,
@@ -182,7 +182,7 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
-    hub_datasets = {"public": hub_responses_public, "spawning_opt_in_out": hub_reponses_spawning_opt_in_out}
+    hub_datasets = {"public": hub_responses_public, "spawning_opt_in_out": hub_responses_spawning_opt_in_out}
     dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
     job_runner = get_job_runner(
         dataset,
@@ -237,7 +237,7 @@ def test_compute(
 )
 def test_compute_failed(
     app_config: AppConfig,
-    hub_reponses_spawning_opt_in_out: HubDatasetTest,
+    hub_responses_spawning_opt_in_out: HubDatasetTest,
     get_job_runner: GetJobRunner,
     dataset: str,
     columns_max_number: int,
@@ -246,7 +246,7 @@ def test_compute_failed(
     exception_name: str,
 ) -> None:
     if dataset == "too_many_columns":
-        dataset = hub_reponses_spawning_opt_in_out["name"]
+        dataset = hub_responses_spawning_opt_in_out["name"]
     dataset, config, split = get_default_config_split(dataset)
     job_runner = get_job_runner(
         dataset,
