@@ -27,9 +27,6 @@ from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dump
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
 
-# List of error codes that should trigger a retry.
-ERROR_CODES_TO_RETRY: list[str] = ["ClientConnectionError"]
-
 
 class JobManager:
     """
