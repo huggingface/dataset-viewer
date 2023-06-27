@@ -58,10 +58,10 @@ def compute_index_rows(
     target_revision: str,
     hf_endpoint: str,
     commit_message: str,
-    extensions_directory: str,
     url_template: str,
     hf_token: Optional[str],
     max_parquet_size_bytes: int,
+    extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
 ) -> SplitHubFile:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
@@ -128,7 +128,9 @@ def compute_index_rows(
         ) from e
 
     # configure duckdb extensions
-    duckdb.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+    if extensions_directory is not None:
+        duckdb.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
