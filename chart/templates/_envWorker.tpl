@@ -108,4 +108,6 @@
   value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
 - name: DUCKDB_INDEX_STORAGE_DIRECTORY
   value: {{ .Values.duckDBIndex.storageDirectory | quote }}
+- name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+  value: "/tmp/duckdb-extensions"
 {{- end -}}

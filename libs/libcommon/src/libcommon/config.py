@@ -111,6 +111,7 @@ DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
 DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
 DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
 DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,7 @@ class DuckDbIndexConfig:
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
     url_template: str = DUCKDB_INDEX_URL_TEMPLATE
     max_parquet_size_bytes: int = DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+    extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -135,6 +137,7 @@ class DuckDbIndexConfig:
                 max_parquet_size_bytes=env.int(
                     name="MAX_PARQUET_SIZE_BYTES", default=DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
                 ),
+                extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )
 
 
