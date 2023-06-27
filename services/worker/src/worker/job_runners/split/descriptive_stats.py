@@ -3,16 +3,17 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
-from libcommon.exceptions import PreviousStepFormatError
+from libcommon.exceptions import ComputationError, PreviousStepFormatError
 
 # from libcommon.exceptions import SplitWithTooBigParquetError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from tqdm import tqdm
 
@@ -26,9 +27,6 @@ DECIMALS = 5
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
-
-
-SplitDescriptiveStatsJobRunnerErrorCode = Literal["PreviousStepFormatError"]
 
 
 class Histogram(TypedDict):
@@ -71,19 +69,32 @@ def compute_histogram(
     column_name: str,
     parquet_filename: Path,
     bin_size: int,
+    min_value: Union[int, float],
+    n_bins: int,
+    n_samples: Optional[int] = None,
 ) -> Histogram:
     hist_query = f"""
-    SELECT FLOOR("{column_name}"/{bin_size})*{bin_size}, COUNT(*)
+    SELECT CAST(FLOOR("{column_name}"/{bin_size}) as INT), COUNT(*)
      FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
     """
     logging.debug(f"Compute histogram for {column_name}")
-    bins, hist = zip(*con.sql(hist_query).fetchall())  # 2 tuples
-    bins, hist = list(bins), list(hist)
-    if None in bins:  # if there are None values in column
-        # it should be always the last element since we order in query but just in case
-        none_idx = bins.index(None)
-        bins.pop(none_idx)
-        hist.pop(none_idx)
+    hist_query_result = dict(con.sql(hist_query).fetchall())
+    if len(hist_query_result) > n_bins:
+        raise ComputationError(
+            "Got unexpected result during histogram computation: returned more bins than requested. "
+            f"{n_bins=} {hist_query_result=}. "
+        )
+    bins, hist = [], []
+    for bin_idx in range(n_bins):
+        # no key in query result = no examples in this range, so we add 0 manually:
+        hist.append(hist_query_result.get(bin_idx, 0))
+        bins.append(min_value + bin_idx * bin_size)  # multiplying here (not in a query) to avoid floating point errors
+    hist[-1] += hist_query_result.get(n_bins, 0)
+    if n_samples and sum(hist) != n_samples:
+        raise ComputationError(
+            "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
+            f" match. histogram sum={sum(hist)}, {n_samples=}"
+        )
     bins = np.round(bins, DECIMALS).tolist()
     return Histogram(hist=hist, bin_edges=bins)
 
@@ -103,7 +114,7 @@ def compute_numerical_stats(
     """
     minimum, maximum, mean, median, std = con.sql(query).fetchall()[0]
     if dtype in FLOAT_DTYPES:
-        bin_size = np.round((maximum - minimum) / n_bins, decimals=DECIMALS).item()
+        bin_size = (maximum - minimum) / n_bins
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     elif dtype in INTEGER_DTYPES:
         if maximum - minimum < n_bins:
@@ -117,7 +128,15 @@ def compute_numerical_stats(
     nan_count = con.sql(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
-    histogram = compute_histogram(con, column_name, parquet_filename, bin_size=bin_size)
+    histogram = compute_histogram(
+        con,
+        column_name,
+        parquet_filename,
+        min_value=minimum,
+        bin_size=bin_size,
+        n_bins=n_bins,
+        n_samples=n_samples - nan_count,
+    )
     return NumericalStatsItem(
         nan_count=nan_count,
         nan_prop=nan_prop,
@@ -162,7 +181,7 @@ def compute_descriptive_stats_response(
     dataset: str,
     config: str,
     split: str,
-    local_parquet_dir: Optional[Path],
+    local_parquet_directory: Optional[Path],
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatsResponse:
@@ -211,7 +230,9 @@ def compute_descriptive_stats_response(
     con.sql("SET enable_progress_bar=true;")
 
     # store data as local parquet file to query fast
-    local_parquet_path = Path(local_parquet_dir) / PARQUET_FILENAME if local_parquet_dir else Path(PARQUET_FILENAME)
+    local_parquet_path = (
+        Path(local_parquet_directory) / PARQUET_FILENAME if local_parquet_directory else Path(PARQUET_FILENAME)
+    )
     logging.info(f"Copying remote data to a local parquet file {local_parquet_path}. ")
     con.sql(f"COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO '{local_parquet_path}' (FORMAT PARQUET);")
 
@@ -272,13 +293,13 @@ class SplitDescriptiveStatsJobRunner(SplitJobRunnerWithCache):
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        cache_directory: Path,
+        stats_cache_directory: StrPath,
     ):
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            cache_directory=cache_directory,
+            cache_directory=Path(stats_cache_directory),
         )
         self.descriptive_stats_config = app_config.descriptive_stats
 
@@ -296,7 +317,7 @@ class SplitDescriptiveStatsJobRunner(SplitJobRunnerWithCache):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                local_parquet_dir=self.base_cache_directory,
+                local_parquet_directory=self.cache_subdirectory,
                 histogram_num_bins=self.descriptive_stats_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_stats_config.max_parquet_size_bytes,
             )
