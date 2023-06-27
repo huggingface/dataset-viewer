@@ -255,12 +255,12 @@ def datasets() -> Mapping[str, Dataset]:
             },
             features=Features(
                 {
-                    "int": Value("int32"),
-                    "int_nan": Value("int32"),
-                    "float": Value("float32"),
-                    "float_nan": Value("float32"),
-                    "class_label": ClassLabel(names=["cat", "dog"]),
-                    "class_label_nan": ClassLabel(names=["cat", "dog"]),
+                    "int_column": Value("int32"),
+                    "int_nan_column": Value("int32"),
+                    "float_column": Value("float32"),
+                    "float_nan_column": Value("float32"),
+                    "class_label_column": ClassLabel(names=["cat", "dog"]),
+                    "class_label_nan_column": ClassLabel(names=["cat", "dog"]),
                 }
             ),
         ),

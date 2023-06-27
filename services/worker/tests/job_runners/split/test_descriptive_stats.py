@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
@@ -117,23 +117,23 @@ def get_parquet_and_info_job_runner(
     return _get_job_runner
 
 
-EXPECTED_CONTENT = {
+EXPECTED_STATS_CONTENT = {
     "num_examples": 20,
     "stats": [
         {
-            "column_name": "class_label",
+            "column_name": "class_label_column",
             "column_type": "class_label",
             "column_dtype": None,
             "column_stats": {"nan_count": 0, "nan_prop": 0.0, "n_unique": 2, "frequencies": {"cat": 17, "dog": 3}},
         },
         {
-            "column_name": "class_label_nan",
+            "column_name": "class_label_nan_column",
             "column_type": "class_label",
             "column_dtype": None,
             "column_stats": {"nan_count": 4, "nan_prop": 0.2, "n_unique": 3, "frequencies": {"cat": 15, "dog": 1}},
         },
         {
-            "column_name": "int",
+            "column_name": "int_column",
             "column_type": "int",
             "column_dtype": "int32",
             "column_stats": {
@@ -148,7 +148,7 @@ EXPECTED_CONTENT = {
             },
         },
         {
-            "column_name": "int_nan",
+            "column_name": "int_nan_column",
             "column_type": "int",
             "column_dtype": "int32",
             "column_stats": {
@@ -163,7 +163,7 @@ EXPECTED_CONTENT = {
             },
         },
         {
-            "column_name": "float",
+            "column_name": "float_column",
             "column_type": "float",
             "column_dtype": "float32",
             "column_stats": {
@@ -181,7 +181,7 @@ EXPECTED_CONTENT = {
             },
         },
         {
-            "column_name": "float_nan",
+            "column_name": "float_nan_column",
             "column_type": "float",
             "column_dtype": "float32",
             "column_stats": {
@@ -202,15 +202,28 @@ EXPECTED_CONTENT = {
 }
 
 
+@pytest.mark.parametrize(
+    "hub_dataset_name,expected_error_code",
+    [("descriptive_stats", None), ("audio", "NoSupportedFeaturesError"), ("big", "SplitWithTooBigParquetError")],
+)
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
     hub_responses_descriptive_stats: HubDatasetTest,
+    hub_responses_audio: HubDatasetTest,
+    hub_responses_big: HubDatasetTest,
+    hub_dataset_name: str,
+    expected_error_code: Optional[str],
 ) -> None:
-    dataset = hub_responses_descriptive_stats["name"]
-    config_names_response = hub_responses_descriptive_stats["config_names_response"]
-    splits_response = hub_responses_descriptive_stats["splits_response"]
+    hub_datasets = {
+        "descriptive_stats": hub_responses_descriptive_stats,
+        "audio": hub_responses_audio,
+        "big": hub_responses_big,
+    }
+    dataset = hub_datasets[hub_dataset_name]["name"]
+    config_names_response = hub_datasets[hub_dataset_name]["config_names_response"]
+    splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     config, split = splits_response["splits"][0]["config"], splits_response["splits"][0]["split"]
 
     upsert_response("dataset-config-names", dataset=dataset, http_status=HTTPStatus.OK, content=config_names_response)
@@ -218,7 +231,6 @@ def test_compute(
         "config-split-names-from-info",
         dataset=dataset,
         config=config,
-        split=split,
         http_status=HTTPStatus.OK,
         content=splits_response,
     )
@@ -238,7 +250,12 @@ def test_compute(
     assert parquet_and_info_response
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
-    response = job_runner.compute()
-    assert sorted(response.content.keys()) == ["num_examples", "stats"]
-    assert response.content["num_examples"] == EXPECTED_CONTENT["num_examples"]
-    assert response.content["stats"] == sorted(EXPECTED_CONTENT["stats"], key=lambda x: x["column_name"])
+    if expected_error_code:
+        with pytest.raises(Exception) as e:
+            job_runner.compute()
+        assert e.typename == expected_error_code
+    else:
+        response = job_runner.compute()
+        assert sorted(response.content.keys()) == ["num_examples", "stats"]
+        assert response.content["num_examples"] == EXPECTED_STATS_CONTENT["num_examples"]
+        assert response.content["stats"] == sorted(EXPECTED_STATS_CONTENT["stats"], key=lambda x: x["column_name"])

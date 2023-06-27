@@ -9,11 +9,11 @@ import duckdb
 import numpy as np
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
 from libcommon.exceptions import (
-    ComputationError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitWithTooBigParquetError,
+    StatsComputationError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -86,7 +86,7 @@ def compute_histogram(
     logging.debug(f"Compute histogram for {column_name}")
     hist_query_result = dict(con.sql(hist_query).fetchall())
     if len(hist_query_result) > n_bins:
-        raise ComputationError(
+        raise StatsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
@@ -97,7 +97,7 @@ def compute_histogram(
         bins.append(min_value + bin_idx * bin_size)  # multiplying here (not in a query) to avoid floating point errors
     hist[-1] += hist_query_result.get(n_bins, 0)
     if n_samples and sum(hist) != n_samples:
-        raise ComputationError(
+        raise StatsComputationError(
             "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
             f" match. histogram sum={sum(hist)}, {n_samples=}"
         )
@@ -129,7 +129,7 @@ def compute_numerical_stats(
             bin_size = int(np.round((maximum - minimum) / n_bins))
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
-        raise ValueError("Incorrect dtype, only integers and float are allowed. ")
+        raise ValueError("Incorrect dtype, only integer and float are allowed. ")
     nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
     nan_count = con.sql(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0

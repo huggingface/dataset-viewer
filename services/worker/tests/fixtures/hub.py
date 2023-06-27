@@ -595,7 +595,7 @@ SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testur
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist() -> HubDatasetTest:
+def hub_responses_does_not_exist() -> HubDatasetTest:
     return {
         "name": "does_not_exist",
         "config_names_response": None,
@@ -606,7 +606,7 @@ def hub_reponses_does_not_exist() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist_config() -> HubDatasetTest:
+def hub_responses_does_not_exist_config() -> HubDatasetTest:
     return {
         "name": "does_not_exist_config",
         "config_names_response": None,
@@ -617,7 +617,7 @@ def hub_reponses_does_not_exist_config() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist_split() -> HubDatasetTest:
+def hub_responses_does_not_exist_split() -> HubDatasetTest:
     return {
         "name": "does_not_exist_split",
         "config_names_response": None,
@@ -628,7 +628,7 @@ def hub_reponses_does_not_exist_split() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_empty(hub_public_empty: str) -> HubDatasetTest:
+def hub_responses_empty(hub_public_empty: str) -> HubDatasetTest:
     return {
         "name": hub_public_empty,
         "config_names_response": None,
@@ -650,7 +650,7 @@ def hub_responses_public(hub_public_csv: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_private(hub_private_csv: str) -> HubDatasetTest:
+def hub_responses_private(hub_private_csv: str) -> HubDatasetTest:
     return {
         "name": hub_private_csv,
         "config_names_response": create_config_names_response(hub_private_csv),
@@ -661,7 +661,7 @@ def hub_reponses_private(hub_private_csv: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_gated(hub_gated_csv: str) -> HubDatasetTest:
+def hub_responses_gated(hub_gated_csv: str) -> HubDatasetTest:
     return {
         "name": hub_gated_csv,
         "config_names_response": create_config_names_response(hub_gated_csv),
@@ -683,7 +683,7 @@ def hub_reponses_jsonl(hub_public_jsonl: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_audio(hub_public_audio: str) -> HubDatasetTest:
+def hub_responses_audio(hub_public_audio: str) -> HubDatasetTest:
     return {
         "name": hub_public_audio,
         "config_names_response": create_config_names_response(hub_public_audio),
@@ -696,7 +696,7 @@ def hub_reponses_audio(hub_public_audio: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_image(hub_public_image: str) -> HubDatasetTest:
+def hub_responses_image(hub_public_image: str) -> HubDatasetTest:
     return {
         "name": hub_public_image,
         "config_names_response": create_config_names_response(hub_public_image),
@@ -709,7 +709,7 @@ def hub_reponses_image(hub_public_image: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_images_list(hub_public_images_list: str) -> HubDatasetTest:
+def hub_responses_images_list(hub_public_images_list: str) -> HubDatasetTest:
     return {
         "name": hub_public_images_list,
         "config_names_response": create_config_names_response(hub_public_images_list),
@@ -722,7 +722,7 @@ def hub_reponses_images_list(hub_public_images_list: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big(hub_public_big: str) -> HubDatasetTest:
+def hub_responses_big(hub_public_big: str) -> HubDatasetTest:
     return {
         "name": hub_public_big,
         "config_names_response": create_config_names_response(hub_public_big),
@@ -733,7 +733,7 @@ def hub_reponses_big(hub_public_big: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
+def hub_responses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
     return {
         "name": hub_public_big_no_info,
         "config_names_response": create_config_names_response(hub_public_big_no_info),
@@ -746,7 +746,7 @@ def hub_reponses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
+def hub_responses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
     return {
         "name": hub_public_big_csv,
         "config_names_response": create_config_names_response(hub_public_big_csv),
@@ -757,7 +757,7 @@ def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_external_files(hub_public_external_files: str) -> HubDatasetTest:
+def hub_responses_external_files(hub_public_external_files: str) -> HubDatasetTest:
     return {
         "name": hub_public_external_files,
         "config_names_response": create_config_names_response(hub_public_external_files),
@@ -768,7 +768,7 @@ def hub_reponses_external_files(hub_public_external_files: str) -> HubDatasetTes
 
 
 @pytest.fixture
-def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> HubDatasetTest:
+def hub_responses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> HubDatasetTest:
     return {
         "name": hub_public_spawning_opt_in_out,
         "config_names_response": create_config_names_response(hub_public_spawning_opt_in_out),
