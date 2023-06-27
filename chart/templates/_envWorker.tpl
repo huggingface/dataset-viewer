@@ -108,6 +108,8 @@
   value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
 - name: DUCKDB_INDEX_STORAGE_DIRECTORY
   value: {{ .Values.duckDBIndex.storageDirectory | quote }}
+- name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+  value: "/tmp/duckdb-extensions"
 # specific to 'split-descriptive-stats'
 - name: DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStats.histogramNumBins | quote }}

@@ -50,6 +50,7 @@ CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', '*', ov
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
+SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 
 
 def compute_index_rows(
@@ -64,6 +65,7 @@ def compute_index_rows(
     url_template: str,
     hf_token: Optional[str],
     max_parquet_size_bytes: int,
+    extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
 ) -> SplitHubFile:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
@@ -119,6 +121,9 @@ def compute_index_rows(
         ) from e
 
     # configure duckdb extensions
+    if extensions_directory is not None:
+        duckdb.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
     duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
     duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
@@ -250,6 +255,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 hf_token=self.app_config.common.hf_token,
                 url_template=self.duckdb_index_config.url_template,
                 commit_message=self.duckdb_index_config.commit_message,
+                extensions_directory=self.duckdb_index_config.extensions_directory,
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
