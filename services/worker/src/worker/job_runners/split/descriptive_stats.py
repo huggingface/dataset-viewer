@@ -284,7 +284,9 @@ def compute_descriptive_stats_response(
             )
         )
 
-    return SplitDescriptiveStatsResponse(num_examples=num_examples, stats=stats)
+    return SplitDescriptiveStatsResponse(
+        num_examples=num_examples, stats=sorted(stats, key=lambda x: x["column_name"])
+    )
 
 
 class SplitDescriptiveStatsJobRunner(SplitJobRunnerWithCache):

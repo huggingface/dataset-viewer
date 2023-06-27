@@ -281,6 +281,13 @@ def hub_public_spawning_opt_in_out(datasets: Mapping[str, Dataset]) -> Iterator[
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def hub_public_descriptive_stats(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="descriptive_stats", dataset=datasets["descriptive_stats"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -762,5 +769,16 @@ def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> Hub
         "first_rows_response": create_first_rows_response(
             hub_public_spawning_opt_in_out, SPAWNING_OPT_IN_OUT_cols, SPAWNING_OPT_IN_OUT_rows
         ),
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_descriptive_stats(hub_public_descriptive_stats: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_descriptive_stats,
+        "config_names_response": create_config_names_response(hub_public_descriptive_stats),
+        "splits_response": create_splits_response(hub_public_descriptive_stats),
+        "first_rows_response": None,
         "parquet_and_info_response": None,
     }
