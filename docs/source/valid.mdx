@@ -2,17 +2,17 @@
 
 Before you download a dataset from the Hub, it is helpful to know which datasets are available or if a specific dataset you're interested in is available. Datasets Server provides two endpoints for verifying whether a dataset is valid or not:
 
-* `/valid` returns a list of all the datasets that work without any errors.
-* `/is-valid` checks if a specific dataset works without any errors.
+- `/valid` returns a list of all the datasets that work without any errors.
+- `/is-valid` checks if a specific dataset works without any errors.
 
 The API endpoints will return an error for datasets that cannot be loaded with the [🤗 Datasets](https://github.com/huggingface/datasets) library, for example, because the data hasn't been uploaded or the format is not supported.
 
 <Tip warning={true}>
-  Currently, only {" "}
-  <a href="https://huggingface.co/docs/datasets/stream">streamable</a> datasets
-  are supported so Datasets Server can extract the 100 first rows without downloading the
-  whole dataset. This is especially useful for previewing large datasets where downloading
-  the whole dataset may take hours!
+  The largest datasets are partially supported by Datasets Server. If they are{" "}
+  <a href="https://huggingface.co/docs/datasets/stream">streamable</a>, it can
+  extract the 100 first rows without downloading the whole dataset. This is
+  especially useful for previewing large datasets where downloading the whole
+  dataset may take hours! See the `preview` field in the response of `/valid`.
 </Tip>
 
 This guide shows you how to check dataset validity programmatically, but free to try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets).
@@ -58,16 +58,31 @@ curl https://datasets-server.huggingface.co/valid \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list valid datasets nested under the `valid` key:
+The endpoint response is a JSON containing lists of datasets nested under the following keys:
+
+- `viewer`: the dataset is fully-supported and the Dataset Viewer is working on the Hub dataset page. It also means that the dataset has been auto-converted to Parquet.
+- `preview`: the dataset is partially supported. The Dataset Viewer on the Hub shows a Preview of the first 100 rows, obtained by streaming.
+- `valid` (_deprecated_): the union of the `viewer` and `preview` lists.
 
 ```json
 {
+  "viewer": [
+    "0-hero/OIG-small-chip2",
+    "000alen/semantic","04-07-22/wep-probes",
+    "0721boy/nva-pic",
+    "0Tick/Danbooru-Random-Posts-Scrape",
+    "0Tick/E621-Random-PostsTag-Scrape",
+    "0n1xus/codexglue"
+    "..."
+  ],
+  "preview": [
+    "0x7194633/GCRL-flibusta",
+    "0xJustin/Dungeons_and_Diffusion_uncropped",
+    "0xaryan/music-classifier","13GP/training",
+    "..."
+  ],
   "valid": [
-    "0n1xus/codexglue",
-    "0n1xus/pytorrent-standalone",
-    "0x7194633/rupile",
-    "51la5/keyword-extraction",
-    ...
+    "// [deprecated] contains the union of 'viewer' and 'preview'."
   ]
 }
 ```
