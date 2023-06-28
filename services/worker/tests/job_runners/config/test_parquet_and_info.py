@@ -42,6 +42,7 @@ from worker.job_runners.config.parquet_and_info import (
     create_commits,
     get_delete_operations,
     get_writer_batch_size,
+    list_generated_parquet_files,
     parse_repo_filename,
     raise_if_blocked,
     raise_if_requires_manual_download,
@@ -839,16 +840,11 @@ def test_stream_convert_to_parquet(
     )
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, full = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
-    assert full == (expected_num_shards == num_data_files)
+    assert partial == (expected_num_shards < num_data_files)
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
-    parquet_filenames = sorted(os.path.basename(op.path_or_fileobj) for op in parquet_operations)
-    if num_shards == 1:
-        assert parquet_filenames[0] == "csv-train.parquet"
-    else:
-        assert all(
-            parquet_filename == f"csv-train-{shard_idx:05d}-of-{num_shards:05d}.parquet"
-            for shard_idx, parquet_filename in enumerate(parquet_filenames)
-        )
+    parquet_files = list_generated_parquet_files(builder, partial=partial)
+    assert len(parquet_files) == expected_num_shards
+    assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
