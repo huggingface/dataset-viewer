@@ -362,7 +362,7 @@ def test_supported_if_big_parquet(
     assert_content_is_equal(content, hub_reponses_big["parquet_and_info_response"])
 
 
-def test_partially_supported_if_big_non_parquet(
+def test_partially_converted_if_big_non_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     hub_reponses_big_csv: HubDatasetTest,
@@ -391,6 +391,7 @@ def test_partially_supported_if_big_non_parquet(
     assert_content_is_equal(content, hub_reponses_big_csv["parquet_and_info_response"])
     # dataset is partially generated
     assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size
+    assert content["parquet_files"][0]["url"].endswith("/partial/train/0000.parquet")
 
 
 def test_supported_if_gated(
@@ -583,6 +584,9 @@ def test_previous_step_error(
             "config",
             False,
         ),
+        ("config/partial/split/0000.parquet", "split", "config", False),
+        ("config/partial/split.with.dots/0000.parquet", "split.with.dots", "config", False),
+        ("config/partial/toomanyzeros/00000.parquet", "toomanyzeros", "config", True),
         ("builder-split-00000-of-00001.parquet", "split", "config", True),
         ("plain_text/openwebtext-10k-train.parquet", "train", "plain_text", False),
         ("plain_text/openwebtext-10k-train-00000-of-00001.parquet", "train", "plain_text", False),

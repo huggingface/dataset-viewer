@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import functools
 import glob
 import logging
 import os
 import re
 from contextlib import ExitStack
-from functools import partial, wraps
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
@@ -99,27 +99,48 @@ T = TypeVar("T")
 
 
 class ParquetFile:
-    def __init__(self, local_file: str, local_dir: str, config: str):
+    def __init__(
+        self, local_file: str, local_dir: str, config: str, split: str, shard_idx: int, partial: bool = False
+    ):
         if not local_file.startswith(local_dir):
             raise ValueError(f"{local_file} is not in {local_dir}")
         self.local_file = local_file
         self.local_dir = local_dir
         self.config = config
+        self.split = split
+        self.shard_idx = shard_idx
+        self.partial = partial
 
     @property
     def path_in_repo(self) -> str:
-        return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
+        if self.partial:
+            return f"{self.config}/partial/{self.split}/{self.shard_idx:04d}.parquet"
+        else:
+            return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
 
 
-p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
+filename_pattern = re.compile("^[0-9]{4}\.parquet$")
+legacy_filename_pattern = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
+    if not filename_pattern.match(os.path.basename(filename)):
+        return parse_legacy_repo_filename(filename)
+    parts = filename.split("/")
+    if len(parts) == 4 and parts[1] == "partial":
+        parts.pop(1)
+    if len(parts) != 3:
+        raise ValueError(f"Invalid filename: {filename}")
+    config, split, _ = parts
+    return config, split
+
+
+def parse_legacy_repo_filename(filename: str) -> Tuple[str, str]:
     parts = filename.split("/")
     if len(parts) != 2:
         raise ValueError(f"Invalid filename: {filename}")
     config, fname = parts
-    m = p.match(fname)
+    m = legacy_filename_pattern.match(fname)
     if not m:
         raise ValueError(f"Cannot parse {filename}")
     split = m.group("split")
@@ -460,7 +481,7 @@ def _is_too_big_from_external_data_files(
         try:
             with ThreadPool(16) as pool:
                 total_size = 0
-                get_size = partial(_request_size, hf_token=hf_token)
+                get_size = functools.partial(_request_size, hf_token=hf_token)
                 for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
                     if size is not None:
                         total_size += size
@@ -609,7 +630,7 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
             split = str(split)  # in case it's a NamedSplit
             try:
                 parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                    partial(retry_get_parquet_file_and_size, fs=fs, hf_token=hf_token),
+                    functools.partial(retry_get_parquet_file_and_size, fs=fs, hf_token=hf_token),
                     data_files[split],
                     unit="pq",
                     disable=True,
@@ -663,7 +684,7 @@ class limit_parquet_writes:
         def limited_generator(
             generator: Callable[..., Generator[T, None, None]]
         ) -> Callable[..., Generator[T, None, None]]:
-            @wraps(generator)
+            @functools.wraps(generator)
             def wrapped(*args: Any, **kwargs: Any) -> Generator[T, None, None]:
                 for item in generator(*args, **kwargs):
                     if limiter.total_bytes < limiter.max_dataset_size:
@@ -691,6 +712,35 @@ class limit_parquet_writes:
         return self.exit_stack.close()
 
 
+def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False) -> List[ParquetFile]:
+    assert builder.info.splits
+    split_dict = builder.info.splits
+    local_parquet_files: List[ParquetFile] = []
+    for split, split_info in split_dict.items():
+        num_shards = len(split_info.shard_lengths) if isinstance(split_info.shard_lengths, list) else 1
+        fname = f"{builder.name}-{split}.parquet"
+        local_parquet_files.extend(
+            [
+                ParquetFile(
+                    local_file=os.path.join(
+                        builder.cache_dir,
+                        fname.replace(
+                            ".parquet",
+                            f"-{shard_idx:05d}-of-{num_shards:05d}.parquet" if num_shards > 1 else ".parquet",
+                        ),
+                    ),
+                    local_dir=builder.cache_dir,
+                    config=builder.config.name,
+                    split=split,
+                    shard_idx=shard_idx,
+                    partial=partial,
+                )
+                for shard_idx in range(num_shards)
+            ]
+        )
+    return local_parquet_files
+
+
 def stream_convert_to_parquet(builder: DatasetBuilder, max_dataset_size: int) -> Tuple[List[CommitOperationAdd], bool]:
     writer_batch_size = get_writer_batch_size(builder.info)
     if writer_batch_size is not None and (
@@ -703,30 +753,27 @@ def stream_convert_to_parquet(builder: DatasetBuilder, max_dataset_size: int) ->
         dataset_name=builder.name,
         data_dir=builder.config.data_dir,
     )
+    os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.name)
     splits_generators = {sg.name: sg for sg in builder._split_generators(dl_manager)}
-    os.makedirs(builder.cache_dir, exist_ok=True)
-    full = True
+    partial = False
     for split in splits_generators:
         split_dict.add(splits_generators[split].split_info)
         with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
             builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
-            full = full and limiter.total_bytes < max_dataset_size
+            partial = partial or limiter.total_bytes >= max_dataset_size
     builder.info.splits = split_dict
     builder.info.dataset_size = sum(split.num_bytes for split in builder.info.splits.values())
     builder.info.download_size = None
     builder.info.size_in_bytes = None
-    local_parquet_files = [
-        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
-        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
-    ]
 
     # send the files to the target revision
+    local_parquet_files = list_generated_parquet_files(builder, partial=partial)
     parquet_operations: List[CommitOperationAdd] = [
         CommitOperationAdd(path_in_repo=parquet_file.path_in_repo, path_or_fileobj=parquet_file.local_file)
         for parquet_file in local_parquet_files
     ]
-    return parquet_operations, full
+    return parquet_operations, partial
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
@@ -740,10 +787,7 @@ def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     builder.download_and_prepare(
         file_format="parquet"
     )  # the parquet files are stored in the cache dir and it fills the info
-    local_parquet_files = [
-        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
-        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
-    ]
+    local_parquet_files = list_generated_parquet_files(builder)
 
     # send the files to the target revision
     parquet_operations: List[CommitOperationAdd] = [
@@ -1078,7 +1122,7 @@ def compute_config_parquet_and_info_response(
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
-    full = True
+    partial = False
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
         fill_builder_info(builder, hf_token=hf_token)
@@ -1099,7 +1143,7 @@ def compute_config_parquet_and_info_response(
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
         ):
-            parquet_operations, full = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
         else:
             parquet_operations = convert_to_parquet(builder)
 
@@ -1140,6 +1184,7 @@ def compute_config_parquet_and_info_response(
         for repo_file in target_dataset_info.siblings
         if repo_file.rfilename.startswith(f"{config}/") and repo_file.rfilename.endswith(".parquet")
     ]
+    repo_files.sort(key=lambda repo_file: repo_file.rfilename)  # type: ignore
     # we might want to check if the sha of the parquet files is the same as the one we just uploaded
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth

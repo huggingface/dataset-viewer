@@ -434,11 +434,16 @@ def create_dataset_info_response_for_audio() -> Any:
 
 
 def create_parquet_and_info_response(
-    dataset: str, data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"]
+    dataset: str,
+    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
+    partial: bool = False,
 ) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
-    filename = "csv-train.parquet" if "csv" in data_type else "parquet-train.parquet"
+    if partial:
+        filename = "0000.parquet"
+    else:
+        filename = "csv-train.parquet" if "csv" in data_type else "parquet-train.parquet"
     size = (
         CSV_PARQUET_SIZE
         if data_type == "csv"
@@ -466,7 +471,9 @@ def create_parquet_and_info_response(
                 "config": config,
                 "split": split,
                 "url": CI_URL_TEMPLATE.format(
-                    repo_id=f"datasets/{dataset}", revision="refs%2Fconvert%2Fparquet", filename=f"{config}/{filename}"
+                    repo_id=f"datasets/{dataset}",
+                    revision="refs%2Fconvert%2Fparquet",
+                    filename=f"{config}/partial/{split}/{filename}" if partial else f"{config}/{filename}",
                 ),
                 "filename": filename,
                 "size": size,
@@ -774,7 +781,9 @@ def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
         "config_names_response": create_config_names_response(hub_public_big_csv),
         "splits_response": create_splits_response(hub_public_big_csv),
         "first_rows_response": create_first_rows_response(hub_public_big_csv, BIG_cols, BIG_rows),
-        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_big_csv, data_type="big-csv"),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_big_csv, data_type="big-csv", partial=True
+        ),
     }
 
 
