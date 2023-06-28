@@ -5,9 +5,13 @@ from http import HTTPStatus
 from typing import Any, Mapping, Optional, TypedDict
 
 
-class UpstreamResponse(TypedDict):
+class _UpstreamResponse(TypedDict):
     kind: str
     dataset: str
-    config: Optional[str]
     http_status: HTTPStatus
     content: Mapping[str, Any]
+
+
+class UpstreamResponse(_UpstreamResponse, total=False):
+    config: Optional[str]
+    split: Optional[str]
