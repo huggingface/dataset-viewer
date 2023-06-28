@@ -639,8 +639,7 @@ class TrackedParquetWriter(pq.ParquetWriter):  # type: ignore
         super().__init__(*args, **kwargs)
 
     def write_table(self, pa_table: pa.Table, row_group_size: Optional[int] = None) -> None:
-        if self.track_write_table is not None:
-            self.track_write_table(pa_table)
+        self.track_write_table(pa_table)
         super().write_table(pa_table, row_group_size=row_group_size)
 
     def track_write_table(self, pa_table: pa.Table) -> None:
