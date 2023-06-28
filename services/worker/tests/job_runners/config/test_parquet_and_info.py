@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
+import os
 from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
@@ -9,6 +10,7 @@ from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Callable, Iterator, List, Optional, Set, TypedDict
+from unittest.mock import patch
 
 import datasets.builder
 import datasets.info
@@ -38,15 +40,16 @@ from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    _is_too_big_from_datasets,
+    _is_too_big_from_external_data_files,
+    _is_too_big_from_hub,
     create_commits,
     get_delete_operations,
     get_writer_batch_size,
     parse_repo_filename,
     raise_if_blocked,
     raise_if_requires_manual_download,
-    raise_if_too_big_from_datasets,
-    raise_if_too_big_from_external_data_files,
-    raise_if_too_big_from_hub,
+    stream_convert_to_parquet,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
@@ -238,14 +241,14 @@ def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_
 
 
 @pytest.mark.parametrize(
-    "name,raises",
+    "name,expected",
     [("public", False), ("big", True)],
 )
-def test_raise_if_too_big_from_hub(
+def test__is_too_big_from_hub(
     hub_public_csv: str,
     hub_public_big: str,
     name: str,
-    raises: bool,
+    expected: bool,
     app_config: AppConfig,
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
@@ -256,78 +259,63 @@ def test_raise_if_too_big_from_hub(
         revision="main",
         files_metadata=True,
     )
-    if raises:
-        with pytest.raises(DatasetTooBigFromHubError):
-            raise_if_too_big_from_hub(
-                dataset_info=dataset_info, max_dataset_size=app_config.parquet_and_info.max_dataset_size
-            )
-    else:
-        raise_if_too_big_from_hub(
-            dataset_info=dataset_info, max_dataset_size=app_config.parquet_and_info.max_dataset_size
-        )
+    assert (
+        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=app_config.parquet_and_info.max_dataset_size)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
-    "name,raises",
+    "name,expected",
     [("public", False), ("big", True)],
 )
-def test_raise_if_too_big_from_datasets(
+def test__is_too_big_from_datasets(
     hub_public_csv: str,
     hub_public_big: str,
     name: str,
-    raises: bool,
+    expected: bool,
     app_config: AppConfig,
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
     builder = load_dataset_builder(dataset)
-    if raises:
-        with pytest.raises(DatasetTooBigFromDatasetsError):
-            raise_if_too_big_from_datasets(
-                info=builder.info,
-                max_dataset_size=app_config.parquet_and_info.max_dataset_size,
-            )
-    else:
-        raise_if_too_big_from_datasets(
+    assert (
+        _is_too_big_from_datasets(
             info=builder.info,
             max_dataset_size=app_config.parquet_and_info.max_dataset_size,
         )
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,max_external_data_files,raises",
+    "max_dataset_size,max_external_data_files,expected",
     [
         (None, None, False),
         (10, None, True),
     ],
 )
-def test_raise_if_too_big_external_files(
+def test__is_too_big_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    raises: bool,
+    expected: bool,
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
 ) -> None:
     max_dataset_size = max_dataset_size or app_config.parquet_and_info.max_dataset_size
     max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
-    if raises:
-        with pytest.raises(DatasetWithTooBigExternalFilesError):
-            raise_if_too_big_from_external_data_files(
-                builder=external_files_dataset_builder,
-                hf_token=app_config.common.hf_token,
-                max_dataset_size=max_dataset_size,
-                max_external_data_files=max_external_data_files,
-            )
-    else:
-        raise_if_too_big_from_external_data_files(
+    assert (
+        _is_too_big_from_external_data_files(
             builder=external_files_dataset_builder,
             hf_token=app_config.common.hf_token,
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
         )
+        == expected
+    )
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,max_external_data_files,raises",
+    "max_dataset_size,max_external_data_files,expected",
     [
         (None, None, False),
         (None, 1, True),
@@ -335,28 +323,22 @@ def test_raise_if_too_big_external_files(
 )
 def test_raise_if_too_many_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
-    raises: bool,
+    expected: bool,
     max_dataset_size: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
 ) -> None:
     max_dataset_size = max_dataset_size or app_config.parquet_and_info.max_dataset_size
     max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
-    if raises:
-        with pytest.raises(DatasetWithTooManyExternalFilesError):
-            raise_if_too_big_from_external_data_files(
-                builder=external_files_dataset_builder,
-                hf_token=app_config.common.hf_token,
-                max_dataset_size=max_dataset_size,
-                max_external_data_files=max_external_data_files,
-            )
-    else:
-        raise_if_too_big_from_external_data_files(
+    assert (
+        _is_too_big_from_external_data_files(
             builder=external_files_dataset_builder,
             hf_token=app_config.common.hf_token,
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
         )
+        == expected
+    )
 
 
 def test_supported_if_big_parquet(
@@ -826,3 +808,37 @@ def test_get_delete_operations(
         parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
     )
     assert set(delete_operation.path_in_repo for delete_operation in delete_operations) == deleted_files
+
+
+@pytest.mark.parametrize(
+    "max_dataset_size,expected_num_shards",
+    [
+        (1, 1),
+        (100, 2),
+        (1000, 10),
+    ],
+)
+def test_stream_convert_to_parquet(
+    csv_path: str, max_dataset_size: int, expected_num_shards: int, tmp_path: Path
+) -> None:
+    num_data_files = 10
+    builder = load_dataset_builder(
+        "csv",
+        data_files={"train": [csv_path] * num_data_files},
+        cache_dir=str(tmp_path / f"test_stream_convert_to_parquet-{max_dataset_size=}"),
+    )
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, full = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+    num_shards = len(parquet_operations)
+    assert num_shards == expected_num_shards
+    assert full == (expected_num_shards == num_data_files)
+    assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
+    parquet_filenames = sorted(os.path.basename(op.path_or_fileobj) for op in parquet_operations)
+    if num_shards == 1:
+        assert parquet_filenames[0] == "csv-train.parquet"
+    else:
+        assert all(
+            parquet_filename == f"csv-train-{shard_idx:05d}-of-{num_shards:05d}.parquet"
+            for shard_idx, parquet_filename in enumerate(parquet_filenames)
+        )

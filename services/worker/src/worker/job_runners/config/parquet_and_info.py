@@ -3,11 +3,26 @@
 
 import glob
 import logging
+import os
 import re
-from functools import partial
+from contextlib import ExitStack
+from functools import partial, wraps
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import Any, List, Optional, Set, Tuple
+from types import TracebackType
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
+from unittest.mock import patch
 from urllib.parse import quote
 
 import datasets
@@ -18,6 +33,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
+from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.data_files import Url
@@ -53,10 +69,6 @@ from libcommon.exceptions import (
     DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
-    DatasetTooBigFromDatasetsError,
-    DatasetTooBigFromHubError,
-    DatasetWithTooBigExternalFilesError,
-    DatasetWithTooManyExternalFilesError,
     DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
@@ -82,6 +94,8 @@ from worker.utils import retry
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
+
+T = TypeVar("T")
 
 
 class ParquetFile:
@@ -198,7 +212,7 @@ def _is_too_big_from_hub(
             The maximum size of the dataset in bytes
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
-    return dataset_size > max_dataset_size:
+    return bool(dataset_size > max_dataset_size)
 
 
 def _is_too_big_from_datasets(
@@ -216,7 +230,7 @@ def _is_too_big_from_datasets(
             The maximum size of the dataset in bytes
     """
     dataset_size = info.dataset_size if info.dataset_size is not None else 0
-    return dataset_size > max_dataset_size:
+    return bool(dataset_size > max_dataset_size)
 
 
 def raise_if_requires_manual_download(
@@ -314,16 +328,18 @@ def is_dataset_too_big(
             f"Invalid datasets.config.HF_ENDPOINT value: '{datasets.config.HF_ENDPOINT}'. Please set it to:"
             f" '{hf_endpoint}'."
         )
-    return _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size) or \
-    _is_too_big_from_datasets(
-        builder.info,
-        max_dataset_size=max_dataset_size,
-    ) or \
-    _is_too_big_from_external_data_files(
-        builder=builder,
-        max_dataset_size=max_dataset_size,
-        max_external_data_files=max_external_data_files,
-        hf_token=hf_token,
+    return (
+        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
+        or _is_too_big_from_datasets(
+            builder.info,
+            max_dataset_size=max_dataset_size,
+        )
+        or _is_too_big_from_external_data_files(
+            builder=builder,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
+            hf_token=hf_token,
+        )
     )
 
 
@@ -455,6 +471,7 @@ def _is_too_big_from_external_data_files(
                     if size is not None:
                         total_size += size
                         return total_size > max_dataset_size
+                return False
         except requests.exceptions.RequestException as error:
             if isinstance(error, requests.exceptions.HTTPError):
                 raise ExternalFilesSizeRequestHTTPError(
@@ -492,6 +509,7 @@ def _is_too_big_from_external_data_files(
                     ),
                     error,
                 ) from error
+    return False
 
 
 def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
@@ -616,8 +634,94 @@ def fill_builder_info(builder: DatasetBuilder, hf_token: Optional[str]) -> None:
                 builder.info.dataset_size += approx_num_bytes
 
 
-def stream_convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
-    pass
+class TrackedParquetWriter(pq.ParquetWriter):  # type: ignore
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    def write_table(self, pa_table: pa.Table, row_group_size: Optional[int] = None) -> None:
+        if self.track_write_table is not None:
+            self.track_write_table(pa_table)
+        super().write_table(pa_table, row_group_size=row_group_size)
+
+    def track_write_table(self, pa_table: pa.Table) -> None:
+        pass
+
+
+class limit_parquet_writes:
+    def __init__(
+        self,
+        builder: Union[datasets.builder.GeneratorBasedBuilder, datasets.builder.ArrowBasedBuilder],
+        max_dataset_size: int,
+    ) -> None:
+        self.total_bytes = 0
+        self.builder = builder
+        self.max_dataset_size = max_dataset_size
+        self.exit_stack = ExitStack()
+
+    def __enter__(self) -> "limit_parquet_writes":
+        limiter = self
+
+        class _TrackedParquetWriter(TrackedParquetWriter):
+            def track_write_table(self, pa_table: pa.Table) -> None:
+                limiter.total_bytes += pa_table.nbytes
+
+        def limited_generator(
+            generator: Callable[..., Generator[T, None, None]]
+        ) -> Callable[..., Generator[T, None, None]]:
+            @wraps(generator)
+            def wrapped(*args: Any, **kwargs: Any) -> Generator[T, None, None]:
+                for item in generator(*args, **kwargs):
+                    if limiter.total_bytes < limiter.max_dataset_size:
+                        yield item
+
+            return wrapped
+
+        self.exit_stack.enter_context(patch.object(ParquetWriter, "_WRITER_CLASS", _TrackedParquetWriter))
+        if isinstance(self.builder, datasets.builder.GeneratorBasedBuilder):
+            self.exit_stack.enter_context(
+                patch.object(self.builder, "_generate_examples", limited_generator(self.builder._generate_examples))
+            )
+        else:
+            self.exit_stack.enter_context(
+                patch.object(self.builder, "_generate_tables", limited_generator(self.builder._generate_tables))
+            )
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        return self.exit_stack.close()
+
+
+def stream_convert_to_parquet(builder: DatasetBuilder, max_dataset_size: int) -> Tuple[List[CommitOperationAdd], bool]:
+    writer_batch_size = get_writer_batch_size(builder.info)
+    dl_manager = StreamingDownloadManager(
+        base_path=builder.base_path,
+        download_config=DownloadConfig(use_auth_token=builder.use_auth_token, storage_options=builder.storage_options),
+        dataset_name=builder.name,
+        data_dir=builder.config.data_dir,
+    )
+    splits_generators = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+    os.makedirs(builder.cache_dir, exist_ok=True)
+    full = True
+    for split in splits_generators:
+        with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
+            builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
+            full = limiter.total_bytes < max_dataset_size
+    local_parquet_files = [
+        ParquetFile(local_file=local_file, local_dir=builder.cache_dir, config=builder.config.name)
+        for local_file in glob.glob(f"{builder.cache_dir}**/*.parquet")
+    ]
+
+    # send the files to the target revision
+    parquet_operations: List[CommitOperationAdd] = [
+        CommitOperationAdd(path_in_repo=parquet_file.path_in_repo, path_or_fileobj=parquet_file.local_file)
+        for parquet_file in local_parquet_files
+    ]
+    return parquet_operations, full
 
 
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
@@ -969,7 +1073,7 @@ def compute_config_parquet_and_info_response(
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
-    partial_parquet = False
+    full = True
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         parquet_operations = copy_parquet_files(builder)
         fill_builder_info(builder, hf_token=hf_token)
@@ -983,15 +1087,14 @@ def compute_config_parquet_and_info_response(
             dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
         )
         if is_dataset_too_big(
-                dataset_info=dataset_info,
-                builder=builder,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                max_dataset_size=max_dataset_size,
-                max_external_data_files=max_external_data_files
-            ):
-            partial_parquet = True
-            parquet_operations = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            dataset_info=dataset_info,
+            builder=builder,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
+        ):
+            parquet_operations, full = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
         else:
             parquet_operations = convert_to_parquet(builder)
 
