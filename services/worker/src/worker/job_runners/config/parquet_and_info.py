@@ -697,6 +697,10 @@ class limit_parquet_writes:
 
 def stream_convert_to_parquet(builder: DatasetBuilder, max_dataset_size: int) -> Tuple[List[CommitOperationAdd], bool]:
     writer_batch_size = get_writer_batch_size(builder.info)
+    if writer_batch_size is not None and (
+        builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
+    ):
+        builder._writer_batch_size = writer_batch_size
     dl_manager = StreamingDownloadManager(
         base_path=builder.base_path,
         download_config=DownloadConfig(use_auth_token=builder.use_auth_token, storage_options=builder.storage_options),
