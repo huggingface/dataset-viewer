@@ -254,7 +254,7 @@ def compute_descriptive_stats_response(
     con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
     # configure duckdb extensions
     if extensions_directory is not None:
-        duckdb.execute(f"SET extension_directory='{extensions_directory}';")
+        con.sql(f"SET extension_directory='{extensions_directory}';")
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")

@@ -205,7 +205,6 @@ class ParquetAndInfoConfig:
             )
 
 
-
 NUMBA_CACHE_DIR: Optional[str] = None
 
 
