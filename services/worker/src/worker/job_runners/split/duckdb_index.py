@@ -120,19 +120,19 @@ def compute_index_rows(
             f"Previous step '{config_parquet_and_info_step}' did not return the expected content.", e
         ) from e
 
-    # configure duckdb extensions
-    if extensions_directory is not None:
-        duckdb.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
-    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
-    duckdb.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-    duckdb.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
-
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
-
     con = duckdb.connect(str(db_path.resolve()))
+
+    # configure duckdb extensions
+    if extensions_directory is not None:
+        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
+    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
+    con.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
+    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
+    con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
+
     logging.debug(CREATE_SEQUENCE_COMMAND)
     con.sql(CREATE_SEQUENCE_COMMAND)
 
@@ -154,6 +154,7 @@ def compute_index_rows(
         with lock.git_branch(
             dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
+            logging.debug(f"try to create branch for {dataset=} with {target_revision=} on {hf_endpoint=}")
             create_branch(
                 dataset=dataset,
                 target_revision=target_revision,
@@ -161,16 +162,19 @@ def compute_index_rows(
                 committer_hf_api=committer_hf_api,
             )
 
+            logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
             delete_operations: List[CommitOperation] = []
             if index_file_location in all_repo_files:
                 delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+            logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision
             add_operations: List[CommitOperation] = [
                 CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path.resolve())
             ]
+            logging.debug(f"add operations for {dataset=} {add_operations=}")
 
             committer_hf_api.create_commit(
                 repo_id=dataset,
@@ -180,9 +184,11 @@ def compute_index_rows(
                 commit_message=commit_message,
                 parent_commit=target_dataset_info.sha,
             )
+            logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+            logging.debug(f"dataset info for {dataset=} {target_dataset_info=}")
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
     except RepositoryNotFoundError as err:
