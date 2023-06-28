@@ -269,7 +269,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 20
+    replicas: 100
     resources:
       requests:
         cpu: 1
@@ -280,7 +280,7 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan,split-duckdb-index"
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
