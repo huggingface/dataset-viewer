@@ -6,23 +6,22 @@ import itertools
 import logging
 import time
 import warnings
-from dataclasses import dataclass, field
 from typing import (
     Any,
     Callable,
     List,
-    Mapping,
     Optional,
     Sequence,
     Tuple,
     Type,
-    TypedDict,
     TypeVar,
     Union,
     cast,
 )
+from urllib.parse import quote
 
 import PIL
+import requests
 from datasets import (
     Dataset,
     DatasetInfo,
@@ -31,121 +30,22 @@ from datasets import (
     IterableDataset,
     load_dataset,
 )
-from libcommon.exceptions import NormalRowsError, StreamingRowsError
+from datasets.utils.file_utils import get_authentication_headers_for_url
+from fsspec.implementations.http import HTTPFileSystem
+from huggingface_hub.hf_api import HfApi
+from huggingface_hub.utils._errors import RepositoryNotFoundError
+from libcommon.exceptions import (
+    DatasetNotFoundError,
+    NormalRowsError,
+    StreamingRowsError,
+)
 from libcommon.utils import orjson_dumps
+from pyarrow.parquet import ParquetFile
+
+from worker.dtos import FeatureItem, Row, RowItem, RowsContent
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-class JobRunnerInfo(TypedDict):
-    job_type: str
-    job_runner_version: int
-
-
-@dataclass
-class JobResult:
-    content: Mapping[str, Any]
-    progress: float
-
-    def __post_init__(self) -> None:
-        if self.progress < 0.0 or self.progress > 1.0:
-            raise ValueError(f"Progress should be between 0 and 1, but got {self.progress}")
-
-
-@dataclass
-class CompleteJobResult(JobResult):
-    content: Mapping[str, Any]
-    progress: float = field(init=False, default=1.0)
-
-
-class DatasetItem(TypedDict):
-    dataset: str
-
-
-class ConfigItem(DatasetItem):
-    config: Optional[str]
-
-
-class SplitItem(ConfigItem):
-    split: Optional[str]
-
-
-class SplitsList(TypedDict):
-    splits: List[SplitItem]
-
-
-class FailedConfigItem(ConfigItem):
-    error: Mapping[str, Any]
-
-
-class DatasetSplitNamesResponse(TypedDict):
-    splits: List[SplitItem]
-    pending: List[ConfigItem]
-    failed: List[FailedConfigItem]
-
-
-class PreviousJob(TypedDict):
-    kind: str
-    dataset: str
-    config: Optional[str]
-    split: Optional[str]
-
-
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Mapping[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
-
-
-class SplitFirstRowsResponse(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    features: List[FeatureItem]
-    rows: List[RowItem]
-
-
-class OptUrl(TypedDict):
-    url: str
-    row_idx: int
-    column_name: str
-
-
-class OptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
-    num_opt_in_urls: int
-    num_opt_out_urls: int
-    num_urls: int
-    num_scanned_rows: int
-    has_urls_columns: bool
-    full_scan: Optional[bool]
-
-
-class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
-
-
-class ImageUrlColumnsResponse(TypedDict):
-    columns: List[str]
-
-
-Row = Mapping[str, Any]
-
-
-class RowsContent(TypedDict):
-    rows: List[Row]
-    all_fetched: bool
-
-
-# TODO: separate functions from common classes and named dicts otherwise this file will continue growing
 
 
 # in JSON, dicts do not carry any order, so we need to return a list
@@ -198,14 +98,14 @@ def utf8_byte_truncate(text: str, max_bytes: int) -> str:
 
 
 # Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem, min_cell_bytes: int) -> RowItem:
+def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: List[str]) -> RowItem:
     row = {}
     for column_name, cell in row_item["row"].items():
         # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
         # it's done by replacing the cell (which can have any type) by a string with
         # its JSON serialization, and then truncating it to min_cell_bytes
         cell_json = orjson_dumps(cell)
-        if len(cell_json) <= min_cell_bytes:
+        if len(cell_json) <= min_cell_bytes or column_name in columns_to_keep_untruncated:
             row[column_name] = cell
         else:
             cell_json_str = cell_json.decode("utf8", "ignore")
@@ -221,7 +121,9 @@ COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
 
 
 # Mutates row_items, and returns them anyway
-def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int) -> List[RowItem]:
+def truncate_row_items(
+    row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: List[str]
+) -> List[RowItem]:
     # compute the current size
     rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
 
@@ -230,7 +132,9 @@ def truncate_row_items(row_items: List[RowItem], min_cell_bytes: int, rows_max_b
         if rows_bytes < rows_max_bytes:
             break
         previous_size = get_json_size(row_item) + COMMA_SIZE
-        row_item = truncate_row_item(row_item=row_item, min_cell_bytes=min_cell_bytes)
+        row_item = truncate_row_item(
+            row_item=row_item, min_cell_bytes=min_cell_bytes, columns_to_keep_untruncated=columns_to_keep_untruncated
+        )
         new_size = get_json_size(row_item) + COMMA_SIZE
         rows_bytes += new_size - previous_size
     return row_items
@@ -249,6 +153,7 @@ def create_truncated_row_items(
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_min_number: int,
+    columns_to_keep_untruncated: List[str],
 ) -> List[RowItem]:
     row_items = []
     rows_bytes = 0
@@ -274,7 +179,12 @@ def create_truncated_row_items(
         #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
         #     f" ({rows_max_bytes}), they will be truncated"
         # )
-        return truncate_row_items(row_items=row_items, min_cell_bytes=min_cell_bytes, rows_max_bytes=rows_max_bytes)
+        return truncate_row_items(
+            row_items=row_items,
+            min_cell_bytes=min_cell_bytes,
+            rows_max_bytes=rows_max_bytes,
+            columns_to_keep_untruncated=columns_to_keep_untruncated,
+        )
 
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
@@ -411,3 +321,34 @@ def get_rows_or_raise(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
             ) from err
+
+
+# TODO: use huggingface_hub's hf_hub_url after
+# https://github.com/huggingface/huggingface_hub/issues/1082
+def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
+    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
+
+
+def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
+    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    return ParquetFile(fs.open(url, headers=headers))
+
+
+DATASET_TYPE = "dataset"
+
+LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
+LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
+
+
+def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_hf_api: HfApi) -> None:
+    try:
+        refs = retry(on=[requests.exceptions.ConnectionError], sleeps=LIST_REPO_REFS_RETRY_SLEEPS)(
+            hf_api.list_repo_refs
+        )(repo_id=dataset, repo_type=DATASET_TYPE)
+        if all(ref.ref != target_revision for ref in refs.converts):
+            initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
+            committer_hf_api.create_branch(
+                repo_id=dataset, branch=target_revision, repo_type=DATASET_TYPE, revision=initial_commit, exist_ok=True
+            )
+    except RepositoryNotFoundError as err:
+        raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err

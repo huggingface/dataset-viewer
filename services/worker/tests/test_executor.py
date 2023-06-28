@@ -12,7 +12,7 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import DoesNotExist, Job, Queue
+from libcommon.queue import Job, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponse
 from libcommon.storage import StrPath
@@ -109,8 +109,8 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info()
     try:
-        Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+        Job.get(job_id=job_info["job_id"]).delete()
+    except JobDoesNotExistError:
         pass
     created_at = get_datetime()
     job = Job(
@@ -138,8 +138,8 @@ def set_long_running_job_in_queue(app_config: AppConfig, queue_mongo_resource: Q
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("long")
     try:
-        Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+        Job.get(job_id=job_info["job_id"]).delete()
+    except JobDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
     last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_interval_seconds)
@@ -169,8 +169,8 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("zombie")
     try:
-        Job.objects(pk=job_info["job_id"]).get().delete()
-    except DoesNotExist:
+        Job.get(job_id=job_info["job_id"]).delete()
+    except JobDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
     job = Job(
@@ -199,6 +199,7 @@ def job_runner_factory(
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    duckdb_index_cache_directory: StrPath,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     return JobRunnerFactory(
@@ -207,6 +208,7 @@ def job_runner_factory(
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
         parquet_metadata_directory=parquet_metadata_directory,
+        duckdb_index_cache_directory=duckdb_index_cache_directory,
     )
 
 

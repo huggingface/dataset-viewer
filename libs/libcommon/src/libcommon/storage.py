@@ -12,6 +12,7 @@ from appdirs import user_cache_dir  # type:ignore
 from libcommon.constants import (
     ASSETS_CACHE_APPNAME,
     CACHED_ASSETS_CACHE_APPNAME,
+    DUCKDB_INDEX_CACHE_APPNAME,
     PARQUET_METADATA_CACHE_APPNAME,
 )
 
@@ -79,6 +80,20 @@ def init_parquet_metadata_dir(directory: Optional[StrPath] = None) -> StrPath:
         Union[str, PathLike[str]]: The directory.
     """
     return init_dir(directory, appname=PARQUET_METADATA_CACHE_APPNAME)
+
+
+def init_duckdb_index_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
+    """Initialize the duckdb index directory.
+
+    If directory is None, it will be set to the default duckdb index location on the machine.
+
+    Args:
+        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+
+    Returns:
+        Union[str, PathLike[str]]: The directory.
+    """
+    return init_dir(directory, appname=DUCKDB_INDEX_CACHE_APPNAME)
 
 
 def exists(path: StrPath) -> bool:

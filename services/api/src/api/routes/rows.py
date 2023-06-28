@@ -10,9 +10,11 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 
 import pyarrow as pa
 from datasets import Features
+from fsspec.implementations.http import HTTPFileSystem
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import CachedArtifactError
 from libcommon.viewer_utils.asset import (
     glob_rows_in_assets_dir,
     update_last_modified_date_of_rows_in_assets_dir,
@@ -31,6 +33,7 @@ from api.utils import (
     are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
+    try_backfill_dataset,
 )
 
 logger = logging.getLogger(__name__)
@@ -251,6 +254,7 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -267,11 +271,13 @@ def create_rows_endpoint(
         processing_graph=processing_graph,
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 
     async def rows_endpoint(request: Request) -> Response:
+        await indexer.httpfs.set_session()
         revision: Optional[str] = None
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
@@ -303,12 +309,27 @@ def create_rows_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    rows_index = indexer.get_rows_index(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                    )
-                    revision = rows_index.revision
+                    try:
+                        rows_index = indexer.get_rows_index(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                        )
+                        revision = rows_index.revision
+                    except CachedArtifactError:
+                        config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
+                        config_parquet_metadata_processing_steps = (
+                            processing_graph.get_config_parquet_metadata_processing_steps()
+                        )
+                        try_backfill_dataset(
+                            processing_steps=config_parquet_metadata_processing_steps
+                            + config_parquet_processing_steps,
+                            processing_graph=processing_graph,
+                            dataset=dataset,
+                            hf_endpoint=hf_endpoint,
+                            hf_timeout_seconds=hf_timeout_seconds,
+                            hf_token=hf_token,
+                        )
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
                 with StepProfiler(method="rows_endpoint", step="clean cache"):

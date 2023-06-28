@@ -15,8 +15,8 @@ from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, 
 
 import pandas as pd
 import pytz
-from mongoengine import Document, DoesNotExist
-from mongoengine.errors import NotUniqueError
+from mongoengine import Document
+from mongoengine.errors import DoesNotExist, NotUniqueError
 from mongoengine.fields import DateTimeField, EnumField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
@@ -89,6 +89,22 @@ class DumpByPendingStatus(TypedDict):
 
 
 class EmptyQueueError(Exception):
+    pass
+
+
+class JobDoesNotExistError(DoesNotExist):
+    pass
+
+
+class AlreadyStartedJobError(Exception):
+    pass
+
+
+class LockTimeoutError(Exception):
+    pass
+
+
+class NoWaitingJobError(Exception):
     pass
 
 
@@ -191,6 +207,13 @@ class Job(Document):
             }
         )
 
+    @classmethod
+    def get(cls, job_id: str) -> "Job":
+        try:
+            return cls.objects(pk=job_id).get()
+        except DoesNotExist as e:
+            raise JobDoesNotExistError(f"Job does not exist: {job_id=}") from e
+
     def flat_info(self) -> FlatJobInfo:
         return FlatJobInfo(
             {
@@ -208,11 +231,12 @@ class Job(Document):
 
 
 class Lock(Document):
-    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "job_id")]}
+    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "owner")]}
     key = StringField(primary_key=True)
-    job_id = StringField()
+    owner = StringField()
+    job_id = StringField()  # deprecated
 
-    created_at = DateTimeField(required=True)
+    created_at = DateTimeField()
     updated_at = DateTimeField()
 
     objects = QuerySetManager["Lock"]()
@@ -220,15 +244,16 @@ class Lock(Document):
 
 class lock(contextlib.AbstractContextManager["lock"]):
     """
-    Provides a simple way of inter-worker communication using a MongoDB lock.
-    A lock is used to indicate another worker of your application that a resource
+    Provides a simple way of inter-applications communication using a MongoDB lock.
+
+    An example usage is to another worker of your application that a resource
     or working directory is currently used in a job.
 
     Example of usage:
 
     ```python
     key = json.dumps({"type": job.type, "dataset": job.dataset})
-    with lock(key=key, job_id=job.pk):
+    with lock(key=key, owner=job.pk):
         ...
     ```
 
@@ -237,7 +262,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
     ```python
     try:
         key = json.dumps({"type": job.type, "dataset": job.dataset})
-        lock(key=key, job_id=job.pk).acquire()
+        lock(key=key, owner=job.pk).acquire()
     except TimeoutError:
         ...
     ```
@@ -245,33 +270,32 @@ class lock(contextlib.AbstractContextManager["lock"]):
 
     _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
 
-    def __init__(self, key: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> None:
+    def __init__(self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> None:
         self.key = key
-        self.job_id = job_id
+        self.owner = owner
         self.sleeps = sleeps
 
     def acquire(self) -> None:
         for sleep in self.sleeps:
             try:
-                Lock.objects(key=self.key, job_id__in=[None, self.job_id]).update(
+                Lock.objects(key=self.key, owner__in=[None, self.owner]).update(
                     upsert=True,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
-                    job_id=self.job_id,
+                    owner=self.owner,
                     updated_at=get_datetime(),
                 )
                 return
             except NotUniqueError:
-                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for job_id='{self.job_id}'")
+                logging.debug(f"Sleep {sleep}s to acquire lock '{self.key}' for owner='{self.owner}'")
                 time.sleep(sleep)
         raise TimeoutError("lock couldn't be acquired")
 
     def release(self) -> None:
-        Lock.objects(key=self.key, job_id=self.job_id).update(
-            upsert=True,
+        Lock.objects(key=self.key, owner=self.owner).update(
             write_concern={"w": "majority", "fsync": True},
             read_concern={"level": "majority"},
-            job_id=None,
+            owner=None,
             updated_at=get_datetime(),
         )
 
@@ -286,18 +310,18 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return False
 
     @classmethod
-    def git_branch(cls, dataset: str, branch: str, job_id: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+    def git_branch(cls, dataset: str, branch: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
         """
         Lock a git branch of a dataset on the hub for read/write
 
         Args:
             dataset (`str`): the dataset repository
             branch (`str`): the branch to lock
-            job_id (`str`): the current job id that holds the lock
+            owner (`str`): the current job id that holds the lock
             sleeps (`Sequence[float]`): the time in seconds to sleep between each attempt to acquire the lock
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, job_id=job_id, sleeps=sleeps)
+        return cls(key=key, owner=owner, sleeps=sleeps)
 
 
 class Queue:
@@ -316,7 +340,7 @@ class Queue:
     - datasets and users that already have started jobs are de-prioritized (using namespace)
     """
 
-    def _add_job(
+    def add_job(
         self,
         job_type: str,
         dataset: str,
@@ -327,7 +351,8 @@ class Queue:
     ) -> Job:
         """Add a job to the queue in the waiting state.
 
-        This method should not be called directly. Use `upsert_job` instead.
+        Note that the same "unicity_id" can have multiple jobs in the waiting state, with the same or different
+        revisions and or priorities.
 
         Args:
             job_type (`str`): The type of the job
@@ -351,44 +376,6 @@ class Queue:
             created_at=get_datetime(),
             status=Status.WAITING,
         ).save()
-
-    def upsert_job(
-        self,
-        job_type: str,
-        dataset: str,
-        revision: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        priority: Priority = Priority.NORMAL,
-    ) -> Job:
-        """Add, or update, a job to the queue in the waiting state.
-
-        If jobs already exist with the same parameters in the waiting state, they are cancelled and replaced by a new
-        one.
-        Note that the new job inherits the highest priority of the previous waiting jobs.
-
-        Args:
-            job_type (`str`): The type of the job
-            dataset (`str`): The dataset on which to apply the job.
-            revision (`str`): The git revision of the dataset.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
-
-        Returns: the job
-        """
-        canceled_jobs = self.cancel_jobs(
-            job_type=job_type,
-            dataset=dataset,
-            config=config,
-            split=split,
-            statuses_to_cancel=[Status.WAITING],
-        )
-        if any(job["priority"] == Priority.NORMAL for job in canceled_jobs):
-            priority = Priority.NORMAL
-        return self._add_job(
-            job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, priority=priority
-        )
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
         """Creates jobs in the queue.
@@ -426,45 +413,6 @@ class Queue:
             return len(job_ids)
         except Exception:
             return 0
-
-    def cancel_jobs(
-        self,
-        job_type: str,
-        dataset: str,
-        config: Optional[str] = None,
-        split: Optional[str] = None,
-        statuses_to_cancel: Optional[List[Status]] = None,
-    ) -> List[JobDict]:
-        """Cancel jobs from the queue.
-
-        Note that the jobs for all the revisions are canceled.
-
-        Returns the list of canceled jobs (as JobDict, before they are canceled, to be able to know their previous
-        status)
-
-        Args:
-            job_type (`str`): The type of the job
-            dataset (`str`): The dataset on which to apply the job.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            statuses_to_cancel (`list[Status]`, optional): The list of statuses to cancel. Defaults to
-                [Status.WAITING, Status.STARTED].
-
-        Returns:
-            `list[JobDict]`: The list of canceled jobs
-        """
-        if statuses_to_cancel is None:
-            statuses_to_cancel = [Status.WAITING, Status.STARTED]
-        existing = Job.objects(
-            type=job_type,
-            dataset=dataset,
-            config=config,
-            split=split,
-            status__in=statuses_to_cancel,
-        )
-        job_dicts = [job.to_dict() for job in existing]
-        existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        return job_dicts
 
     def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
         """Cancel jobs from the queue.
@@ -526,7 +474,7 @@ class Queue:
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
-            .only("type", "dataset", "revision", "config", "split", "priority")
+            .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
             .no_cache()
             .first()
         )
@@ -563,7 +511,7 @@ class Queue:
                     **filters,
                 )
                 .order_by("+created_at")
-                .only("type", "dataset", "revision", "config", "split", "priority")
+                .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
                 .no_cache()
                 .first()
             )
@@ -598,17 +546,70 @@ class Queue:
                 )
         raise EmptyQueueError("no job available")
 
-    def _start_job(self, job: Job) -> Job:
+    def _start_newest_job_and_cancel_others(self, job: Job) -> Job:
+        """Start a job (the newest one for unicity_id) and cancel the other ones.
+
+        A lock is used to ensure that the job is not started by another worker.
+
+        Args:
+            job: the job to start
+
+        Returns:
+            the started job
+
+        Raises:
+            AlreadyStartedJobError: if a started job already exist for the same unicity_id.
+            LockTimeoutError: if the lock could not be acquired after 20 retries.
+        """
         # could be a method of Job
-        job.update(started_at=get_datetime(), status=Status.STARTED)
-        return job
+        RETRIES = 20
+        try:
+            # retry for 2 seconds
+            with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.1] * RETRIES):
+                # get all the pending jobs for the same unicity_id
+                waiting_jobs = Job.objects(
+                    unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
+                ).order_by("-created_at")
+                datetime = get_datetime()
+                # raise if any job has already been started for unicity_id
+                num_started_jobs = waiting_jobs(status=Status.STARTED).count()
+                if num_started_jobs > 0:
+                    if num_started_jobs > 1:
+                        logging.critical(f"job {job.unicity_id} has been started {num_started_jobs} times. Max is 1.")
+                    raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
+                # get the most recent one
+                first_job = waiting_jobs.first()
+                if not first_job:
+                    raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
+                # start it
+                first_job.update(
+                    started_at=datetime,
+                    status=Status.STARTED,
+                    write_concern={"w": "majority", "fsync": True},
+                    read_concern={"level": "majority"},
+                )
+                # and cancel the other ones, if any
+                for job in waiting_jobs.skip(1):
+                    # TODO: try to do a bulk update (not sure it's possible)
+                    job.update(
+                        finished_at=datetime,
+                        status=Status.CANCELLED,
+                        write_concern={"w": "majority", "fsync": True},
+                        read_concern={"level": "majority"},
+                    )
+                return first_job.reload()
+        except TimeoutError as err:
+            raise LockTimeoutError(
+                f"could not acquire the lock for job {job.unicity_id} after {RETRIES} retries."
+            ) from err
 
     def start_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
     ) -> JobInfo:
         """Start the next job in the queue.
 
-        The job is moved from the waiting state to the started state.
+        The job is moved from the waiting state to the started state. A lock is used to ensure that only one worker
+        can start a job at a time.
 
         Args:
             job_types_blocked: if not None, jobs of the given types are not considered.
@@ -617,16 +618,18 @@ class Queue:
         Raises:
             EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
             for a dataset
+            AlreadyStartedJobError: if a started job already exist for the same unicity_id
+            LockTimeoutError: if the lock cannot be acquired
 
         Returns: the job id, the type, the input arguments: dataset, revision, config and split
         """
+
         logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
         next_waiting_job = self.get_next_waiting_job(
             job_types_blocked=job_types_blocked, job_types_only=job_types_only
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
-        self._start_job(next_waiting_job)
         if job_types_blocked and next_waiting_job.type in job_types_blocked:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is in the list of blocked job types {job_types_only}"
@@ -635,7 +638,8 @@ class Queue:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
-        return next_waiting_job.info()
+        started_job = self._start_newest_job_and_cancel_others(job=next_waiting_job)
+        return started_job.info()
 
     def get_job_with_id(self, job_id: str) -> Job:
         """Get the job for a given job id.
@@ -759,7 +763,7 @@ class Queue:
         """Cancel all started jobs for a given type."""
         for job in Job.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.upsert_job(
+            self.add_job(
                 job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
             )
 
@@ -918,7 +922,3 @@ def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     Job.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore
-
-
-# explicit re-export
-__all__ = ["DoesNotExist"]

@@ -5,11 +5,11 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
+from worker.dtos import CompleteJobResult
 from worker.job_runner import JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
-from worker.utils import CompleteJobResult
 
 
 class DummyJobRunner(JobRunner):
@@ -69,7 +69,7 @@ def test_process_next_job(
     revision = "revision"
     config = "config"
     split = "split"
-    loop.queue.upsert_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
+    loop.queue.add_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
     assert loop.queue.is_job_in_process(
         job_type=job_type, dataset=dataset, revision=revision, config=config, split=split
     )

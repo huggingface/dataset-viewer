@@ -106,9 +106,9 @@ def test_rows_endpoint(
     headers = auth_headers[auth]
     # ensure the /rows endpoint works as well
     offset = 1
-    limit = 10
+    length = 10
     rows_response = poll_until_ready_and_assert(
-        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&limit={limit}",
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
