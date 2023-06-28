@@ -14,6 +14,7 @@ from libcommon.storage import StrPath
 
 from api.config import AppConfig
 from api.routes.filter import (
+    Table,
     create_response,
     execute_filter_query,
     get_config_parquet_metadata_from_cache,
@@ -119,7 +120,7 @@ def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     offset = 2
-    table = {
+    table: Table = {
         "columns": ["name", "gender", "age"],
         "rows": [("Marie", "female", 35), ("Paul", "male", 30), ("Leo", "male", 25), ("Simone", "female", 30)],
     }
