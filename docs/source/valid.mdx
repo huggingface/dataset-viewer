@@ -135,13 +135,31 @@ curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
 The response looks like this if a dataset is valid:
 
 ```json
-{ "valid": true }
+{
+  "viewer": true,
+  "preview": true,
+  "valid": true, // deprecated
+}
 ```
 
-If a dataset is not valid, then the response looks like:
+If only the first rows of a dataset are available, then the response looks like:
 
 ```json
-{ "valid": false }
+{
+  "viewer": false,
+  "preview": true,
+  "valid": true, // deprecated
+}
+```
+
+Finally, if the dataset is not valid at all, then the response is:
+
+```json
+{
+  "viewer": false,
+  "preview": false,
+  "valid": false, // deprecated
+}
 ```
 
 Some cases where a dataset is not valid are:
