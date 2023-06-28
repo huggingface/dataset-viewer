@@ -362,7 +362,7 @@ def test_supported_if_big_parquet(
     assert_content_is_equal(content, hub_reponses_big["parquet_and_info_response"])
 
 
-def test_not_supported_if_big_non_parquet(
+def test_partially_supported_if_big_non_parquet(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     hub_reponses_big_csv: HubDatasetTest,
@@ -378,9 +378,19 @@ def test_not_supported_if_big_non_parquet(
         content=hub_reponses_big_csv["config_names_response"],
     )
     job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CustomError) as e:
-        job_runner.compute()
-    assert e.typename == "DatasetTooBigFromHubError"
+    from datasets.packaged_modules.csv.csv import CsvConfig
+
+    # Set a small chunk size to yield more than one Arrow Table in _generate_tables
+    # to be able to stop the generation mid-way.
+    with patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 10}):
+        response = job_runner.compute()
+    assert response
+    content = response.content
+    assert content
+    assert len(content["parquet_files"]) == 1
+    assert_content_is_equal(content, hub_reponses_big_csv["parquet_and_info_response"])
+    # dataset is partially generated
+    assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size
 
 
 def test_supported_if_gated(

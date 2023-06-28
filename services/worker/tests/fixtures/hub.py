@@ -372,6 +372,24 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     }
 
 
+def create_dataset_info_response_for_partially_generated_big_csv(config: str) -> Any:
+    # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
+    # Missing fields:
+    # - download_size: not applicable, because the dataset is generated using partially downloaded files
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": BIG_cols,
+        "builder_name": "csv",
+        "config_name": config,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 12380, "num_examples": 10, "dataset_name": "csv"}},
+        "dataset_size": 12380,
+    }
+
+
 def create_dataset_info_response_for_big_parquet() -> Any:
     return {
         "description": "",
@@ -416,15 +434,25 @@ def create_dataset_info_response_for_audio() -> Any:
 
 
 def create_parquet_and_info_response(
-    dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]
+    dataset: str, data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"]
 ) -> Any:
     dataset, config, split = get_default_config_split(dataset)
 
-    filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
-    size = CSV_PARQUET_SIZE if data_type == "csv" else AUDIO_PARQUET_SIZE if data_type == "audio" else BIG_PARQUET_FILE
+    filename = "csv-train.parquet" if "csv" in data_type else "parquet-train.parquet"
+    size = (
+        CSV_PARQUET_SIZE
+        if data_type == "csv"
+        else PARTIAL_CSV_PARQUET_SIZE
+        if data_type == "big-csv"
+        else AUDIO_PARQUET_SIZE
+        if data_type == "audio"
+        else BIG_PARQUET_FILE
+    )
     info = (
         create_dataset_info_response_for_csv(dataset, config)
         if data_type == "csv"
+        else create_dataset_info_response_for_partially_generated_big_csv(config)
+        if data_type == "big-csv"
         else create_dataset_info_response_for_audio()
         if data_type == "audio"
         else create_dataset_info_response_for_big_parquet()
@@ -449,6 +477,7 @@ def create_parquet_and_info_response(
 
 
 CSV_PARQUET_SIZE = 1_866
+PARTIAL_CSV_PARQUET_SIZE = 8_188
 AUDIO_PARQUET_SIZE = 1_384
 BIG_PARQUET_FILE = 38_896
 
@@ -745,7 +774,7 @@ def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
         "config_names_response": create_config_names_response(hub_public_big_csv),
         "splits_response": create_splits_response(hub_public_big_csv),
         "first_rows_response": create_first_rows_response(hub_public_big_csv, BIG_cols, BIG_rows),
-        "parquet_and_info_response": None,
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_public_big_csv, data_type="big-csv"),
     }
 
 
