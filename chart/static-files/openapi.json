@@ -912,17 +912,13 @@
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["preview", "viewer", "valid"],
+        "required": ["preview", "viewer"],
         "properties": {
           "viewer": {
             "type": "boolean"
           },
           "preview": {
             "type": "boolean"
-          },
-          "valid": {
-            "type": "boolean",
-            "deprecated": true
           }
         }
       },
@@ -3308,24 +3304,21 @@
                     "summary": "valid dataset",
                     "value": {
                       "viewer": true,
-                      "preview": true,
-                      "valid": true
+                      "preview": true
                     }
                   },
                   "preview": {
                     "summary": "dataset with only preview",
                     "value": {
                       "viewer": false,
-                      "preview": true,
-                      "valid": true
+                      "preview": true
                     }
                   },
                   "invalid": {
                     "summary": "invalid dataset",
                     "value": {
                       "viewer": false,
-                      "preview": false,
-                      "valid": false
+                      "preview": false
                     }
                   }
                 }

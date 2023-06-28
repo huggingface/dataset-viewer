@@ -65,19 +65,19 @@ UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR: UpstreamResponse = Upst
     content={},
 )
 EXPECTED_ERROR = (
-    {"viewer": False, "preview": False, "valid": False},
+    {"viewer": False, "preview": False},
     1.0,
 )
 EXPECTED_VIEWER_OK = (
-    {"viewer": True, "preview": False, "valid": True},
+    {"viewer": True, "preview": False},
     1.0,
 )
 EXPECTED_PREVIEW_OK = (
-    {"viewer": False, "preview": True, "valid": True},
+    {"viewer": False, "preview": True},
     1.0,
 )
 EXPECTED_BOTH_OK = (
-    {"viewer": True, "preview": True, "valid": True},
+    {"viewer": True, "preview": True},
     1.0,
 )
 
@@ -194,4 +194,4 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
     compute_result = job_runner.compute()
-    assert compute_result.content == {"viewer": False, "preview": False, "valid": False}
+    assert compute_result.content == {"viewer": False, "preview": False}

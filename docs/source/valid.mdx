@@ -137,8 +137,7 @@ The response looks like this if a dataset is valid:
 ```json
 {
   "viewer": true,
-  "preview": true,
-  "valid": true, // deprecated
+  "preview": true
 }
 ```
 
@@ -147,8 +146,7 @@ If only the first rows of a dataset are available, then the response looks like:
 ```json
 {
   "viewer": false,
-  "preview": true,
-  "valid": true, // deprecated
+  "preview": true
 }
 ```
 
@@ -157,8 +155,7 @@ Finally, if the dataset is not valid at all, then the response is:
 ```json
 {
   "viewer": false,
-  "preview": false,
-  "valid": false, // deprecated
+  "preview": false
 }
 ```
 

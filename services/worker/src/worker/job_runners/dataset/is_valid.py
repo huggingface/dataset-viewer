@@ -41,9 +41,8 @@ def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -
     preview = is_valid_for_kinds(
         dataset=dataset, kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()]
     )
-    valid = viewer or preview
 
-    return (DatasetIsValidResponse({"viewer": viewer, "preview": preview, "valid": valid}), 1.0)
+    return (DatasetIsValidResponse({"viewer": viewer, "preview": preview}), 1.0)
 
 
 class DatasetIsValidJobRunner(DatasetJobRunner):
