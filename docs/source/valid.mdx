@@ -63,7 +63,6 @@ The endpoint response is a JSON containing lists of datasets nested under the fo
 
 - `viewer`: the dataset is fully-supported and the Dataset Viewer is working on the Hub dataset page. It also means that the dataset has been auto-converted to Parquet.
 - `preview`: the dataset is partially supported. The Dataset Viewer on the Hub shows a Preview of the first 100 rows, obtained by streaming.
-- `valid` (_deprecated_): the union of the `viewer` and `preview` lists.
 
 ```json
 {
@@ -81,9 +80,6 @@ The endpoint response is a JSON containing lists of datasets nested under the fo
     "0xJustin/Dungeons_and_Diffusion_uncropped",
     "0xaryan/music-classifier","13GP/training",
     "..."
-  ],
-  "valid": [
-    "// [deprecated] contains the union of 'viewer' and 'preview'."
   ]
 }
 ```

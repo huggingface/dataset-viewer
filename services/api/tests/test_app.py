@@ -48,7 +48,6 @@ def test_cors(client: TestClient, first_dataset_endpoint: str) -> None:
 def test_get_valid_datasets(client: TestClient) -> None:
     response = client.get("/valid")
     assert response.status_code == 200
-    assert "valid" in response.json()
     assert "preview" in response.json()
     assert "viewer" in response.json()
 

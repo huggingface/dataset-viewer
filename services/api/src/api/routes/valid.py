@@ -20,9 +20,8 @@ from api.utils import (
 
 
 class ValidContent(TypedDict):
-    valid: List[str]
-    preview: List[str]
     viewer: List[str]
+    preview: List[str]
 
 
 @dataclass
@@ -37,11 +36,9 @@ class ValidDatasets:
         _preview_set: Set[str] = self._get_valid_set(
             processing_steps=self.processing_graph.get_processing_steps_enables_preview()
         ).difference(_viewer_set)
-        _valid_set = set.union(_viewer_set, _preview_set)
         self.content = ValidContent(
-            valid=sorted(_valid_set),
-            preview=sorted(_preview_set),
             viewer=sorted(_viewer_set),
+            preview=sorted(_preview_set),
         )
 
     def _get_valid_set(self, processing_steps: List[ProcessingStep]) -> Set[str]:

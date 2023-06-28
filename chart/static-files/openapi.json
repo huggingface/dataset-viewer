@@ -902,11 +902,6 @@
           "preview": {
             "type": "array",
             "items": { "type": "string" }
-          },
-          "valid": {
-            "type": "array",
-            "items": { "type": "string" },
-            "deprecated": true
           }
         }
       },
@@ -3190,13 +3185,6 @@
                       "viewer": [
                         "0n1xus/pytorrent-standalone",
                         "51la5/keyword-extraction"
-                      ],
-                      "valid": [
-                        "0n1xus/codexglue",
-                        "0n1xus/pytorrent-standalone",
-                        "0x7194633/rupile",
-                        "51la5/keyword-extraction",
-                        "AHussain0418/day2_data"
                       ]
                     }
                   }
