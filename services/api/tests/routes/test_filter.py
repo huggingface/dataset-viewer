@@ -12,7 +12,9 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
+from api.config import AppConfig
 from api.routes.filter import (
+    create_response,
     execute_filter_query,
     get_config_parquet_metadata_from_cache,
     get_features_from_parquet_file_metadata,
@@ -112,3 +114,35 @@ def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
         columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
     )
     assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
+
+
+def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+    dataset, config, split = "ds", "default", "train"
+    offset = 2
+    table = {
+        "columns": ["name", "gender", "age"],
+        "rows": [("Marie", "female", 35), ("Paul", "male", 30), ("Leo", "male", 25), ("Simone", "female", 30)],
+    }
+    response = create_response(
+        dataset=dataset,
+        config=config,
+        split=split,
+        cached_assets_base_url=app_config.cached_assets.base_url,
+        cached_assets_directory=cached_assets_directory,
+        table=table,
+        offset=offset,
+        features=ds.features,
+    )
+    assert response == {
+        "features": [
+            {"feature_idx": 0, "name": "name", "type": {"dtype": "string", "_type": "Value"}},
+            {"feature_idx": 1, "name": "gender", "type": {"dtype": "string", "_type": "Value"}},
+            {"feature_idx": 2, "name": "age", "type": {"dtype": "int64", "_type": "Value"}},
+        ],
+        "rows": [
+            {"row_idx": 2, "row": {"name": "Marie", "gender": "female", "age": 35}, "truncated_cells": []},
+            {"row_idx": 3, "row": {"name": "Paul", "gender": "male", "age": 30}, "truncated_cells": []},
+            {"row_idx": 4, "row": {"name": "Leo", "gender": "male", "age": 25}, "truncated_cells": []},
+            {"row_idx": 5, "row": {"name": "Simone", "gender": "female", "age": 30}, "truncated_cells": []},
+        ],
+    }
