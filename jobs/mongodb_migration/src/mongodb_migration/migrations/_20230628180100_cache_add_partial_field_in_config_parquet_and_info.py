@@ -12,7 +12,7 @@ from mongodb_migration.migration import Migration
 
 
 # connection already occurred in the main.py (caveat: we use globals)
-class MigrationAddProgressToCacheResponse(Migration):
+class MigrationAddPartialToCacheResponse(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info(
@@ -30,13 +30,13 @@ class MigrationAddProgressToCacheResponse(Migration):
         )
 
     def down(self) -> None:
-        logging.info("Remove the progress field from all the cached results")
+        logging.info("Remove the partial field from all the cached results")
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {"kind": "config-parquet-and-info", "http_status": 200}, {"$unset": {"partial": ""}}
         )
 
     def validate(self) -> None:
-        logging.info("Ensure that a random selection of cached results have the 'progress' field")
+        logging.info("Ensure that a random selection of cached results have the 'partial' field")
 
         check_documents(DocCls=CachedResponse, sample_size=10)
