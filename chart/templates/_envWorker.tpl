@@ -117,4 +117,6 @@
   value: {{ .Values.descriptiveStats.maxParquetSizeBytes | quote }}
 - name: DESCRIPTIVE_STATS_STORAGE_DIRECTORY
   value: {{ .Values.descriptiveStats.storageDirectory | quote }}
+- name: DESCRIPTIVE_STATS_EXTENSIONS_DIRECTORY
+  value: "/tmp/duckdb-extensions"
 {{- end -}}

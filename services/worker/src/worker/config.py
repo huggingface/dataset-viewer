@@ -9,6 +9,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
+    DescriptiveStatsConfig,
     DuckDbIndexConfig,
     LogConfig,
     ParquetMetadataConfig,
@@ -203,32 +204,6 @@ class ParquetAndInfoConfig:
                 url_template=env.str(name="URL_TEMPLATE", default=PARQUET_AND_INFO_URL_TEMPLATE),
             )
 
-
-DESCRIPTIVE_STATS_CACHE_DIRECTORY = None
-DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS = 10
-DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES = 100_000_000
-
-
-@dataclass(frozen=True)
-class DescriptiveStatsConfig:
-    cache_directory: Optional[str] = DESCRIPTIVE_STATS_CACHE_DIRECTORY
-    histogram_num_bins: int = DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS
-    max_parquet_size_bytes: int = DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
-
-    @classmethod
-    def from_env(cls) -> "DescriptiveStatsConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DESCRIPTIVE_STATS_"):
-            return cls(
-                cache_directory=env.str(name="STORAGE_DIRECTORY", default=DESCRIPTIVE_STATS_CACHE_DIRECTORY),
-                histogram_num_bins=env.int(
-                    name="HISTOGRAM_NUM_BINS",
-                    default=DESCRIPTIVE_STATS_HISTOGRAM_NUM_BINS,
-                ),
-                max_parquet_size_bytes=env.int(
-                    name="MAX_PARQUET_SIZE_BYTES", default=DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
-                ),
-            )
 
 
 NUMBA_CACHE_DIR: Optional[str] = None
