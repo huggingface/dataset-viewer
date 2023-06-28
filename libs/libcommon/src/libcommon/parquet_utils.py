@@ -20,6 +20,7 @@ from libcommon.constants import PARQUET_REVISION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.utils import SplitHubFile
 
 StrPath = Union[str, PathLike[str]]
 
@@ -34,15 +35,6 @@ class ParquetResponseFormatError(Exception):
 
 class FileSystemError(Exception):
     pass
-
-
-class ParquetFileItem(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
 
 
 class ParquetFileMetadataItem(TypedDict):
@@ -134,7 +126,7 @@ class ParquetIndexWithoutMetadata:
 
     @staticmethod
     def from_parquet_file_items(
-        parquet_file_items: List[ParquetFileItem],
+        parquet_file_items: List[SplitHubFile],
         dataset: str,
         config: str,
         split: str,
@@ -263,6 +255,7 @@ class ParquetIndexWithMetadata:
                         size=size,
                         loop=self.httpfs.loop,
                         cache_type=None,
+                        **self.httpfs.kwargs,
                     ),
                     metadata=pq.read_metadata(metadata_path),
                     pre_buffer=True,

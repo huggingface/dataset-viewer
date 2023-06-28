@@ -39,6 +39,7 @@ def test_create_job_runner(
     libraries_resource: LibrariesResource,
     assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    duckdb_index_cache_directory: StrPath,
     job_type: str,
     expected_job_runner: Optional[str],
 ) -> None:
@@ -48,6 +49,7 @@ def test_create_job_runner(
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         assets_directory=assets_directory,
         parquet_metadata_directory=parquet_metadata_directory,
+        duckdb_index_cache_directory=duckdb_index_cache_directory,
     )
     job_info: JobInfo = {
         "type": job_type,

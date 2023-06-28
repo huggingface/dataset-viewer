@@ -23,7 +23,7 @@ from typing import (
     Union,
 )
 from unittest.mock import patch
-from urllib.parse import quote
+from urllib.parse import unquote
 
 import datasets
 import datasets.config
@@ -83,13 +83,13 @@ from libcommon.exceptions import (
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig
-from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse, ParquetFileItem
+from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import retry
+from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url, retry
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
@@ -109,12 +109,6 @@ class ParquetFile:
     @property
     def path_in_repo(self) -> str:
         return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
-
-
-# TODO: use huggingface_hub's hf_hub_url after
-# https://github.com/huggingface/huggingface_hub/issues/1082
-def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url_template: str) -> str:
-    return (hf_endpoint + url_template) % (repo_id, quote(revision, safe=""), filename)
 
 
 p = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
@@ -139,7 +133,7 @@ def create_parquet_file_item(
     hf_endpoint: str,
     target_revision: str,
     url_template: str,
-) -> ParquetFileItem:
+) -> SplitHubFile:
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
     _, split = parse_repo_filename(repo_file.rfilename)
@@ -554,6 +548,8 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
             src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split(
                 "/", 1
             )
+            src_revision = unquote(src_revision)
+            src_path_in_repo = unquote(src_path_in_repo)
 
             # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
             parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
@@ -1102,23 +1098,19 @@ def compute_config_parquet_and_info_response(
             parquet_operations = convert_to_parquet(builder)
 
     try:
-        sleeps = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
         # ^ timeouts after ~7 minutes
-        with lock.git_branch(dataset=dataset, branch=target_revision, owner=job_id, sleeps=sleeps):
+        with lock.git_branch(
+            dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
+        ):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
-            refs = retry(on=[requests.exceptions.ConnectionError], sleeps=[1, 1, 1, 10, 10])(hf_api.list_repo_refs)(
-                repo_id=dataset, repo_type=DATASET_TYPE
+            create_branch(
+                dataset=dataset,
+                target_revision=target_revision,
+                hf_api=hf_api,
+                committer_hf_api=committer_hf_api,
             )
-            if all(ref.ref != target_revision for ref in refs.converts):
-                initial_commit = hf_api.list_repo_commits(repo_id=dataset, repo_type=DATASET_TYPE)[-1].commit_id
-                committer_hf_api.create_branch(
-                    repo_id=dataset,
-                    branch=target_revision,
-                    repo_type=DATASET_TYPE,
-                    revision=initial_commit,
-                    exist_ok=True,
-                )
+
             # commit the parquet files
             commit_parquet_conversion(
                 hf_api=hf_api,
