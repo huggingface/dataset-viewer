@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import functools
-import glob
 import logging
 import os
 import re
@@ -119,7 +118,7 @@ class ParquetFile:
             return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
 
 
-filename_pattern = re.compile("^[0-9]{4}\.parquet$")
+filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
 legacy_filename_pattern = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
