@@ -250,7 +250,7 @@ def compute_descriptive_stats_response(
             f"{NUMERICAL_DTYPES} and ClassLabel. "
         )
 
-    con = duckdb.connect("dataset.db")
+    con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
@@ -266,7 +266,7 @@ def compute_descriptive_stats_response(
     if categorical_features:
         logging.info("Compute statistics for categorical features")
     for feature_name, feature in tqdm(categorical_features.items()):
-        logging.info(f"Compute statistics for ClassLabel feature {feature_name}")
+        logging.debug(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
         cat_column_stats: CategoricalStatsItem = compute_categorical_stats(
             con,
