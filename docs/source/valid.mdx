@@ -9,11 +9,11 @@ The API endpoints will return an error for datasets that cannot be loaded with t
 
 <Tip warning={true}>
   The largest datasets are partially supported by Datasets Server. If they are{" "}
-  <a href="https://huggingface.co/docs/datasets/stream">streamable</a>, it can
-  extract the 100 first rows without downloading the whole dataset. This is
+  <a href="https://huggingface.co/docs/datasets/stream">streamable</a>, Datasets Server can
+  extract the first 100 rows without downloading the whole dataset. This is
   especially useful for previewing large datasets where downloading the whole
   dataset may take hours! See the <code>preview</code> field in the response of{" "}
-  <code>/valid</code>.
+  <code>/valid</code> to view these partially supported datasets.
 </Tip>
 
 This guide shows you how to check dataset validity programmatically, but free to try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets).
