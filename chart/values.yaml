@@ -227,6 +227,8 @@ duckDBIndex:
   maxParquetSizeBytes: "100_000_000"
 
 descriptiveStats:
+  # Directory on the shared storage (used temporarily to download dataset locally in .parquet to compute statistics)
+  storageDirectory: "/stats-cache"
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.

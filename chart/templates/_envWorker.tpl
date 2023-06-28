@@ -115,4 +115,6 @@
   value: {{ .Values.descriptiveStats.histogramNumBins | quote }}
 - name: DESCRIPTIVE_STATS_MAX_PARQUET_SIZE_BYTES
   value: {{ .Values.descriptiveStats.maxParquetSizeBytes | quote }}
+- name: DESCRIPTIVE_STATS_STORAGE_DIRECTORY
+  value: {{ .Values.descriptiveStats.storageDirectory | quote }}
 {{- end -}}

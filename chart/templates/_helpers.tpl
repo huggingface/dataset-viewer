@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 {{/*
 Expand the name of the chart.
@@ -176,6 +176,15 @@ The duckdb-index/ subpath in the NFS
 */}}
 {{- define "duckDBIndex.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "duckdb-index" }}
+{{- end }}
+
+{{/*
+The stats-cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "descriptiveStats.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "stats-cache" }}
 {{- end }}
 
 {{/*
