@@ -480,6 +480,7 @@ def create_parquet_and_info_response(
             }
         ],
         "dataset_info": info,
+        "partial": partial,
     }
 
 
