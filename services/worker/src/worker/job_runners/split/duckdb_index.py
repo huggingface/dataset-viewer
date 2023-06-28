@@ -161,7 +161,7 @@ def compute_index_rows(
         with lock.git_branch(
             dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
-            logging.debug(f"try to create branch for {dataset=} with {target_revision=}")
+            logging.debug(f"try to create branch for {dataset=} with {target_revision=} on {hf_endpoint=}")
             create_branch(
                 dataset=dataset,
                 target_revision=target_revision,
