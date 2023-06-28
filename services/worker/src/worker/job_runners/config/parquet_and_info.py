@@ -1202,7 +1202,7 @@ def compute_config_parquet_and_info_response(
             for repo_file in repo_files
         ],
         dataset_info=asdict(builder.info),
-        partial=partial
+        partial=partial,
     )
 
 
