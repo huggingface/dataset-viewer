@@ -12,7 +12,8 @@ The API endpoints will return an error for datasets that cannot be loaded with t
   <a href="https://huggingface.co/docs/datasets/stream">streamable</a>, it can
   extract the 100 first rows without downloading the whole dataset. This is
   especially useful for previewing large datasets where downloading the whole
-  dataset may take hours! See the `preview` field in the response of `/valid`.
+  dataset may take hours! See the <code>preview</code> field in the response of{" "}
+  <code>/valid</code>.
 </Tip>
 
 This guide shows you how to check dataset validity programmatically, but free to try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-17b761d0-b2b8-4638-a4f7-73be9049c324), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listValidDatasets).
@@ -134,21 +135,23 @@ curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
 The response looks like this if a dataset is valid:
 
 ```json
-{"valid": true}
+{ "valid": true }
 ```
 
 If a dataset is not valid, then the response looks like:
 
 ```json
-{"valid": false}
+{ "valid": false }
 ```
 
 Some cases where a dataset is not valid are:
+
 - the dataset viewer is disabled
 - the dataset is gated but the access is not granted: no token is passed or the passed token is not authorized
 - the dataset is private
 - the dataset contains no data or the data format is not supported
 
 <Tip>
-  Remember if a dataset is <a href="./quick_start#gated-datasets">gated</a>, you'll need to provide your user token to submit a successful query!
+  Remember if a dataset is <a href="./quick_start#gated-datasets">gated</a>,
+  you'll need to provide your user token to submit a successful query!
 </Tip>
