@@ -63,7 +63,7 @@ class RowItem(TypedDict):
 
 class Table(TypedDict):
     columns: list[str]
-    rows: list[list[Any]]
+    rows: list[tuple]
 
 
 logger = logging.getLogger(__name__)
