@@ -62,7 +62,7 @@ curl https://datasets-server.huggingface.co/valid \
 The endpoint response is a JSON containing lists of datasets nested under the following keys:
 
 - `viewer`: the dataset is fully-supported and the Dataset Viewer is working on the Hub dataset page. It also means the dataset has been auto-converted to Parquet.
-- `preview`: the dataset is partially supported. The Dataset Viewer on the Hub shows a Preview of the first 100 rows, obtained by streaming.
+- `preview`: the dataset is partially supported and the Dataset Viewer on the Hub dataset page shows a preview of the first 100 rows obtained by streaming.
 
 ```json
 {
