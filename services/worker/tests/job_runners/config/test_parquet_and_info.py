@@ -109,7 +109,7 @@ def get_job_runner(
 
 def assert_content_is_equal(content: Any, expected: Any) -> None:
     print(content)
-    assert set(content) == {"parquet_files", "dataset_info"}, content
+    assert set(content) == {"parquet_files", "dataset_info", "partial"}, content
     assert content["parquet_files"] == expected["parquet_files"], content
     assert len(content["dataset_info"]) == len(expected["dataset_info"]), content
     content_value = content["dataset_info"]
@@ -118,6 +118,7 @@ def assert_content_is_equal(content: Any, expected: Any) -> None:
     for key in content_value.keys():
         if key != "download_checksums":
             assert content_value[key] == expected_value[key], content
+    assert content["partial"] == expected["partial"], content
 
 
 def test_compute(
