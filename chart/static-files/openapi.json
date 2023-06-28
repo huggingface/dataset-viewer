@@ -895,11 +895,11 @@
         "type": "object",
         "required": ["preview", "viewer", "valid"],
         "properties": {
-          "preview": {
+          "viewer": {
             "type": "array",
             "items": { "type": "string" }
           },
-          "viewer": {
+          "preview": {
             "type": "array",
             "items": { "type": "string" }
           },
@@ -912,10 +912,17 @@
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["valid"],
+        "required": ["preview", "viewer", "valid"],
         "properties": {
-          "valid": {
+          "viewer": {
             "type": "boolean"
+          },
+          "preview": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean",
+            "deprecated": true
           }
         }
       },
@@ -3300,12 +3307,24 @@
                   "valid": {
                     "summary": "valid dataset",
                     "value": {
+                      "viewer": true,
+                      "preview": true,
+                      "valid": true
+                    }
+                  },
+                  "preview": {
+                    "summary": "dataset with only preview",
+                    "value": {
+                      "viewer": false,
+                      "preview": true,
                       "valid": true
                     }
                   },
                   "invalid": {
                     "summary": "invalid dataset",
                     "value": {
+                      "viewer": false,
+                      "preview": false,
                       "valid": false
                     }
                   }
