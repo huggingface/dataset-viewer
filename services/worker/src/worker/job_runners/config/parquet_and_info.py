@@ -712,7 +712,8 @@ class limit_parquet_writes:
 
 
 def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False) -> List[ParquetFile]:
-    assert builder.info.splits
+    if not builder.info.splits:
+        raise EmptyDatasetError("No split found after generating parquet files")
     split_dict = builder.info.splits
     local_parquet_files: List[ParquetFile] = []
     for split, split_info in split_dict.items():
@@ -1201,6 +1202,7 @@ def compute_config_parquet_and_info_response(
             for repo_file in repo_files
         ],
         dataset_info=asdict(builder.info),
+        partial=partial
     )
 
 

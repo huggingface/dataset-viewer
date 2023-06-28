@@ -115,6 +115,7 @@ class ConfigInfoResponse(TypedDict):
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     dataset_info: Dict[str, Any]
+    partial: bool
 
 
 class ParquetFileMetadataItem(SplitItem):
