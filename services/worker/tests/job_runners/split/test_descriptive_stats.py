@@ -258,4 +258,6 @@ def test_compute(
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "stats"]
         assert response.content["num_examples"] == EXPECTED_STATS_CONTENT["num_examples"]
-        assert response.content["stats"] == sorted(EXPECTED_STATS_CONTENT["stats"], key=lambda x: x["column_name"])
+        assert response.content["stats"] == sorted(
+            EXPECTED_STATS_CONTENT["stats"], key=lambda x: x["column_name"]
+        )  # type: ignore
