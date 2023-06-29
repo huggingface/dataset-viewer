@@ -123,12 +123,12 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "backfill"
+  action: "skip"
   # ^ allowed values are {backfill, collect-metrics,skip}
   log:
     level: "debug"
   backfill:
-    error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError"
+    error_codes_to_retry: ""
   resources:
     requests:
       cpu: 1
@@ -271,7 +271,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 20
     resources:
       requests:
         cpu: 1

@@ -362,8 +362,9 @@ class ProcessingGraphConfig:
             },
             "dataset-is-valid": {
                 "input_type": "dataset",
+                # special case: triggered by all the steps that have "enables_preview" or "enables_viewer"
                 "triggered_by": [
-                    "dataset-split-names",
+                    "config-size",
                     "split-first-rows-from-parquet",
                     "split-first-rows-from-streaming",
                 ],

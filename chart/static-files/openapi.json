@@ -895,26 +895,24 @@
         "type": "object",
         "required": ["preview", "viewer", "valid"],
         "properties": {
-          "preview": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
           "viewer": {
             "type": "array",
             "items": { "type": "string" }
           },
-          "valid": {
+          "preview": {
             "type": "array",
-            "items": { "type": "string" },
-            "deprecated": true
+            "items": { "type": "string" }
           }
         }
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["valid"],
+        "required": ["preview", "viewer"],
         "properties": {
-          "valid": {
+          "viewer": {
+            "type": "boolean"
+          },
+          "preview": {
             "type": "boolean"
           }
         }
@@ -3187,13 +3185,6 @@
                       "viewer": [
                         "0n1xus/pytorrent-standalone",
                         "51la5/keyword-extraction"
-                      ],
-                      "valid": [
-                        "0n1xus/codexglue",
-                        "0n1xus/pytorrent-standalone",
-                        "0x7194633/rupile",
-                        "51la5/keyword-extraction",
-                        "AHussain0418/day2_data"
                       ]
                     }
                   }
@@ -3300,13 +3291,22 @@
                   "valid": {
                     "summary": "valid dataset",
                     "value": {
-                      "valid": true
+                      "viewer": true,
+                      "preview": true
+                    }
+                  },
+                  "preview": {
+                    "summary": "dataset with only preview",
+                    "value": {
+                      "viewer": false,
+                      "preview": true
                     }
                   },
                   "invalid": {
                     "summary": "invalid dataset",
                     "value": {
-                      "valid": false
+                      "viewer": false,
+                      "preview": false
                     }
                   }
                 }
