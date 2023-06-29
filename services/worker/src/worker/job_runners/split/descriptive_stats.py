@@ -85,7 +85,7 @@ def compute_histogram(
     """
     logging.debug(f"Compute histogram for {column_name}")
     hist_query_result = dict(con.sql(hist_query).fetchall())
-    if len(hist_query_result) > n_bins:
+    if len(hist_query_result) > n_bins + 1:
         raise StatsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
@@ -113,12 +113,13 @@ def compute_numerical_stats(
     n_samples: int,
     dtype: str,
 ) -> NumericalStatsItem:
-    logging.debug(f"Compute min, max, mean, median, std for {column_name}")
+    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name}")
     query = f"""
     SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
      stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
     """
     minimum, maximum, mean, median, std = con.sql(query).fetchall()[0]
+    logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}")
     if dtype in FLOAT_DTYPES:
         bin_size = (maximum - minimum) / n_bins
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
@@ -133,6 +134,7 @@ def compute_numerical_stats(
     nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
     nan_count = con.sql(nan_query).fetchall()[0][0]
     nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+    logging.debug(f"{nan_count=} {nan_prop=}")
 
     histogram = compute_histogram(
         con,
@@ -247,7 +249,7 @@ def compute_descriptive_stats_response(
     }
     if not categorical_features and not numerical_features:
         raise NoSupportedFeaturesError(
-            "No features for statistics computation type found. Currently supported types are: "
+            "No features for statistics computation found. Currently supported types are: "
             f"{NUMERICAL_DTYPES} and ClassLabel. "
         )
 
@@ -308,6 +310,7 @@ def compute_descriptive_stats_response(
                 column_stats=num_column_stats,
             )
         )
+    con.close()
 
     return SplitDescriptiveStatsResponse(
         num_examples=num_examples, stats=sorted(stats, key=lambda x: x["column_name"])
