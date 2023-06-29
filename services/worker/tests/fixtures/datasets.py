@@ -155,7 +155,14 @@ def datasets() -> Mapping[str, Dataset]:
                         "Vader turns round and round in circles as his ship spins into space.",
                         "We count thirty Rebel ships, Lord Vader.",
                         "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                    ]
+                    ],
+                    "column with spaces": [
+                        "a",
+                        "b",
+                        "c",
+                        "d",
+                        "e",
+                    ],
                 },
                 dtype=pd.StringDtype(storage="python"),
             )
