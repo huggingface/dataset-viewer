@@ -30,7 +30,7 @@ PARQUET_FILENAME = "dataset.parquet"
 
 DECIMALS = 5
 
-INTEGER_DTYPES = ["int8", "int16", "int32", "int64"]
+INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
