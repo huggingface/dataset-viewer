@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
@@ -10,11 +9,11 @@ from libcommon.simple_cache import is_valid_for_kinds
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.dtos import DatasetIsValidResponse, JobResult
+from worker.dtos import CompleteJobResult, DatasetIsValidResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -> Tuple[DatasetIsValidResponse, float]:
+def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -> DatasetIsValidResponse:
     """
     Get the response of /is-valid for one specific dataset on huggingface.co.
 
@@ -42,7 +41,7 @@ def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -
         dataset=dataset, kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()]
     )
 
-    return (DatasetIsValidResponse({"viewer": viewer, "preview": preview}), 1.0)
+    return DatasetIsValidResponse({"viewer": viewer, "preview": preview})
 
 
 class DatasetIsValidJobRunner(DatasetJobRunner):
@@ -71,7 +70,5 @@ class DatasetIsValidJobRunner(DatasetJobRunner):
     def compute(self) -> JobResult:
         if self.dataset is None:
             raise ValueError("dataset is required")
-        response_content, progress = compute_is_valid_response(
-            dataset=self.dataset, processing_graph=self.processing_graph
-        )
-        return JobResult(response_content, progress=progress)
+        response_content = compute_is_valid_response(dataset=self.dataset, processing_graph=self.processing_graph)
+        return CompleteJobResult(response_content)
