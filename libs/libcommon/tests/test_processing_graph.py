@@ -112,7 +112,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "dataset-split-names",
-            ["dataset-is-valid"],
+            [],
             [
                 "dataset-config-names",
                 "config-split-names-from-info",
@@ -179,7 +179,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-size",
-            ["dataset-size"],
+            ["dataset-is-valid", "dataset-size"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
@@ -193,16 +193,16 @@ def graph() -> ProcessingGraph:
             "dataset-is-valid",
             [],
             [
-                "dataset-split-names",
+                "config-size",
                 "split-first-rows-from-parquet",
                 "split-first-rows-from-streaming",
             ],
             [
                 "dataset-config-names",
                 "config-parquet-and-info",
-                "dataset-split-names",
                 "config-info",
                 "config-parquet",
+                "config-size",
                 "config-split-names-from-info",
                 "config-split-names-from-streaming",
                 "split-first-rows-from-parquet",

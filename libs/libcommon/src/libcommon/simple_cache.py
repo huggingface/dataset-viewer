@@ -444,17 +444,8 @@ def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-def get_validity_by_kind(dataset: str, kinds: Optional[List[str]] = None) -> Mapping[str, bool]:
-    # TODO: rework with aggregate
-    entries = (
-        CachedResponse.objects(dataset=dataset)
-        if kinds is None
-        else CachedResponse.objects(dataset=dataset, kind__in=kinds)
-    ).only("kind", "http_status")
-    return {
-        str(kind): entries(kind=kind, http_status=HTTPStatus.OK).first() is not None
-        for kind in sorted(entries.distinct("kind"))
-    }
+def is_valid_for_kinds(dataset: str, kinds: List[str]) -> bool:
+    return CachedResponse.objects(dataset=dataset, kind__in=kinds, http_status=HTTPStatus.OK).count() > 0
 
 
 # admin /metrics endpoint
