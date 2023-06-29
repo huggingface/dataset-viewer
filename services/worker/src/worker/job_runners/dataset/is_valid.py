@@ -31,7 +31,7 @@ def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -
             The processing graph. In particular, it must provide the list of
             processing steps that enable the viewer and the preview.
     Returns:
-        `DatasetIsValidResponse`: The response (viewer, preview, valid).
+        `DatasetIsValidResponse`: The response (viewer, preview).
     """
     logging.info(f"get is-valid response for dataset={dataset}")
 
