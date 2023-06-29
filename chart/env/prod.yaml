@@ -121,12 +121,12 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "skip"
+  action: "backfill"
   # ^ allowed values are {backfill, collect-metrics,skip}
   log:
     level: "debug"
   backfill:
-    error_codes_to_retry: ""
+    error_codes_to_retry: "AskAccessHubRequestError,CachedResponseNotFound,DatasetInfoHubRequestError,DatasetTooBigFromDatasetsError,DatasetTooBigFromHubError,DatasetWithTooBigExternalFilesError,DatasetWithTooManyExternalFilesError,ExternalFilesSizeRequestConnectionError,ExternalFilesSizeRequestTimeoutError,FileSystemError,GatedExtraFieldsError,JobManagerExceededMaximumDurationError,JobRunnerCrashedError,JobRunnerExceededMaximumDurationError,PreviousStepFormatError,PreviousStepStatusError"
   resources:
     requests:
       cpu: 1
