@@ -35,10 +35,15 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
         kinds=[previous_step], dataset=dataset, config=config
     )
     content = config_parquet_and_info_best_response.response["content"]
-    if "parquet_files" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.")
 
-    parquet_files = [parquet_file for parquet_file in content["parquet_files"] if parquet_file.get("config") == config]
+    try:
+        parquet_files = [
+            parquet_file for parquet_file in content["parquet_files"] if parquet_file.get("config") == config
+        ]
+        # sort by filename, which ensures the shards are in order: 00000, 00001, 00002, ...
+        parquet_files.sort(key=lambda x: x["filename"])  # type: ignore
+    except KeyError as e:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.", e) from e
     return ConfigParquetResponse(parquet_files=parquet_files)
 
 
