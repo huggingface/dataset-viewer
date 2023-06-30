@@ -9,15 +9,20 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Optional, Set, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, TypedDict
 from unittest.mock import patch
 
 import datasets.builder
+import datasets.config
 import datasets.info
 import pandas as pd
+import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
+from datasets.packaged_modules.generator.generator import (
+    Generator as ParametrizedGeneratorBasedBuilder,
+)
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
@@ -42,6 +47,7 @@ from worker.job_runners.config.parquet_and_info import (
     create_commits,
     get_delete_operations,
     get_writer_batch_size,
+    limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
     raise_if_blocked,
@@ -826,8 +832,9 @@ def test_get_delete_operations(
     "max_dataset_size,expected_num_shards",
     [
         (1, 1),
-        (100, 2),
-        (1000, 10),
+        (150, 2),
+        (300, 4),
+        (9999999, 10),
     ],
 )
 def test_stream_convert_to_parquet(
@@ -849,3 +856,30 @@ def test_stream_convert_to_parquet(
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
     assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
+    one_sample_max_size = 100
+    expected_max_dataset_size = max_dataset_size + one_sample_max_size
+    assert (
+        sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+        < expected_max_dataset_size
+    )
+
+
+def test_limit_parquet_writes(tmp_path: Path) -> None:
+    num_examples = 0
+
+    def long_generator() -> Iterator[Dict[str, int]]:
+        nonlocal num_examples
+        for i in range(10_000_000):
+            yield {"foo": i}
+            num_examples += 1
+
+    one_sample_size = 8
+    max_dataset_size = 50_000
+    expected_max_dataset_size = max_dataset_size + datasets.config.DEFAULT_MAX_BATCH_SIZE * one_sample_size
+    expected_max_num_examples = 1 + max_dataset_size // one_sample_size + datasets.config.DEFAULT_MAX_BATCH_SIZE
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
+    with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
+        builder.download_and_prepare(file_format="parquet")
+        assert builder.info.dataset_size == limiter.total_bytes <= expected_max_dataset_size
+        assert builder.info.splits["train"].num_examples == num_examples < expected_max_num_examples
