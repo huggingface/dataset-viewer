@@ -658,6 +658,9 @@ class limit_parquet_writes:
     the `GeneratorBasedBuilder._generate_examples` and `ArrowBasedBuilder._generate_tables`
     generators once we reach the maximum number of bytes.
 
+    Since the generator is stopped after we reach the maximum number of bytes, the actual
+    number of bytes generated might be slightly higher than the requested limit.
+
     Example of usage:
 
     ```python
@@ -665,7 +668,7 @@ class limit_parquet_writes:
     max_dataset_size = 10_000_000
     with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
         builder.download_and_prepare(file_format="parquet")
-        assert builder.info.dataset_size == limiter.total_bytes < max_dataset_size
+        assert builder.info.dataset_size == limiter.total_bytes < max_dataset_size + epsilon
     ```
 
     The limiter is usually used with a `StreamingDownloadManager` to not have to download
