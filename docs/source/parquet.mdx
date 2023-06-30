@@ -113,7 +113,7 @@ The endpoint also gives the filename and size of each file:
 
 ## Sharded Parquet files
 
-Big datasets are partitioned into Parquet files (shards) of about 500MB each. The filename contains the name of the dataset, the split, the shard index, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
+Big datasets are partitioned into Parquet files (shards) of about 500MB each. The filename contains the name of the dataset, the split, the shard index, and the total number of shards (`dataset-name-train-0000-of-0004.parquet`). For a given split, the elements in the list are sorted by their shard index, in ascending order. For example, the `train` split of the [`amazon_polarity`](https://datasets-server.huggingface.co/parquet?dataset=amazon_polarity) dataset is partitioned into 4 shards:
 
 ```json
 {

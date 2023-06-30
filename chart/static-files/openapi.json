@@ -2783,7 +2783,7 @@
     "/parquet": {
       "get": {
         "summary": "List of parquet files",
-        "description": "The dataset is converted to the parquet format. The endpoint gives the list of the parquet files.",
+        "description": "The dataset is converted to the parquet format. The endpoint gives the list of the parquet files. The same split can have multiple parquet files, called shards. They are sorted by their shard index.",
         "externalDocs": {
           "description": "See Parquet (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/parquet"
