@@ -336,6 +336,7 @@ def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> P
 
 DATASET_TYPE = "dataset"
 
+HF_HUB_HTTP_ERROR_RETRY_SLEEPS = [1, 1, 1, 10, 10, 10]
 LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
 LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 

@@ -12,11 +12,12 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils._errors import RepositoryNotFoundError
+from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.config import DuckDbIndexConfig
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
+    CreateCommitError,
     DatasetNotFoundError,
     DuckDBIndexFileNotFoundError,
     LockedDatasetTimeoutError,
@@ -35,7 +36,13 @@ from libcommon.utils import JobInfo, SplitHubFile
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url
+from worker.utils import (
+    HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
+    LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    create_branch,
+    hf_hub_url,
+    retry,
+)
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
@@ -184,14 +191,29 @@ def compute_index_rows(
             ]
             logging.debug(f"add operations for {dataset=} {add_operations=}")
 
-            committer_hf_api.create_commit(
-                repo_id=dataset,
-                repo_type=DATASET_TYPE,
-                revision=target_revision,
-                operations=delete_operations + add_operations,
-                commit_message=commit_message,
-                parent_commit=target_dataset_info.sha,
+            retry_create_commit = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+                committer_hf_api.create_commit
             )
+            try:
+                retry_create_commit(
+                    repo_id=dataset,
+                    repo_type=DATASET_TYPE,
+                    revision=target_revision,
+                    operations=delete_operations + add_operations,
+                    commit_message=commit_message,
+                    parent_commit=target_dataset_info.sha,
+                )
+            except RuntimeError as e:
+                if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                    raise CreateCommitError(
+                        message=(
+                            f"Commit {commit_message} could not be created on the Hub (after"
+                            f" {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)} attempts)."
+                        ),
+                        cause=e.__cause__,
+                    ) from e.__cause__
+                raise e
+
             logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
