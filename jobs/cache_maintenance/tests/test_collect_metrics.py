@@ -3,7 +3,7 @@
 
 from http import HTTPStatus
 
-from libcommon.metrics import CacheTotalMetric, JobTotalMetric
+from libcommon.metrics import CacheTotalMetricDocument, JobTotalMetricDocument
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
@@ -38,11 +38,11 @@ def test_collect_metrics() -> None:
 
     collect_metrics(processing_graph=processing_graph)
 
-    cache_metrics = CacheTotalMetric.objects()
+    cache_metrics = CacheTotalMetricDocument.objects()
     assert cache_metrics
     assert len(cache_metrics) == 1
 
-    job_metrics = JobTotalMetric.objects()
+    job_metrics = JobTotalMetricDocument.objects()
     assert job_metrics
     assert len(job_metrics) == len(Status)  # One by each job state, see libcommon.queue.get_jobs_count_by_status
     waiting_job = next((job for job in job_metrics if job.status == "waiting"), None)

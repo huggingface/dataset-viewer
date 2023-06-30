@@ -12,7 +12,7 @@ from pymongo.errors import DocumentTooLarge
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
-    CachedResponse,
+    CachedResponseDocument,
     CacheEntryDoesNotExistError,
     CacheReportsPage,
     CacheReportsWithContentPage,
@@ -53,27 +53,27 @@ def test_insert_null_values() -> None:
     content = {"some": "content"}
     http_status = HTTPStatus.OK
 
-    CachedResponse.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
+    CachedResponseDocument.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
     )
-    assert CachedResponse.objects.count() == 1
-    cached_response = CachedResponse.objects.get()
+    assert CachedResponseDocument.objects.count() == 1
+    cached_response = CachedResponseDocument.objects.get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()
     cached_response.validate()
 
-    CachedResponse(
+    CachedResponseDocument(
         kind=kind, dataset=dataset_b, config=config, split=split, content=content, http_status=http_status
     ).save()
-    assert CachedResponse.objects.count() == 2
-    cached_response = CachedResponse.objects(dataset=dataset_b).get()
+    assert CachedResponseDocument.objects.count() == 2
+    cached_response = CachedResponseDocument.objects(dataset=dataset_b).get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()
 
-    coll = CachedResponse._get_collection()
+    coll = CachedResponseDocument._get_collection()
     coll.insert_one(
         {
             "kind": kind,
@@ -84,8 +84,8 @@ def test_insert_null_values() -> None:
             "http_status": http_status,
         }
     )
-    assert CachedResponse.objects.count() == 3
-    cached_response = CachedResponse.objects(dataset=dataset_c).get()
+    assert CachedResponseDocument.objects.count() == 3
+    cached_response = CachedResponseDocument.objects(dataset=dataset_c).get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()

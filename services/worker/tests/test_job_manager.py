@@ -5,9 +5,9 @@ from typing import Optional
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Job, Queue
+from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, get_response, upsert_response
+from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
@@ -124,7 +124,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
-    assert Job.objects().count() == 0
+    assert JobDocument.objects().count() == 0
     queue.add_job(
         job_type=root_step.job_type,
         dataset="dataset",
@@ -194,7 +194,7 @@ def test_job_runner_set_crashed(
     message = "I'm crashed :("
 
     queue = Queue()
-    assert Job.objects().count() == 0
+    assert JobDocument.objects().count() == 0
     queue.add_job(
         job_type=test_processing_step.job_type,
         dataset=dataset,
@@ -216,7 +216,7 @@ def test_job_runner_set_crashed(
     )
 
     job_manager.set_crashed(message=message)
-    response = CachedResponse.objects()[0]
+    response = CachedResponseDocument.objects()[0]
     expected_error = {"error": message}
     assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerCrashedError"

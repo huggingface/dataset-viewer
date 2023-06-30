@@ -4,8 +4,8 @@
 import logging
 from typing import Optional
 
-from libcommon.queue import Job
-from libcommon.simple_cache import CachedResponse
+from libcommon.queue import JobDocument
+from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents
@@ -44,7 +44,7 @@ class CacheRenamingMigration(CacheMigration):
     def validate(self) -> None:
         logging.info("Validate modified documents")
 
-        check_documents(DocCls=CachedResponse, sample_size=10)
+        check_documents(DocCls=CachedResponseDocument, sample_size=10)
 
 
 class QueueRenamingMigration(QueueMigration):
@@ -111,4 +111,4 @@ class QueueRenamingMigration(QueueMigration):
     def validate(self) -> None:
         logging.info("Validate modified documents")
 
-        check_documents(DocCls=Job, sample_size=10)
+        check_documents(DocCls=JobDocument, sample_size=10)

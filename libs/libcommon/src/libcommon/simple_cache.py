@@ -67,7 +67,7 @@ class SplitFullName(NamedTuple):
 
 
 # cache of any job
-class CachedResponse(Document):
+class CachedResponseDocument(Document):
     """A response computed for a job, cached in the mongoDB database
 
     Args:
@@ -113,15 +113,15 @@ class CachedResponse(Document):
             ("kind", "id"),
         ],
     }
-    objects = QuerySetManager["CachedResponse"]()
+    objects = QuerySetManager["CachedResponseDocument"]()
 
 
 # Fix issue with mongoengine: https://github.com/MongoEngine/mongoengine/issues/1242#issuecomment-810501601
 # mongoengine automatically sets "config" and "splits" as required fields, because they are listed in the unique_with
 # field of the "kind" field. But it's an error, since unique indexes (which are used to enforce unique_with) accept
 # null values, see https://www.mongodb.com/docs/v5.0/core/index-unique/#unique-index-and-missing-field.
-CachedResponse.config.required = False  # type: ignore
-CachedResponse.split.required = False  # type: ignore
+CachedResponseDocument.config.required = False  # type: ignore
+CachedResponseDocument.split.required = False  # type: ignore
 
 
 class CacheEntryDoesNotExistError(DoesNotExist):
@@ -143,7 +143,7 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
+    CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
         error_code=error_code,
@@ -185,11 +185,11 @@ def upsert_response_params(
 def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
-    return CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
+    return CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
-    return CachedResponse.objects(dataset=dataset).delete()
+    return CachedResponseDocument.objects(dataset=dataset).delete()
 
 
 class CacheEntryWithoutContent(TypedDict):
@@ -206,7 +206,7 @@ def get_response_without_content(
 ) -> CacheEntryWithoutContent:
     try:
         response = (
-            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
             .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
             .get()
         )
@@ -237,7 +237,7 @@ def get_response_metadata(
 ) -> CacheEntryMetadata:
     try:
         response = (
-            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
             .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
             .get()
         )
@@ -297,7 +297,7 @@ class CachedArtifactError(Exception):
 def get_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> CacheEntry:
     try:
         response = (
-            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
             .only("content", "http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress")
             .get()
         )
@@ -319,7 +319,7 @@ def get_response_with_details(
 ) -> CacheEntryWithDetails:
     try:
         response = (
-            CachedResponse.objects(kind=kind, dataset=dataset, config=config, split=split)
+            CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
             .only(
                 "content",
                 "http_status",
@@ -441,11 +441,11 @@ def get_previous_step_or_raise(
 
 
 def get_valid_datasets(kind: str) -> Set[str]:
-    return set(CachedResponse.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
+    return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
 def is_valid_for_kinds(dataset: str, kinds: List[str]) -> bool:
-    return CachedResponse.objects(dataset=dataset, kind__in=kinds, http_status=HTTPStatus.OK).count() > 0
+    return CachedResponseDocument.objects(dataset=dataset, kind__in=kinds, http_status=HTTPStatus.OK).count() > 0
 
 
 # admin /metrics endpoint
@@ -463,7 +463,7 @@ def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
     # see
     # https://stackoverflow.com/questions/47301829/mongodb-distinct-count-for-combination-of-two-fields?noredirect=1&lq=1#comment81555081_47301829
     # and https://docs.mongoengine.org/guide/querying.html#mongodb-aggregation-api
-    entries = CachedResponse.objects().only("kind", "http_status", "error_code")
+    entries = CachedResponseDocument.objects().only("kind", "http_status", "error_code")
     return [
         {
             "kind": str(kind),
@@ -532,10 +532,10 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
           If the limit is an invalid number.
     """
     if not cursor:
-        queryset = CachedResponse.objects(kind=kind)
+        queryset = CachedResponseDocument.objects(kind=kind)
     else:
         try:
-            queryset = CachedResponse.objects(kind=kind, id__gt=ObjectId(cursor))
+            queryset = CachedResponseDocument.objects(kind=kind, id__gt=ObjectId(cursor))
         except InvalidId as err:
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
@@ -563,7 +563,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
 
 
 def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> List[SplitFullName]:
-    responses = CachedResponse.objects(kind=kind, job_runner_version__lt=current_version).only(
+    responses = CachedResponseDocument.objects(kind=kind, job_runner_version__lt=current_version).only(
         "dataset", "config", "split"
     )
     return [
@@ -572,7 +572,7 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> L
 
 
 def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
-    responses = CachedResponse.objects(kind=kind, dataset=dataset).exclude("content")
+    responses = CachedResponseDocument.objects(kind=kind, dataset=dataset).exclude("content")
     return [
         {
             "kind": response.kind,
@@ -625,10 +625,10 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
           If the limit is an invalid number.
     """
     if not cursor:
-        queryset = CachedResponse.objects(kind=kind)
+        queryset = CachedResponseDocument.objects(kind=kind)
     else:
         try:
-            queryset = CachedResponse.objects(kind=kind, id__gt=ObjectId(cursor))
+            queryset = CachedResponseDocument.objects(kind=kind, id__gt=ObjectId(cursor))
         except InvalidId as err:
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
@@ -703,7 +703,7 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) 
                 "progress": response.progress,
                 "updated_at": response.updated_at,
             }
-            for response in CachedResponse.objects(dataset=dataset, **filters).only(
+            for response in CachedResponseDocument.objects(dataset=dataset, **filters).only(
                 "kind",
                 "dataset",
                 "config",
@@ -720,7 +720,7 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) 
 
 
 def has_some_cache(dataset: str) -> bool:
-    return CachedResponse.objects(dataset=dataset).count() > 0
+    return CachedResponseDocument.objects(dataset=dataset).count() > 0
 
 
 def fetch_names(
@@ -757,4 +757,4 @@ def fetch_names(
 
 # only for the tests
 def _clean_cache_database() -> None:
-    CachedResponse.drop_collection()  # type: ignore
+    CachedResponseDocument.drop_collection()  # type: ignore
