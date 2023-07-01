@@ -8,9 +8,9 @@ import pytest
 
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import Job, Queue
+from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, upsert_response_params
+from libcommon.simple_cache import CachedResponseDocument, upsert_response_params
 from libcommon.utils import JobOutput, JobResult, Priority, Status
 
 from .utils import (
@@ -166,17 +166,17 @@ def test_finish_job(
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.finish_job(job_result=job_result)
 
-    assert Job.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
+    assert JobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
 
-    done_job = Job.objects(dataset=DATASET_NAME, status=Status.SUCCESS)
+    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.SUCCESS)
     assert done_job.count() == 1
 
-    waiting_jobs = Job.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
 
-    assert CachedResponse.objects(dataset=DATASET_NAME).count() == 1
-    cached_response = CachedResponse.objects(dataset=DATASET_NAME).first()
+    assert CachedResponseDocument.objects(dataset=DATASET_NAME).count() == 1
+    cached_response = CachedResponseDocument.objects(dataset=DATASET_NAME).first()
     assert cached_response
     assert cached_response.content == CONFIG_NAMES_CONTENT
     assert cached_response.http_status == HTTPStatus.OK

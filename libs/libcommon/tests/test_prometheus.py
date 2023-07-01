@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 import pytest
 
-from libcommon.metrics import CacheTotalMetric, JobTotalMetric
+from libcommon.metrics import CacheTotalMetricDocument, JobTotalMetricDocument
 from libcommon.prometheus import (
     ASSETS_DISK_USAGE,
     QUEUE_JOBS_TOTAL,
@@ -148,7 +148,7 @@ def test_cache_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
         "total": 1,
     }
 
-    collection = CacheTotalMetric._get_collection()
+    collection = CacheTotalMetricDocument._get_collection()
     collection.insert_one(cache_metric)
 
     metrics = get_metrics()
@@ -181,7 +181,7 @@ def test_queue_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
         "total": 1,
     }
 
-    collection = JobTotalMetric._get_collection()
+    collection = JobTotalMetricDocument._get_collection()
     collection.insert_one(job_metric)
 
     metrics = get_metrics()
