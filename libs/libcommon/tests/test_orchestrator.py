@@ -38,7 +38,7 @@ from .utils import (
     artifact_id_to_job_info,
 )
 
-MAX_CACHE_DAYS = 180
+CACHE_MAX_DAYS = 90
 
 
 @pytest.fixture(autouse=True)
@@ -205,7 +205,7 @@ def test_set_revision(
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
 
     dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=MAX_CACHE_DAYS
+        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -241,7 +241,7 @@ def test_set_revision_handle_existing_jobs(
 
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=MAX_CACHE_DAYS
+        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
