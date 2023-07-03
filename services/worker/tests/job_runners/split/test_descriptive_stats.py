@@ -119,13 +119,23 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "class_label_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {"nan_count": 0, "nan_proportion": 0.0, "n_unique": 2, "frequencies": {"cat": 17, "dog": 3}},
+            "column_stats": {
+                "nan_count": 0,
+                "nan_proportion": 0.0,
+                "n_unique": 2,
+                "frequencies": {"cat": 17, "dog": 3},
+            },
         },
         {
             "column_name": "class_label_nan_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {"nan_count": 4, "nan_proportion": 0.2, "n_unique": 3, "frequencies": {"cat": 15, "dog": 1}},
+            "column_stats": {
+                "nan_count": 4,
+                "nan_proportion": 0.2,
+                "n_unique": 3,
+                "frequencies": {"cat": 15, "dog": 1},
+            },
         },
         {
             "column_name": "int_column",
