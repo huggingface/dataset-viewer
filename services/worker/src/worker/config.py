@@ -9,7 +9,6 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
-    DuckDbIndexConfig,
     LogConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
@@ -231,6 +230,42 @@ class ConfigNamesConfig:
         with env.prefixed("CONFIG_NAMES_"):
             return cls(
                 max_number=env.int(name="MAX_NUMBER", default=CONFIG_NAMES_MAX_NUMBER),
+            )
+
+
+DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
+DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
+DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
+DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
+DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class DuckDbIndexConfig:
+    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
+    committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
+    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
+    url_template: str = DUCKDB_INDEX_URL_TEMPLATE
+    max_parquet_size_bytes: int = DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+    extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "DuckDbIndexConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DUCKDB_INDEX_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
+                committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
+                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
+                url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
+                max_parquet_size_bytes=env.int(
+                    name="MAX_PARQUET_SIZE_BYTES", default=DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+                ),
+                extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )
 
 
