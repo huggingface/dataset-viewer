@@ -14,7 +14,7 @@ from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
 from api.utils import ResponseNotReadyError
 
-CACHE_MAX_DAYS = 180
+CACHE_MAX_DAYS = 90
 
 
 def test_endpoints_definition() -> None:
