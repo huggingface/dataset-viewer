@@ -81,6 +81,7 @@ EXPECTED_PARTIAL_PENDING = (
             )
         ],
         "failed": [],
+        "partial": False,
     },
     0.5,
 )
@@ -99,6 +100,7 @@ EXPECTED_PARTIAL_FAILED = (
                 split=None,
             )
         ],
+        "partial": False,
     },
     1.0,
 )
