@@ -83,10 +83,6 @@ CacheableErrorCode = Literal[
     "DatasetNotFoundError",
     "DatasetRevisionEmptyError",
     "DatasetRevisionNotFoundError",
-    "DatasetTooBigFromDatasetsError",
-    "DatasetTooBigFromHubError",
-    "DatasetWithTooBigExternalFilesError",
-    "DatasetWithTooManyExternalFilesError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
@@ -222,39 +218,11 @@ class DatasetRevisionNotFoundError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
-class DatasetTooBigFromDatasetsError(CacheableError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromDatasetsError", cause, False)
-
-
-class DatasetTooBigFromHubError(CacheableError):
-    """Raised when the dataset size (sum of files on the Hub) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetTooBigFromHubError", cause, False)
-
-
-class DatasetWithTooBigExternalFilesError(CacheableError):
-    """Raised when the dataset size (sum of config sizes given by the datasets library) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooBigExternalFilesError", cause, True)
-
-
 class DatasetWithTooManyConfigsError(CacheableError):
     """Raised when the number of configs of a dataset exceeded the limit."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
-
-
-class DatasetWithTooManyExternalFilesError(CacheableError):
-    """Raised when the number of external data files of a dataset is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyExternalFilesError", cause, True)
 
 
 class DatasetWithTooManyParquetFilesError(CacheableError):
