@@ -12,6 +12,8 @@
     title: Check dataset validity
   - local: splits
     title: List splits and configurations
+  - local: info
+    title: Get dataset information
   - local: first_rows
     title: Preview a dataset
   - local: rows
