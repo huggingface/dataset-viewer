@@ -806,11 +806,16 @@ def stream_convert_to_parquet(builder: DatasetBuilder, max_dataset_size: int) ->
     os.makedirs(builder.cache_dir, exist_ok=True)
     split_dict = SplitDict(dataset_name=builder.name)
     splits_generators = {sg.name: sg for sg in builder._split_generators(dl_manager)}
+    prepare_split_kwargs: dict[str, Any] = (
+        {"check_duplicate_keys": True} if isinstance(builder, datasets.builder.GeneratorBasedBuilder) else {}
+    )
     partial = False
     for split in splits_generators:
         split_dict.add(splits_generators[split].split_info)
         with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
-            builder._prepare_split(split_generator=splits_generators[split], file_format="parquet")
+            builder._prepare_split(
+                split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
+            )
             partial = partial or limiter.total_bytes >= max_dataset_size
     builder.info.splits = split_dict
     builder.info.dataset_size = sum(split.num_bytes for split in builder.info.splits.values())
