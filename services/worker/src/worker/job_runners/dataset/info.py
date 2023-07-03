@@ -75,7 +75,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
                 )
                 continue
             config_infos[config] = config_response["content"]["dataset_info"]
-            partial = partial or partial
+            partial = partial or config_response["content"]["partial"]
 
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e

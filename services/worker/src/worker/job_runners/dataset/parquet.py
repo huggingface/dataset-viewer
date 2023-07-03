@@ -83,7 +83,7 @@ def compute_parquet_response(dataset: str) -> Tuple[DatasetParquetResponse, floa
                 )
                 continue
             config_parquet_content = ConfigParquetResponse(
-                parquet_files=response["content"]["parquet_files"], partial=False
+                parquet_files=response["content"]["parquet_files"], partial=response["content"]["partial"]
             )
             parquet_files.extend(config_parquet_content["parquet_files"])
             partial = partial or config_parquet_content["partial"]
