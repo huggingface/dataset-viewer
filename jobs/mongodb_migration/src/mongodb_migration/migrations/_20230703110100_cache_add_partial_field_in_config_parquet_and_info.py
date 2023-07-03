@@ -33,7 +33,7 @@ class MigrationAddPartialToCacheResponse(Migration):
         logging.info("Remove the partial field from all the cached results")
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].update_many(
-            {"kind": "config-parquet-and-info", "http_status": 200}, {"$unset": {"partial": ""}}
+            {"kind": "config-parquet-and-info", "http_status": 200}, {"$unset": {"content.partial": ""}}
         )
 
     def validate(self) -> None:
