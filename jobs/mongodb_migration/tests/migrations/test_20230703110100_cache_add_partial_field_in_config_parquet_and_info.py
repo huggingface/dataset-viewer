@@ -40,7 +40,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                                 "dataset": "lhoestq/demo1",
                                 "config": "lhoestq--demo1",
                                 "split": "test",
-                                "url": "https://huggingface.co/datasets/lhoestq/demo1/resolve/refs%2Fconvert%2Fparquet/lhoestq--demo1/csv-test.parquet",
+                                "url": "https://huggingface.co/.../csv-test.parquet",
                                 "filename": "csv-test.parquet",
                                 "size": 4415,
                             },
@@ -48,7 +48,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                                 "dataset": "lhoestq/demo1",
                                 "config": "lhoestq--demo1",
                                 "split": "train",
-                                "url": "https://huggingface.co/datasets/lhoestq/demo1/resolve/refs%2Fconvert%2Fparquet/lhoestq--demo1/csv-train.parquet",
+                                "url": "https://huggingface.co/.../csv-train.parquet",
                                 "filename": "csv-train.parquet",
                                 "size": 5038,
                             },
@@ -87,7 +87,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                                 "dataset": "lhoestq/demo2",
                                 "config": "lhoestq--demo2",
                                 "split": "test",
-                                "url": "https://huggingface.co/datasets/lhoestq/demo2/resolve/refs%2Fconvert%2Fparquet/lhoestq--demo2/csv-test.parquet",
+                                "url": "https://huggingface.co/.../csv-test.parquet",
                                 "filename": "csv-test.parquet",
                                 "size": 4415,
                             },
@@ -95,7 +95,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                                 "dataset": "lhoestq/demo2",
                                 "config": "lhoestq--demo2",
                                 "split": "train",
-                                "url": "https://huggingface.co/datasets/lhoestq/demo2/resolve/refs%2Fconvert%2Fparquet/lhoestq--demo2/csv-train.parquet",
+                                "url": "https://huggingface.co/.../csv-train.parquet",
                                 "filename": "csv-train.parquet",
                                 "size": 5038,
                             },
@@ -159,7 +159,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                             ),
                             (
                                 "  File"
-                                ' "/tmp/modules-cache/datasets_modules/datasets/101arrowz--vox_celeb/abc650ecc73f2e6637ab790832fa06a9d0cd3e3aefc9d749ee8d79efe828fa68/error.py",'
+                                ' "/tmp/modules-cache/datasets_modules/.../error.py",'
                                 ' line 190, in _split_generators\n    raise TypeError("Streaming is not supported for'
                                 ' lhoestq/error")\n'
                             ),
