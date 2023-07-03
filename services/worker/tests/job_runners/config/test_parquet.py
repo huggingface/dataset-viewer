@@ -114,6 +114,70 @@ def get_job_runner(
             None,
             True,
         ),
+        (
+            "shards_order",
+            "config_1",
+            HTTPStatus.OK,
+            ConfigParquetAndInfoResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="parquet-train-00001-of-05534.parquet",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="parquet-train-00000-of-05534.parquet",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="test",
+                        url="url2",
+                        filename="parquet-test-00000-of-00001.parquet",
+                        size=0,
+                    ),
+                ],
+                dataset_info={"description": "value", "dataset_size": 10},
+            ),
+            None,
+            ConfigParquetResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="test",
+                        url="url2",
+                        filename="parquet-test-00000-of-00001.parquet",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="parquet-train-00000-of-05534.parquet",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="ok",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="parquet-train-00001-of-05534.parquet",
+                        size=0,
+                    ),
+                ]
+            ),
+            False,
+        ),
     ],
 )
 def test_compute(

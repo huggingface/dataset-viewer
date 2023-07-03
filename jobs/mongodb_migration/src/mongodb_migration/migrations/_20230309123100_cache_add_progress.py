@@ -4,7 +4,7 @@
 import logging
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
-from libcommon.simple_cache import CachedResponse
+from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents
@@ -27,4 +27,4 @@ class MigrationAddProgressToCacheResponse(Migration):
     def validate(self) -> None:
         logging.info("Ensure that a random selection of cached results have the 'progress' field")
 
-        check_documents(DocCls=CachedResponse, sample_size=10)
+        check_documents(DocCls=CachedResponseDocument, sample_size=10)

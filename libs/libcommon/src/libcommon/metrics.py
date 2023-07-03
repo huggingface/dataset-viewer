@@ -36,7 +36,7 @@ class QuerySetManager(Generic[U]):
 # END monkey patching ### hack ###
 
 
-class JobTotalMetric(Document):
+class JobTotalMetricDocument(Document):
     """Jobs total metric in mongoDB database, used to compute prometheus metrics.
 
     Args:
@@ -57,10 +57,10 @@ class JobTotalMetric(Document):
         "db_alias": METRICS_MONGOENGINE_ALIAS,
         "indexes": [("queue", "status")],
     }
-    objects = QuerySetManager["JobTotalMetric"]()
+    objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
-class CacheTotalMetric(Document):
+class CacheTotalMetricDocument(Document):
     """Cache total metric in the mongoDB database, used to compute prometheus metrics.
 
     Args:
@@ -83,10 +83,10 @@ class CacheTotalMetric(Document):
         "db_alias": METRICS_MONGOENGINE_ALIAS,
         "indexes": [("kind", "http_status", "error_code")],
     }
-    objects = QuerySetManager["CacheTotalMetric"]()
+    objects = QuerySetManager["CacheTotalMetricDocument"]()
 
 
 # only for the tests
 def _clean_metrics_database() -> None:
-    CacheTotalMetric.drop_collection()  # type: ignore
-    JobTotalMetric.drop_collection()  # type: ignore
+    CacheTotalMetricDocument.drop_collection()  # type: ignore
+    JobTotalMetricDocument.drop_collection()  # type: ignore

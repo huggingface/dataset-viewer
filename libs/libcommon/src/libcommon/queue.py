@@ -114,7 +114,7 @@ class NoWaitingJobError(Exception):
 # - finished: started_at is not None and finished_at is not None: finished jobs
 # For a given set of arguments, only one job is allowed in the started state. No
 # restriction for the other states
-class Job(Document):
+class JobDocument(Document):
     """A job in the mongoDB database
 
     Args:
@@ -190,7 +190,7 @@ class Job(Document):
             "last_heartbeat": self.last_heartbeat,
         }
 
-    objects = QuerySetManager["Job"]()
+    objects = QuerySetManager["JobDocument"]()
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -208,7 +208,7 @@ class Job(Document):
         )
 
     @classmethod
-    def get(cls, job_id: str) -> "Job":
+    def get(cls, job_id: str) -> "JobDocument":
         try:
             return cls.objects(pk=job_id).get()
         except DoesNotExist as e:
@@ -348,7 +348,7 @@ class Queue:
         config: Optional[str] = None,
         split: Optional[str] = None,
         priority: Priority = Priority.NORMAL,
-    ) -> Job:
+    ) -> JobDocument:
         """Add a job to the queue in the waiting state.
 
         Note that the same "unicity_id" can have multiple jobs in the waiting state, with the same or different
@@ -364,7 +364,7 @@ class Queue:
 
         Returns: the job
         """
-        return Job(
+        return JobDocument(
             type=job_type,
             dataset=dataset,
             revision=revision,
@@ -390,7 +390,7 @@ class Queue:
         """
         try:
             jobs = [
-                Job(
+                JobDocument(
                     type=job_info["type"],
                     dataset=job_info["params"]["dataset"],
                     revision=job_info["params"]["revision"],
@@ -409,7 +409,7 @@ class Queue:
                 )
                 for job_info in job_infos
             ]
-            job_ids = Job.objects.insert(jobs, load_bulk=False)
+            job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
             return 0
@@ -426,7 +426,7 @@ class Queue:
             `int`: The number of canceled jobs
         """
         try:
-            existing = Job.objects(pk__in=job_ids)
+            existing = JobDocument.objects(pk__in=job_ids)
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
             return existing.count()
         except Exception:
@@ -437,7 +437,7 @@ class Queue:
         priority: Priority,
         job_types_blocked: Optional[list[str]] = None,
         job_types_only: Optional[list[str]] = None,
-    ) -> Job:
+    ) -> JobDocument:
         """Get the next job in the queue for a given priority.
 
         For a given priority, get the waiting job with the oldest creation date:
@@ -464,13 +464,13 @@ class Queue:
             filters["type__nin"] = job_types_blocked
         if job_types_only:
             filters["type__in"] = job_types_only
-        started_jobs = Job.objects(status=Status.STARTED, **filters)
+        started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job = (
-            Job.objects(
+            JobDocument.objects(
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
@@ -503,7 +503,7 @@ class Queue:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
             logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
             next_waiting_job = (
-                Job.objects(
+                JobDocument.objects(
                     status=Status.WAITING,
                     namespace__in=least_common_namespaces_group,
                     unicity_id__nin=started_unicity_ids,
@@ -521,7 +521,7 @@ class Queue:
 
     def get_next_waiting_job(
         self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
-    ) -> Job:
+    ) -> JobDocument:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
@@ -546,7 +546,7 @@ class Queue:
                 )
         raise EmptyQueueError("no job available")
 
-    def _start_newest_job_and_cancel_others(self, job: Job) -> Job:
+    def _start_newest_job_and_cancel_others(self, job: JobDocument) -> JobDocument:
         """Start a job (the newest one for unicity_id) and cancel the other ones.
 
         A lock is used to ensure that the job is not started by another worker.
@@ -567,7 +567,7 @@ class Queue:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.1] * RETRIES):
                 # get all the pending jobs for the same unicity_id
-                waiting_jobs = Job.objects(
+                waiting_jobs = JobDocument.objects(
                     unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
                 ).order_by("-created_at")
                 datetime = get_datetime()
@@ -641,7 +641,7 @@ class Queue:
         started_job = self._start_newest_job_and_cancel_others(job=next_waiting_job)
         return started_job.info()
 
-    def get_job_with_id(self, job_id: str) -> Job:
+    def get_job_with_id(self, job_id: str) -> JobDocument:
         """Get the job for a given job id.
 
         Args:
@@ -652,7 +652,7 @@ class Queue:
         Raises:
             DoesNotExist: if the job does not exist
         """
-        return Job.objects(pk=job_id).get()
+        return JobDocument.objects(pk=job_id).get()
 
     def get_job_type(self, job_id: str) -> str:
         """Get the job type for a given job id.
@@ -668,7 +668,7 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def _get_started_job(self, job_id: str) -> Job:
+    def _get_started_job(self, job_id: str) -> JobDocument:
         """Get a started job, and raise if it's not in the correct format
           (does not exist, not started, incorrect values for finished_at or started_at).
 
@@ -678,7 +678,7 @@ class Queue:
         Returns:
             `Job`: the started job
         """
-        job = Job.objects(pk=job_id).get()
+        job = JobDocument.objects(pk=job_id).get()
         if job.status is not Status.STARTED:
             raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
         if job.finished_at is not None:
@@ -748,7 +748,7 @@ class Queue:
             `bool`: whether the job is in process (waiting or started)
         """
         return (
-            Job.objects(
+            JobDocument.objects(
                 type=job_type,
                 dataset=dataset,
                 revision=revision,
@@ -761,7 +761,7 @@ class Queue:
 
     def cancel_started_jobs(self, job_type: str) -> None:
         """Cancel all started jobs for a given type."""
-        for job in Job.objects(type=job_type, status=Status.STARTED.value):
+        for job in JobDocument.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.add_job(
                 job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
@@ -804,7 +804,7 @@ class Queue:
         return self._get_df(
             [
                 job.flat_info()
-                for job in Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters)
+                for job in JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters)
             ]
         )
 
@@ -812,7 +812,7 @@ class Queue:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return Job.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters).count() > 0
+        return JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:
@@ -824,7 +824,7 @@ class Queue:
 
         Returns: the number of jobs with the given status and the given type.
         """
-        return Job.objects(type=job_type, status=status.value).count()
+        return JobDocument.objects(type=job_type, status=status.value).count()
 
     def get_jobs_count_by_status(self, job_type: str) -> CountByStatus:
         """Count the number of jobs by status for a given job type.
@@ -853,7 +853,7 @@ class Queue:
 
         Returns: a list of jobs with the given status and the given type
         """
-        return [d.to_dict() for d in Job.objects(type=job_type, status=status.value)]
+        return [d.to_dict() for d in JobDocument.objects(type=job_type, status=status.value)]
 
     def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
         """Get the dump of the jobs by pending status for a given job type.
@@ -872,7 +872,7 @@ class Queue:
         """
         return [
             d.to_dict()
-            for d in Job.objects(
+            for d in JobDocument.objects(
                 type=job_type, dataset=dataset, status__in=[Status.WAITING.value, Status.STARTED.value]
             )
         ]
@@ -896,7 +896,7 @@ class Queue:
 
         Returns: an array of the zombie job infos.
         """
-        started_jobs = Job.objects(status=Status.STARTED)
+        started_jobs = JobDocument.objects(status=Status.STARTED)
         if max_seconds_without_heartbeat <= 0:
             return []
         zombies = [
@@ -920,5 +920,5 @@ class Queue:
 # only for the tests
 def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
-    Job.drop_collection()  # type: ignore
+    JobDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore

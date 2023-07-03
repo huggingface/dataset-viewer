@@ -46,7 +46,7 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
@@ -101,7 +101,7 @@ def compute_index_rows(
 
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
-        column_names = ",".join(list(features.keys()))
+        column_names = ",".join('"' + column + '"' for column in list(features.keys()))
 
         # look for string columns
         string_columns = [
@@ -142,8 +142,9 @@ def compute_index_rows(
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    logging.debug(CREATE_INDEX_COMMAND)
-    con.sql(CREATE_INDEX_COMMAND)
+    create_index_sql = CREATE_INDEX_COMMAND.format(columns=column_names)
+    logging.debug(create_index_sql)
+    con.sql(create_index_sql)
     con.close()
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
