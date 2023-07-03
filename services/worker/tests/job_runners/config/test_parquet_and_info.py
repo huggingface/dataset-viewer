@@ -837,7 +837,7 @@ def test_get_delete_operations(
         (9999999, 10),
     ],
 )
-def test_stream_convert_to_parquet(
+def test_stream_convert_to_parquet_arrowbasedbuilder(
     csv_path: str, max_dataset_size: int, expected_num_shards: int, tmp_path: Path
 ) -> None:
     num_data_files = 10
@@ -852,6 +852,44 @@ def test_stream_convert_to_parquet(
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_data_files)
+    assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
+    parquet_files = list_generated_parquet_files(builder, partial=partial)
+    assert len(parquet_files) == expected_num_shards
+    assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
+    one_sample_max_size = 100
+    expected_max_dataset_size = max_dataset_size + one_sample_max_size
+    assert (
+        sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+        < expected_max_dataset_size
+    )
+
+
+@pytest.mark.parametrize(
+    "max_dataset_size,expected_num_shards",
+    [
+        (1, 1),
+        (150, 19),
+        (300, 38),
+        (9999999, 1000),
+    ],
+)
+def test_stream_convert_to_parquet_generatorbasedbuilder(
+    max_dataset_size: int, expected_num_shards: int, tmp_path: Path
+) -> None:
+    num_rows = 1000
+
+    def long_generator() -> Iterator[Dict[str, int]]:
+        for i in range(num_rows):
+            yield {"foo": i}
+
+    cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
+    builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+        with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
+            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+    num_shards = len(parquet_operations)
+    assert num_shards == expected_num_shards
+    assert partial == (expected_num_shards < num_rows)
     assert all(isinstance(op.path_or_fileobj, str) for op in parquet_operations)
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
