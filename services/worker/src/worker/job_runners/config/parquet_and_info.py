@@ -98,7 +98,9 @@ T = TypeVar("T")
 
 
 def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
-    return repo_file.rfilename if isinstance(repo_file.rfilename, str) else ""  # check type for mypy
+    if not isinstance(repo_file.rfilename, str):  # check type for mypy
+        raise ValueError(f"Expected a string for repo_file.rfilename, but got a '{type(repo_file.rfilename)}'.")
+    return repo_file.rfilename
 
 
 class ParquetFile:
