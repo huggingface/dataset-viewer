@@ -103,6 +103,11 @@ class ParquetFile:
     ):
         if not local_file.startswith(local_dir):
             raise ValueError(f"{local_file} is not in {local_dir}")
+        if shard_idx >= MAX_FILES_PER_DIRECTORY:
+            raise DatasetWithTooManyParquetFilesError(
+                f"The dataset has too many parquet files and can't be uploaded in the parquet directory "
+                f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
+            )
         self.local_file = local_file
         self.local_dir = local_dir
         self.config = config
@@ -113,6 +118,7 @@ class ParquetFile:
     @property
     def path_in_repo(self) -> str:
         if self.partial:
+            # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
             return f"{self.config}/partial/{self.split}/{self.shard_idx:04d}.parquet"
         else:
             return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
@@ -322,8 +328,6 @@ def is_dataset_too_big(
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     Raises the following errors:
-        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
-          If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.UnsupportedExternalFilesError`]
           If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
