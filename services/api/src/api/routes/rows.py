@@ -254,6 +254,7 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
+    cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -329,6 +330,7 @@ def create_rows_endpoint(
                             hf_endpoint=hf_endpoint,
                             hf_timeout_seconds=hf_timeout_seconds,
                             hf_token=hf_token,
+                            cache_max_days=cache_max_days,
                         )
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)
