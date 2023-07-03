@@ -43,11 +43,6 @@ def get_job_runner(
                     "input_type": "config",
                     "triggered_by": "dataset-config-names",
                 },
-                # "config-split-names-from-streaming": {
-                #     "input_type": "config",
-                #     "triggered_by": "dataset-step",
-                #     "provides_config_parquet": True,
-                # },
                 processing_step_name: {
                     "input_type": "split",
                     "job_runner_version": SplitDescriptiveStatsJobRunner.get_job_runner_version(),
