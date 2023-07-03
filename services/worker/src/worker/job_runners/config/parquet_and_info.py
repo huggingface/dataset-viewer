@@ -77,7 +77,13 @@ from tqdm.contrib.concurrent import thread_map
 from worker.config import AppConfig, ParquetAndInfoConfig
 from worker.dtos import CompleteJobResult, ConfigParquetAndInfoResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url, retry
+from worker.utils import (
+    HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
+    LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    create_branch,
+    hf_hub_url,
+    retry,
+)
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
@@ -750,11 +756,10 @@ def create_commits(
             If one of the commits could not be created on the Hub.
     """
     commit_infos: List[CommitInfo] = []
-    sleeps = [1, 1, 1, 10, 10, 10]
     offsets = range(0, len(operations), max_operations_per_commit)
     for commit_idx, offset in enumerate(offsets):
         batch_msg = f" (step {commit_idx + 1} of {len(offsets)})" if len(offsets) > 1 else ""
-        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=sleeps)(hf_api.create_commit)
+        retry_create_commit = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_api.create_commit)
         try:
             commit_info = retry_create_commit(
                 repo_id=repo_id,
@@ -769,7 +774,7 @@ def create_commits(
                 raise CreateCommitError(
                     message=(
                         f"Commit {commit_idx}/{len(offsets)} could not be created on the Hub (after"
-                        f" {len(sleeps)} attempts)."
+                        f" {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)} attempts)."
                     ),
                     cause=e.__cause__,
                 ) from e.__cause__
