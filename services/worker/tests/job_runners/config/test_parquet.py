@@ -147,6 +147,7 @@ def get_job_runner(
                     ),
                 ],
                 dataset_info={"description": "value", "dataset_size": 10},
+                partial=False,
             ),
             None,
             ConfigParquetResponse(
