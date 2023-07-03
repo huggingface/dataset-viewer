@@ -1,0 +1,139 @@
+# Get dataset information
+
+Datasets Server provides an `/info` endpoint for exploring the general information about dataset, including such fields as description, citation, homepage, license and features.
+
+The `/info` endpoint accepts two query parameters:
+
+- `dataset`: the dataset name
+- `config`: the configuration name
+
+<inferencesnippet>
+<python>
+```python
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/info?dataset=duorc&config=SelfRC"
+def query():
+    response = requests.get(API_URL, headers=headers)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/info?dataset=duorc&config=SelfRC",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/info?dataset=duorc&config=SelfRC \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+The endpoint response is a JSON with the `dataset_info` key. Its structure and content correspond to [DatasetInfo](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.DatasetInfo) object of the `datasets` library.
+
+```json
+{
+    "dataset_info": {
+        "description": "DuoRC contains 186,089 unique question-answer pairs created from a collection of 7680 pairs of movie plots where each pair in the collection reflects two versions of the same movie.\n",
+        "citation": "@inproceedings{DuoRC,\nauthor = { Amrita Saha and Rahul Aralikatte and Mitesh M. Khapra and Karthik Sankaranarayanan},title = {{DuoRC: Towards Complex Language Understanding with Paraphrased Reading Comprehension}},\nbooktitle = {Meeting of the Association for Computational Linguistics (ACL)},\nyear = {2018}\n}\n",
+        "homepage": "https://duorc.github.io/",
+        "license": "https://raw.githubusercontent.com/duorc/duorc/master/LICENSE",
+        "features": {
+            "plot_id": {
+                "dtype": "string",
+                "_type": "Value"
+            },
+            "plot": {
+                "dtype": "string",
+                "_type": "Value"
+            },
+            "title": {
+                "dtype": "string",
+                "_type": "Value"
+            },
+            "question_id": {
+                "dtype": "string",
+                "_type": "Value"
+            },
+            "question": {
+                "dtype": "string",
+                "_type": "Value"
+            },
+            "answers": {
+                "feature": {
+                    "dtype": "string",
+                    "_type": "Value"
+                },
+                "_type": "Sequence"
+            },
+            "no_answer": {
+                "dtype": "bool",
+                "_type": "Value"
+            }
+        },
+        "builder_name": "duorc",
+        "config_name": "SelfRC",
+        "version": {
+            "version_str": "1.0.0",
+            "major": 1,
+            "minor": 0,
+            "patch": 0
+        },
+        "splits": {
+            "train": {
+                "name": "train",
+                "num_bytes": 239852729,
+                "num_examples": 60721,
+                "dataset_name": "duorc"
+            },
+            "validation": {
+                "name": "validation",
+                "num_bytes": 51662519,
+                "num_examples": 12961,
+                "dataset_name": "duorc"
+            },
+            "test": {
+                "name": "test",
+                "num_bytes": 49142710,
+                "num_examples": 12559,
+                "dataset_name": "duorc"
+            }
+        },
+        "download_checksums": {
+            "https://raw.githubusercontent.com/duorc/duorc/master/dataset/SelfRC_train.json": {
+                "num_bytes": 24388192,
+                "checksum": null
+            },
+            "https://raw.githubusercontent.com/duorc/duorc/master/dataset/SelfRC_dev.json": {
+                "num_bytes": 5051240,
+                "checksum": null
+            },
+            "https://raw.githubusercontent.com/duorc/duorc/master/dataset/SelfRC_test.json": {
+                "num_bytes": 5023228,
+                "checksum": null
+            }
+        },
+        "download_size": 34462660,
+        "dataset_size": 340657958,
+        "size_in_bytes": 375120618
+    }
+}
+```

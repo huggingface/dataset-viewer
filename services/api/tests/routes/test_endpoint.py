@@ -62,7 +62,7 @@ def test_endpoints_definition() -> None:
     assert len(parquet["dataset"]) == 1  # Only has one processing step
     assert len(parquet["config"]) == 1  # Only has one processing step
 
-    dataset_info = definition["/dataset-info"]
+    dataset_info = definition["/info"]
     assert dataset_info is not None
     assert sorted(list(dataset_info)) == ["config", "dataset"]
     assert dataset_info["dataset"] is not None
@@ -87,6 +87,10 @@ def test_endpoints_definition() -> None:
     assert len(opt_in_out_urls["split"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["config"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["dataset"]) == 1  # Only has one processing step
+
+    # assert old endpoints don't exist
+    with raises(KeyError):
+        _ = definition["/dataset-info"]
 
 
 def test_get_cache_entry_from_steps() -> None:
