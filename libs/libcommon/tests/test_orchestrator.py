@@ -38,6 +38,8 @@ from .utils import (
     artifact_id_to_job_info,
 )
 
+CACHE_MAX_DAYS = 90
+
 
 @pytest.fixture(autouse=True)
 def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
@@ -202,7 +204,9 @@ def test_set_revision(
 ) -> None:
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
 
-    dataset_orchestrator.set_revision(revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[])
+    dataset_orchestrator.set_revision(
+        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == len(first_artifacts)
@@ -236,7 +240,9 @@ def test_set_revision_handle_existing_jobs(
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
 
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
-    dataset_orchestrator.set_revision(revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[])
+    dataset_orchestrator.set_revision(
+        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == len(first_artifacts)

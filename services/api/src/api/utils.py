@@ -173,6 +173,7 @@ def try_backfill_dataset(
     processing_steps: List[ProcessingStep],
     dataset: str,
     processing_graph: ProcessingGraph,
+    cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
@@ -192,7 +193,9 @@ def try_backfill_dataset(
             raise ResponseNotFoundError("Not found.") from e
         # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
         # and tell the user to retry.
-        dataset_orchestrator.set_revision(revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[])
+        dataset_orchestrator.set_revision(
+            revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=cache_max_days
+        )
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )

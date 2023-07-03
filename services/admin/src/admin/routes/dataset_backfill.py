@@ -26,6 +26,7 @@ from admin.utils import (
 def create_dataset_backfill_endpoint(
     processing_graph: ProcessingGraph,
     hf_endpoint: str,
+    cache_max_days: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
     hf_token: Optional[str] = None,
@@ -50,7 +51,9 @@ def create_dataset_backfill_endpoint(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
             )
             dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
-            dataset_orchestrator.backfill(revision=dataset_git_revision, priority=Priority.LOW)
+            dataset_orchestrator.backfill(
+                revision=dataset_git_revision, priority=Priority.LOW, cache_max_days=cache_max_days
+            )
             return get_json_ok_response(
                 {"status": "ok", "message": "Backfilling dataset."},
                 max_age=0,
