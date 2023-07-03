@@ -97,7 +97,8 @@ def get_job_runner(
                                 filename="filename1",
                                 size=0,
                             ),
-                        ]
+                        ],
+                        partial=False,
                     ),
                 ),
                 UpstreamResponse(
@@ -115,7 +116,8 @@ def get_job_runner(
                                 filename="filename2",
                                 size=0,
                             ),
-                        ]
+                        ],
+                        partial=False,
                     ),
                 ),
             ],
@@ -131,6 +133,7 @@ def get_job_runner(
                 ],
                 pending=[],
                 failed=[],
+                partial=False,
             ),
             False,
         ),

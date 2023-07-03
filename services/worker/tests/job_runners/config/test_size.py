@@ -120,6 +120,7 @@ def get_job_runner(
                     "dataset_size": 20387232,
                     "size_in_bytes": 31981954,
                 },
+                "partial": False,
             },
             None,
             {
@@ -153,7 +154,8 @@ def get_job_runner(
                             "num_columns": 2,
                         },
                     ],
-                }
+                },
+                "partial": False,
             },
             False,
         ),

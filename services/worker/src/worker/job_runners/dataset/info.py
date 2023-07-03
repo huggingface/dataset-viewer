@@ -46,6 +46,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         config_infos: Dict[str, Any] = {}
         total = 0
         pending, failed = [], []
+        partial = False
         for config_item in content["config_names"]:
             config = config_item["config"]
             total += 1
@@ -74,13 +75,14 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
                 )
                 continue
             config_infos[config] = config_response["content"]["dataset_info"]
+            partial = partial or config_response["content"]["partial"]
 
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - len(pending)) / total if total else 1.0
 
-    return DatasetInfoResponse(dataset_info=config_infos, pending=pending, failed=failed), progress
+    return DatasetInfoResponse(dataset_info=config_infos, pending=pending, failed=failed, partial=partial), progress
 
 
 class DatasetInfoJobRunner(DatasetJobRunner):

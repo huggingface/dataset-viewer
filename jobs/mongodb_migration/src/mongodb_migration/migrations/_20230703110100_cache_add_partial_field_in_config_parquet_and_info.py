@@ -17,12 +17,23 @@ class MigrationAddPartialToCacheResponse(Migration):
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info(
             "If missing, add the partial field with the default value (false) to the cached results of"
-            " config-parquet-and-info"
+            " config-parquet-and-info and subsequent steps"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
-                "kind": "config-parquet-and-info",
+                "kind": {
+                    "$in": [
+                        "config-parquet-and-info",
+                        "config-parquet",
+                        "dataset-parquet",
+                        "config-parquet-metadata",
+                        "config-info",
+                        "dataset-info",
+                        "config-size",
+                        "dataset-size",
+                    ]
+                },
                 "http_status": 200,
                 "content.partial": {"$exists": False},
             },
@@ -33,7 +44,22 @@ class MigrationAddPartialToCacheResponse(Migration):
         logging.info("Remove the partial field from all the cached results")
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].update_many(
-            {"kind": "config-parquet-and-info", "http_status": 200}, {"$unset": {"content.partial": ""}}
+            {
+                "kind": {
+                    "$in": [
+                        "config-parquet-and-info",
+                        "config-parquet",
+                        "dataset-parquet",
+                        "config-parquet-metadata",
+                        "config-info",
+                        "dataset-info",
+                        "config-size",
+                        "dataset-size",
+                    ]
+                },
+                "http_status": 200,
+            },
+            {"$unset": {"content.partial": ""}},
         )
 
     def validate(self) -> None:

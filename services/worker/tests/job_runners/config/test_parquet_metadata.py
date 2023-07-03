@@ -103,6 +103,7 @@ def get_job_runner(
                         dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],
+                partial=False,
             ),
             None,
             ConfigParquetMetadataResponse(
@@ -127,7 +128,8 @@ def get_job_runner(
                         num_rows=3,
                         parquet_metadata_subpath="ok/--/config_1/filename2",
                     ),
-                ]
+                ],
+                partial=False,
             ),
             False,
         ),
