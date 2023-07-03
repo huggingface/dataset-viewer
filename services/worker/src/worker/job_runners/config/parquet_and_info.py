@@ -97,6 +97,10 @@ MAX_OPERATIONS_PER_COMMIT = 500
 T = TypeVar("T")
 
 
+def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
+    return repo_file.rfilename if isinstance(repo_file.rfilename, str) else ""  # check type for mypy
+
+
 class ParquetFile:
     def __init__(
         self, local_file: str, local_dir: str, config: str, split: str, shard_idx: int, partial: bool = False
@@ -1222,7 +1226,7 @@ def compute_config_parquet_and_info_response(
         for repo_file in target_dataset_info.siblings
         if repo_file.rfilename.startswith(f"{config}/") and repo_file.rfilename.endswith(".parquet")
     ]
-    repo_files.sort(key=lambda repo_file: repo_file.rfilename)  # type: ignore
+    repo_files.sort(key=repo_file_rfilename_sort_key)
     # we might want to check if the sha of the parquet files is the same as the one we just uploaded
     # we could also check that the list of parquet files is exactly what we expect
     # let's not over engineer this for now. After all, what is on the Hub is the source of truth
