@@ -55,7 +55,6 @@ def test_auth_e2e(
         ("/parquet-and-dataset-info", "config"),
         ("/parquet", "dataset"),
         ("/parquet", "config"),
-        ("/info", "dataset"),
         ("/info", "config"),
         ("/size", "dataset"),
         ("/size", "config"),

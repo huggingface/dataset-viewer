@@ -62,10 +62,8 @@ def test_endpoints_definition() -> None:
 
     dataset_info = definition["/info"]
     assert dataset_info is not None
-    assert sorted(list(dataset_info)) == ["config", "dataset"]
-    assert dataset_info["dataset"] is not None
+    assert sorted(list(dataset_info)) == ["config"]
     assert dataset_info["config"] is not None
-    assert len(dataset_info["dataset"]) == 1  # Only has one processing step
     assert len(dataset_info["config"]) == 1  # Only has one processing step
 
     size = definition["/size"]
