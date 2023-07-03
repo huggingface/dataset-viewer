@@ -13,7 +13,7 @@ def backfill_dataset(
     dataset: str,
     revision: str,
     processing_graph: ProcessingGraph,
-    priority: Priority = Priority.NORMAL,
+    priority: Priority = Priority.LOW,
 ) -> None:
     """
     Update a dataset
@@ -22,7 +22,7 @@ def backfill_dataset(
         dataset (str): the dataset
         revision (str): The revision of the dataset.
         processing_graph (ProcessingGraph): the processing graph
-        priority (Priority, optional): The priority of the job. Defaults to Priority.NORMAL.
+        priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
 
     Returns: None.
     """

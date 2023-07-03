@@ -50,7 +50,7 @@ def create_dataset_backfill_endpoint(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
             )
             dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
-            dataset_orchestrator.backfill(revision=dataset_git_revision, priority=Priority.NORMAL)
+            dataset_orchestrator.backfill(revision=dataset_git_revision, priority=Priority.LOW)
             return get_json_ok_response(
                 {"status": "ok", "message": "Backfilling dataset."},
                 max_age=0,
