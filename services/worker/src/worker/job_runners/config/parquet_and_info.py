@@ -105,7 +105,7 @@ class ParquetFile:
             raise ValueError(f"{local_file} is not in {local_dir}")
         if shard_idx >= MAX_FILES_PER_DIRECTORY:
             raise DatasetWithTooManyParquetFilesError(
-                f"The dataset has too many parquet files and can't be uploaded in the parquet directory "
+                "The dataset has too many parquet files and can't be uploaded in the parquet directory "
                 f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
             )
         self.local_file = local_file
@@ -763,7 +763,8 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
                 ParquetFile(
                     local_file=os.path.join(
                         builder.cache_dir,
-                        fname_prefix + f"-{shard_idx:05d}-of-{num_shards:05d}.parquet" if num_shards > 1 else ".parquet",
+                        fname_prefix
+                        + (f"-{shard_idx:05d}-of-{num_shards:05d}.parquet" if num_shards > 1 else ".parquet"),
                     ),
                     local_dir=builder.cache_dir,
                     config=builder.config.name,
