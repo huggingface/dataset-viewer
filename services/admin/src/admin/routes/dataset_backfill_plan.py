@@ -26,6 +26,7 @@ def create_dataset_backfill_plan_endpoint(
     processing_graph: ProcessingGraph,
     max_age: int,
     hf_endpoint: str,
+    cache_max_days: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
     hf_token: Optional[str] = None,
@@ -53,6 +54,7 @@ def create_dataset_backfill_plan_endpoint(
                 dataset=dataset,
                 processing_graph=processing_graph,
                 revision=dataset_git_revision,
+                cache_max_days=cache_max_days,
             )
             return get_json_ok_response(dataset_backfill_plan.as_response(), max_age=max_age)
         except AdminCustomError as e:

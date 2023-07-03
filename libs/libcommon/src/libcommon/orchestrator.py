@@ -31,6 +31,7 @@ from libcommon.utils import JobInfo, JobResult, Priority
 @dataclass
 class CacheStatus:
     cache_has_different_git_revision: Dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_old: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_error_to_retry: Dict[str, ArtifactState] = field(default_factory=dict)
@@ -40,6 +41,7 @@ class CacheStatus:
     def as_response(self) -> Dict[str, List[str]]:
         return {
             "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
+            "cache_is_old": sorted(self.cache_is_old.keys()),
             "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
             "cache_is_empty": sorted(self.cache_is_empty.keys()),
             "cache_is_error_to_retry": sorted(self.cache_is_error_to_retry.keys()),
@@ -307,6 +309,7 @@ class DatasetBackfillPlan(Plan):
         dataset: dataset name
         processing_graph: processing graph
         revision: revision to backfill
+        cache_max_days: maximum number of days to keep the cache
         error_codes_to_retry: list of error codes to retry
         priority: priority of the jobs to create
         only_first_processing_steps: if True, only the first processing steps are backfilled
@@ -315,6 +318,7 @@ class DatasetBackfillPlan(Plan):
     dataset: str
     processing_graph: ProcessingGraph
     revision: str
+    cache_max_days: int
     error_codes_to_retry: Optional[List[str]] = None
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
@@ -476,6 +480,11 @@ class DatasetBackfillPlan(Plan):
             # config
             artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
+                # is an old entry?
+                if artifact_state.cache_state.is_old(days=self.cache_max_days):
+                    cache_status.cache_is_old[artifact_state.id] = artifact_state
+                    continue
+
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
@@ -535,6 +544,7 @@ class DatasetBackfillPlan(Plan):
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
+            + list(self.cache_status.cache_is_old.values())
             + list(self.cache_status.cache_is_outdated_by_parent.values())
             + list(self.cache_status.cache_is_job_runner_obsolete.values())
             + list(self.cache_status.cache_has_different_git_revision.values())
@@ -570,7 +580,9 @@ class DatasetOrchestrator:
     dataset: str
     processing_graph: ProcessingGraph
 
-    def set_revision(self, revision: str, priority: Priority, error_codes_to_retry: List[str]) -> None:
+    def set_revision(
+        self, revision: str, priority: Priority, error_codes_to_retry: List[str], cache_max_days: int
+    ) -> None:
         """
         Set the current revision of the dataset.
 
@@ -581,6 +593,7 @@ class DatasetOrchestrator:
             revision (str): The new revision of the dataset.
             priority (Priority): The priority of the jobs to create.
             error_codes_to_retry (List[str]): The error codes for which the jobs should be retried.
+            cache_max_days (int): The maximum number of days for which the cache is considered valid.
 
         Returns:
             None
@@ -612,6 +625,7 @@ class DatasetOrchestrator:
                     processing_graph=self.processing_graph,
                     error_codes_to_retry=error_codes_to_retry,
                     only_first_processing_steps=True,
+                    cache_max_days=cache_max_days,
                 )
             logging.info(f"Setting new revision to {self.dataset}")
             with StepProfiler(
@@ -720,13 +734,16 @@ class DatasetOrchestrator:
         # is good enough.
         return Queue().has_pending_jobs(dataset=self.dataset, job_types=list(job_types))
 
-    def backfill(self, revision: str, priority: Priority, error_codes_to_retry: Optional[List[str]] = None) -> int:
+    def backfill(
+        self, revision: str, priority: Priority, cache_max_days: int, error_codes_to_retry: Optional[List[str]] = None
+    ) -> int:
         """
         Backfill the cache for a given revision.
 
         Args:
             revision (str): The revision.
             priority (Priority): The priority of the jobs.
+            cache_max_days (int): The maximum number of days to keep the cache.
             error_codes_to_retry (Optional[List[str]]): The error codes for which the jobs should be retried.
 
         Returns:
@@ -750,6 +767,7 @@ class DatasetOrchestrator:
                     processing_graph=self.processing_graph,
                     error_codes_to_retry=error_codes_to_retry,
                     only_first_processing_steps=False,
+                    cache_max_days=cache_max_days,
                 )
             logging.info(f"Analyzing {self.dataset}")
             with StepProfiler(

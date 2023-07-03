@@ -80,6 +80,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
+                cache_max_days=app_config.cache.max_days,
             ),
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
@@ -99,7 +100,9 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                processing_graph=processing_graph, hf_webhook_secret=app_config.api.hf_webhook_secret
+                processing_graph=processing_graph,
+                hf_webhook_secret=app_config.api.hf_webhook_secret,
+                cache_max_days=app_config.cache.max_days,
             ),
             methods=["POST"],
         ),
@@ -119,6 +122,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
+                cache_max_days=app_config.cache.max_days,
             ),
         ),
     ]

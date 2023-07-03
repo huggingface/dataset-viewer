@@ -4,7 +4,7 @@
 import base64
 import enum
 import mimetypes
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from typing import Any, Mapping, Optional, TypedDict
 
@@ -88,8 +88,11 @@ def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
 
 
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
+def get_datetime(days: Optional[int] = None) -> datetime:
+    date = datetime.now(timezone.utc)
+    if days is not None:
+        date = date - timedelta(days=days)
+    return date
 
 
 def inputs_to_string(

@@ -10,6 +10,7 @@ import pandas as pd
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntryMetadata, fetch_names
+from libcommon.utils import get_datetime
 
 # TODO: assets, cached_assets, parquet files
 
@@ -88,6 +89,13 @@ class CacheState:
                 and self.cache_entry_metadata["error_code"] in self.error_codes_to_retry
             )
         )
+
+    def is_old(self, days: int) -> bool:
+        if self.cache_entry_metadata is None or days <= 0:
+            return False
+        return self.cache_entry_metadata["updated_at"] < get_datetime(days).replace(tzinfo=None)
+        # ^ we remove the timezone to avoid comparing timezone-aware and timezone-naive datetimes
+        # could be done better, but we don't need more precision
 
     def is_older_than(self, other: "CacheState") -> bool:
         if self.cache_entry_metadata is None or other.cache_entry_metadata is None:

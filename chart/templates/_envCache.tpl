@@ -2,6 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envCache" -}}
+- name: CACHE_MAX_DAYS
+  value: {{ .Values.cache.maxDays | quote }}
 - name: CACHE_MONGO_DATABASE
   value: {{ .Values.cache.mongoDatabase | quote }}
 - name: CACHE_MONGO_URL

@@ -62,6 +62,7 @@ def run_job() -> None:
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
+                cache_max_days=job_config.cache.max_days,
             )
         elif action == "collect-metrics":
             collect_metrics(processing_graph=processing_graph)
