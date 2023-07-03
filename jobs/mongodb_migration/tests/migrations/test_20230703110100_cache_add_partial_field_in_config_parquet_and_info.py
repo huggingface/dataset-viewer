@@ -138,6 +138,8 @@ cache2: List[Dict[str, Any]] = [
         "config-parquet-metadata",
         "config-info",
         "dataset-info",
+        "config-size",
+        "dataset-size",
     ]
 ]
 
@@ -162,6 +164,8 @@ def test_cache_add_partial(mongo_host: str) -> None:
             "config-parquet-metadata",
             "config-info",
             "dataset-info",
+            "config-size",
+            "dataset-size",
         ]:
             assert_partial("lhoestq/demo2", kind=kind)
 
@@ -175,6 +179,8 @@ def test_cache_add_partial(mongo_host: str) -> None:
             "config-parquet-metadata",
             "config-info",
             "dataset-info",
+            "config-size",
+            "dataset-size",
         ]:
             assert_unchanged("lhoestq/demo2", kind=kind)
 

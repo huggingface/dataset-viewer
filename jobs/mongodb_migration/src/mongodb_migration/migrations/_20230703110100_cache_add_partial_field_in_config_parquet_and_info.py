@@ -30,6 +30,8 @@ class MigrationAddPartialToCacheResponse(Migration):
                         "config-parquet-metadata",
                         "config-info",
                         "dataset-info",
+                        "config-size",
+                        "dataset-size",
                     ]
                 },
                 "http_status": 200,
@@ -51,6 +53,8 @@ class MigrationAddPartialToCacheResponse(Migration):
                         "config-parquet-metadata",
                         "config-info",
                         "dataset-info",
+                        "config-size",
+                        "dataset-size",
                     ]
                 },
                 "http_status": 200,

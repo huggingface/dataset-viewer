@@ -53,6 +53,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         total = 0
         pending = []
         failed = []
+        partial = False
         for config_item in content["config_names"]:
             config = config_item["config"]
             total += 1
@@ -84,9 +85,12 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
                     )
                 )
                 continue
-            config_size_content = ConfigSizeResponse(size=response["content"]["size"])
+            config_size_content = ConfigSizeResponse(
+                size=response["content"]["size"], partial=response["content"]["partial"]
+            )
             config_sizes.append(config_size_content["size"]["config"])
             split_sizes.extend(config_size_content["size"]["splits"])
+            partial = partial or config_size_content["partial"]
         dataset_size: DatasetSize = {
             "dataset": dataset,
             "num_bytes_original_files": sum(config_size["num_bytes_original_files"] for config_size in config_sizes),
@@ -109,6 +113,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
                 },
                 "pending": pending,
                 "failed": failed,
+                "partial": partial,
             }
         ),
         progress,

@@ -161,6 +161,7 @@ class ConfigSizeContent(TypedDict):
 
 class ConfigSizeResponse(TypedDict):
     size: ConfigSizeContent
+    partial: bool
 
 
 class ConfigNameItem(TypedDict):
@@ -209,3 +210,4 @@ class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
     pending: list[PreviousJob]
     failed: list[PreviousJob]
+    partial: bool
