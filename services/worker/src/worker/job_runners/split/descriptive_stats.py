@@ -42,7 +42,7 @@ class Histogram(TypedDict):
 
 class NumericalStatsItem(TypedDict):
     nan_count: int
-    nan_prop: float
+    nan_proportion: float
     min: float
     max: float
     mean: float
@@ -53,7 +53,7 @@ class NumericalStatsItem(TypedDict):
 
 class CategoricalStatsItem(TypedDict):
     nan_count: int
-    nan_prop: float
+    nan_proportion: float
     n_unique: int
     frequencies: Dict[str, int]
 
@@ -133,8 +133,8 @@ def compute_numerical_stats(
         raise ValueError("Incorrect dtype, only integer and float are allowed. ")
     nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
     nan_count = con.sql(nan_query).fetchall()[0][0]
-    nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
-    logging.debug(f"{nan_count=} {nan_prop=}")
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+    logging.debug(f"{nan_count=} {nan_proportion=}")
 
     histogram = compute_histogram(
         con,
@@ -147,7 +147,7 @@ def compute_numerical_stats(
     )
     return NumericalStatsItem(
         nan_count=nan_count,
-        nan_prop=nan_prop,
+        nan_proportion=nan_proportion,
         min=minimum,
         max=maximum,
         mean=mean,
@@ -176,10 +176,10 @@ def compute_categorical_stats(
             frequencies[class_label_names[cat_id]] = freq
         else:
             nan_count = freq
-    nan_prop = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     return CategoricalStatsItem(
         nan_count=nan_count,
-        nan_prop=nan_prop,
+        nan_proportion=nan_proportion,
         n_unique=len(categories),
         frequencies=frequencies,
     )

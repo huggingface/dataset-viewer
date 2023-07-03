@@ -124,13 +124,13 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "class_label_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {"nan_count": 0, "nan_prop": 0.0, "n_unique": 2, "frequencies": {"cat": 17, "dog": 3}},
+            "column_stats": {"nan_count": 0, "nan_proportion": 0.0, "n_unique": 2, "frequencies": {"cat": 17, "dog": 3}},
         },
         {
             "column_name": "class_label_nan_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {"nan_count": 4, "nan_prop": 0.2, "n_unique": 3, "frequencies": {"cat": 15, "dog": 1}},
+            "column_stats": {"nan_count": 4, "nan_proportion": 0.2, "n_unique": 3, "frequencies": {"cat": 15, "dog": 1}},
         },
         {
             "column_name": "int_column",
@@ -138,7 +138,7 @@ EXPECTED_STATS_CONTENT = {
             "column_dtype": "int32",
             "column_stats": {
                 "nan_count": 0,
-                "nan_prop": 0.0,
+                "nan_proportion": 0.0,
                 "min": 0,
                 "max": 8,
                 "mean": 4.05,
@@ -153,7 +153,7 @@ EXPECTED_STATS_CONTENT = {
             "column_dtype": "int32",
             "column_stats": {
                 "nan_count": 6,
-                "nan_prop": 0.3,
+                "nan_proportion": 0.3,
                 "min": 0,
                 "max": 8,
                 "mean": 4.71429,
@@ -168,7 +168,7 @@ EXPECTED_STATS_CONTENT = {
             "column_dtype": "float32",
             "column_stats": {
                 "nan_count": 0,
-                "nan_prop": 0.0,
+                "nan_proportion": 0.0,
                 "min": 0.1,
                 "max": 9.9,
                 "mean": 4.585,
@@ -186,7 +186,7 @@ EXPECTED_STATS_CONTENT = {
             "column_dtype": "float32",
             "column_stats": {
                 "nan_count": 8,
-                "nan_prop": 0.4,
+                "nan_proportion": 0.4,
                 "min": 0.2,
                 "max": 9.9,
                 "mean": 5.09167,
