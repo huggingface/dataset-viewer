@@ -182,6 +182,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return DatasetIsValidJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
+                processing_graph=self.processing_graph,
                 app_config=self.app_config,
             )
         if job_type == SplitImageUrlColumnsJobRunner.get_job_type():

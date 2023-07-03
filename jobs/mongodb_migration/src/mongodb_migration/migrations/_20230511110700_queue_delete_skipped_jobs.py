@@ -4,7 +4,7 @@
 import logging
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.queue import Job
+from libcommon.queue import JobDocument
 from mongoengine import Document
 from mongoengine.connection import get_db
 
@@ -28,9 +28,9 @@ class MigrationDeleteSkippedJobs(Migration):
         logging.info("Ensure that a random selection of jobs don't have the status {status}")
 
         def custom_validation(doc: Document) -> None:
-            if not isinstance(doc, Job):
+            if not isinstance(doc, JobDocument):
                 raise ValueError("Document is not a Job")
             if doc.status == status:
                 raise ValueError(f"Document has the status {status}")
 
-        check_documents(DocCls=Job, sample_size=10, custom_validation=custom_validation)
+        check_documents(DocCls=JobDocument, sample_size=10, custom_validation=custom_validation)

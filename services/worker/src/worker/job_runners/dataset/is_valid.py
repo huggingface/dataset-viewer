@@ -2,41 +2,46 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
-from libcommon.simple_cache import get_validity_by_kind
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.simple_cache import is_valid_for_kinds
+from libcommon.utils import JobInfo
 
-from worker.dtos import DatasetIsValidResponse, JobResult
+from worker.config import AppConfig
+from worker.dtos import CompleteJobResult, DatasetIsValidResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
-SPLIT_KINDS = ["config-split-names-from-streaming", "config-split-names-from-info"]
-FIRST_ROWS_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
 
-
-def compute_is_valid_response(dataset: str) -> Tuple[DatasetIsValidResponse, float]:
+def compute_is_valid_response(dataset: str, processing_graph: ProcessingGraph) -> DatasetIsValidResponse:
     """
     Get the response of /is-valid for one specific dataset on huggingface.co.
 
-    A dataset is valid if:
-    - /splits is valid for at least one of the configs
-    - /first-rows is valid for at least one of the splits
+
+    A dataset is valid if at least one response of any of the artifacts for any of the
+    steps (for viewer and preview) is valid.
+    The deprecated `valid` field is an "or" of the `preview` and `viewer` fields.
 
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        processing_graph (`ProcessingGraph`):
+            The processing graph. In particular, it must provide the list of
+            processing steps that enable the viewer and the preview.
     Returns:
-        `DatasetIsValidResponse`: An object with the is_valid_response.
+        `DatasetIsValidResponse`: The response (viewer, preview).
     """
     logging.info(f"get is-valid response for dataset={dataset}")
 
-    validity_by_kind = get_validity_by_kind(dataset=dataset, kinds=SPLIT_KINDS + FIRST_ROWS_KINDS)
-    is_valid = any(validity_by_kind[kind] for kind in SPLIT_KINDS if kind in validity_by_kind) and any(
-        validity_by_kind[kind] for kind in FIRST_ROWS_KINDS if kind in validity_by_kind
+    viewer = is_valid_for_kinds(
+        dataset=dataset, kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_viewer()]
+    )
+    preview = is_valid_for_kinds(
+        dataset=dataset, kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()]
     )
 
-    return (DatasetIsValidResponse({"valid": is_valid}), 1.0)
+    return DatasetIsValidResponse({"viewer": viewer, "preview": preview})
 
 
 class DatasetIsValidJobRunner(DatasetJobRunner):
@@ -48,8 +53,22 @@ class DatasetIsValidJobRunner(DatasetJobRunner):
     def get_job_runner_version() -> int:
         return PROCESSING_STEP_DATASET_IS_VALID_VERSION
 
+    def __init__(
+        self,
+        job_info: JobInfo,
+        app_config: AppConfig,
+        processing_step: ProcessingStep,
+        processing_graph: ProcessingGraph,
+    ) -> None:
+        super().__init__(
+            job_info=job_info,
+            app_config=app_config,
+            processing_step=processing_step,
+        )
+        self.processing_graph = processing_graph
+
     def compute(self) -> JobResult:
         if self.dataset is None:
             raise ValueError("dataset is required")
-        response_content, progress = compute_is_valid_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+        response_content = compute_is_valid_response(dataset=self.dataset, processing_graph=self.processing_graph)
+        return CompleteJobResult(response_content)

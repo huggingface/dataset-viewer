@@ -12,7 +12,7 @@ from pymongo.errors import DocumentTooLarge
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
-    CachedResponse,
+    CachedResponseDocument,
     CacheEntryDoesNotExistError,
     CacheReportsPage,
     CacheReportsWithContentPage,
@@ -31,7 +31,7 @@ from libcommon.simple_cache import (
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     get_valid_datasets,
-    get_validity_by_kind,
+    is_valid_for_kinds,
     upsert_response,
 )
 
@@ -53,27 +53,27 @@ def test_insert_null_values() -> None:
     content = {"some": "content"}
     http_status = HTTPStatus.OK
 
-    CachedResponse.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
+    CachedResponseDocument.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
     )
-    assert CachedResponse.objects.count() == 1
-    cached_response = CachedResponse.objects.get()
+    assert CachedResponseDocument.objects.count() == 1
+    cached_response = CachedResponseDocument.objects.get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()
     cached_response.validate()
 
-    CachedResponse(
+    CachedResponseDocument(
         kind=kind, dataset=dataset_b, config=config, split=split, content=content, http_status=http_status
     ).save()
-    assert CachedResponse.objects.count() == 2
-    cached_response = CachedResponse.objects(dataset=dataset_b).get()
+    assert CachedResponseDocument.objects.count() == 2
+    cached_response = CachedResponseDocument.objects(dataset=dataset_b).get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()
 
-    coll = CachedResponse._get_collection()
+    coll = CachedResponseDocument._get_collection()
     coll.insert_one(
         {
             "kind": kind,
@@ -84,8 +84,8 @@ def test_insert_null_values() -> None:
             "http_status": http_status,
         }
     )
-    assert CachedResponse.objects.count() == 3
-    cached_response = CachedResponse.objects(dataset=dataset_c).get()
+    assert CachedResponseDocument.objects.count() == 3
+    cached_response = CachedResponseDocument.objects(dataset=dataset_c).get()
     assert cached_response is not None
     assert cached_response.config is None
     assert "config" not in cached_response.to_json()
@@ -267,34 +267,33 @@ def test_get_valid_dataset_names_only_invalid_responses() -> None:
     assert not get_valid_datasets(kind=kind)
 
 
-def test_get_validity_by_kind_empty() -> None:
-    assert not get_validity_by_kind(dataset="dataset")
+def test_is_valid_for_kinds_empty() -> None:
+    assert not is_valid_for_kinds(dataset="dataset", kinds=[])
 
 
-def test_get_validity_by_kind_two_valid_datasets() -> None:
+def test_is_valid_for_kinds_two_valid_datasets() -> None:
     kind = "test_kind"
     other_kind = "other_kind"
     dataset_a = "test_dataset_a"
     dataset_b = "test_dataset_b"
     upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_validity_by_kind(dataset=dataset_a) == {kind: True}
-    assert get_validity_by_kind(dataset=dataset_b) == {kind: True}
-    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind]) == {kind: True}
-    assert not get_validity_by_kind(dataset=dataset_b, kinds=[other_kind])
-    assert get_validity_by_kind(dataset=dataset_b, kinds=[kind, other_kind]) == {kind: True}
+    assert is_valid_for_kinds(dataset=dataset_a, kinds=[kind])
+    assert is_valid_for_kinds(dataset=dataset_b, kinds=[kind])
+    assert not is_valid_for_kinds(dataset=dataset_b, kinds=[other_kind])
+    assert is_valid_for_kinds(dataset=dataset_b, kinds=[kind, other_kind])
 
 
-def test_get_validity_by_kind_two_valid_kinds() -> None:
+def test_is_valid_for_kinds_two_valid_kinds() -> None:
     kind_a = "test_kind_a"
     kind_b = "test_kind_b"
     dataset = "test_dataset"
     upsert_response(kind=kind_a, dataset=dataset, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind_b, dataset=dataset, content={}, http_status=HTTPStatus.OK)
-    assert get_validity_by_kind(dataset=dataset) == {kind_a: True, kind_b: True}
+    assert is_valid_for_kinds(dataset=dataset, kinds=[kind_a, kind_b])
 
 
-def test_get_validity_by_kind_at_least_one_valid_response() -> None:
+def test_is_valid_for_kinds_at_least_one_valid_response() -> None:
     kind = "test_kind"
     dataset = "test_dataset"
     config_a = "test_config_a"
@@ -303,10 +302,10 @@ def test_get_validity_by_kind_at_least_one_valid_response() -> None:
     upsert_response(
         kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
-    assert get_validity_by_kind(dataset=dataset) == {kind: True}
+    assert is_valid_for_kinds(dataset=dataset, kinds=[kind])
 
 
-def test_get_validity_by_kind_only_invalid_responses() -> None:
+def test_is_valid_for_kinds_only_invalid_responses() -> None:
     kind = "test_kind"
     dataset = "test_dataset"
     config_a = "test_config_a"
@@ -317,7 +316,7 @@ def test_get_validity_by_kind_only_invalid_responses() -> None:
     upsert_response(
         kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
-    assert get_validity_by_kind(dataset=dataset) == {kind: False}
+    assert not is_valid_for_kinds(dataset=dataset, kinds=[kind])
 
 
 def test_count_by_status_and_error_code() -> None:

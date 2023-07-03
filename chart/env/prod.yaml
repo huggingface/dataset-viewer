@@ -122,7 +122,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "backfill"
-  # ^ allowed values are {skip,backfill,upgrade}
+  # ^ allowed values are {backfill, collect-metrics,skip}
   log:
     level: "debug"
   backfill:
@@ -280,7 +280,7 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan,split-duckdb-index"
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"

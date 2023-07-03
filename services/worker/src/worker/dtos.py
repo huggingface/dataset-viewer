@@ -176,7 +176,8 @@ class DatasetInfoResponse(TypedDict):
 
 
 class DatasetIsValidResponse(TypedDict):
-    valid: bool
+    preview: bool
+    viewer: bool
 
 
 class DatasetParquetResponse(TypedDict):

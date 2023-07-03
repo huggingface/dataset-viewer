@@ -42,7 +42,7 @@ STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
@@ -108,7 +108,7 @@ def compute_index_rows(
 
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
-        column_names = ",".join(list(features.keys()))
+        column_names = ",".join('"' + column + '"' for column in list(features.keys()))
 
         # look for string columns
         string_columns = [
@@ -149,8 +149,9 @@ def compute_index_rows(
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    logging.debug(CREATE_INDEX_COMMAND)
-    con.sql(CREATE_INDEX_COMMAND)
+    create_index_sql = CREATE_INDEX_COMMAND.format(columns=column_names)
+    logging.debug(create_index_sql)
+    con.sql(create_index_sql)
     con.close()
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
@@ -161,6 +162,7 @@ def compute_index_rows(
         with lock.git_branch(
             dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
+            logging.debug(f"try to create branch for {dataset=} with {target_revision=} on {hf_endpoint=}")
             create_branch(
                 dataset=dataset,
                 target_revision=target_revision,
@@ -168,16 +170,19 @@ def compute_index_rows(
                 committer_hf_api=committer_hf_api,
             )
 
+            logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
             delete_operations: List[CommitOperation] = []
             if index_file_location in all_repo_files:
                 delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+            logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision
             add_operations: List[CommitOperation] = [
                 CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path.resolve())
             ]
+            logging.debug(f"add operations for {dataset=} {add_operations=}")
 
             committer_hf_api.create_commit(
                 repo_id=dataset,
@@ -187,9 +192,11 @@ def compute_index_rows(
                 commit_message=commit_message,
                 parent_commit=target_dataset_info.sha,
             )
+            logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+            logging.debug(f"dataset info for {dataset=} {target_dataset_info=}")
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
     except RepositoryNotFoundError as err:

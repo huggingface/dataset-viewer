@@ -23,7 +23,7 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
+def compute_parquet_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
     """
     Get the response of dataset-parquet for one specific dataset on huggingface.co.
     Args:
@@ -108,5 +108,5 @@ class DatasetParquetJobRunner(DatasetJobRunner):
         return PROCESSING_STEP_DATASET_PARQUET_VERSION
 
     def compute(self) -> JobResult:
-        response_content, progress = compute_sizes_response(dataset=self.dataset)
+        response_content, progress = compute_parquet_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)

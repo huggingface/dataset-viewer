@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.queue import Job
+from libcommon.queue import JobDocument
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
@@ -18,7 +18,7 @@ from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_forc
 
 def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_indexes_with_force", host=mongo_host, mongoengine_alias="queue"):
-        Job(
+        JobDocument(
             type="test",
             dataset="test",
             revision="revision",

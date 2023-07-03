@@ -10,7 +10,7 @@ from libcommon.constants import (
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
 )
-from libcommon.queue import Job
+from libcommon.queue import JobDocument
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
@@ -118,7 +118,7 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
 
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
-        Job(
+        JobDocument(
             type="test",
             dataset="test",
             revision="test",
