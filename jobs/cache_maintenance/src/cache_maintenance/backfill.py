@@ -13,6 +13,7 @@ from libcommon.utils import Priority
 def backfill_cache(
     processing_graph: ProcessingGraph,
     hf_endpoint: str,
+    cache_max_days: int,
     hf_token: Optional[str] = None,
     error_codes_to_retry: Optional[List[str]] = None,
 ) -> None:
@@ -48,6 +49,7 @@ def backfill_cache(
             revision=str(dataset_info.sha),
             priority=Priority.LOW,
             error_codes_to_retry=error_codes_to_retry,
+            cache_max_days=cache_max_days,
         )
         if created_jobs > 0:
             backfilled_datasets += 1

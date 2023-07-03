@@ -112,6 +112,8 @@ mongodb:
     create: false
 
 cache:
+  # Maximum number of days to keep the cached API responses
+  maxDays: 90
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 

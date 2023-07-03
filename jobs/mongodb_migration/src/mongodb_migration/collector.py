@@ -47,6 +47,9 @@ from mongodb_migration.migrations._20230516101600_queue_delete_index_without_rev
 from mongodb_migration.migrations._20230622131500_lock_add_owner import (
     MigrationAddOwnerToQueueLock,
 )
+from mongodb_migration.migrations._20230703110100_cache_add_partial_field_in_config_parquet_and_info import (
+    MigrationAddPartialToCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -234,5 +237,8 @@ class MigrationsCollector:
             ),
             MigrationAddOwnerToQueueLock(
                 version="20230622131800", description="add 'owner' field copying the job_id value"
+            ),
+            MigrationAddPartialToCacheResponse(
+                version="20230703110100", description="add 'partial' field to config-parquet-and-info"
             ),
         ]

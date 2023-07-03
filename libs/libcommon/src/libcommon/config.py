@@ -176,12 +176,14 @@ class LogConfig:
             )
 
 
+CACHE_MAX_DAYS = 90  # 3 months
 CACHE_MONGO_DATABASE = "datasets_server_cache"
 CACHE_MONGO_URL = "mongodb://localhost:27017"
 
 
 @dataclass(frozen=True)
 class CacheConfig:
+    max_days: int = CACHE_MAX_DAYS
     mongo_database: str = CACHE_MONGO_DATABASE
     mongo_url: str = CACHE_MONGO_URL
 
@@ -190,6 +192,7 @@ class CacheConfig:
         env = Env(expand_vars=True)
         with env.prefixed("CACHE_"):
             return cls(
+                max_days=env.int(name="MAX_DAYS", default=CACHE_MAX_DAYS),
                 mongo_database=env.str(name="MONGO_DATABASE", default=CACHE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=CACHE_MONGO_URL),
             )
