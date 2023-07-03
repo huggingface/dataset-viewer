@@ -211,14 +211,14 @@ def get_dataset_backfill_plan(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
-    cache_max_days: Optional[int] = CACHE_MAX_DAYS,
+    cache_max_days: Optional[int] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
         error_codes_to_retry=error_codes_to_retry,
-        cache_max_days=cache_max_days,
+        cache_max_days=CACHE_MAX_DAYS if cache_max_days is None else cache_max_days,
     )
 
 
