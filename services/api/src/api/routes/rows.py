@@ -13,6 +13,7 @@ from datasets import Features
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import ApiError
+from libapi.utils import Endpoint
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -27,7 +28,6 @@ from starlette.responses import Response
 
 from api.utils import (
     ApiCustomError,
-    Endpoint,
     InvalidParameterError,
     MissingRequiredParameterError,
     UnexpectedError,

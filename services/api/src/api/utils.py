@@ -3,14 +3,13 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, List, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.utils import Priority, orjson_dumps
-from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
@@ -172,6 +171,3 @@ def try_backfill_dataset(
     else:
         # no pending job: the cache entry will not be created
         raise ResponseNotFoundError("Not found.")
-
-
-Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

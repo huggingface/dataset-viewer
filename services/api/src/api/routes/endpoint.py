@@ -8,6 +8,7 @@ from typing import List, Mapping, Optional, Tuple, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import ApiError
+from libapi.utils import Endpoint
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
@@ -21,7 +22,6 @@ from starlette.responses import Response
 from api.config import EndpointConfig
 from api.utils import (
     ApiCustomError,
-    Endpoint,
     MissingRequiredParameterError,
     UnexpectedError,
     are_valid_parameters,
