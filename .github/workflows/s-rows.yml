@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
-name: services/api
+name: services/rows
 on:
   workflow_dispatch:
   push:
@@ -10,8 +10,8 @@ on:
     paths:
       - "libs/libapi/**"
       - "libs/libcommon/**"
-      - "services/api/**"
-      - ".github/workflows/s-api.yml"
+      - "services/rows/**"
+      - ".github/workflows/s-rows.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
       - "tools/docker-compose-mongo.yml"
@@ -19,8 +19,8 @@ on:
     paths:
       - "libs/libapi/**"
       - "libs/libcommon/**"
-      - "services/api/**"
-      - ".github/workflows/s-api.yml"
+      - "services/rows/**"
+      - ".github/workflows/s-rows.yml"
       - ".github/workflows/_quality-python.yml"
       - ".github/workflows/_unit-tests-python.yml"
       - "tools/docker-compose-mongo.yml"
@@ -28,8 +28,8 @@ jobs:
   quality:
     uses: ./.github/workflows/_quality-python.yml
     with:
-      working-directory: services/api
+      working-directory: services/rows
   unit-tests:
     uses: ./.github/workflows/_unit-tests-python.yml
     with:
-      working-directory: services/api
+      working-directory: services/rows

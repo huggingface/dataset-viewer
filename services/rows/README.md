@@ -1,6 +1,6 @@
-# Datasets server API
+# Datasets server API - rows endpoint
 
-> API on 🤗 datasets
+> /rows endpoint
 
 ## Configuration
 
@@ -19,10 +19,5 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 See https://huggingface.co/docs/datasets-server
 
 - /healthcheck: ensure the app is running
-- /valid: give the list of the valid datasets
-- /is-valid: tell if a dataset is valid
-- /webhook: add, update or remove a dataset
-- /splits: list the [splits](https://huggingface.co/docs/datasets/splits.html) names for a dataset
-- /first-rows: extract the first [rows](https://huggingface.co/docs/datasets/splits.html) for a dataset split
-- /parquet: list the parquet files auto-converted for a dataset
 - /metrics: return a list of metrics in the Prometheus format
+- /rows: get a slice of rows of a dataset split

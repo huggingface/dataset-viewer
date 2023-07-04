@@ -33,6 +33,10 @@
       "path": "../services/api"
     },
     {
+      "name": "services/rows",
+      "path": "../services/rows"
+    },
+    {
       "name": "services/worker",
       "path": "../services/worker"
     },

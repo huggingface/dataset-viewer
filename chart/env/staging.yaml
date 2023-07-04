@@ -40,6 +40,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-api
       tag: sha-fb3399a
+    rows:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-rows
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -198,6 +203,20 @@ admin:
       memory: "4Gi"
 
 api:
+  uvicornNumWorkers: "1"
+
+  replicas: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
+
+rows:
   uvicornNumWorkers: "1"
 
   replicas: 1

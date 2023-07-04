@@ -1,9 +1,8 @@
 # environment variables for the commands (docker compose, poetry)
-export COMPOSE_PROJECT_NAME := admin
-export MONGO_PORT := 27030
+export COMPOSE_PROJECT_NAME := rows
+export MONGO_PORT := 27032
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
-export METRICS_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests
@@ -13,11 +12,11 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/admin/main.py
+	poetry run python src/rows/main.py
 
 .PHONY: watch
 watch:
-	poetry run watchmedo auto-restart -d src/admin -p "*.py" -R python src/admin/main.py
+	poetry run watchmedo auto-restart -d src/rows -p "*.py" -R python src/rows/main.py
 
 # override the default test target to test prometheus depending on the environment
 # we cannot set the env var with pytest.MonkeyPatch, it's too late
@@ -25,10 +24,10 @@ watch:
 test:
 	$(MAKE) up
 	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
-	rm -rf /tmp/admin.prometheus
-	mkdir /tmp/admin.prometheus
-	PROMETHEUS_MULTIPROC_DIR=/tmp/admin.prometheus poetry run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
-	rm -rf /tmp/admin.prometheus
+	rm -rf /tmp/rows.prometheus
+	mkdir /tmp/rows.prometheus
+	PROMETHEUS_MULTIPROC_DIR=/tmp/rows.prometheus poetry run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
+	rm -rf /tmp/rows.prometheus
 	$(MAKE) down
 
 .PHONY: coverage
