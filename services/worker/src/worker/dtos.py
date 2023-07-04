@@ -140,7 +140,9 @@ class ConfigParquetResponse(TypedDict):
 class ConfigSize(TypedDict):
     dataset: str
     config: str
-    num_bytes_original_files: int
+    num_bytes_original_files: Optional[
+        int
+    ]  # optional because partial parquet conversion can't provide the size of the original data
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int
@@ -194,7 +196,7 @@ class DatasetParquetResponse(TypedDict):
 
 class DatasetSize(TypedDict):
     dataset: str
-    num_bytes_original_files: int
+    num_bytes_original_files: Optional[int]
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int

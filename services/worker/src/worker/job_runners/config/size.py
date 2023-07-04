@@ -65,7 +65,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             {
                 "dataset": dataset,
                 "config": config,
-                "num_bytes_original_files": config_info["download_size"],
+                "num_bytes_original_files": config_info["download_size"] if not content["partial"] else None,
                 "num_bytes_parquet_files": sum(split_size["num_bytes_parquet_files"] for split_size in split_sizes),
                 "num_bytes_memory": sum(
                     split_size["num_bytes_memory"] for split_size in split_sizes
