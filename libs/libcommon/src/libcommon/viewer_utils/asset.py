@@ -47,7 +47,10 @@ def update_last_modified_date_of_rows_in_assets_dir(
         if (row_dirs_path / str(row_idx)).is_dir():
             # update the directory's last modified date
             if (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).is_file():
-                (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).unlink()
+                try:
+                    (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).unlink()
+                except FileNotFoundError:
+                    pass
             (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).touch()
 
 
