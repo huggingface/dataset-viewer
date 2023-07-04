@@ -61,6 +61,7 @@ def get_cache_entry_from_steps(
     config: Optional[str],
     split: Optional[str],
     processing_graph: ProcessingGraph,
+    cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
@@ -86,6 +87,7 @@ def get_cache_entry_from_steps(
             hf_endpoint=hf_endpoint,
             hf_timeout_seconds=hf_timeout_seconds,
             hf_token=hf_token,
+            cache_max_days=cache_max_days,
         )
     return best_response.response
 
@@ -221,6 +223,7 @@ def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
     processing_graph: ProcessingGraph,
+    cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_key: Optional[str] = None,
@@ -294,6 +297,7 @@ def create_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
+                        cache_max_days=cache_max_days,
                     )
                 content = result["content"]
                 http_status = result["http_status"]

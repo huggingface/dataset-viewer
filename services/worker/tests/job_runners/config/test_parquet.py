@@ -82,6 +82,7 @@ def get_job_runner(
                     ),
                 ],
                 dataset_info={"description": "value", "dataset_size": 10},
+                partial=False,
             ),
             None,
             ConfigParquetResponse(
@@ -92,7 +93,8 @@ def get_job_runner(
                     SplitHubFile(
                         dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
-                ]
+                ],
+                partial=False,
             ),
             False,
         ),
@@ -146,6 +148,7 @@ def get_job_runner(
                     ),
                 ],
                 dataset_info={"description": "value", "dataset_size": 10},
+                partial=False,
             ),
             None,
             ConfigParquetResponse(
@@ -174,7 +177,8 @@ def get_job_runner(
                         filename="parquet-train-00001-of-05534.parquet",
                         size=0,
                     ),
-                ]
+                ],
+                partial=False,
             ),
             False,
         ),

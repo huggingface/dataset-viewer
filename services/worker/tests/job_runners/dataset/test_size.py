@@ -117,7 +117,8 @@ def get_job_runner(
                                     "num_columns": 2,
                                 },
                             ],
-                        }
+                        },
+                        "partial": False,
                     },
                 ),
                 UpstreamResponse(
@@ -156,7 +157,8 @@ def get_job_runner(
                                     "num_columns": 3,
                                 },
                             ],
-                        }
+                        },
+                        "partial": False,
                     },
                 ),
             ],
@@ -231,6 +233,7 @@ def get_job_runner(
                 },
                 "failed": [],
                 "pending": [],
+                "partial": False,
             },
             False,
         ),

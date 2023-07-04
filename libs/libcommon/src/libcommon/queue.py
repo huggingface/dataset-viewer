@@ -126,7 +126,7 @@ class JobDocument(Document):
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
-        priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
+        priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
@@ -166,7 +166,7 @@ class JobDocument(Document):
     split = StringField()
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
-    priority = EnumField(Priority, default=Priority.NORMAL)
+    priority = EnumField(Priority, default=Priority.LOW)
     status = EnumField(Status, default=Status.WAITING)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
@@ -347,7 +347,7 @@ class Queue:
         revision: str,
         config: Optional[str] = None,
         split: Optional[str] = None,
-        priority: Priority = Priority.NORMAL,
+        priority: Priority = Priority.LOW,
     ) -> JobDocument:
         """Add a job to the queue in the waiting state.
 
@@ -360,7 +360,7 @@ class Queue:
             revision (`str`): The git revision of the dataset.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
-            priority (`Priority`, optional): The priority of the job. Defaults to Priority.NORMAL.
+            priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
 
         Returns: the job
         """

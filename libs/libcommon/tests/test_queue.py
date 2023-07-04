@@ -127,8 +127,8 @@ def test_priority_logic_creation_order() -> None:
     queue = Queue()
     queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split1")
     queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split2")
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.NORMAL)
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.NORMAL)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.LOW)
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
@@ -140,10 +140,10 @@ def test_priority_logic_started_jobs_per_dataset_order() -> None:
     queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split1")
     queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split2")
     queue.add_job(job_type=test_type, dataset="dataset2", revision=test_revision, config="config", split="split1")
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.NORMAL)
-    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.NORMAL)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
+    check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.LOW)
     # ^ before, even if the creation date is after, because the dataset is different and has no started job
-    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.NORMAL)
+    check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.LOW)
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
@@ -158,19 +158,11 @@ def test_priority_logic_started_jobs_per_namespace_order() -> None:
     queue.add_job(
         job_type=test_type, dataset="no_org_dataset3", revision=test_revision, config="config", split="split1"
     )
-    check_job(
-        queue=queue, expected_dataset="org1/dataset1", expected_split="split1", expected_priority=Priority.NORMAL
-    )
-    check_job(
-        queue=queue, expected_dataset="org2/dataset2", expected_split="split1", expected_priority=Priority.NORMAL
-    )
+    check_job(queue=queue, expected_dataset="org1/dataset1", expected_split="split1", expected_priority=Priority.LOW)
+    check_job(queue=queue, expected_dataset="org2/dataset2", expected_split="split1", expected_priority=Priority.LOW)
     # ^ before, even if the creation date is after, because the namespace is different and has no started job
-    check_job(
-        queue=queue, expected_dataset="no_org_dataset3", expected_split="split1", expected_priority=Priority.NORMAL
-    )
-    check_job(
-        queue=queue, expected_dataset="org1/dataset2", expected_split="split1", expected_priority=Priority.NORMAL
-    )
+    check_job(queue=queue, expected_dataset="no_org_dataset3", expected_split="split1", expected_priority=Priority.LOW)
+    check_job(queue=queue, expected_dataset="org1/dataset2", expected_split="split1", expected_priority=Priority.LOW)
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
@@ -185,9 +177,15 @@ def test_priority_logic_priority_order() -> None:
         revision=test_revision,
         config="config",
         split="split1",
-        priority=Priority.LOW,
     )
-    queue.add_job(job_type=test_type, dataset="dataset2", revision=test_revision, config="config", split="split1")
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset2",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        priority=Priority.NORMAL,
+    )
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ before, even if the creation date is after, because the priority is higher
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)

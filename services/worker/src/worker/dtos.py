@@ -110,11 +110,13 @@ class RowsContent(TypedDict):
 
 class ConfigInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
+    partial: bool
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     dataset_info: Dict[str, Any]
+    partial: bool
 
 
 class ParquetFileMetadataItem(SplitItem):
@@ -127,10 +129,12 @@ class ParquetFileMetadataItem(SplitItem):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: List[ParquetFileMetadataItem]
+    partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
+    partial: bool
 
 
 class ConfigSize(TypedDict):
@@ -157,6 +161,7 @@ class ConfigSizeContent(TypedDict):
 
 class ConfigSizeResponse(TypedDict):
     size: ConfigSizeContent
+    partial: bool
 
 
 class ConfigNameItem(TypedDict):
@@ -172,6 +177,7 @@ class DatasetInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
     pending: List[PreviousJob]
     failed: List[PreviousJob]
+    partial: bool
 
 
 class DatasetIsValidResponse(TypedDict):
@@ -183,6 +189,7 @@ class DatasetParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
+    partial: bool
 
 
 class DatasetSize(TypedDict):
@@ -203,3 +210,4 @@ class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
     pending: list[PreviousJob]
     failed: list[PreviousJob]
+    partial: bool

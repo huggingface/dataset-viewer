@@ -135,7 +135,7 @@ class EndpointConfig:
                 "dataset": ["dataset-parquet"],
                 "config": ["config-parquet"],
             },
-            "/dataset-info": {"dataset": ["dataset-info"], "config": ["config-info"]},
+            "/info": {"dataset": ["dataset-info"], "config": ["config-info"]},
             "/size": {
                 "dataset": ["dataset-size"],
                 "config": ["config-size"],

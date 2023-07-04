@@ -31,6 +31,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     content = dataset_info_best_response.response["content"]
     try:
         config_info = content["dataset_info"]
+        partial = content["partial"]
     except Exception as e:
         raise PreviousStepFormatError(
             f"Previous step '{previous_step}' did not return the expected content: 'dataset_info'.", e
@@ -42,7 +43,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
             TypeError(f"dataset_info should be a dict, but got {type(config_info)}"),
         )
 
-    return ConfigInfoResponse(dataset_info=config_info)
+    return ConfigInfoResponse(dataset_info=config_info, partial=partial)
 
 
 class ConfigInfoJobRunner(ConfigJobRunner):

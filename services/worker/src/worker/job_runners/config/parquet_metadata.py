@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import functools
 import logging
-from functools import partial
 from typing import List, Optional
 
 from fsspec.implementations.http import HTTPFileSystem
@@ -69,6 +69,7 @@ def compute_parquet_metadata_response(
         ]
         if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
+        partial = config_parquet_best_response.response["content"]["partial"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
@@ -77,7 +78,11 @@ def compute_parquet_metadata_response(
     desc = f"{dataset}/{config}"
     try:
         parquet_files: List[ParquetFile] = thread_map(
-            partial(get_parquet_file, fs=fs, hf_token=hf_token), source_urls, desc=desc, unit="pq", disable=True
+            functools.partial(get_parquet_file, fs=fs, hf_token=hf_token),
+            source_urls,
+            desc=desc,
+            unit="pq",
+            disable=True,
         )
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
@@ -105,7 +110,7 @@ def compute_parquet_metadata_response(
             )
         )
 
-    return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata)
+    return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata, partial=partial)
 
 
 class ConfigParquetMetadataJobRunner(ConfigJobRunner):

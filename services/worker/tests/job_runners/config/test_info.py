@@ -178,12 +178,9 @@ def get_job_runner(
             "dataset_ok",
             "config_1",
             HTTPStatus.OK,
-            {
-                "parquet_files": PARQUET_FILES,
-                "dataset_info": CONFIG_INFO_1,
-            },
+            {"parquet_files": PARQUET_FILES, "dataset_info": CONFIG_INFO_1, "partial": False},
             None,
-            {"dataset_info": CONFIG_INFO_1},
+            {"dataset_info": CONFIG_INFO_1, "partial": False},
             False,
         ),
         (

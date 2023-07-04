@@ -14,6 +14,8 @@ from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
 from api.utils import ResponseNotReadyError
 
+CACHE_MAX_DAYS = 90
+
 
 def test_endpoints_definition() -> None:
     config = ProcessingGraphConfig()
@@ -60,7 +62,7 @@ def test_endpoints_definition() -> None:
     assert len(parquet["dataset"]) == 1  # Only has one processing step
     assert len(parquet["config"]) == 1  # Only has one processing step
 
-    dataset_info = definition["/dataset-info"]
+    dataset_info = definition["/info"]
     assert dataset_info is not None
     assert sorted(list(dataset_info)) == ["config", "dataset"]
     assert dataset_info["dataset"] is not None
@@ -85,6 +87,10 @@ def test_endpoints_definition() -> None:
     assert len(opt_in_out_urls["split"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["config"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["dataset"]) == 1  # Only has one processing step
+
+    # assert old endpoints don't exist
+    with raises(KeyError):
+        _ = definition["/dataset-info"]
 
 
 def test_get_cache_entry_from_steps() -> None:
@@ -120,31 +126,39 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned
     result = get_cache_entry_from_steps(
-        [step_without_error, step_with_error],
-        dataset,
-        config,
-        None,
-        processing_graph,
-        app_config.common.hf_endpoint,
+        processing_steps=[step_without_error, step_with_error],
+        dataset=dataset,
+        config=config,
+        split=None,
+        processing_graph=processing_graph,
+        hf_endpoint=app_config.common.hf_endpoint,
+        cache_max_days=CACHE_MAX_DAYS,
     )
     assert result
     assert result["http_status"] == HTTPStatus.OK
 
     # succeeded result is returned even if first step failed
     result = get_cache_entry_from_steps(
-        [step_with_error, step_without_error],
-        dataset,
-        config,
-        None,
-        processing_graph,
-        app_config.common.hf_endpoint,
+        processing_steps=[step_with_error, step_without_error],
+        dataset=dataset,
+        config=config,
+        split=None,
+        processing_graph=processing_graph,
+        hf_endpoint=app_config.common.hf_endpoint,
+        cache_max_days=CACHE_MAX_DAYS,
     )
     assert result
     assert result["http_status"] == HTTPStatus.OK
 
     # error result is returned if all steps failed
     result = get_cache_entry_from_steps(
-        [step_with_error, step_with_error], dataset, config, None, processing_graph, app_config.common.hf_endpoint
+        processing_steps=[step_with_error, step_with_error],
+        dataset=dataset,
+        config=config,
+        split=None,
+        processing_graph=processing_graph,
+        hf_endpoint=app_config.common.hf_endpoint,
+        cache_max_days=CACHE_MAX_DAYS,
     )
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
@@ -157,5 +171,11 @@ def test_get_cache_entry_from_steps() -> None:
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
         with raises(ResponseNotReadyError):
             get_cache_entry_from_steps(
-                [non_existent_step], dataset, None, None, processing_graph, app_config.common.hf_endpoint
+                processing_steps=[non_existent_step],
+                dataset=dataset,
+                config=None,
+                split=None,
+                processing_graph=processing_graph,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
             )

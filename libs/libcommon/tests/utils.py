@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
@@ -26,6 +27,7 @@ SPLIT_NAMES_CONTENT = {
     "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
 }
 
+CACHE_MAX_DAYS = 90
 
 CACHE_KIND = "cache_kind"
 CONTENT_ERROR = {"error": "error"}
@@ -209,12 +211,14 @@ def get_dataset_backfill_plan(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[List[str]] = None,
+    cache_max_days: Optional[int] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
         error_codes_to_retry=error_codes_to_retry,
+        cache_max_days=CACHE_MAX_DAYS if cache_max_days is None else cache_max_days,
     )
 
 
@@ -263,6 +267,7 @@ def put_cache(
     split: Optional[str] = None,
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
+    updated_at: Optional[datetime] = None,
 ) -> None:
     if not config:
         if not step.startswith("dataset-"):
@@ -296,6 +301,7 @@ def put_cache(
         job_runner_version=JOB_RUNNER_VERSION - 1 if use_old_job_runner_version else JOB_RUNNER_VERSION,
         dataset_git_revision=revision,
         error_code=error_code,
+        updated_at=updated_at,
     )
 
 
