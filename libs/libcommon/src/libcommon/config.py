@@ -356,7 +356,6 @@ class ProcessingGraphConfig:
                 "triggered_by": [
                     "config-split-names-from-info",
                     "config-split-names-from-streaming",
-                    "config-parquet-and-info",
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION,
             },
