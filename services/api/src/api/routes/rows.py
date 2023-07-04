@@ -12,7 +12,12 @@ import pyarrow as pa
 from datasets import Features
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
-from libapi.exceptions import ApiError
+from libapi.exceptions import (
+    ApiError,
+    InvalidParameterError,
+    MissingRequiredParameterError,
+    UnexpectedApiError,
+)
 from libapi.utils import Endpoint
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
@@ -27,10 +32,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from api.utils import (
-    ApiCustomError,
-    InvalidParameterError,
-    MissingRequiredParameterError,
-    UnexpectedError,
     are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
@@ -379,11 +380,7 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = (
-                    e
-                    if isinstance(e, ApiCustomError) or isinstance(e, ApiError)
-                    else UnexpectedError("Unexpected error.", e)
-                )
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 

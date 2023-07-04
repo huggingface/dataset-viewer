@@ -1,13 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from http import HTTPStatus
 from typing import Literal, Optional
 
 from libcommon.exceptions import CustomError
 
 ApiErrorCode = Literal[
-    "AuthCheckHubRequestError", "ExternalAuthenticatedError", "ExternalUnauthenticatedError", "JWKError"
+    "AuthCheckHubRequestError",
+    "ExternalAuthenticatedError",
+    "ExternalUnauthenticatedError",
+    "InvalidParameter",
+    "JWKError",
+    "MissingProcessingStepsError",
+    "MissingRequiredParameter",
+    "ResponseNotFound",
+    "ResponseNotReady",
+    "UnexpectedApiError",
 ]
 
 
@@ -53,8 +63,44 @@ class ExternalUnauthenticatedError(ApiError):
         super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
 
 
+class InvalidParameterError(ApiError):
+    """Raised when a parameter has an invalid value."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
+
+
 class JWKError(ApiError):
     """Raised when the JWT key (JWK) could not be fetched or parsed."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
+
+
+class MissingRequiredParameterError(ApiError):
+    """Raised when a required parameter is missing."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
+
+
+class ResponseNotFoundError(ApiError):
+    """Raised when the response has not been found."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.NOT_FOUND, "ResponseNotFound")
+
+
+class ResponseNotReadyError(ApiError):
+    """Raised when the response has not been processed yet."""
+
+    def __init__(self, message: str):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
+
+
+class UnexpectedApiError(ApiError):
+    """Raised when the server raised an unexpected error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        logging.error(message, exc_info=cause)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedApiError", cause)
