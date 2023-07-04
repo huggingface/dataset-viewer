@@ -289,8 +289,8 @@ def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
-def hub_public_descriptive_stats(datasets: Mapping[str, Dataset]) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="descriptive_stats", dataset=datasets["descriptive_stats"])
+def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="descriptive_statistics", dataset=datasets["descriptive_statistics"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -794,11 +794,11 @@ def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_responses_descriptive_stats(hub_public_descriptive_stats: str) -> HubDatasetTest:
+def hub_responses_descriptive_statistics(hub_public_descriptive_statistics: str) -> HubDatasetTest:
     return {
-        "name": hub_public_descriptive_stats,
-        "config_names_response": create_config_names_response(hub_public_descriptive_stats),
-        "splits_response": create_splits_response(hub_public_descriptive_stats),
+        "name": hub_public_descriptive_statistics,
+        "config_names_response": create_config_names_response(hub_public_descriptive_statistics),
+        "splits_response": create_splits_response(hub_public_descriptive_statistics),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
-from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
+from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
@@ -40,7 +40,7 @@ class Histogram(TypedDict):
     bin_edges: List[float]
 
 
-class NumericalStatsItem(TypedDict):
+class NumericalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
     min: float
@@ -51,23 +51,23 @@ class NumericalStatsItem(TypedDict):
     histogram: Histogram
 
 
-class CategoricalStatsItem(TypedDict):
+class CategoricalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
     n_unique: int
     frequencies: Dict[str, int]
 
 
-class StatsPerColumnItem(TypedDict):
+class StatisticsPerColumnItem(TypedDict):
     column_name: str
     column_type: str
     column_dtype: Optional[str]
-    column_stats: Union[NumericalStatsItem, CategoricalStatsItem]
+    column_stats: Union[NumericalStatisticsItem, CategoricalStatisticsItem]
 
 
-class SplitDescriptiveStatsResponse(TypedDict):
+class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
-    stats: List[StatsPerColumnItem]
+    stats: List[StatisticsPerColumnItem]
 
 
 def compute_histogram(
@@ -105,14 +105,14 @@ def compute_histogram(
     return Histogram(hist=hist, bin_edges=bins)
 
 
-def compute_numerical_stats(
+def compute_numerical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
     n_bins: int,
     n_samples: int,
     dtype: str,
-) -> NumericalStatsItem:
+) -> NumericalStatisticsItem:
     logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name}")
     query = f"""
     SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
@@ -145,7 +145,7 @@ def compute_numerical_stats(
         n_bins=n_bins,
         n_samples=n_samples - nan_count,
     )
-    return NumericalStatsItem(
+    return NumericalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
         min=minimum,
@@ -157,13 +157,13 @@ def compute_numerical_stats(
     )
 
 
-def compute_categorical_stats(
+def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
     class_label_names: List[str],
     n_samples: int,
-) -> CategoricalStatsItem:
+) -> CategoricalStatisticsItem:
     query = f"""
     SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
     """
@@ -177,7 +177,7 @@ def compute_categorical_stats(
         else:
             nan_count = freq
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    return CategoricalStatsItem(
+    return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
         n_unique=len(categories),
@@ -185,7 +185,7 @@ def compute_categorical_stats(
     )
 
 
-def compute_descriptive_stats_response(
+def compute_descriptive_statistics_response(
     dataset: str,
     config: str,
     split: str,
@@ -193,7 +193,7 @@ def compute_descriptive_stats_response(
     extensions_directory: Optional[str],
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
-) -> SplitDescriptiveStatsResponse:
+) -> SplitDescriptiveStatisticsResponse:
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
     check_split_exists(dataset=dataset, config=config, split=split)
 
@@ -237,7 +237,7 @@ def compute_descriptive_stats_response(
         )
     parquet_files_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
 
-    stats: List[StatsPerColumnItem] = []
+    stats: List[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
         feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
@@ -274,7 +274,7 @@ def compute_descriptive_stats_response(
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.debug(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
-        cat_column_stats: CategoricalStatsItem = compute_categorical_stats(
+        cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
             con,
             feature_name,
             class_label_names=class_label_names,
@@ -282,7 +282,7 @@ def compute_descriptive_stats_response(
             parquet_filename=local_parquet_path,
         )
         stats.append(
-            StatsPerColumnItem(
+            StatisticsPerColumnItem(
                 column_name=feature_name,
                 column_type="class_label",
                 column_dtype=None,  # should be some int?
@@ -294,7 +294,7 @@ def compute_descriptive_stats_response(
         logging.info("Compute min, max, mean, median, std, histogram for numerical features. ")
     for feature_name, feature in tqdm(numerical_features.items()):
         feature_dtype = feature["dtype"]
-        num_column_stats: NumericalStatsItem = compute_numerical_stats(
+        num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
             con,
             feature_name,
             parquet_filename=local_parquet_path,
@@ -303,7 +303,7 @@ def compute_descriptive_stats_response(
             dtype=feature_dtype,
         )
         stats.append(
-            StatsPerColumnItem(
+            StatisticsPerColumnItem(
                 column_name=feature_name,
                 column_type="float" if feature_dtype in FLOAT_DTYPES else "int",
                 column_dtype=feature_dtype,
@@ -312,44 +312,44 @@ def compute_descriptive_stats_response(
         )
     con.close()
 
-    return SplitDescriptiveStatsResponse(
+    return SplitDescriptiveStatisticsResponse(
         num_examples=num_examples, stats=sorted(stats, key=lambda x: x["column_name"])
     )
 
 
-class SplitDescriptiveStatsJobRunner(SplitJobRunnerWithCache):
+class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
     def __init__(
         self,
         job_info: JobInfo,
         app_config: AppConfig,
         processing_step: ProcessingStep,
-        stats_cache_directory: StrPath,
+        statistics_cache_directory: StrPath,
     ):
         super().__init__(
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            cache_directory=Path(stats_cache_directory),
+            cache_directory=Path(statistics_cache_directory),
         )
-        self.descriptive_stats_config = app_config.descriptive_stats
+        self.descriptive_statistics_config = app_config.descriptive_statistics
 
     @staticmethod
     def get_job_type() -> str:
-        return "split-descriptive-stats"
+        return "split-descriptive-statistics"
 
     @staticmethod
     def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATS_VERSION
+        return PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
-            compute_descriptive_stats_response(
+            compute_descriptive_statistics_response(
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
                 local_parquet_directory=self.cache_subdirectory,
-                extensions_directory=self.descriptive_stats_config.extensions_directory,
-                histogram_num_bins=self.descriptive_stats_config.histogram_num_bins,
-                max_parquet_size_bytes=self.descriptive_stats_config.max_parquet_size_bytes,
+                extensions_directory=self.descriptive_statistics_config.extensions_directory,
+                histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
+                max_parquet_size_bytes=self.descriptive_statistics_config.max_parquet_size_bytes,
             )
         )

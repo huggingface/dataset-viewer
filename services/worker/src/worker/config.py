@@ -9,7 +9,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CommonConfig,
-    DescriptiveStatsConfig,
+    DescriptiveStatisticsConfig,
     DuckDbIndexConfig,
     LogConfig,
     ParquetMetadataConfig,
@@ -252,7 +252,7 @@ class AppConfig:
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
-    descriptive_stats: DescriptiveStatsConfig = field(default_factory=DescriptiveStatsConfig)
+    descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -272,5 +272,5 @@ class AppConfig:
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
-            descriptive_stats=DescriptiveStatsConfig.from_env(),
+            descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
         )

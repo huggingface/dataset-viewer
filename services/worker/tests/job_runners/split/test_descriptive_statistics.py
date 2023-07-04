@@ -13,19 +13,21 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
-from worker.job_runners.split.descriptive_stats import SplitDescriptiveStatsJobRunner
+from worker.job_runners.split.descriptive_statistics import (
+    SplitDescriptiveStatisticsJobRunner,
+)
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
 
-GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatsJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatisticsJobRunner]
 
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
 
 @pytest.fixture
 def get_job_runner(
-    stats_cache_directory: StrPath,
+    statistics_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -34,8 +36,8 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-    ) -> SplitDescriptiveStatsJobRunner:
-        processing_step_name = SplitDescriptiveStatsJobRunner.get_job_type()
+    ) -> SplitDescriptiveStatisticsJobRunner:
+        processing_step_name = SplitDescriptiveStatisticsJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
             {
                 "dataset-config-names": {"input_type": "dataset"},
@@ -45,14 +47,14 @@ def get_job_runner(
                 },
                 processing_step_name: {
                     "input_type": "split",
-                    "job_runner_version": SplitDescriptiveStatsJobRunner.get_job_runner_version(),
+                    "job_runner_version": SplitDescriptiveStatisticsJobRunner.get_job_runner_version(),
                     "triggered_by": ["config-split-names-from-info"],
                 },
             }
         )
-        return SplitDescriptiveStatsJobRunner(
+        return SplitDescriptiveStatisticsJobRunner(
             job_info={
-                "type": SplitDescriptiveStatsJobRunner.get_job_type(),
+                "type": SplitDescriptiveStatisticsJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": "revision",
@@ -64,7 +66,7 @@ def get_job_runner(
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
-            stats_cache_directory=stats_cache_directory,
+            statistics_cache_directory=statistics_cache_directory,
         )
 
     return _get_job_runner
@@ -209,20 +211,20 @@ EXPECTED_STATS_CONTENT = {
 
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
-    [("descriptive_stats", None), ("audio", "NoSupportedFeaturesError"), ("big", "SplitWithTooBigParquetError")],
+    [("descriptive_statistics", None), ("audio", "NoSupportedFeaturesError"), ("big", "SplitWithTooBigParquetError")],
 )
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
-    hub_responses_descriptive_stats: HubDatasetTest,
+    hub_responses_descriptive_statistics: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
 ) -> None:
     hub_datasets = {
-        "descriptive_stats": hub_responses_descriptive_stats,
+        "descriptive_statistics": hub_responses_descriptive_statistics,
         "audio": hub_responses_audio,
         "big": hub_responses_big,
     }

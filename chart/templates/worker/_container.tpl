@@ -25,7 +25,7 @@
   {{ include "volumeMountCache" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
-  {{ include "volumeMountDescriptiveStatsRW" . | nindent 2 }}
+  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}

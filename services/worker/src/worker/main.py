@@ -10,7 +10,7 @@ from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
-    init_stats_cache_dir,
+    init_statistics_cache_dir,
 )
 
 from worker.config import AppConfig
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
         parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
         duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
-        stats_cache_directory = init_stats_cache_dir(app_config.descriptive_stats.cache_directory)
+        statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
         processing_graph = ProcessingGraph(app_config.processing_graph.specification)
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 assets_directory=assets_directory,
                 parquet_metadata_directory=parquet_metadata_directory,
                 duckdb_index_cache_directory=duckdb_index_cache_directory,
-                stats_cache_directory=stats_cache_directory,
+                statistics_cache_directory=statistics_cache_directory,
             )
             worker_executor = WorkerExecutor(
                 app_config=app_config,

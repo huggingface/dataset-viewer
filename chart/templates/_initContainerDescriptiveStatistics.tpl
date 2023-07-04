@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-{{- define "initContainerDescriptiveStats" -}}
-- name: compute-descriptive-stats
+{{- define "initContainerDescriptiveStatistics" -}}
+- name: compute-descriptive-statistics
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
@@ -12,7 +12,7 @@
   - mountPath: /mounted-path
     mountPropagation: None
     name: data
-    subPath: "{{ include "descriptiveStats.subpath" . }}"
+    subPath: "{{ include "descriptiveStatistics.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false
