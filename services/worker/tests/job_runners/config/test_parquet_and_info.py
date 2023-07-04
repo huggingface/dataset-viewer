@@ -396,7 +396,7 @@ def test_partially_converted_if_big_non_parquet(
     content = response.content
     assert content
     assert len(content["parquet_files"]) == 1
-    assert_content_is_equal(content, hub_reponses_big_csv["parquet_and_info_response"])
+    assert_content_is_equal(content, hub_responses_big_csv["parquet_and_info_response"])
     # dataset is partially generated
     assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size
     assert content["parquet_files"][0]["url"].endswith("/partial/train/0000.parquet")

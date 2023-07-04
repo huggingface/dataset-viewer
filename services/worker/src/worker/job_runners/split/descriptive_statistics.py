@@ -21,7 +21,7 @@ from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 from tqdm import tqdm
 
-from worker.config import AppConfig
+from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import check_split_exists
@@ -318,6 +318,8 @@ def compute_descriptive_statistics_response(
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
+    descriptive_statistics_config: DescriptiveStatisticsConfig
+
     def __init__(
         self,
         job_info: JobInfo,
