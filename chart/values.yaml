@@ -17,6 +17,7 @@ global:
           proxy: 30020
           admin: 30021
           api: 30022
+          rows: 30023
 
 images:
   pullPolicy: IfNotPresent
@@ -47,6 +48,11 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-api
+      tag: sha-fb3399a
+    rows:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-rows
       tag: sha-fb3399a
     worker:
       registry: huggingface
@@ -394,6 +400,44 @@ api:
   uvicornNumWorkers: "1"
   # Application endpoint port
   uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  tolerations: []
+
+rows:
+  # the path of the external authentication service on the hub.
+  # The string must contain `%s` which will be replaced with the dataset name.
+  hfAuthPath: "/api/datasets/%s/auth-check"
+  # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
+  # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
+  # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
+  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
+  # the algorithm used to encode the JWT.
+  hfJwtAlgorithm: "EdDSA"
+  # the timeout in seconds for the requests to the Hugging Face Hub.
+  hfTimeoutSeconds: "0.2"
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8082
 
   nodeSelector: {}
   replicas: 1

@@ -27,8 +27,8 @@ from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
-from api.config import AppConfig
-from api.routes.rows import clean_cached_assets, create_response
+from rows.config import AppConfig
+from rows.routes.rows import clean_cached_assets, create_response
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +38,7 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
 
 @pytest.fixture(autouse=True)
 def enable_parquet_metadata_on_all_datasets() -> Generator[None, None, None]:
-    with patch("api.routes.rows.ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST", "all"):
+    with patch("rows.routes.rows.ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST", "all"):
         yield
 
 
@@ -467,7 +467,7 @@ def test_clean_cached_assets(
             key=lambda p: int(p.name),
         )
 
-    with patch("api.routes.rows.glob_rows_in_assets_dir", deterministic_glob_rows_in_assets_dir):
+    with patch("rows.routes.rows.glob_rows_in_assets_dir", deterministic_glob_rows_in_assets_dir):
         clean_cached_assets(
             "ds",
             cached_assets_directory,
