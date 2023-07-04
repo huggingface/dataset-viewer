@@ -15,14 +15,12 @@ from starlette.requests import Request
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from api.authentication import auth_check
-from api.utils import (
+from libapi.authentication import auth_check
+from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
 )
-
-from .utils import auth_callback
 
 private_key = """-----BEGIN RSA PRIVATE KEY-----
 MIIBOQIBAAJAZTmplhS/Jd73ycVut7TglMObheQqXM7RZYlwazLU4wpfIVIwOh9I
@@ -44,6 +42,17 @@ read_ok = True
 sub_ok = f"datasets/{dataset_ok}"
 payload_ok = {"sub": sub_ok, "read": read_ok, "exp": exp_ok}
 algorithm_rs256 = "RS256"
+
+
+def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
+    # return 401 if a cookie has been provided, 404 if a token has been provided,
+    # and 200 if none has been provided
+    #
+    # caveat: the returned status codes don't simulate the reality
+    # they're just used to check every case
+    return WerkzeugResponse(
+        status=401 if request.headers.get("cookie") else 404 if request.headers.get("authorization") else 200
+    )
 
 
 def test_no_auth_check() -> None:

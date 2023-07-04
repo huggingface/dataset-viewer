@@ -14,11 +14,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 ApiErrorCode = Literal[
-    "AuthCheckHubRequestError",
-    "ExternalAuthenticatedError",
-    "ExternalUnauthenticatedError",
     "InvalidParameter",
-    "JWKError",
     "MissingRequiredParameter",
     "MissingProcessingStepsError",
     "ResponseNotFound",
@@ -77,32 +73,6 @@ class UnexpectedError(ApiCustomError):
         logging.error(message, exc_info=cause)
 
 
-class ExternalUnauthenticatedError(ApiCustomError):
-    """Raised when the external authentication check failed while the user was unauthenticated."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
-
-
-class ExternalAuthenticatedError(ApiCustomError):
-    """Raised when the external authentication check failed while the user was authenticated.
-
-    Even if the external authentication server returns 403 in that case, we return 404 because
-    we don't know if the dataset exist or not. It's also coherent with how the Hugging Face Hub works."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
-
-
-class AuthCheckHubRequestError(ApiCustomError):
-    """Raised when the external authentication check failed or timed out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message, HTTPStatus.INTERNAL_SERVER_ERROR, "AuthCheckHubRequestError", cause=cause, disclose_cause=False
-        )
-
-
 class OrjsonResponse(JSONResponse):
     def render(self, content: Any) -> bytes:
         return orjson_dumps(content=content)
@@ -144,7 +114,7 @@ def get_json_error_response(
     )
 
 
-def get_json_api_error_response(error: ApiCustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
+def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
     return get_json_error_response(
         content=error.as_response(),
         status_code=error.status_code,

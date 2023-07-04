@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from http import HTTPStatus
 from typing import List, Mapping, Optional, Tuple, TypedDict
 
+from libapi.authentication import auth_check
+from libapi.exceptions import ApiError
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import (
@@ -16,7 +18,6 @@ from libcommon.simple_cache import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.authentication import auth_check
 from api.config import EndpointConfig
 from api.utils import (
     ApiCustomError,
@@ -316,7 +317,11 @@ def create_endpoint(
                         revision=revision,
                     )
             except Exception as e:
-                error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
+                error = (
+                    e
+                    if isinstance(e, ApiCustomError) or isinstance(e, ApiError)
+                    else UnexpectedError("Unexpected error.", e)
+                )
                 with StepProfiler(
                     method="processing_step_endpoint", step="generate API error response", context=context
                 ):

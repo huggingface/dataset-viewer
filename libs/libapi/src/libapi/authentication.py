@@ -5,17 +5,17 @@ import logging
 from typing import Literal, Optional
 
 import requests
-from libapi.jwt_token import is_jwt_valid
 from libcommon.prometheus import StepProfiler
 from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
 
-from api.utils import (
+from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
 )
+from libapi.jwt_token import is_jwt_valid
 
 
 class RequestAuth(AuthBase):
