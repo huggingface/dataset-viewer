@@ -284,10 +284,10 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "2Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
 
 workers:
   -
