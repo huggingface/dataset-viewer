@@ -4,6 +4,7 @@
 import uvicorn
 from libapi.config import UvicornConfig
 from libapi.jwt_token import fetch_jwt_public_key
+from libapi.routes.healthcheck import healthcheck_endpoint
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -17,7 +18,6 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.metrics import create_metrics_endpoint
 from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_valid_endpoint
