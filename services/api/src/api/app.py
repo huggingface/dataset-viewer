@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import uvicorn
+from libapi.jwt_token import fetch_jwt_public_key
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -14,7 +15,6 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig, UvicornConfig
-from api.jwt_token import fetch_jwt_public_key
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
 from api.routes.healthcheck import healthcheck_endpoint
 from api.routes.metrics import create_metrics_endpoint

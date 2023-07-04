@@ -94,13 +94,6 @@ class ExternalAuthenticatedError(ApiCustomError):
         super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
-class JWKError(ApiCustomError):
-    """Raised when the JWT key (JWK) could not be fetched or parsed."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
-
-
 class AuthCheckHubRequestError(ApiCustomError):
     """Raised when the external authentication check failed or timed out."""
 
