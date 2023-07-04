@@ -21,6 +21,10 @@
       "path": "../libs/libcommon"
     },
     {
+      "name": "libs/libapi",
+      "path": "../libs/libapi"
+    },
+    {
       "name": "services/admin",
       "path": "../services/admin"
     },

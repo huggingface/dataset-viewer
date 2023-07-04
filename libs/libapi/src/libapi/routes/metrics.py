@@ -8,7 +8,7 @@ from prometheus_client import CONTENT_TYPE_LATEST
 from starlette.requests import Request
 from starlette.responses import Response
 
-from api.utils import Endpoint
+from libapi.utils import Endpoint
 
 
 def create_metrics_endpoint() -> Endpoint:

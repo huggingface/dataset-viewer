@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 import jwt
 import pytest
 
-from api.jwt_token import is_jwt_valid, parse_jwt_public_key
+from libapi.jwt_token import is_jwt_valid, parse_jwt_public_key
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 HUB_JWT_ALGORITHM = "EdDSA"

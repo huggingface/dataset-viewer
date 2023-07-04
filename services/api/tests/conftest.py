@@ -4,6 +4,7 @@
 from pathlib import Path
 from typing import Iterator
 
+from libapi.config import UvicornConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -11,7 +12,7 @@ from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_cached_assets_dir, init_parquet_metadata_dir
 from pytest import MonkeyPatch, fixture
 
-from api.config import AppConfig, EndpointConfig, UvicornConfig
+from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, StepsByInputTypeAndEndpoint
 
 # Import fixture modules as plugins

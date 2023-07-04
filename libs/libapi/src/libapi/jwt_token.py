@@ -28,7 +28,7 @@ from jwt.algorithms import (
     RSAPSSAlgorithm,
 )
 
-from api.utils import JWKError
+from libapi.exceptions import JWKError
 
 ASYMMETRIC_ALGORITHMS = (ECAlgorithm, OKPAlgorithm, RSAAlgorithm, RSAPSSAlgorithm)
 SYMMETRIC_ALGORITHMS = (HMACAlgorithm,)

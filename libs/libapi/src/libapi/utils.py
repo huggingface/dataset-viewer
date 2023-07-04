@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import logging
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, List, Literal, Optional
+from typing import Any, Callable, Coroutine, List, Optional
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -13,101 +12,7 @@ from libcommon.utils import Priority, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-ApiErrorCode = Literal[
-    "AuthCheckHubRequestError",
-    "ExternalAuthenticatedError",
-    "ExternalUnauthenticatedError",
-    "InvalidParameter",
-    "JWKError",
-    "MissingRequiredParameter",
-    "MissingProcessingStepsError",
-    "ResponseNotFound",
-    "ResponseNotReady",
-    "UnexpectedError",  # also in libcommon.exceptions
-]
-
-
-class ApiCustomError(CustomError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: ApiErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
-
-
-class MissingRequiredParameterError(ApiCustomError):
-    """Raised when a required parameter is missing."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
-
-
-class InvalidParameterError(ApiCustomError):
-    """Raised when a parameter has an invalid value."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
-
-
-class ResponseNotReadyError(ApiCustomError):
-    """Raised when the response has not been processed yet."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
-
-
-class ResponseNotFoundError(ApiCustomError):
-    """Raised when the response has not been found."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "ResponseNotFound")
-
-
-class UnexpectedError(ApiCustomError):
-    """Raised when the server raised an unexpected error."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
-        logging.error(message, exc_info=cause)
-
-
-class ExternalUnauthenticatedError(ApiCustomError):
-    """Raised when the external authentication check failed while the user was unauthenticated."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
-
-
-class ExternalAuthenticatedError(ApiCustomError):
-    """Raised when the external authentication check failed while the user was authenticated.
-
-    Even if the external authentication server returns 403 in that case, we return 404 because
-    we don't know if the dataset exist or not. It's also coherent with how the Hugging Face Hub works."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
-
-
-class JWKError(ApiCustomError):
-    """Raised when the JWT key (JWK) could not be fetched or parsed."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
-
-
-class AuthCheckHubRequestError(ApiCustomError):
-    """Raised when the external authentication check failed or timed out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message, HTTPStatus.INTERNAL_SERVER_ERROR, "AuthCheckHubRequestError", cause=cause, disclose_cause=False
-        )
+from libapi.exceptions import ResponseNotFoundError, ResponseNotReadyError
 
 
 class OrjsonResponse(JSONResponse):
@@ -151,7 +56,7 @@ def get_json_error_response(
     )
 
 
-def get_json_api_error_response(error: ApiCustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
+def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: Optional[str] = None) -> Response:
     return get_json_error_response(
         content=error.as_response(),
         status_code=error.status_code,

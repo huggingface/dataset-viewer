@@ -11,6 +11,20 @@ from typing import Any, List, Literal, Mapping, Optional, TypedDict, Union
 import pyarrow as pa
 from datasets import Features
 from fsspec.implementations.http import HTTPFileSystem
+from libapi.authentication import auth_check
+from libapi.exceptions import (
+    ApiError,
+    InvalidParameterError,
+    MissingRequiredParameterError,
+    UnexpectedApiError,
+)
+from libapi.utils import (
+    Endpoint,
+    are_valid_parameters,
+    get_json_api_error_response,
+    get_json_ok_response,
+    try_backfill_dataset,
+)
 from libcommon.parquet_utils import Indexer, StrPath
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -22,19 +36,6 @@ from libcommon.viewer_utils.asset import (
 from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
-
-from api.authentication import auth_check
-from api.utils import (
-    ApiCustomError,
-    Endpoint,
-    InvalidParameterError,
-    MissingRequiredParameterError,
-    UnexpectedError,
-    are_valid_parameters,
-    get_json_api_error_response,
-    get_json_ok_response,
-    try_backfill_dataset,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -378,7 +379,7 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 

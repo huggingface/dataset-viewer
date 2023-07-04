@@ -4,6 +4,7 @@
 from http import HTTPStatus
 from unittest.mock import patch
 
+from libapi.exceptions import ResponseNotReadyError
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
@@ -12,7 +13,6 @@ from pytest import raises
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
-from api.utils import ResponseNotReadyError
 
 CACHE_MAX_DAYS = 90
 

@@ -1,0 +1,54 @@
+[tool.poetry]
+authors = ["The HuggingFace Authors."]
+description = "Library for the API services"
+name = "libapi"
+version = "0.1.0"
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+cryptography = "^41.0.1"
+environs = "^9.5.0"
+libcommon = {path = "../../libs/libcommon", develop = true}
+orjson = "^3.8.6"
+pyjwt = { extras = ["crypto"], version = "^2.6.0" }
+python = "3.9.15"
+requests = "^2.28.2"
+starlette = "^0.28.0"
+starlette-prometheus = "^0.9.0"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.4"
+black = "^22.12.0"
+flake8 = "^3.9.2"
+isort = "^5.12.0"
+mypy = "^1.0.0"
+pip-audit = "^2.5.4"
+pytest = "^7.2.1"
+pytest-cov = "^2.12.1"
+pytest-httpserver = "^1.0.6"
+types-requests = "^2.28.11"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning"]
+[tool.coverage.run]
+source = ["libapi"]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 119
+preview = true
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "prometheus_client.*",
+]
+ignore_missing_imports = true
