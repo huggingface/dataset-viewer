@@ -68,9 +68,6 @@ class EndpointConfig:
                 "config": ["config-split-names-from-streaming", "config-split-names-from-info"],
             },
             "/first-rows": {"split": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]},
-            "/parquet-and-dataset-info": {
-                "config": ["config-parquet-and-info"],
-            },
             "/parquet": {
                 "dataset": ["dataset-parquet"],
                 "config": ["config-parquet"],

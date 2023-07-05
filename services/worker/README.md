@@ -1,10 +1,10 @@
 # Datasets server - worker
 
-> Worker that pre-computes and caches the response to /splits, /first-rows or /parquet-and-dataset-info.
+> Workers that pre-compute and cache the response to /splits, /first-rows, /parquet, /info and /size.
 
 ## Configuration
 
-Use environment variables to configure the worker. The prefix of each environment variable gives its scope.
+Use environment variables to configure the workers. The prefix of each environment variable gives its scope.
 
 ## Worker configuration
 
@@ -52,7 +52,7 @@ If the Hub is not https://huggingface.co (i.e., if you set the `COMMON_HF_ENDPOI
 
 ### First rows worker
 
-Set environment variables to configure the first rows worker (`FIRST_ROWS_` prefix):
+Set environment variables to configure the `first-rows` worker (`FIRST_ROWS_` prefix):
 
 - `FIRST_ROWS_MAX_BYTES`: the max size of the /first-rows response in bytes. Defaults to `1_000_000` (1 MB).
 - `FIRST_ROWS_MAX_NUMBER`: the max number of rows fetched by the worker for the split and provided in the /first-rows response. Defaults to `100`.
@@ -62,9 +62,9 @@ Set environment variables to configure the first rows worker (`FIRST_ROWS_` pref
 
 Also, set the assets-related configuration for the first-rows worker. See [../../libs/libcommon/README.md](../../libs/libcommon/README.md).
 
-### Parquet and dataset info worker
+### Parquet and info worker
 
-Set environment variables to configure the parquet worker (`PARQUET_AND_INFO_` prefix):
+Set environment variables to configure the `parquet-and-info` worker (`PARQUET_AND_INFO_` prefix):
 
 - `PARQUET_AND_INFO_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. If empty, no dataset is blocked. Defaults to empty.
 - `PARQUET_AND_INFO_COMMIT_MESSAGE`: the git commit message when the worker uploads the parquet files to the Hub. Defaults to `Update parquet files`.
@@ -77,7 +77,7 @@ Set environment variables to configure the parquet worker (`PARQUET_AND_INFO_` p
 
 ### Duckdb Index worker
 
-Set environment variables to configure the duckdb index worker (`DUCKDB_INDEX_` prefix):
+Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_` prefix):
 
 - `DUCKDB_INDEX_STORAGE_DIRECTORY`: directory where the temporal duckdb index files are stored. Defaults to empty.
 - `DUCKDB_INDEX_COMMIT_MESSAGE`: the git commit message when the worker uploads the duckdb index file to the Hub. Defaults to `Update duckdb index file`.
@@ -89,7 +89,7 @@ Set environment variables to configure the duckdb index worker (`DUCKDB_INDEX_` 
 
 ### Splits worker
 
-The splits worker does not need any additional configuration.
+The `splits` worker does not need any additional configuration.
 
 ### Common
 
