@@ -398,7 +398,8 @@ class RowsIndex:
                 content = result.response["content"]
             if content and "parquet_files" in content:
                 logging.info(
-                    f"Create ParquetIndexWithoutMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+                    f"Create ParquetIndexWithoutMetadata for dataset={self.dataset}, config={self.config},"
+                    f" split={self.split}"
                 )
                 return ParquetIndexWithoutMetadata.from_parquet_file_items(
                     [
@@ -414,7 +415,8 @@ class RowsIndex:
                 )
             else:
                 logging.info(
-                    f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+                    f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config},"
+                    f" split={self.split}"
                 )
                 return ParquetIndexWithMetadata.from_parquet_metadata_items(
                     [
@@ -444,7 +446,8 @@ class RowsIndex:
             pa.Table: The requested rows.
         """
         logging.info(
-            f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config}, split={self.split}, offset={offset}, length={length}"
+            f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
+            f" split={self.split}, offset={offset}, length={length}"
         )
         return self.parquet_index.query(offset=offset, length=length)
 
