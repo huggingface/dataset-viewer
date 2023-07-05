@@ -27,7 +27,7 @@ test:
 	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/admin.prometheus
 	mkdir /tmp/admin.prometheus
-	PROMETHEUS_MULTIPROC_DIR=/tmp/admin.prometheus poetry run python -m pytest -vv -x -k "test_metrics or test_prometheus" ${ADDOPTS} $(TEST_PATH)
+	PROMETHEUS_MULTIPROC_DIR=/tmp/admin.prometheus poetry run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/admin.prometheus
 	$(MAKE) down
 

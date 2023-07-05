@@ -46,6 +46,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.api "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "services.rows.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.rows "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "services.worker.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
@@ -96,6 +100,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-admin"
 {{- define "labels.api" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-api"
+{{- end -}}
+
+{{- define "labels.rows" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-rows"
 {{- end -}}
 
 {{- define "labels.worker" -}}
@@ -209,6 +218,14 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 */}}
 {{- define "api.url" -}}
 {{- printf "http://%s-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
+The URL to access the rows service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "rows.url" -}}
+{{- printf "http://%s-rows.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*

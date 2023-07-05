@@ -4,7 +4,7 @@
 
 ## Configuration
 
-The worker can be configured using environment variables. They are grouped by scope.
+The service can be configured using environment variables. They are grouped by scope.
 
 ### API service
 

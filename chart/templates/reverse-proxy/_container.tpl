@@ -18,6 +18,8 @@
     value: {{ include "admin.url" . | quote }}
   - name: URL_API
     value: {{ include "api.url" . | quote }}
+  - name: URL_ROWS
+    value: {{ include "rows.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}

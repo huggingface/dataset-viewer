@@ -17,11 +17,13 @@ services:
       PORT: 80
       URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
       URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
+      URL_ROWS: http://host.docker.internal:${ROWS_UVICORN_PORT-8082}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - api
       - admin
+      - api
+      - rows
   admin:
     build:
       context: ..
@@ -56,6 +58,33 @@ services:
     extends:
       file: docker-compose-dev-base.yml
       service: api
+    environment:
+      # service
+      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://hub-ci.huggingface.co/api/keys/jwt}
+      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-1.0}
+      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
+      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+    network_mode: ${DEV_NETWORK_MODE}
+    ports:
+      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+  rows:
+    build:
+      context: ..
+      dockerfile: services/rows/dev.Dockerfile
+    extends:
+      file: docker-compose-dev-base.yml
+      service: api
     volumes:
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -78,11 +107,12 @@ services:
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
-      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
-      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+      API_UVICORN_NUM_WORKERS: ${ROWS_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${ROWS_UVICORN_PORT-8082}
     network_mode: ${DEV_NETWORK_MODE}
     ports:
-      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+      # for debug
+      - ${ROWS_UVICORN_PORT-8082}:${ROWS_UVICORN_PORT-8082}
     depends_on:
       - mongodb
     restart: unless-stopped

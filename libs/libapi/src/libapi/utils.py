@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Optional
 
@@ -98,6 +99,7 @@ def try_backfill_dataset(
             raise ResponseNotFoundError("Not found.") from e
         # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
         # and tell the user to retry.
+        logging.info(f"Set orchestrator revision for dataset={dataset}, revision={revision}")
         dataset_orchestrator.set_revision(
             revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=cache_max_days
         )

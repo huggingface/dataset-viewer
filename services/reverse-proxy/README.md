@@ -17,8 +17,9 @@ It takes various environment variables, all of them are mandatory:
 - `ASSETS_DIRECTORY`: the directory that contains the static assets, eg `/assets`
 - `HOST`: domain of the reverse proxy, eg `localhost`
 - `PORT`: port of the reverse proxy, eg `80`
-- `URL_ADMIN`= URL of the admin, eg `http://admin:8080`
+- `URL_ADMIN`= URL of the admin, eg `http://admin:8081`
 - `URL_API`= URL of the API, eg `http://api:8080`
+- `URL_ROWS`= URL of the rows service, eg `http://rows:8082`
 
 The image requires three directories to be mounted (from volumes):
 

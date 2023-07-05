@@ -9,7 +9,6 @@ from libapi.routes.metrics import create_metrics_endpoint
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import exists, init_cached_assets_dir, init_parquet_metadata_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -19,7 +18,6 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.rows import create_rows_endpoint
 from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -33,10 +31,6 @@ def create_app() -> Starlette:
 def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfig) -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
-    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
-    if not exists(cached_assets_directory):
-        raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
@@ -108,24 +102,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             methods=["POST"],
         ),
         # ^ called by the Hub webhooks
-        Route(
-            "/rows",
-            endpoint=create_rows_endpoint(
-                processing_graph=processing_graph,
-                cached_assets_base_url=app_config.cached_assets.base_url,
-                cached_assets_directory=cached_assets_directory,
-                parquet_metadata_directory=parquet_metadata_directory,
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                hf_jwt_public_key=hf_jwt_public_key,
-                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
-                external_auth_url=app_config.api.external_auth_url,
-                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
-            ),
-        ),
     ]
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])

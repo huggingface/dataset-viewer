@@ -32,6 +32,8 @@ jobs:
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
           API_UVICORN_PORT: "8080"
+          ROWS_UVICORN_NUM_WORKERS: "2"
+          ROWS_UVICORN_PORT: "8082"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
@@ -68,6 +70,8 @@ jobs:
           # ^ allow hub-ci to be slow to answer
           API_UVICORN_NUM_WORKERS: "2"
           API_UVICORN_PORT: "8080"
+          ROWS_UVICORN_NUM_WORKERS: "2"
+          ROWS_UVICORN_PORT: "8082"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
