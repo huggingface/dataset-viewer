@@ -308,7 +308,7 @@ workers:
   -
     deployName: "light"
     workerJobTypesBlocked: ""
-    workerJobTypesOnly: "config-parquet,config-parquet-metadata,dataset-parquet,config-info,dataset-info,config-split-names-from-info,config-size,dataset-size,dataset-split-names,dataset-is-valid,split-image-url-columns,split-opt-in-out-urls-count,config-opt-in-out-urls-count,dataset-opt-in-out-urls-count"
+    workerJobTypesOnly: "config-parquet,dataset-parquet,config-info,dataset-info,config-split-names-from-info,config-size,dataset-size,dataset-split-names,dataset-is-valid,split-image-url-columns,split-opt-in-out-urls-count,config-opt-in-out-urls-count,dataset-opt-in-out-urls-count"
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 12
