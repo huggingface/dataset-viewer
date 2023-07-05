@@ -1,6 +1,6 @@
 # Datasets server - worker
 
-> Workers that pre-computes and caches the response to /splits, /first-rows, /parquet, /info and /size.
+> Workers that pre-compute and cache the response to /splits, /first-rows, /parquet, /info and /size.
 
 ## Configuration
 
