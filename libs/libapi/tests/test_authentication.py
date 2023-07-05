@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import datetime
 import time
 from contextlib import nullcontext as does_not_raise
 from typing import Any, Dict, Mapping, Optional
@@ -14,21 +15,44 @@ from starlette.requests import Request
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response as WerkzeugResponse
 
-from api.authentication import auth_check
-from api.utils import (
+from libapi.authentication import auth_check
+from libapi.exceptions import (
     AuthCheckHubRequestError,
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
 )
 
-from .test_jwt_token import (
-    algorithm_rs256,
-    dataset_ok,
-    payload_ok,
-    private_key,
-    public_key,
-)
-from .utils import auth_callback
+private_key = """-----BEGIN RSA PRIVATE KEY-----
+MIIBOQIBAAJAZTmplhS/Jd73ycVut7TglMObheQqXM7RZYlwazLU4wpfIVIwOh9I
+sCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQABAkAMyF9WCICq86Eu5bO5lynV
+H26AVfPTjHp87AI6R00C7p9n8hO/DhHaHpc3InOSsXsw9d2hmz37jwwBFiwMHMMh
+AiEAtbttHlIO+yO29oXw4P6+yO11lMy1UpT1sPVTnR9TXbUCIQCOl7Zuyy2ZY9ZW
+pDhW91x/14uXjnLXPypgY9bcfggJUwIhAJQG1LzrzjQWRUPMmgZKuhBkC3BmxhM8
+LlwzmCXVjEw5AiA7JnAFEb9+q82T71d3q/DxD0bWvb6hz5ASoBfXK2jGBQIgbaQp
+h4Tk6UJuj1xgKNs75Pk3pG2tj8AQiuBk3l62vRU=
+-----END RSA PRIVATE KEY-----"""
+public_key = """-----BEGIN PUBLIC KEY-----
+MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAZTmplhS/Jd73ycVut7TglMObheQqXM7R
+ZYlwazLU4wpfIVIwOh9IsCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQAB
+-----END PUBLIC KEY-----"""
+
+dataset_ok = "dataset"
+exp_ok = datetime.datetime.now().timestamp() + 1000
+read_ok = True
+sub_ok = f"datasets/{dataset_ok}"
+payload_ok = {"sub": sub_ok, "read": read_ok, "exp": exp_ok}
+algorithm_rs256 = "RS256"
+
+
+def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
+    # return 401 if a cookie has been provided, 404 if a token has been provided,
+    # and 200 if none has been provided
+    #
+    # caveat: the returned status codes don't simulate the reality
+    # they're just used to check every case
+    return WerkzeugResponse(
+        status=401 if request.headers.get("cookie") else 404 if request.headers.get("authorization") else 200
+    )
 
 
 def test_no_auth_check() -> None:

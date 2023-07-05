@@ -52,7 +52,6 @@ def test_auth_e2e(
         ("/splits", "dataset"),
         ("/splits", "config"),
         ("/first-rows", "split"),
-        ("/parquet-and-dataset-info", "config"),
         ("/parquet", "dataset"),
         ("/parquet", "config"),
         ("/info", "dataset"),

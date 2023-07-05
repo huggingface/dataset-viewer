@@ -25,6 +25,8 @@ RUN pip install "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
 COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
+COPY libs/libapi/poetry.lock ./libs/libapi/poetry.lock
+COPY libs/libapi/pyproject.toml ./libs/libapi/pyproject.toml
 COPY services/api/poetry.lock ./services/api/poetry.lock
 COPY services/api/pyproject.toml ./services/api/pyproject.toml
 
@@ -32,6 +34,9 @@ COPY services/api/pyproject.toml ./services/api/pyproject.toml
 # Initialize an empty libcommon
 # Mapping a volume to ./libs/libcommon/src is required when running this image.
 RUN mkdir ./libs/libcommon/src && mkdir ./libs/libcommon/src/libcommon && touch ./libs/libcommon/src/libcommon/__init__.py
+# Initialize an empty libapi
+# Mapping a volume to ./libs/libapi/src is required when running this image.
+RUN mkdir ./libs/libapi/src && mkdir ./libs/libapi/src/libapi && touch ./libs/libapi/src/libapi/__init__.py
 
 # Install dependencies
 WORKDIR /src/services/api/

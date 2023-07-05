@@ -30,6 +30,8 @@ jobs:
           - directory: services
             project: api
           - directory: services
+            project: rows
+          - directory: services
             project: worker
     runs-on: "ubuntu-latest"
     steps:
@@ -107,6 +109,8 @@ jobs:
                 admin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 api:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                rows:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 worker:
                   tag: sha-${{ steps.vars.outputs.sha_short }}

@@ -5,18 +5,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Set, TypedDict
 
+from libapi.exceptions import UnexpectedApiError
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_valid_datasets
 from starlette.requests import Request
 from starlette.responses import Response
-
-from api.utils import (
-    Endpoint,
-    UnexpectedError,
-    get_json_api_error_response,
-    get_json_ok_response,
-)
 
 
 class ValidContent(TypedDict):
@@ -76,6 +71,8 @@ def create_valid_endpoint(
                     return get_json_ok_response(content, max_age=max_age_long)
             except Exception as e:
                 with StepProfiler(method="valid_endpoint", step="generate API error response"):
-                    return get_json_api_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age_short)
+                    return get_json_api_error_response(
+                        UnexpectedApiError("Unexpected error.", e), max_age=max_age_short
+                    )
 
     return valid_endpoint

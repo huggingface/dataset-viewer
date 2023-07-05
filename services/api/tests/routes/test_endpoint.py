@@ -4,6 +4,7 @@
 from http import HTTPStatus
 from unittest.mock import patch
 
+from libapi.exceptions import ResponseNotReadyError
 from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
@@ -12,7 +13,6 @@ from pytest import raises
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, get_cache_entry_from_steps
-from api.utils import ResponseNotReadyError
 
 CACHE_MAX_DAYS = 90
 
@@ -48,12 +48,6 @@ def test_endpoints_definition() -> None:
     assert first_rows["split"] is not None
     assert len(first_rows["split"]) == 2  # Has two processing steps
 
-    parquet_and_info = definition["/parquet-and-dataset-info"]
-    assert parquet_and_info is not None
-    assert sorted(list(parquet_and_info)) == ["config"]
-    assert parquet_and_info["config"] is not None
-    assert len(parquet_and_info["config"]) == 1  # Only has one processing step
-
     parquet = definition["/parquet"]
     assert parquet is not None
     assert sorted(list(parquet)) == ["config", "dataset"]
@@ -88,9 +82,11 @@ def test_endpoints_definition() -> None:
     assert len(opt_in_out_urls["config"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["dataset"]) == 1  # Only has one processing step
 
-    # assert old endpoints don't exist
+    # assert old deleted endpoints don't exist
     with raises(KeyError):
         _ = definition["/dataset-info"]
+    with raises(KeyError):
+        _ = definition["/parquet-and-dataset-info"]
 
 
 def test_get_cache_entry_from_steps() -> None:

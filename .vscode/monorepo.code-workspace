@@ -21,12 +21,20 @@
       "path": "../libs/libcommon"
     },
     {
+      "name": "libs/libapi",
+      "path": "../libs/libapi"
+    },
+    {
       "name": "services/admin",
       "path": "../services/admin"
     },
     {
       "name": "services/api",
       "path": "../services/api"
+    },
+    {
+      "name": "services/rows",
+      "path": "../services/rows"
     },
     {
       "name": "services/worker",
