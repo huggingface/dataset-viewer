@@ -50,6 +50,9 @@ from mongodb_migration.migrations._20230622131500_lock_add_owner import (
 from mongodb_migration.migrations._20230703110100_cache_add_partial_field_in_config_parquet_and_info import (
     MigrationAddPartialToCacheResponse,
 )
+from mongodb_migration.migrations._20230705160600_queue_job_add_difficulty import (
+    MigrationQueueAddDifficultyToJob,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -241,4 +244,5 @@ class MigrationsCollector:
             MigrationAddPartialToCacheResponse(
                 version="20230703110100", description="add 'partial' field to config-parquet-and-info"
             ),
+            MigrationQueueAddDifficultyToJob(version="20230705160600", description="add 'difficulty' field to jobs"),
         ]
