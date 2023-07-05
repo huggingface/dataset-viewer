@@ -343,9 +343,6 @@ def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int]
         assert job_info["params"]["dataset"] == test_dataset
 
 
-# TODO: add min max difficulty test
-
-
 def test_count_by_status() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"
