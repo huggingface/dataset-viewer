@@ -456,9 +456,9 @@ workers:
     # name of the deployment
     deployName: "all"
     # max difficulty of the jobs that this worker will process
-    workerDifficultyMax: ""
+    workerDifficultyMax: 100
     # min difficulty of the jobs that this worker will process
-    workerDifficultyMin: ""
+    workerDifficultyMin: 0
     # job types that this worker will not process
     workerJobTypesBlocked: ""
     # job types that this worker can process
