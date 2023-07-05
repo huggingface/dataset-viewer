@@ -233,8 +233,8 @@ rows:
 workers:
   -
     deployName: "all"
-    workerDifficultyMax: ""
-    workerDifficultyMin: ""
+    workerDifficultyMax: 100
+    workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
@@ -249,9 +249,9 @@ workers:
     tolerations: []
   -
     deployName: "light"
-    workerDifficultyMax: ""
-    workerDifficultyMin: ""
-    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+    workerDifficultyMax: 40
+    workerDifficultyMin: 0
+    workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
     replicas: 1

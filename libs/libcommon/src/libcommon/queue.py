@@ -157,6 +157,7 @@ class JobDocument(Document):
             ("priority", "status", "created_at", "type", "namespace"),
             ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
             ("priority", "status", "created_at", "namespace", "type", "unicity_id"),
+            ("priority", "status", "created_at", "difficulty", "namespace", "type", "unicity_id"),
             ("status", "type"),
             ("status", "namespace", "priority", "type", "created_at"),
             ("status", "namespace", "unicity_id", "priority", "type", "created_at"),
