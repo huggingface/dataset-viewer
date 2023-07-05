@@ -3658,28 +3658,6 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
-name = "pypdf"
-version = "3.12.0"
-description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pypdf-3.12.0-py3-none-any.whl", hash = "sha256:826ad4681660394d7a5742fe8380168cf13058e27b826b7f5b798e994cb77b38"},
-    {file = "pypdf-3.12.0.tar.gz", hash = "sha256:cebac920db0698369f49c389018858a5436862bf3c45b64b10c55c008878db95"},
-]
-
-[package.dependencies]
-typing_extensions = {version = ">=3.10.0.0", markers = "python_version < \"3.10\""}
-
-[package.extras]
-crypto = ["PyCryptodome"]
-dev = ["black", "flit", "pip-tools", "pre-commit (<2.18.0)", "pytest-cov", "pytest-socket", "wheel"]
-docs = ["myst_parser", "sphinx", "sphinx_rtd_theme"]
-full = ["Pillow", "PyCryptodome"]
-image = ["Pillow"]
-
-[[package]]
 name = "pyppmd"
 version = "1.0.0"
 description = "PPMd compression/decompression library"
@@ -5654,4 +5632,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "dece13133001f90556ed41701836d8252b52473b4035d3f53e942c86ddf48e85"
+content-hash = "7b9fd2481fb986fca30a557319cf230f266121211c27d92ab44168121a21afc1"
