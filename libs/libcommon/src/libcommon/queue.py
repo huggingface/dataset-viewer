@@ -21,6 +21,8 @@ from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
+    DEFAULT_DIFFICULTY_MAX,
+    DEFAULT_DIFFICULTY_MIN,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
@@ -487,9 +489,9 @@ class Queue:
             filters["type__nin"] = job_types_blocked
         if job_types_only:
             filters["type__in"] = job_types_only
-        if difficulty_min:
+        if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
             filters["difficulty__gte"] = difficulty_min
-        if difficulty_max:
+        if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
             filters["difficulty__lte"] = difficulty_max
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")

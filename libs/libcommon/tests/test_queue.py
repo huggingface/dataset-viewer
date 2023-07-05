@@ -316,6 +316,8 @@ def test_job_types_only(
         (60, None, True),
         (60, 60, True),
         (40, 40, True),
+        (55, 60, True),
+        (40, 45, True),
     ],
 )
 def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int], should_raise: bool) -> None:
