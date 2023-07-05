@@ -310,19 +310,20 @@ def create_rows_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                with StepProfiler(method="rows_endpoint", step="get row groups index"):
-                    try:
+                try:
+                    with StepProfiler(method="rows_endpoint", step="get row groups index"):
                         rows_index = indexer.get_rows_index(
                             dataset=dataset,
                             config=config,
                             split=split,
                         )
                         revision = rows_index.revision
-                    except CachedArtifactError:
-                        config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
-                        config_parquet_metadata_processing_steps = (
-                            processing_graph.get_config_parquet_metadata_processing_steps()
-                        )
+                except CachedArtifactError:
+                    config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
+                    config_parquet_metadata_processing_steps = (
+                        processing_graph.get_config_parquet_metadata_processing_steps()
+                    )
+                    with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset(
                             processing_steps=config_parquet_metadata_processing_steps
                             + config_parquet_processing_steps,
