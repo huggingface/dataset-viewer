@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
+import pandas as pd
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
     NoSupportedFeaturesError,
@@ -42,21 +43,13 @@ COMPUTE_CATEGORIES_COUNTS_COMMAND = """
     SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
 """
 COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
-    SELECT min({column_name}), max({column_name}), mean({column_name}), 
+    SELECT min({column_name}), max({column_name}), mean({column_name}),
     median({column_name}), stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
 """
-CREATE_BINS_TABLE_COMMAND = """
-    CREATE OR REPLACE TEMPORARY TABLE bins AS 
-        SELECT range bin_id, 
-            {min_value} + ({max_value} - {min_value}) * (range/n::double) as bin_min,
-            {min_value} + ({max_value} - {min_value}) * ((range+1)/n::double) as bin_max
-        FROM 
-            SELECT *, max(range) over() + 1 as n FROM range(0,{n_bins})
- """
 COMPUTE_HIST_COMMAND = """
-    SELECT bin_max, COUNT(*) as count FROM read_parquet('{parquet_filename}') 
+    SELECT bin_max, COUNT(*) as count FROM read_parquet('{parquet_filename}')
         JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_max;
-"""
+"""  # `bins` is the name of preinjected table with bin edges data
 
 
 class Histogram(TypedDict):
@@ -85,13 +78,31 @@ class CategoricalStatisticsItem(TypedDict):
 class StatisticsPerColumnItem(TypedDict):
     column_name: str
     column_type: str
-    column_dtype: Optional[str]
-    column_stats: Union[NumericalStatisticsItem, CategoricalStatisticsItem]
+    # column_dtype: Optional[str]
+    column_statistics: Union[NumericalStatisticsItem, CategoricalStatisticsItem]
 
 
 class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
-    stats: List[StatisticsPerColumnItem]
+    statistics: List[StatisticsPerColumnItem]
+
+
+# TODO: Union[int, float] - > convert to separate type
+NUMERICAL = Union[int, float]
+
+
+def generate_bins(
+    min_value: Union[int, float], max_value: Union[int, float], bin_size: Union[int, float], n_bins: int
+):
+    """
+    Returns:
+        pandas.DataFrame with bin edges to insert into database to perform histogram computation with duckdb
+    """
+    bins = [(0, min_value, min_value + bin_size)]
+    for i in range(n_bins - 2):
+        bins.append((i + 1, bins[i][2], bins[i][2] + bin_size))
+    bins.append((n_bins - 1, bins[-1][2], max_value + 0.1))
+    return pd.DataFrame.from_records(bins, columns=["bin_id", "bin_min", "bin_max"])
 
 
 def compute_histogram(
@@ -104,35 +115,32 @@ def compute_histogram(
     n_bins: int,
     n_samples: Optional[int] = None,
 ) -> Histogram:
-    create_bins_table_command = CREATE_BINS_TABLE_COMMAND.format(min_value=min_value, max_value=max_value, n_bins=n_bins)
-    con.sql(create_bins_table_command)
-    # hist_query = f"""
-    # SELECT CAST(FLOOR("{column_name}"/{bin_size}) as INT), COUNT(*)
-    #  FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
-    # """
+    bins_df = generate_bins(min_value=min_value, max_value=max_value, n_bins=n_bins, bin_size=bin_size)  # type: ignore
+    con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
     compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
     logging.debug(f"Compute histogram for {column_name}")
-    hist_query_result = list(zip(*con.sql(compute_hist_command).fetchall()))  # result is list tuples (bin_max,n_count)
+    hist_query_result = list(zip(*con.sql(compute_hist_command).fetchall()))  # return list of tuples (bin_max,n_count)
 
     if len(hist_query_result) > n_bins + 1:
         raise StatsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
-    bins_id_to_max = dict(con.sql("select bin_id, bin_max from bins").fetchall())
-    bins, hist = [], []
-    for bin_idx in range(n_bins):
-        # no key in query result = no examples in this range, so we add 0 manually:
-        hist.append(hist_query_result.get(bin_idx, 0))
-        bins.append(min_value + bin_idx * bin_size)  # multiplying here (not in a query) to avoid floating point errors
-    hist[-1] += hist_query_result.get(n_bins, 0)
-    if n_samples and sum(hist) != n_samples:
-        raise StatsComputationError(
-            "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
-            f" match. histogram sum={sum(hist)}, {n_samples=}"
-        )
-    bins = np.round(bins, DECIMALS).tolist()
-    return Histogram(hist=hist, bin_edges=bins)
+    # bins_id_to_max = dict(con.sql("select bin_id, bin_max from bins").fetchall())
+    # bins, hist = [], []
+    # for bin_idx in range(n_bins):
+    #     # no key in query result = no examples in this range, so we add 0 manually:
+    #     hist.append(hist_query_result.get(bin_idx, 0))
+    #     bins.append(min_value + bin_idx * bin_size)
+    # multiplying here (not in a query) to avoid floating point errors
+    # hist[-1] += hist_query_result.get(n_bins, 0)
+    # if n_samples and sum(hist) != n_samples:
+    #     raise StatsComputationError(
+    #         "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
+    #         f" match. histogram sum={sum(hist)}, {n_samples=}"
+    #     )
+    # bins = np.round(bins, DECIMALS).tolist()
+    # return Histogram(hist=hist, bin_edges=bins)
 
 
 def compute_numerical_statistics(
@@ -144,15 +152,19 @@ def compute_numerical_statistics(
     dtype: str,
 ) -> NumericalStatisticsItem:
     logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name}")
-    query = f"""
-    SELECT min({column_name}), max({column_name}), mean({column_name}), median({column_name}),
-     stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
-    """
-    minimum, maximum, mean, median, std = con.sql(query).fetchall()[0]
+    min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
+        column_name=column_name, parquet_filename=parquet_filename
+    )
+    minimum, maximum, mean, median, std = con.sql(min_max_mean_median_std_command).fetchall()[0]
     logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}")
+
+    nan_count_command = COMPUTE_NAN_COUNTS_COMMAND.format(column_name=column_name, parquet_filename=parquet_filename)
+    nan_count = con.sql(nan_count_command).fetchall()[0][0]
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+    logging.debug(f"{nan_count=} {nan_proportion=}")
+
     if dtype in FLOAT_DTYPES:
         bin_size = (maximum - minimum) / n_bins
-        minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     elif dtype in INTEGER_DTYPES:
         if maximum - minimum < n_bins:
             bin_size = 1
@@ -161,20 +173,21 @@ def compute_numerical_statistics(
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
         raise ValueError("Incorrect dtype, only integer and float are allowed. ")
-    nan_query = f"SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;"
-    nan_count = con.sql(nan_query).fetchall()[0][0]
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
-    logging.debug(f"{nan_count=} {nan_proportion=}")
 
     histogram = compute_histogram(
         con,
         column_name,
         parquet_filename,
         min_value=minimum,
+        max_value=maximum,
         bin_size=bin_size,
         n_bins=n_bins,
         n_samples=n_samples - nan_count,
     )
+    if dtype in FLOAT_DTYPES:
+        minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
+    else:
+        mean, std = np.round([mean, std], DECIMALS).tolist()
     return NumericalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
@@ -314,9 +327,9 @@ def compute_descriptive_statistics_response(
         stats.append(
             StatisticsPerColumnItem(
                 column_name=feature_name,
-                column_type="class_label",
-                column_dtype=None,  # should be some int?
-                column_stats=cat_column_stats,
+                column_type="CLASS_LABEL",
+                # column_dtype=None,  # should be some int?
+                column_statistics=cat_column_stats,
             )
         )
 
@@ -335,15 +348,15 @@ def compute_descriptive_statistics_response(
         stats.append(
             StatisticsPerColumnItem(
                 column_name=feature_name,
-                column_type="float" if feature_dtype in FLOAT_DTYPES else "int",
-                column_dtype=feature_dtype,
-                column_stats=num_column_stats,
+                column_type="FLOAT" if feature_dtype in FLOAT_DTYPES else "INT",
+                # column_dtype=feature_dtype,
+                column_statistics=num_column_stats,
             )
         )
     con.close()
 
     return SplitDescriptiveStatisticsResponse(
-        num_examples=num_examples, stats=sorted(stats, key=lambda x: x["column_name"])
+        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
     )
 
 
