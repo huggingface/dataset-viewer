@@ -318,7 +318,6 @@ def create_rows_endpoint(
                             split=split,
                         )
                         revision = rows_index.revision
-                        indexer.get_rows_index.cache_info()
                     except CachedArtifactError:
                         config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
                         config_parquet_metadata_processing_steps = (
