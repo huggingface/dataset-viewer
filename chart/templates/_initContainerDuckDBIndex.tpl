@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
+    name: duckdb-data
     subPath: "{{ include "duckDBIndex.subpath" . }}"
     readOnly: false
   securityContext:
