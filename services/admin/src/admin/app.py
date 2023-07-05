@@ -129,6 +129,7 @@ def create_app() -> Starlette:
                     endpoint=create_force_refresh_endpoint(
                         input_type=input_type,
                         job_type=job_type,
+                        difficulty=processing_step.difficulty,
                         hf_endpoint=app_config.common.hf_endpoint,
                         hf_token=app_config.common.hf_token,
                         external_auth_url=app_config.admin.external_auth_url,

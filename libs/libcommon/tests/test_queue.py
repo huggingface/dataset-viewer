@@ -35,12 +35,13 @@ def test_add_job() -> None:
     test_type = "test_type"
     test_dataset = "test_dataset"
     test_revision = "test_revision"
+    test_difficulty = 50
     # get the queue
     queue = Queue()
     # add a job
-    job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     # a second call adds a second waiting job
-    job2 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job2 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # get and start a job the second one should have been picked
     job_info = queue.start_job()
@@ -55,7 +56,7 @@ def test_add_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
-    job3 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    job3 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert job3.status == Status.WAITING
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
@@ -90,12 +91,13 @@ def test_cancel_jobs_by_job_id(
     jobs_ids: List[str], job_ids_to_cancel: List[str], expected_canceled_number: int
 ) -> None:
     test_type = "test_type"
+    test_difficulty = 50
     queue = Queue()
 
     # we cannot really set job_id, so, we create jobs and get their job id, using dataset as a proxy
     real_job_ids_to_cancel = []
     for job_id in list(set(jobs_ids + job_ids_to_cancel)):
-        job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision")
+        job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision", difficulty=test_difficulty)
         if job_id in job_ids_to_cancel:
             real_job_id = job.info()["job_id"]
             real_job_ids_to_cancel.append(real_job_id)
@@ -124,9 +126,24 @@ def check_job(queue: Queue, expected_dataset: str, expected_split: str, expected
 def test_priority_logic_creation_order() -> None:
     test_type = "test_type"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
-    queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split1")
-    queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split2")
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset1",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset1",
+        revision=test_revision,
+        config="config",
+        split="split2",
+        difficulty=test_difficulty,
+    )
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.LOW)
     with pytest.raises(EmptyQueueError):
@@ -136,10 +153,32 @@ def test_priority_logic_creation_order() -> None:
 def test_priority_logic_started_jobs_per_dataset_order() -> None:
     test_type = "test_type"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
-    queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split1")
-    queue.add_job(job_type=test_type, dataset="dataset1", revision=test_revision, config="config", split="split2")
-    queue.add_job(job_type=test_type, dataset="dataset2", revision=test_revision, config="config", split="split1")
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset1",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset1",
+        revision=test_revision,
+        config="config",
+        split="split2",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset2",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.LOW)
     # ^ before, even if the creation date is after, because the dataset is different and has no started job
@@ -151,12 +190,39 @@ def test_priority_logic_started_jobs_per_dataset_order() -> None:
 def test_priority_logic_started_jobs_per_namespace_order() -> None:
     test_type = "test_type"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
-    queue.add_job(job_type=test_type, dataset="org1/dataset1", revision=test_revision, config="config", split="split1")
-    queue.add_job(job_type=test_type, dataset="org1/dataset2", revision=test_revision, config="config", split="split1")
-    queue.add_job(job_type=test_type, dataset="org2/dataset2", revision=test_revision, config="config", split="split1")
     queue.add_job(
-        job_type=test_type, dataset="no_org_dataset3", revision=test_revision, config="config", split="split1"
+        job_type=test_type,
+        dataset="org1/dataset1",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="org1/dataset2",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="org2/dataset2",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
+    queue.add_job(
+        job_type=test_type,
+        dataset="no_org_dataset3",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
     )
     check_job(queue=queue, expected_dataset="org1/dataset1", expected_split="split1", expected_priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="org2/dataset2", expected_split="split1", expected_priority=Priority.LOW)
@@ -170,6 +236,7 @@ def test_priority_logic_started_jobs_per_namespace_order() -> None:
 def test_priority_logic_priority_order() -> None:
     test_type = "test_type"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
     queue.add_job(
         job_type=test_type,
@@ -177,6 +244,7 @@ def test_priority_logic_priority_order() -> None:
         revision=test_revision,
         config="config",
         split="split1",
+        difficulty=test_difficulty,
     )
     queue.add_job(
         job_type=test_type,
@@ -185,6 +253,7 @@ def test_priority_logic_priority_order() -> None:
         config="config",
         split="split1",
         priority=Priority.NORMAL,
+        difficulty=test_difficulty,
     )
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ before, even if the creation date is after, because the priority is higher
@@ -194,27 +263,36 @@ def test_priority_logic_priority_order() -> None:
 
 
 @pytest.mark.parametrize(
-    "job_type,job_types_blocked,job_types_only,should_raise",
+    "job_types_blocked,job_types_only,should_raise",
     [
-        ("test_type", None, None, False),
-        ("test_type", None, ["test_type"], False),
-        ("test_type", ["other_type"], None, False),
-        ("test_type", ["other_type"], ["test_type"], False),
-        ("test_type", None, ["other_type"], True),
-        ("test_type", ["test_type"], None, True),
-        ("test_type", ["test_type"], ["test_type"], True),
-        ("test_type", ["other_type", "test_type"], None, True),
-        ("test_type", ["other_type"], ["other_type"], True),
-        ("test_type", ["other_type", "test_type"], ["other_type", "test_type"], True),
+        (None, None, False),
+        (None, ["test_type"], False),
+        (["other_type"], None, False),
+        (["other_type"], ["test_type"], False),
+        (None, ["other_type"], True),
+        (["test_type"], None, True),
+        (["test_type"], ["test_type"], True),
+        (["other_type", "test_type"], None, True),
+        (["other_type"], ["other_type"], True),
+        (["other_type", "test_type"], ["other_type", "test_type"], True),
     ],
 )
 def test_job_types_only(
-    job_type: str, job_types_blocked: Optional[list[str]], job_types_only: Optional[list[str]], should_raise: bool
+    job_types_blocked: Optional[list[str]], job_types_only: Optional[list[str]], should_raise: bool
 ) -> None:
+    job_type = "test_type"
     test_dataset = "test_dataset"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
-    queue.add_job(job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None)
+    queue.add_job(
+        job_type=job_type,
+        dataset=test_dataset,
+        revision=test_revision,
+        config=None,
+        split=None,
+        difficulty=test_difficulty,
+    )
     assert queue.is_job_in_process(
         job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None
     )
@@ -226,11 +304,51 @@ def test_job_types_only(
         assert job_info["params"]["dataset"] == test_dataset
 
 
+@pytest.mark.parametrize(
+    "difficulty_min,difficulty_max,should_raise",
+    [
+        (None, None, False),
+        (None, 60, False),
+        (40, None, False),
+        (40, 60, False),
+        (50, 50, False),
+        (None, 40, True),
+        (60, None, True),
+        (60, 60, True),
+        (40, 40, True),
+    ],
+)
+def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int], should_raise: bool) -> None:
+    job_type = "test_type"
+    test_dataset = "test_dataset"
+    test_revision = "test_revision"
+    test_difficulty = 50
+    queue = Queue()
+    queue.add_job(
+        job_type=job_type,
+        dataset=test_dataset,
+        revision=test_revision,
+        config=None,
+        split=None,
+        difficulty=test_difficulty,
+    )
+    assert queue.is_job_in_process(
+        job_type=job_type, dataset=test_dataset, revision=test_revision, config=None, split=None
+    )
+    if should_raise:
+        with pytest.raises(EmptyQueueError):
+            queue.start_job(difficulty_max=difficulty_max, difficulty_min=difficulty_min)
+    else:
+        job_info = queue.start_job(difficulty_max=difficulty_max, difficulty_min=difficulty_min)
+        assert job_info["params"]["dataset"] == test_dataset
+
+
 def test_count_by_status() -> None:
     test_type = "test_type"
     test_other_type = "test_other_type"
     test_dataset = "test_dataset"
     test_revision = "test_revision"
+    test_difficulty = 50
     queue = Queue()
 
     expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0}
@@ -239,12 +357,12 @@ def test_count_by_status() -> None:
     assert queue.get_jobs_count_by_status(job_type=test_type) == expected_empty
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
 
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision)
+    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
 
     assert queue.get_jobs_count_by_status(job_type=test_type) == expected_one_waiting
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
 
-    queue.add_job(job_type=test_other_type, dataset=test_dataset, revision=test_revision)
+    queue.add_job(job_type=test_other_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
 
     assert queue.get_jobs_count_by_status(job_type=test_type) == expected_one_waiting
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_one_waiting
@@ -253,6 +371,7 @@ def test_count_by_status() -> None:
 def test_get_dataset_pending_jobs_for_type() -> None:
     queue = Queue()
     test_type = "test_type"
+    test_difficulty = 50
     test_another_type = "test_another_type"
     test_dataset = "test_dataset"
     test_another_dataset = "test_another_dataset"
@@ -263,18 +382,39 @@ def test_get_dataset_pending_jobs_for_type() -> None:
     for config in test_configs_finished:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
-                queue.add_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
+                queue.add_job(
+                    job_type=job_type,
+                    dataset=dataset,
+                    revision=test_revision,
+                    config=config,
+                    split=None,
+                    difficulty=test_difficulty,
+                )
                 job_info = queue.start_job()
                 queue.finish_job(job_info["job_id"], is_success=True)
     for config in test_configs_started:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
-                queue.add_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
+                queue.add_job(
+                    job_type=job_type,
+                    dataset=dataset,
+                    revision=test_revision,
+                    config=config,
+                    split=None,
+                    difficulty=test_difficulty,
+                )
                 job_info = queue.start_job()
     for config in test_configs_waiting:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
-                queue.add_job(job_type=job_type, dataset=dataset, revision=test_revision, config=config, split=None)
+                queue.add_job(
+                    job_type=job_type,
+                    dataset=dataset,
+                    revision=test_revision,
+                    config=config,
+                    split=None,
+                    difficulty=test_difficulty,
+                )
     result = queue.get_dataset_pending_jobs_for_type(dataset=test_dataset, job_type=test_type)
     assert len(result) == len(test_configs_waiting) + len(test_configs_started)
     for r in result:
@@ -285,8 +425,16 @@ def test_get_dataset_pending_jobs_for_type() -> None:
 
 def test_queue_heartbeat() -> None:
     job_type = "test_type"
+    test_difficulty = 50
     queue = Queue()
-    job = queue.add_job(job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split1")
+    job = queue.add_job(
+        job_type=job_type,
+        dataset="dataset1",
+        revision="revision",
+        config="config",
+        split="split1",
+        difficulty=test_difficulty,
+    )
     queue.start_job(job_types_only=[job_type])
     assert job.last_heartbeat is None
     queue.heartbeat(job.pk)
@@ -298,13 +446,26 @@ def test_queue_heartbeat() -> None:
 
 def test_queue_get_zombies() -> None:
     job_type = "test_type"
+    test_difficulty = 50
     queue = Queue()
     with patch("libcommon.queue.get_datetime", get_old_datetime):
         zombie = queue.add_job(
-            job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split1"
+            job_type=job_type,
+            dataset="dataset1",
+            revision="revision",
+            config="config",
+            split="split1",
+            difficulty=test_difficulty,
         )
         queue.start_job(job_types_only=[job_type])
-    queue.add_job(job_type=job_type, dataset="dataset1", revision="revision", config="config", split="split2")
+    queue.add_job(
+        job_type=job_type,
+        dataset="dataset1",
+        revision="revision",
+        config="config",
+        split="split2",
+        difficulty=test_difficulty,
+    )
     queue.start_job(job_types_only=[job_type])
     assert queue.get_zombies(max_seconds_without_heartbeat=10) == [zombie.info()]
     assert queue.get_zombies(max_seconds_without_heartbeat=-1) == []

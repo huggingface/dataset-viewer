@@ -36,6 +36,7 @@ class JobInfo(TypedDict):
     type: str
     params: JobParams
     priority: Priority
+    difficulty: int
 
 
 class FlatJobInfo(TypedDict):
@@ -47,6 +48,7 @@ class FlatJobInfo(TypedDict):
     split: Optional[str]
     priority: str
     status: str
+    difficulty: int
     created_at: datetime
 
 

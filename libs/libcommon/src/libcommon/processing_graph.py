@@ -19,7 +19,11 @@ from typing import (
 
 import networkx as nx
 
-from libcommon.constants import DEFAULT_INPUT_TYPE, DEFAULT_JOB_RUNNER_VERSION
+from libcommon.constants import (
+    DEFAULT_DIFFICULTY,
+    DEFAULT_INPUT_TYPE,
+    DEFAULT_JOB_RUNNER_VERSION,
+)
 from libcommon.utils import inputs_to_string
 
 InputType = Literal["dataset", "config", "split"]
@@ -54,6 +58,7 @@ class ProcessingStepSpecification(TypedDict, total=False):
     provides_config_split_names: bool
     provides_config_parquet: bool
     provides_config_parquet_metadata: bool
+    difficulty: int
 
 
 ProcessingGraphSpecification = Mapping[str, ProcessingStepSpecification]
@@ -80,6 +85,7 @@ class ProcessingStep:
     name: str
     input_type: InputType
     job_runner_version: int
+    difficulty: int
 
     cache_kind: str = field(init=False)
     job_type: str = field(init=False)
@@ -98,6 +104,7 @@ class ProcessingStep:
             name=self.name,
             input_type=self.input_type,
             job_runner_version=self.job_runner_version,
+            difficulty=self.difficulty,
         )
 
 
@@ -192,6 +199,7 @@ class ProcessingGraph:
                 name=name,
                 input_type=input_type,
                 job_runner_version=specification.get("job_runner_version", DEFAULT_JOB_RUNNER_VERSION),
+                difficulty=specification.get("difficulty", DEFAULT_DIFFICULTY),
             )
             _processing_step_names_by_input_type[input_type].append(name)
         for name, specification in self.processing_graph_specification.items():

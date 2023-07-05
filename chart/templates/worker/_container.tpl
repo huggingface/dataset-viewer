@@ -16,6 +16,10 @@
   {{ include "envDatasetsBased" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ printf "%s/%s/datasets" .Values.cacheDirectory .workerValues.deployName | quote }}
+  - name: WORKER_DIFFICULTY_MAX
+    value: {{ .workerValues.workerDifficultyMax | quote }}
+  - name: WORKER_DIFFICULTY_MIN
+    value: {{ .workerValues.workerDifficultyMin | quote }}
   - name: WORKER_JOB_TYPES_BLOCKED
     value: {{ .workerValues.workerJobTypesBlocked | quote }}
   - name: WORKER_JOB_TYPES_ONLY

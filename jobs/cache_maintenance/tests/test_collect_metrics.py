@@ -25,7 +25,12 @@ def test_collect_metrics() -> None:
     processing_step = processing_graph.get_processing_step(processing_step_name)
     queue = Queue()
     queue.add_job(
-        job_type=processing_step.job_type, dataset="dataset", revision="revision", config="config", split="split"
+        job_type=processing_step.job_type,
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        difficulty=50,
     )
     upsert_response(
         kind=processing_step.cache_kind,

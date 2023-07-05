@@ -292,6 +292,8 @@ rows:
 workers:
   -
     deployName: "all"
+    workerDifficultyMax: ""
+    workerDifficultyMin: ""
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -307,6 +309,8 @@ workers:
     tolerations: []
   -
     deployName: "light"
+    workerDifficultyMax: ""
+    workerDifficultyMin: ""
     workerJobTypesBlocked: ""
     workerJobTypesOnly: "config-parquet,dataset-parquet,config-info,dataset-info,config-split-names-from-info,config-size,dataset-size,dataset-split-names,dataset-is-valid,split-image-url-columns,split-opt-in-out-urls-count,config-opt-in-out-urls-count,dataset-opt-in-out-urls-count"
     nodeSelector:

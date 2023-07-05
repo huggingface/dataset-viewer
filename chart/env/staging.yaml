@@ -233,6 +233,8 @@ rows:
 workers:
   -
     deployName: "all"
+    workerDifficultyMax: ""
+    workerDifficultyMin: ""
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
@@ -247,6 +249,8 @@ workers:
     tolerations: []
   -
     deployName: "light"
+    workerDifficultyMax: ""
+    workerDifficultyMin: ""
     workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
     workerJobTypesOnly: ""
     nodeSelector: {}

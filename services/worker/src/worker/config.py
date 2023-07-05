@@ -16,6 +16,8 @@ from libcommon.config import (
 )
 
 WORKER_CONTENT_MAX_BYTES = 10_000_000
+WORKER_DIFFICULTY_MAX = None
+WORKER_DIFFICULTY_MIN = None
 WORKER_ENDPOINT = "/config-names"
 WORKER_HEARTBEAT_INTERVAL_SECONDS = 60
 WORKER_KILL_LONG_JOB_INTERVAL_SECONDS = 60
@@ -36,6 +38,8 @@ def get_empty_str_list() -> List[str]:
 @dataclass(frozen=True)
 class WorkerConfig:
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
+    difficulty_max: Optional[int] = WORKER_DIFFICULTY_MAX
+    difficulty_min: Optional[int] = WORKER_DIFFICULTY_MIN
     heartbeat_interval_seconds: float = WORKER_HEARTBEAT_INTERVAL_SECONDS
     job_types_blocked: list[str] = field(default_factory=get_empty_str_list)
     job_types_only: list[str] = field(default_factory=get_empty_str_list)
@@ -56,6 +60,8 @@ class WorkerConfig:
         with env.prefixed("WORKER_"):
             return cls(
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
+                difficulty_max=env.int(name="DIFFICULTY_MAX", default=WORKER_DIFFICULTY_MAX),
+                difficulty_min=env.int(name="DIFFICULTY_MIN", default=WORKER_DIFFICULTY_MIN),
                 heartbeat_interval_seconds=env.float(
                     name="HEARTBEAT_INTERVAL_SECONDS", default=WORKER_HEARTBEAT_INTERVAL_SECONDS
                 ),
