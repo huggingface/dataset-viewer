@@ -35,6 +35,30 @@ FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
 
+COMPUTE_NAN_COUNTS_COMMAND = """
+    SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;
+"""
+COMPUTE_CATEGORIES_COUNTS_COMMAND = """
+    SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
+"""
+COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
+    SELECT min({column_name}), max({column_name}), mean({column_name}), 
+    median({column_name}), stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
+"""
+CREATE_BINS_TABLE_COMMAND = """
+    CREATE OR REPLACE TEMPORARY TABLE bins AS 
+        SELECT range bin_id, 
+            {min_value} + ({max_value} - {min_value}) * (range/n::double) as bin_min,
+            {min_value} + ({max_value} - {min_value}) * ((range+1)/n::double) as bin_max
+        FROM 
+            SELECT *, max(range) over() + 1 as n FROM range(0,{n_bins})
+ """
+COMPUTE_HIST_COMMAND = """
+    SELECT bin_max, COUNT(*) as count FROM read_parquet('{parquet_filename}') 
+        JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_max;
+"""
+
+
 class Histogram(TypedDict):
     hist: List[int]
     bin_edges: List[float]
@@ -76,20 +100,26 @@ def compute_histogram(
     parquet_filename: Path,
     bin_size: int,
     min_value: Union[int, float],
+    max_value: Union[int, float],
     n_bins: int,
     n_samples: Optional[int] = None,
 ) -> Histogram:
-    hist_query = f"""
-    SELECT CAST(FLOOR("{column_name}"/{bin_size}) as INT), COUNT(*)
-     FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
-    """
+    create_bins_table_command = CREATE_BINS_TABLE_COMMAND.format(min_value=min_value, max_value=max_value, n_bins=n_bins)
+    con.sql(create_bins_table_command)
+    # hist_query = f"""
+    # SELECT CAST(FLOOR("{column_name}"/{bin_size}) as INT), COUNT(*)
+    #  FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NOT NULL GROUP BY 1 ORDER BY 1;
+    # """
+    compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
     logging.debug(f"Compute histogram for {column_name}")
-    hist_query_result = dict(con.sql(hist_query).fetchall())
+    hist_query_result = list(zip(*con.sql(compute_hist_command).fetchall()))  # result is list tuples (bin_max,n_count)
+
     if len(hist_query_result) > n_bins + 1:
         raise StatsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
+    bins_id_to_max = dict(con.sql("select bin_id, bin_max from bins").fetchall())
     bins, hist = [], []
     for bin_idx in range(n_bins):
         # no key in query result = no examples in this range, so we add 0 manually:
