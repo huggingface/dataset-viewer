@@ -61,6 +61,7 @@ def test_create_job_runner(
         },
         "job_id": "job_id",
         "priority": Priority.NORMAL,
+        "difficulty": 50,
     }
     if expected_job_runner is None:
         with pytest.raises(KeyError):

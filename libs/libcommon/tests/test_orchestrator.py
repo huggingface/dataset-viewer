@@ -25,6 +25,7 @@ from .utils import (
     ARTIFACT_DH,
     CONFIG_NAMES_CONTENT,
     DATASET_NAME,
+    DIFFICULTY,
     JOB_RUNNER_VERSION,
     PROCESSING_GRAPH_FAN_IN_OUT,
     PROCESSING_GRAPH_GENEALOGY,
@@ -151,6 +152,7 @@ def test_finish_job(
         split=None,
         job_type=STEP_DA,
         priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
     )
     job_info = Queue().start_job()
     job_result = JobResult(

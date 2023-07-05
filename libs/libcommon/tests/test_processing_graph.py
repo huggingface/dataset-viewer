@@ -12,6 +12,8 @@ from libcommon.processing_graph import (
     ProcessingStep,
 )
 
+DIFFICULTY = 50
+
 
 def assert_lists_are_equal(a: List[ProcessingStep], b: List[str]) -> None:
     assert sorted(processing_step.name for processing_step in a) == sorted(b)

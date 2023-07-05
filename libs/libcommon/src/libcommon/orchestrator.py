@@ -294,6 +294,7 @@ class AfterJobPlan(Plan):
                         "revision": self.revision,
                     },
                     "priority": self.priority,
+                    "difficulty": next_processing_step.difficulty,
                 }
             )
 
@@ -563,6 +564,7 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
+                        "difficulty": artifact_state.processing_step.difficulty,
                     }
                 )
             else:

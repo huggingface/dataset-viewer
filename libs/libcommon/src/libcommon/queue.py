@@ -17,7 +17,7 @@ import pandas as pd
 import pytz
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import DateTimeField, EnumField, StringField
+from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -69,6 +69,7 @@ class JobDict(TypedDict):
     namespace: str
     priority: str
     status: str
+    difficulty: int
     created_at: datetime
     started_at: Optional[datetime]
     finished_at: Optional[datetime]
@@ -108,6 +109,13 @@ class NoWaitingJobError(Exception):
     pass
 
 
+class JobQueryFilters(TypedDict, total=False):
+    type__nin: List[str]
+    type__in: List[str]
+    difficulty__gte: int
+    difficulty__lte: int
+
+
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
@@ -128,6 +136,7 @@ class JobDocument(Document):
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
         status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
+        difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
         finished_at (`datetime`, optional): When the job has finished.
@@ -168,6 +177,7 @@ class JobDocument(Document):
     namespace = StringField(required=True)
     priority = EnumField(Priority, default=Priority.LOW)
     status = EnumField(Status, default=Status.WAITING)
+    difficulty = IntField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     finished_at = DateTimeField()
@@ -184,6 +194,7 @@ class JobDocument(Document):
             "namespace": self.namespace,
             "priority": self.priority.value,
             "status": self.status.value,
+            "difficulty": self.difficulty,
             "created_at": self.created_at,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
@@ -204,6 +215,7 @@ class JobDocument(Document):
                     "split": self.split,
                 },
                 "priority": self.priority,
+                "difficulty": self.difficulty,
             }
         )
 
@@ -225,6 +237,7 @@ class JobDocument(Document):
                 "split": self.split,
                 "priority": self.priority.value,
                 "status": self.status.value,
+                "difficulty": self.difficulty,
                 "created_at": self.created_at,
             }
         )
@@ -333,9 +346,10 @@ class Queue:
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config and split, NOT revision)
     - a job can be in one of the following states: waiting, started, success, error, cancelled
-    - a job can be in the queue only once (unicity_id) in the "started" or "waiting" state
-    - a job can be in the queue multiple times in the other states (success, error, cancelled)
+    - a job can be in the queue only once (unicity_id) in the "started" state
+    - a job can be in the queue multiple times in the other states
     - a job has a priority (two levels: NORMAL and LOW)
+    - a job has a difficulty (from 0: easy to 100: hard, as a convention)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
     """
@@ -345,6 +359,7 @@ class Queue:
         job_type: str,
         dataset: str,
         revision: str,
+        difficulty: int,
         config: Optional[str] = None,
         split: Optional[str] = None,
         priority: Priority = Priority.LOW,
@@ -358,6 +373,7 @@ class Queue:
             job_type (`str`): The type of the job
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
+            difficulty (`int`): The difficulty of the job.
             config (`str`, optional): The config on which to apply the job.
             split (`str`, optional): The config on which to apply the job.
             priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
@@ -375,6 +391,7 @@ class Queue:
             priority=priority,
             created_at=get_datetime(),
             status=Status.WAITING,
+            difficulty=difficulty,
         ).save()
 
     def create_jobs(self, job_infos: List[JobInfo]) -> int:
@@ -406,6 +423,7 @@ class Queue:
                     priority=job_info["priority"],
                     created_at=get_datetime(),
                     status=Status.WAITING,
+                    difficulty=job_info["difficulty"],
                 )
                 for job_info in job_infos
             ]
@@ -435,6 +453,8 @@ class Queue:
     def _get_next_waiting_job_for_priority(
         self,
         priority: Priority,
+        difficulty_min: Optional[int] = None,
+        difficulty_max: Optional[int] = None,
         job_types_blocked: Optional[list[str]] = None,
         job_types_only: Optional[list[str]] = None,
     ) -> JobDocument:
@@ -447,6 +467,8 @@ class Queue:
 
         Args:
             priority (`Priority`): The priority of the job.
+            difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
+            difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
             job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
@@ -459,11 +481,15 @@ class Queue:
             f"Getting next waiting job for priority {priority}, blocked types: {job_types_blocked}, only types:"
             f" {job_types_only}"
         )
-        filters = {}
+        filters: JobQueryFilters = {}
         if job_types_blocked:
             filters["type__nin"] = job_types_blocked
         if job_types_only:
             filters["type__in"] = job_types_only
+        if difficulty_min:
+            filters["difficulty__gte"] = difficulty_min
+        if difficulty_max:
+            filters["difficulty__lte"] = difficulty_max
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
@@ -520,7 +546,11 @@ class Queue:
         raise EmptyQueueError("no job available with the priority")
 
     def get_next_waiting_job(
-        self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
+        self,
+        difficulty_min: Optional[int] = None,
+        difficulty_max: Optional[int] = None,
+        job_types_blocked: Optional[list[str]] = None,
+        job_types_only: Optional[list[str]] = None,
     ) -> JobDocument:
         """Get the next job in the queue.
 
@@ -531,6 +561,8 @@ class Queue:
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
+            difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
+            difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
             job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
@@ -542,7 +574,11 @@ class Queue:
         for priority in [Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
                 return self._get_next_waiting_job_for_priority(
-                    priority=priority, job_types_blocked=job_types_blocked, job_types_only=job_types_only
+                    priority=priority,
+                    job_types_blocked=job_types_blocked,
+                    job_types_only=job_types_only,
+                    difficulty_min=difficulty_min,
+                    difficulty_max=difficulty_max,
                 )
         raise EmptyQueueError("no job available")
 
@@ -604,7 +640,11 @@ class Queue:
             ) from err
 
     def start_job(
-        self, job_types_blocked: Optional[list[str]] = None, job_types_only: Optional[list[str]] = None
+        self,
+        difficulty_min: Optional[int] = None,
+        difficulty_max: Optional[int] = None,
+        job_types_blocked: Optional[list[str]] = None,
+        job_types_only: Optional[list[str]] = None,
     ) -> JobInfo:
         """Start the next job in the queue.
 
@@ -612,6 +652,8 @@ class Queue:
         can start a job at a time.
 
         Args:
+            difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
+            difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
             job_types_blocked: if not None, jobs of the given types are not considered.
             job_types_only: if not None, only jobs of the given types are considered.
 
@@ -626,7 +668,10 @@ class Queue:
 
         logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
         next_waiting_job = self.get_next_waiting_job(
-            job_types_blocked=job_types_blocked, job_types_only=job_types_only
+            job_types_blocked=job_types_blocked,
+            job_types_only=job_types_only,
+            difficulty_min=difficulty_min,
+            difficulty_max=difficulty_max,
         )
         logging.debug(f"job found: {next_waiting_job}")
         # ^ can raise EmptyQueueError
@@ -764,7 +809,12 @@ class Queue:
         for job in JobDocument.objects(type=job_type, status=Status.STARTED.value):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.add_job(
-                job_type=job.type, dataset=job.dataset, revision=job.revision, config=job.config, split=job.split
+                job_type=job.type,
+                dataset=job.dataset,
+                revision=job.revision,
+                config=job.config,
+                split=job.split,
+                difficulty=job.difficulty,
             )
 
     def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:

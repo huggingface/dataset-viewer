@@ -125,6 +125,7 @@ def test_queue_delete_ttl_index(mongo_host: str) -> None:
             unicity_id="test",
             namespace="test",
             created_at=get_datetime(),
+            difficulty=50,
         ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         assert (

@@ -11,6 +11,8 @@ Use environment variables to configure the workers. The prefix of each environme
 Set environment variables to configure the worker.
 
 - `WORKER_CONTENT_MAX_BYTES`: the maximum size in bytes of the response content computed by a worker (to prevent returning big responses in the REST API). Defaults to `10_000_000`.
+- `WORKER_DIFFICULTY_MAX`: the maximum difficulty of the jobs to process. Defaults to None.
+- `WORKER_DIFFICULTY_MIN`: the minimum difficulty of the jobs to process. Defaults to None.
 - `WORKER_HEARTBEAT_INTERVAL_SECONDS`: the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue. Defaults to `60` (1 minute).
 - `WORKER_JOB_TYPES_BLOCKED`: comma-separated list of job types that will not be processed, e.g. "dataset-config-names,dataset-split-names". If empty, no job type is blocked. Defaults to empty.
 - `WORKER_JOB_TYPES_ONLY`: comma-separated list of the non-blocked job types to process, e.g. "dataset-config-names,dataset-split-names". If empty, the worker processes all the non-blocked jobs. Defaults to empty.
