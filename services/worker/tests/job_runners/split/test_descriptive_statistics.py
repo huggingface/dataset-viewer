@@ -2,9 +2,12 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Callable, Optional
+from typing import Callable, List, Mapping, Optional
 
+import numpy as np
+import pandas as pd
 import pytest
+from datasets import Dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -14,6 +17,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.split.descriptive_statistics import (
+    DECIMALS,
     SplitDescriptiveStatisticsJobRunner,
 )
 from worker.resources import LibrariesResource
@@ -121,7 +125,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "class_label_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 0,
                 "nan_proportion": 0.0,
                 "n_unique": 2,
@@ -132,7 +136,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "class_label_nan_column",
             "column_type": "class_label",
             "column_dtype": None,
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 4,
                 "nan_proportion": 0.2,
                 "n_unique": 3,
@@ -143,7 +147,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "int_column",
             "column_type": "int",
             "column_dtype": "int32",
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 0,
                 "nan_proportion": 0.0,
                 "min": 0,
@@ -158,7 +162,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "int_nan_column",
             "column_type": "int",
             "column_dtype": "int32",
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 6,
                 "nan_proportion": 0.3,
                 "min": 0,
@@ -173,7 +177,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "float_column",
             "column_type": "float",
             "column_dtype": "float32",
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 0,
                 "nan_proportion": 0.0,
                 "min": 0.1,
@@ -191,7 +195,7 @@ EXPECTED_STATS_CONTENT = {
             "column_name": "float_nan_column",
             "column_type": "float",
             "column_dtype": "float32",
-            "column_stats": {
+            "column_statistics": {
                 "nan_count": 8,
                 "nan_proportion": 0.4,
                 "min": 0.2,
@@ -205,8 +209,101 @@ EXPECTED_STATS_CONTENT = {
                 },
             },
         },
+        {
+            "column_name": "float_negative_column",
+            "column_type": "float",
+            "column_dtype": "float32",
+            "column_statistics": {
+                "nan_count": 0,
+                "nan_proportion": 0.0,
+                "min": -15.754,
+                "max": -5.333,
+                "mean": -9.8159,
+                "median": -9.0,
+                "std": 3.03655,
+                "histogram": {
+                    "hist": [2, 1, 2, 1, 1, 2, 2, 3, 5, 1],
+                    "bin_edges": [0.2, 1.17, 2.14, 3.11, 4.08, 5.05, 6.02, 6.99, 7.96, 8.93],
+                },
+            },
+        },
     ],
 }
+
+
+def count_expected_statistics_for_numerical_column(column: pd.Series):
+    minimum, maximum, mean, median, std = (
+        column.min().round(DECIMALS),
+        column.max().round(DECIMALS),
+        column.mean().round(DECIMALS),
+        column.median().round(DECIMALS),
+        column.std().round(DECIMALS),
+    )
+    n_samples = column.shape[0]
+    nan_count = column.isna().sum()
+    hist, bin_edges = np.histogram(column[~column.isna()])
+    return {
+        "nan_count": nan_count,
+        "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+        "min": minimum,
+        "max": maximum,
+        "mean": mean,
+        "median": median,
+        "std": std,
+        "histogram": {
+            "hist": hist.tolist(),
+            "bin_edges": bin_edges.round(DECIMALS).tolist(),
+        },
+    }
+
+
+def count_expected_statistics_for_categorical_column(column: pd.Series, class_labels: List[str]):
+    n_samples = column.shape[0]
+    nan_count = column.isna().sum()
+    value_counts = column.value_counts().to_dict()
+    n_unique = len(value_counts)
+    frequencies = {class_labels[int(class_id)]: class_count for class_id, class_count in value_counts.items()}
+    return {
+        "nan_count": nan_count,
+        "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+        "n_unique": n_unique,
+        "frequencies": frequencies,
+    }
+
+
+@pytest.fixture
+def descriptive_statistics_expected(
+    datasets: Mapping[str, Dataset], hub_responses_descriptive_statistics: HubDatasetTest
+):
+    columns_to_types = {
+        "int_column": "INT",
+        "float_column": "FLOAT",
+        "float_nan_column": "FLOAT",
+        "class_label_column": "CLASS_LABEL",
+        "class_label_nan_column": "CLASS_LABEL",
+        "float_negative_column": "FLOAT",
+    }
+    ds = datasets["descriptive_statistics"]
+    df = ds.to_pandas()
+    expected_statistics = {}
+    for column_name in df.columns:
+        column_type = columns_to_types[column_name]
+        if column_type in ["FLOAT", "INT"]:
+            column_stats = count_expected_statistics_for_numerical_column(df[column_name])
+            expected_statistics[column_name] = {
+                "column_name": column_name,
+                "column_type": column_type,
+                "column_statistics": column_stats,
+            }
+        elif column_type == "CLASS_LABEL":
+            class_labels = ds.features[column_name].names
+            column_stats = count_expected_statistics_for_categorical_column(df[column_name], class_labels=class_labels)
+            expected_statistics[column_name] = {
+                "column_name": column_name,
+                "column_type": column_type,
+                "column_statistics": column_stats,
+            }
+    return expected_statistics
 
 
 @pytest.mark.parametrize(
