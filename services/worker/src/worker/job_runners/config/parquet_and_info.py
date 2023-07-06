@@ -542,7 +542,7 @@ def _is_too_big_from_external_data_files(
     return False
 
 
-def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
+def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -> Optional[int]:
     """
     Get the writer_batch_size that defines the maximum row group size in the parquet files.
     The default in `datasets` is 1,000 but we lower it to 100 for image datasets.
@@ -564,6 +564,36 @@ def get_writer_batch_size(ds_config_info: datasets.info.DatasetInfo) -> Optional
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS
     else:
         return None
+
+
+def get_writer_batch_size_from_row_group_size(
+    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, factor_of: int = 100, divide_step: int = 10
+) -> int:
+    """
+    Get the writer_batch_size that defines the maximum row group size in the parquet files,
+    given a sample row group size that mught be too big.
+
+    This allows to optimize random access to parquet file, since accessing 1 row requires
+    to read its entire row group.
+
+    Args:
+        num_rows (`int`):
+            Number of rows in the sample row group.
+        row_group_byte_size (`int`):
+            Number of bytes of uncompressed data in the sample row group.
+        max_row_group_byte_size (`int`):
+            Maximum number of bytes of uncompressed data for batches that
+            will be passed to a dataset builder.
+    Returns:
+        writer_batch_size (`Optional[int]`):
+            Writer batch size to pass to a dataset builder.
+    """
+    writer_batch_size = max(num_rows // factor_of * factor_of, factor_of)
+    writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows
+    while writer_batch_size > factor_of and writer_batch_byte_size > max_row_group_byte_size:
+        writer_batch_size = max(writer_batch_size // divide_step // factor_of * factor_of, factor_of)
+        writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows
+    return writer_batch_size
 
 
 def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
@@ -618,9 +648,10 @@ class ParquetValidationError(ValueError):
 class TooBigRowGroupsError(ParquetValidationError):
     """When a parquet file has row groups that are too big for copy"""
 
-    def __init__(self, *args: object, row_group_metadata: pq.RowGroupMetaData) -> None:
+    def __init__(self, *args: object, num_rows: int, row_group_size: int) -> None:
         super().__init__(*args)
-        self.row_group_metadata = row_group_metadata
+        self.num_rows = num_rows
+        self.row_group_size = row_group_size
 
 
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
@@ -646,8 +677,8 @@ def retry_and_validate_get_parquet_file_and_size(
 
 
 class ParquetFileValidator:
-    def __init__(self, max_row_group_size: int, max_validation: int = 5) -> None:
-        self.max_row_group_size = max_row_group_size
+    def __init__(self, max_row_group_byte_size: int, max_validation: int = 5) -> None:
+        self.max_row_group_byte_size = max_row_group_byte_size
         self.num_validations = 0
         self.max_validations = max_validation
 
@@ -656,13 +687,14 @@ class ParquetFileValidator:
             return
         row_group_metadata = pf.metadata.row_group(0)
         row_group_size = row_group_metadata.total_byte_size
-        if row_group_metadata.total_byte_size > self.max_row_group_size:
+        if row_group_metadata.total_byte_size > self.max_row_group_byte_size:
             raise TooBigRowGroupsError(
                 (
                     f"Parquet file has too big row groups. First row group has {row_group_size} which exceeds the"
-                    f" limit of {self.max_row_group_size}"
+                    f" limit of {self.max_row_group_byte_size}"
                 ),
-                row_group_metadata=row_group_metadata,
+                num_rows=row_group_metadata.num_rows,
+                row_group_size=row_group_metadata.total_byte_size,
             )
         self.num_validations += 1
 
@@ -836,7 +868,7 @@ def stream_convert_to_parquet(
     builder: DatasetBuilder, max_dataset_size: int, writer_batch_size: Optional[int] = None
 ) -> Tuple[List[CommitOperationAdd], bool]:
     """Stream and prepare the dataset as parquet files and fills the builder info."""
-    writer_batch_size = writer_batch_size or get_writer_batch_size(builder.info)
+    writer_batch_size = writer_batch_size or get_writer_batch_size_from_info(builder.info)
     if writer_batch_size is not None and (
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
@@ -878,7 +910,7 @@ def stream_convert_to_parquet(
 def convert_to_parquet(builder: DatasetBuilder) -> List[CommitOperationAdd]:
     """Download and prepare the dataset as parquet files and fills the builder info."""
     # prepare the parquet files locally
-    writer_batch_size = get_writer_batch_size(builder.info)
+    writer_batch_size = get_writer_batch_size_from_info(builder.info)
     if writer_batch_size is not None and (
         builder._writer_batch_size is None or builder._writer_batch_size > writer_batch_size
     ):
@@ -1097,7 +1129,7 @@ def compute_config_parquet_and_info_response(
     blocked_datasets: List[str],
     max_dataset_size: int,
     max_external_data_files: int,
-    max_row_group_size_for_copy: int,
+    max_row_group_byte_size_for_copy: int,
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
@@ -1135,7 +1167,7 @@ def compute_config_parquet_and_info_response(
             can be fetched), it will be allowed.
         max_external_data_files (`int`):
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
-        max_row_group_size_for_copy (`int`):
+        max_row_group_byte_size_for_copy (`int`):
             The maximum size in bytes of parquet files that are allowed to be copied without being converted.
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
@@ -1227,18 +1259,14 @@ def compute_config_parquet_and_info_response(
     if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
         try:
             parquet_operations = copy_parquet_files(builder)
-            validate = ParquetFileValidator(max_row_group_size=max_row_group_size_for_copy).validate
+            validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
             fill_builder_info(builder, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
-            # and with a batch_byte_size is smaller than max_row_group_size_for_copy
-            writer_batch_size = max(err.row_group_metadata.num_rows // 100 * 100, 100)
-            batch_byte_size = (
-                err.row_group_metadata.total_byte_size * writer_batch_size / err.row_group_metadata.num_rows
+            # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
+            writer_batch_size = get_writer_batch_size_from_row_group_size(
+                num_rows=err.num_rows, row_group_size=err.row_group_size
             )
-            while writer_batch_size >= 100 and batch_byte_size > max_row_group_size_for_copy:
-                writer_batch_size = writer_batch_size // 10
-                batch_byte_size = batch_byte_size / 10
             parquet_operations, partial = stream_convert_to_parquet(
                 builder, max_dataset_size=max_dataset_size, writer_batch_size=writer_batch_size
             )
@@ -1365,6 +1393,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 blocked_datasets=self.parquet_and_info_config.blocked_datasets,
                 max_dataset_size=self.parquet_and_info_config.max_dataset_size,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
-                max_row_group_size_for_copy=self.parquet_and_info_config.max_row_group_size_for_copy,
+                max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
             )
         )
