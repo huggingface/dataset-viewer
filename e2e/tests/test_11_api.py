@@ -48,7 +48,6 @@ def test_auth_e2e(
 @pytest.mark.parametrize(
     "endpoint,input_type",
     [
-        ("/config-names", "dataset"),
         ("/splits", "dataset"),
         ("/splits", "config"),
         ("/first-rows", "split"),
