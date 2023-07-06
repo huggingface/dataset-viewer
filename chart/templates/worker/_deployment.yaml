@@ -34,6 +34,5 @@ spec:
         {{ include "volumeCache" . | nindent 8 }} 
         {{ include "volumeData" . | nindent 8 }}
         {{ include "volumeDuckDB" . | nindent 8 }}
-        {{ include "volumeParquet" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
 {{- end -}}
