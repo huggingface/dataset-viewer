@@ -955,7 +955,8 @@ def test_fill_builder_info(
         with pytest.raises(TooBigRowGroupsError) as exc_info:
             fill_builder_info(builder, hf_token=None, validate=validate)
         assert isinstance(exc_info.value, TooBigRowGroupsError)
-        assert isinstance(exc_info.value.row_group_metadata, pq.RowGroupMetaData)
+        assert isinstance(exc_info.value.num_rows, int)
+        assert isinstance(exc_info.value.row_group_byte_size, int)
     else:
         fill_builder_info(builder, hf_token=None, validate=validate)
         expected_info = hub_reponses_big["parquet_and_info_response"]["dataset_info"]

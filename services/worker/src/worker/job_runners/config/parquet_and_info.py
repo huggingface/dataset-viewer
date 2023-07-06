@@ -648,10 +648,10 @@ class ParquetValidationError(ValueError):
 class TooBigRowGroupsError(ParquetValidationError):
     """When a parquet file has row groups that are too big for copy"""
 
-    def __init__(self, *args: object, num_rows: int, row_group_size: int) -> None:
+    def __init__(self, *args: object, num_rows: int, row_group_byte_size: int) -> None:
         super().__init__(*args)
         self.num_rows = num_rows
-        self.row_group_size = row_group_size
+        self.row_group_byte_size = row_group_byte_size
 
 
 def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
@@ -677,6 +677,17 @@ def retry_and_validate_get_parquet_file_and_size(
 
 
 class ParquetFileValidator:
+    """
+    Validate the Parquet files before they are copied to the target revision.
+    In particular we check that the row group size is not too big, otherwise the dataset viewer
+    doesn't work correctly.
+
+    Note: we only validate the first parquet files (default 5 first files).
+    We don't want to check the biggest row group of all the dataset, but rather just get the order
+    of magnitude of the size. Otherwise we might end up converting a dataset that has 99% good row
+    groups but 1% that is a bit too big, which is overkill.
+    """
+
     def __init__(self, max_row_group_byte_size: int, max_validation: int = 5) -> None:
         self.max_row_group_byte_size = max_row_group_byte_size
         self.num_validations = 0
@@ -694,7 +705,7 @@ class ParquetFileValidator:
                     f" limit of {self.max_row_group_byte_size}"
                 ),
                 num_rows=row_group_metadata.num_rows,
-                row_group_size=row_group_metadata.total_byte_size,
+                row_group_byte_size=row_group_metadata.total_byte_size,
             )
         self.num_validations += 1
 
@@ -1265,7 +1276,9 @@ def compute_config_parquet_and_info_response(
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
             writer_batch_size = get_writer_batch_size_from_row_group_size(
-                num_rows=err.num_rows, row_group_size=err.row_group_size
+                num_rows=err.num_rows,
+                row_group_byte_size=err.row_group_byte_size,
+                max_row_group_byte_size=max_row_group_byte_size_for_copy,
             )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder, max_dataset_size=max_dataset_size, writer_batch_size=writer_batch_size
