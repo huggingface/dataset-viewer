@@ -84,6 +84,15 @@ secrets:
 persistence:
   existingClaim: "nfs-datasets-server-pvc"
 
+cachePersistence:
+  existingClaim: "datasets-server-cache-pvc"
+
+parquetPersistence:
+  existingClaim: "datasets-server-parquet-pvc"
+
+duckdbPersistence:
+  existingClaim: "datasets-server-duckdb-pvc"
+
 monitoring:
   enabled: true
 

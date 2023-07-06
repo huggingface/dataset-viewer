@@ -105,6 +105,15 @@ persistence:
   storageClass: ""
   size: 20Gi
 
+cachePersistence:
+  existingClaim: ""
+
+parquetPersistence:
+  existingClaim: ""
+
+duckdbPersistence:
+  existingClaim: ""
+
 monitoring:
   enabled: false
 

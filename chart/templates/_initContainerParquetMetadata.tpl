@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
+    name: parquet-data
     subPath: "{{ include "parquetMetadata.subpath" . }}"
     readOnly: false
   securityContext:
