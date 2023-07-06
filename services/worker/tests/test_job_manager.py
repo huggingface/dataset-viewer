@@ -71,6 +71,7 @@ def test_check_type(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -93,6 +94,7 @@ def test_check_type(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -132,6 +134,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         config=None,
         split=None,
         priority=priority,
+        difficulty=50,
     )
     job_info = queue.start_job()
     assert job_info["priority"] == priority
@@ -202,6 +205,7 @@ def test_job_runner_set_crashed(
         config=config,
         split=split,
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     job_info = queue.start_job()
 
@@ -260,6 +264,7 @@ def test_raise_if_parallel_response_exists(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -291,6 +296,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     processing_step_name = "dummy"
     processing_graph = ProcessingGraph(

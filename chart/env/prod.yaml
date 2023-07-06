@@ -294,11 +294,13 @@ rows:
 workers:
   -
     deployName: "all"
+    workerDifficultyMax: 100
+    workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 80
+    replicas: 60
     resources:
       requests:
         cpu: 1
@@ -309,8 +311,10 @@ workers:
     tolerations: []
   -
     deployName: "light"
+    workerDifficultyMax: 40
+    workerDifficultyMin: 0
     workerJobTypesBlocked: ""
-    workerJobTypesOnly: "config-parquet,config-parquet-metadata,dataset-parquet,config-info,dataset-info,config-split-names-from-info,config-size,dataset-size,dataset-split-names,dataset-is-valid,split-image-url-columns,split-opt-in-out-urls-count,config-opt-in-out-urls-count,dataset-opt-in-out-urls-count"
+    workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 12

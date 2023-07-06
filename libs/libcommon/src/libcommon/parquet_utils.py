@@ -397,6 +397,10 @@ class RowsIndex:
                 self.revision = result.response["dataset_git_revision"]
                 content = result.response["content"]
             if content and "parquet_files" in content:
+                logging.info(
+                    f"Create ParquetIndexWithoutMetadata for dataset={self.dataset}, config={self.config},"
+                    f" split={self.split}"
+                )
                 return ParquetIndexWithoutMetadata.from_parquet_file_items(
                     [
                         parquet_item
@@ -410,6 +414,10 @@ class RowsIndex:
                     unsupported_features_magic_strings=unsupported_features_magic_strings,
                 )
             else:
+                logging.info(
+                    f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config},"
+                    f" split={self.split}"
+                )
                 return ParquetIndexWithMetadata.from_parquet_metadata_items(
                     [
                         parquet_item
@@ -437,6 +445,10 @@ class RowsIndex:
         Returns:
             pa.Table: The requested rows.
         """
+        logging.info(
+            f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"
+            f" split={self.split}, offset={offset}, length={length}"
+        )
         return self.parquet_index.query(offset=offset, length=length)
 
 

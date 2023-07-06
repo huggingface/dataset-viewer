@@ -104,6 +104,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -691,6 +692,7 @@ def get_dataset_config_names_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -720,12 +722,14 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
             type="config-parquet-and-info",
             params=JobParams(dataset=dataset, revision=revision, config=config, split=None),
             priority=Priority.NORMAL,
+            difficulty=50,
         ),
         app_config=app_config,
         processing_step=ProcessingStep(
             name="config-parquet-and-info",
             input_type="config",
             job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+            difficulty=50,
         ),
         hf_datasets_cache=tmp_path,
     )
@@ -759,6 +763,7 @@ def test_concurrency(
         type="dataset-config-names",
         params=JobParams(dataset=repo_id, revision=revision, config=None, split=None),
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     queue = Queue()
     queue.create_jobs([job_info])

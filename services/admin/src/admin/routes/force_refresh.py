@@ -26,6 +26,7 @@ from admin.utils import (
 def create_force_refresh_endpoint(
     input_type: InputType,
     job_type: str,
+    difficulty: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -62,6 +63,7 @@ def create_force_refresh_endpoint(
             revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
             Queue().add_job(
                 job_type=job_type,
+                difficulty=difficulty,
                 dataset=dataset,
                 revision=revision,
                 config=config,

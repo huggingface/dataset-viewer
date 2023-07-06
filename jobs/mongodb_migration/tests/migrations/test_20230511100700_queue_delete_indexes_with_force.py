@@ -25,6 +25,7 @@ def test_queue_delete_indexes_with_force(mongo_host: str) -> None:
             unicity_id="test",
             namespace="test",
             created_at=get_datetime(),
+            difficulty=50,
         ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_JOBS].create_index(field_name)

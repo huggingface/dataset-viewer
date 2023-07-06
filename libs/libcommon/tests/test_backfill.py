@@ -33,6 +33,7 @@ from .utils import (
     CONFIG_NAME_1,
     CONFIG_NAMES,
     DATASET_NAME,
+    DIFFICULTY,
     OTHER_REVISION_NAME,
     PROCESSING_GRAPH_FAN_IN_OUT,
     PROCESSING_GRAPH_GENEALOGY,
@@ -812,7 +813,9 @@ def test_delete_jobs(
     queue = Queue()
     for job_spec in existing_jobs:
         (priority, status, created_at) = job_spec
-        job = queue.add_job(job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority)
+        job = queue.add_job(
+            job_type=STEP_DA, dataset="dataset", revision="revision", priority=priority, difficulty=DIFFICULTY
+        )
         if created_at is not None:
             job.created_at = created_at
             job.save()

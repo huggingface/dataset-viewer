@@ -69,7 +69,9 @@ def test_process_next_job(
     revision = "revision"
     config = "config"
     split = "split"
-    loop.queue.add_job(job_type=job_type, dataset=dataset, revision=revision, config=config, split=split)
+    loop.queue.add_job(
+        job_type=job_type, dataset=dataset, revision=revision, config=config, split=split, difficulty=50
+    )
     assert loop.queue.is_job_in_process(
         job_type=job_type, dataset=dataset, revision=revision, config=config, split=split
     )

@@ -32,6 +32,7 @@ CACHE_MAX_DAYS = 90
 CACHE_KIND = "cache_kind"
 CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
+DIFFICULTY = 50
 
 STEP_DATASET_A = "dataset-a"
 STEP_CONFIG_B = "config-b"
@@ -361,4 +362,5 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
         },
         type=processing_step_name,
         priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
     )

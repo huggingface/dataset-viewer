@@ -42,6 +42,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
             "split": "train",
         },
         priority=Priority.LOW,
+        difficulty=50,
     )
 
 
@@ -126,6 +127,7 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
         status=Status.STARTED,
         created_at=created_at,
         started_at=created_at + timedelta(microseconds=1),
+        difficulty=job_info["difficulty"],
     )
     job.save()
     yield job
@@ -159,6 +161,7 @@ def set_long_running_job_in_queue(
         created_at=created_at,
         started_at=created_at + timedelta(milliseconds=1),
         last_heartbeat=last_heartbeat,
+        difficulty=job_info["difficulty"],
     )
     job.save()
     yield job
@@ -189,6 +192,7 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
         created_at=created_at,
         started_at=created_at + timedelta(milliseconds=1),
         last_heartbeat=created_at + timedelta(milliseconds=2),
+        difficulty=job_info["difficulty"],
     )
     job.save()
     yield job
