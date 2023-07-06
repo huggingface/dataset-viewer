@@ -50,7 +50,8 @@ from worker.job_runners.config.parquet_and_info import (
     create_commits,
     fill_builder_info,
     get_delete_operations,
-    get_writer_batch_size,
+    get_writer_batch_size_from_info,
+    get_writer_batch_size_from_row_group_size,
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
@@ -624,8 +625,8 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
         (datasets.info.DatasetInfo(features=Features({"blob": Value("binary")})), True),
     ],
 )
-def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
-    assert get_writer_batch_size(ds_info) == (100 if has_big_chunks else None)
+def test_get_writer_batch_size_from_info(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
+    assert get_writer_batch_size_from_info(ds_info) == (100 if has_big_chunks else None)
 
 
 @pytest.mark.parametrize(
@@ -855,7 +856,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
         data_files={"train": [csv_path] * num_data_files},
         cache_dir=str(tmp_path / f"test_stream_convert_to_parquet-{max_dataset_size=}"),
     )
-    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
             parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
     num_shards = len(parquet_operations)
@@ -893,7 +894,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
 
     cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
-    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
             parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
     num_shards = len(parquet_operations)
@@ -936,8 +937,8 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
     "validate,too_big_row_groups",
     [
         (None, False),
-        (ParquetFileValidator(max_row_group_size=1).validate, True),
-        (ParquetFileValidator(max_row_group_size=100_000).validate, False),
+        (ParquetFileValidator(max_row_group_byte_size=1).validate, True),
+        (ParquetFileValidator(max_row_group_byte_size=100_000).validate, False),
     ],
 )
 def test_fill_builder_info(
@@ -959,3 +960,21 @@ def test_fill_builder_info(
         fill_builder_info(builder, hf_token=None, validate=validate)
         expected_info = hub_reponses_big["parquet_and_info_response"]["dataset_info"]
         assert expected_info == asdict(builder.info)
+
+
+@pytest.mark.parametrize(
+    "num_rows, row_group_byte_size, max_row_group_byte_size, expected",
+    [
+        (1000, 1000, 500, 100),
+        (1000, 1000_000, 500_000, 100),
+        (123456789, 123456789, 1000, 100),
+        (987654321, 987654321, 1000, 900),
+    ],
+)
+def test_get_writer_batch_size_from_row_group_size(
+    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, expected: int
+) -> None:
+    writer_batch_size = get_writer_batch_size_from_row_group_size(
+        num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
+    )
+    assert writer_batch_size == expected
