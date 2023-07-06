@@ -12,9 +12,7 @@ import pyarrow.parquet as pq
 from datasets import Features
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
-from huggingface_hub.hf_file_system import safe_quote
 
-from libcommon.constants import PARQUET_REVISION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
