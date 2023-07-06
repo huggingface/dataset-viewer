@@ -4,7 +4,7 @@
 {{- define "volumeMountCache" -}}
 - mountPath: {{ .Values.cacheDirectory | quote }}
   mountPropagation: None
-  name: data
+  name: cache-data
   subPath: "{{ include "cache.subpath" . }}"
   readOnly: false
 {{- end -}}
