@@ -282,8 +282,7 @@ class RowsIndex:
                 self.revision = result.response["dataset_git_revision"]
                 content = result.response["content"]
             logging.info(
-                f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config},"
-                f" split={self.split}"
+                f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
             )
             return ParquetIndexWithMetadata.from_parquet_metadata_items(
                 [
