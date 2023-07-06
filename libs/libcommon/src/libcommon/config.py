@@ -246,7 +246,7 @@ class ProcessingGraphConfig:
             },
             "split-first-rows-from-parquet": {
                 "input_type": "split",
-                "triggered_by": "config-parquet",
+                "triggered_by": "config-parquet-metadata",
                 "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
                 "difficulty": 40,
