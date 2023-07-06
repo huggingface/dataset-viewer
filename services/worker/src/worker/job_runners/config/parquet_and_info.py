@@ -611,8 +611,12 @@ class NotAParquetFileError(ValueError):
     pass
 
 
-class TooBigRowGroupsError(ValueError):
-    """When a parquet file has row groups that are bigger than"""
+class ParquetValidationError(ValueError):
+    """When a parquet file is not validated for copy"""
+
+
+class TooBigRowGroupsError(ParquetValidationError):
+    """When a parquet file has row groups that are too big for copy"""
 
     def __init__(self, *args: object, row_group_metadata: pq.RowGroupMetaData) -> None:
         super().__init__(*args)
@@ -664,7 +668,7 @@ class ParquetFileValidator:
 
 
 def fill_builder_info(
-    builder: DatasetBuilder, hf_token: Optional[str], validate: Callable[[pq.ParquetFile], None]
+    builder: DatasetBuilder, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> None:
     """Fill the builder DatasetInfo from the copied parquet files"""
     data_files = builder.config.data_files
@@ -687,6 +691,8 @@ def fill_builder_info(
                     disable=True,
                 )
                 parquet_files, sizes = zip(*parquet_files_and_sizes)
+            except ParquetValidationError:
+                raise
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
             if parquet_files:

@@ -9,7 +9,7 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Type, TypedDict
 from unittest.mock import patch
 
 import datasets.builder
@@ -23,6 +23,7 @@ from datasets import Audio, Features, Image, Value, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
+from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
@@ -41,10 +42,13 @@ from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    ParquetFileValidator,
+    TooBigRowGroupsError,
     _is_too_big_from_datasets,
     _is_too_big_from_external_data_files,
     _is_too_big_from_hub,
     create_commits,
+    fill_builder_info,
     get_delete_operations,
     get_writer_batch_size,
     limit_parquet_writes,
@@ -926,3 +930,32 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
         builder.download_and_prepare(file_format="parquet")
         assert builder.info.dataset_size == limiter.total_bytes <= expected_max_dataset_size
         assert builder.info.splits["train"].num_examples == num_examples < expected_max_num_examples
+
+
+@pytest.mark.parametrize(
+    "validate,too_big_row_groups",
+    [
+        (None, False),
+        (ParquetFileValidator(max_row_group_size=1).validate, True),
+        (ParquetFileValidator(max_row_group_size=100_000).validate, False),
+    ],
+)
+def test_fill_builder_info(
+    hub_reponses_big: HubDatasetTest,
+    tmp_path: Path,
+    validate: Optional[Callable[[pq.ParquetFile], None]],
+    too_big_row_groups: bool,
+) -> None:
+    cache_dir = str(tmp_path / "test_fill_builder_info")
+    name = hub_reponses_big["name"]
+    builder = load_dataset_builder(name, cache_dir=cache_dir)
+    builder.info = datasets.info.DatasetInfo()
+    if too_big_row_groups:
+        with pytest.raises(TooBigRowGroupsError) as exc_info:
+            fill_builder_info(builder, hf_token=None, validate=validate)
+        assert isinstance(exc_info.value, TooBigRowGroupsError)
+        assert isinstance(exc_info.value.row_group_metadata, pq.RowGroupMetaData)
+    else:
+        fill_builder_info(builder, hf_token=None, validate=validate)
+        expected_info = hub_reponses_big["parquet_and_info_response"]["dataset_info"]
+        assert expected_info == asdict(builder.info)
