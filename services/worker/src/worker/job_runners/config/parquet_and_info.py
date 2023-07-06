@@ -1230,7 +1230,7 @@ def compute_config_parquet_and_info_response(
             batch_byte_size = (
                 err.row_group_metadata.total_byte_size * writer_batch_size / err.row_group_metadata.num_rows
             )
-            while writer_batch_size >= 100 and batch_byte_size > max_row_group_size_for_copy / 10:
+            while writer_batch_size >= 100 and batch_byte_size > max_row_group_size_for_copy:
                 writer_batch_size = writer_batch_size // 10
                 batch_byte_size = batch_byte_size / 10
             parquet_operations, partial = stream_convert_to_parquet(
