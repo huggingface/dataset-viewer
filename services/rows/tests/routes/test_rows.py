@@ -255,10 +255,6 @@ def indexer(
     )
 
 
-def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    return paths
-
-
 @pytest.fixture
 def rows_index_with_parquet_metadata(
     indexer: Indexer,

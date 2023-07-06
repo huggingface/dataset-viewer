@@ -61,31 +61,6 @@ def get_supported_unsupported_columns(
     return supported_columns, unsupported_columns
 
 
-# TODO: how to invalidate the cache when the parquet branch is created or deleted?
-@lru_cache(maxsize=128)
-def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
-    """Get the Hugging Face filesystem.
-
-    Args:
-        hf_token (Optional[str]): The token to access the filesystem.
-    Returns:
-        HfFileSystem: The Hugging Face filesystem.
-    """
-    return HfFileSystem(token=hf_token)
-
-
-def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
-
-    Args:
-        paths (List[str]): List of paths.
-        dataset (str): The dataset name.
-    Returns:
-        List[str]: List of Parquet URIs.
-    """
-    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
-
-
 @dataclass
 class ParquetIndexWithMetadata:
     features: Features
