@@ -171,7 +171,7 @@ parquetAndInfo:
   # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.
   maxDatasetSize: "100_000_000"
   # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
-  maxExternalFiles: "10_000"
+  maxExternalDataFiles: "10_000"
   # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
   maxRowGroupByteSizeForCopy: "100_000_000"
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
