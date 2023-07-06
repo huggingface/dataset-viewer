@@ -233,15 +233,17 @@ EXPECTED_STATS_CONTENT = {
 
 def count_expected_statistics_for_numerical_column(column: pd.Series):
     minimum, maximum, mean, median, std = (
-        column.min().round(DECIMALS),
-        column.max().round(DECIMALS),
-        column.mean().round(DECIMALS),
-        column.median().round(DECIMALS),
-        column.std().round(DECIMALS),
+        column.min().astype(float).round(DECIMALS).item(),
+        column.max().astype(float).round(DECIMALS).item(),
+        column.mean().astype(float).round(DECIMALS).item(),
+        column.median().astype(float).round(DECIMALS).item(),
+        column.std().astype(float).round(DECIMALS).item(),
     )
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     hist, bin_edges = np.histogram(column[~column.isna()])
+    bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
+    hist = hist.astype(int).tolist()
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
@@ -251,8 +253,8 @@ def count_expected_statistics_for_numerical_column(column: pd.Series):
         "median": median,
         "std": std,
         "histogram": {
-            "hist": hist.tolist(),
-            "bin_edges": bin_edges.round(DECIMALS).tolist(),
+            "hist": hist,
+            "bin_edges": bin_edges,
         },
     }
 
@@ -274,9 +276,10 @@ def count_expected_statistics_for_categorical_column(column: pd.Series, class_la
 @pytest.fixture
 def descriptive_statistics_expected(
     datasets: Mapping[str, Dataset], hub_responses_descriptive_statistics: HubDatasetTest
-):
+) -> dict:  # SplitDescriptiveStatisticsResponse:
     columns_to_types = {
         "int_column": "INT",
+        "int_nan_column": "INT",
         "float_column": "FLOAT",
         "float_nan_column": "FLOAT",
         "class_label_column": "CLASS_LABEL",
@@ -303,6 +306,7 @@ def descriptive_statistics_expected(
                 "column_type": column_type,
                 "column_statistics": column_stats,
             }
+    # return SplitDescriptiveStatisticsResponse(num_examples=df.shape[0], statistics=expected_statistics)
     return expected_statistics
 
 
@@ -319,6 +323,7 @@ def test_compute(
     hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
+    descriptive_statistics_expected: dict,
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -360,8 +365,12 @@ def test_compute(
         assert e.typename == expected_error_code
     else:
         response = job_runner.compute()
-        assert sorted(response.content.keys()) == ["num_examples", "stats"]
-        assert response.content["num_examples"] == EXPECTED_STATS_CONTENT["num_examples"]
-        assert response.content["stats"] == sorted(
-            EXPECTED_STATS_CONTENT["stats"], key=lambda x: x["column_name"]
-        )  # type: ignore
+        assert sorted(response.content.keys()) == ["num_examples", "statistics"]
+        assert response.content["num_examples"] == 20
+        response_statistics = response.content["statistics"]
+        assert len(response_statistics) == len(descriptive_statistics_expected)
+        assert set([column_response["column_name"] for column_response in response_statistics]) == set(
+            descriptive_statistics_expected.keys()
+        )  # columns
+        for column_response in response_statistics:
+            assert column_response == descriptive_statistics_expected[column_response["column_name"]]
