@@ -47,8 +47,8 @@ COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
     median({column_name}), stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
 """
 COMPUTE_HIST_COMMAND = """
-    SELECT bin_max, COUNT(*) as count FROM read_parquet('{parquet_filename}')
-        JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_max;
+    SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
+        JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
 """  # `bins` is the name of preinjected table with bin edges data
 
 
@@ -101,7 +101,9 @@ def generate_bins(
     bins = [(0, min_value, min_value + bin_size)]
     for i in range(n_bins - 2):
         bins.append((i + 1, bins[i][2], bins[i][2] + bin_size))
-    bins.append((n_bins - 1, bins[-1][2], max_value + 0.1))
+    # add 1 to the rightmost bin to include exact max values in the count
+    # (add integer value to work with both floats and ints)
+    bins.append((n_bins - 1, bins[-1][2], max_value + 1))
     return pd.DataFrame.from_records(bins, columns=["bin_id", "bin_min", "bin_max"])
 
 
@@ -119,28 +121,26 @@ def compute_histogram(
     con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
     compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
     logging.debug(f"Compute histogram for {column_name}")
-    hist_query_result = list(zip(*con.sql(compute_hist_command).fetchall()))  # return list of tuples (bin_max,n_count)
-
+    # query returns list of tuples (bin_id, bin_max, n_count):
+    hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
     if len(hist_query_result) > n_bins + 1:
         raise StatsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
     # bins_id_to_max = dict(con.sql("select bin_id, bin_max from bins").fetchall())
-    # bins, hist = [], []
-    # for bin_idx in range(n_bins):
-    #     # no key in query result = no examples in this range, so we add 0 manually:
-    #     hist.append(hist_query_result.get(bin_idx, 0))
-    #     bins.append(min_value + bin_idx * bin_size)
-    # multiplying here (not in a query) to avoid floating point errors
-    # hist[-1] += hist_query_result.get(n_bins, 0)
-    # if n_samples and sum(hist) != n_samples:
-    #     raise StatsComputationError(
-    #         "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
-    #         f" match. histogram sum={sum(hist)}, {n_samples=}"
-    #     )
-    # bins = np.round(bins, DECIMALS).tolist()
-    # return Histogram(hist=hist, bin_edges=bins)
+    hist = []
+    for bin_idx in range(n_bins):
+        # no key in query result = no examples in this range, so we put 0
+        hist.append(hist_query_result.get(bin_idx, 0))
+    if n_samples and sum(hist) != n_samples:
+        raise StatsComputationError(
+            "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
+            f" match. histogram sum={sum(hist)}, {n_samples=}"
+        )
+    bins = bins_df["bin_max"].round(DECIMALS).tolist()[:-1]
+    bins = [np.round(min_value, DECIMALS).item()] + bins + [np.round(max_value, DECIMALS).item()]
+    return Histogram(hist=hist, bin_edges=bins)
 
 
 def compute_numerical_statistics(
@@ -168,6 +168,7 @@ def compute_numerical_statistics(
     elif dtype in INTEGER_DTYPES:
         if maximum - minimum < n_bins:
             bin_size = 1
+            n_bins = maximum - minimum + 1
         else:
             bin_size = int(np.round((maximum - minimum) / n_bins))
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
@@ -223,7 +224,7 @@ def compute_categorical_statistics(
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
-        n_unique=len(categories),
+        n_unique=len(categories) - 1 if nan_count else len(categories),
         frequencies=frequencies,
     )
 
