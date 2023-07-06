@@ -23,6 +23,7 @@ from datasets import Audio, Features, Image, Value, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
+from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
@@ -41,12 +42,16 @@ from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    ParquetFileValidator,
+    TooBigRowGroupsError,
     _is_too_big_from_datasets,
     _is_too_big_from_external_data_files,
     _is_too_big_from_hub,
     create_commits,
+    fill_builder_info,
     get_delete_operations,
-    get_writer_batch_size,
+    get_writer_batch_size_from_info,
+    get_writer_batch_size_from_row_group_size,
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
@@ -620,8 +625,8 @@ def test_parse_repo_filename(filename: str, split: str, config: str, raises: boo
         (datasets.info.DatasetInfo(features=Features({"blob": Value("binary")})), True),
     ],
 )
-def test_get_writer_batch_size(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
-    assert get_writer_batch_size(ds_info) == (100 if has_big_chunks else None)
+def test_get_writer_batch_size_from_info(ds_info: datasets.info.DatasetInfo, has_big_chunks: bool) -> None:
+    assert get_writer_batch_size_from_info(ds_info) == (100 if has_big_chunks else None)
 
 
 @pytest.mark.parametrize(
@@ -851,7 +856,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
         data_files={"train": [csv_path] * num_data_files},
         cache_dir=str(tmp_path / f"test_stream_convert_to_parquet-{max_dataset_size=}"),
     )
-    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
             parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
     num_shards = len(parquet_operations)
@@ -889,7 +894,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
 
     cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
-    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size", lambda ds_config_info: 1):
+    with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
             parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
     num_shards = len(parquet_operations)
@@ -926,3 +931,53 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
         builder.download_and_prepare(file_format="parquet")
         assert builder.info.dataset_size == limiter.total_bytes <= expected_max_dataset_size
         assert builder.info.splits["train"].num_examples == num_examples < expected_max_num_examples
+
+
+@pytest.mark.parametrize(
+    "validate,too_big_row_groups",
+    [
+        (None, False),
+        (ParquetFileValidator(max_row_group_byte_size=1).validate, True),
+        (ParquetFileValidator(max_row_group_byte_size=100_000).validate, False),
+    ],
+)
+def test_fill_builder_info(
+    hub_reponses_big: HubDatasetTest,
+    tmp_path: Path,
+    validate: Optional[Callable[[pq.ParquetFile], None]],
+    too_big_row_groups: bool,
+) -> None:
+    cache_dir = str(tmp_path / "test_fill_builder_info")
+    name = hub_reponses_big["name"]
+    builder = load_dataset_builder(name, cache_dir=cache_dir)
+    builder.info = datasets.info.DatasetInfo()
+    if too_big_row_groups:
+        with pytest.raises(TooBigRowGroupsError) as exc_info:
+            fill_builder_info(builder, hf_token=None, validate=validate)
+        assert isinstance(exc_info.value, TooBigRowGroupsError)
+        assert isinstance(exc_info.value.num_rows, int)
+        assert isinstance(exc_info.value.row_group_byte_size, int)
+    else:
+        fill_builder_info(builder, hf_token=None, validate=validate)
+        expected_info = hub_reponses_big["parquet_and_info_response"]["dataset_info"]
+        assert expected_info == asdict(builder.info)
+
+
+@pytest.mark.parametrize(
+    "num_rows, row_group_byte_size, max_row_group_byte_size, expected",
+    [
+        (1000, 1000, 500, 100),
+        (1000, 1000_000, 500_000, 100),
+        (123456789, 123456789, 1000, 100),
+        (987654321, 987654321, 1000, 900),
+        (1000, 10, 1000, 1000),
+        (10, 1000, 1000, 100),
+    ],
+)
+def test_get_writer_batch_size_from_row_group_size(
+    num_rows: int, row_group_byte_size: int, max_row_group_byte_size: int, expected: int
+) -> None:
+    writer_batch_size = get_writer_batch_size_from_row_group_size(
+        num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
+    )
+    assert writer_batch_size == expected
