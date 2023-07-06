@@ -9,7 +9,7 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Type, TypedDict
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, TypedDict
 from unittest.mock import patch
 
 import datasets.builder
