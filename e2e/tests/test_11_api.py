@@ -37,7 +37,7 @@ def test_auth_e2e(
 
     # asking for the dataset will launch the jobs, without the need of a webhook
     poll_until_ready_and_assert(
-        relative_url=f"/config-names?dataset={dataset}",
+        relative_url=f"/splits?dataset={dataset}",
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
