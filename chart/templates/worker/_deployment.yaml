@@ -30,7 +30,8 @@ spec:
       containers: {{ include "containerWorker" . | nindent 8 }}
       nodeSelector: {{ toYaml .workerValues.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .workerValues.tolerations | nindent 8 }}
-      volumes: 
+      volumes:
+        {{ include "volumeCache" . | nindent 8 }} 
         {{ include "volumeData" . | nindent 8 }}
         {{ include "volumeDuckDB" . | nindent 8 }}
         {{ include "volumeParquet" . | nindent 8 }}
