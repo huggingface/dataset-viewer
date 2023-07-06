@@ -176,7 +176,7 @@ PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
 PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES = 10_000
-PARQUET_AND_INFO_MAX_ROW_GROUP_SIZE_FOR_COPY = 500_000_000
+PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY = 100_000_000
 PARQUET_AND_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
@@ -189,7 +189,7 @@ class ParquetAndInfoConfig:
     committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
     max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
     max_external_data_files: int = PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
-    max_row_group_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_SIZE_FOR_COPY
+    max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
     supported_datasets: List[str] = field(default_factory=get_empty_str_list)
     target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
@@ -207,8 +207,8 @@ class ParquetAndInfoConfig:
                 max_external_data_files=env.int(
                     name="MAX_EXTERNAL_DATA_FILES", default=PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
                 ),
-                max_row_group_size_for_copy=env.int(
-                    name="MAX_ROW_GROUP_SIZE_FOR_COPY", default=PARQUET_AND_INFO_MAX_ROW_GROUP_SIZE_FOR_COPY
+                max_row_group_byte_size_for_copy=env.int(
+                    name="MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY", default=PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
                 ),
                 source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
