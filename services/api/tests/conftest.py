@@ -75,7 +75,7 @@ def first_dataset_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> 
 
 
 @fixture(scope="session")
-def first_config_endoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
+def first_config_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
     return next(
         endpoint
         for endpoint, input_types in endpoint_definition.items()
