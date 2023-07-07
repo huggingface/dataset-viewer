@@ -7,20 +7,15 @@ from os import PathLike
 from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
 
 import numpy as np
-import numpy.typing as npt
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
-from huggingface_hub.hf_file_system import safe_quote
-from tqdm.contrib.concurrent import thread_map
 
-from libcommon.constants import PARQUET_REVISION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import SplitHubFile
 
 StrPath = Union[str, PathLike[str]]
 
@@ -62,136 +57,6 @@ def get_supported_unsupported_columns(
         else:
             supported_columns.append(str_column)
     return supported_columns, unsupported_columns
-
-
-# TODO: how to invalidate the cache when the parquet branch is created or deleted?
-@lru_cache(maxsize=128)
-def get_hf_fs(hf_token: Optional[str]) -> HfFileSystem:
-    """Get the Hugging Face filesystem.
-
-    Args:
-        hf_token (Optional[str]): The token to access the filesystem.
-    Returns:
-        HfFileSystem: The Hugging Face filesystem.
-    """
-    return HfFileSystem(token=hf_token)
-
-
-def get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    """Get the Hugging Face URIs from the Parquet branch of the dataset repository (see PARQUET_REVISION).
-
-    Args:
-        paths (List[str]): List of paths.
-        dataset (str): The dataset name.
-    Returns:
-        List[str]: List of Parquet URIs.
-    """
-    return [f"hf://datasets/{dataset}@{safe_quote(PARQUET_REVISION)}/{path}" for path in paths]
-
-
-@dataclass
-class ParquetIndexWithoutMetadata:
-    features: Features
-    supported_columns: List[str]
-    unsupported_columns: List[str]
-    row_group_offsets: npt.NDArray[np.int64]
-    row_group_readers: List[Callable[[], pa.Table]]
-
-    def query(self, offset: int, length: int) -> pa.Table:
-        """Query the parquet files
-
-        Note that this implementation will always read at least one row group, to get the list of columns and always
-        have the same schema, even if the requested rows are invalid (out of range).
-
-        Args:
-            offset (int): The first row to read.
-            length (int): The number of rows to read.
-
-        Returns:
-            pa.Table: The requested rows.
-        """
-        if (len(self.row_group_offsets) == 0) or (len(self.row_group_readers) == 0):
-            raise ParquetResponseEmptyError("No parquet files found.")
-        last_row_in_parquet = self.row_group_offsets[-1] - 1
-        first_row = min(offset, last_row_in_parquet)
-        last_row = min(offset + length - 1, last_row_in_parquet)
-        first_row_group_id, last_row_group_id = np.searchsorted(
-            self.row_group_offsets, [first_row, last_row], side="right"
-        )
-        pa_table = pa.concat_tables(
-            [self.row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)]
-        )
-        first_row_in_pa_table = self.row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-        return pa_table.slice(offset - first_row_in_pa_table, length)
-
-    @staticmethod
-    def from_parquet_file_items(
-        parquet_file_items: List[SplitHubFile],
-        dataset: str,
-        config: str,
-        split: str,
-        hf_token: Optional[str],
-        unsupported_features_magic_strings: List[str] = [],
-    ) -> "ParquetIndexWithoutMetadata":
-        try:
-            sources = sorted(f"{config}/{parquet_file['filename']}" for parquet_file in parquet_file_items)
-        except Exception as e:
-            raise ParquetResponseFormatError(f"Could not parse the list of parquet files: {e}") from e
-        logging.debug(
-            f"Found {len(sources)} parquet files for dataset={dataset}, config={config}, split={split}: {sources}"
-        )
-        if not sources:
-            raise ParquetResponseEmptyError("No parquet files found.")
-        with StepProfiler(
-            method="parquet_index_without_metadata.from_parquet_file_items", step="get the Hub's dataset filesystem"
-        ):
-            fs = get_hf_fs(hf_token=hf_token)
-        with StepProfiler(method="parquet_index_without_metadata.from_parquet_file_items", step="get the source URIs"):
-            source_uris = get_hf_parquet_uris(sources, dataset=dataset)
-        with StepProfiler(
-            method="parquet_index_without_metadata.from_parquet_file_items",
-            step="get one parquet reader per parquet file",
-        ):
-            desc = f"{dataset}/{config}/{split}"
-            try:
-                parquet_files: List[pq.ParquetFile] = thread_map(
-                    partial(pq.ParquetFile, filesystem=fs), source_uris, desc=desc, unit="pq", disable=True
-                )
-            except Exception as e:
-                raise FileSystemError(f"Could not read the parquet files: {e}") from e
-        with StepProfiler(
-            method="parquet_index_without_metadata.from_parquet_file_items", step="get the dataset's features"
-        ):
-            features = Features.from_arrow_schema(parquet_files[0].schema.to_arrow_schema())
-            supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                features, unsupported_features_magic_strings=unsupported_features_magic_strings
-            )
-
-        with StepProfiler(
-            method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group offsets"
-        ):
-            row_group_offsets = np.cumsum(
-                [
-                    parquet_file.metadata.row_group(group_id).num_rows
-                    for parquet_file in parquet_files
-                    for group_id in range(parquet_file.metadata.num_row_groups)
-                ]
-            )
-        with StepProfiler(
-            method="parquet_index_without_metadata.from_parquet_file_items", step="create the row group readers"
-        ):
-            row_group_readers: List[Callable[[], pa.Table]] = [
-                partial(parquet_file.read_row_group, i=group_id, columns=supported_columns)
-                for parquet_file in parquet_files
-                for group_id in range(parquet_file.metadata.num_row_groups)
-            ]
-        return ParquetIndexWithoutMetadata(
-            features=features,
-            supported_columns=supported_columns,
-            unsupported_columns=unsupported_columns,
-            row_group_offsets=row_group_offsets,
-            row_group_readers=row_group_readers,
-        )
 
 
 @dataclass
@@ -373,21 +238,14 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         unsupported_features_magic_strings: List[str] = [],
-    ) -> Union[ParquetIndexWithMetadata, ParquetIndexWithoutMetadata]:
+    ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                config_parquet_processing_steps = self.processing_graph.get_config_parquet_processing_steps()
-                if not config_parquet_processing_steps:
-                    raise RuntimeError("No processing steps are configured to provide a config's parquet response.")
-
                 config_parquet_metadata_processing_steps = (
                     self.processing_graph.get_config_parquet_metadata_processing_steps()
                 )
-
                 cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
-                cache_kinds.extend([step.cache_kind for step in config_parquet_processing_steps])
-
                 result = get_previous_step_or_raise(
                     kinds=cache_kinds,
                     dataset=self.dataset,
@@ -396,39 +254,20 @@ class RowsIndex:
                 )
                 self.revision = result.response["dataset_git_revision"]
                 content = result.response["content"]
-            if content and "parquet_files" in content:
-                logging.info(
-                    f"Create ParquetIndexWithoutMetadata for dataset={self.dataset}, config={self.config},"
-                    f" split={self.split}"
-                )
-                return ParquetIndexWithoutMetadata.from_parquet_file_items(
-                    [
-                        parquet_item
-                        for parquet_item in content["parquet_files"]
-                        if parquet_item["split"] == self.split and parquet_item["config"] == self.config
-                    ],
-                    dataset=self.dataset,
-                    config=self.config,
-                    split=self.split,
-                    hf_token=hf_token,
-                    unsupported_features_magic_strings=unsupported_features_magic_strings,
-                )
-            else:
-                logging.info(
-                    f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config},"
-                    f" split={self.split}"
-                )
-                return ParquetIndexWithMetadata.from_parquet_metadata_items(
-                    [
-                        parquet_item
-                        for parquet_item in content["parquet_files_metadata"]
-                        if parquet_item["split"] == self.split and parquet_item["config"] == self.config
-                    ],
-                    parquet_metadata_directory=parquet_metadata_directory,
-                    httpfs=self.httpfs,
-                    hf_token=hf_token,
-                    unsupported_features_magic_strings=unsupported_features_magic_strings,
-                )
+            logging.info(
+                f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
+            )
+            return ParquetIndexWithMetadata.from_parquet_metadata_items(
+                [
+                    parquet_item
+                    for parquet_item in content["parquet_files_metadata"]
+                    if parquet_item["split"] == self.split and parquet_item["config"] == self.config
+                ],
+                parquet_metadata_directory=parquet_metadata_directory,
+                httpfs=self.httpfs,
+                hf_token=hf_token,
+                unsupported_features_magic_strings=unsupported_features_magic_strings,
+            )
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1024)

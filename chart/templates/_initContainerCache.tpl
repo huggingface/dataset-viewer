@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
+    name: cache-data
     subPath: "{{ include "cache.subpath" . }}"
     readOnly: false
   securityContext:
