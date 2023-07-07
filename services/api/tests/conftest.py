@@ -43,8 +43,8 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
     return EndpointConfig(
         processing_step_names_by_input_type_and_endpoint={
-            "/config-names": {"dataset": ["dataset-config-names"]},
             "/splits": {
+                "dataset": ["dataset-split-names"],
                 "config": ["config-split-names-from-streaming"],
             },
             "/first-rows": {"split": ["split-first-rows-from-streaming"]},
@@ -75,7 +75,7 @@ def first_dataset_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> 
 
 
 @fixture(scope="session")
-def first_config_endoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
+def first_config_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
     return next(
         endpoint
         for endpoint, input_types in endpoint_definition.items()
