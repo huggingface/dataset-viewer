@@ -77,6 +77,7 @@ def test_get_dataset_missing_parameter(
     assert response.status_code == 422
 
 
+# this test might fail someday, if `first_split_endpoint` fixture appears to be not an only-split-level endpoint
 @pytest.mark.parametrize(
     "dataset,config,split",
     [
