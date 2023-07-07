@@ -9,19 +9,13 @@ from pathlib import Path
 from typing import Any, Generator, List
 from unittest.mock import patch
 
-import numpy as np
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.parquet_utils import (
-    Indexer,
-    ParquetIndexWithMetadata,
-    ParquetIndexWithoutMetadata,
-    RowsIndex,
-)
+from libcommon.parquet_utils import Indexer, ParquetIndexWithMetadata, RowsIndex
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
@@ -259,66 +253,6 @@ def indexer(
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
     )
-
-
-def mock_get_hf_parquet_uris(paths: List[str], dataset: str) -> List[str]:
-    return paths
-
-
-@pytest.fixture
-def rows_index(
-    indexer: Indexer,
-    ds_sharded: Dataset,
-    ds_sharded_fs: AbstractFileSystem,
-    dataset_sharded_with_config_parquet: dict[str, Any],
-) -> Generator[RowsIndex, None, None]:
-    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_sharded_fs):
-        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
-            yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
-
-
-def test_indexer_get_rows_index(
-    indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet: dict[str, Any]
-) -> None:
-    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_fs):
-        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
-            index = indexer.get_rows_index("ds", "plain_text", "train")
-    assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
-    assert index.parquet_index.features == ds.features
-    assert index.parquet_index.row_group_offsets.tolist() == [len(ds)]
-    assert len(index.parquet_index.row_group_readers) == 1
-    row_group_reader = index.parquet_index.row_group_readers[0]
-    pa_table = row_group_reader()
-    assert pa_table.to_pydict() == ds.to_dict()
-
-
-def test_indexer_get_rows_index_sharded(
-    indexer: Indexer,
-    ds: Dataset,
-    ds_sharded: Dataset,
-    ds_sharded_fs: AbstractFileSystem,
-    dataset_sharded_with_config_parquet: dict[str, Any],
-) -> None:
-    with patch("libcommon.parquet_utils.get_hf_fs", return_value=ds_sharded_fs):
-        with patch("libcommon.parquet_utils.get_hf_parquet_uris", side_effect=mock_get_hf_parquet_uris):
-            index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
-    assert isinstance(index.parquet_index, ParquetIndexWithoutMetadata)
-    assert index.parquet_index.features == ds_sharded.features
-    assert index.parquet_index.row_group_offsets.tolist() == np.cumsum([len(ds)] * 4).tolist()
-    assert len(index.parquet_index.row_group_readers) == 4
-    row_group_reader = index.parquet_index.row_group_readers[0]
-    pa_table = row_group_reader()
-    assert pa_table.to_pydict() == ds.to_dict()
-
-
-def test_rows_index_query(rows_index: RowsIndex, ds_sharded: Dataset) -> None:
-    assert rows_index.query(offset=1, length=3).to_pydict() == ds_sharded[1:4]
-    assert rows_index.query(offset=1, length=-1).to_pydict() == ds_sharded[:0]
-    assert rows_index.query(offset=1, length=0).to_pydict() == ds_sharded[:0]
-    assert rows_index.query(offset=999999, length=1).to_pydict() == ds_sharded[:0]
-    assert rows_index.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
-    with pytest.raises(IndexError):
-        rows_index.query(offset=-1, length=2)
 
 
 @pytest.fixture
