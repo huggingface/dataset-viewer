@@ -845,6 +845,7 @@ def test_get_delete_operations(
         (150, 2),
         (300, 4),
         (9999999, 10),
+        (None, 10),
     ],
 )
 def test_stream_convert_to_parquet_arrowbasedbuilder(
@@ -866,12 +867,13 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
     assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
-    one_sample_max_size = 100
-    expected_max_dataset_size = max_dataset_size + one_sample_max_size
-    assert (
-        sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
-        < expected_max_dataset_size
-    )
+    if max_dataset_size is not None:
+        one_sample_max_size = 100
+        expected_max_dataset_size = max_dataset_size + one_sample_max_size
+        assert (
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+            < expected_max_dataset_size
+        )
 
 
 @pytest.mark.parametrize(
@@ -881,6 +883,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
         (150, 19),
         (300, 38),
         (9999999, 1000),
+        (None, 1000),
     ],
 )
 def test_stream_convert_to_parquet_generatorbasedbuilder(
@@ -904,12 +907,13 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
     assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
-    one_sample_max_size = 100
-    expected_max_dataset_size = max_dataset_size + one_sample_max_size
-    assert (
-        sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
-        < expected_max_dataset_size
-    )
+    if max_dataset_size is not None:
+        one_sample_max_size = 100
+        expected_max_dataset_size = max_dataset_size + one_sample_max_size
+        assert (
+            sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
+            < expected_max_dataset_size
+        )
 
 
 def test_limit_parquet_writes(tmp_path: Path) -> None:

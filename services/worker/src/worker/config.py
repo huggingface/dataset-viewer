@@ -173,6 +173,7 @@ class OptInOutUrlsScanConfig:
 
 PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
+PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS: List[str] = []
 PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
 PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES = 10_000
 PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY = 100_000_000
@@ -186,6 +187,7 @@ class ParquetAndInfoConfig:
     blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
+    fully_converted_datasets: List[str] = field(default_factory=PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS.copy)
     max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
     max_external_data_files: int = PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
     max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
@@ -202,6 +204,9 @@ class ParquetAndInfoConfig:
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN),
+                fully_converted_datasets=env.list(
+                    name="FULLY_CONVERTED_DATASETS", default=PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS.copy()
+                ),
                 max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_INFO_MAX_DATASET_SIZE),
                 max_external_data_files=env.int(
                     name="MAX_EXTERNAL_DATA_FILES", default=PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
