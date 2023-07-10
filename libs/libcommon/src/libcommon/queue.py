@@ -153,7 +153,7 @@ class JobDocument(Document):
             ("type", "dataset", "revision", "config", "split", "status", "priority"),
             ("priority", "status", "created_at", "difficulty", "namespace", "type", "unicity_id"),
             ("status", "type"),
-            ("unicity", "status", "created_at"),
+            ("unicity_id", "status", "created_at"),
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,
