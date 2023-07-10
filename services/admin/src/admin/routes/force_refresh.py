@@ -15,6 +15,7 @@ from starlette.responses import Response
 from admin.authentication import auth_check
 from admin.utils import (
     Endpoint,
+    InvalidParameterError,
     MissingRequiredParameterError,
     UnexpectedError,
     are_valid_parameters,
@@ -51,7 +52,15 @@ def create_force_refresh_endpoint(
                 split = request.query_params.get("split")
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
-            logging.info(f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}")
+            try:
+                priority = Priority(request.query_params.get("priority", "low"))
+            except ValueError:
+                raise InvalidParameterError(
+                    f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
+                )
+            logging.info(
+                f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}, priority={priority}"
+            )
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(
@@ -68,7 +77,7 @@ def create_force_refresh_endpoint(
                 revision=revision,
                 config=config,
                 split=split,
-                priority=Priority.LOW,
+                priority=priority,
             )
             return get_json_ok_response(
                 {"status": "ok"},
