@@ -51,6 +51,8 @@
   {{- else }}
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
+- name: PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS
+  value: {{ .Values.parquetAndInfo.fullyConvertedDatasets | quote }}
 - name: PARQUET_AND_INFO_MAX_DATASET_SIZE
   value: {{ .Values.parquetAndInfo.maxDatasetSize | quote }}
 - name: PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
