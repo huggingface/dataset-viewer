@@ -184,8 +184,9 @@ def test_compute(
             assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
             for parquet_file_item in upstream_content["parquet_files"]:
                 mock_ParquetFile.assert_any_call(
-                    parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
+                    url=parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
                 )
+        assert expected_content["parquet_files_metadata"]
         for parquet_file_metadata_item in expected_content["parquet_files_metadata"]:
             assert (
                 pq.read_metadata(

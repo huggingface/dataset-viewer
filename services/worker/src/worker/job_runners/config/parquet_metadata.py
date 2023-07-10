@@ -17,7 +17,6 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
-from pyarrow.parquet import ParquetFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig
@@ -28,6 +27,32 @@ from worker.dtos import (
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import get_parquet_file
+
+
+def create_parquet_metadata_file_from_remote_parquet(
+    parquet_file_item: SplitHubFile, fs: HTTPFileSystem, hf_token: Optional[str], parquet_metadata_directory: StrPath
+) -> ParquetFileMetadataItem:
+    try:
+        parquet_file = get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
+    except Exception as e:
+        raise FileSystemError(f"Could not read the parquet files: {e}") from e
+    parquet_metadata_subpath = create_parquet_metadata_file(
+        dataset=parquet_file_item["dataset"],
+        config=parquet_file_item["config"],
+        parquet_file_metadata=parquet_file.metadata,
+        filename=parquet_file_item["filename"],
+        parquet_metadata_directory=parquet_metadata_directory,
+    )
+    return ParquetFileMetadataItem(
+        dataset=parquet_file_item["dataset"],
+        config=parquet_file_item["config"],
+        split=parquet_file_item["split"],
+        url=parquet_file_item["url"],
+        filename=parquet_file_item["filename"],
+        size=parquet_file_item["size"],
+        num_rows=parquet_file.metadata.num_rows,
+        parquet_metadata_subpath=parquet_metadata_subpath,
+    )
 
 
 def compute_parquet_metadata_response(
@@ -74,42 +99,19 @@ def compute_parquet_metadata_response(
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
     fs = HTTPFileSystem()
-    source_urls = [parquet_file_item["url"] for parquet_file_item in parquet_file_items]
     desc = f"{dataset}/{config}"
-    try:
-        parquet_files: List[ParquetFile] = thread_map(
-            functools.partial(get_parquet_file, fs=fs, hf_token=hf_token),
-            source_urls,
-            desc=desc,
-            unit="pq",
-            disable=True,
-        )
-    except Exception as e:
-        raise FileSystemError(f"Could not read the parquet files: {e}") from e
-
-    parquet_files_metadata = []
-    for parquet_file_item, parquet_file in zip(parquet_file_items, parquet_files):
-        parquet_metadata_subpath = create_parquet_metadata_file(
-            dataset=dataset,
-            config=config,
-            parquet_file_metadata=parquet_file.metadata,
-            filename=parquet_file_item["filename"],
+    parquet_files_metadata: List[ParquetFileMetadataItem] = thread_map(
+        functools.partial(
+            create_parquet_metadata_file_from_remote_parquet,
+            fs=fs,
+            hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
-        )
-        num_rows = parquet_file.metadata.num_rows
-        parquet_files_metadata.append(
-            ParquetFileMetadataItem(
-                dataset=dataset,
-                config=config,
-                split=parquet_file_item["split"],
-                url=parquet_file_item["url"],
-                filename=parquet_file_item["filename"],
-                size=parquet_file_item["size"],
-                num_rows=num_rows,
-                parquet_metadata_subpath=parquet_metadata_subpath,
-            )
-        )
-
+        ),
+        parquet_file_items,
+        desc=desc,
+        unit="pq",
+        disable=True,
+    )
     return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata, partial=partial)
 
 
