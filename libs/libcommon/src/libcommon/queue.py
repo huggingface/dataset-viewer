@@ -151,7 +151,8 @@ class JobDocument(Document):
         "indexes": [
             ("type", "dataset", "status"),
             ("type", "dataset", "revision", "config", "split", "status", "priority"),
-            ("priority", "status", "created_at", "difficulty", "namespace", "type", "unicity_id"),
+            ("priority", "status", "created_at", "namespace"),
+            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
             ("unicity_id", "status", "created_at"),
             {
