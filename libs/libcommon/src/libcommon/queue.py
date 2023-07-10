@@ -154,7 +154,7 @@ class JobDocument(Document):
             ("priority", "status", "created_at", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
-            ("unicity_id", "status", "created_at"),
+            ("unicity_id", "-created_at", "status"),
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,
