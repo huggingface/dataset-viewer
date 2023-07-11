@@ -51,14 +51,14 @@
   {{- else }}
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
-- name: PARQUET_AND_INFO_FULLY_CONVERTED_DATASETS
-  value: {{ .Values.parquetAndInfo.fullyConvertedDatasets | quote }}
 - name: PARQUET_AND_INFO_MAX_DATASET_SIZE
   value: {{ .Values.parquetAndInfo.maxDatasetSize | quote }}
 - name: PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
   value: {{ .Values.parquetAndInfo.maxExternalDataFiles | quote }}
 - name: PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
   value: {{ .Values.parquetAndInfo.maxRowGroupByteSizeForCopy | quote }}
+- name: PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS
+  value: {{ .Values.parquetAndInfo.noMaxSizeLimitDatasets | quote }}
 - name: PARQUET_AND_INFO_SOURCE_REVISION
   value: {{ .Values.parquetAndInfo.sourceRevision | quote }}
 - name: PARQUET_AND_INFO_SUPPORTED_DATASETS
