@@ -23,6 +23,7 @@ from mongoengine.queryset.queryset import QuerySet
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
+    LOCK_TTL_SECONDS,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
@@ -238,7 +239,19 @@ class JobDocument(Document):
 
 
 class Lock(Document):
-    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "owner")]}
+    meta = {
+        "collection": QUEUE_COLLECTION_LOCKS,
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
+        "indexes": [
+            ("key", "owner"),
+            {
+                "fields": ["updated_at"],
+                "expireAfterSeconds": LOCK_TTL_SECONDS,
+                "partialFilterExpression": {"owner": None},
+            },
+        ],
+    }
+
     key = StringField(primary_key=True)
     owner = StringField()
     job_id = StringField()  # deprecated
