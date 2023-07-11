@@ -212,7 +212,7 @@ class ParquetAndInfoConfig:
                     name="MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY", default=PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
                 ),
                 no_max_size_limit_datasets=env.list(
-                    name="FULLY_CONVERTED_DATASETS", default=PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS.copy()
+                    name="NO_MAX_SIZE_LIMIT_DATASETS", default=PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS.copy()
                 ),
                 source_revision=env.str(name="SOURCE_REVISION", default=PARQUET_AND_INFO_SOURCE_REVISION),
                 supported_datasets=env.list(name="SUPPORTED_DATASETS", default=get_empty_str_list()),
