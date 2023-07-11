@@ -1146,7 +1146,7 @@ def compute_config_parquet_and_info_response(
     max_dataset_size: int,
     max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
-    fully_converted_datasets: List[str],
+    no_max_size_limit_datasets: List[str],
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
@@ -1186,7 +1186,7 @@ def compute_config_parquet_and_info_response(
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
         max_row_group_byte_size_for_copy (`int`):
             The maximum size in bytes of parquet files that are allowed to be copied without being converted.
-        fully_converted_datasets (`List[str]`):
+        no_max_size_limit_datasets (`List[str]`):
             List of datasets that should be fully converted (no partial conversion).
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
@@ -1290,7 +1290,7 @@ def compute_config_parquet_and_info_response(
             )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder,
-                max_dataset_size=None if dataset in fully_converted_datasets else max_dataset_size,
+                max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size,
                 writer_batch_size=writer_batch_size,
             )
     else:
@@ -1311,7 +1311,7 @@ def compute_config_parquet_and_info_response(
             max_external_data_files=max_external_data_files,
         ):
             parquet_operations, partial = stream_convert_to_parquet(
-                builder, max_dataset_size=None if dataset in fully_converted_datasets else max_dataset_size
+                builder, max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size
             )
         else:
             parquet_operations = convert_to_parquet(builder)
@@ -1419,6 +1419,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 max_dataset_size=self.parquet_and_info_config.max_dataset_size,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
-                fully_converted_datasets=self.parquet_and_info_config.fully_converted_datasets,
+                no_max_size_limit_datasets=self.parquet_and_info_config.no_max_size_limit_datasets,
             )
         )

@@ -177,14 +177,14 @@ parquetAndInfo:
   blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
-  # comma-separated list of datasets that are fully converted to parquet (no partial conversion).
-  fullyConvertedDatasets: ""
   # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.
   maxDatasetSize: "100_000_000"
   # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
   maxExternalDataFiles: "10_000"
   # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
   maxRowGroupByteSizeForCopy: "100_000_000"
+  # comma-separated list of datasets that are fully converted to parquet (no partial conversion).
+  noMaxSizeLimitDatasets: ""
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
