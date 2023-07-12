@@ -2,8 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import List, Mapping
+from typing import List, Mapping, Optional
 
+from environs import Env
 from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
@@ -16,6 +17,21 @@ from libcommon.config import (
 )
 from libcommon.processing_graph import InputType
 
+DUCKDB_INDEX_STORAGE_DIRECTORY = None
+
+
+@dataclass(frozen=True)
+class DuckDbIndexConfig:
+    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+
+    @classmethod
+    def from_env(cls) -> "DuckDbIndexConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DUCKDB_INDEX_"):
+            return cls(
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+            )
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -27,6 +43,7 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
+    duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":

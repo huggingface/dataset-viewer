@@ -9,6 +9,7 @@ from libapi.routes.metrics import create_metrics_endpoint
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
+from libcommon.storage import exists, init_duckdb_index_cache_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
+from api.routes.fts import create_fts_endpoint
 from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -51,6 +53,10 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
+
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
+    if not exists(duckdb_index_cache_directory):
+        raise RuntimeError("The duckdb_index storage directory could not be accessed. Exiting.")
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -102,6 +108,19 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             methods=["POST"],
         ),
         # ^ called by the Hub webhooks
+        Route(
+            "/fts",
+            endpoint=create_fts_endpoint(
+                duckdb_index_file_directory=duckdb_index_cache_directory,
+                cache_max_days=app_config.cache.max_days,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                processing_graph=processing_graph,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+            ),
+        ),
     ]
 
     return Starlette(routes=routes, middleware=middleware, on_shutdown=[resource.release for resource in resources])
