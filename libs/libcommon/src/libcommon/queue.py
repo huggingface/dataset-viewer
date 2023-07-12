@@ -23,6 +23,7 @@ from mongoengine.queryset.queryset import QuerySet
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
+    LOCK_TTL_SECONDS,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_MONGOENGINE_ALIAS,
@@ -149,21 +150,12 @@ class JobDocument(Document):
         "collection": QUEUE_COLLECTION_JOBS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
-            "dataset",
-            ("dataset", "revision", "status"),
-            "status",
-            ("type", "status"),
             ("type", "dataset", "status"),
             ("type", "dataset", "revision", "config", "split", "status", "priority"),
-            ("priority", "status", "created_at", "namespace", "unicity_id"),
-            ("priority", "status", "created_at", "type", "namespace"),
-            ("priority", "status", "type", "created_at", "namespace", "unicity_id"),
-            ("priority", "status", "created_at", "namespace", "type", "unicity_id"),
-            ("priority", "status", "created_at", "difficulty", "namespace", "type", "unicity_id"),
+            ("priority", "status", "created_at", "namespace"),
+            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
-            ("status", "namespace", "priority", "type", "created_at"),
-            ("status", "namespace", "unicity_id", "priority", "type", "created_at"),
-            "-created_at",
+            ("unicity_id", "-created_at", "status"),
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,
@@ -247,7 +239,19 @@ class JobDocument(Document):
 
 
 class Lock(Document):
-    meta = {"collection": QUEUE_COLLECTION_LOCKS, "db_alias": QUEUE_MONGOENGINE_ALIAS, "indexes": [("key", "owner")]}
+    meta = {
+        "collection": QUEUE_COLLECTION_LOCKS,
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
+        "indexes": [
+            ("key", "owner"),
+            {
+                "fields": ["updated_at"],
+                "expireAfterSeconds": LOCK_TTL_SECONDS,
+                "partialFilterExpression": {"owner": None},
+            },
+        ],
+    }
+
     key = StringField(primary_key=True)
     owner = StringField()
     job_id = StringField()  # deprecated
@@ -809,7 +813,7 @@ class Queue:
 
     def cancel_started_jobs(self, job_type: str) -> None:
         """Cancel all started jobs for a given type."""
-        for job in JobDocument.objects(type=job_type, status=Status.STARTED.value):
+        for job in JobDocument.objects(status=Status.STARTED.value, type=job_type):
             job.update(finished_at=get_datetime(), status=Status.CANCELLED)
             self.add_job(
                 job_type=job.type,
@@ -857,7 +861,7 @@ class Queue:
         return self._get_df(
             [
                 job.flat_info()
-                for job in JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters)
+                for job in JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset)
             ]
         )
 
@@ -865,7 +869,7 @@ class Queue:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED], **filters).count() > 0
+        return JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:
@@ -906,7 +910,7 @@ class Queue:
 
         Returns: a list of jobs with the given status and the given type
         """
-        return [d.to_dict() for d in JobDocument.objects(type=job_type, status=status.value)]
+        return [d.to_dict() for d in JobDocument.objects(status=status.value, type=job_type)]
 
     def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
         """Get the dump of the jobs by pending status for a given job type.
@@ -926,7 +930,7 @@ class Queue:
         return [
             d.to_dict()
             for d in JobDocument.objects(
-                type=job_type, dataset=dataset, status__in=[Status.WAITING.value, Status.STARTED.value]
+                status__in=[Status.WAITING.value, Status.STARTED.value], type=job_type, dataset=dataset
             )
         ]
 

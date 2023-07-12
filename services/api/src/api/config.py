@@ -60,7 +60,6 @@ class EndpointConfig:
 
     processing_step_names_by_input_type_and_endpoint: ProcessingStepNamesByInputTypeAndEndpoint = field(
         default_factory=lambda: {
-            "/config-names": {"dataset": ["dataset-config-names"]},
             "/splits": {
                 "dataset": [
                     "dataset-split-names",

@@ -28,12 +28,6 @@ def test_endpoints_definition() -> None:
     definition = endpoints_definition.steps_by_input_type_and_endpoint
     assert definition
 
-    config_names = definition["/config-names"]
-    assert config_names is not None
-    assert sorted(list(config_names)) == ["dataset"]
-    assert config_names["dataset"] is not None
-    assert len(config_names["dataset"]) == 1  # Only has one processing step
-
     splits = definition["/splits"]
     assert splits is not None
     assert sorted(list(splits)) == ["config", "dataset"]
@@ -87,6 +81,8 @@ def test_endpoints_definition() -> None:
         _ = definition["/dataset-info"]
     with raises(KeyError):
         _ = definition["/parquet-and-dataset-info"]
+    with raises(KeyError):
+        _ = definition["/config-names"]
 
 
 def test_get_cache_entry_from_steps() -> None:

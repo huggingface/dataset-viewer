@@ -85,6 +85,7 @@ with gr.Blocks() as demo:
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
                 refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
                 gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
+                refresh_priority = gr.Dropdown(["low", "normal"], multiselect=False, label="priority", value="low")
                 refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
             with gr.Tab("Dataset status"):
@@ -260,15 +261,14 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
             return {pending_jobs_query_result_df: gr.update(value=pd.DataFrame({"Error": [f"❌ {str(error)}"]}))}
         return {pending_jobs_query_result_df: gr.update(value=result)}
 
-    def refresh_dataset(token, refresh_types, refresh_dataset_names, refresh_config_names, refresh_split_names):
+    def refresh_dataset(token, refresh_type, refresh_dataset_names, refresh_config_names, refresh_split_names, refresh_priority):
         headers = {"Authorization": f"Bearer {token}"}
         all_results = ""
-        for refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name in product(
-            refresh_types.split(","), refresh_dataset_names.split(","), refresh_config_names.split(","), refresh_split_names.split(",")
+        for refresh_dataset_name, refresh_config_name, refresh_split_name in product(
+            refresh_dataset_names.split(","), refresh_config_names.split(","), refresh_split_names.split(",")
         ):
-            refresh_types = refresh_types.strip()
             refresh_dataset_name = refresh_dataset_name.strip()
-            params = {"dataset": refresh_dataset_name}
+            params = {"dataset": refresh_dataset_name, "priority": refresh_priority}
             if refresh_config_name:
                 refresh_config_name = refresh_config_name.strip()
                 params["config"] = refresh_config_name
@@ -298,7 +298,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
     fetch_pending_jobs_button.click(view_jobs, inputs=token_box, outputs=[recent_pending_jobs_table, pending_jobs_summary_table])
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
     
-    refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name], outputs=refresh_dataset_output)
+    refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name, refresh_priority], outputs=refresh_dataset_output)
     dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
     backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
 
