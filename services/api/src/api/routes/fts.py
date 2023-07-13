@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 import json
 import logging
@@ -7,9 +7,11 @@ import re
 from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
+from typing import Any, List, Mapping, Optional, TypedDict
 
 import duckdb
+import pyarrow as pa
+from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.exceptions import (
     ApiError,
@@ -26,6 +28,7 @@ from libapi.utils import (
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
+from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -34,9 +37,115 @@ from api.routes.endpoint import get_cache_entry_from_steps
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 
 
+class RowItem(TypedDict):
+    row_idx: int
+    row: Mapping[str, Any]
+    truncated_cells: List[str]
+
+
+Row = Mapping[str, Any]
+
+
+class FeatureItem(TypedDict):
+    feature_idx: int
+    name: str
+    type: Row
+
+
+# in JSON, dicts do not carry any order, so we need to return a list
+#
+# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
+#   is a string, number, boolean, null, object, or array.
+# > An array is an *ordered* sequence of zero or more values.
+# > The terms "object" and "array" come from the conventions of JavaScript.
+# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
+def to_features_list(features: Features) -> List[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]
+
+def transform_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    rows: List[Row],
+    features: Features,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+) -> List[Row]:
+    return [
+        {
+            featureName: get_cell_value(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=offset + row_idx,
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=cached_assets_base_url,
+                assets_directory=cached_assets_directory,
+            )
+            for (featureName, fieldType) in features.items()
+        }
+        for row_idx, row in enumerate(rows)
+    ]
+
+
+def to_rows_list(
+    pa_table: pa.Table,
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> List[RowItem]:
+    num_rows = pa_table.num_rows
+    for idx, (column, feature) in enumerate(features.items()):
+        if column in unsupported_columns:
+            pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    try:
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            rows=pa_table.to_pylist(),
+            features=features,
+            cached_assets_base_url=cached_assets_base_url,
+            cached_assets_directory=cached_assets_directory,
+            offset=offset,
+        )
+    except Exception as err:
+        logging.error(err)
+        raise Exception(  # TODO: Send a better exception
+            "Server error while post-processing the split rows. Please report the issue."
+        ) from err
+    return [
+        {
+            "row_idx": idx + offset,
+            "row": row,
+            "truncated_cells": [],
+        }
+        for idx, row in enumerate(transformed_rows)
+    ]
+
+
 def create_fts_endpoint(
     processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -121,19 +230,31 @@ def create_fts_endpoint(
                     )
                 con = duckdb.connect(index_file_location, read_only=True)
                 query_result = con.execute(
-                    "SELECT * FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+                    (
+                        "SELECT * EXCLUDE (__hf_index_id) FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?)"
+                        " IS NOT NULL;"
+                    ),
                     [query],
                 )
-                rows = query_result.df()
-                rows.drop("__hf_index_id", inplace=True, axis=1)  # remove unused column, not needed for the viewer
+                pa_table = query_result.arrow()
                 con.close()
 
-                logging.info(f"{rows=}")
-                logging.info(f"type {type(rows)}")
+                logging.info(f"{pa_table=}")
 
+                features = Features.from_arrow_schema(pa_table.schema)
                 response = {
-                    "features": features,
-                    "rows": rows.to_json(),  # TODO: It should be same format as /rows
+                    "features": to_features_list(features),
+                    "rows": to_rows_list(
+                        pa_table,
+                        dataset,
+                        config,
+                        split,
+                        cached_assets_base_url,
+                        cached_assets_directory,
+                        offset=0, # TODO: Calculate offset or send by params?
+                        features=features,
+                        unsupported_columns=[],
+                    ),
                 }
                 return get_json_ok_response(response, max_age=max_age_long)
             except Exception as e:

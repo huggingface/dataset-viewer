@@ -5,7 +5,7 @@ import json
 from io import BytesIO
 from typing import Any, List, Optional, Union
 from zlib import adler32
-
+import logging
 from datasets import (
     Array2D,
     Array3D,
@@ -144,6 +144,7 @@ def get_cell_value(
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
 ) -> Any:
+    logging.warning(f"{dataset=} {config=} {split=} {row_idx=} {cell=} {featureName=} {fieldType=}")
     # always allow None values in the cells
     if cell is None:
         return cell

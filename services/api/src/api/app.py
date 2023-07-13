@@ -9,7 +9,11 @@ from libapi.routes.metrics import create_metrics_endpoint
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import exists, init_duckdb_index_cache_dir
+from libcommon.storage import (
+    exists,
+    init_cached_assets_dir,
+    init_duckdb_index_cache_dir,
+)
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -57,6 +61,10 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
     if not exists(duckdb_index_cache_directory):
         raise RuntimeError("The duckdb_index storage directory could not be accessed. Exiting.")
+
+    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
+    if not exists(cached_assets_directory):
+        raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -112,6 +120,8 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             "/fts",
             endpoint=create_fts_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
+                cached_assets_base_url=app_config.cached_assets.base_url,
+                cached_assets_directory=cached_assets_directory,
                 cache_max_days=app_config.cache.max_days,
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
