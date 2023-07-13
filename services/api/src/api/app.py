@@ -113,6 +113,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             endpoint=create_fts_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cache_max_days=app_config.cache.max_days,
+                target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,

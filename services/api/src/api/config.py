@@ -18,11 +18,13 @@ from libcommon.config import (
 from libcommon.processing_graph import InputType
 
 DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
 
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
     storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -30,6 +32,7 @@ class DuckDbIndexConfig:
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
             )
 
 
