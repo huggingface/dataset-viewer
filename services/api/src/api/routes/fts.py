@@ -7,10 +7,9 @@ import re
 from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Mapping, Optional, TypedDict
+from typing import Optional
 
 import duckdb
-import pyarrow as pa
 from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.exceptions import (
@@ -25,11 +24,12 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
+    to_rows_list,
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -37,111 +37,10 @@ from api.routes.endpoint import get_cache_entry_from_steps
 
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 MAX_ROWS = 100
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
-
-
-Row = Mapping[str, Any]
-
-
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Row
-
-
-# in JSON, dicts do not carry any order, so we need to return a list
-#
-# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
-#   is a string, number, boolean, null, object, or array.
-# > An array is an *ordered* sequence of zero or more values.
-# > The terms "object" and "array" come from the conventions of JavaScript.
-# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "feature_idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
-
-
-def transform_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    rows: List[Row],
-    features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    offset: int,
-) -> List[Row]:
-    return [
-        {
-            featureName: get_cell_value(
-                dataset=dataset,
-                config=config,
-                split=split,
-                row_idx=offset + row_idx,
-                cell=row[featureName] if featureName in row else None,
-                featureName=featureName,
-                fieldType=fieldType,
-                assets_base_url=cached_assets_base_url,
-                assets_directory=cached_assets_directory,
-            )
-            for (featureName, fieldType) in features.items()
-        }
-        for row_idx, row in enumerate(rows)
-    ]
-
-
-def to_rows_list(
-    pa_table: pa.Table,
-    dataset: str,
-    config: str,
-    split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    offset: int,
-    features: Features,
-    unsupported_columns: List[str],
-) -> List[RowItem]:
-    num_rows = pa_table.num_rows
-    for idx, (column, feature) in enumerate(features.items()):
-        if column in unsupported_columns:
-            pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
-    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
-    try:
-        transformed_rows = transform_rows(
-            dataset=dataset,
-            config=config,
-            split=split,
-            rows=pa_table.to_pylist(),
-            features=features,
-            cached_assets_base_url=cached_assets_base_url,
-            cached_assets_directory=cached_assets_directory,
-            offset=offset,
-        )
-    except Exception as err:
-        logging.error(err)
-        raise Exception(  # TODO: Send a better exception
-            "Server error while post-processing the split rows. Please report the issue."
-        ) from err
-    return [
-        {
-            "row_idx": idx + offset,
-            "row": row,
-            "truncated_cells": [],
-        }
-        for idx, row in enumerate(transformed_rows)
-    ]
+FTS_COMMAND = (
+    "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
+    " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
+)
 
 
 def create_fts_endpoint(
@@ -190,18 +89,18 @@ def create_fts_endpoint(
 
                 logging.info(f"/fts {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
+                # TODO: Symplify temporal index folder name
                 payload = ("download", dataset, config, split)
                 hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
                 prefix = f"download-{dataset}"[:64]
                 subdirectory = f"{prefix}-{hash_suffix}"
                 index_folder = "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
-                logging.info(f"{duckdb_index_file_directory=} {type(duckdb_index_file_directory)}")
                 index_folder = f"{duckdb_index_file_directory}/{index_folder}"
                 filename = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
                 index_file_location = f"{index_folder}/{filename}"
                 index_exists = Path(index_file_location).is_file()
-                logging.info(f"{index_exists=}")
 
+                # TODO: Note that actually, no cache data is needed to download the index file
                 processing_steps = processing_graph.get_processing_step_by_job_type("config-info")
                 result = get_cache_entry_from_steps(
                     processing_steps=[processing_steps],
@@ -243,11 +142,7 @@ def create_fts_endpoint(
                     )
                 con = duckdb.connect(index_file_location, read_only=True)
                 query_result = con.execute(
-                    (
-                        "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT *,"
-                        " fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM data) A WHERE score IS NOT NULL"
-                        f" ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
-                    ),
+                    (FTS_COMMAND.format(offset=offset, length=length)),
                     [query],
                 )  # TODO: Does the response need to have the totalCount for pagination?
                 pa_table = query_result.arrow()

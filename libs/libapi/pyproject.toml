@@ -49,6 +49,8 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = [
+    "datasets.*",
     "prometheus_client.*",
+    "pyarrow.*"
 ]
 ignore_missing_imports = true

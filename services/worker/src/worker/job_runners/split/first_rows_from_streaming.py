@@ -30,17 +30,12 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult, JobRunnerInfo, Row, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import (
-    create_truncated_row_items,
-    get_json_size,
-    get_rows_or_raise,
-    to_features_list,
-)
+from worker.utils import create_truncated_row_items, get_json_size, get_rows_or_raise
 
 
 def transform_rows(
