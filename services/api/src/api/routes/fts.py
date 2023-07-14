@@ -15,6 +15,7 @@ from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.exceptions import (
     ApiError,
+    InvalidParameterError,
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
@@ -35,6 +36,7 @@ from starlette.responses import Response
 from api.routes.endpoint import get_cache_entry_from_steps
 
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
+MAX_ROWS = 100
 
 
 class RowItem(TypedDict):
@@ -69,6 +71,7 @@ def to_features_list(features: Features) -> List[FeatureItem]:
         }
         for idx, name in enumerate(features)
     ]
+
 
 def transform_rows(
     dataset: str,
@@ -175,7 +178,17 @@ def create_fts_endpoint(
                         "Parameter 'dataset', 'config', 'split' and 'query' are required"
                     )
 
-                logging.info(f"/fts {dataset=} {config=} {split=} {query=}")
+                offset = int(request.query_params.get("offset", 0))
+                if offset < 0:
+                    raise InvalidParameterError(message="Offset must be positive")
+
+                length = int(request.query_params.get("length", MAX_ROWS))
+                if length < 0:
+                    raise InvalidParameterError("Length must be positive")
+                if length > MAX_ROWS:
+                    raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+
+                logging.info(f"/fts {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
                 payload = ("download", dataset, config, split)
                 hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
@@ -201,7 +214,7 @@ def create_fts_endpoint(
                     hf_timeout_seconds=hf_timeout_seconds,
                     cache_max_days=cache_max_days,
                 )
-                logging.info(f"{result=}")
+
                 content = result["content"]
                 features = content["dataset_info"]["features"]
                 http_status = result["http_status"]
@@ -231,15 +244,14 @@ def create_fts_endpoint(
                 con = duckdb.connect(index_file_location, read_only=True)
                 query_result = con.execute(
                     (
-                        "SELECT * EXCLUDE (__hf_index_id) FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?)"
-                        " IS NOT NULL;"
+                        "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT *,"
+                        " fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM data) A WHERE score IS NOT NULL"
+                        f" ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
                     ),
                     [query],
-                )
+                )  # TODO: Does the response need to have the totalCount for pagination?
                 pa_table = query_result.arrow()
                 con.close()
-
-                logging.info(f"{pa_table=}")
 
                 features = Features.from_arrow_schema(pa_table.schema)
                 response = {
@@ -251,7 +263,7 @@ def create_fts_endpoint(
                         split,
                         cached_assets_base_url,
                         cached_assets_directory,
-                        offset=0, # TODO: Calculate offset or send by params?
+                        offset=offset,
                         features=features,
                         unsupported_columns=[],
                     ),

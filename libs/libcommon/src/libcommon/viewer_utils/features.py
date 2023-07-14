@@ -144,7 +144,6 @@ def get_cell_value(
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
 ) -> Any:
-    logging.warning(f"{dataset=} {config=} {split=} {row_idx=} {cell=} {featureName=} {fieldType=}")
     # always allow None values in the cells
     if cell is None:
         return cell
