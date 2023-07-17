@@ -112,7 +112,8 @@ def create_fts_endpoint(
                 logging.info(f"/fts {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
                 with StepProfiler(method="fts_endpoint", step="validate indexing was done"):
-                    # Note that actually, no cache data is needed to download the index file, but will help validate if indexing was done
+                    # no cache data is needed to download the index file
+                    # but will help to validate if indexing was done
                     processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
                     result = get_cache_entry_from_steps(
                         processing_steps=[processing_steps],
@@ -192,7 +193,9 @@ def create_fts_endpoint(
                             features=features,
                             unsupported_columns=[],
                         ),
-                        "num_total_items": count_result[0][0],  # it will always return a non empty list with one element in a tuple
+                        "num_total_items": count_result[0][
+                            0
+                        ],  # it will always return a non empty list with one element in a tuple
                     }
                 with StepProfiler(method="fts_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long)
