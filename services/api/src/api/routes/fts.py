@@ -38,10 +38,16 @@ from api.routes.endpoint import get_cache_entry_from_steps
 
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 MAX_ROWS = 100
+FTS_COMMAND_COUNT = (
+    "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
+    " data) A WHERE score IS NOT NULL;"
+)
+
 FTS_COMMAND = (
     "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
     " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
 )
+REPO_TYPE = "dataset"
 
 
 def create_fts_endpoint(
@@ -134,24 +140,22 @@ def create_fts_endpoint(
                         )
 
                 with StepProfiler(method="fts_endpoint", step="validate index file exists"):
-                    # TODO: Symplify temporal index folder name
-                    payload = ("download", dataset, config, split)
+                    payload = (dataset, config, split)
                     hash_suffix = sha1(
                         json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False
                     ).hexdigest()[:8]
-                    prefix = f"download-{dataset}"[:64]
-                    subdirectory = f"{prefix}-{hash_suffix}"
-                    index_folder = "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
-                    index_folder = f"{duckdb_index_file_directory}/{index_folder}"
+
+                    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
+                    index_folder = f"{duckdb_index_file_directory}/{subdirectory}"
                     filename = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
                     index_file_location = f"{index_folder}/{filename}"
-                    index_exists = Path(index_file_location).is_file()
-                    if not index_exists:
+                    index_path = Path(index_file_location)
+                    if not index_path.is_file():
                         with StepProfiler(method="fts_endpoint", step="download index file"):
                             logging.info(f"init_dir {index_folder}")
                             init_dir(index_folder)
                             hf_hub_download(
-                                repo_type="dataset",
+                                repo_type=REPO_TYPE,
                                 revision=target_revision,
                                 repo_id=dataset,
                                 filename=filename,
@@ -161,13 +165,17 @@ def create_fts_endpoint(
                             )
 
                 with StepProfiler(method="fts_endpoint", step="perform FTS command"):
+                    logging.debug(f"connect to index file {index_file_location}")
                     con = duckdb.connect(index_file_location, read_only=True)
+                    count_result = con.execute(FTS_COMMAND_COUNT, [query]).fetchall()
+                    logging.debug(f"got {count_result=} results for {query=}")
                     query_result = con.execute(
                         (FTS_COMMAND.format(offset=offset, length=length)),
                         [query],
-                    )  # TODO: Does the response need to have the totalCount for pagination?
+                    )
                     pa_table = query_result.arrow()
                     con.close()
+                    index_path.touch()
 
                 with StepProfiler(method="fts_endpoint", step="tranform response"):
                     features = Features.from_arrow_schema(pa_table.schema)
@@ -184,6 +192,7 @@ def create_fts_endpoint(
                             features=features,
                             unsupported_columns=[],
                         ),
+                        "num_total_items": count_result[0][0],  # it will always return a non empty list with one element in a tuple
                     }
                 with StepProfiler(method="fts_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long)
