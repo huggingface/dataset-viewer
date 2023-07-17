@@ -12,6 +12,7 @@ from typing import Optional
 import duckdb
 from datasets import Features
 from huggingface_hub import hf_hub_download
+from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
@@ -51,7 +52,10 @@ def create_fts_endpoint(
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
+    external_auth_url: Optional[str] = None,
     hf_token: Optional[str] = None,
+    hf_jwt_public_key: Optional[str] = None,
+    hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
@@ -60,113 +64,132 @@ def create_fts_endpoint(
         revision: Optional[str] = None
         with StepProfiler(method="fts_endpoint", step="all"):
             try:
-                dataset = request.query_params.get("dataset")
-                config = request.query_params.get("config")
-                split = request.query_params.get("split")
-                query = request.query_params.get("query")
+                with StepProfiler(method="fts_endpoint", step="validate parameters"):
+                    dataset = request.query_params.get("dataset")
+                    config = request.query_params.get("config")
+                    split = request.query_params.get("split")
+                    query = request.query_params.get("query")
 
-                # TODO: Evaluate query parameter (Prevent SQL injection)
-                if (
-                    not dataset
-                    or not config
-                    or not split
-                    or not query
-                    or not are_valid_parameters([dataset, config, split, query])
-                ):
-                    raise MissingRequiredParameterError(
-                        "Parameter 'dataset', 'config', 'split' and 'query' are required"
+                    # TODO: Evaluate query parameter (Prevent SQL injection)
+                    if (
+                        not dataset
+                        or not config
+                        or not split
+                        or not query
+                        or not are_valid_parameters([dataset, config, split, query])
+                    ):
+                        raise MissingRequiredParameterError(
+                            "Parameter 'dataset', 'config', 'split' and 'query' are required"
+                        )
+
+                    offset = int(request.query_params.get("offset", 0))
+                    if offset < 0:
+                        raise InvalidParameterError(message="Offset must be positive")
+
+                    length = int(request.query_params.get("length", MAX_ROWS))
+                    if length < 0:
+                        raise InvalidParameterError("Length must be positive")
+                    if length > MAX_ROWS:
+                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+
+                with StepProfiler(method="fts_endpoint", step="check authentication"):
+                    # if auth_check fails, it will raise an exception that will be caught below
+                    auth_check(
+                        dataset=dataset,
+                        external_auth_url=external_auth_url,
+                        request=request,
+                        hf_jwt_public_key=hf_jwt_public_key,
+                        hf_jwt_algorithm=hf_jwt_algorithm,
+                        hf_timeout_seconds=hf_timeout_seconds,
                     )
-
-                offset = int(request.query_params.get("offset", 0))
-                if offset < 0:
-                    raise InvalidParameterError(message="Offset must be positive")
-
-                length = int(request.query_params.get("length", MAX_ROWS))
-                if length < 0:
-                    raise InvalidParameterError("Length must be positive")
-                if length > MAX_ROWS:
-                    raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
 
                 logging.info(f"/fts {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
-                # TODO: Symplify temporal index folder name
-                payload = ("download", dataset, config, split)
-                hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-                prefix = f"download-{dataset}"[:64]
-                subdirectory = f"{prefix}-{hash_suffix}"
-                index_folder = "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
-                index_folder = f"{duckdb_index_file_directory}/{index_folder}"
-                filename = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
-                index_file_location = f"{index_folder}/{filename}"
-                index_exists = Path(index_file_location).is_file()
-
-                # TODO: Note that actually, no cache data is needed to download the index file
-                processing_steps = processing_graph.get_processing_step_by_job_type("config-info")
-                result = get_cache_entry_from_steps(
-                    processing_steps=[processing_steps],
-                    dataset=dataset,
-                    config=config,
-                    split=None,
-                    processing_graph=processing_graph,
-                    hf_endpoint=hf_endpoint,
-                    hf_token=hf_token,
-                    hf_timeout_seconds=hf_timeout_seconds,
-                    cache_max_days=cache_max_days,
-                )
-
-                content = result["content"]
-                features = content["dataset_info"]["features"]
-                http_status = result["http_status"]
-                error_code = result["error_code"]
-                revision = result["dataset_git_revision"]
-                if http_status != HTTPStatus.OK:
-                    return get_json_error_response(
-                        content=content,
-                        status_code=http_status,
-                        max_age=max_age_short,
-                        error_code=error_code,
-                        revision=revision,
+                with StepProfiler(method="fts_endpoint", step="validate indexing was done"):
+                    # Note that actually, no cache data is needed to download the index file, but will help validate if indexing was done
+                    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
+                    result = get_cache_entry_from_steps(
+                        processing_steps=[processing_steps],
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        processing_graph=processing_graph,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                        cache_max_days=cache_max_days,
                     )
 
-                if not index_exists:
-                    logging.info(f"init_dir {index_folder}")
-                    init_dir(index_folder)
-                    hf_hub_download(
-                        repo_type="dataset",
-                        revision=target_revision,
-                        repo_id=dataset,
-                        filename=filename,
-                        local_dir=index_folder,
-                        local_dir_use_symlinks=False,
-                        token=hf_token,
-                    )
-                con = duckdb.connect(index_file_location, read_only=True)
-                query_result = con.execute(
-                    (FTS_COMMAND.format(offset=offset, length=length)),
-                    [query],
-                )  # TODO: Does the response need to have the totalCount for pagination?
-                pa_table = query_result.arrow()
-                con.close()
+                    content = result["content"]
+                    http_status = result["http_status"]
+                    error_code = result["error_code"]
+                    revision = result["dataset_git_revision"]
+                    if http_status != HTTPStatus.OK:
+                        return get_json_error_response(
+                            content=content,
+                            status_code=http_status,
+                            max_age=max_age_short,
+                            error_code=error_code,
+                            revision=revision,
+                        )
 
-                features = Features.from_arrow_schema(pa_table.schema)
-                response = {
-                    "features": to_features_list(features),
-                    "rows": to_rows_list(
-                        pa_table,
-                        dataset,
-                        config,
-                        split,
-                        cached_assets_base_url,
-                        cached_assets_directory,
-                        offset=offset,
-                        features=features,
-                        unsupported_columns=[],
-                    ),
-                }
-                return get_json_ok_response(response, max_age=max_age_long)
+                with StepProfiler(method="fts_endpoint", step="validate index file exists"):
+                    # TODO: Symplify temporal index folder name
+                    payload = ("download", dataset, config, split)
+                    hash_suffix = sha1(
+                        json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False
+                    ).hexdigest()[:8]
+                    prefix = f"download-{dataset}"[:64]
+                    subdirectory = f"{prefix}-{hash_suffix}"
+                    index_folder = "".join([c if re.match(r"[\w-]", c) else "-" for c in subdirectory])
+                    index_folder = f"{duckdb_index_file_directory}/{index_folder}"
+                    filename = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+                    index_file_location = f"{index_folder}/{filename}"
+                    index_exists = Path(index_file_location).is_file()
+                    if not index_exists:
+                        with StepProfiler(method="fts_endpoint", step="download index file"):
+                            logging.info(f"init_dir {index_folder}")
+                            init_dir(index_folder)
+                            hf_hub_download(
+                                repo_type="dataset",
+                                revision=target_revision,
+                                repo_id=dataset,
+                                filename=filename,
+                                local_dir=index_folder,
+                                local_dir_use_symlinks=False,
+                                token=hf_token,
+                            )
+
+                with StepProfiler(method="fts_endpoint", step="perform FTS command"):
+                    con = duckdb.connect(index_file_location, read_only=True)
+                    query_result = con.execute(
+                        (FTS_COMMAND.format(offset=offset, length=length)),
+                        [query],
+                    )  # TODO: Does the response need to have the totalCount for pagination?
+                    pa_table = query_result.arrow()
+                    con.close()
+
+                with StepProfiler(method="fts_endpoint", step="tranform response"):
+                    features = Features.from_arrow_schema(pa_table.schema)
+                    response = {
+                        "features": to_features_list(features),
+                        "rows": to_rows_list(
+                            pa_table,
+                            dataset,
+                            config,
+                            split,
+                            cached_assets_base_url,
+                            cached_assets_directory,
+                            offset=offset,
+                            features=features,
+                            unsupported_columns=[],
+                        ),
+                    }
+                with StepProfiler(method="fts_endpoint", step="generate the OK response"):
+                    return get_json_ok_response(response, max_age=max_age_long)
             except Exception as e:
                 error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
-                with StepProfiler(method="processing_step_endpoint", step="generate API error response", context=""):
+                with StepProfiler(method="fts_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return fts_endpoint
