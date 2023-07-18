@@ -167,9 +167,78 @@ To read and query the Parquet files, take a look at the [Query datasets from Dat
 
 ## Using the Hugging Face Hub API
 
-For convenience, you can directly use the Hugging Face Hub `/api/parquet` endpoint which returns the list of Parquet URLs.
+For convenience, you can directly use the Hugging Face Hub `/api/parquet` endpoint which returns the list of Parquet URLs:
 
-It takes the dataset name, the configuration name and the split as parameters:
+<inferencesnippet>
+<python>
+```python
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://huggingface.co/api/datasets/duorc/parquet"
+def query():
+    response = requests.get(API_URL, headers=headers)
+    return response.json()
+urls = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://huggingface.co/api/datasets/duorc/parquet",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET"
+        }
+    );
+    const urls = await response.json();
+    return urls;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://huggingface.co/api/datasets/duorc/parquet \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and configuration. For example, the [`duorc`](https://huggingface.co/datasets/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" configuration (see the [List splits and configurations](./splits) guide for more details about splits and configurations). 
+
+```json
+{
+  "ParaphraseRC": {
+    "test": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet"
+    ],
+    "train": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"
+    ],
+    "validation": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet"
+    ]
+  },
+  "SelfRC": {
+    "test": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-test.parquet"
+    ],
+    "train": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-train.parquet"
+    ],
+    "validation": [
+      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-validation.parquet"
+    ]
+  }
+}
+```
+
+You can get a single list by specifying the configuration name and split:
 
 <inferencesnippet>
 <python>
@@ -210,8 +279,6 @@ curl https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train \
 ```
 </curl>
 </inferencesnippet>
-
-The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format. For example, the [`duorc`](https://huggingface.co/datasets/duorc) dataset has one Parquet file for the train split of  "ParaphraseRC" configuration (see the [List splits and configurations](./splits) guide for more details about splits and configurations). 
 
 ```json
 ["https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"]
