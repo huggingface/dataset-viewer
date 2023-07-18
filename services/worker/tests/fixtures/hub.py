@@ -427,9 +427,9 @@ def create_dataset_info_response_for_audio() -> Any:
         "homepage": "",
         "license": "",
         "features": AUDIO_cols,
-        "splits": {"train": {"name": "train", "num_bytes": 54, "num_examples": 1, "dataset_name": None}},
+        "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
-        "dataset_size": 54,
+        "dataset_size": 59,
     }
 
 

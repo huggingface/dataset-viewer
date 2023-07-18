@@ -718,37 +718,36 @@ def fill_builder_info(
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
     fs = HTTPFileSystem()
-    if not builder.info.splits or not builder.info.download_size:
-        builder.info.splits = SplitDict()
-        builder.info.download_size = 0
-        builder.info.dataset_size = 0
-        for split in data_files:
-            split = str(split)  # in case it's a NamedSplit
-            try:
-                parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
-                    functools.partial(
-                        retry_and_validate_get_parquet_file_and_size, fs=fs, hf_token=hf_token, validate=validate
-                    ),
-                    data_files[split],
-                    unit="pq",
-                    disable=True,
-                )
-                parquet_files, sizes = zip(*parquet_files_and_sizes)
-            except ParquetValidationError:
-                raise
-            except Exception as e:
-                raise FileSystemError(f"Could not read the parquet files: {e}") from e
-            if parquet_files:
-                first_pf = parquet_files[0]
-                if builder.info.features is None:
-                    builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
-                first_row_group = first_pf.read_row_group(0)
-                compression_ratio = first_row_group.nbytes / first_row_group.num_rows
-                num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
-                approx_num_bytes = int(compression_ratio * num_examples)
-                builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
-                builder.info.download_size += sum(sizes)
-                builder.info.dataset_size += approx_num_bytes
+    builder.info.splits = SplitDict()
+    builder.info.download_size = 0
+    builder.info.dataset_size = 0
+    for split in data_files:
+        split = str(split)  # in case it's a NamedSplit
+        try:
+            parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
+                functools.partial(
+                    retry_and_validate_get_parquet_file_and_size, fs=fs, hf_token=hf_token, validate=validate
+                ),
+                data_files[split],
+                unit="pq",
+                disable=True,
+            )
+            parquet_files, sizes = zip(*parquet_files_and_sizes)
+        except ParquetValidationError:
+            raise
+        except Exception as e:
+            raise FileSystemError(f"Could not read the parquet files: {e}") from e
+        if parquet_files:
+            first_pf = parquet_files[0]
+            if builder.info.features is None:
+                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
+            first_row_group = first_pf.read_row_group(0)
+            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
+            num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+            approx_num_bytes = int(compression_ratio * num_examples)
+            builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
+            builder.info.download_size += sum(sizes)
+            builder.info.dataset_size += approx_num_bytes
 
 
 class limit_parquet_writes:
