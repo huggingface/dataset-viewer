@@ -27,11 +27,10 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
-from libcommon.parquet_utils import get_supported_unsupported_columns
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
-from libcommon.viewer_utils.features import to_features_list
+from libcommon.viewer_utils.features import to_features_list, get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -52,7 +51,7 @@ FTS_COMMAND = (
 REPO_TYPE = "dataset"
 
 
-def create_fts_endpoint(
+def create_search_endpoint(
     processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
@@ -68,11 +67,11 @@ def create_fts_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
 ) -> Endpoint:
-    async def fts_endpoint(request: Request) -> Response:
+    async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
-        with StepProfiler(method="fts_endpoint", step="all"):
+        with StepProfiler(method="search_endpoint", step="all"):
             try:
-                with StepProfiler(method="fts_endpoint", step="validate parameters"):
+                with StepProfiler(method="search_endpoint", step="validate parameters"):
                     dataset = request.query_params.get("dataset")
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
@@ -100,7 +99,7 @@ def create_fts_endpoint(
                     if length > MAX_ROWS:
                         raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
 
-                with StepProfiler(method="fts_endpoint", step="check authentication"):
+                with StepProfiler(method="search_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
                     auth_check(
                         dataset=dataset,
@@ -111,9 +110,9 @@ def create_fts_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
 
-                logging.info(f"/fts {dataset=} {config=} {split=} {query=} {offset=} {length=}")
+                logging.info(f"/search {dataset=} {config=} {split=} {query=} {offset=} {length=}")
 
-                with StepProfiler(method="fts_endpoint", step="validate indexing was done"):
+                with StepProfiler(method="search_endpoint", step="validate indexing was done"):
                     # no cache data is needed to download the index file
                     # but will help to validate if indexing was done
                     processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
@@ -142,7 +141,7 @@ def create_fts_endpoint(
                             revision=revision,
                         )
 
-                with StepProfiler(method="fts_endpoint", step="validate index file exists"):
+                with StepProfiler(method="search_endpoint", step="validate index file exists"):
                     payload = (dataset, config, split)
                     hash_suffix = sha1(
                         json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False
@@ -154,7 +153,7 @@ def create_fts_endpoint(
                     index_file_location = f"{index_folder}/{filename}"
                     index_path = Path(index_file_location)
                     if not index_path.is_file():
-                        with StepProfiler(method="fts_endpoint", step="download index file"):
+                        with StepProfiler(method="search_endpoint", step="download index file"):
                             logging.info(f"init_dir {index_folder}")
                             init_dir(index_folder)
                             hf_hub_download(
@@ -167,7 +166,7 @@ def create_fts_endpoint(
                                 token=hf_token,
                             )
 
-                with StepProfiler(method="fts_endpoint", step="perform FTS command"):
+                with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     con = duckdb.connect(index_file_location, read_only=True)
                     count_result = con.execute(FTS_COMMAND_COUNT, [query]).fetchall()
@@ -180,7 +179,7 @@ def create_fts_endpoint(
                     con.close()
                     index_path.touch()
 
-                with StepProfiler(method="fts_endpoint", step="tranform response"):
+                with StepProfiler(method="search_endpoint", step="tranform response"):
                     features = Features.from_arrow_schema(pa_table.schema)
                     _, unsupported_columns = get_supported_unsupported_columns(
                         features,
@@ -203,11 +202,11 @@ def create_fts_endpoint(
                             0
                         ],  # it will always return a non empty list with one element in a tuple
                     }
-                with StepProfiler(method="fts_endpoint", step="generate the OK response"):
+                with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long)
             except Exception as e:
                 error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
-                with StepProfiler(method="fts_endpoint", step="generate API error response"):
+                with StepProfiler(method="search_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
-    return fts_endpoint
+    return search_endpoint

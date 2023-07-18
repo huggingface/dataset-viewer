@@ -3,7 +3,7 @@
 
 import json
 from io import BytesIO
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Union, Tuple
 from zlib import adler32
 
 from datasets import (
@@ -298,3 +298,20 @@ def to_features_list(features: Features) -> List[FeatureItem]:
         }
         for idx, name in enumerate(features)
     ]
+
+
+def get_supported_unsupported_columns(
+    features: Features,
+    unsupported_features_magic_strings: List[str] = [],
+) -> Tuple[List[str], List[str]]:
+    supported_columns, unsupported_columns = [], []
+
+    for column, feature in features.items():
+        str_feature = str(feature)
+        str_column = str(column)
+        if any(magic_string in str_feature for magic_string in unsupported_features_magic_strings):
+            unsupported_columns.append(str_column)
+        else:
+            supported_columns.append(str_column)
+    return supported_columns, unsupported_columns
+

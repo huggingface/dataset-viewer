@@ -23,7 +23,7 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.fts import create_fts_endpoint
+from api.routes.search import create_search_endpoint
 from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
@@ -117,8 +117,8 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         ),
         # ^ called by the Hub webhooks
         Route(
-            "/fts",
-            endpoint=create_fts_endpoint(
+            "/search",
+            endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,

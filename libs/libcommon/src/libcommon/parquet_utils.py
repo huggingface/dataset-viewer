@@ -16,6 +16,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
 
 class ParquetResponseEmptyError(Exception):
@@ -39,22 +40,6 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
-
-
-def get_supported_unsupported_columns(
-    features: Features,
-    unsupported_features_magic_strings: List[str] = [],
-) -> Tuple[List[str], List[str]]:
-    supported_columns, unsupported_columns = [], []
-
-    for column, feature in features.items():
-        str_feature = str(feature)
-        str_column = str(column)
-        if any(magic_string in str_feature for magic_string in unsupported_features_magic_strings):
-            unsupported_columns.append(str_column)
-        else:
-            supported_columns.append(str_column)
-    return supported_columns, unsupported_columns
 
 
 @dataclass
