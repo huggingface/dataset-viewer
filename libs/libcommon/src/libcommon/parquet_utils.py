@@ -3,7 +3,6 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache, partial
-from os import PathLike
 from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
 
 import numpy as np
@@ -16,8 +15,7 @@ from huggingface_hub import HfFileSystem
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
-
-StrPath = Union[str, PathLike[str]]
+from libcommon.storage import StrPath
 
 
 class ParquetResponseEmptyError(Exception):

@@ -6,7 +6,7 @@ import enum
 import mimetypes
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, List, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -74,6 +74,21 @@ class SplitHubFile(TypedDict):
     url: str
     filename: str
     size: int
+
+
+class RowItem(TypedDict):
+    row_idx: int
+    row: Mapping[str, Any]
+    truncated_cells: List[str]
+
+
+Row = Mapping[str, Any]
+
+
+class FeatureItem(TypedDict):
+    feature_idx: int
+    name: str
+    type: Row
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
