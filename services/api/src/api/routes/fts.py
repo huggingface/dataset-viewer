@@ -27,6 +27,7 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
+from libcommon.parquet_utils import get_supported_unsupported_columns
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
@@ -38,6 +39,7 @@ from api.routes.endpoint import get_cache_entry_from_steps
 
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 MAX_ROWS = 100
+UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
     " data) A WHERE score IS NOT NULL;"
@@ -180,6 +182,10 @@ def create_fts_endpoint(
 
                 with StepProfiler(method="fts_endpoint", step="tranform response"):
                     features = Features.from_arrow_schema(pa_table.schema)
+                    _, unsupported_columns = get_supported_unsupported_columns(
+                        features,
+                        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+                    )
                     response = {
                         "features": to_features_list(features),
                         "rows": to_rows_list(
@@ -191,7 +197,7 @@ def create_fts_endpoint(
                             cached_assets_directory,
                             offset=offset,
                             features=features,
-                            unsupported_columns=[],
+                            unsupported_columns=unsupported_columns,
                         ),
                         "num_total_items": count_result[0][
                             0
