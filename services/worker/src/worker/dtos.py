@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
-from libcommon.utils import SplitHubFile
+from libcommon.utils import FeatureItem, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -56,18 +56,6 @@ class DatasetSplitNamesResponse(TypedDict):
 
 class PreviousJob(SplitItem):
     kind: str
-
-
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Mapping[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
 
 
 class SplitFirstRowsResponse(SplitItem):

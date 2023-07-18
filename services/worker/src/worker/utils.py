@@ -22,14 +22,7 @@ from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import (
-    Dataset,
-    DatasetInfo,
-    DownloadConfig,
-    Features,
-    IterableDataset,
-    load_dataset,
-)
+from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
@@ -39,32 +32,13 @@ from libcommon.exceptions import (
     NormalRowsError,
     StreamingRowsError,
 )
-from libcommon.utils import orjson_dumps
+from libcommon.utils import Row, RowItem, orjson_dumps
 from pyarrow.parquet import ParquetFile
 
-from worker.dtos import FeatureItem, Row, RowItem, RowsContent
+from worker.dtos import RowsContent
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-# in JSON, dicts do not carry any order, so we need to return a list
-#
-# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
-#   is a string, number, boolean, null, object, or array.
-# > An array is an *ordered* sequence of zero or more values.
-# > The terms "object" and "array" come from the conventions of JavaScript.
-# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "feature_idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
 
 
 def get_json_size(obj: Any) -> int:

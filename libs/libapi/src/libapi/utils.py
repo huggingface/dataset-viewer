@@ -5,15 +5,23 @@ import logging
 from http import HTTPStatus
 from typing import Any, Callable, Coroutine, List, Optional
 
+import pyarrow as pa
+from datasets import Features
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.utils import Priority, orjson_dumps
+from libcommon.rows_utils import transform_rows
+from libcommon.storage import StrPath
+from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from libapi.exceptions import ResponseNotFoundError, ResponseNotReadyError
+from libapi.exceptions import (
+    ResponseNotFoundError,
+    ResponseNotReadyError,
+    TransformRowsProcessingError,
+)
 
 
 class OrjsonResponse(JSONResponse):
@@ -119,3 +127,44 @@ def try_backfill_dataset(
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
+
+
+def to_rows_list(
+    pa_table: pa.Table,
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    features: Features,
+    unsupported_columns: List[str],
+) -> List[RowItem]:
+    num_rows = pa_table.num_rows
+    for idx, (column, feature) in enumerate(features.items()):
+        if column in unsupported_columns:
+            pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    try:
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            config=config,
+            split=split,
+            rows=pa_table.to_pylist(),
+            features=features,
+            cached_assets_base_url=cached_assets_base_url,
+            cached_assets_directory=cached_assets_directory,
+            offset=offset,
+        )
+    except Exception as err:
+        raise TransformRowsProcessingError(
+            "Server error while post-processing the split rows. Please report the issue."
+        ) from err
+    return [
+        {
+            "row_idx": idx + offset,
+            "row": row,
+            "truncated_cells": [],
+        }
+        for idx, row in enumerate(transformed_rows)
+    ]
