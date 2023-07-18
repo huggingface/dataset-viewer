@@ -27,8 +27,8 @@ from huggingface_hub.utils._errors import hf_raise_for_status
 CI_HUB_USER = "__DUMMY_DATASETS_SERVER_USER__"
 CI_HUB_USER_API_TOKEN = "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"
 CI_HUB_USER_SESSION_TOKEN = (
-    "oMidckPVQYumfKrAHNYKqnbacRoLaMppHRRlfNbupNahzAHCz"
-    "InBVbhgGosDneYXHVTKkkWygoMDxBfFUkFPIPiVWBtZtSTYIYTScnEKAJYkyGBAcbVTbokAygCCTWvH"
+    "ePTgRpKDHjwQZylcViCgFywZqECKWIutEsEercqQPAeADPKGt"
+    "CLuLEvMpNIGhruoHbnIbDhGLlpTpTlZhOygCpHzbfTHboxEwuPdlHjNlfcxFuYHvfSivfoBXQxWUUek"
 )
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
