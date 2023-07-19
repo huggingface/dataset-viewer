@@ -7,9 +7,10 @@ import re
 from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import duckdb
+import pyarrow as pa
 from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
@@ -52,6 +53,79 @@ FTS_COMMAND = (
     " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
+
+
+def get_index_folder(duckdb_index_file_directory: StrPath, dataset: str, config: str, split: str) -> str:
+    payload = (dataset, config, split)
+    hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
+    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
+    return f"{duckdb_index_file_directory}/{subdirectory}"
+
+
+def download_index_file(
+    index_folder: str,
+    target_revision: str,
+    dataset: str,
+    repo_file_location: str,
+    hf_token: Optional[str] = None,
+) -> None:
+    logging.info(f"init_dir {index_folder}")
+    init_dir(index_folder)
+    hf_hub_download(
+        repo_type=REPO_TYPE,
+        revision=target_revision,
+        repo_id=dataset,
+        filename=repo_file_location,
+        local_dir=index_folder,
+        local_dir_use_symlinks=False,
+        token=hf_token,
+    )
+
+
+def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> Tuple[int, pa.Table]:
+    con = duckdb.connect(index_file_location, read_only=True)
+    count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
+    num_total_items = count_result[0][0]  # it will always return a non empty list with one element in a tuple
+    logging.debug(f"got {num_total_items=} results for {query=}")
+    query_result = con.execute(
+        query=FTS_COMMAND.format(offset=offset, length=length),
+        parameters=[query],
+    )
+    pa_table = query_result.arrow()
+    con.close()
+    return (num_total_items, pa_table)
+
+
+def create_response(
+    pa_table: pa.Table,
+    dataset: str,
+    config: str,
+    split: str,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    num_total_items: int,
+) -> None:
+    features = Features.from_arrow_schema(pa_table.schema)
+    _, unsupported_columns = get_supported_unsupported_columns(
+        features,
+        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+    )
+    return {
+        "features": to_features_list(features),
+        "rows": to_rows_list(
+            pa_table,
+            dataset,
+            config,
+            split,
+            cached_assets_base_url,
+            cached_assets_directory,
+            offset=offset,
+            features=features,
+            unsupported_columns=unsupported_columns,
+        ),
+        "num_total_items": num_total_items,
+    }
 
 
 def create_search_endpoint(
@@ -143,67 +217,31 @@ def create_search_endpoint(
                             revision=revision,
                         )
 
-                with StepProfiler(method="search_endpoint", step="validate index file exists"):
-                    payload = (dataset, config, split)
-                    hash_suffix = sha1(
-                        json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False
-                    ).hexdigest()[:8]
-
-                    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-                    index_folder = f"{duckdb_index_file_directory}/{subdirectory}"
-                    filename = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
-                    index_file_location = f"{index_folder}/{filename}"
+                with StepProfiler(method="search_endpoint", step="download index file if missing"):
+                    index_folder = get_index_folder(duckdb_index_file_directory, dataset, config, split)
+                    repo_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+                    index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)
                     if not index_path.is_file():
                         with StepProfiler(method="search_endpoint", step="download index file"):
-                            logging.info(f"init_dir {index_folder}")
-                            init_dir(index_folder)
-                            hf_hub_download(
-                                repo_type=REPO_TYPE,
-                                revision=target_revision,
-                                repo_id=dataset,
-                                filename=filename,
-                                local_dir=index_folder,
-                                local_dir_use_symlinks=False,
-                                token=hf_token,
-                            )
+                            download_index_file(index_folder, target_revision, dataset, repo_file_location, hf_token)
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
-                    con = duckdb.connect(index_file_location, read_only=True)
-                    count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
-                    logging.debug(f"got {count_result=} results for {query=}")
-                    query_result = con.execute(
-                        query=FTS_COMMAND.format(offset=offset, length=length),
-                        parameters=[query],
-                    )
-                    pa_table = query_result.arrow()
-                    con.close()
+                    (num_total_items, pa_table) = full_text_search(index_file_location, query, offset, length)
                     index_path.touch()
 
-                with StepProfiler(method="search_endpoint", step="tranform response"):
-                    features = Features.from_arrow_schema(pa_table.schema)
-                    _, unsupported_columns = get_supported_unsupported_columns(
-                        features,
-                        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+                with StepProfiler(method="search_endpoint", step="create response"):
+                    response = create_response(
+                        pa_table,
+                        dataset,
+                        config,
+                        split,
+                        cached_assets_base_url,
+                        cached_assets_directory,
+                        offset,
+                        num_total_items,
                     )
-                    response = {
-                        "features": to_features_list(features),
-                        "rows": to_rows_list(
-                            pa_table,
-                            dataset,
-                            config,
-                            split,
-                            cached_assets_base_url,
-                            cached_assets_directory,
-                            offset=offset,
-                            features=features,
-                            unsupported_columns=unsupported_columns,
-                        ),
-                        "num_total_items": count_result[0][
-                            0
-                        ],  # it will always return a non empty list with one element in a tuple
-                    }
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long)
             except Exception as e:
