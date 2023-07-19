@@ -116,6 +116,4 @@
   value: {{ .Values.duckDBIndex.storageDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
   value: "/tmp/duckdb-extensions"
-- name: HF_HUB_ENABLE_HF_TRANSFER
-  value: {{ .Values.worker.hfHubEnableHfTransfer | quote }}
 {{- end -}}
