@@ -514,7 +514,7 @@ class UnsupportedExternalFilesError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
 
 
-class StatsComputationError(CacheableError):
+class StatisticsComputationError(CacheableError):
     """Raised in case of unexpected behaviour / errors during statistics computations."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
