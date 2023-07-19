@@ -44,7 +44,17 @@ services:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
     volumes:
+      - ../libs/libapi/src:/src/libs/libapi/src
       - ../services/api/src:/src/services/api/src
+  rows:
+    extends:
+      service: common
+    environment:
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+    # volumes to local source directory for development
+    volumes:
+      - ../libs/libapi/src:/src/libs/libapi/src
+      - ../services/rows/src:/src/services/rows/src
   datasets-worker:
     extends:
       service: common
