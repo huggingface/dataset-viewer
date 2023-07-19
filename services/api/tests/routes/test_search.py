@@ -49,6 +49,8 @@ def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
             3,
         ),
         ("non existing text", 0, 100, {"text": []}, 0),
+        (";DROP TABLE data;", 0, 100, {"text": []}, 0),
+        ("some text'); DROP TABLE data; --", 0, 100, {"text": []}, 0),
     ],
 )
 def test_full_text_search(
@@ -93,5 +95,10 @@ def test_full_text_search(
     filtered_df = pd.DataFrame(expected_result)
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
     assert pa_table == expected_table
+
+    # ensure again that database has not been modified
+    con = duckdb.connect(index_file_location)
+    assert sample_df.size == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
+    con.close()
 
     os.remove(index_file_location)
