@@ -280,9 +280,4 @@ def test_compute(
             descriptive_statistics_expected.keys()
         )  # columns
         for column_response in response_statistics:
-            from pprint import pprint
-
-            pprint(column_response)
-            pprint(descriptive_statistics_expected[column_response["column_name"]])
-
             assert column_response == descriptive_statistics_expected[column_response["column_name"]]

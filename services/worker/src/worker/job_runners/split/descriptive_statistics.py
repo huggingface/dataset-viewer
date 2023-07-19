@@ -36,6 +36,9 @@ FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
 
+COPY_PARQUET_DATA_COMMAND = """
+COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO '{local_parquet_path}' (FORMAT PARQUET);
+"""
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;
 """
@@ -214,10 +217,12 @@ def compute_categorical_statistics(
     class_label_names: List[str],
     n_samples: int,
 ) -> CategoricalStatisticsItem:
-    query = f"""
-    SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
-    """
-    categories: List[Tuple[int, int]] = con.sql(query).fetchall()  # list of tuples (idx, num_samples)
+    categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
+        column_name=column_name, parquet_filename=parquet_filename
+    )
+    categories: List[Tuple[int, int]] = con.sql(
+        categorical_counts_query
+    ).fetchall()  # list of tuples (idx, num_samples)
 
     logging.debug(f"Statistics for {column_name} computed")
     frequencies, nan_count = {}, 0
@@ -315,8 +320,10 @@ def compute_descriptive_statistics_response(
     local_parquet_path = (
         Path(local_parquet_directory) / PARQUET_FILENAME if local_parquet_directory else Path(PARQUET_FILENAME)
     )
-    logging.info(f"Copying remote data to a local parquet file {local_parquet_path}. ")
-    con.sql(f"COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO '{local_parquet_path}' (FORMAT PARQUET);")
+    logging.info(f"Downloading remote data to a local parquet file {local_parquet_path}. ")
+    con.sql(
+        COPY_PARQUET_DATA_COMMAND.format(parquet_files_urls=parquet_files_urls, local_parquet_path=local_parquet_path)
+    )
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
