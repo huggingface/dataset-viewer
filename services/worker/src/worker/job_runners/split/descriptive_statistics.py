@@ -87,37 +87,44 @@ class SplitDescriptiveStatisticsResponse(TypedDict):
     statistics: List[StatisticsPerColumnItem]
 
 
-# TODO: Union[int, float] - > convert to separate type
-NUMERICAL = Union[int, float]
-
-
 def generate_bins(
-    min_value: Union[int, float], max_value: Union[int, float], bin_size: Union[int, float], n_bins: int
-):
+    min_value: Union[int, float],
+    max_value: Union[int, float],
+    dtype: str,
+    n_bins: int,
+) -> pd.DataFrame:
     """
     Returns:
         pandas.DataFrame with bin edges to insert into database to perform histogram computation with duckdb
     """
-    bins = [(0, min_value, min_value + bin_size)]
-    for i in range(n_bins - 2):
-        bins.append((i + 1, bins[i][2], bins[i][2] + bin_size))
-    # add 1 to the rightmost bin to include exact max values in the count
-    # (add integer value to work with both floats and ints)
-    bins.append((n_bins - 1, bins[-1][2], max_value + 1))
-    return pd.DataFrame.from_records(bins, columns=["bin_id", "bin_min", "bin_max"])
+    if dtype == "FLOAT":
+        bin_size = (max_value - min_value) / n_bins
+        bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
+        assert len(bin_edges) == n_bins, "incorrect number of bins"
+    elif dtype == "INT":
+        bin_size = np.ceil((max_value - min_value + 1) / n_bins)
+        bin_edges = np.arange(min_value, max_value + 1, bin_size).astype(int).tolist()
+        assert len(bin_edges) <= n_bins, "incorrect number of bins"
+    else:
+        raise ValueError
+    bin_max_edges = bin_edges[1:] + [max_value + 1]  # add 1 to include exact max values in the last bin
+    return pd.DataFrame.from_dict(
+        {"bin_id": list(range(len(bin_edges))), "bin_min": bin_edges, "bin_max": bin_max_edges}
+    )
 
 
 def compute_histogram(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
-    bin_size: int,
+    dtype: str,
     min_value: Union[int, float],
     max_value: Union[int, float],
     n_bins: int,
     n_samples: Optional[int] = None,
 ) -> Histogram:
-    bins_df = generate_bins(min_value=min_value, max_value=max_value, n_bins=n_bins, bin_size=bin_size)  # type: ignore
+    bins_df = generate_bins(min_value=min_value, max_value=max_value, dtype=dtype, n_bins=n_bins)
+    n_bins = bins_df.shape[0]
     con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
     compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
     logging.debug(f"Compute histogram for {column_name}")
@@ -128,7 +135,6 @@ def compute_histogram(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
-    # bins_id_to_max = dict(con.sql("select bin_id, bin_max from bins").fetchall())
     hist = []
     for bin_idx in range(n_bins):
         # no key in query result = no examples in this range, so we put 0
@@ -138,8 +144,8 @@ def compute_histogram(
             "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
             f" match. histogram sum={sum(hist)}, {n_samples=}"
         )
-    bins = bins_df["bin_max"].round(DECIMALS).tolist()[:-1]
-    bins = [np.round(min_value, DECIMALS).item()] + bins + [np.round(max_value, DECIMALS).item()]
+    bins = bins_df["bin_min"].round(DECIMALS).tolist()
+    bins = bins + [np.round(max_value, DECIMALS).item()]  # put exact max value back to bins
     return Histogram(hist=hist, bin_edges=bins)
 
 
@@ -162,33 +168,20 @@ def compute_numerical_statistics(
     nan_count = con.sql(nan_count_command).fetchall()[0][0]
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
     logging.debug(f"{nan_count=} {nan_proportion=}")
-
-    if dtype in FLOAT_DTYPES:
-        bin_size = (maximum - minimum) / n_bins
-    elif dtype in INTEGER_DTYPES:
-        if maximum - minimum < n_bins:
-            bin_size = 1
-            n_bins = maximum - minimum + 1
-        else:
-            bin_size = int(np.round((maximum - minimum) / n_bins))
-        mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
-    else:
-        raise ValueError("Incorrect dtype, only integer and float are allowed. ")
-
     histogram = compute_histogram(
         con,
         column_name,
         parquet_filename,
         min_value=minimum,
         max_value=maximum,
-        bin_size=bin_size,
+        dtype="FLOAT" if dtype in FLOAT_DTYPES else "INT",
         n_bins=n_bins,
         n_samples=n_samples - nan_count,
     )
     if dtype in FLOAT_DTYPES:
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     else:
-        mean, std = np.round([mean, std], DECIMALS).tolist()
+        mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     return NumericalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
