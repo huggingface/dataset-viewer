@@ -946,13 +946,13 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
     ],
 )
 def test_fill_builder_info(
-    hub_reponses_big: HubDatasetTest,
+    hub_responses_big: HubDatasetTest,
     tmp_path: Path,
     validate: Optional[Callable[[pq.ParquetFile], None]],
     too_big_row_groups: bool,
 ) -> None:
     cache_dir = str(tmp_path / "test_fill_builder_info")
-    name = hub_reponses_big["name"]
+    name = hub_responses_big["name"]
     builder = load_dataset_builder(name, cache_dir=cache_dir)
     builder.info = datasets.info.DatasetInfo()
     if too_big_row_groups:
@@ -963,7 +963,7 @@ def test_fill_builder_info(
         assert isinstance(exc_info.value.row_group_byte_size, int)
     else:
         fill_builder_info(builder, hf_token=None, validate=validate)
-        expected_info = hub_reponses_big["parquet_and_info_response"]["dataset_info"]
+        expected_info = hub_responses_big["parquet_and_info_response"]["dataset_info"]
         assert expected_info == asdict(builder.info)
 
 
