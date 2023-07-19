@@ -91,6 +91,11 @@ class FeatureItem(TypedDict):
     type: Row
 
 
+class PaginatedResponse(TypedDict):
+    features: List[FeatureItem]
+    rows: Any
+    num_total_items: int
+
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 def orjson_default(obj: Any) -> Any:
     if isinstance(obj, bytes):

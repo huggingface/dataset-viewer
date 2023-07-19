@@ -17,7 +17,7 @@ def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
     dataset, config, split = "dataset", "config", "split"
     index_folder = get_index_folder(duckdb_index_cache_directory, dataset, config, split)
     assert index_folder is not None
-    assert duckdb_index_cache_directory in index_folder
+    assert str(duckdb_index_cache_directory) in index_folder
 
 
 @pytest.mark.parametrize(

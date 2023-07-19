@@ -31,6 +31,7 @@ from libapi.utils import (
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
+from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -105,15 +106,15 @@ def create_response(
     cached_assets_directory: StrPath,
     offset: int,
     num_total_items: int,
-) -> None:
+) -> PaginatedResponse:
     features = Features.from_arrow_schema(pa_table.schema)
     _, unsupported_columns = get_supported_unsupported_columns(
         features,
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
     )
-    return {
-        "features": to_features_list(features),
-        "rows": to_rows_list(
+    return PaginatedResponse(
+        features=to_features_list(features),
+        rows=to_rows_list(
             pa_table,
             dataset,
             config,
@@ -124,8 +125,8 @@ def create_response(
             features=features,
             unsupported_columns=unsupported_columns,
         ),
-        "num_total_items": num_total_items,
-    }
+        num_total_items=num_total_items,
+    )
 
 
 def create_search_endpoint(
