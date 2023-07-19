@@ -19,6 +19,7 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     SplitDescriptiveStatisticsJobRunner,
+    generate_bins,
 )
 from worker.resources import LibrariesResource
 
@@ -67,6 +68,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 100,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -109,6 +111,7 @@ def get_parquet_and_info_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 100,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -231,19 +234,32 @@ EXPECTED_STATS_CONTENT = {
 }
 
 
-def count_expected_statistics_for_numerical_column(column: pd.Series):
+def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: str) -> dict:  # type: ignore
     minimum, maximum, mean, median, std = (
-        column.min().astype(float).round(DECIMALS).item(),
-        column.max().astype(float).round(DECIMALS).item(),
-        column.mean().astype(float).round(DECIMALS).item(),
-        column.median().astype(float).round(DECIMALS).item(),
-        column.std().astype(float).round(DECIMALS).item(),
+        column.min(),  # .astype(float).round(DECIMALS).item(),
+        column.max(),  # .astype(float).round(DECIMALS).item(),
+        column.mean(),  # .astype(float).round(DECIMALS).item(),
+        column.median(),  # .astype(float).round(DECIMALS).item(),
+        column.std(),  # .astype(float).round(DECIMALS).item(),
     )
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
-    hist, bin_edges = np.histogram(column[~column.isna()])
-    bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
+    if dtype == "FLOAT":
+        hist, bin_edges = np.histogram(column[~column.isna()])
+        bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
+    else:
+        bins = generate_bins(minimum, maximum, dtype, 10)  # TODO: N BINS
+        hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
+        bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
+    if dtype == "FLOAT":
+        minimum = minimum.astype(float).round(DECIMALS).item()
+        maximum = maximum.astype(float).round(DECIMALS).item()
+        mean = mean.astype(float).round(DECIMALS).item()  # type: ignore
+        median = median.astype(float).round(DECIMALS).item()  # type: ignore
+        std = std.astype(float).round(DECIMALS).item()  # type: ignore
+    else:
+        mean, median, std = list(np.round([mean, median, std], DECIMALS))
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
@@ -259,7 +275,9 @@ def count_expected_statistics_for_numerical_column(column: pd.Series):
     }
 
 
-def count_expected_statistics_for_categorical_column(column: pd.Series, class_labels: List[str]):
+def count_expected_statistics_for_categorical_column(
+    column: pd.Series, class_labels: List[str]  # type: ignore
+) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts().to_dict()
@@ -274,9 +292,7 @@ def count_expected_statistics_for_categorical_column(column: pd.Series, class_la
 
 
 @pytest.fixture
-def descriptive_statistics_expected(
-    datasets: Mapping[str, Dataset], hub_responses_descriptive_statistics: HubDatasetTest
-) -> dict:  # SplitDescriptiveStatisticsResponse:
+def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
     columns_to_types = {
         "int_column": "INT",
         "int_nan_column": "INT",
@@ -285,6 +301,9 @@ def descriptive_statistics_expected(
         "class_label_column": "CLASS_LABEL",
         "class_label_nan_column": "CLASS_LABEL",
         "float_negative_column": "FLOAT",
+        "float_cross_zero_column": "FLOAT",
+        "int_negative_column": "INT",
+        "int_cross_zero_column": "INT",
     }
     ds = datasets["descriptive_statistics"]
     df = ds.to_pandas()
@@ -292,7 +311,9 @@ def descriptive_statistics_expected(
     for column_name in df.columns:
         column_type = columns_to_types[column_name]
         if column_type in ["FLOAT", "INT"]:
-            column_stats = count_expected_statistics_for_numerical_column(df[column_name])
+            column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
+            if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+                raise ValueError(column_name, column_stats)
             expected_statistics[column_name] = {
                 "column_name": column_name,
                 "column_type": column_type,
@@ -306,13 +327,16 @@ def descriptive_statistics_expected(
                 "column_type": column_type,
                 "column_statistics": column_stats,
             }
-    # return SplitDescriptiveStatisticsResponse(num_examples=df.shape[0], statistics=expected_statistics)
     return expected_statistics
 
 
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
-    [("descriptive_statistics", None), ("audio", "NoSupportedFeaturesError"), ("big", "SplitWithTooBigParquetError")],
+    [
+        ("descriptive_statistics", None),
+        ("audio", "NoSupportedFeaturesError"),
+        ("big", "SplitWithTooBigParquetError"),
+    ],
 )
 def test_compute(
     app_config: AppConfig,
@@ -323,7 +347,7 @@ def test_compute(
     hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
-    descriptive_statistics_expected: dict,
+    descriptive_statistics_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
