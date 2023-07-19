@@ -56,16 +56,14 @@ def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
 def test_full_text_search(
     query: str, offset: int, length: int, expected_result: Any, expected_num_total_items: int
 ) -> None:
+    # simulate index file
     index_file_location = "index.duckdb"
     con = duckdb.connect(index_file_location)
-
     con.execute("INSTALL 'httpfs';")
     con.execute("LOAD 'httpfs';")
     con.execute("INSTALL 'fts';")
     con.execute("LOAD 'fts';")
-
     con.sql("CREATE OR REPLACE SEQUENCE serial START 1;")
-
     sample_df = pd.DataFrame(
         {
             "text": [
@@ -78,7 +76,6 @@ def test_full_text_search(
         },
         dtype=pd.StringDtype(storage="python"),
     )
-
     create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
@@ -86,6 +83,7 @@ def test_full_text_search(
     con.sql("PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);")
     con.close()
 
+    # assert search results
     (num_total_items, pa_table) = full_text_search(index_file_location, query, offset, length)
     assert num_total_items is not None
     assert pa_table is not None
@@ -96,7 +94,7 @@ def test_full_text_search(
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
     assert pa_table == expected_table
 
-    # ensure again that database has not been modified
+    # ensure that database has not been modified
     con = duckdb.connect(index_file_location)
     assert sample_df.size == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
     con.close()
