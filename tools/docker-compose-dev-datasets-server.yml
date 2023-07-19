@@ -84,7 +84,7 @@ services:
       dockerfile: services/rows/dev.Dockerfile
     extends:
       file: docker-compose-dev-base.yml
-      service: api
+      service: rows
     volumes:
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
