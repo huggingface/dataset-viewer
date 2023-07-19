@@ -3,7 +3,7 @@
 
 import json
 from io import BytesIO
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
 from datasets import (
@@ -314,4 +314,3 @@ def get_supported_unsupported_columns(
         else:
             supported_columns.append(str_column)
     return supported_columns, unsupported_columns
-

@@ -30,7 +30,10 @@ from libapi.utils import (
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
-from libcommon.viewer_utils.features import to_features_list, get_supported_unsupported_columns
+from libcommon.viewer_utils.features import (
+    get_supported_unsupported_columns,
+    to_features_list,
+)
 from starlette.requests import Request
 from starlette.responses import Response
 
