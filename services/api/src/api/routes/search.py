@@ -80,7 +80,6 @@ def create_search_endpoint(
                     split = request.query_params.get("split")
                     query = request.query_params.get("query")
 
-                    # TODO: Evaluate query parameter (Prevent SQL injection)
                     if (
                         not dataset
                         or not config
@@ -172,11 +171,11 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     con = duckdb.connect(index_file_location, read_only=True)
-                    count_result = con.execute(FTS_COMMAND_COUNT, [query]).fetchall()
+                    count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
                     logging.debug(f"got {count_result=} results for {query=}")
                     query_result = con.execute(
-                        (FTS_COMMAND.format(offset=offset, length=length)),
-                        [query],
+                        query=FTS_COMMAND.format(offset=offset, length=length),
+                        parameters=[query],
                     )
                     pa_table = query_result.arrow()
                     con.close()

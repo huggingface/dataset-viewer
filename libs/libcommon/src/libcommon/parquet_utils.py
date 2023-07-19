@@ -3,7 +3,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache, partial
-from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
