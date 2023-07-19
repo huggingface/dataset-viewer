@@ -17,6 +17,7 @@ ApiErrorCode = Literal[
     "MissingRequiredParameter",
     "ResponseNotFound",
     "ResponseNotReady",
+    "TransformRowsProcessingError",
     "UnexpectedApiError",
 ]
 
@@ -96,6 +97,13 @@ class ResponseNotReadyError(ApiError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
+
+
+class TransformRowsProcessingError(ApiError):
+    """Raised when there was an error when transforming rows to list."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TransformRowsProcessingError", cause, True)
 
 
 class UnexpectedApiError(ApiError):

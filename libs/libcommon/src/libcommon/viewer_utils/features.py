@@ -13,6 +13,7 @@ from datasets import (
     Array5D,
     Audio,
     ClassLabel,
+    Features,
     Image,
     Sequence,
     Translation,
@@ -23,6 +24,7 @@ from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage import StrPath
+from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_files, create_image_file
 
 
@@ -277,3 +279,22 @@ def get_cell_value(
         return cell
     else:
         raise TypeError("could not determine the type of the data cell.")
+
+
+# in JSON, dicts do not carry any order, so we need to return a list
+#
+# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
+#   is a string, number, boolean, null, object, or array.
+# > An array is an *ordered* sequence of zero or more values.
+# > The terms "object" and "array" come from the conventions of JavaScript.
+# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
+def to_features_list(features: Features) -> List[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]

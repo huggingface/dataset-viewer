@@ -18,19 +18,13 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.utils import JobInfo, RowItem
+from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import (
-    CompleteJobResult,
-    JobRunnerInfo,
-    Row,
-    RowItem,
-    SplitFirstRowsResponse,
-)
+from worker.dtos import CompleteJobResult, JobRunnerInfo, Row, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import create_truncated_row_items, get_json_size, to_features_list
+from worker.utils import create_truncated_row_items, get_json_size
 
 
 def transform_rows(
