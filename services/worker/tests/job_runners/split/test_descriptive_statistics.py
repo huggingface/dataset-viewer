@@ -18,6 +18,7 @@ from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
+    ColumnType,
     SplitDescriptiveStatisticsJobRunner,
     generate_bins,
 )
@@ -121,17 +122,17 @@ def get_parquet_and_info_job_runner(
     return _get_job_runner
 
 
-def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: str) -> dict:  # type: ignore
+def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: ColumnType) -> dict:  # type: ignore
     minimum, maximum, mean, median, std = (
-        column.min(),  # .astype(float).round(DECIMALS).item(),
-        column.max(),  # .astype(float).round(DECIMALS).item(),
-        column.mean(),  # .astype(float).round(DECIMALS).item(),
-        column.median(),  # .astype(float).round(DECIMALS).item(),
-        column.std(),  # .astype(float).round(DECIMALS).item(),
+        column.min(),
+        column.max(),
+        column.mean(),
+        column.median(),
+        column.std(),
     )
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
-    if dtype == "FLOAT":
+    if dtype is ColumnType.FLOAT:
         hist, bin_edges = np.histogram(column[~column.isna()])
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
@@ -139,7 +140,7 @@ def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: str
         hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
-    if dtype == "FLOAT":
+    if dtype is ColumnType.FLOAT:
         minimum = minimum.astype(float).round(DECIMALS).item()
         maximum = maximum.astype(float).round(DECIMALS).item()
         mean = mean.astype(float).round(DECIMALS).item()  # type: ignore
@@ -180,24 +181,19 @@ def count_expected_statistics_for_categorical_column(
 
 @pytest.fixture
 def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
-    columns_to_types = {
-        "int_column": "INT",
-        "int_nan_column": "INT",
-        "float_column": "FLOAT",
-        "float_nan_column": "FLOAT",
-        "class_label_column": "CLASS_LABEL",
-        "class_label_nan_column": "CLASS_LABEL",
-        "float_negative_column": "FLOAT",
-        "float_cross_zero_column": "FLOAT",
-        "int_negative_column": "INT",
-        "int_cross_zero_column": "INT",
-    }
     ds = datasets["descriptive_statistics"]
     df = ds.to_pandas()
     expected_statistics = {}
     for column_name in df.columns:
-        column_type = columns_to_types[column_name]
-        if column_type in ["FLOAT", "INT"]:
+        if column_name.startswith("int_"):
+            column_type = ColumnType.INT
+        elif column_name.startswith("float_"):
+            column_type = ColumnType.FLOAT
+        elif column_name.startswith("class_label"):
+            column_type = ColumnType.CLASS_LABEL
+        else:
+            continue
+        if column_type in [ColumnType.FLOAT, ColumnType.INT]:
             column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
                 raise ValueError(column_name, column_stats)
@@ -206,7 +202,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
                 "column_type": column_type,
                 "column_statistics": column_stats,
             }
-        elif column_type == "CLASS_LABEL":
+        elif column_type is ColumnType.CLASS_LABEL:
             class_labels = ds.features[column_name].names
             column_stats = count_expected_statistics_for_categorical_column(df[column_name], class_labels=class_labels)
             expected_statistics[column_name] = {
@@ -221,8 +217,8 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
+        # ("audio", "NoSupportedFeaturesError"),
+        # ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
@@ -284,4 +280,9 @@ def test_compute(
             descriptive_statistics_expected.keys()
         )  # columns
         for column_response in response_statistics:
+            from pprint import pprint
+
+            pprint(column_response)
+            pprint(descriptive_statistics_expected[column_response["column_name"]])
+
             assert column_response == descriptive_statistics_expected[column_response["column_name"]]

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-
+import enum
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
@@ -14,7 +14,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitWithTooBigParquetError,
-    StatsComputationError,
+    StatisticsComputationError,
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -52,6 +52,12 @@ COMPUTE_HIST_COMMAND = """
 """  # `bins` is the name of preinjected table with bin edges data
 
 
+class ColumnType(str, enum.Enum):
+    FLOAT = "float"
+    INT = "int"
+    CLASS_LABEL = "class_label"
+
+
 class Histogram(TypedDict):
     hist: List[int]
     bin_edges: List[float]
@@ -77,8 +83,7 @@ class CategoricalStatisticsItem(TypedDict):
 
 class StatisticsPerColumnItem(TypedDict):
     column_name: str
-    column_type: str
-    # column_dtype: Optional[str]
+    column_type: ColumnType
     column_statistics: Union[NumericalStatisticsItem, CategoricalStatisticsItem]
 
 
@@ -90,23 +95,29 @@ class SplitDescriptiveStatisticsResponse(TypedDict):
 def generate_bins(
     min_value: Union[int, float],
     max_value: Union[int, float],
-    dtype: str,
+    column_type: ColumnType,
     n_bins: int,
 ) -> pd.DataFrame:
     """
     Returns:
         pandas.DataFrame with bin edges to insert into database to perform histogram computation with duckdb
     """
-    if dtype == "FLOAT":
+    if column_type is ColumnType.FLOAT:
         bin_size = (max_value - min_value) / n_bins
         bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
-        assert len(bin_edges) == n_bins, "incorrect number of bins"
-    elif dtype == "INT":
+        if len(bin_edges) != n_bins:
+            raise StatisticsComputationError(
+                f"Incorrect number of bins generated, expected {n_bins}, got {len(bin_edges)}."
+            )
+    elif column_type is ColumnType.INT:
         bin_size = np.ceil((max_value - min_value + 1) / n_bins)
         bin_edges = np.arange(min_value, max_value + 1, bin_size).astype(int).tolist()
-        assert len(bin_edges) <= n_bins, "incorrect number of bins"
+        if len(bin_edges) > n_bins:
+            raise StatisticsComputationError(
+                f"Incorrect number of bins generated, expected {n_bins}, got {len(bin_edges)}."
+            )
     else:
-        raise ValueError
+        raise ValueError(f"Incorrect column type {column_type}. ")
     bin_max_edges = bin_edges[1:] + [max_value + 1]  # add 1 to include exact max values in the last bin
     return pd.DataFrame.from_dict(
         {"bin_id": list(range(len(bin_edges))), "bin_min": bin_edges, "bin_max": bin_max_edges}
@@ -117,13 +128,13 @@ def compute_histogram(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
-    dtype: str,
+    column_type: ColumnType,
     min_value: Union[int, float],
     max_value: Union[int, float],
     n_bins: int,
     n_samples: Optional[int] = None,
 ) -> Histogram:
-    bins_df = generate_bins(min_value=min_value, max_value=max_value, dtype=dtype, n_bins=n_bins)
+    bins_df = generate_bins(min_value=min_value, max_value=max_value, column_type=column_type, n_bins=n_bins)
     n_bins = bins_df.shape[0]
     con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
     compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
@@ -131,7 +142,7 @@ def compute_histogram(
     # query returns list of tuples (bin_id, bin_max, n_count):
     hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
     if len(hist_query_result) > n_bins + 1:
-        raise StatsComputationError(
+        raise StatisticsComputationError(
             "Got unexpected result during histogram computation: returned more bins than requested. "
             f"{n_bins=} {hist_query_result=}. "
         )
@@ -140,7 +151,7 @@ def compute_histogram(
         # no key in query result = no examples in this range, so we put 0
         hist.append(hist_query_result.get(bin_idx, 0))
     if n_samples and sum(hist) != n_samples:
-        raise StatsComputationError(
+        raise StatisticsComputationError(
             "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
             f" match. histogram sum={sum(hist)}, {n_samples=}"
         )
@@ -155,7 +166,7 @@ def compute_numerical_statistics(
     parquet_filename: Path,
     n_bins: int,
     n_samples: int,
-    dtype: str,
+    column_type: ColumnType,
 ) -> NumericalStatisticsItem:
     logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name}")
     min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
@@ -174,14 +185,16 @@ def compute_numerical_statistics(
         parquet_filename,
         min_value=minimum,
         max_value=maximum,
-        dtype="FLOAT" if dtype in FLOAT_DTYPES else "INT",
+        column_type=column_type,
         n_bins=n_bins,
         n_samples=n_samples - nan_count,
     )
-    if dtype in FLOAT_DTYPES:
+    if column_type == ColumnType.FLOAT:
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
-    else:
+    elif column_type == ColumnType.INT:
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
+    else:
+        raise ValueError(f"Incorrect column type {column_type}")
     return NumericalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
@@ -286,7 +299,7 @@ def compute_descriptive_statistics_response(
     }
     if not categorical_features and not numerical_features:
         raise NoSupportedFeaturesError(
-            "No features for statistics computation found. Currently supported types are: "
+            "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES} and ClassLabel. "
         )
 
@@ -307,7 +320,7 @@ def compute_descriptive_statistics_response(
 
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
-        logging.info("Compute statistics for categorical features")
+        logging.info(f"Compute statistics for categorical columns {categorical_features}")
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.debug(f"Compute statistics for ClassLabel feature {feature_name}")
         class_label_names = feature["names"]
@@ -321,29 +334,27 @@ def compute_descriptive_statistics_response(
         stats.append(
             StatisticsPerColumnItem(
                 column_name=feature_name,
-                column_type="CLASS_LABEL",
-                # column_dtype=None,  # should be some int?
+                column_type=ColumnType.CLASS_LABEL,
                 column_statistics=cat_column_stats,
             )
         )
 
     if numerical_features:
-        logging.info("Compute min, max, mean, median, std, histogram for numerical features. ")
+        logging.info(f"Compute min, max, mean, median, std, histogram for numerical columns {numerical_features}. ")
     for feature_name, feature in tqdm(numerical_features.items()):
-        feature_dtype = feature["dtype"]
+        column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
         num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
             con,
             feature_name,
             parquet_filename=local_parquet_path,
             n_bins=histogram_num_bins,
             n_samples=num_examples,
-            dtype=feature_dtype,
+            column_type=column_type,
         )
         stats.append(
             StatisticsPerColumnItem(
                 column_name=feature_name,
-                column_type="FLOAT" if feature_dtype in FLOAT_DTYPES else "INT",
-                # column_dtype=feature_dtype,
+                column_type=column_type,
                 column_statistics=num_column_stats,
             )
         )
