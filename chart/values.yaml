@@ -299,6 +299,23 @@ backfill:
   tolerations: []
 
 
+deleteIndexes:
+  enabled: false
+  log:
+    level: "info"
+  action: "delete-indexes"
+  error_codes_to_retry: ""
+  schedule: "*/10 * * * *"
+  # every ten minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/5 * * * *"
