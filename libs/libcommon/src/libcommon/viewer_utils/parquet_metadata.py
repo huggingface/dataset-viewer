@@ -11,7 +11,9 @@ DATASET_SEPARATOR = "--"
 PARQUET_METADATA_DIR_MODE = 0o755
 
 
-def create_parquet_metadata_dir(dataset: str, config: str, split: str, parquet_metadata_directory: StrPath) -> Tuple[Path, str]:
+def create_parquet_metadata_dir(
+    dataset: str, config: str, split: str, parquet_metadata_directory: StrPath
+) -> Tuple[Path, str]:
     dir_path = Path(parquet_metadata_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     parquet_metadata_dir_subpath = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}"
     makedirs(dir_path, PARQUET_METADATA_DIR_MODE, exist_ok=True)
