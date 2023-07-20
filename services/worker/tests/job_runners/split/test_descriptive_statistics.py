@@ -217,8 +217,8 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        # ("audio", "NoSupportedFeaturesError"),
-        # ("big", "SplitWithTooBigParquetError"),
+        ("audio", "NoSupportedFeaturesError"),
+        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
