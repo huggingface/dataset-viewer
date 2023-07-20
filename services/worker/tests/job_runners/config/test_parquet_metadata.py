@@ -117,7 +117,7 @@ def get_job_runner(
                         filename="filename1",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="ok/--/config_1/filename1",
+                        parquet_metadata_subpath="ok/--/config_1/train/filename1",
                     ),
                     ParquetFileMetadataItem(
                         dataset="ok",
@@ -127,7 +127,7 @@ def get_job_runner(
                         filename="filename2",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="ok/--/config_1/filename2",
+                        parquet_metadata_subpath="ok/--/config_1/train/filename2",
                     ),
                 ],
                 partial=False,
