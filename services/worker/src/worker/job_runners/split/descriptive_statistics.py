@@ -245,7 +245,6 @@ def compute_descriptive_statistics_response(
     config: str,
     split: str,
     local_parquet_directory: Optional[Path],
-    extensions_directory: Optional[str],
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -310,8 +309,7 @@ def compute_descriptive_statistics_response(
 
     con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
     # configure duckdb extensions
-    if extensions_directory is not None:
-        con.sql(f"SET extension_directory='{extensions_directory}';")
+    con.sql(f"SET extension_directory='{local_parquet_directory}';")
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
@@ -405,7 +403,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 config=self.config,
                 split=self.split,
                 local_parquet_directory=self.cache_subdirectory,
-                extensions_directory=self.descriptive_statistics_config.extensions_directory,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_statistics_config.max_parquet_size_bytes,
             )
