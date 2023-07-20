@@ -307,6 +307,7 @@ class ProcessingGraphConfig:
                     "config-split-names-from-streaming",
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION,
+                "difficulty": 70,
             },
             "dataset-is-valid": {
                 "input_type": "dataset",
