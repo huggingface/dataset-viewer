@@ -278,6 +278,54 @@ def test_compute(
         assert len(response_statistics) == len(descriptive_statistics_expected)
         assert set([column_response["column_name"] for column_response in response_statistics]) == set(
             descriptive_statistics_expected.keys()
-        )  # columns
-        for column_response in response_statistics:
-            assert column_response == descriptive_statistics_expected[column_response["column_name"]]
+        )  # assert returned features are as expected
+        for column_response_statistics in response_statistics:
+            assert_statistics_equal(
+                column_response_statistics, descriptive_statistics_expected[column_response_statistics["column_name"]]
+            )
+
+
+def assert_statistics_equal(response: dict, expected: dict) -> None:  # type: ignore
+    """
+    Check that all values are equal or in case of float - almost equal.
+    We use np.isclose because of small possible mismatches
+    between numpy (which is used for counting expected values) and python float rounding.
+    """
+    assert response["column_name"] == expected["column_name"]
+    assert response["column_type"] == expected["column_type"]
+    response_stats, expected_stats = response["column_statistics"], expected["column_statistics"]
+    assert response_stats.keys() == expected_stats.keys()
+
+    if response["column_type"] is ColumnType.FLOAT:
+        assert np.isclose(
+            response_stats["histogram"]["bin_edges"], expected_stats["histogram"]["bin_edges"], 1e-3
+        ).all()
+        assert np.isclose(response_stats["min"], expected_stats["min"], 1e-3)
+        assert np.isclose(response_stats["max"], expected_stats["max"], 1e-3)
+        assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
+        assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
+        assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
+        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
+
+        assert response_stats["nan_count"] == expected_stats["nan_count"]
+        assert response_stats["histogram"]["hist"] == expected_stats["histogram"]["hist"]
+
+    elif response["column_type"] is ColumnType.INT:
+        assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
+        assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
+        assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
+        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
+
+        assert response_stats["min"] == expected_stats["min"]
+        assert response_stats["max"] == expected_stats["max"]
+        assert response_stats["nan_count"] == expected_stats["nan_count"]
+        assert response_stats["histogram"] == expected_stats["histogram"]
+
+    elif response["column_type"] is ColumnType.CLASS_LABEL:
+        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
+        assert response_stats["nan_count"] == expected_stats["nan_count"]
+        assert response_stats["n_unique"] == expected_stats["n_unique"]
+        assert response_stats["frequencies"] == expected_stats["frequencies"]
+
+    else:
+        raise ValueError("Incorrect data type")
