@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
+    name: statistics-data
     subPath: "{{ include "descriptiveStatistics.subpath" . }}"
     readOnly: false
   securityContext:

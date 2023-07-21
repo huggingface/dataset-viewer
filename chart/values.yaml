@@ -114,6 +114,9 @@ parquetPersistence:
 duckdbPersistence:
   existingClaim: ""
 
+statisticsPersistence:
+  existingClaim: ""
+
 monitoring:
   enabled: false
 

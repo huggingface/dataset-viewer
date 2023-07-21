@@ -90,6 +90,9 @@ parquetPersistence:
 duckdbPersistence:
   existingClaim: "datasets-server-duckdb-pvc"
 
+statisticsPersistence:
+  existingClaim: "datasets-server-statistics-pvc"
+
 monitoring:
   enabled: false
 
