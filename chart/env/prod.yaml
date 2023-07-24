@@ -314,7 +314,7 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "4Gi"
+        memory: "8Gi"
       limits:
         cpu: 2
         memory: "8Gi"
@@ -326,7 +326,7 @@ workers:
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
-      role-datasets-server-worker: "true"
+      role-datasets-server-worker-light: "true"
     replicas: 15
     resources:
       requests:
