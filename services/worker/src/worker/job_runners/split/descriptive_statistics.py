@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
+    CacheDirectoryNotInitializedError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
@@ -244,7 +245,7 @@ def compute_descriptive_statistics_response(
     dataset: str,
     config: str,
     split: str,
-    local_parquet_directory: Optional[Path],
+    local_parquet_directory: Path,
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -397,6 +398,8 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
         return PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 
     def compute(self) -> CompleteJobResult:
+        if self.cache_subdirectory is None:
+            raise CacheDirectoryNotInitializedError("Cache directory has not been initialized.")
         return CompleteJobResult(
             compute_descriptive_statistics_response(
                 dataset=self.dataset,
