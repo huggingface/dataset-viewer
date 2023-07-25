@@ -1,8 +1,8 @@
 [tool.poetry]
-authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
-description = "REST API app"
-name = "api"
-version = "0.1.3"
+authors = ["The HuggingFace Authors."]
+description = "REST API app - /search endpoint"
+name = "search"
+version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
@@ -14,6 +14,7 @@ python = "3.9.15"
 soundfile = ">=0.12.1"
 uvicorn = "^0.20.0"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
+duckdb = "^0.8.1"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
@@ -42,7 +43,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["api"]
+source = ["search"]
 
 [tool.isort]
 profile = "black"

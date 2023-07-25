@@ -24,6 +24,7 @@ from libapi.exceptions import (
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
+    get_cache_entry_from_steps,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -39,8 +40,6 @@ from libcommon.viewer_utils.features import (
 )
 from starlette.requests import Request
 from starlette.responses import Response
-
-from api.routes.endpoint import get_cache_entry_from_steps
 
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 MAX_ROWS = 100
@@ -90,15 +89,15 @@ def download_index_file(
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> Tuple[int, pa.Table]:
     con = duckdb.connect(index_file_location, read_only=True)
     count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
-    num_total_items = count_result[0][0]  # it will always return a non empty list with one element in a tuple
-    logging.debug(f"got {num_total_items=} results for {query=}")
+    num_total_rows = count_result[0][0]  # it will always return a non empty list with one element in a tuple
+    logging.debug(f"got {num_total_rows=} results for {query=}")
     query_result = con.execute(
         query=FTS_COMMAND.format(offset=offset, length=length),
         parameters=[query],
     )
     pa_table = query_result.arrow()
     con.close()
-    return (num_total_items, pa_table)
+    return (num_total_rows, pa_table)
 
 
 def create_response(
@@ -109,7 +108,7 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     offset: int,
-    num_total_items: int,
+    num_total_rows: int,
 ) -> PaginatedResponse:
     features = Features.from_arrow_schema(pa_table.schema)
     _, unsupported_columns = get_supported_unsupported_columns(
@@ -129,7 +128,7 @@ def create_response(
             features=features,
             unsupported_columns=unsupported_columns,
         ),
-        num_total_items=num_total_items,
+        num_total_rows=num_total_rows,
     )
 
 
@@ -233,7 +232,7 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
-                    (num_total_items, pa_table) = full_text_search(index_file_location, query, offset, length)
+                    (num_total_rows, pa_table) = full_text_search(index_file_location, query, offset, length)
                     index_path.touch()
 
                 with StepProfiler(method="search_endpoint", step="create response"):
@@ -245,7 +244,7 @@ def create_search_endpoint(
                         cached_assets_base_url,
                         cached_assets_directory,
                         offset,
-                        num_total_items,
+                        num_total_rows,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long)

@@ -2,9 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import List, Mapping, Optional
+from typing import List, Mapping
 
-from environs import Env
 from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
@@ -17,24 +16,6 @@ from libcommon.config import (
 )
 from libcommon.processing_graph import InputType
 
-DUCKDB_INDEX_STORAGE_DIRECTORY = None
-DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
-
-
-@dataclass(frozen=True)
-class DuckDbIndexConfig:
-    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
-    target_revision: str = DUCKDB_INDEX_TARGET_REVISION
-
-    @classmethod
-    def from_env(cls) -> "DuckDbIndexConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DUCKDB_INDEX_"):
-            return cls(
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
-                target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
-            )
-
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -46,7 +27,6 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":

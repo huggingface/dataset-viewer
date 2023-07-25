@@ -94,7 +94,7 @@ class FeatureItem(TypedDict):
 class PaginatedResponse(TypedDict):
     features: List[FeatureItem]
     rows: Any
-    num_total_items: int
+    num_total_rows: int
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)

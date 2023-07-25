@@ -10,7 +10,7 @@ import pyarrow as pa
 import pytest
 from libcommon.storage import StrPath
 
-from api.routes.search import full_text_search, get_index_folder
+from search.routes.search import full_text_search, get_index_folder
 
 
 def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
@@ -21,7 +21,7 @@ def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
 
 
 @pytest.mark.parametrize(
-    "query,offset,length,expected_result, expected_num_total_items",
+    "query,offset,length,expected_result, expected_num_total_rows",
     [
         (
             "Lord Vader",
@@ -54,7 +54,7 @@ def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
     ],
 )
 def test_full_text_search(
-    query: str, offset: int, length: int, expected_result: Any, expected_num_total_items: int
+    query: str, offset: int, length: int, expected_result: Any, expected_num_total_rows: int
 ) -> None:
     # simulate index file
     index_file_location = "index.duckdb"
@@ -84,10 +84,10 @@ def test_full_text_search(
     con.close()
 
     # assert search results
-    (num_total_items, pa_table) = full_text_search(index_file_location, query, offset, length)
-    assert num_total_items is not None
+    (num_total_rows, pa_table) = full_text_search(index_file_location, query, offset, length)
+    assert num_total_rows is not None
     assert pa_table is not None
-    assert num_total_items == expected_num_total_items
+    assert num_total_rows == expected_num_total_rows
 
     fields = [pa.field("text", pa.string())]
     filtered_df = pd.DataFrame(expected_result)

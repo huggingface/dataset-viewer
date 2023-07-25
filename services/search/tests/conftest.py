@@ -8,11 +8,14 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_cached_assets_dir
+from libcommon.storage import (
+    StrPath,
+    init_cached_assets_dir,
+    init_duckdb_index_cache_dir,
+)
 from pytest import MonkeyPatch, fixture
 
-from api.config import AppConfig, EndpointConfig
-from api.routes.endpoint import EndpointsDefinition, StepsByInputTypeAndEndpoint
+from search.config import AppConfig
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -21,6 +24,7 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHED_ASSETS_BASE_URL", "http://localhost/cached-assets")
     hostname = "localhost"
     port = "8888"
     monkeypatch_session.setenv("API_HF_TIMEOUT_SECONDS", "10")
@@ -40,56 +44,13 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 
 
 @fixture(scope="session")
-def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
-    return EndpointConfig(
-        processing_step_names_by_input_type_and_endpoint={
-            "/splits": {
-                "dataset": ["dataset-split-names"],
-                "config": ["config-split-names-from-streaming"],
-            },
-            "/first-rows": {"split": ["split-first-rows-from-streaming"]},
-            "/parquet": {"config": ["config-parquet"]},
-        }
-    )
-
-
-@fixture(scope="session")
 def processing_graph(app_config: AppConfig) -> ProcessingGraph:
     return ProcessingGraph(app_config.processing_graph.specification)
 
 
 @fixture(scope="session")
-def endpoint_definition(
-    endpoint_config: EndpointConfig, processing_graph: ProcessingGraph
-) -> StepsByInputTypeAndEndpoint:
-    return EndpointsDefinition(processing_graph, endpoint_config=endpoint_config).steps_by_input_type_and_endpoint
-
-
-@fixture(scope="session")
-def first_dataset_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
-    return next(
-        endpoint
-        for endpoint, input_types in endpoint_definition.items()
-        if next((endpoint for input_type, _ in input_types.items() if input_type == "dataset"), None)
-    )
-
-
-@fixture(scope="session")
-def first_config_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
-    return next(
-        endpoint
-        for endpoint, input_types in endpoint_definition.items()
-        if next((endpoint for input_type, _ in input_types.items() if input_type == "config"), None)
-    )
-
-
-@fixture(scope="session")
-def first_split_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
-    return next(
-        endpoint
-        for endpoint, input_types in endpoint_definition.items()
-        if next((endpoint for input_type, _ in input_types.items() if input_type == "split"), None)
-    )
+def search_endpoint() -> str:
+    return "/search"
 
 
 @fixture(autouse=True)
@@ -129,3 +90,8 @@ def hf_auth_path(app_config: AppConfig) -> str:
 @fixture
 def cached_assets_directory(app_config: AppConfig) -> StrPath:
     return init_cached_assets_dir(app_config.cached_assets.storage_directory)
+
+
+@fixture
+def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
+    return init_duckdb_index_cache_dir(app_config.duckdb_index.storage_directory)
