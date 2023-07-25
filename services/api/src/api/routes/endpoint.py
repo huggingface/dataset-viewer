@@ -76,6 +76,7 @@ def get_cache_entry_from_steps(
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
           if the response is not ready yet.
+
     Returns: the cached record
     """
     kinds = [processing_step.cache_kind for processing_step in processing_steps]

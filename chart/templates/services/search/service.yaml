@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+{{ $serviceType := .Values.reverseProxy.service.type | default .Values.global.huggingface.service.type }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ include "name" . }}-search"
+  annotations: {{ toYaml .Values.search.service.annotations | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "labels.search" . | nindent 4 }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    {{- if eq "NodePort" $serviceType }}
+    nodePort: {{ .Values.global.huggingface.service.ports.datasetsServer.search }}
+    {{- end }}
+    targetPort: {{ .Values.search.uvicornPort }}
+  selector: {{ include "labels.search" . | nindent 4 }}
+  type: {{ $serviceType }}

@@ -65,7 +65,7 @@ def get_index_folder(duckdb_index_file_directory: StrPath, dataset: str, config:
     payload = (dataset, config, split)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-    return f"{duckdb_index_file_directory}/{subdirectory}"
+    return f"{duckdb_index_file_directory}/download/{subdirectory}"
 
 
 def download_index_file(

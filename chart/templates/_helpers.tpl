@@ -107,6 +107,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-api"
 app.kubernetes.io/component: "{{ include "name" . }}-rows"
 {{- end -}}
 
+{{- define "labels.search" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-search"
+{{- end -}}
+
 {{- define "labels.worker" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-worker"

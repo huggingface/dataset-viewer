@@ -49,9 +49,9 @@ def test_get_healthcheck(client: TestClient) -> None:
     assert response.text == "ok"
 
 
-def test_get_rows(client: TestClient) -> None:
+def test_get_search(client: TestClient) -> None:
     # missing parameter
-    response = client.get("/rows")
+    response = client.get("/search")
     assert response.status_code == 422
 
 
@@ -70,7 +70,7 @@ def test_get_split_missing_parameter(
     config: Optional[str],
     split: Optional[str],
 ) -> None:
-    response = client.get("/rows", params={"dataset": dataset, "config": config, "split": split})
+    response = client.get("/search", params={"dataset": dataset, "config": config, "split": split})
     assert response.status_code == 422
 
 
