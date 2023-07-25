@@ -44,6 +44,11 @@
     value: {{ .Values.search.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.search.uvicornPort | quote }}
+  # duckdb
+  - name: DUCKDB_INDEX_TARGET_REVISION
+    value: {{ .Values.duckDBIndex.targetRevision | quote }}
+  - name: DUCKDB_INDEX_STORAGE_DIRECTORY
+    value: {{ .Values.duckDBIndex.storageDirectory | quote }}
   volumeMounts:
   {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
