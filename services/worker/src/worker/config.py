@@ -232,7 +232,7 @@ class NumbaConfig:
     def from_env(cls) -> "NumbaConfig":
         env = Env(expand_vars=True)
         with env.prefixed("NUMBA_"):
-            return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
+            return cls(path=env.str(name="CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
 CONFIG_NAMES_MAX_NUMBER = 3_000
