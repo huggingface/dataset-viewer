@@ -300,7 +300,7 @@ class ProcessingGraphConfig:
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
                 "difficulty": 20,
             },
-            "split-descriptive-stats": {
+            "split-descriptive-statistics": {
                 "input_type": "split",
                 "triggered_by": [
                     "config-split-names-from-info",

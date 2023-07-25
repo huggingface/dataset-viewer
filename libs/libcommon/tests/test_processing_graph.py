@@ -95,7 +95,7 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-streaming",
                 "dataset-split-names",
                 "split-duckdb-index",
-                "split-descriptive-stats",
+                "split-descriptive-statistics",
             ],
             ["config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
@@ -107,7 +107,7 @@ def graph() -> ProcessingGraph:
                 "dataset-split-names",
                 "config-opt-in-out-urls-count",
                 "split-duckdb-index",
-                "split-descriptive-stats",
+                "split-descriptive-statistics",
             ],
             ["dataset-config-names"],
             ["dataset-config-names"],
@@ -315,7 +315,7 @@ def graph() -> ProcessingGraph:
             ],
         ),
         (
-            "split-descriptive-stats",
+            "split-descriptive-statistics",
             [],
             ["config-split-names-from-info", "config-split-names-from-streaming"],
             [
