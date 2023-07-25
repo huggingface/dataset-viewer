@@ -47,10 +47,16 @@
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
-    tcpSocket:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
       port: {{ .Values.api.uvicornPort }}
   livenessProbe:
-    tcpSocket:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
       port: {{ .Values.api.uvicornPort }}
   ports:
   - containerPort: {{ .Values.api.uvicornPort }}

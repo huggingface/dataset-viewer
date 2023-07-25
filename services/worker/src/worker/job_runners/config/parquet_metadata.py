@@ -39,6 +39,7 @@ def create_parquet_metadata_file_from_remote_parquet(
     parquet_metadata_subpath = create_parquet_metadata_file(
         dataset=parquet_file_item["dataset"],
         config=parquet_file_item["config"],
+        split=parquet_file_item["split"],
         parquet_file_metadata=parquet_file.metadata,
         filename=parquet_file_item["filename"],
         parquet_metadata_directory=parquet_metadata_directory,
