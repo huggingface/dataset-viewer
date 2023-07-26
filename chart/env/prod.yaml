@@ -265,9 +265,10 @@ admin:
       cpu: 4
       memory: "4Gi"
 
+hf:
+  timeoutSeconds: "1.5"
+
 api:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -287,8 +288,6 @@ api:
       memory: "4Gi"
 
 rows:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -307,8 +306,6 @@ rows:
       memory: "8Gi"
 
 search:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers

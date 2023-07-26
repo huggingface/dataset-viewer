@@ -13,13 +13,13 @@
   {{ include "envLog" . | nindent 2 }}
   # service
   - name: API_HF_AUTH_PATH
-    value: {{ .Values.search.hfAuthPath | quote }}
+    value: {{ .Values.hf.authPath | quote }}
   - name: API_HF_JWT_PUBLIC_KEY_URL
-    value: {{ .Values.search.hfJwtPublicKeyUrl | quote }}
+    value: {{ .Values.hf.jwtPublicKeyUrl | quote }}
   - name: API_HF_JWT_ALGORITHM
-    value: {{ .Values.search.hfJwtAlgorithm | quote }}
+    value: {{ .Values.hf.jwtAlgorithm | quote }}
   - name: API_HF_TIMEOUT_SECONDS
-    value: {{ .Values.search.hfTimeoutSeconds | quote }}
+    value: {{ .Values.hf.timeoutSeconds | quote }}
   - name: API_HF_WEBHOOK_SECRET
     {{- if .Values.secrets.hfWebhookSecret.fromSecret }}
     valueFrom:

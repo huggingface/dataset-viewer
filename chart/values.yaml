@@ -396,18 +396,20 @@ admin:
     annotations: {}
   tolerations: []
 
-api:
+hf:
   # the path of the external authentication service on the hub.
   # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
+  authPath: "/api/datasets/%s/auth-check"
   # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
   # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
   # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
+  jwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
   # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
+  jwtAlgorithm: "EdDSA"
   # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
+  timeoutSeconds: "0.2"
+
+api:
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -435,17 +437,6 @@ api:
   tolerations: []
 
 rows:
-  # the path of the external authentication service on the hub.
-  # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
-  # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
-  # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
-  # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
-  # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -473,17 +464,6 @@ rows:
   tolerations: []
 
 search:
-  # the path of the external authentication service on the hub.
-  # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
-  # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
-  # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
-  # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
-  # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
