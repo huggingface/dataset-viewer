@@ -226,7 +226,7 @@ Python 3.9.15
 Install poetry:
 
 ```bash
-curl -sSL https://install.python-poetry.org | python3 -
+curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python3 -
 ```
 
 append the following lines to ~/.zshrc:
