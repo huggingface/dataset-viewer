@@ -457,7 +457,7 @@ rows:
   # Number of uvicorn workers for running the application
   uvicornNumWorkers: "1"
   # Application endpoint port
-  uvicornPort: 8082
+  uvicornPort: 8080
 
   nodeSelector: {}
   replicas: 1
@@ -495,7 +495,7 @@ search:
   # Number of uvicorn workers for running the application
   uvicornNumWorkers: "1"
   # Application endpoint port
-  uvicornPort: 8082
+  uvicornPort: 8080
 
   nodeSelector: {}
   replicas: 1

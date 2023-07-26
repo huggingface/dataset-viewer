@@ -306,10 +306,10 @@ search:
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  uvicornNumWorkers: "3"
+  uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 4
+  replicas: 12
   service:
     type: NodePort
   resources:
