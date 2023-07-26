@@ -18,6 +18,7 @@ global:
           admin: 30021
           api: 30022
           rows: 30023
+          search: 30024
 
 images:
   pullPolicy: IfNotPresent

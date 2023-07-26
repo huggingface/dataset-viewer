@@ -12,6 +12,7 @@ global:
           admin: 32702
           api: 31370
           rows: 31371
+          search: 31372
 
 images:
   pullPolicy: IfNotPresent
@@ -47,6 +48,11 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-rows
+      tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
       tag: sha-fb3399a
     worker:
       registry: huggingface

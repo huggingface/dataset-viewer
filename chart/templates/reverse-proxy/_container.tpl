@@ -20,6 +20,8 @@
     value: {{ include "api.url" . | quote }}
   - name: URL_ROWS
     value: {{ include "rows.url" . | quote }}
+  - name: URL_SEARCH
+    value: {{ include "search.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}

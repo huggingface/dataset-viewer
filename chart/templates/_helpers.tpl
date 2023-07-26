@@ -184,7 +184,7 @@ The parquet-metadata/ subpath in the NFS
 {{- end }}
 
 {{/*
-The duckdb-index/ subpath in the NFS
+The duckdb-index/ subpath in EFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
