@@ -8,16 +8,8 @@ import duckdb
 import pandas as pd
 import pyarrow as pa
 import pytest
-from libcommon.storage import StrPath
 
-from search.routes.search import full_text_search, get_index_folder
-
-
-def test_get_index_folder(duckdb_index_cache_directory: StrPath) -> None:
-    dataset, config, split = "dataset", "config", "split"
-    index_folder = get_index_folder(duckdb_index_cache_directory, dataset, config, split)
-    assert index_folder is not None
-    assert str(duckdb_index_cache_directory) in index_folder
+from search.routes.search import full_text_search
 
 
 @pytest.mark.parametrize(

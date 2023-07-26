@@ -1,12 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import json
 import logging
 import os
 import random
-import re
-from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -40,7 +37,7 @@ from libcommon.simple_cache import (
     get_best_response,
 )
 from libcommon.storage import StrPath, init_dir
-from libcommon.utils import PaginatedResponse
+from libcommon.utils import PaginatedResponse, get_download_folder_for_split
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -63,13 +60,6 @@ FTS_COMMAND = (
     " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
-
-
-def get_index_folder(duckdb_index_file_directory: StrPath, dataset: str, config: str, split: str) -> str:
-    payload = (dataset, config, split)
-    hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-    return f"{duckdb_index_file_directory}/download/{subdirectory}"
 
 
 def download_index_file(
@@ -273,7 +263,7 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
-                    index_folder = get_index_folder(duckdb_index_file_directory, dataset, config, split)
+                    index_folder = get_download_folder_for_split(duckdb_index_file_directory, dataset, config, split)
                     repo_file_location = f"{config}/{split}/{file_name}"
                     index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)

@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional, Set
 
@@ -30,7 +31,7 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo, SplitHubFile
+from libcommon.utils import JobInfo, SplitHubFile, get_download_folder_for_split
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult
@@ -65,6 +66,7 @@ def compute_index_rows(
     hf_endpoint: str,
     commit_message: str,
     url_template: str,
+    duckdb_index_temp_download_directory: StrPath,
     hf_token: Optional[str],
     max_parquet_size_bytes: int,
     extensions_directory: Optional[str],
@@ -83,6 +85,15 @@ def compute_index_rows(
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
+
+    # remove obsolete index files used in /search
+    index_folder = get_download_folder_for_split(duckdb_index_temp_download_directory, dataset, config, split)
+    repo_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    index_file_location = f"{index_folder}/{repo_file_location}"
+    logging.warn(f"looking for file {index_file_location}")
+    if os.path.exists(index_file_location):
+        logging.info(f"removing {index_file_location=}")
+        os.remove(index_file_location)
 
     # get parquet urls and dataset_info
     config_parquet_and_info_step = "config-parquet-and-info"
@@ -253,6 +264,7 @@ def compute_index_rows(
 
 class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
     duckdb_index_config: DuckDbIndexConfig
+    duckdb_index_temp_download_directory: StrPath
 
     def __init__(
         self,
@@ -267,6 +279,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
             processing_step=processing_step,
             cache_directory=Path(duckdb_index_cache_directory),
         )
+        self.duckdb_index_temp_download_directory = duckdb_index_cache_directory
         self.duckdb_index_config = app_config.duckdb_index
 
     @staticmethod
@@ -295,5 +308,6 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
                 max_parquet_size_bytes=self.duckdb_index_config.max_parquet_size_bytes,
+                duckdb_index_temp_download_directory=self.duckdb_index_temp_download_directory,
             )
         )

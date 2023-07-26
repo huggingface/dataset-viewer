@@ -3,12 +3,17 @@
 
 import base64
 import enum
+import json
 import mimetypes
+import re
 from datetime import datetime, timedelta, timezone
+from hashlib import sha1
 from http import HTTPStatus
 from typing import Any, List, Mapping, Optional, TypedDict
 
 import orjson
+
+from libcommon.storage import StrPath
 
 
 class Status(str, enum.Enum):
@@ -141,3 +146,10 @@ def is_image_url(text: str) -> bool:
     is_url = text.startswith("https://") or text.startswith("http://")
     (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
     return is_url and mime_type is not None and mime_type.startswith("image/")
+
+
+def get_download_folder_for_split(root_directory: StrPath, dataset: str, config: str, split: str) -> str:
+    payload = (dataset, config, split)
+    hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
+    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
+    return f"{root_directory}/downloads/{subdirectory}"
