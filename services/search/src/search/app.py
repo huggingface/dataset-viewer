@@ -35,7 +35,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     # ^ set first to have logs as soon as possible
     cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
     if not exists(cached_assets_directory):
-        raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
+        raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
     if not exists(duckdb_index_cache_directory):

@@ -203,11 +203,7 @@ def create_search_endpoint(
                     query = request.query_params.get("query")
 
                     if (
-                        not dataset
-                        or not config
-                        or not split
-                        or not query
-                        or not are_valid_parameters([dataset, config, split, query])
+                        not are_valid_parameters([dataset, config, split, query])
                     ):
                         raise MissingRequiredParameterError(
                             "Parameter 'dataset', 'config', 'split' and 'query' are required"

@@ -11,7 +11,6 @@ from libcommon.config import (
     CachedAssetsConfig,
     CommonConfig,
     LogConfig,
-    ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -44,7 +43,6 @@ class AppConfig:
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
-    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
 
     @classmethod
@@ -58,6 +56,5 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
-            parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
         )
