@@ -300,7 +300,7 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "2Gi"
+      memory: "4Gi"
     limits:
       cpu: 4
       memory: "8Gi"
@@ -314,7 +314,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 16
+    replicas: 24
     resources:
       requests:
         cpu: 1
