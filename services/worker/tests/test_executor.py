@@ -346,10 +346,13 @@ def test_executor_stops_on_long_job(
     try:
         with patch.dict(os.environ, {"WORKER_LOOP_TYPE": "start_worker_loop_with_long_job"}):
             with patch.object(executor, "max_seconds_without_heartbeat_for_zombies", -1):  # don't kill normal_job
-                with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
-                    os.environ, {"WORKER_TEST_TIME": str(_TIME)}
-                ):
-                    executor.start()
+                with patch.object(
+                    executor, "kill_long_job_interval_seconds", 0.1
+                ):  # make sure it has the time to kill the job
+                    with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
+                        os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+                    ):
+                        executor.start()
 
         assert long_job is not None
         assert str(long_job.pk) == get_job_info("long")["job_id"]
