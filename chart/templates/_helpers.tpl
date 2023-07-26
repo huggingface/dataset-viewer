@@ -234,6 +234,14 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 {{- end }}
 
 {{/*
+The URL to access the search service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "search.url" -}}
+{{- printf "http://%s-search.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
 Return the HUB url
 */}}
 {{- define "datasetsServer.hub.url" -}}
