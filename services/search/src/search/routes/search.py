@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import random
 import re
 from hashlib import sha1
 from http import HTTPStatus
@@ -24,6 +25,7 @@ from libapi.exceptions import (
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
+    clean_cached_assets,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -46,7 +48,9 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
+logger = logging.getLogger(__name__)
+
+
 MAX_ROWS = 100
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 FTS_COMMAND_COUNT = (
@@ -159,6 +163,7 @@ def create_response(
         features,
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
     )
+    pa_table = pa_table.drop(unsupported_columns)
     return PaginatedResponse(
         features=to_features_list(features),
         rows=to_rows_list(
@@ -191,6 +196,10 @@ def create_search_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    clean_cache_proba: float = 0.0,
+    keep_first_rows_number: int = -1,
+    keep_most_recent_rows_number: int = -1,
+    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -266,8 +275,9 @@ def create_search_endpoint(
                         )
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
+                    file_name = content["filename"]
                     index_folder = get_index_folder(duckdb_index_file_directory, dataset, config, split)
-                    repo_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+                    repo_file_location = f"{config}/{split}/{file_name}"
                     index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)
                     if not index_path.is_file():
@@ -278,6 +288,27 @@ def create_search_endpoint(
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_total_rows, pa_table) = full_text_search(index_file_location, query, offset, length)
                     index_path.touch()
+
+                with StepProfiler(method="search_endpoint", step="clean cache"):
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
+                        if (
+                            keep_first_rows_number < 0
+                            and keep_most_recent_rows_number < 0
+                            and max_cleaned_rows_number < 0
+                        ):
+                            logger.debug(
+                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+                            )
+                        else:
+                            clean_cached_assets(
+                                dataset=dataset,
+                                cached_assets_directory=cached_assets_directory,
+                                keep_first_rows_number=keep_first_rows_number,
+                                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                                max_cleaned_rows_number=max_cleaned_rows_number,
+                            )
 
                 with StepProfiler(method="search_endpoint", step="create response"):
                     response = create_response(

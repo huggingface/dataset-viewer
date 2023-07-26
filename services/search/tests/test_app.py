@@ -20,7 +20,7 @@ def test_cors(client: TestClient) -> None:
     method = "GET"
     header = "X-Requested-With"
     response = client.options(
-        "/rows?dataset=dataset1&config=config1&split=train",
+        "/search?dataset=dataset1&config=config1&split=train&query=query1",
         headers={
             "Origin": origin,
             "Access-Control-Request-Method": method,
