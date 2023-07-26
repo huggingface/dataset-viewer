@@ -55,9 +55,7 @@ def update_last_modified_date_of_rows_in_assets_dir(
     length: int,
     assets_directory: StrPath,
 ) -> None:
-    namespace, repo = dataset.split("/")
-    root_dir = namespace if repo else dataset
-    update_directory_modification_date(Path(assets_directory).resolve() / root_dir)
+    update_directory_modification_date(Path(assets_directory).resolve() / dataset.split("/")[0])
     row_dirs_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     for row_idx in range(offset, offset + length):
         update_directory_modification_date(row_dirs_path / str(row_idx))
