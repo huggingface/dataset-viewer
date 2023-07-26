@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from typing import Optional
 
@@ -56,12 +56,13 @@ def test_get_search(client: TestClient) -> None:
 
 
 @pytest.mark.parametrize(
-    "dataset,config,split",
+    "dataset,config,split,query",
     [
-        (None, None, None),
-        ("a", None, None),
-        ("a", "b", None),
-        ("a", "b", ""),
+        (None, None, None, None),
+        ("a", None, None, None),
+        ("a", "b", None, None),
+        ("a", "b", "c", None),
+        ("a", "b", "c", ""),
     ],
 )
 def test_get_split_missing_parameter(
@@ -69,8 +70,9 @@ def test_get_split_missing_parameter(
     dataset: Optional[str],
     config: Optional[str],
     split: Optional[str],
+    query: Optional[str],
 ) -> None:
-    response = client.get("/search", params={"dataset": dataset, "config": config, "split": split})
+    response = client.get("/search", params={"dataset": dataset, "config": config, "split": split, "query": query})
     assert response.status_code == 422
 
 
