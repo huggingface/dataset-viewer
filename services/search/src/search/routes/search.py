@@ -109,9 +109,6 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
     return (num_total_rows, pa_table)
 
 
-# TODO: Copied from api.routes.endpoint, refactor
-
-
 def get_cache_entry_from_steps(
     processing_steps: List[ProcessingStep],
     dataset: str,
