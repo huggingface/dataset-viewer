@@ -12,7 +12,6 @@ from unittest.mock import patch
 import pyarrow.parquet as pq
 import pytest
 from datasets import Audio, Dataset, Features, Image, Value, concatenate_datasets
-from datasets.features.features import FeatureType
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem

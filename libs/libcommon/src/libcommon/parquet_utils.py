@@ -15,7 +15,7 @@ from huggingface_hub import HfFileSystem
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import CacheEntryWithDetails, get_previous_step_or_raise
+from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 
 
