@@ -95,9 +95,11 @@ def compute_parquet_metadata_response(
         ]
         if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
-        features = config_parquet_best_response.response["content"].get(
-            "features"
-        )  # config-parquet version<6 didn't have features
+        content = config_parquet_best_response.response["content"]
+        if "features" in content and isinstance(content["features"], dict):
+            features = content["features"]  # config-parquet version<6 didn't have features
+        else:
+            features = None
         partial = config_parquet_best_response.response["content"]["partial"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e

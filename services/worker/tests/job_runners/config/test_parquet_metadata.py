@@ -105,6 +105,7 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
             ),
             None,
             ConfigParquetMetadataResponse(
@@ -131,6 +132,7 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
             ),
             False,
         ),
