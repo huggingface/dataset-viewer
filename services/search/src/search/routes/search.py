@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import json
 import logging
 import os
 import random
+import re
+from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -37,7 +40,7 @@ from libcommon.simple_cache import (
     get_best_response,
 )
 from libcommon.storage import StrPath, init_dir
-from libcommon.utils import PaginatedResponse, get_download_folder_for_split
+from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -48,6 +51,7 @@ from starlette.responses import Response
 logger = logging.getLogger(__name__)
 
 
+ROW_IDX_COLUMN = "__hf_index_id"
 MAX_ROWS = 100
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 FTS_COMMAND_COUNT = (
@@ -56,10 +60,19 @@ FTS_COMMAND_COUNT = (
 )
 
 FTS_COMMAND = (
-    "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
+    "SELECT * EXCLUDE (score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
     " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
+
+
+def get_download_folder(
+    root_directory: StrPath, dataset: str, config: str, split: str, revision: Optional[str]
+) -> str:
+    payload = (dataset, config, split, revision)
+    hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
+    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
+    return f"{root_directory}/downloads/{subdirectory}"
 
 
 def download_index_file(
@@ -146,13 +159,17 @@ def create_response(
     num_total_rows: int,
 ) -> PaginatedResponse:
     features = Features.from_arrow_schema(pa_table.schema)
+
+    features_without_key = features.copy()
+    features_without_key.pop(ROW_IDX_COLUMN, None)
+
     _, unsupported_columns = get_supported_unsupported_columns(
         features,
         unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
     )
     pa_table = pa_table.drop(unsupported_columns)
     return PaginatedResponse(
-        features=to_features_list(features),
+        features=to_features_list(features_without_key),
         rows=to_rows_list(
             pa_table,
             dataset,
@@ -163,6 +180,7 @@ def create_response(
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
+            row_idx_column=ROW_IDX_COLUMN,
         ),
         num_total_rows=num_total_rows,
     )
@@ -263,7 +281,7 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
-                    index_folder = get_download_folder_for_split(duckdb_index_file_directory, dataset, config, split)
+                    index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
                     repo_file_location = f"{config}/{split}/{file_name}"
                     index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)

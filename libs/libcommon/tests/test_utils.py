@@ -3,12 +3,7 @@
 
 import pytest
 
-from libcommon.storage import StrPath
-from libcommon.utils import (
-    get_download_folder_for_split,
-    inputs_to_string,
-    is_image_url,
-)
+from libcommon.utils import inputs_to_string, is_image_url
 
 
 @pytest.mark.parametrize(
@@ -40,10 +35,3 @@ def test_inputs_to_string(dataset: str, revision: str, config: str, split: str, 
 )
 def test_is_image_url(text: str, expected: bool) -> None:
     assert is_image_url(text=text) == expected
-
-
-def test_get_index_folder(cached_assets_directory: StrPath) -> None:
-    dataset, config, split = "dataset", "config", "split"
-    index_folder = get_download_folder_for_split(cached_assets_directory, dataset, config, split)
-    assert index_folder is not None
-    assert str(cached_assets_directory) in index_folder

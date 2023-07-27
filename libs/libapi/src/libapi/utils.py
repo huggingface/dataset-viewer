@@ -143,6 +143,7 @@ def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: List[str],
+    row_idx_column: Optional[str],
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -159,6 +160,7 @@ def to_rows_list(
             cached_assets_base_url=cached_assets_base_url,
             cached_assets_directory=cached_assets_directory,
             offset=offset,
+            row_idx_column=row_idx_column,
         )
     except Exception as err:
         raise TransformRowsProcessingError(
@@ -166,11 +168,11 @@ def to_rows_list(
         ) from err
     return [
         {
-            "row_idx": idx + offset,
+            "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),  # type: ignore
             "row": row,
             "truncated_cells": [],
         }
-        for idx, row in enumerate(transformed_rows)
+        for _, row in enumerate(transformed_rows)
     ]
 
 
