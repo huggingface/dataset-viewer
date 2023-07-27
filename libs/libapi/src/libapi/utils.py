@@ -172,7 +172,7 @@ def to_rows_list(
             "row": row,
             "truncated_cells": [],
         }
-        for _, row in enumerate(transformed_rows)
+        for idx, row in enumerate(transformed_rows)
     ]
 
 

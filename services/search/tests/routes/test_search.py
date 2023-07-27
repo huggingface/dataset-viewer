@@ -28,11 +28,12 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             0,
             100,
             {
+                "__hf_index_id_row_idx": [0, 2, 4],
                 "text": [
                     "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink",
                     "Vader turns round and round in circles as his ship spins into space.",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                ]
+                ],
             },
             3,
         ),
@@ -41,16 +42,17 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             1,
             2,
             {
+                "__hf_index_id_row_idx": [2, 4],
                 "text": [
                     "Vader turns round and round in circles as his ship spins into space.",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                ]
+                ],
             },
             3,
         ),
-        ("non existing text", 0, 100, {"text": []}, 0),
-        (";DROP TABLE data;", 0, 100, {"text": []}, 0),
-        ("some text'); DROP TABLE data; --", 0, 100, {"text": []}, 0),
+        ("non existing text", 0, 100, {"__hf_index_id_row_idx": [], "text": []}, 0),
+        (";DROP TABLE data;", 0, 100, {"__hf_index_id_row_idx": [], "text": []}, 0),
+        ("some text'); DROP TABLE data; --", 0, 100, {"__hf_index_id_row_idx": [], "text": []}, 0),
     ],
 )
 def test_full_text_search(
@@ -89,7 +91,7 @@ def test_full_text_search(
     assert pa_table is not None
     assert num_total_rows == expected_num_total_rows
 
-    fields = [pa.field("text", pa.string())]
+    fields = [pa.field("__hf_index_id_row_idx", pa.int64()), pa.field("text", pa.string())]
     filtered_df = pd.DataFrame(expected_result)
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
     assert pa_table == expected_table

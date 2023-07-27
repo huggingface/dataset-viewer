@@ -51,7 +51,7 @@ from starlette.responses import Response
 logger = logging.getLogger(__name__)
 
 
-ROW_IDX_COLUMN = "__hf_index_id"
+ROW_IDX_COLUMN = "__hf_index_id_row_idx"
 MAX_ROWS = 100
 UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
 FTS_COMMAND_COUNT = (
@@ -60,8 +60,9 @@ FTS_COMMAND_COUNT = (
 )
 
 FTS_COMMAND = (
-    "SELECT * EXCLUDE (score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
-    " data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
+    "SELECT * EXCLUDE (__hf_index_id, score) FROM (SELECT __hf_index_id - 1 as __hf_index_id_row_idx, *,"
+    " fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM data) A WHERE score IS NOT NULL ORDER BY __hf_index_id"
+    " OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
 
