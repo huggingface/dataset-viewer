@@ -42,10 +42,11 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
         ]
         # sort by filename, which ensures the shards are in order: 00000, 00001, 00002, ...
         parquet_files.sort(key=lambda x: x["filename"])  # type: ignore
+        features = content["dataset_info"]["features"]
         partial = content["partial"]
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'parquet_files'.", e) from e
-    return ConfigParquetResponse(parquet_files=parquet_files, partial=partial)
+    return ConfigParquetResponse(parquet_files=parquet_files, features=features, partial=partial)
 
 
 class ConfigParquetJobRunner(ConfigJobRunner):

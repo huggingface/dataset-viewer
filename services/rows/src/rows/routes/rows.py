@@ -9,7 +9,7 @@ from itertools import islice
 from typing import Any, List, Literal, Optional, Union
 
 import pyarrow as pa
-from datasets import Features
+from datasets import Audio, Features, Value
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -48,7 +48,7 @@ MAX_ROWS = 100
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
 
 # audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
+UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
 
 
 def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
@@ -169,7 +169,7 @@ def create_rows_endpoint(
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
-        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+        unsupported_features=UNSUPPORTED_FEATURES,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
 

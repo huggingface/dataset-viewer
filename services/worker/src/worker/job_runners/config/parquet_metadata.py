@@ -95,6 +95,7 @@ def compute_parquet_metadata_response(
         ]
         if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
+        features = config_parquet_best_response.response["content"].get("features")  # config-parquet version<6 didn't have features
         partial = config_parquet_best_response.response["content"]["partial"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
@@ -113,7 +114,7 @@ def compute_parquet_metadata_response(
         unit="pq",
         disable=True,
     )
-    return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata, partial=partial)
+    return ConfigParquetMetadataResponse(parquet_files_metadata=parquet_files_metadata, features=features, partial=partial)
 
 
 class ConfigParquetMetadataJobRunner(ConfigJobRunner):
