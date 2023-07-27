@@ -188,6 +188,15 @@ The duckdb-index/ subpath in the NFS
 {{- end }}
 
 {{/*
+The stats-cache/ subpath in the NFS
+- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the Release, so that Releases will not share the same dir
+*/}}
+{{- define "descriptiveStatistics.subpath" -}}
+{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "stats-cache" }}
+{{- end }}
+
+{{/*
 The datasets library will use this directory as a cache
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir

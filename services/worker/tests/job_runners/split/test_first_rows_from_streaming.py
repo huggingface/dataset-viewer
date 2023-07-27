@@ -115,15 +115,15 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
 )
 def test_number_rows(
     hub_responses_public: HubDatasetTest,
-    hub_reponses_audio: HubDatasetTest,
-    hub_reponses_image: HubDatasetTest,
-    hub_reponses_images_list: HubDatasetTest,
+    hub_responses_audio: HubDatasetTest,
+    hub_responses_image: HubDatasetTest,
+    hub_responses_images_list: HubDatasetTest,
     hub_reponses_jsonl: HubDatasetTest,
-    hub_reponses_gated: HubDatasetTest,
-    hub_reponses_private: HubDatasetTest,
-    hub_reponses_empty: HubDatasetTest,
-    hub_reponses_does_not_exist_config: HubDatasetTest,
-    hub_reponses_does_not_exist_split: HubDatasetTest,
+    hub_responses_gated: HubDatasetTest,
+    hub_responses_private: HubDatasetTest,
+    hub_responses_empty: HubDatasetTest,
+    hub_responses_does_not_exist_config: HubDatasetTest,
+    hub_responses_does_not_exist_split: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -139,15 +139,15 @@ def test_number_rows(
 
     hub_datasets = {
         "public": hub_responses_public,
-        "audio": hub_reponses_audio,
-        "image": hub_reponses_image,
-        "images_list": hub_reponses_images_list,
+        "audio": hub_responses_audio,
+        "image": hub_responses_image,
+        "images_list": hub_responses_images_list,
         "jsonl": hub_reponses_jsonl,
-        "gated": hub_reponses_gated,
-        "private": hub_reponses_private,
-        "empty": hub_reponses_empty,
-        "does_not_exist_config": hub_reponses_does_not_exist_config,
-        "does_not_exist_split": hub_reponses_does_not_exist_split,
+        "gated": hub_responses_gated,
+        "private": hub_responses_private,
+        "empty": hub_responses_empty,
+        "does_not_exist_config": hub_responses_does_not_exist_config,
+        "does_not_exist_split": hub_responses_does_not_exist_split,
     }
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
