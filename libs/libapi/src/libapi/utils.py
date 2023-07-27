@@ -143,7 +143,7 @@ def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: List[str],
-    row_idx_column: Optional[str],
+    row_idx_column: Optional[str] = None,
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
