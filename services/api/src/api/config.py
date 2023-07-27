@@ -81,6 +81,7 @@ class EndpointConfig:
             "/is-valid": {
                 "dataset": ["dataset-is-valid"],
             },
+            "/statistics": {"split": ["split-descriptive-statistics"]},
         }
     )
 

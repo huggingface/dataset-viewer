@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import contextlib
 import os
 from os import makedirs
 from pathlib import Path
@@ -34,6 +35,18 @@ def glob_rows_in_assets_dir(
     return Path(assets_directory).resolve().glob(os.path.join(dataset, DATASET_SEPARATOR, "*", "*", "*"))
 
 
+def update_directory_modification_date(path: Path) -> None:
+    if path.is_dir():
+        # update the directory's last modified date
+        temporary_file = path / DATASETS_SERVER_MDATE_FILENAME
+        if temporary_file.is_dir():
+            raise ValueError(f"Cannot create temporary file {temporary_file} in {path}")
+        temporary_file.touch(exist_ok=True)
+        if temporary_file.is_file():
+            with contextlib.suppress(FileNotFoundError):
+                temporary_file.unlink()
+
+
 def update_last_modified_date_of_rows_in_assets_dir(
     dataset: str,
     config: str,
@@ -42,16 +55,10 @@ def update_last_modified_date_of_rows_in_assets_dir(
     length: int,
     assets_directory: StrPath,
 ) -> None:
+    update_directory_modification_date(Path(assets_directory).resolve() / dataset.split("/")[0])
     row_dirs_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     for row_idx in range(offset, offset + length):
-        if (row_dirs_path / str(row_idx)).is_dir():
-            # update the directory's last modified date
-            if (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).is_file():
-                try:
-                    (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).unlink()
-                except FileNotFoundError:
-                    pass
-            (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).touch()
+        update_directory_modification_date(row_dirs_path / str(row_idx))
 
 
 class ImageSource(TypedDict):

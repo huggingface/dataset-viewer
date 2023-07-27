@@ -92,6 +92,244 @@ Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_
 - `DUCKDB_INDEX_URL_TEMPLATE`: the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
 - `DUCKDB_INDEX_EXTENSIONS_DIRECTORY`: directory where the duckdb extensions will be downloaded. Defaults to empty.
 
+### Descriptive statistics worker
+
+Set environment variables to configure the `descriptive-statistics` worker (`DESCRIPTIVE_STATISTICS_` prefix):
+
+- `DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY`: directory to which a dataset in parquet format is downloaded. Defaults to empty.
+- `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`: number of histogram bins (see examples below for more info).
+- `DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES`: maximum size in bytes of the dataset's parquet files to compute statistics. Datasets with bigger size are ignored. Defaults to `100_000_000`.
+
+#### How descriptive statistics are computed 
+
+Descriptive statistics are currently computed for three types of data: categories (`ClassLabel` feature of the `datasets` library), `float` numbers and `int` numbers.
+Response has two fields: `num_examples` and `statistics`. `statistics` field is a list of dicts with three keys: `column_name`, `column_type` (has three values: `class_label`, `float` or `int`), and `column_statistics`.
+`column_statistics` content depends on the feature type. 
+##### class_label
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    "column_name": "class_col",
+    "column_type": "class_label",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "n_unique": 5,  # number of unique values
+        "frequencies": {   # mapping value -> its count
+            "this": 19834,
+            "are": 20159,
+            "random": 20109,
+            "words": 20172,
+            "test": 19726
+        }
+    }
+}
+```
+</p>
+</details> 
+
+##### float
+
+Bin size for histogram is counted as `(max_value - min_value) / DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    "column_name": "delay",
+    "column_type": "float",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": -10.206,
+        "max": 8.48053,
+        "mean": 2.10174,
+        "median": 3.4012,
+        "std": 3.12487,
+        "histogram": {
+            "hist": [
+                2,
+                34,
+                256,
+                15198,
+                9037,
+                2342,
+                12743,
+                45114,
+                14904,
+                370
+            ],
+            "bin_edges": [
+                -10.206,
+                -8.33734,
+                -6.46869,
+                -4.60004,
+                -2.73139,
+                -0.86273,
+                1.00592,
+                2.87457,
+                4.74322,
+                6.61188,
+                8.48053  # includes maximum value, so len is always len(hist) + 1
+            ]
+        }
+    }
+}
+```
+</p>
+</details> 
+
+##### int
+
+As bin edges for integer values also must be integers, bin size is counted as `np.ceil((max_value - min_value + 1) / DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS)`. Rounding up means that there might be smaller number of bins in response then provided `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`. The last bin's size might be smaller than that of the others if the feature's range is not divisible by the rounded bin size. 
+
+<details><summary>examples: </summary>
+<p>
+
+```python
+{
+    "column_name": "direction",
+    "column_type": "int",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 0,
+        "max": 1,
+        "mean": 0.49925,
+        "median": 0.0,
+        "std": 0.5,
+        "histogram": {
+            "hist": [
+                50075,
+                49925
+            ],
+            "bin_edges": [
+                0,
+                1,
+                1  # if the last value is equal to the last but one, that means that this bin includes only this value
+            ]
+        }
+    }
+},
+{
+    "column_name": "hour",
+    "column_type": "int",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 0,
+        "max": 23,
+        "mean": 13.44402,
+        "median": 14.0,
+        "std": 5.49455,
+        "histogram": {
+            "hist": [
+                2694,
+                2292,
+                16785,
+                16326,
+                16346,
+                17809,
+                16546,
+                11202
+            ],
+            "bin_edges": [
+                0,
+                3,
+                6,
+                9,
+                12,
+                15,
+                18,
+                21,
+                23
+            ]
+        }
+    }
+},
+{
+    "column_name": "humidity",
+    "column_type": "int",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 54,
+        "max": 99,
+        "mean": 83.89878,
+        "median": 85.0,
+        "std": 8.65174,
+        "histogram": {
+            "hist": [
+                554,
+                1662,
+                3823,
+                6532,
+                12512,
+                17536,
+                23871,
+                20355,
+                12896,
+                259
+            ],
+            "bin_edges": [
+                54,
+                59,
+                64,
+                69,
+                74,
+                79,
+                84,
+                89,
+                94,
+                99,
+                99
+            ]
+        }
+    }
+},
+{
+    "column_name": "weekday",
+    "column_type": "int",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 0,
+        "max": 6,
+        "mean": 3.08063,
+        "median": 3.0,
+        "std": 1.90347,
+        "histogram": {
+            "hist": [
+                10282,
+                15416,
+                15291,
+                15201,
+                15586,
+                15226,
+                12998
+            ],
+            "bin_edges": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                6
+            ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
 ### Splits worker
 
 The `splits` worker does not need any additional configuration.

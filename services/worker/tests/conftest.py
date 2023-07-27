@@ -13,6 +13,7 @@ from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
+    init_statistics_cache_dir,
 )
 from pytest import MonkeyPatch, fixture
 
@@ -43,6 +44,11 @@ def worker_state_file_path(tmp_path: Path) -> str:
     return str(tmp_path / WORKER_STATE_FILE_NAME)
 
 
+@fixture
+def statistics_cache_directory(app_config: AppConfig) -> StrPath:
+    return init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
+
+
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session", autouse=True)
 def monkeypatch_session() -> Iterator[MonkeyPatch]:
@@ -68,6 +74,7 @@ def set_env_vars(
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
     mp.setenv("FIRST_ROWS_MAX_NUMBER", "7")
     mp.setenv("PARQUET_AND_INFO_MAX_DATASET_SIZE", "10_000")
+    mp.setenv("DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES", "10_000")
     mp.setenv("PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES", "10")
     mp.setenv("PARQUET_AND_INFO_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
     mp.setenv("DUCKDB_INDEX_COMMITTER_HF_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)

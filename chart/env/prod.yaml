@@ -99,6 +99,9 @@ parquetPersistence:
 duckdbPersistence:
   existingClaim: "datasets-server-duckdb-pvc"
 
+statisticsPersistence:
+  existingClaim: "datasets-server-statistics-pvc"
+
 monitoring:
   enabled: true
 
@@ -130,6 +133,8 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
+descriptiveStatistics:
+  maxParquetSizeBytes: "5_000_000_000"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -300,7 +305,7 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "4Gi"
+      memory: "6Gi"
     limits:
       cpu: 4
       memory: "8Gi"

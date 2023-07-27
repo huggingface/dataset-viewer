@@ -40,7 +40,12 @@ tensorflow-cpu = [
 tensorflow-aarch64 = {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-macos = {version = "^2.11.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"}
 tfrecord = "^1.14.1"
-torch = { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl" }
+torch = [
+    { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1%2Bcpu-cp39-cp39-linux_x86_64.whl", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"},
+    { url = "https://download.pytorch.org/whl/cpu/torch-1.13.1-cp39-none-macosx_11_0_arm64.whl", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"},
+    { url = "https://download.pytorch.org/whl/torch-1.13.1-cp39-cp39-manylinux2014_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
+]
 transformers = "^4.30.0"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"

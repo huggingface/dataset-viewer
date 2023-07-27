@@ -23,7 +23,6 @@ from libcommon.exceptions import (
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
-    SplitNotFoundError,
     SplitWithTooBigParquetError,
 )
 from libcommon.processing_graph import ProcessingStep
@@ -38,6 +37,7 @@ from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    check_split_exists,
     create_branch,
     hf_hub_url,
     retry,
@@ -71,18 +71,7 @@ def compute_index_rows(
     committer_hf_token: Optional[str],
 ) -> SplitHubFile:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
-
-    # validate split
-    split_names_best_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
-    )
-    try:
-        splits_content = split_names_best_response.response["content"]["splits"]
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if split not in [split_item["split"] for split_item in splits_content]:
-        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
+    check_split_exists(dataset=dataset, config=config, split=split)
 
     # get parquet urls and dataset_info
     config_parquet_and_info_step = "config-parquet-and-info"

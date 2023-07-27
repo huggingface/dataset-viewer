@@ -24,6 +24,7 @@ from libcommon.constants import (
     PROCESSING_STEP_DATASET_PARQUET_VERSION,
     PROCESSING_STEP_DATASET_SIZE_VERSION,
     PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
+    PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION,
     PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
@@ -298,6 +299,15 @@ class ProcessingGraphConfig:
                 ],
                 "job_runner_version": PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION,
                 "difficulty": 20,
+            },
+            "split-descriptive-statistics": {
+                "input_type": "split",
+                "triggered_by": [
+                    "config-split-names-from-info",
+                    "config-split-names-from-streaming",
+                ],
+                "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION,
+                "difficulty": 70,
             },
             "dataset-is-valid": {
                 "input_type": "dataset",
