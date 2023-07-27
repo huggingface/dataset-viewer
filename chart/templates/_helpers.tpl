@@ -50,6 +50,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.rows "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "services.search.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.search "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "services.worker.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
