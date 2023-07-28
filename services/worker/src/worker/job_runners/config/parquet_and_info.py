@@ -297,9 +297,7 @@ def raise_if_requires_manual_download(
         )
     try:
         builder._check_manual_download(
-            StreamingDownloadManager(
-                base_path=builder.base_path, download_config=DownloadConfig(token=hf_token)
-            )
+            StreamingDownloadManager(base_path=builder.base_path, download_config=DownloadConfig(token=hf_token))
         )
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"dataset={builder.repo_id} requires manual download.", cause=err) from err
