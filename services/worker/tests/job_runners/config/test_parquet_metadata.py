@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from datasets import Dataset, Features
+from datasets import Dataset, Features, Value
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
 from libcommon.exceptions import PreviousStepFormatError
@@ -105,6 +105,7 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
             ),
             None,
             ConfigParquetMetadataResponse(
@@ -131,6 +132,7 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
             ),
             False,
         ),
@@ -151,6 +153,61 @@ def get_job_runner(
             PreviousStepFormatError.__name__,
             None,
             True,
+        ),
+        (
+            "with_features",
+            "config_1",
+            HTTPStatus.OK,
+            ConfigParquetResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                    ),
+                ],
+                partial=False,
+                features=Features({"a": Value("string")}).to_dict(),
+            ),
+            None,
+            ConfigParquetMetadataResponse(
+                parquet_files_metadata=[
+                    ParquetFileMetadataItem(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                        num_rows=3,
+                        parquet_metadata_subpath="with_features/--/config_1/train/filename1",
+                    ),
+                    ParquetFileMetadataItem(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                        num_rows=3,
+                        parquet_metadata_subpath="with_features/--/config_1/train/filename2",
+                    ),
+                ],
+                partial=False,
+                features=Features({"a": Value("string")}).to_dict(),
+            ),
+            False,
         ),
     ],
 )

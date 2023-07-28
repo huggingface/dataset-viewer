@@ -17,6 +17,7 @@ from typing import (
     Type,
     TypedDict,
     TypeVar,
+    overload,
 )
 
 import pandas as pd
@@ -192,6 +193,36 @@ def delete_dataset_responses(dataset: str) -> Optional[int]:
     return CachedResponseDocument.objects(dataset=dataset).delete()
 
 
+T = TypeVar("T")
+
+
+@overload
+def _clean_nested_mongo_object(obj: Dict[str, T]) -> Dict[str, T]:
+    ...
+
+
+@overload
+def _clean_nested_mongo_object(obj: List[T]) -> List[T]:
+    ...
+
+
+@overload
+def _clean_nested_mongo_object(obj: T) -> T:
+    ...
+
+
+def _clean_nested_mongo_object(obj: Any) -> Any:
+    """get rid of BaseDict and BaseList objects from mongo (Feature.from_dict doesn't support them)"""
+    if isinstance(obj, dict):
+        return {k: _clean_nested_mongo_object(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_clean_nested_mongo_object(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(_clean_nested_mongo_object(v) for v in obj)
+    else:
+        return obj
+
+
 class CacheEntryWithoutContent(TypedDict):
     http_status: HTTPStatus
     error_code: Optional[str]
@@ -304,7 +335,7 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     except DoesNotExist as e:
         raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
-        "content": response.content,
+        "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
         "error_code": response.error_code,
         "job_runner_version": response.job_runner_version,
@@ -334,13 +365,13 @@ def get_response_with_details(
     except DoesNotExist as e:
         raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
-        "content": response.content,
+        "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
         "error_code": response.error_code,
         "job_runner_version": response.job_runner_version,
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
-        "details": response.details,
+        "details": _clean_nested_mongo_object(response.details),
     }
 
 
@@ -550,7 +581,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
-                "details": object.details,
+                "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
@@ -581,7 +612,7 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "split": response.split,
             "http_status": response.http_status,
             "error_code": response.error_code,
-            "details": response.details,
+            "details": _clean_nested_mongo_object(response.details),
             "updated_at": response.updated_at,
             "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
@@ -643,10 +674,10 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
-                "content": object.content,
+                "content": _clean_nested_mongo_object(object.content),
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
-                "details": object.details,
+                "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "progress": object.progress,
             }
