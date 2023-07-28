@@ -3,7 +3,7 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache, partial
-from typing import Any, Callable, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -29,18 +29,6 @@ class ParquetResponseFormatError(Exception):
 
 class FileSystemError(Exception):
     pass
-
-
-def _clean_mongo_objects(obj: Any) -> Any:
-    """get rid of BaseDict and BaseList objects from mongo (Feature.from_dict doesn't support them)"""
-    if isinstance(obj, dict):
-        return {_clean_mongo_objects(k): _clean_mongo_objects(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_clean_mongo_objects(v) for v in obj]
-    elif isinstance(obj, tuple):
-        return tuple(_clean_mongo_objects(v) for v in obj)
-    else:
-        return obj
 
 
 class ParquetFileMetadataItem(TypedDict):
@@ -279,7 +267,7 @@ class RowsIndex:
                 self.revision = result.response["dataset_git_revision"]
                 content = result.response["content"]
                 if content.get("features"):  # config-parquet-metadata version<2 didn't have features
-                    features = Features.from_dict(_clean_mongo_objects(content["features"]))
+                    features = Features.from_dict(content["features"])
                 else:
                     features = None
             logging.info(
