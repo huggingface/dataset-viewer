@@ -86,4 +86,4 @@ jobs:
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
         run: |
-          poetry run python -m pytest -vv -x tests
+          poetry run python -m pytest -vv -s tests
