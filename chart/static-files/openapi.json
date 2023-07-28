@@ -2812,6 +2812,23 @@
                 "value": "Helsinki-NLP/tatoeba_mt"
               }
             }
+          },
+          {
+            "name": "config",
+            "in": "query",
+            "description": "The dataset configuration (or subset).",
+            "required": false,
+            "schema": { "type": "string" },
+            "examples": {
+              "cola": {
+                "summary": "a subset of the glue dataset",
+                "value": "cola"
+              },
+              "yangdong/ecqa": {
+                "summary": "the default configuration given by the 🤗 Datasets library",
+                "value": "yangdong--ecqa"
+              }
+            }
           }
         ],
         "responses": {
@@ -2881,102 +2898,239 @@
                           "filename": "duorc-validation.parquet",
                           "size": 3114389
                         }
-                      ]
+                      ],
+                      "pending": [],
+                      "failed": [],
+                      "partial": false
                     }
                   },
-                  "sharded": {
-                    "summary": "alexandrainst/danish-wit: the parquet file for the train split is partitioned into 9 shards",
+                  "duorc with ParaphraseRC config": {
+                    "summary": "duorc: three parquet files for ParaphraseRC, one per split",
                     "value": {
                       "parquet_files": [
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "test",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet",
+                          "filename": "duorc-test.parquet",
+                          "size": 6136590
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet",
+                          "filename": "duorc-train.parquet",
+                          "size": 26005667
+                        },
+                        {
+                          "dataset": "duorc",
+                          "config": "ParaphraseRC",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet",
+                          "filename": "duorc-validation.parquet",
+                          "size": 5566867
+                        }
+                      ],
+                      "pending": [],
+                      "failed": [],
+                      "partial": false,
+                      "features": {
+                        "plot_id": {
+                          "dtype": "string",
+                          "_type": "Value"
+                        },
+                        "plot": {
+                          "dtype": "string",
+                          "_type": "Value"
+                        },
+                        "title": {
+                          "dtype": "string",
+                          "_type": "Value"
+                        },
+                        "question_id": {
+                          "dtype": "string",
+                          "_type": "Value"
+                        },
+                        "question": {
+                          "dtype": "string",
+                          "_type": "Value"
+                        },
+                        "answers": {
+                          "feature": {
+                            "dtype": "string",
+                            "_type": "Value"
+                          },
+                          "_type": "Sequence"
+                        },
+                        "no_answer": {
+                          "dtype": "bool",
+                          "_type": "Value"
+                        }
+                      }
+                    }
+                  },
+                  "sharded": {
+                    "summary": "alexandrainst/da-wit: the parquet file for the train split is partitioned into 9 shards",
+                    "value": {
+                      "parquet_files": [
+                        {
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-test.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-test.parquet",
                           "filename": "parquet-test.parquet",
-                          "size": 48781933
+                          "size": 48684227
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00000-of-00009.parquet",
-                          "filename": "parquet-train-00000-of-00009.parquet",
-                          "size": 937127291
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00000-of-00017.parquet",
+                          "filename": "parquet-train-00000-of-00017.parquet",
+                          "size": 465549291
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00001-of-00009.parquet",
-                          "filename": "parquet-train-00001-of-00009.parquet",
-                          "size": 925920565
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00001-of-00017.parquet",
+                          "filename": "parquet-train-00001-of-00017.parquet",
+                          "size": 465701535
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00002-of-00009.parquet",
-                          "filename": "parquet-train-00002-of-00009.parquet",
-                          "size": 940390661
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00002-of-00017.parquet",
+                          "filename": "parquet-train-00002-of-00017.parquet",
+                          "size": 463857123
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00003-of-00009.parquet",
-                          "filename": "parquet-train-00003-of-00009.parquet",
-                          "size": 934549621
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00003-of-00017.parquet",
+                          "filename": "parquet-train-00003-of-00017.parquet",
+                          "size": 456197486
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00004-of-00009.parquet",
-                          "filename": "parquet-train-00004-of-00009.parquet",
-                          "size": 493004154
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00004-of-00017.parquet",
+                          "filename": "parquet-train-00004-of-00017.parquet",
+                          "size": 465412051
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00005-of-00009.parquet",
-                          "filename": "parquet-train-00005-of-00009.parquet",
-                          "size": 942848888
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00005-of-00017.parquet",
+                          "filename": "parquet-train-00005-of-00017.parquet",
+                          "size": 469114305
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00006-of-00009.parquet",
-                          "filename": "parquet-train-00006-of-00009.parquet",
-                          "size": 933373843
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00006-of-00017.parquet",
+                          "filename": "parquet-train-00006-of-00017.parquet",
+                          "size": 460338645
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00007-of-00009.parquet",
-                          "filename": "parquet-train-00007-of-00009.parquet",
-                          "size": 936939176
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00007-of-00017.parquet",
+                          "filename": "parquet-train-00007-of-00017.parquet",
+                          "size": 468309376
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00008-of-00009.parquet",
-                          "filename": "parquet-train-00008-of-00009.parquet",
-                          "size": 946933048
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00008-of-00017.parquet",
+                          "filename": "parquet-train-00008-of-00017.parquet",
+                          "size": 490063121
                         },
                         {
-                          "dataset": "alexandrainst/danish-wit",
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00009-of-00017.parquet",
+                          "filename": "parquet-train-00009-of-00017.parquet",
+                          "size": 460462764
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00010-of-00017.parquet",
+                          "filename": "parquet-train-00010-of-00017.parquet",
+                          "size": 476525998
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00011-of-00017.parquet",
+                          "filename": "parquet-train-00011-of-00017.parquet",
+                          "size": 470327354
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00012-of-00017.parquet",
+                          "filename": "parquet-train-00012-of-00017.parquet",
+                          "size": 457138334
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00013-of-00017.parquet",
+                          "filename": "parquet-train-00013-of-00017.parquet",
+                          "size": 464485292
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00014-of-00017.parquet",
+                          "filename": "parquet-train-00014-of-00017.parquet",
+                          "size": 466549376
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00015-of-00017.parquet",
+                          "filename": "parquet-train-00015-of-00017.parquet",
+                          "size": 460452174
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
+                          "config": "alexandrainst--danish-wit",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00016-of-00017.parquet",
+                          "filename": "parquet-train-00016-of-00017.parquet",
+                          "size": 480583533
+                        },
+                        {
+                          "dataset": "alexandrainst/da-wit",
                           "config": "alexandrainst--danish-wit",
                           "split": "val",
-                          "url": "https://huggingface.co/datasets/alexandrainst/danish-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-val.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-val.parquet",
                           "filename": "parquet-val.parquet",
-                          "size": 11437355
+                          "size": 11434278
                         }
-                      ]
+                      ],
+                      "pending": [],
+                      "failed": [],
+                      "partial": false
                     }
                   }
                 }
