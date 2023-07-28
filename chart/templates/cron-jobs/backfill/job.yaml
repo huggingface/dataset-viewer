@@ -17,9 +17,9 @@ spec:
         spec:
           restartPolicy: OnFailure
           {{- include "dnsConfig" . | nindent 10 }}
-          {{- include "image.imagePullSecrets" . | nindent 10 }}
-          nodeSelector: {{ toYaml .Values.backfill.nodeSelector | nindent 10 }}
-          tolerations: {{ toYaml .Values.backfill.tolerations | nindent 10 }}
-          containers: {{ include "containerBackfill" . | nindent 10 }}
-          securityContext: {{ include "securityContext" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.backfill.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.backfill.tolerations | nindent 12 }}
+          containers: {{ include "containerBackfill" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
 {{- end}}
