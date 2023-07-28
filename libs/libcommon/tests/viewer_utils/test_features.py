@@ -7,10 +7,13 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
-from datasets import Audio, Dataset, Image, Value
+from datasets import Audio, Dataset, Features, Image, Value
 
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.viewer_utils.features import (
+    get_cell_value,
+    get_supported_unsupported_columns,
+)
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -317,3 +320,22 @@ def test_others(
         assets_directory=cached_assets_directory,
     )
     assert value == output_value
+
+
+def test_get_supported_unsupported_columns() -> None:
+    features = Features(
+        {
+            "audio1": Audio(),
+            "audio2": Audio(sampling_rate=16_000),
+            "audio3": [Audio()],
+            "image1": Image(),
+            "image2": Image(decode=False),
+            "image3": [Image()],
+            "string": Value("string"),
+            "binary": Value("binary"),
+        }
+    )
+    unsupported_features = [Value("binary"), Audio()]
+    supported_columns, unsupported_columns = get_supported_unsupported_columns(features, unsupported_features)
+    assert supported_columns == ["image1", "image2", "image3", "string"]
+    assert unsupported_columns == ["audio1", "audio2", "audio3", "binary"]

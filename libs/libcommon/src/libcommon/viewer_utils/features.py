@@ -20,6 +20,7 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
+from datasets.features.features import FeatureType, _visit
 from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
@@ -302,15 +303,26 @@ def to_features_list(features: Features) -> List[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features_magic_strings: List[str] = [],
+    unsupported_features: List[FeatureType] = [],
 ) -> Tuple[List[str], List[str]]:
     supported_columns, unsupported_columns = [], []
 
     for column, feature in features.items():
-        str_feature = str(feature)
         str_column = str(column)
-        if any(magic_string in str_feature for magic_string in unsupported_features_magic_strings):
-            unsupported_columns.append(str_column)
-        else:
+        supported = True
+
+        def classify(feature: FeatureType) -> None:
+            nonlocal supported
+            for unsupported_feature in unsupported_features:
+                if type(unsupported_feature) == type(feature) == Value:
+                    if unsupported_feature.dtype == feature.dtype:
+                        supported = False
+                elif type(unsupported_feature) == type(feature):
+                    supported = False
+
+        _visit(feature, classify)
+        if supported:
             supported_columns.append(str_column)
+        else:
+            unsupported_columns.append(str_column)
     return supported_columns, unsupported_columns

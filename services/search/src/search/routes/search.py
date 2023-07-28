@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 
 import duckdb
 import pyarrow as pa
-from datasets import Features
+from datasets import Audio, Features, Image, Value
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -53,7 +53,8 @@ logger = logging.getLogger(__name__)
 
 ROW_IDX_COLUMN = "__hf_index_id_row_idx"
 MAX_ROWS = 100
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
+UNSUPPORTED_FEATURES = [Value("binary"), Audio(), Image()]
+
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS score FROM"
     " data) A WHERE score IS NOT NULL;"
@@ -166,7 +167,7 @@ def create_response(
 
     _, unsupported_columns = get_supported_unsupported_columns(
         features,
-        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+        unsupported_features=UNSUPPORTED_FEATURES,
     )
     pa_table = pa_table.drop(unsupported_columns)
     return PaginatedResponse(
