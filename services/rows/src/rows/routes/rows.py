@@ -24,7 +24,7 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_ok_response,
     to_rows_list,
-    try_backfill_dataset,
+    try_backfill_dataset_then_raise,
 )
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
@@ -124,6 +124,7 @@ def create_response(
     offset: int,
     features: Features,
     unsupported_columns: List[str],
+    num_total_rows: int,
 ) -> Any:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -142,6 +143,7 @@ def create_response(
             features,
             unsupported_columns,
         ),
+        "num_total_rows": num_total_rows,
     }
 
 
@@ -219,7 +221,7 @@ def create_rows_endpoint(
                         processing_graph.get_config_parquet_metadata_processing_steps()
                     )
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
-                        try_backfill_dataset(
+                        try_backfill_dataset_then_raise(
                             processing_steps=config_parquet_metadata_processing_steps
                             + config_parquet_processing_steps,
                             processing_graph=processing_graph,
@@ -262,6 +264,7 @@ def create_rows_endpoint(
                         offset=offset,
                         features=rows_index.parquet_index.features,
                         unsupported_columns=rows_index.parquet_index.unsupported_columns,
+                        num_total_rows=rows_index.parquet_index.num_total_rows,
                     )
                 with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
                     update_last_modified_date_of_rows_in_assets_dir(

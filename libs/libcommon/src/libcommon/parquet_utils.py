@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache, partial
 from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
 
@@ -81,11 +81,14 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
 
+    num_total_rows: int = field(init=False)
+
     def __post_init__(self) -> None:
         if self.httpfs._session is None:
             self.httpfs_session = asyncio.run(self.httpfs.set_session())
         else:
             self.httpfs_session = self.httpfs._session
+        self.num_total_rows = sum(self.num_rows)
 
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files

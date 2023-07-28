@@ -281,6 +281,7 @@ def test_indexer_get_rows_index_with_parquet_metadata(
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
     assert index.parquet_index.num_rows == [len(ds)]
+    assert index.parquet_index.num_total_rows == 2
     assert index.parquet_index.parquet_files_urls == [
         parquet_file_metadata_item["url"]
         for parquet_file_metadata_item in dataset_with_config_parquet_metadata["parquet_files_metadata"]
@@ -302,6 +303,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features
     assert index.parquet_index.num_rows == [len(ds)] * 4
+    assert index.parquet_index.num_total_rows == 8
     assert index.parquet_index.parquet_files_urls == [
         parquet_file_metadata_item["url"]
         for parquet_file_metadata_item in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
@@ -334,12 +336,14 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         offset=0,
         features=ds.features,
         unsupported_columns=[],
+        num_total_rows=10,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "text", "type": {"dtype": "string", "_type": "Value"}}]
     assert response["rows"] == [
         {"row_idx": 0, "row": {"text": "Hello there"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"text": "General Kenobi"}, "truncated_cells": []},
     ]
+    assert response["num_total_rows"] == 10
 
 
 def test_create_response_with_image(
@@ -355,6 +359,7 @@ def test_create_response_with_image(
         offset=0,
         features=ds_image.features,
         unsupported_columns=[],
+        num_total_rows=10,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
     assert response["rows"] == [
