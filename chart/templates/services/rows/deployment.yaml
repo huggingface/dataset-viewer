@@ -22,7 +22,6 @@ spec:
     metadata:
       labels: {{ include "labels.rows" . | nindent 8 }}
     spec:
-      {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
         {{ include "initContainerCachedAssets" . | nindent 8 }}
