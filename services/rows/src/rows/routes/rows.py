@@ -24,7 +24,7 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_ok_response,
     to_rows_list,
-    try_backfill_dataset,
+    try_backfill_dataset_then_raise,
 )
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
@@ -219,7 +219,7 @@ def create_rows_endpoint(
                         processing_graph.get_config_parquet_metadata_processing_steps()
                     )
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
-                        try_backfill_dataset(
+                        try_backfill_dataset_then_raise(
                             processing_steps=config_parquet_metadata_processing_steps
                             + config_parquet_processing_steps,
                             processing_graph=processing_graph,

@@ -83,7 +83,7 @@ def are_valid_parameters(parameters: List[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
 
 
-def try_backfill_dataset(
+def try_backfill_dataset_then_raise(
     processing_steps: List[ProcessingStep],
     dataset: str,
     processing_graph: ProcessingGraph,
