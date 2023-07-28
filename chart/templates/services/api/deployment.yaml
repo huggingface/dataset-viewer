@@ -22,7 +22,6 @@ spec:
     metadata:
       labels: {{ include "labels.api" . | nindent 8 }}
     spec:
-      {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerApi" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.api.nodeSelector | nindent 8 }}
