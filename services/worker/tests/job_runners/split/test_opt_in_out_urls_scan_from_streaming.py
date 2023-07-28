@@ -299,6 +299,12 @@ def test_compute_error_from_spawning(
         job_runner.compute()
 
 
+@pytest.mark.skip(
+    reason=(
+        "Temporarily disabled, we can't use secrets on fork repos. See"
+        " https://github.com/huggingface/datasets-server/issues/1085"
+    )
+)
 @pytest.mark.asyncio
 async def test_real_check_spawning_response(app_config: AppConfig) -> None:
     semaphore = Semaphore(value=10)
