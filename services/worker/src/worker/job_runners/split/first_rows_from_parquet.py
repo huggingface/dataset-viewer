@@ -190,7 +190,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             hf_token=self.app_config.common.hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
             httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),
-            unsupported_features_magic_strings=[],
+            unsupported_features=[],
             all_columns_supported_datasets_allow_list="all",
         )
 

@@ -117,11 +117,13 @@ class ParquetFileMetadataItem(SplitItem):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: List[ParquetFileMetadataItem]
+    features: Optional[Dict[str, Any]]
     partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
+    features: Optional[Dict[str, Any]]
     partial: bool
 
 
