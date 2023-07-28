@@ -58,12 +58,12 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
+    token: Union[bool, str, None] = hf_token if hf_token is not None else False
 
     try:
         split_name_items: List[SplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}
-            for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
+            for split in get_dataset_split_names(path=dataset, config_name=config, token=token)
         ]
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err

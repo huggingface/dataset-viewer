@@ -140,7 +140,7 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
+    token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
     check_split_exists(dataset=dataset, config=config, split=split)
     # get the features
@@ -148,7 +148,7 @@ def compute_first_rows_response(
         info = get_dataset_config_info(
             path=dataset,
             config_name=config,
-            use_auth_token=use_auth_token,
+            token=token,
         )
     except Exception as err:
         raise InfoError(
@@ -163,7 +163,7 @@ def compute_first_rows_response(
                 name=config,
                 split=split,
                 streaming=True,
-                use_auth_token=use_auth_token,
+                token=token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
@@ -214,7 +214,7 @@ def compute_first_rows_response(
         info=info,
         max_size_fallback=max_size_fallback,
         rows_max_number=rows_max_number,
-        use_auth_token=use_auth_token,
+        token=token,
     )
     rows = rows_content["rows"]
 
