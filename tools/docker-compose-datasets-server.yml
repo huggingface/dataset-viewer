@@ -23,6 +23,7 @@ services:
       - admin
       - api
       - rows
+      - search
   admin:
     build:
       context: ..
