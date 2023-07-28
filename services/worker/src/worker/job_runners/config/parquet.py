@@ -45,6 +45,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
         if "features" in content["dataset_info"] and isinstance(content["dataset_info"]["features"], dict):
             features = content["dataset_info"]["features"]
         else:
+            # (July 23) we can remove this later and raise an error instead (can be None for backward compatibility)
             features = None
         partial = content["partial"]
     except KeyError as e:

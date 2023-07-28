@@ -99,6 +99,7 @@ def compute_parquet_metadata_response(
         if "features" in content and isinstance(content["features"], dict):
             features = content["features"]  # config-parquet version<6 didn't have features
         else:
+            # (July 23) we can remove this later and raise an error instead (can be None for backward compatibility)
             features = None
         partial = config_parquet_best_response.response["content"]["partial"]
     except Exception as e:
