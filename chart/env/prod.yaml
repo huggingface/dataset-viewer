@@ -108,7 +108,7 @@ common:
 
 log:
   # Log level
-  level: "DEBUG"
+  level: "INFO"
 
 firstRows:
   maxBytes: "200_000"
