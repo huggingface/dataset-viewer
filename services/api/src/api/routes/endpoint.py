@@ -18,7 +18,7 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    try_backfill_dataset,
+    try_backfill_dataset_then_raise,
 )
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
@@ -82,7 +82,7 @@ def get_cache_entry_from_steps(
     kinds = [processing_step.cache_kind for processing_step in processing_steps]
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        try_backfill_dataset(
+        try_backfill_dataset_then_raise(
             processing_steps=processing_steps,
             processing_graph=processing_graph,
             dataset=dataset,

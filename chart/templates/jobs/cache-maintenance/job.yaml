@@ -17,6 +17,7 @@ spec:
       labels: {{ include "labels.cacheMaintenance" . | nindent 8 }}
     spec:
       restartPolicy: Never
+      {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       containers: {{ include "containerCacheMaintenance" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.cacheMaintenance.nodeSelector | nindent 8 }}
