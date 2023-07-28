@@ -206,6 +206,11 @@ def _clean_nested_mongo_object(obj: List[T]) -> List[T]:
     ...
 
 
+@overload
+def _clean_nested_mongo_object(obj: T) -> T:
+    ...
+
+
 def _clean_nested_mongo_object(obj: Any) -> Any:
     """get rid of BaseDict and BaseList objects from mongo (Feature.from_dict doesn't support them)"""
     if isinstance(obj, dict):
