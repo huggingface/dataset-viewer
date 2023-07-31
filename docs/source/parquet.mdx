@@ -209,30 +209,30 @@ curl https://huggingface.co/api/datasets/duorc/parquet \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and configuration. For example, the [`duorc`](https://huggingface.co/datasets/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" configuration (see the [List splits and configurations](./splits) guide for more details about splits and configurations). 
+The endpoint response is a JSON containing a list of the dataset's files URLs in the Parquet format for each split and configuration. For example, the [`duorc`](https://huggingface.co/datasets/duorc) dataset has one Parquet file for the train split of the "ParaphraseRC" configuration (see the [List splits and configurations](./splits) guide for more details about splits and configurations).
 
 ```json
 {
   "ParaphraseRC": {
     "test": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/test/0.parquet"
     ],
     "train": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train/0.parquet"
     ],
     "validation": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/validation/0.parquet"
     ]
   },
   "SelfRC": {
     "test": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-test.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/SelfRC/test/0.parquet"
     ],
     "train": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-train.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/SelfRC/train/0.parquet"
     ],
     "validation": [
-      "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-validation.parquet"
+      "https://huggingface.co/api/datasets/duorc/parquet/SelfRC/validation/0.parquet"
     ]
   }
 }
@@ -281,7 +281,9 @@ curl https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train \
 </inferencesnippet>
 
 ```json
-["https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet"]
+[
+  "https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train/0.parquet"
+]
 ```
 
 Each parquet file can also be accessed using its shard index: `https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train/0.parquet` redirects to `https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet` for example.
