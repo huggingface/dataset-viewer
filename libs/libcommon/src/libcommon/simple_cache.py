@@ -109,9 +109,7 @@ class CachedResponseDocument(Document):
         "indexes": [
             ("kind", "dataset", "config", "split"),
             ("dataset", "kind", "http_status"),
-            ("kind", "http_status", "dataset"),
             ("kind", "http_status", "error_code"),
-            ("kind", "id"),
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
