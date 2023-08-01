@@ -4,7 +4,7 @@
 {{- define "volumeMountDescriptiveStatisticsRW" -}}
 - mountPath: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
   mountPropagation: None
-  name: data
+  name: statistics-data
   subPath: "{{ include "descriptiveStatistics.subpath" . }}"
   readOnly: false
 {{- end -}}
