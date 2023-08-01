@@ -127,6 +127,9 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
+duckDBIndex:
+  maxParquetSizeBytes: "5_000_000_000"
+
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
 
