@@ -32,6 +32,8 @@ jobs:
           - directory: services
             project: rows
           - directory: services
+            project: search
+          - directory: services
             project: worker
     runs-on: "ubuntu-latest"
     steps:
