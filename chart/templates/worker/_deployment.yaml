@@ -28,6 +28,7 @@ spec:
         {{ include "initContainerCache" . | nindent 8 }}
         {{ include "initContainerParquetMetadata" . | nindent 8 }}
         {{ include "initContainerDuckDBIndex" . | nindent 8 }}
+        {{ include "initContainerDescriptiveStatistics" . | nindent 8 }}
       containers: {{ include "containerWorker" . | nindent 8 }}
       nodeSelector: {{ toYaml .workerValues.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .workerValues.tolerations | nindent 8 }}
