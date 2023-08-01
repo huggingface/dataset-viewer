@@ -5,11 +5,12 @@
 - name: "{{ include "name" . }}-storage-admin"
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
-  volumeMounts: 
-  - mountPath: /data
-    mountPropagation: None
-    name: data
-    readOnly: false
+  volumeMounts:
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
+  {{ include "volumeMountCache" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
+  {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
+  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   securityContext:
     runAsNonRoot: false
     runAsUser: 0
