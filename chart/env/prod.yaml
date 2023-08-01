@@ -168,7 +168,7 @@ backfill:
     level: "debug"
   action: "backfill"
   error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError"
-  schedule: "45 * * * *"
+  schedule: "0 * * * *"
   # every four hours
   nodeSelector: {}
   resources:
