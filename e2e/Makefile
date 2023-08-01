@@ -11,8 +11,6 @@ export API_UVICORN_NUM_WORKERS := 2
 export API_UVICORN_PORT := 9080
 export ROWS_UVICORN_NUM_WORKERS := 2
 export ROWS_UVICORN_PORT := 9082
-export SEARCH_UVICORN_NUM_WORKERS := 2
-export SEARCH_UVICORN_PORT := 9083
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
