@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
-    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
