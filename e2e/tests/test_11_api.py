@@ -123,7 +123,11 @@ def test_rows_endpoint(
         assert len(rows) == 3, rows
         assert rows[0] == {
             "row_idx": 1,
-            "row": {"col_1": "Vader turns round and round in circles as his ship spins into space.", "col_2": 1, "col_3": 1.0},
+            "row": {
+                "col_1": "Vader turns round and round in circles as his ship spins into space.",
+                "col_2": 1,
+                "col_3": 1.0,
+            },
             "truncated_cells": [],
         }, rows[0]
         assert features == [
