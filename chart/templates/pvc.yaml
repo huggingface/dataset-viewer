@@ -1,4 +1,4 @@
-{{- if (not .Values.persistence.existingClaim) }}
+{{- if (not .Values.persistence.nfs.existingClaim) }}
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
@@ -10,8 +10,8 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: {{ .Values.persistence.size }}
-  {{ if ne "" .Values.persistence.storageClass }}
-  storageClassName: {{ .Values.persistence.storageClass }}
+      storage: {{ .Values.persistence.nfs.size }}
+  {{ if ne "" .Values.persistence.nfs.storageClass }}
+  storageClassName: {{ .Values.persistence.nfs.storageClass }}
   {{ end }}
 {{- end }}

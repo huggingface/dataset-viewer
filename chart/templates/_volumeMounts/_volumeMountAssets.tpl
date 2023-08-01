@@ -4,7 +4,7 @@
 {{- define "volumeMountAssetsRO" -}}
 - mountPath: {{ .Values.assets.storageDirectory | quote }}
   mountPropagation: None
-  name: data
+  name: volume-nfs
   subPath: "{{ include "assets.subpath" . }}"
   readOnly: true
 {{- end -}}
@@ -12,7 +12,7 @@
 {{- define "volumeMountAssetsRW" -}}
 - mountPath: {{ .Values.assets.storageDirectory | quote }}
   mountPropagation: None
-  name: data
+  name: volume-nfs
   subPath: "{{ include "assets.subpath" . }}"
   readOnly: false
 {{- end -}}

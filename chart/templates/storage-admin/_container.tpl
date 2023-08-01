@@ -7,7 +7,7 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
-  {{ include "volumeMountCache" . | nindent 2 }}
+  {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
