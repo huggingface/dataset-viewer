@@ -65,6 +65,7 @@ FTS_COMMAND = (
     "data) A WHERE score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
+HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
 def get_download_folder(
@@ -77,6 +78,7 @@ def get_download_folder(
 
 
 def download_index_file(
+    cache_folder: str,
     index_folder: str,
     target_revision: str,
     dataset: str,
@@ -96,6 +98,7 @@ def download_index_file(
         local_dir=index_folder,
         local_dir_use_symlinks=False,
         token=hf_token,
+        cache_dir=cache_folder,
     )
 
 
@@ -288,7 +291,14 @@ def create_search_endpoint(
                     index_path = Path(index_file_location)
                     if not index_path.is_file():
                         with StepProfiler(method="search_endpoint", step="download index file"):
-                            download_index_file(index_folder, target_revision, dataset, repo_file_location, hf_token)
+                            download_index_file(
+                                cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
+                                index_folder=index_folder,
+                                target_revision=target_revision,
+                                dataset=dataset,
+                                repo_file_location=repo_file_location,
+                                hf_token=hf_token,
+                            )
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
