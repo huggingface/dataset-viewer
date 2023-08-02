@@ -36,9 +36,9 @@ def test_search_endpoint(
         features = content["features"]
         assert isinstance(rows, list), rows
         assert isinstance(features, list), features
-        assert len(rows) == 2, rows
+        assert len(rows) == 3, rows
         assert rows[0] == {
-            "row_idx": 1,
+            "row_idx": 2,
             "row": {"col_1": "We count thirty Rebel ships, Lord Vader.", "col_2": 2, "col_3": 2.0},
             "truncated_cells": [],
         }, rows[0]
