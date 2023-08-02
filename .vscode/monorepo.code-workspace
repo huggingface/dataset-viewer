@@ -33,6 +33,10 @@
       "path": "../services/api"
     },
     {
+      "name": "services/reverse-proxy",
+      "path": "../services/reverse-proxy"
+    },
+    {
       "name": "services/rows",
       "path": "../services/rows"
     },
@@ -41,12 +45,12 @@
       "path": "../services/search"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
+      "name": "services/storage-admin",
+      "path": "../services/storage-admin"
     },
     {
-      "name": "services/reverse-proxy",
-      "path": "../services/reverse-proxy"
+      "name": "services/worker",
+      "path": "../services/worker"
     },
     {
       "name": "front/admin_ui",

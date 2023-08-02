@@ -34,6 +34,8 @@ jobs:
           - directory: services
             project: search
           - directory: services
+            project: storage-admin
+          - directory: services
             project: worker
     runs-on: "ubuntu-latest"
     steps:
@@ -115,6 +117,8 @@ jobs:
                 rows:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 search:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                storage-admin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 worker:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
