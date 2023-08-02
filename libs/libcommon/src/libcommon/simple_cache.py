@@ -487,23 +487,43 @@ class CountEntry(TypedDict):
     count: int
 
 
+def format_group(group: Dict[str, Any]) -> CountEntry:
+    kind = group["kind"]
+    if not isinstance(kind, str):
+        raise TypeError("kind must be a str")
+    http_status = group["http_status"]
+    if not isinstance(http_status, int):
+        raise TypeError("http_status must be an int")
+    error_code = group["error_code"]
+    if not isinstance(error_code, str) and error_code is not None:
+        raise TypeError("error_code must be a str or None")
+    count = group["count"]
+    if not isinstance(count, int):
+        raise TypeError("count must be an int")
+    return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
+
+
 def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
-    # TODO: rework with aggregate
-    # see
-    # https://stackoverflow.com/questions/47301829/mongodb-distinct-count-for-combination-of-two-fields?noredirect=1&lq=1#comment81555081_47301829
-    # and https://docs.mongoengine.org/guide/querying.html#mongodb-aggregation-api
-    entries = CachedResponseDocument.objects().only("kind", "http_status", "error_code")
-    return [
-        {
-            "kind": str(kind),
-            "http_status": int(http_status),
-            "error_code": error_code,
-            "count": entries(kind=kind, http_status=http_status, error_code=error_code).count(),
-        }
-        for kind in sorted(entries.distinct("kind"))
-        for http_status in sorted(entries(kind=kind).distinct("http_status"))
-        for error_code in entries(kind=kind, http_status=http_status).distinct("error_code")
-    ]
+    groups = CachedResponseDocument.objects().aggregate(
+        [
+            {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
+            {
+                "$group": {
+                    "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
+                    "count": {"$sum": 1},
+                }
+            },
+            {
+                "$project": {
+                    "kind": "$_id.kind",
+                    "http_status": "$_id.http_status",
+                    "error_code": "$_id.error_code",
+                    "count": "$count",
+                }
+            },
+        ]
+    )
+    return [format_group(group) for group in groups]
 
 
 # /cache-reports/... endpoints
