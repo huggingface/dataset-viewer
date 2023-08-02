@@ -6,7 +6,7 @@ import enum
 import mimetypes
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -82,7 +82,7 @@ class RowItem(TypedDict):
     truncated_cells: List[str]
 
 
-Row = Mapping[str, Any]
+Row = Dict[str, Any]
 
 
 class FeatureItem(TypedDict):

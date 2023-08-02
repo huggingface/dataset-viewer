@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
-from libcommon.utils import FeatureItem, RowItem, SplitHubFile
+from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -86,9 +86,6 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
 
 class ImageUrlColumnsResponse(TypedDict):
     columns: List[str]
-
-
-Row = Mapping[str, Any]
 
 
 class RowsContent(TypedDict):

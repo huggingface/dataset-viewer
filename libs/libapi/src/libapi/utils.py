@@ -168,7 +168,7 @@ def to_rows_list(
         ) from err
     return [
         {
-            "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),  # type: ignore
+            "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),
             "row": row,
             "truncated_cells": [],
         }
