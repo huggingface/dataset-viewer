@@ -7,10 +7,11 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
+  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
+  {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
-  {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
-  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataNewRW" . | nindent 2 }}
   - mountPath: /volumes/descriptive-statistics
     mountPropagation: None
     name: volume-descriptive-statistics
@@ -26,6 +27,10 @@
   - mountPath: /volumes/nfs
     mountPropagation: None
     name: volume-nfs
+    readOnly: false
+  - mountPath: /volumes/parquet-metadata
+    mountPropagation: None
+    name: volume-parquet-metadata
     readOnly: false
   securityContext:
     runAsNonRoot: false

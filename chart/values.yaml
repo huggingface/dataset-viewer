@@ -117,7 +117,7 @@ persistence:
     existingClaim: ""
     storageClass: ""
     size: 20Gi
-  parquet:
+  parquetMetadata:
     existingClaim: ""
 
 monitoring:
@@ -242,6 +242,8 @@ cachedAssets:
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/storage/parquet-metadata"
+  # Temporary - to synchronize the files from NFS to dedicated EFS
+  storageDirectoryNew: "/storage/parquet-metadata-new"
 
 duckDBIndex:
   # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
