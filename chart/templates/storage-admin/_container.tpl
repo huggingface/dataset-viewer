@@ -3,7 +3,7 @@
 
 {{- define "containerStorageAdmin" -}}
 - name: "{{ include "name" . }}-storage-admin"
-  image: ubuntu:focal
+  image: {{ include "services.storageAdmin.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
@@ -37,7 +37,4 @@
     runAsUser: 0
     runAsGroup: 0
   resources: {{ toYaml .Values.storageAdmin.resources | nindent 4 }}
-  command:
-  - 'sleep'
-  - 'infinity'
 {{- end -}}
