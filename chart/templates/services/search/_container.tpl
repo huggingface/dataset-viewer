@@ -48,7 +48,7 @@
   - name: DUCKDB_INDEX_TARGET_REVISION
     value: {{ .Values.duckDBIndex.targetRevision | quote }}
   - name: DUCKDB_INDEX_STORAGE_DIRECTORY
-    value: {{ .Values.duckDBIndex.storageDirectory | quote }}
+    value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   volumeMounts:
   {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
