@@ -11,6 +11,22 @@
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
+  - mountPath: /volumes/descriptive-statistics
+    mountPropagation: None
+    name: volume-descriptive-statistics
+    readOnly: false
+  - mountPath: /volumes/duckdb-index
+    mountPropagation: None
+    name: volume-duckdb-index
+    readOnly: false
+  - mountPath: /volumes/hf-datasets-cache
+    mountPropagation: None
+    name: volume-hf-datasets-cache
+    readOnly: false
+  - mountPath: /volumes/nfs
+    mountPropagation: None
+    name: volume-nfs
+    readOnly: false
   securityContext:
     runAsNonRoot: false
     runAsUser: 0
