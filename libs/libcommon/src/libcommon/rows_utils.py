@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import List
+from typing import List, Optional
 
 from datasets import Features
 
@@ -19,6 +19,7 @@ def transform_rows(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     offset: int,
+    row_idx_column: Optional[str],
 ) -> List[Row]:
     return [
         {
@@ -26,7 +27,7 @@ def transform_rows(
                 dataset=dataset,
                 config=config,
                 split=split,
-                row_idx=offset + row_idx,
+                row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,

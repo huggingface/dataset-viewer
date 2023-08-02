@@ -37,6 +37,10 @@
       "path": "../services/rows"
     },
     {
+      "name": "services/search",
+      "path": "../services/search"
+    },
+    {
       "name": "services/worker",
       "path": "../services/worker"
     },

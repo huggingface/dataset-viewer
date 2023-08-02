@@ -3,13 +3,13 @@ import logging
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache, partial
-from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import Features, Value
-from datasets.features.features import FeatureType, _visit
+from datasets import Features
+from datasets.features.features import FeatureType
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 
@@ -17,6 +17,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
 
 class ParquetResponseEmptyError(Exception):
@@ -40,33 +41,6 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
-
-
-def get_supported_unsupported_columns(
-    features: Features,
-    unsupported_features: List[FeatureType] = [],
-) -> Tuple[List[str], List[str]]:
-    supported_columns, unsupported_columns = [], []
-
-    for column, feature in features.items():
-        str_column = str(column)
-        supported = True
-
-        def classify(feature: FeatureType) -> None:
-            nonlocal supported
-            for unsupported_feature in unsupported_features:
-                if type(unsupported_feature) == type(feature) == Value:
-                    if unsupported_feature.dtype == feature.dtype:
-                        supported = False
-                elif type(unsupported_feature) == type(feature):
-                    supported = False
-
-        _visit(feature, classify)
-        if supported:
-            supported_columns.append(str_column)
-        else:
-            unsupported_columns.append(str_column)
-    return supported_columns, unsupported_columns
 
 
 @dataclass

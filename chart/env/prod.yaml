@@ -12,6 +12,7 @@ global:
           admin: 32702
           api: 31370
           rows: 31371
+          search: 31372
 
 images:
   pullPolicy: IfNotPresent
@@ -47,6 +48,11 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-rows
+      tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
       tag: sha-fb3399a
     worker:
       registry: huggingface
@@ -265,9 +271,10 @@ admin:
       cpu: 4
       memory: "4Gi"
 
+hf:
+  timeoutSeconds: "1.5"
+
 api:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -287,8 +294,6 @@ api:
       memory: "4Gi"
 
 rows:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -302,6 +307,24 @@ rows:
     requests:
       cpu: 1
       memory: "6Gi"
+    limits:
+      cpu: 4
+      memory: "8Gi"
+
+search:
+  # Number of uvicorn workers for running the application
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  uvicornNumWorkers: "9"
+  nodeSelector:
+    role-datasets-server-search: "true"
+  replicas: 12
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 1
+      memory: "4Gi"
     limits:
       cpu: 4
       memory: "8Gi"

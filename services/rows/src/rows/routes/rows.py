@@ -2,10 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import os
 import random
-import shutil
-from itertools import islice
 from typing import Any, List, Literal, Optional, Union
 
 import pyarrow as pa
@@ -21,6 +18,7 @@ from libapi.exceptions import (
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
+    clean_cached_assets,
     get_json_api_error_response,
     get_json_ok_response,
     to_rows_list,
@@ -31,10 +29,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import (
-    glob_rows_in_assets_dir,
-    update_last_modified_date_of_rows_in_assets_dir,
-)
+from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
@@ -49,69 +44,6 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["
 
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
-
-
-def _greater_or_equal(row_dir_name: str, row_idx: int, on_error: bool) -> bool:
-    try:
-        return int(row_dir_name) >= row_idx
-    except ValueError:
-        return on_error
-
-
-def clean_cached_assets(
-    dataset: str,
-    cached_assets_directory: StrPath,
-    keep_first_rows_number: int,
-    keep_most_recent_rows_number: int,
-    max_cleaned_rows_number: int,
-) -> None:
-    """
-    The cached assets directory is cleaned to save disk space using this simple (?) heuristic:
-
-    1. it takes a big sample of rows from the cache using glob (max `max_cleaned_rows_number`)
-    2. it keeps the most recent ones (max `keep_most_recent_rows_number`)
-    3. it keeps the rows below a certain index (max `keep_first_rows_number`)
-    4. it discards the rest
-
-    To check for the most recent rows, it looks at the "last modified time" of rows directories.
-    This time is updated every time a row is accessed using `update_last_modified_date_of_rows_in_assets_dir()`.
-
-    Args:
-        dataset (`str`):
-            Dataset name e.g `squad` or `lhoestq/demo1`.
-            Rows are cleaned in any dataset configuration or split of this dataset.
-        cached_assets_directory (`str`):
-            Directory containing the cached image and audio files
-        keep_first_rows_number (`int`):
-            Keep the rows with an index below a certain number
-        keep_most_recent_rows_number (`int`):
-            Keep the most recently accessed rows.
-        max_cleaned_rows_number (`int`):
-            Maximum number of rows to discard.
-    """
-    if keep_first_rows_number < 0 or keep_most_recent_rows_number < 0 or max_cleaned_rows_number < 0:
-        raise ValueError(
-            "Failed to run cached assets cleaning. Make sure all of keep_first_rows_number,"
-            f" keep_most_recent_rows_number and max_cleaned_rows_number  are set (got {keep_first_rows_number},"
-            f" {keep_most_recent_rows_number} and {max_cleaned_rows_number})"
-        )
-    row_directories = glob_rows_in_assets_dir(dataset, cached_assets_directory)
-    row_directories_sample = list(
-        islice(
-            (
-                row_dir
-                for row_dir in row_directories
-                if _greater_or_equal(row_dir.name, keep_first_rows_number, on_error=True)
-            ),
-            max_cleaned_rows_number + keep_most_recent_rows_number,
-        )
-    )
-    if len(row_directories_sample) > keep_most_recent_rows_number:
-        row_dirs_to_delete = sorted(row_directories_sample, key=os.path.getmtime, reverse=True)[
-            keep_most_recent_rows_number:
-        ]
-        for row_dir_to_delete in row_dirs_to_delete:
-            shutil.rmtree(row_dir_to_delete, ignore_errors=True)
 
 
 def create_response(

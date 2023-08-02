@@ -18,12 +18,14 @@ services:
       URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
       URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
       URL_ROWS: http://host.docker.internal:${ROWS_UVICORN_PORT-8082}
+      URL_SEARCH: http://host.docker.internal:${SEARCH_UVICORN_PORT-8083}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - admin
       - api
       - rows
+      - search
   admin:
     build:
       context: ..
@@ -113,6 +115,44 @@ services:
     ports:
       # for debug
       - ${ROWS_UVICORN_PORT-8082}:${ROWS_UVICORN_PORT-8082}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+  search:
+    build:
+      context: ..
+      dockerfile: services/search/dev.Dockerfile
+    extends:
+      file: docker-compose-dev-base.yml
+      service: search
+    volumes:
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      - duckdb-index:${DUCKDB_INDEX_STORAGE_DIRECTORY-/duckdb-index}
+    environment:
+      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
+      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      CACHED_ASSETS_CLEAN_CACHE_PROBA: ${CACHED_ASSETS_CLEAN_CACHE_PROBA-0.05}
+      CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER-100}
+      CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER-200}
+      CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER: ${CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER-10000}
+      DUCKDB_INDEX_STORAGE_DIRECTORY: ${DUCKDB_INDEX_STORAGE_DIRECTORY-/duckdb-index}
+      # service
+      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://huggingface.co/api/keys/jwt}
+      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
+      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
+      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${SEARCH_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${SEARCH_UVICORN_PORT-8083}
+    network_mode: ${DEV_NETWORK_MODE}
+    ports:
+      # for debug
+      - ${SEARCH_UVICORN_PORT-8083}:${SEARCH_UVICORN_PORT-8083}
     depends_on:
       - mongodb
     restart: unless-stopped

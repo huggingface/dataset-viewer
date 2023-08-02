@@ -50,6 +50,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.rows "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "services.search.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.search "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "services.worker.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.worker "global" .Values.global.huggingface) }}
 {{- end -}}
@@ -105,6 +109,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-api"
 {{- define "labels.rows" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-rows"
+{{- end -}}
+
+{{- define "labels.search" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-search"
 {{- end -}}
 
 {{- define "labels.worker" -}}
@@ -179,7 +188,7 @@ The parquet-metadata/ subpath in the NFS
 {{- end }}
 
 {{/*
-The duckdb-index/ subpath in the NFS
+The duckdb-index/ subpath in EFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
@@ -235,6 +244,14 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 */}}
 {{- define "rows.url" -}}
 {{- printf "http://%s-rows.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
+The URL to access the search service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "search.url" -}}
+{{- printf "http://%s-search.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*
