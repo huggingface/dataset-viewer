@@ -118,7 +118,7 @@ jobs:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 search:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
-                storage-admin:
+                storageAdmin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 worker:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
