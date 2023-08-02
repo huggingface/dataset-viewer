@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2023 The HuggingFace Authors.
+# Copyright 2022 The HuggingFace Authors.
 
-{{- define "initContainerDuckDBIndex" -}}
-- name: prepare-duckdb-index
+{{- define "initContainerHfDatasetsCache" -}}
+- name: prepare-hf-datasets-cache
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
@@ -11,8 +11,8 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: duckdb-data
-    subPath: "{{ include "duckDBIndex.subpath" . }}"
+    name: volume-hf-datasets-cache
+    subPath: "{{ include "hfDatasetsCache.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false

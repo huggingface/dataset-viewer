@@ -4,7 +4,7 @@
 {{- define "volumeMountDuckDBIndexRW" -}}
 - mountPath: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   mountPropagation: None
-  name: duckdb-data
+  name: volume-duckdb-index
   subPath: "{{ include "duckDBIndex.subpath" . }}"
   readOnly: false
 {{- end -}}

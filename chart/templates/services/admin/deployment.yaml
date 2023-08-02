@@ -26,9 +26,8 @@ spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers: 
         {{ include "initContainerAssets" . | nindent 8 }}
-        {{ include "initContainerCachedAssets" . | nindent 8 }}
       containers: {{ include "containerAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.admin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.admin.tolerations | nindent 8 }}
-      volumes: {{ include "volumeData" . | nindent 8 }}
+      volumes: {{ include "volumeNfs" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}

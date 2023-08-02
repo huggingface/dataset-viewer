@@ -79,19 +79,16 @@ secrets:
     secretName: "datasets-server-staging-secrets"
 
 persistence:
-  existingClaim: "nfs-datasets-server-pvc"
-
-cachePersistence:
-  existingClaim: "datasets-server-cache-pvc"
-
-parquetPersistence:
-  existingClaim: "datasets-server-parquet-pvc"
-
-duckdbPersistence:
-  existingClaim: "datasets-server-duckdb-pvc"
-
-statisticsPersistence:
-  existingClaim: "datasets-server-statistics-pvc"
+  descriptiveStatistics:
+    existingClaim: "datasets-server-statistics-pvc"
+  duckDBIndex:
+    existingClaim: "datasets-server-duckdb-pvc"
+  hfDatasetsCache:
+    existingClaim: "datasets-server-cache-pvc"
+  nfs:
+    existingClaim: "nfs-datasets-server-pvc"
+  parquet:
+    existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
   enabled: false

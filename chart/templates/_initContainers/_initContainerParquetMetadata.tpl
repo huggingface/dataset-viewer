@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-{{- define "initContainerDescriptiveStatistics" -}}
-- name: compute-descriptive-statistics
+{{- define "initContainerParquetMetadata" -}}
+- name: prepare-parquet-metadata
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
@@ -11,8 +11,8 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: statistics-data
-    subPath: "{{ include "descriptiveStatistics.subpath" . }}"
+    name: volume-nfs
+    subPath: "{{ include "parquetMetadata.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false

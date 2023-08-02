@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
-{{- define "initContainerAssets" -}}
-- name: prepare-assets
+{{- define "initContainerDuckDBIndex" -}}
+- name: prepare-duckdb-index
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
@@ -11,8 +11,8 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
-    subPath: "{{ include "assets.subpath" . }}"
+    name: volume-duckdb-index
+    subPath: "{{ include "duckDBIndex.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false
