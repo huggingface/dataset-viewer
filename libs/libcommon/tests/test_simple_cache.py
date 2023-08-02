@@ -345,10 +345,10 @@ def test_count_by_status_and_error_code() -> None:
         error_code="error_code",
     )
 
-    assert get_responses_count_by_kind_status_and_error_code() == [
-        {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1},
-        {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1},
-    ]
+    metrics = get_responses_count_by_kind_status_and_error_code()
+    assert len(metrics) == 2
+    assert {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1} in metrics
+    assert {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1} in metrics
 
 
 def test_get_cache_reports() -> None:
