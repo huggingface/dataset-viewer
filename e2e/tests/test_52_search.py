@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from .fixtures.hub import AuthHeaders, AuthType
 from .utils import get_default_config_split, poll_until_ready_and_assert
