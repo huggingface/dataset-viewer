@@ -92,7 +92,7 @@ persistence:
     existingClaim: "datasets-server-cache-pvc"
   nfs:
     existingClaim: "nfs-datasets-server-pvc"
-  parquet:
+  parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
