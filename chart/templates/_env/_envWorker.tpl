@@ -92,7 +92,6 @@
   value: {{ .Values.optInOutUrlsScan.spawningUrl | quote }}
 - name: CONFIG_NAMES_MAX_NUMBER
   value: {{ .Values.configNames.maxNumber | quote }}
-
 # specific to 'split-duckdb-index' job runner
 - name: DUCKDB_INDEX_COMMIT_MESSAGE
   value: {{ .Values.duckDBIndex.commitMessage | quote }}
@@ -112,8 +111,8 @@
   value: {{ .Values.duckDBIndex.urlTemplate | quote }}
 - name: DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
   value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
-- name: DUCKDB_INDEX_STORAGE_DIRECTORY
-  value: {{ .Values.duckDBIndex.storageDirectory | quote }}
+- name: DUCKDB_INDEX_CACHE_DIRECTORY
+  value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
   value: "/tmp/duckdb-extensions"
 # specific to 'split-descriptive-statistics'
@@ -121,6 +120,6 @@
   value: {{ .Values.descriptiveStatistics.histogramNumBins | quote }}
 - name: DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
   value: {{ .Values.descriptiveStatistics.maxParquetSizeBytes | quote }}
-- name: DESCRIPTIVE_STATISTICS_STORAGE_DIRECTORY
-  value: {{ .Values.descriptiveStatistics.storageDirectory | quote }}
+- name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
+  value: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
 {{- end -}}

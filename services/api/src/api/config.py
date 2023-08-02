@@ -7,7 +7,6 @@ from typing import List, Mapping
 from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
-    CachedAssetsConfig,
     CommonConfig,
     LogConfig,
     ProcessingGraphConfig,
@@ -19,7 +18,6 @@ from libcommon.processing_graph import InputType
 @dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
-    cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
@@ -31,7 +29,6 @@ class AppConfig:
         common_config = CommonConfig.from_env()
         return cls(
             common=common_config,
-            cached_assets=CachedAssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),

@@ -134,7 +134,7 @@ def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
 
 @fixture
 def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
-    return init_duckdb_index_cache_dir(app_config.duckdb_index.storage_directory)
+    return init_duckdb_index_cache_dir(app_config.duckdb_index.cache_directory)
 
 
 @fixture

@@ -2,9 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 
 {{- define "volumeMountDescriptiveStatisticsRW" -}}
-- mountPath: {{ .Values.descriptiveStatistics.storageDirectory | quote }}
+- mountPath: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
   mountPropagation: None
-  name: data
+  name: volume-descriptive-statistics
   subPath: "{{ include "descriptiveStatistics.subpath" . }}"
   readOnly: false
 {{- end -}}

@@ -2,9 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 
 {{- define "volumeMountDuckDBIndexRW" -}}
-- mountPath: {{ .Values.duckDBIndex.storageDirectory | quote }}
+- mountPath: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   mountPropagation: None
-  name: duckdb-data
+  name: volume-duckdb-index
   subPath: "{{ include "duckDBIndex.subpath" . }}"
   readOnly: false
 {{- end -}}

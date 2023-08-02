@@ -64,7 +64,7 @@ CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER = 10_000
 @dataclass(frozen=True)
 class CachedAssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
+    storage_directory: Optional[str] = CACHED_ASSETS_STORAGE_DIRECTORY
     clean_cache_proba: float = CACHED_ASSETS_CLEAN_CACHE_PROBA
     keep_first_rows_number: int = CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
     keep_most_recent_rows_number: int = CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER

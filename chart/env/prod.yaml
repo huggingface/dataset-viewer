@@ -88,19 +88,16 @@ secrets:
     secretName: "datasets-server-prod-secrets"
 
 persistence:
-  existingClaim: "nfs-datasets-server-pvc"
-
-cachePersistence:
-  existingClaim: "datasets-server-cache-pvc"
-
-parquetPersistence:
-  existingClaim: "datasets-server-parquet-pvc"
-
-duckdbPersistence:
-  existingClaim: "datasets-server-duckdb-pvc"
-
-statisticsPersistence:
-  existingClaim: "datasets-server-statistics-pvc"
+  descriptiveStatistics:
+    existingClaim: "datasets-server-statistics-pvc"
+  duckDBIndex:
+    existingClaim: "datasets-server-duckdb-pvc"
+  hfDatasetsCache:
+    existingClaim: "datasets-server-cache-pvc"
+  nfs:
+    existingClaim: "nfs-datasets-server-pvc"
+  parquet:
+    existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
   enabled: true
@@ -174,15 +171,16 @@ backfill:
     level: "debug"
   action: "backfill"
   error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError"
-  schedule: "00 */4 * * *"
+  schedule: "20 21 * * *"
   # every four hours
   nodeSelector: {}
   resources:
     requests:
       cpu: 1
+      memory: "4Gi"
     limits:
-      cpu: 1
-      memory: "512Mi"
+      cpu: 2
+      memory: "8Gi"
   tolerations: []
 
 metricsCollector:
@@ -340,7 +338,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 24
+    replicas: 40
     resources:
       requests:
         cpu: 1
@@ -357,7 +355,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 8
+    replicas: 15
     resources:
       requests:
         cpu: 200m

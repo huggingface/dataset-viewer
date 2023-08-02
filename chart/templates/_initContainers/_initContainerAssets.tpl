@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- define "initContainerCachedAssets" -}}
-- name: prepare-cached-assets
+{{- define "initContainerAssets" -}}
+- name: prepare-assets
   image: ubuntu:focal
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   command: ["/bin/sh", "-c"]
@@ -11,8 +11,8 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: data
-    subPath: "{{ include "cachedAssets.subpath" . }}"
+    name: volume-nfs
+    subPath: "{{ include "assets.subpath" . }}"
     readOnly: false
   securityContext:
     runAsNonRoot: false
