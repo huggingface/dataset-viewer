@@ -34,10 +34,10 @@ DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
-def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
-    config = dataset.replace("/", "--")
+def get_default_config_split() -> Tuple[str, str]:
+    config = "default"
     split = "train"
-    return dataset, config, split
+    return config, split
 
 
 def update_repo_settings(
@@ -307,7 +307,7 @@ HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_config_names_response(dataset: str) -> Any:
-    dataset, config, _ = get_default_config_split(dataset)
+    config, _ = get_default_config_split()
     return {
         "config_names": [
             {
@@ -319,7 +319,7 @@ def create_config_names_response(dataset: str) -> Any:
 
 
 def create_splits_response(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "splits": [
             {
@@ -332,7 +332,7 @@ def create_splits_response(dataset: str) -> Any:
 
 
 def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "dataset": dataset,
         "config": config,
@@ -445,7 +445,7 @@ def create_parquet_and_info_response(
     data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
     partial: bool = False,
 ) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
 
     if partial:
         filename = "0000.parquet"
@@ -530,7 +530,7 @@ AUDIO_cols = {
 
 
 def get_AUDIO_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [
@@ -553,7 +553,7 @@ IMAGE_cols = {
 
 
 def get_IMAGE_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": {
@@ -571,7 +571,7 @@ IMAGES_LIST_cols = {
 
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [

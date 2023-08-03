@@ -66,7 +66,8 @@ def get_job_runner(
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset, config, _ = get_default_config_split(hub_public_csv)
+    dataset = hub_public_csv
+    config, _ = get_default_config_split()
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     content = response.content
@@ -110,7 +111,8 @@ def test_compute_split_names_from_streaming_response(
         "empty": hub_responses_empty,
         "does_not_exist": hub_responses_does_not_exist,
     }
-    dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
+    dataset = hub_datasets[name]["name"]
+    config, _ = get_default_config_split()
     expected_configs_response = hub_datasets[name]["splits_response"]
     job_runner = get_job_runner(
         dataset,
