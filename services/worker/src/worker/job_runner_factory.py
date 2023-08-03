@@ -12,6 +12,7 @@ from libcommon.utils import JobInfo
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
+from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 from worker.job_runners.config.opt_in_out_urls_count import (
     ConfigOptInOutUrlsCountJobRunner,
 )
@@ -45,6 +46,7 @@ from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
+from worker.job_runners.split.is_valid import SplitIsValidJobRunner
 from worker.job_runners.split.opt_in_out_urls_count import (
     SplitOptInOutUrlsCountJobRunner,
 )
@@ -182,11 +184,23 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 assets_directory=self.assets_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
+        if job_type == SplitIsValidJobRunner.get_job_type():
+            return SplitIsValidJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                processing_graph=self.processing_graph,
+                app_config=self.app_config,
+            )
+        if job_type == ConfigIsValidJobRunner.get_job_type():
+            return ConfigIsValidJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                app_config=self.app_config,
+            )
         if job_type == DatasetIsValidJobRunner.get_job_type():
             return DatasetIsValidJobRunner(
                 job_info=job_info,
                 processing_step=processing_step,
-                processing_graph=self.processing_graph,
                 app_config=self.app_config,
             )
         if job_type == SplitImageUrlColumnsJobRunner.get_job_type():
@@ -250,6 +264,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigSizeJobRunner.get_job_type(),
             ConfigSplitNamesFromInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
+            SplitIsValidJobRunner.get_job_type(),
+            ConfigIsValidJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
             SplitImageUrlColumnsJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),

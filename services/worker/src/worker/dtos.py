@@ -169,9 +169,10 @@ class DatasetInfoResponse(TypedDict):
     partial: bool
 
 
-class DatasetIsValidResponse(TypedDict):
+class IsValidResponse(TypedDict):
     preview: bool
     viewer: bool
+    search: bool
 
 
 class DatasetParquetResponse(TypedDict):

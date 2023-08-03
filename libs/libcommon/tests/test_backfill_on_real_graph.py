@@ -156,6 +156,8 @@ def test_plan_job_creation_and_termination() -> None:
                 "config-parquet-metadata,dataset,revision,config2",
                 "config-size,dataset,revision,config1",
                 "config-size,dataset,revision,config2",
+                "config-is-valid,dataset,revision,config1",
+                "config-is-valid,dataset,revision,config2",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -178,5 +180,5 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-split-names,dataset,revision",
             ]
         },
-        tasks=["CreateJobs,16"],
+        tasks=["CreateJobs,18"],
     )

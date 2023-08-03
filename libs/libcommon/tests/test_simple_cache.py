@@ -294,15 +294,15 @@ def test_is_valid_for_kinds_two_valid_kinds() -> None:
 
 
 def test_is_valid_for_kinds_at_least_one_valid_response() -> None:
-    kind = "test_kind"
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
     dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
+    config = "test_config"
+    upsert_response(kind=kind_a, dataset=dataset, config=config, content={}, http_status=HTTPStatus.OK)
     upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+        kind=kind_b, dataset=dataset, config=config, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
-    assert is_valid_for_kinds(dataset=dataset, kinds=[kind])
+    assert is_valid_for_kinds(dataset=dataset, config=config, kinds=[kind_a, kind_b])
 
 
 def test_is_valid_for_kinds_only_invalid_responses() -> None:

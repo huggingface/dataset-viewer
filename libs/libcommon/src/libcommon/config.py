@@ -10,6 +10,7 @@ from environs import Env
 
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_INFO_VERSION,
+    PROCESSING_STEP_CONFIG_IS_VALID_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
     PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
@@ -29,6 +30,7 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
+    PROCESSING_STEP_SPLIT_IS_VALID_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
@@ -309,13 +311,33 @@ class ProcessingGraphConfig:
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION,
                 "difficulty": 70,
             },
-            "dataset-is-valid": {
-                "input_type": "dataset",
-                # special case: triggered by all the steps that have "enables_preview" or "enables_viewer"
+            "split-is-valid": {
+                "input_type": "split",
+                # special case: triggered by all the steps that have enables_preview/enables_viewer/enables_search
                 "triggered_by": [
                     "config-size",
                     "split-first-rows-from-parquet",
                     "split-first-rows-from-streaming",
+                    "split-duckdb-index",
+                ],
+                "job_runner_version": PROCESSING_STEP_SPLIT_IS_VALID_VERSION,
+                "difficulty": 20,
+            },
+            "config-is-valid": {
+                "input_type": "config",
+                "triggered_by": [
+                    "config-split-names-from-streaming",
+                    "config-split-names-from-info",
+                    "split-is-valid",
+                ],
+                "job_runner_version": PROCESSING_STEP_CONFIG_IS_VALID_VERSION,
+                "difficulty": 20,
+            },
+            "dataset-is-valid": {
+                "input_type": "dataset",
+                "triggered_by": [
+                    "dataset-config-names",
+                    "config-is-valid",
                 ],
                 "job_runner_version": PROCESSING_STEP_DATASET_IS_VALID_VERSION,
                 "difficulty": 20,
@@ -361,6 +383,7 @@ class ProcessingGraphConfig:
                     "config-split-names-from-streaming",
                     "config-parquet-and-info",
                 ],
+                "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
             },
