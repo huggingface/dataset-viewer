@@ -32,7 +32,7 @@ def test_auth_e2e(
     expected_error_code: str,
 ) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset, config, split = get_default_config_split(hf_dataset_repos_csv_data[type])
+    dataset = hf_dataset_repos_csv_data[type]
     headers = auth_headers[auth]
 
     # asking for the dataset will launch the jobs, without the need of a webhook
@@ -71,7 +71,8 @@ def test_endpoint(
     expected_status_code: int = 200
     expected_error_code = None
     # TODO: add dataset with various splits, or various configs
-    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    dataset = hf_public_dataset_repo_csv_data
+    config, split = get_default_config_split()
     headers = auth_headers[auth]
 
     # asking for the dataset will launch the jobs, without the need of a webhook
@@ -100,7 +101,8 @@ def test_rows_endpoint(
     expected_status_code: int = 200
     expected_error_code = None
     # TODO: add dataset with various splits, or various configs
-    dataset, config, split = get_default_config_split(hf_public_dataset_repo_csv_data)
+    dataset = hf_public_dataset_repo_csv_data
+    config, split = get_default_config_split()
     headers = auth_headers[auth]
     # ensure the /rows endpoint works as well
     offset = 1
