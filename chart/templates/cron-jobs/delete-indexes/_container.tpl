@@ -17,6 +17,8 @@
     value: {{ .Values.deleteIndexes.action | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.deleteIndexes.log.level | quote }}
-  - name: DUCKDB_INDEX_STORAGE_DIRECTORY
-    value: {{ .Values.duckDBIndex.storageDirectory}}
+  - name: DUCKDB_INDEX_CACHE_DIRECTORY
+    value: {{ .Values.duckDBIndex.cacheDirectory}}
+  - name: DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
+    value: {{ .Values.duckDBIndex.expiredTimeIntervalSeconds}}
 {{- end -}}

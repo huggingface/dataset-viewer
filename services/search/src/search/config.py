@@ -15,13 +15,13 @@ from libcommon.config import (
     QueueConfig,
 )
 
-DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
 
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
-    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
 
     @classmethod
@@ -29,7 +29,7 @@ class DuckDbIndexConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
             )
 

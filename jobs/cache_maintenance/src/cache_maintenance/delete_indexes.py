@@ -20,5 +20,5 @@ def delete_indexes(
         last_access_datetime = datetime.fromtimestamp(last_access_time_value).replace(tzinfo=None)
         now = datetime.now().replace(tzinfo=None)
         if last_access_datetime + timedelta(seconds=expired_time_interval_seconds) <= now:
-            logging.info(f"deleting {path=}")
+            logging.info(f"deleting file {path=} {last_access_datetime=}")
             os.remove(path)
