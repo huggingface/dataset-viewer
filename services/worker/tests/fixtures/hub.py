@@ -34,10 +34,10 @@ DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
-def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
+def get_default_config_split() -> Tuple[str, str, str]:
     config = "default"
     split = "train"
-    return dataset, config, split
+    return config, split
 
 
 def update_repo_settings(
