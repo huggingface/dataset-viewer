@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
-from libcommon.utils import FeatureItem, RowItem, SplitHubFile
+from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -88,9 +88,6 @@ class ImageUrlColumnsResponse(TypedDict):
     columns: List[str]
 
 
-Row = Mapping[str, Any]
-
-
 class RowsContent(TypedDict):
     rows: List[Row]
     all_fetched: bool
@@ -117,11 +114,13 @@ class ParquetFileMetadataItem(SplitItem):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: List[ParquetFileMetadataItem]
+    features: Optional[Dict[str, Any]]
     partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
+    features: Optional[Dict[str, Any]]
     partial: bool
 
 

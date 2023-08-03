@@ -14,6 +14,7 @@ PORT_REVERSE_PROXY = os.environ.get("PORT_REVERSE_PROXY", "8000")
 API_UVICORN_PORT = os.environ.get("API_UVICORN_PORT", "8080")
 ADMIN_UVICORN_PORT = os.environ.get("ADMIN_UVICORN_PORT", "8081")
 ROWS_UVICORN_PORT = os.environ.get("ROWS_UVICORN_PORT", "8082")
+SEARCH_UVICORN_PORT = os.environ.get("SEARCH_UVICORN_PORT", "8083")
 ADMIN_TOKEN = os.environ.get("PARQUET_AND_INFO_COMMITTER_HF_TOKEN", "")
 INTERVAL = 1
 MAX_DURATION = 10 * 60
@@ -21,6 +22,7 @@ URL = f"http://localhost:{PORT_REVERSE_PROXY}"
 ADMIN_URL = f"http://localhost:{ADMIN_UVICORN_PORT}"
 API_URL = f"http://localhost:{API_UVICORN_PORT}"
 ROWS_URL = f"http://localhost:{ROWS_UVICORN_PORT}"
+SEARCH_URL = f"http://localhost:{SEARCH_UVICORN_PORT}"
 
 Headers = Mapping[str, str]
 

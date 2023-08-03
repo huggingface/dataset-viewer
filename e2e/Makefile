@@ -11,6 +11,8 @@ export API_UVICORN_NUM_WORKERS := 2
 export API_UVICORN_PORT := 9080
 export ROWS_UVICORN_NUM_WORKERS := 2
 export ROWS_UVICORN_PORT := 9082
+export SEARCH_UVICORN_NUM_WORKERS := 2
+export SEARCH_UVICORN_PORT := 9083
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
@@ -18,6 +20,7 @@ export LOG_LEVEL := DEBUG
 export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
 export PARQUET_AND_INFO_COMMITTER_HF_TOKEN := hf_app_datasets-server-parquet-converter_token
+export DUCKDB_INDEX_COMMITTER_HF_TOKEN := hf_app_datasets-server-parquet-converter_token
 export PORT_REVERSE_PROXY := 9000
 export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1

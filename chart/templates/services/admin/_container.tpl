@@ -7,7 +7,6 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envAssets" . | nindent 2 }}
-  {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
@@ -38,14 +37,19 @@
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
-  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:
-    tcpSocket:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
       port: {{ .Values.admin.uvicornPort }}
   livenessProbe:
-    tcpSocket:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
       port: {{ .Values.admin.uvicornPort }}
   ports:
   - containerPort: {{ .Values.admin.uvicornPort }}

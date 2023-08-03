@@ -22,6 +22,7 @@ spec:
     metadata:
       labels: {{ include "labels.rows" . | nindent 8 }}
     spec:
+      {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers:
         {{ include "initContainerCachedAssets" . | nindent 8 }}
@@ -30,5 +31,5 @@ spec:
       nodeSelector: {{ toYaml .Values.rows.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.rows.tolerations | nindent 8 }}
       volumes: 
-        {{ include "volumeData" . | nindent 8 }}
+        {{ include "volumeNfs" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}

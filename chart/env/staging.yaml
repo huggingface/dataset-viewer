@@ -45,6 +45,16 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-rows
       tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
+      tag: sha-fb3399a
+    storageAdmin:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-storage-admin
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -79,16 +89,16 @@ secrets:
     secretName: "datasets-server-staging-secrets"
 
 persistence:
-  existingClaim: "nfs-datasets-server-pvc"
-
-cachePersistence:
-  existingClaim: "datasets-server-cache-pvc"
-
-parquetPersistence:
-  existingClaim: "datasets-server-parquet-pvc"
-
-duckdbPersistence:
-  existingClaim: "datasets-server-duckdb-pvc"
+  descriptiveStatistics:
+    existingClaim: "datasets-server-statistics-pvc"
+  duckDBIndex:
+    existingClaim: "datasets-server-duckdb-pvc"
+  hfDatasetsCache:
+    existingClaim: "datasets-server-cache-pvc"
+  nfs:
+    existingClaim: "nfs-datasets-server-pvc"
+  parquetMetadata:
+    existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
   enabled: false
@@ -228,6 +238,19 @@ api:
 rows:
   uvicornNumWorkers: "1"
 
+  replicas: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
+
+search:
+  uvicornNumWorkers: "1"
   replicas: 1
   service:
     type: NodePort

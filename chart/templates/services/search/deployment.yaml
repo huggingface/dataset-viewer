@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels: {{ include "labels.search" . | nindent 4 }}
+  name: "{{ include "name" . }}-search"
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.search.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels: {{ include "labels.search" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels: {{ include "labels.search" . | nindent 8 }}
+    spec:
+      {{- include "dnsConfig" . | nindent 6 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
+      initContainers:
+        {{ include "initContainerCachedAssets" . | nindent 8 }}
+        {{ include "initContainerDuckDBIndex" . | nindent 8 }}
+      containers: {{ include "containerSearch" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.search.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.search.tolerations | nindent 8 }}
+      volumes: 
+        {{ include "volumeNfs" . | nindent 8 }}
+        {{ include "volumeDuckDBIndex" . | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}

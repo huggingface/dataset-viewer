@@ -75,6 +75,7 @@ class CustomError(LoggedError):
 CacheableErrorCode = Literal[
     "CacheDirectoryNotInitializedError",
     "ConfigNamesError",
+    "ComputationError",
     "CreateCommitError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
@@ -101,6 +102,7 @@ CacheableErrorCode = Literal[
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NoIndexableColumnsError",
+    "NoSupportedFeaturesError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -369,6 +371,13 @@ class NoIndexableColumnsError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
 
 
+class NoSupportedFeaturesError(CacheableError):
+    """Raised when dataset does not have any features which types are supported by a worker's processing pipeline."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoSupportedFeaturesError", cause, True)
+
+
 class ParameterMissingError(CacheableError):
     """Raised when request is missing some parameter."""
 
@@ -503,3 +512,10 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
+
+
+class StatisticsComputationError(CacheableError):
+    """Raised in case of unexpected behaviour / errors during statistics computations."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ComputationError", cause, True)

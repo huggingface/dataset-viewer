@@ -55,6 +55,14 @@ services:
     volumes:
       - ../libs/libapi/src:/src/libs/libapi/src
       - ../services/rows/src:/src/services/rows/src
+  search:
+    extends:
+      service: common
+    environment:
+    # volumes to local source directory for development
+    volumes:
+      - ../libs/libapi/src:/src/libs/libapi/src
+      - ../services/search/src:/src/services/search/src
   datasets-worker:
     extends:
       service: common

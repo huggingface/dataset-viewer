@@ -224,7 +224,7 @@ def test_compute(
         # perform a search to validate fts feature
         query = "Lord Vader"
         result = con.execute(
-            "SELECT text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+            "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
             [query],
         )
         rows = result.df()
@@ -238,6 +238,7 @@ def test_compute(
             )
         ).any()
         assert not (rows["text"].eq("There goes another one.")).any()
+        assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
 
         con.close()
         os.remove(file_name)

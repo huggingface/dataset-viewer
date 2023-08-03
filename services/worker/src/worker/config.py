@@ -232,7 +232,7 @@ class NumbaConfig:
     def from_env(cls) -> "NumbaConfig":
         env = Env(expand_vars=True)
         with env.prefixed("NUMBA_"):
-            return cls(path=env.str(name="NUMBA_CACHE_DIR", default=NUMBA_CACHE_DIR))
+            return cls(path=env.str(name="CACHE_DIR", default=NUMBA_CACHE_DIR))
 
 
 CONFIG_NAMES_MAX_NUMBER = 3_000
@@ -251,7 +251,7 @@ class ConfigNamesConfig:
             )
 
 
-DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
 DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
 DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
@@ -262,7 +262,7 @@ DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
-    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
@@ -275,7 +275,7 @@ class DuckDbIndexConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
@@ -284,6 +284,33 @@ class DuckDbIndexConfig:
                     name="MAX_PARQUET_SIZE_BYTES", default=DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
                 ),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
+            )
+
+
+DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
+DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS = 10
+DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES = 100_000_000
+
+
+@dataclass(frozen=True)
+class DescriptiveStatisticsConfig:
+    cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
+    histogram_num_bins: int = DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
+    max_parquet_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
+
+    @classmethod
+    def from_env(cls) -> "DescriptiveStatisticsConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DESCRIPTIVE_STATISTICS_"):
+            return cls(
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
+                histogram_num_bins=env.int(
+                    name="HISTOGRAM_NUM_BINS",
+                    default=DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS,
+                ),
+                max_parquet_size_bytes=env.int(
+                    name="MAX_PARQUET_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
+                ),
             )
 
 
@@ -304,6 +331,7 @@ class AppConfig:
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
+    descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -323,4 +351,5 @@ class AppConfig:
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
+            descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
         )

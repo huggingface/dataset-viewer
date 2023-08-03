@@ -121,9 +121,17 @@ def test_rows_endpoint(
         assert isinstance(rows, list), rows
         assert isinstance(features, list), features
         assert len(rows) == 3, rows
-        assert rows[0] == {"row_idx": 1, "row": {"col_1": 1, "col_2": 1, "col_3": 1.0}, "truncated_cells": []}, rows[0]
+        assert rows[0] == {
+            "row_idx": 1,
+            "row": {
+                "col_1": "Vader turns round and round in circles as his ship spins into space.",
+                "col_2": 1,
+                "col_3": 1.0,
+            },
+            "truncated_cells": [],
+        }, rows[0]
         assert features == [
-            {"feature_idx": 0, "name": "col_1", "type": {"dtype": "int64", "_type": "Value"}},
+            {"feature_idx": 0, "name": "col_1", "type": {"dtype": "string", "_type": "Value"}},
             {"feature_idx": 1, "name": "col_2", "type": {"dtype": "int64", "_type": "Value"}},
             {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
         ], features

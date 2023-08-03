@@ -44,16 +44,24 @@ def backfill_cache(
             logging.warning(f"dataset revision not found for {dataset_info}")
             # should not occur
             continue
-        dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
-        created_jobs = dataset_orchestrator.backfill(
-            revision=str(dataset_info.sha),
-            priority=Priority.LOW,
-            error_codes_to_retry=error_codes_to_retry,
-            cache_max_days=cache_max_days,
-        )
-        if created_jobs > 0:
-            backfilled_datasets += 1
-        total_created_jobs += created_jobs
+        try:
+            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+        except Exception as e:
+            logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
+            continue
+        try:
+            created_jobs = dataset_orchestrator.backfill(
+                revision=str(dataset_info.sha),
+                priority=Priority.LOW,
+                error_codes_to_retry=error_codes_to_retry,
+                cache_max_days=cache_max_days,
+            )
+            if created_jobs > 0:
+                backfilled_datasets += 1
+            total_created_jobs += created_jobs
+        except Exception as e:
+            logging.warning(f"failed to backfill {dataset_info}: {e}")
+            continue
 
         logging.debug(get_log())
         if analyzed_datasets % log_batch == 0:

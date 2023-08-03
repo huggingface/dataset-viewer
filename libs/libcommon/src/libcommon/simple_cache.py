@@ -17,6 +17,7 @@ from typing import (
     Type,
     TypedDict,
     TypeVar,
+    overload,
 )
 
 import pandas as pd
@@ -108,9 +109,7 @@ class CachedResponseDocument(Document):
         "indexes": [
             ("kind", "dataset", "config", "split"),
             ("dataset", "kind", "http_status"),
-            ("kind", "http_status", "dataset"),
             ("kind", "http_status", "error_code"),
-            ("kind", "id"),
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()
@@ -190,6 +189,36 @@ def delete_response(
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
     return CachedResponseDocument.objects(dataset=dataset).delete()
+
+
+T = TypeVar("T")
+
+
+@overload
+def _clean_nested_mongo_object(obj: Dict[str, T]) -> Dict[str, T]:
+    ...
+
+
+@overload
+def _clean_nested_mongo_object(obj: List[T]) -> List[T]:
+    ...
+
+
+@overload
+def _clean_nested_mongo_object(obj: T) -> T:
+    ...
+
+
+def _clean_nested_mongo_object(obj: Any) -> Any:
+    """get rid of BaseDict and BaseList objects from mongo (Feature.from_dict doesn't support them)"""
+    if isinstance(obj, dict):
+        return {k: _clean_nested_mongo_object(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_clean_nested_mongo_object(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(_clean_nested_mongo_object(v) for v in obj)
+    else:
+        return obj
 
 
 class CacheEntryWithoutContent(TypedDict):
@@ -304,7 +333,7 @@ def get_response(kind: str, dataset: str, config: Optional[str] = None, split: O
     except DoesNotExist as e:
         raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
-        "content": response.content,
+        "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
         "error_code": response.error_code,
         "job_runner_version": response.job_runner_version,
@@ -334,13 +363,13 @@ def get_response_with_details(
     except DoesNotExist as e:
         raise CacheEntryDoesNotExistError(f"Cache entry does not exist: {kind=} {dataset=} {config=} {split=}") from e
     return {
-        "content": response.content,
+        "content": _clean_nested_mongo_object(response.content),
         "http_status": response.http_status,
         "error_code": response.error_code,
         "job_runner_version": response.job_runner_version,
         "dataset_git_revision": response.dataset_git_revision,
         "progress": response.progress,
-        "details": response.details,
+        "details": _clean_nested_mongo_object(response.details),
     }
 
 
@@ -458,23 +487,43 @@ class CountEntry(TypedDict):
     count: int
 
 
+def format_group(group: Dict[str, Any]) -> CountEntry:
+    kind = group["kind"]
+    if not isinstance(kind, str):
+        raise TypeError("kind must be a str")
+    http_status = group["http_status"]
+    if not isinstance(http_status, int):
+        raise TypeError("http_status must be an int")
+    error_code = group["error_code"]
+    if not isinstance(error_code, str) and error_code is not None:
+        raise TypeError("error_code must be a str or None")
+    count = group["count"]
+    if not isinstance(count, int):
+        raise TypeError("count must be an int")
+    return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
+
+
 def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
-    # TODO: rework with aggregate
-    # see
-    # https://stackoverflow.com/questions/47301829/mongodb-distinct-count-for-combination-of-two-fields?noredirect=1&lq=1#comment81555081_47301829
-    # and https://docs.mongoengine.org/guide/querying.html#mongodb-aggregation-api
-    entries = CachedResponseDocument.objects().only("kind", "http_status", "error_code")
-    return [
-        {
-            "kind": str(kind),
-            "http_status": int(http_status),
-            "error_code": error_code,
-            "count": entries(kind=kind, http_status=http_status, error_code=error_code).count(),
-        }
-        for kind in sorted(entries.distinct("kind"))
-        for http_status in sorted(entries(kind=kind).distinct("http_status"))
-        for error_code in entries(kind=kind, http_status=http_status).distinct("error_code")
-    ]
+    groups = CachedResponseDocument.objects().aggregate(
+        [
+            {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
+            {
+                "$group": {
+                    "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
+                    "count": {"$sum": 1},
+                }
+            },
+            {
+                "$project": {
+                    "kind": "$_id.kind",
+                    "http_status": "$_id.http_status",
+                    "error_code": "$_id.error_code",
+                    "count": "$count",
+                }
+            },
+        ]
+    )
+    return [format_group(group) for group in groups]
 
 
 # /cache-reports/... endpoints
@@ -550,7 +599,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
-                "details": object.details,
+                "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
@@ -581,7 +630,7 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> L
             "split": response.split,
             "http_status": response.http_status,
             "error_code": response.error_code,
-            "details": response.details,
+            "details": _clean_nested_mongo_object(response.details),
             "updated_at": response.updated_at,
             "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
@@ -643,10 +692,10 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "split": object.split,
                 "http_status": object.http_status.value,
                 "error_code": object.error_code,
-                "content": object.content,
+                "content": _clean_nested_mongo_object(object.content),
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
-                "details": object.details,
+                "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "progress": object.progress,
             }

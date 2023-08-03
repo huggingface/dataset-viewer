@@ -1,14 +1,15 @@
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache, partial
-from typing import Callable, List, Literal, Optional, Tuple, TypedDict, Union
+from typing import Callable, List, Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
+from datasets.features.features import FeatureType
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 
@@ -16,6 +17,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
 
 class ParquetResponseEmptyError(Exception):
@@ -41,22 +43,6 @@ class ParquetFileMetadataItem(TypedDict):
     parquet_metadata_subpath: str
 
 
-def get_supported_unsupported_columns(
-    features: Features,
-    unsupported_features_magic_strings: List[str] = [],
-) -> Tuple[List[str], List[str]]:
-    supported_columns, unsupported_columns = [], []
-
-    for column, feature in features.items():
-        str_feature = str(feature)
-        str_column = str(column)
-        if any(magic_string in str_feature for magic_string in unsupported_features_magic_strings):
-            unsupported_columns.append(str_column)
-        else:
-            supported_columns.append(str_column)
-    return supported_columns, unsupported_columns
-
-
 @dataclass
 class ParquetIndexWithMetadata:
     features: Features
@@ -69,11 +55,14 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
 
+    num_total_rows: int = field(init=False)
+
     def __post_init__(self) -> None:
         if self.httpfs._session is None:
             self.httpfs_session = asyncio.run(self.httpfs.set_session())
         else:
             self.httpfs_session = self.httpfs._session
+        self.num_total_rows = sum(self.num_rows)
 
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
@@ -160,10 +149,11 @@ class ParquetIndexWithMetadata:
     @staticmethod
     def from_parquet_metadata_items(
         parquet_file_metadata_items: List[ParquetFileMetadataItem],
+        features: Optional[Features],
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         hf_token: Optional[str],
-        unsupported_features_magic_strings: List[str] = [],
+        unsupported_features: List[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
             raise ParquetResponseEmptyError("No parquet files found.")
@@ -189,10 +179,11 @@ class ParquetIndexWithMetadata:
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items", step="get the dataset's features"
         ):
-            features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
+            if features is None:  # config-parquet version<6 didn't have features
+                features = Features.from_arrow_schema(pq.read_schema(metadata_paths[0]))
             supported_columns, unsupported_columns = get_supported_unsupported_columns(
                 features,
-                unsupported_features_magic_strings=unsupported_features_magic_strings,
+                unsupported_features=unsupported_features,
             )
         return ParquetIndexWithMetadata(
             features=features,
@@ -217,7 +208,7 @@ class RowsIndex:
         httpfs: HfFileSystem,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
-        unsupported_features_magic_strings: List[str] = [],
+        unsupported_features: List[FeatureType] = [],
     ):
         self.dataset = dataset
         self.revision: Optional[str] = None
@@ -228,14 +219,14 @@ class RowsIndex:
         self.parquet_index = self._init_parquet_index(
             hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
-            unsupported_features_magic_strings=unsupported_features_magic_strings,
+            unsupported_features=unsupported_features,
         )
 
     def _init_parquet_index(
         self,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
-        unsupported_features_magic_strings: List[str] = [],
+        unsupported_features: List[FeatureType] = [],
     ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
@@ -252,6 +243,10 @@ class RowsIndex:
                 )
                 self.revision = result.response["dataset_git_revision"]
                 content = result.response["content"]
+                if content.get("features"):  # config-parquet-metadata version<2 didn't have features
+                    features = Features.from_dict(content["features"])
+                else:
+                    features = None
             logging.info(
                 f"Create ParquetIndexWithMetadata for dataset={self.dataset}, config={self.config}, split={self.split}"
             )
@@ -261,10 +256,11 @@ class RowsIndex:
                     for parquet_item in content["parquet_files_metadata"]
                     if parquet_item["split"] == self.split and parquet_item["config"] == self.config
                 ],
+                features=features,
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=self.httpfs,
                 hf_token=hf_token,
-                unsupported_features_magic_strings=unsupported_features_magic_strings,
+                unsupported_features=unsupported_features,
             )
 
     # note that this cache size is global for the class, not per instance
@@ -295,7 +291,7 @@ class Indexer:
         processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
-        unsupported_features_magic_strings: List[str] = [],
+        unsupported_features: List[FeatureType] = [],
         all_columns_supported_datasets_allow_list: Union[Literal["all"], List[str]] = "all",
         hf_token: Optional[str] = None,
     ):
@@ -303,7 +299,7 @@ class Indexer:
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
         self.hf_token = hf_token
-        self.unsupported_features_magic_strings = unsupported_features_magic_strings
+        self.unsupported_features = unsupported_features
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
     @lru_cache(maxsize=8)
@@ -313,11 +309,11 @@ class Indexer:
         config: str,
         split: str,
     ) -> RowsIndex:
-        filter_magic_strings = (
+        filter_features = (
             self.all_columns_supported_datasets_allow_list != "all"
             and dataset not in self.all_columns_supported_datasets_allow_list
         )
-        unsupported_features_magic_strings = self.unsupported_features_magic_strings if filter_magic_strings else []
+        unsupported_features = self.unsupported_features if filter_features else []
         return RowsIndex(
             dataset=dataset,
             config=config,
@@ -326,5 +322,5 @@ class Indexer:
             httpfs=self.httpfs,
             hf_token=self.hf_token,
             parquet_metadata_directory=self.parquet_metadata_directory,
-            unsupported_features_magic_strings=unsupported_features_magic_strings,
+            unsupported_features=unsupported_features,
         )
