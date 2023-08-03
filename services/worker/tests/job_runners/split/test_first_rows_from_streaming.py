@@ -74,7 +74,8 @@ def get_job_runner(
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset, config, split = get_default_config_split(hub_public_csv)
+    dataset = hub_public_csv
+    config, split = get_default_config_split()
     job_runner = get_job_runner(dataset, config, split, app_config)
     upsert_response(
         kind="config-split-names-from-streaming",
@@ -151,7 +152,7 @@ def test_number_rows(
     }
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -216,7 +217,7 @@ def test_truncation(
     error_code: str,
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
