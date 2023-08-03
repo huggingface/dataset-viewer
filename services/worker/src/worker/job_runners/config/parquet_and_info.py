@@ -850,10 +850,10 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
     local_parquet_files: List[ParquetFile] = []
     for split, split_info in split_dict.items():
         # We know the `datasets` library uses a template for the shards names:
-        # - {builder.name}-{split}.parquet if there is only one shard
-        # - {builder.name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet otherwise
+        # - {builder.dataset_name}-{split}.parquet if there is only one shard
+        # - {builder.dataset_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet otherwise
         num_shards = len(split_info.shard_lengths) if isinstance(split_info.shard_lengths, list) else 1
-        fname_prefix = f"{builder.name}-{split}"
+        fname_prefix = f"{builder.dataset_name}-{split}"
         local_parquet_files.extend(
             [
                 ParquetFile(
