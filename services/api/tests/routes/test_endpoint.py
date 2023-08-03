@@ -76,6 +76,16 @@ def test_endpoints_definition() -> None:
     assert len(opt_in_out_urls["config"]) == 1  # Only has one processing step
     assert len(opt_in_out_urls["dataset"]) == 1  # Only has one processing step
 
+    is_valid = definition["/is-valid"]
+    assert is_valid is not None
+    assert sorted(list(is_valid)) == ["config", "dataset", "split"]
+    assert is_valid["dataset"] is not None
+    assert is_valid["config"] is not None
+    assert is_valid["split"] is not None
+    assert len(is_valid["dataset"]) == 1  # Only has one processing step
+    assert len(is_valid["config"]) == 1  # Only has one processing step
+    assert len(is_valid["split"]) == 1  # Only has one processing step
+
     # assert old deleted endpoints don't exist
     with raises(KeyError):
         _ = definition["/dataset-info"]
