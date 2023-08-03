@@ -97,7 +97,7 @@ def get_openapi_body_example(path: str, status: int, example_name: str) -> Any:
     ]["value"]
 
 
-def get_default_config_split() -> Tuple[str, str, str]:
+def get_default_config_split() -> Tuple[str, str]:
     config = "default"
     split = "train"
     return config, split
