@@ -34,7 +34,6 @@ def run_job() -> None:
 
     init_logging(level=job_config.log.level)
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
-    print(duckdb_index_cache_directory)
     with (
         CacheMongoResource(
             database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
@@ -58,7 +57,6 @@ def run_job() -> None:
 
         processing_graph = ProcessingGraph(job_config.graph.specification)
         start_time = datetime.now()
-        print(action)
         if action == "backfill":
             backfill_cache(
                 processing_graph=processing_graph,

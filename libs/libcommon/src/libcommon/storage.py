@@ -33,8 +33,6 @@ def init_dir(directory: Optional[StrPath] = None, appname: Optional[str] = None)
     Returns:
         Union[str, PathLike[str]]: The directory.
     """
-    print("AAAAAAAAAAAAAAAAAAAAAA")
-    print(f"{directory=}")
     if directory is None:
         directory = user_cache_dir(appname=appname)
         logging.debug(f"Directory defaulting to user-specific cache: {directory}")
