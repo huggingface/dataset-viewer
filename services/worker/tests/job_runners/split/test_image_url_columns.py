@@ -185,7 +185,7 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -229,7 +229,7 @@ def test_compute_failed(
     upstream_status: HTTPStatus,
     exception_name: str,
 ) -> None:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,

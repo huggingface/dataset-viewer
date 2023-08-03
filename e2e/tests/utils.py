@@ -97,10 +97,10 @@ def get_openapi_body_example(path: str, status: int, example_name: str) -> Any:
     ]["value"]
 
 
-def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
-    config = dataset.replace("/", "--")
+def get_default_config_split() -> Tuple[str, str]:
+    config = "default"
     split = "train"
-    return dataset, config, split
+    return config, split
 
 
 def log(response: Response, url: str = URL, relative_url: Optional[str] = None, dataset: Optional[str] = None) -> str:

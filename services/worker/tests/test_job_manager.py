@@ -284,7 +284,7 @@ def test_raise_if_parallel_response_exists(
 def test_doesnotexist(app_config: AppConfig) -> None:
     dataset = "doesnotexist"
     revision = "revision"
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
 
     job_info = JobInfo(
         job_id="job_id",
