@@ -15,10 +15,10 @@ def delete_indexes(
     logging.info("delete indexes")
     indexes_folder = f"{duckdb_index_cache_directory}/{subdirectory}/**/*{file_extension}"
     logging.info(f"looking for all files with pattern {indexes_folder}")
+    now = datetime.now().replace(tzinfo=None)
     for path in glob.glob(indexes_folder, recursive=True):
         last_access_time_value = os.path.getatime(path)
         last_access_datetime = datetime.fromtimestamp(last_access_time_value).replace(tzinfo=None)
-        now = datetime.now().replace(tzinfo=None)
         if last_access_datetime + timedelta(seconds=expired_time_interval_seconds) <= now:
             logging.info(f"deleting file {path=} {last_access_datetime=}")
             os.remove(path)

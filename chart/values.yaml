@@ -324,13 +324,13 @@ backfill:
 
 
 deleteIndexes:
-  enabled: false
+  enabled: true
   log:
     level: "info"
   action: "delete-indexes"
   error_codes_to_retry: ""
-  schedule: "*/10 * * * *"
-  # every ten minutes
+  schedule: "0 0 * * *"
+  # at 00:00
   nodeSelector: {}
   resources:
     requests:
