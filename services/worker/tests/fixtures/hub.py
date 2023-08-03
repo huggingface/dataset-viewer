@@ -35,7 +35,7 @@ hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
 def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
-    config = dataset.replace("/", "--")
+    config = "default"
     split = "train"
     return dataset, config, split
 
