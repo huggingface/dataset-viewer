@@ -45,7 +45,6 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -53,6 +52,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
+from huggingface_hub.hf_file_system import HfFileSystem
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -640,9 +640,9 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
-    f = fs.open(url, headers=headers)
+def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    f = fs.open(url)
     return pq.ParquetFile(f), f.size
 
 
