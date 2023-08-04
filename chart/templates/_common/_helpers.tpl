@@ -102,7 +102,7 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 
 {{- define "labels.deleteIndexes" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-deleteIndexes"
+app.kubernetes.io/component: "{{ include "name" . }}-delete-indexes"
 {{- end -}}
 
 {{- define "labels.admin" -}}
