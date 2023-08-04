@@ -23,7 +23,7 @@ spec:
           containers: {{ include "containerDeleteIndexes" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
           initContainers:
-            {{ include "initContainerDuckDBIndex" . | nindent 8 }}
+            {{ include "initContainerDuckDBIndex" . | nindent 12 }}
           volumes: 
-            {{ include "volumeDuckDBIndex" . | nindent 8 }}
+            {{ include "volumeDuckDBIndex" . | nindent 12 }}
 {{- end}}
