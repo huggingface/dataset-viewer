@@ -608,9 +608,7 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     for split in data_files:
         num_shards = len(data_files[split])
         for shard_idx, data_file in enumerate(data_files[split]):
-            src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split(
-                "/", 1
-            )
+            src_revision, src_path_in_repo = data_file.split("@")[1].split("/", 1)
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
             filename_suffix = f"-{shard_idx:05d}-of-{num_shards:05d}" if num_shards > 1 else ""
