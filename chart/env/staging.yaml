@@ -149,7 +149,7 @@ backfill:
   enabled: false
 
 deleteIndexes:
-  schedule: "*/10  * * * *"
+  schedule: "*/10 * * * *"
   # every ten minutes
   nodeSelector: {}
   resources:

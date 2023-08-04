@@ -190,7 +190,7 @@ backfill:
   tolerations: []
 
 deleteIndexes:
-  schedule: "*/10  * * * *"
+  schedule: "*/10 * * * *"
   # every ten minutes
 
 metricsCollector:
