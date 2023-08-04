@@ -16,6 +16,7 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
           {{- include "image.imagePullSecrets" . | nindent 6 }}
           nodeSelector: {{ toYaml .Values.deleteIndexes.nodeSelector | nindent 12 }}
           tolerations: {{ toYaml .Values.deleteIndexes.tolerations | nindent 12 }}
