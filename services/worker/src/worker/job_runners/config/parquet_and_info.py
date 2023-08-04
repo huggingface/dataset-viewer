@@ -706,6 +706,10 @@ def fill_builder_info(
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
+    builder.info.builder_name = builder.name
+    builder.info.dataset_name = builder.dataset_name
+    builder.info.config_name = builder.config.name
+    builder.info.version = builder.config.version
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
