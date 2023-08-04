@@ -647,11 +647,11 @@ def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str
 
 
 def retry_and_validate_get_parquet_file_and_size(
-    url: str, fs: HTTPFileSystem, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> Tuple[pq.ParquetFile, int]:
     try:
         sleeps = [1, 1, 1, 10, 10, 10]
-        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
+        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
         if validate:
             validate(pf)
         return pf, size
@@ -697,13 +697,15 @@ class ParquetFileValidator:
 
 
 def fill_builder_info(
-    builder: DatasetBuilder, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+    builder: DatasetBuilder,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    validate: Optional[Callable[[pq.ParquetFile], None]],
 ) -> None:
     """Fill the builder DatasetInfo from the copied parquet files"""
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
-    fs = HTTPFileSystem()
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
@@ -712,7 +714,10 @@ def fill_builder_info(
         try:
             parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
                 functools.partial(
-                    retry_and_validate_get_parquet_file_and_size, fs=fs, hf_token=hf_token, validate=validate
+                    retry_and_validate_get_parquet_file_and_size,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    validate=validate,
                 ),
                 data_files[split],
                 unit="pq",
@@ -1264,7 +1269,7 @@ def compute_config_parquet_and_info_response(
         try:
             parquet_operations = copy_parquet_files(builder)
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-            fill_builder_info(builder, hf_token=hf_token, validate=validate)
+            fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
