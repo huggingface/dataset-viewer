@@ -46,12 +46,19 @@ UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True},
 )
-UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER_FALSE: UpstreamResponse = UpstreamResponse(
+UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
-    content={"viewer": False, "preview": True, "search": True},
+    content={"viewer": True, "preview": False, "search": False},
+)
+UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_2,
+    http_status=HTTPStatus.OK,
+    content={"viewer": False, "preview": False, "search": True},
 )
 UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -74,23 +81,23 @@ UPSTREAM_RESPONSE_CONFIG_2_ERROR: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
-EXPECTED_ALL_ERROR = (
+EXPECTED_COMPLETED_ALL_FALSE = (
     {"viewer": False, "preview": False, "search": False},
     1.0,
 )
 EXPECTED_ALL_MIXED = (
-    {"viewer": False, "preview": True, "search": True},
+    {"viewer": True, "preview": False, "search": True},
     1.0,
 )
-EXPECTED_ALL_OK = (
+EXPECTED_COMPLETED_ALL_TRUE = (
     {"viewer": True, "preview": True, "search": True},
     1.0,
 )
-EXPECTED_PARTIALLY_PENDING = (
-    {"viewer": False, "preview": False, "search": False},
+EXPECTED_PENDING_ALL_TRUE = (
+    {"viewer": True, "preview": True, "search": True},
     0.5,
 )
-EXPECTED_ALL_PENDING = (
+EXPECTED_PENDING_ALL_FALSE = (
     {"viewer": False, "preview": False, "search": False},
     0.0,
 )
@@ -135,25 +142,25 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_CONFIG_1_OK,
                 UPSTREAM_RESPONSE_CONFIG_2_OK,
             ],
-            EXPECTED_ALL_OK,
+            EXPECTED_COMPLETED_ALL_TRUE,
         ),
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_1_OK,
             ],
-            EXPECTED_PARTIALLY_PENDING,
+            EXPECTED_PENDING_ALL_TRUE,
         ),
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_1_ERROR,
                 UPSTREAM_RESPONSE_CONFIG_2_ERROR,
             ],
-            EXPECTED_ALL_ERROR,
+            EXPECTED_COMPLETED_ALL_FALSE,
         ),
-        ([UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER_FALSE, UPSTREAM_RESPONSE_CONFIG_2_OK], EXPECTED_ALL_MIXED),
+        ([UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER, UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH], EXPECTED_ALL_MIXED),
         (
             [],
-            EXPECTED_ALL_PENDING,
+            EXPECTED_PENDING_ALL_FALSE,
         ),
     ],
 )

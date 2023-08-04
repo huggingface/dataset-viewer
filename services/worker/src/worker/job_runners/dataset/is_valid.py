@@ -40,9 +40,9 @@ def compute_is_valid_response(dataset: str) -> Tuple[IsValidResponse, float]:
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
-    preview_count = 0
-    viewer_count = 0
-    search_count = 0
+    preview = False
+    viewer = False
+    search = False
     try:
         total = 0
         pending = 0
@@ -58,17 +58,14 @@ def compute_is_valid_response(dataset: str) -> Tuple[IsValidResponse, float]:
             if response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {response['http_status']}.")
                 continue
-            split_is_valid_content = response["content"]
-            preview_count += 1 if split_is_valid_content["preview"] else 0
-            viewer_count += 1 if split_is_valid_content["viewer"] else 0
-            search_count += 1 if split_is_valid_content["search"] else 0
+            config_is_valid_content = response["content"]
+            preview = preview or config_is_valid_content["preview"]
+            viewer = viewer or config_is_valid_content["viewer"]
+            search = search or config_is_valid_content["search"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - pending) / total if total else 1.0
-    preview = preview_count == total
-    viewer = viewer_count == total
-    search = search_count == total
 
     return (
         IsValidResponse(

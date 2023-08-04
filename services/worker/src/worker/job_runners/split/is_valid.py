@@ -5,7 +5,7 @@ import logging
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_IS_VALID_VERSION
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.simple_cache import is_valid_for_kinds
+from libcommon.simple_cache import has_any_successful_response
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -38,19 +38,19 @@ def compute_is_valid_response(
     """
     logging.info(f"get is-valid response for dataset={dataset}")
 
-    viewer = is_valid_for_kinds(
+    viewer = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=None,
         kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_viewer()],
     )
-    preview = is_valid_for_kinds(
+    preview = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=split,
         kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()],
     )
-    search = is_valid_for_kinds(
+    search = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=split,
