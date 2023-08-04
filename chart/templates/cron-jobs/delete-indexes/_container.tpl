@@ -5,6 +5,8 @@
 - name: "{{ include "name" . }}-delete-indexes"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
+  volumeMounts:
+  {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .Values.deleteIndexes.resources | nindent 4 }}
