@@ -22,8 +22,4 @@ spec:
           tolerations: {{ toYaml .Values.backfill.tolerations | nindent 12 }}
           containers: {{ include "containerBackfill" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
-  initContainers:
-    {{ include "initContainerDuckDBIndex" . | nindent 8 }}
-  volumes: 
-    {{ include "volumeDuckDBIndex" . | nindent 8 }}
 {{- end}}
