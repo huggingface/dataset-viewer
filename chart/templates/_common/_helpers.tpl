@@ -100,6 +100,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-metrics-collector"
 app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 {{- end -}}
 
+{{- define "labels.deleteIndexes" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-deleteIndexes"
+{{- end -}}
+
 {{- define "labels.admin" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-admin"
