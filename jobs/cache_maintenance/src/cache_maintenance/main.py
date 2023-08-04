@@ -33,7 +33,6 @@ def run_job() -> None:
         return
 
     init_logging(level=job_config.log.level)
-    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
     with (
         CacheMongoResource(
             database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
@@ -68,6 +67,7 @@ def run_job() -> None:
         elif action == "collect-metrics":
             collect_metrics(processing_graph=processing_graph)
         elif action == "delete-indexes":
+            duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
             delete_indexes(
                 duckdb_index_cache_directory=duckdb_index_cache_directory,
                 subdirectory=job_config.duckdb.subdirectory,
