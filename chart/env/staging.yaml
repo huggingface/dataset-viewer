@@ -148,6 +148,10 @@ cacheMaintenance:
 backfill:
   enabled: false
 
+deleteIndexes:
+  schedule: "*/10  * * * *"
+  # every ten minutes
+
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/2 * * * *"
