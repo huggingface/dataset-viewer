@@ -617,8 +617,7 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
 
-            # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
-            parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
+            parquet_name = str(builder.dataset_name)
 
             if num_shards > 1:
                 path_in_repo = (
