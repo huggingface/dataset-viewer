@@ -35,7 +35,6 @@ from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from datasets.data_files import Url
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.splits import SplitDict, SplitInfo
@@ -217,14 +216,12 @@ def raise_if_blocked(
         )
 
 
-def is_parquet_builder_with_hub_files(builder: DatasetBuilder, hf_endpoint: str) -> bool:
+def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
     if not isinstance(builder, ParquetBuilder) or not builder.config.data_files:
         return False
     for split in builder.config.data_files:
         for data_file in builder.config.data_files[split]:
-            if not isinstance(data_file, Url):
-                return False
-            if not data_file.startswith(hf_endpoint + "/datasets/" + str(builder.repo_id) + "/"):
+            if not data_file.startswith(f"hf://datasets/{builder.repo_id}@"):
                 return False
     return True
 
@@ -1265,7 +1262,7 @@ def compute_config_parquet_and_info_response(
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
     partial = False
-    if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
+    if is_parquet_builder_with_hub_files(builder):
         try:
             parquet_operations = copy_parquet_files(builder)
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
