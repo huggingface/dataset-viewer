@@ -2,9 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from datasets import get_dataset_split_names
+from datasets import DownloadConfig, get_dataset_split_names
 from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.constants import (
@@ -58,12 +58,12 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
-
     try:
         split_name_items: List[SplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}
-            for split in get_dataset_split_names(path=dataset, config_name=config, use_auth_token=use_auth_token)
+            for split in get_dataset_split_names(
+                path=dataset, config_name=config, download_config=DownloadConfig(token=hf_token)
+            )
         ]
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
