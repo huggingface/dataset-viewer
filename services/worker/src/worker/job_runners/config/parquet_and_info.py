@@ -35,7 +35,6 @@ from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.arrow_writer import ParquetWriter
 from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from datasets.data_files import Url
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
 from datasets.splits import SplitDict, SplitInfo
@@ -46,7 +45,6 @@ from datasets.utils.file_utils import (
     url_or_path_join,
 )
 from datasets.utils.py_utils import asdict, map_nested
-from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -54,6 +52,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
+from huggingface_hub.hf_file_system import HfFileSystem
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -217,14 +216,12 @@ def raise_if_blocked(
         )
 
 
-def is_parquet_builder_with_hub_files(builder: DatasetBuilder, hf_endpoint: str) -> bool:
+def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
     if not isinstance(builder, ParquetBuilder) or not builder.config.data_files:
         return False
     for split in builder.config.data_files:
         for data_file in builder.config.data_files[split]:
-            if not isinstance(data_file, Url):
-                return False
-            if not data_file.startswith(hf_endpoint + "/datasets/" + str(builder.repo_id) + "/"):
+            if not data_file.startswith(f"hf://datasets/{builder.repo_id}@"):
                 return False
     return True
 
@@ -611,9 +608,7 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
     for split in data_files:
         num_shards = len(data_files[split])
         for shard_idx, data_file in enumerate(data_files[split]):
-            src_revision, src_path_in_repo = data_file.split("/datasets/" + builder.repo_id + "/resolve/", 1)[1].split(
-                "/", 1
-            )
+            src_revision, src_path_in_repo = data_file.split("@")[1].split("/", 1)
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
             filename_suffix = f"-{shard_idx:05d}-of-{num_shards:05d}" if num_shards > 1 else ""
@@ -645,18 +640,18 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def get_parquet_file_and_size(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
-    f = fs.open(url, headers=headers)
+def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    f = fs.open(url)
     return pq.ParquetFile(f), f.size
 
 
 def retry_and_validate_get_parquet_file_and_size(
-    url: str, fs: HTTPFileSystem, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> Tuple[pq.ParquetFile, int]:
     try:
         sleeps = [1, 1, 1, 10, 10, 10]
-        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, fs, hf_token)
+        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
         if validate:
             validate(pf)
         return pf, size
@@ -702,13 +697,19 @@ class ParquetFileValidator:
 
 
 def fill_builder_info(
-    builder: DatasetBuilder, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+    builder: DatasetBuilder,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    validate: Optional[Callable[[pq.ParquetFile], None]],
 ) -> None:
     """Fill the builder DatasetInfo from the copied parquet files"""
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
-    fs = HTTPFileSystem()
+    builder.info.builder_name = builder.name
+    builder.info.dataset_name = builder.dataset_name
+    builder.info.config_name = builder.config.name
+    builder.info.version = builder.config.version
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
@@ -717,7 +718,10 @@ def fill_builder_info(
         try:
             parquet_files_and_sizes: List[Tuple[pq.ParquetFile, int]] = thread_map(
                 functools.partial(
-                    retry_and_validate_get_parquet_file_and_size, fs=fs, hf_token=hf_token, validate=validate
+                    retry_and_validate_get_parquet_file_and_size,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    validate=validate,
                 ),
                 data_files[split],
                 unit="pq",
@@ -1265,11 +1269,11 @@ def compute_config_parquet_and_info_response(
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
     partial = False
-    if is_parquet_builder_with_hub_files(builder, hf_endpoint=hf_endpoint):
+    if is_parquet_builder_with_hub_files(builder):
         try:
             parquet_operations = copy_parquet_files(builder)
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-            fill_builder_info(builder, hf_token=hf_token, validate=validate)
+            fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
