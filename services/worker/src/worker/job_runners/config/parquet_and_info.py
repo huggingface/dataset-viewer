@@ -616,17 +616,8 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
             )
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
-
-            # for forward compatibility with https://github.com/huggingface/datasets/pull/5331
-            parquet_name = str(builder.dataset_name) if hasattr(builder, "dataset_name") else builder.name
-
-            if num_shards > 1:
-                path_in_repo = (
-                    f"{builder.config.name}/{parquet_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet"
-                )
-            else:
-                path_in_repo = f"{builder.config.name}/{parquet_name}-{split}.parquet"
-
+            filename_suffix = f"-{shard_idx:05d}-of-{num_shards:05d}" if num_shards > 1 else ""
+            path_in_repo = f"{builder.config.name}/{builder.dataset_name}-{split}{filename_suffix}.parquet"
             parquet_operations.append(
                 CommitOperationCopy(
                     src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision
@@ -850,17 +841,17 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
     local_parquet_files: List[ParquetFile] = []
     for split, split_info in split_dict.items():
         # We know the `datasets` library uses a template for the shards names:
-        # - {builder.name}-{split}.parquet if there is only one shard
-        # - {builder.name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet otherwise
+        # - {builder.dataset_name}-{split}.parquet if there is only one shard
+        # - {builder.dataset_name}-{split}-{shard_idx:05d}-of-{num_shards:05d}.parquet otherwise
         num_shards = len(split_info.shard_lengths) if isinstance(split_info.shard_lengths, list) else 1
-        fname_prefix = f"{builder.name}-{split}"
+        filename_suffix = "-{shard_idx:05d}-of-" + f"{num_shards:05d}" if num_shards > 1 else ""
+        filename = f"{builder.dataset_name}-{split}{filename_suffix}.parquet"
         local_parquet_files.extend(
             [
                 ParquetFile(
                     local_file=os.path.join(
                         builder.cache_dir,
-                        fname_prefix
-                        + (f"-{shard_idx:05d}-of-{num_shards:05d}.parquet" if num_shards > 1 else ".parquet"),
+                        filename.format(shard_idx=shard_idx),
                     ),
                     local_dir=builder.cache_dir,
                     config=builder.config.name,
