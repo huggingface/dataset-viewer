@@ -189,10 +189,6 @@ backfill:
       memory: "8Gi"
   tolerations: []
 
-deleteIndexes:
-  schedule: "*/10 * * * *"
-  # every ten minutes
-
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/2 * * * *"

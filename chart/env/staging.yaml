@@ -148,18 +148,6 @@ cacheMaintenance:
 backfill:
   enabled: false
 
-deleteIndexes:
-  schedule: "*/10 * * * *"
-  # every ten minutes
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 1
-    limits:
-      cpu: 1
-      memory: "512Mi"
-  tolerations: []
-
 metricsCollector:
   action: "collect-metrics"
   schedule: "*/2 * * * *"
