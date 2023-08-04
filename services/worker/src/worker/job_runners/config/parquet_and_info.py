@@ -1254,7 +1254,7 @@ def compute_config_parquet_and_info_response(
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
 
-    download_config = DownloadConfig(delete_extracted=True)
+    download_config = DownloadConfig(delete_extracted=True, token=hf_token)
     try:
         builder = load_dataset_builder(
             path=dataset,
