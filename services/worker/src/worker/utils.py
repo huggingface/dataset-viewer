@@ -221,7 +221,7 @@ def get_rows(
     use_auth_token: Union[bool, str, None] = False,
     column_names: Optional[List[str]] = None,
 ) -> RowsContent:
-    download_config = DownloadConfig(delete_extracted=True)
+    download_config = DownloadConfig(delete_extracted=True, token=use_auth_token)
     PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
     ds = load_dataset(
         dataset,

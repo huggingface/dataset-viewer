@@ -947,6 +947,7 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
 )
 def test_fill_builder_info(
     hub_responses_big: HubDatasetTest,
+    app_config: AppConfig,
     tmp_path: Path,
     validate: Optional[Callable[[pq.ParquetFile], None]],
     too_big_row_groups: bool,
@@ -957,12 +958,12 @@ def test_fill_builder_info(
     builder.info = datasets.info.DatasetInfo()
     if too_big_row_groups:
         with pytest.raises(TooBigRowGroupsError) as exc_info:
-            fill_builder_info(builder, hf_token=None, validate=validate)
+            fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
         assert isinstance(exc_info.value, TooBigRowGroupsError)
         assert isinstance(exc_info.value.num_rows, int)
         assert isinstance(exc_info.value.row_group_byte_size, int)
     else:
-        fill_builder_info(builder, hf_token=None, validate=validate)
+        fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
         expected_info = hub_responses_big["parquet_and_info_response"]["dataset_info"]
         assert expected_info == asdict(builder.info)
 

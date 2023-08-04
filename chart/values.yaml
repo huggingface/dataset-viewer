@@ -261,6 +261,8 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
+  # the time interval at which a downloaded index will be considered as expired and will be deleted 
+  expiredTimeIntervalSeconds: 600
 
 descriptiveStatistics:
   # Directory on the shared storage (used temporarily to download dataset locally in .parquet to compute statistics)
@@ -312,6 +314,23 @@ backfill:
   error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
+deleteIndexes:
+  enabled: true
+  log:
+    level: "info"
+  action: "delete-indexes"
+  error_codes_to_retry: ""
+  schedule: "0 0 * * *"
+  # at 00:00
   nodeSelector: {}
   resources:
     requests:

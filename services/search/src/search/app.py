@@ -37,9 +37,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     if not exists(cached_assets_directory):
         raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
 
-    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.storage_directory)
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
-        raise RuntimeError("The duckdb_index storage directory could not be accessed. Exiting.")
+        raise RuntimeError("The duckdb_index cache directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     hf_jwt_public_key = (

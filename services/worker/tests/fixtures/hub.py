@@ -34,10 +34,10 @@ DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
-def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
-    config = dataset.replace("/", "--")
+def get_default_config_split() -> Tuple[str, str]:
+    config = "default"
     split = "train"
-    return dataset, config, split
+    return config, split
 
 
 def update_repo_settings(
@@ -307,7 +307,7 @@ HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_config_names_response(dataset: str) -> Any:
-    dataset, config, _ = get_default_config_split(dataset)
+    config, _ = get_default_config_split()
     return {
         "config_names": [
             {
@@ -319,7 +319,7 @@ def create_config_names_response(dataset: str) -> Any:
 
 
 def create_splits_response(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "splits": [
             {
@@ -332,7 +332,7 @@ def create_splits_response(dataset: str) -> Any:
 
 
 def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "dataset": dataset,
         "config": config,
@@ -357,6 +357,7 @@ def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List
 
 
 def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
@@ -365,8 +366,9 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "features": DATA_cols,
         "builder_name": "csv",
         "config_name": config,
+        "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": "csv"}},
+        "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
                 "num_bytes": 50,
@@ -379,10 +381,11 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     }
 
 
-def create_dataset_info_response_for_partially_generated_big_csv(config: str) -> Any:
+def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, config: str) -> Any:
     # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
     # Missing fields:
     # - download_size: not applicable, because the dataset is generated using partially downloaded files
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
@@ -391,19 +394,25 @@ def create_dataset_info_response_for_partially_generated_big_csv(config: str) ->
         "features": BIG_cols,
         "builder_name": "csv",
         "config_name": config,
+        "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {"train": {"name": "train", "num_bytes": 12380, "num_examples": 10, "dataset_name": "csv"}},
         "dataset_size": 12380,
     }
 
 
-def create_dataset_info_response_for_big_parquet() -> Any:
+def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
         "homepage": "",
         "license": "",
         "features": BIG_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {
             "train": {"name": "train", "num_bytes": 5653946, "num_examples": len(BIG_rows), "dataset_name": None}
         },
@@ -427,13 +436,18 @@ def create_dataset_info_response_for_big_parquet_no_info() -> Any:
     }
 
 
-def create_dataset_info_response_for_audio() -> Any:
+def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
         "homepage": "",
         "license": "",
         "features": AUDIO_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
         "dataset_size": 59,
@@ -445,12 +459,12 @@ def create_parquet_and_info_response(
     data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
     partial: bool = False,
 ) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
-
+    config, split = get_default_config_split()
+    dataset_name = dataset.split("/")[-1]
     if partial:
         filename = "0000.parquet"
     else:
-        filename = "csv-train.parquet" if "csv" in data_type else "parquet-train.parquet"
+        filename = f"{dataset_name}-train.parquet"
     size = (
         CSV_PARQUET_SIZE
         if data_type == "csv"
@@ -463,11 +477,11 @@ def create_parquet_and_info_response(
     info = (
         create_dataset_info_response_for_csv(dataset, config)
         if data_type == "csv"
-        else create_dataset_info_response_for_partially_generated_big_csv(config)
+        else create_dataset_info_response_for_partially_generated_big_csv(dataset, config)
         if data_type == "big-csv"
-        else create_dataset_info_response_for_audio()
+        else create_dataset_info_response_for_audio(dataset, config)
         if data_type == "audio"
-        else create_dataset_info_response_for_big_parquet()
+        else create_dataset_info_response_for_big_parquet(dataset, config)
         if data_type == "big_parquet"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
@@ -530,7 +544,7 @@ AUDIO_cols = {
 
 
 def get_AUDIO_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [
@@ -553,7 +567,7 @@ IMAGE_cols = {
 
 
 def get_IMAGE_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": {
@@ -571,7 +585,7 @@ IMAGES_LIST_cols = {
 
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [
