@@ -137,7 +137,7 @@ optInOutUrlsScan:
 
 duckDBIndex:
   maxParquetSizeBytes: "5_000_000_000"
-  expiredTimeIntervalSeconds: 259_200 # 3 days
+  expiredTimeIntervalSeconds: 600
 
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
