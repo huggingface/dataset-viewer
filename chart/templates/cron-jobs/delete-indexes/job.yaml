@@ -22,8 +22,6 @@ spec:
           tolerations: {{ toYaml .Values.deleteIndexes.tolerations | nindent 12 }}
           containers: {{ include "containerDeleteIndexes" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
-  initContainers:
-    {{ include "initContainerDuckDBIndex" . | nindent 8 }}
-  volumes: 
-    {{ include "volumeDuckDBIndex" . | nindent 8 }}
+          initContainers: {{ include "initContainerDuckDBIndex" . | nindent 12 }}
+          volumes: {{ include "volumeDuckDBIndex" . | nindent 12 }}
 {{- end}}
