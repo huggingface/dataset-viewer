@@ -312,10 +312,10 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "8Gi"
+      memory: "7Gi"
     limits:
       cpu: 4
-      memory: "8Gi"
+      memory: "7Gi"
 
 search:
   # Number of uvicorn workers for running the application
@@ -330,10 +330,10 @@ search:
   resources:
     requests:
       cpu: 1
-      memory: "8Gi"
+      memory: "7Gi"
     limits:
       cpu: 4
-      memory: "8Gi"
+      memory: "7Gi"
 
 workers:
   -
