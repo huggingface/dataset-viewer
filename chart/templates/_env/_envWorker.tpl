@@ -8,6 +8,8 @@
   value: {{ .Values.worker.heartbeatIntervalSeconds | quote}}
 - name: WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
   value: {{ .Values.worker.killZombiesIntervalSeconds | quote}}
+- name: WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
+  value: {{ .Values.worker.killLongJobIntervalSeconds | quote}}
 - name: WORKER_MAX_DISK_USAGE_PCT
   value: {{ .Values.worker.maxDiskUsagePct | quote }}
 - name: WORKER_MAX_JOB_DURATION_SECONDS

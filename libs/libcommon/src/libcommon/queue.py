@@ -344,6 +344,21 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return cls(key=key, owner=owner, sleeps=sleeps)
 
 
+def release_locks(owner: str) -> None:
+    """
+    Release all locks owned by the given owner
+
+    Args:
+        owner (`str`): the current owner that holds the locks
+    """
+    Lock.objects(owner=owner).update(
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        owner=None,
+        updated_at=get_datetime(),
+    )
+
+
 class Queue:
     """A queue manages jobs.
 
@@ -762,7 +777,7 @@ class Queue:
     def finish_job(self, job_id: str, is_success: bool) -> bool:
         """Finish a job in the queue.
 
-        The job is moved from the started state to the success or error state.
+        The job is moved from the started state to the success or error state. The existing locks are released.
 
         Args:
             job_id (`str`, required): id of the job
@@ -782,6 +797,7 @@ class Queue:
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
         job.update(finished_at=get_datetime(), status=finished_status)
+        release_locks(owner=job_id)
         return True
 
     def is_job_in_process(

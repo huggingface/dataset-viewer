@@ -84,7 +84,7 @@ def set_env_vars(
     mp.setenv("WORKER_STATE_FILE_PATH", worker_state_file_path)
     mp.setenv("WORKER_HEARTBEAT_INTERVAL_SECONDS", "1")
     mp.setenv("WORKER_KILL_ZOMBIES_INTERVAL_SECONDS", "1")
-    mp.setenv("WORKER_KILL_LONG_JOBS_INTERVAL_SECONDS", "1")
+    mp.setenv("WORKER_KILL_LONG_JOB_INTERVAL_SECONDS", "1")
     mp.setenv("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN", "dummy_spawning_token")
     yield mp
     mp.undo()
