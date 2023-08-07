@@ -312,10 +312,10 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "7Gi"
+      memory: "6500Mi"
     limits:
       cpu: 4
-      memory: "7Gi"
+      memory: "6500Mi"
 
 search:
   # Number of uvicorn workers for running the application
@@ -324,16 +324,16 @@ search:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 12
+  replicas: 2
   service:
     type: NodePort
   resources:
     requests:
       cpu: 1
-      memory: "7Gi"
+      memory: "6500Mi"
     limits:
       cpu: 4
-      memory: "7Gi"
+      memory: "6500Mi"
 
 workers:
   -
