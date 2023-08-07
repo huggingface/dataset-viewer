@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from datasets import (
     Audio,
