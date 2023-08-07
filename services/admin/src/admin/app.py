@@ -23,7 +23,6 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
-from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
 from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
@@ -159,16 +158,6 @@ def create_app() -> Starlette:
                         organization=app_config.admin.hf_organization,
                         hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
-                ),
-                Route(
-                    f"/cancel-jobs/{job_type}",
-                    endpoint=create_cancel_jobs_endpoint(
-                        job_type=job_type,
-                        external_auth_url=app_config.admin.external_auth_url,
-                        organization=app_config.admin.hf_organization,
-                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                    ),
-                    methods=["POST"],
                 ),
             ]
         )
