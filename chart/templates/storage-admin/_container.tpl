@@ -11,7 +11,6 @@
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
-  {{ include "volumeMountParquetMetadataNewRW" . | nindent 2 }}
   - mountPath: /volumes/descriptive-statistics
     mountPropagation: None
     name: volume-descriptive-statistics

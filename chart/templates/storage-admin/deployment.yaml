@@ -23,7 +23,6 @@ spec:
         {{ include "initContainerDuckDBIndex" . | nindent 8 }}
         {{ include "initContainerHfDatasetsCache" . | nindent 8 }}
         {{ include "initContainerParquetMetadata" . | nindent 8 }}
-        {{ include "initContainerParquetMetadataNew" . | nindent 8 }}
       containers: {{ include "containerStorageAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.storageAdmin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.storageAdmin.tolerations | nindent 8 }}
