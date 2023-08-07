@@ -210,11 +210,11 @@ storageAdmin:
   replicas: 1
   resources:
     requests:
-      cpu: 50m
-      memory: "64Mi"
+      cpu: 1
+      memory: "4Gi"
     limits:
       cpu: 1
-      memory: "256Mi"
+      memory: "4Gi"
 
 # --- reverse proxy ---
 
