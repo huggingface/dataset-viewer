@@ -3,7 +3,7 @@
 
 import json
 from io import BytesIO
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
 from datasets import (
@@ -20,6 +20,7 @@ from datasets import (
     TranslationVariableLanguages,
     Value,
 )
+from datasets.features.features import FeatureType, _visit
 from numpy import ndarray
 from PIL import Image as PILImage  # type: ignore
 
@@ -298,3 +299,30 @@ def to_features_list(features: Features) -> List[FeatureItem]:
         }
         for idx, name in enumerate(features)
     ]
+
+
+def get_supported_unsupported_columns(
+    features: Features,
+    unsupported_features: List[FeatureType] = [],
+) -> Tuple[List[str], List[str]]:
+    supported_columns, unsupported_columns = [], []
+
+    for column, feature in features.items():
+        str_column = str(column)
+        supported = True
+
+        def classify(feature: FeatureType) -> None:
+            nonlocal supported
+            for unsupported_feature in unsupported_features:
+                if type(unsupported_feature) == type(feature) == Value:
+                    if unsupported_feature.dtype == feature.dtype:
+                        supported = False
+                elif type(unsupported_feature) == type(feature):
+                    supported = False
+
+        _visit(feature, classify)
+        if supported:
+            supported_columns.append(str_column)
+        else:
+            unsupported_columns.append(str_column)
+    return supported_columns, unsupported_columns

@@ -18,6 +18,7 @@ global:
           admin: 30021
           api: 30022
           rows: 30023
+          search: 30024
 
 images:
   pullPolicy: IfNotPresent
@@ -53,6 +54,16 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-rows
+      tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
+      tag: sha-fb3399a
+    storageAdmin:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-storage-admin
       tag: sha-fb3399a
     worker:
       registry: huggingface
@@ -101,21 +112,18 @@ uid: 1000
 gid: 3000
 
 persistence:
-  existingClaim: ""
-  storageClass: ""
-  size: 20Gi
-
-cachePersistence:
-  existingClaim: ""
-
-parquetPersistence:
-  existingClaim: ""
-
-duckdbPersistence:
-  existingClaim: ""
-
-statisticsPersistence:
-  existingClaim: ""
+  descriptiveStatistics:
+    existingClaim: ""
+  duckDBIndex:
+    existingClaim: ""
+  hfDatasetsCache:
+    existingClaim: ""
+  nfs:
+    existingClaim: ""
+    storageClass: ""
+    size: 20Gi
+  parquetMetadata:
+    existingClaim: ""
 
 monitoring:
   enabled: false
@@ -219,13 +227,13 @@ assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
   # Directory on the shared storage (audio files and images)
-  storageDirectory: "/assets"
+  storageDirectory: "/storage/assets"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
   # baseUrl: "not used for now"
   # Directory on the cached shared storage (audio files and images)
-  storageDirectory: "/cached-assets"
+  storageDirectory: "/storage/cached-assets"
   # Probability of cleaning the cached assets directory at each request.
   cleanCacheProba: 0.05
   # When cleaning the cached assets directory: keep the rows with an index below a certain number.
@@ -238,11 +246,13 @@ cachedAssets:
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
-  storageDirectory: "/parquet-metadata"
+  storageDirectory: "/storage/parquet-metadata"
+  # Temporary - to synchronize the files from NFS to dedicated EFS
+  storageDirectoryNew: "/storage/parquet-metadata-new"
 
 duckDBIndex:
   # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
-  storageDirectory: "/duckdb-index"
+  cacheDirectory: "/storage/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
   # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/parquet`.
@@ -251,17 +261,20 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
+  # the time interval at which a downloaded index will be considered as expired and will be deleted 
+  expiredTimeIntervalSeconds: 600
 
 descriptiveStatistics:
   # Directory on the shared storage (used temporarily to download dataset locally in .parquet to compute statistics)
-  storageDirectory: "/stats-cache"
+  cacheDirectory: "/storage/stats-cache"
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
 
-# Directory where the cache data will be stored
-cacheDirectory: "/datasets-server-cache"
+hfDatasetsCache:
+  # Directory where the HF datasets cache data will be stored
+  cacheDirectory: "/storage/hf-datasets-cache"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -301,6 +314,23 @@ backfill:
   error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
+deleteIndexes:
+  enabled: true
+  log:
+    level: "info"
+  action: "delete-indexes"
+  error_codes_to_retry: ""
+  schedule: "0 0 * * *"
+  # at 00:00
   nodeSelector: {}
   resources:
     requests:
@@ -401,18 +431,20 @@ admin:
     annotations: {}
   tolerations: []
 
-api:
+hf:
   # the path of the external authentication service on the hub.
   # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
+  authPath: "/api/datasets/%s/auth-check"
   # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
   # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
   # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
+  jwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
   # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
+  jwtAlgorithm: "EdDSA"
   # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
+  timeoutSeconds: "0.2"
+
+api:
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -440,17 +472,6 @@ api:
   tolerations: []
 
 rows:
-  # the path of the external authentication service on the hub.
-  # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
-  # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
-  # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
-  # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
-  # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -463,7 +484,34 @@ rows:
   # Number of uvicorn workers for running the application
   uvicornNumWorkers: "1"
   # Application endpoint port
-  uvicornPort: 8082
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  tolerations: []
+
+search:
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
 
   nodeSelector: {}
   replicas: 1

@@ -12,6 +12,7 @@ global:
           admin: 32702
           api: 31370
           rows: 31371
+          search: 31372
 
 images:
   pullPolicy: IfNotPresent
@@ -48,6 +49,16 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-rows
       tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
+      tag: sha-fb3399a
+    storageAdmin:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-storage-admin
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -82,19 +93,16 @@ secrets:
     secretName: "datasets-server-prod-secrets"
 
 persistence:
-  existingClaim: "nfs-datasets-server-pvc"
-
-cachePersistence:
-  existingClaim: "datasets-server-cache-pvc"
-
-parquetPersistence:
-  existingClaim: "datasets-server-parquet-pvc"
-
-duckdbPersistence:
-  existingClaim: "datasets-server-duckdb-pvc"
-
-statisticsPersistence:
-  existingClaim: "datasets-server-statistics-pvc"
+  descriptiveStatistics:
+    existingClaim: "datasets-server-statistics-pvc"
+  duckDBIndex:
+    existingClaim: "datasets-server-duckdb-pvc"
+  hfDatasetsCache:
+    existingClaim: "datasets-server-cache-pvc"
+  nfs:
+    existingClaim: "nfs-datasets-server-pvc"
+  parquetMetadata:
+    existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
   enabled: true
@@ -126,6 +134,10 @@ optInOutUrlsScan:
   maxRequestsPerSecond: 50
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
+
+duckDBIndex:
+  maxParquetSizeBytes: "5_000_000_000"
+  expiredTimeIntervalSeconds: 259_200 # 3 days
 
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
@@ -165,15 +177,16 @@ backfill:
     level: "debug"
   action: "backfill"
   error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError"
-  schedule: "00 12 * * *"
-  # every day at 12:00
+  schedule: "20 21 * * *"
+  # every four hours
   nodeSelector: {}
   resources:
     requests:
       cpu: 1
+      memory: "4Gi"
     limits:
-      cpu: 1
-      memory: "512Mi"
+      cpu: 2
+      memory: "8Gi"
   tolerations: []
 
 metricsCollector:
@@ -264,9 +277,10 @@ admin:
       cpu: 4
       memory: "4Gi"
 
+hf:
+  timeoutSeconds: "1.5"
+
 api:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -286,8 +300,6 @@ api:
       memory: "4Gi"
 
 rows:
-  # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "1.5"
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -305,6 +317,24 @@ rows:
       cpu: 4
       memory: "8Gi"
 
+search:
+  # Number of uvicorn workers for running the application
+  # (2 x $num_cores) + 1
+  # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+  uvicornNumWorkers: "9"
+  nodeSelector:
+    role-datasets-server-search: "true"
+  replicas: 12
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 1
+      memory: "4Gi"
+    limits:
+      cpu: 4
+      memory: "8Gi"
+
 workers:
   -
     deployName: "all"
@@ -314,7 +344,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 24
+    replicas: 100
     resources:
       requests:
         cpu: 1
@@ -331,7 +361,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 8
+    replicas: 25
     resources:
       requests:
         cpu: 200m

@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 from datasets import (
     Audio,
+    DownloadConfig,
     Features,
     Image,
     IterableDataset,
@@ -26,11 +27,11 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
+from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, JobRunnerInfo, Row, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
     check_split_exists,
@@ -148,7 +149,7 @@ def compute_first_rows_response(
         info = get_dataset_config_info(
             path=dataset,
             config_name=config,
-            token=token,
+            download_config=DownloadConfig(token=hf_token),
         )
     except Exception as err:
         raise InfoError(
@@ -163,6 +164,7 @@ def compute_first_rows_response(
                 name=config,
                 split=split,
                 streaming=True,
+                download_config=DownloadConfig(token=hf_token),
                 token=token,
             )
             if not isinstance(iterable_dataset, IterableDataset):

@@ -251,7 +251,7 @@ class ConfigNamesConfig:
             )
 
 
-DUCKDB_INDEX_STORAGE_DIRECTORY = None
+DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
 DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
 DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
@@ -262,7 +262,7 @@ DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
-    storage_directory: Optional[str] = DUCKDB_INDEX_STORAGE_DIRECTORY
+    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     commit_message: str = DUCKDB_INDEX_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
@@ -275,7 +275,7 @@ class DuckDbIndexConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=DUCKDB_INDEX_STORAGE_DIRECTORY),
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=DUCKDB_INDEX_COMMIT_MESSAGE),
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
@@ -303,7 +303,7 @@ class DescriptiveStatisticsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DESCRIPTIVE_STATISTICS_"):
             return cls(
-                cache_directory=env.str(name="STORAGE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
                 histogram_num_bins=env.int(
                     name="HISTOGRAM_NUM_BINS",
                     default=DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS,

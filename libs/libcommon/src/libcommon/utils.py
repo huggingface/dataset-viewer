@@ -6,7 +6,7 @@ import enum
 import mimetypes
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -82,13 +82,19 @@ class RowItem(TypedDict):
     truncated_cells: List[str]
 
 
-Row = Mapping[str, Any]
+Row = Dict[str, Any]
 
 
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
     type: Row
+
+
+class PaginatedResponse(TypedDict):
+    features: List[FeatureItem]
+    rows: Any
+    num_total_rows: int
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)

@@ -15,13 +15,13 @@
   {{ include "envNumba" . | nindent 2 }}
   # service
   - name: API_HF_AUTH_PATH
-    value: {{ .Values.rows.hfAuthPath | quote }}
+    value: {{ .Values.hf.authPath | quote }}
   - name: API_HF_JWT_PUBLIC_KEY_URL
-    value: {{ .Values.rows.hfJwtPublicKeyUrl | quote }}
+    value: {{ .Values.hf.jwtPublicKeyUrl | quote }}
   - name: API_HF_JWT_ALGORITHM
-    value: {{ .Values.rows.hfJwtAlgorithm | quote }}
+    value: {{ .Values.hf.jwtAlgorithm | quote }}
   - name: API_HF_TIMEOUT_SECONDS
-    value: {{ .Values.rows.hfTimeoutSeconds | quote }}
+    value: {{ .Values.hf.timeoutSeconds | quote }}
   - name: API_HF_WEBHOOK_SECRET
     {{- if .Values.secrets.hfWebhookSecret.fromSecret }}
     valueFrom:

@@ -6,7 +6,7 @@ import shutil
 import time
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Generator, List
+from typing import Any, Generator
 from unittest.mock import patch
 
 import pyarrow.parquet as pq
@@ -22,7 +22,7 @@ from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 
 from rows.config import AppConfig
-from rows.routes.rows import clean_cached_assets, create_response
+from rows.routes.rows import create_response
 
 
 @pytest.fixture(autouse=True)
@@ -276,6 +276,7 @@ def test_indexer_get_rows_index_with_parquet_metadata(
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
     assert index.parquet_index.num_rows == [len(ds)]
+    assert index.parquet_index.num_total_rows == 2
     assert index.parquet_index.parquet_files_urls == [
         parquet_file_metadata_item["url"]
         for parquet_file_metadata_item in dataset_with_config_parquet_metadata["parquet_files_metadata"]
@@ -297,6 +298,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features
     assert index.parquet_index.num_rows == [len(ds)] * 4
+    assert index.parquet_index.num_total_rows == 8
     assert index.parquet_index.parquet_files_urls == [
         parquet_file_metadata_item["url"]
         for parquet_file_metadata_item in dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
@@ -329,12 +331,14 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         offset=0,
         features=ds.features,
         unsupported_columns=[],
+        num_total_rows=10,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "text", "type": {"dtype": "string", "_type": "Value"}}]
     assert response["rows"] == [
         {"row_idx": 0, "row": {"text": "Hello there"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"text": "General Kenobi"}, "truncated_cells": []},
     ]
+    assert response["num_total_rows"] == 10
 
 
 def test_create_response_with_image(
@@ -350,6 +354,7 @@ def test_create_response_with_image(
         offset=0,
         features=ds_image.features,
         unsupported_columns=[],
+        num_total_rows=10,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
     assert response["rows"] == [
@@ -367,50 +372,6 @@ def test_create_response_with_image(
     ]
     cached_image_path = Path(cached_assets_directory) / "ds_image/--/plain_text/train/0/image/image.jpg"
     assert cached_image_path.is_file()
-
-
-@pytest.mark.parametrize(
-    "n_rows,keep_most_recent_rows_number,keep_first_rows_number,max_cleaned_rows_number,expected_remaining_rows",
-    [
-        (8, 1, 1, 100, [0, 7]),
-        (8, 2, 2, 100, [0, 1, 6, 7]),
-        (8, 1, 1, 3, [0, 4, 5, 6, 7]),
-    ],
-)
-def test_clean_cached_assets(
-    tmp_path: Path,
-    n_rows: int,
-    keep_most_recent_rows_number: int,
-    keep_first_rows_number: int,
-    max_cleaned_rows_number: int,
-    expected_remaining_rows: list[int],
-) -> None:
-    cached_assets_directory = tmp_path / "cached-assets"
-    split_dir = cached_assets_directory / "ds/--/plain_text/train"
-    split_dir.mkdir(parents=True)
-    for i in range(n_rows):
-        (split_dir / str(i)).mkdir()
-        time.sleep(0.01)
-
-    def deterministic_glob_rows_in_assets_dir(
-        dataset: str,
-        assets_directory: StrPath,
-    ) -> List[Path]:
-        return sorted(
-            list(Path(assets_directory).resolve().glob(os.path.join(dataset, "--", "*", "*", "*"))),
-            key=lambda p: int(p.name),
-        )
-
-    with patch("rows.routes.rows.glob_rows_in_assets_dir", deterministic_glob_rows_in_assets_dir):
-        clean_cached_assets(
-            "ds",
-            cached_assets_directory,
-            keep_most_recent_rows_number=keep_most_recent_rows_number,
-            keep_first_rows_number=keep_first_rows_number,
-            max_cleaned_rows_number=max_cleaned_rows_number,
-        )
-    remaining_rows = sorted(int(row_dir.name) for row_dir in split_dir.glob("*"))
-    assert remaining_rows == expected_remaining_rows
 
 
 def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None:

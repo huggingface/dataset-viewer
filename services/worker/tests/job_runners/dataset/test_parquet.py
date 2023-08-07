@@ -100,6 +100,7 @@ def get_job_runner(
                             ),
                         ],
                         partial=False,
+                        features=None,
                     ),
                 ),
                 UpstreamResponse(
@@ -119,6 +120,7 @@ def get_job_runner(
                             ),
                         ],
                         partial=False,
+                        features=None,
                     ),
                 ),
             ],

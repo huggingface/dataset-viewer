@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import Any, Callable
 
 import pytest
+from datasets import Features, Value
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -96,6 +97,7 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
             ),
             False,
         ),
@@ -180,6 +182,62 @@ def get_job_runner(
                     ),
                 ],
                 partial=False,
+                features=None,
+            ),
+            False,
+        ),
+        (
+            "with_features",
+            "config_1",
+            HTTPStatus.OK,
+            ConfigParquetAndInfoResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                    ),
+                ],
+                dataset_info={
+                    "description": "value",
+                    "dataset_size": 10,
+                    "features": Features({"a": Value("string")}).to_dict(),
+                },
+                partial=False,
+            ),
+            None,
+            ConfigParquetResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                    ),
+                ],
+                partial=False,
+                features=Features({"a": Value("string")}).to_dict(),
             ),
             False,
         ),
