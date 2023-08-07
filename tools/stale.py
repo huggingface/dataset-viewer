@@ -14,11 +14,11 @@ from github import Github
 # ^ PyGithub - https://pygithub.readthedocs.io/en/stable/introduction.html
 
 
-LABELS_TO_EXEMPT_IN_LOWERCASE = [
-    "p0",
-    "p1",
-    "p2"
-]
+LABELS_TO_EXEMPT_IN_LOWERCASE = [label.lower() for label in [
+    "P0",
+    "P1",
+    "P2"
+]]
 
 
 def main():
