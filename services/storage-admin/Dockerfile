@@ -4,7 +4,7 @@ FROM ubuntu:jammy
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y rsync unzip wget curl \
+    && apt-get install -y rsync unzip wget curl rclone glances \
     && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["sleep", "infinity"]
