@@ -4,7 +4,8 @@ FROM ubuntu:jammy
 
 # System deps:
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsync unzip wget curl rclone glances \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsync unzip wget curl glances \
     && rm -rf /var/lib/apt/lists/*
+RUN curl https://rclone.org/install.sh | bash
 
 ENTRYPOINT ["sleep", "infinity"]
