@@ -827,19 +827,6 @@ class Queue:
             > 0
         )
 
-    def cancel_started_jobs(self, job_type: str) -> None:
-        """Cancel all started jobs for a given type."""
-        for job in JobDocument.objects(status=Status.STARTED.value, type=job_type):
-            job.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            self.add_job(
-                job_type=job.type,
-                dataset=job.dataset,
-                revision=job.revision,
-                config=job.config,
-                split=job.split,
-                difficulty=job.difficulty,
-            )
-
     def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
         return pd.DataFrame(
             {
