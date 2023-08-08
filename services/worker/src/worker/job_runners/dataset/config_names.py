@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
@@ -48,12 +48,11 @@ def compute_config_names_response(
           If the list of configs could not be obtained using the datasets library.
     """
     logging.info(f"get config names for dataset={dataset}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # get the list of splits in streaming mode
     try:
         config_name_items: List[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
-            for config in sorted(get_dataset_config_names(path=dataset, use_auth_token=use_auth_token))
+            for config in sorted(get_dataset_config_names(path=dataset, token=hf_token))
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err

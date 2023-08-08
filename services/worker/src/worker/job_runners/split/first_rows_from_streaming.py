@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from datasets import (
     Audio,
@@ -141,7 +141,6 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     # first ensure the tuple (dataset, config, split) exists on the Hub
     check_split_exists(dataset=dataset, config=config, split=split)
     # get the features
@@ -165,7 +164,7 @@ def compute_first_rows_response(
                 split=split,
                 streaming=True,
                 download_config=DownloadConfig(token=hf_token),
-                use_auth_token=use_auth_token,
+                token=hf_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
@@ -216,7 +215,7 @@ def compute_first_rows_response(
         info=info,
         max_size_fallback=max_size_fallback,
         rows_max_number=rows_max_number,
-        use_auth_token=use_auth_token,
+        token=hf_token,
     )
     rows = rows_content["rows"]
 

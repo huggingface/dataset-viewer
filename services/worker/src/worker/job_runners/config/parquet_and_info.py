@@ -294,9 +294,7 @@ def raise_if_requires_manual_download(
         )
     try:
         builder._check_manual_download(
-            StreamingDownloadManager(
-                base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
-            )
+            StreamingDownloadManager(base_path=builder.base_path, download_config=DownloadConfig(token=hf_token))
         )
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"dataset={builder.repo_id} requires manual download.", cause=err) from err
@@ -391,7 +389,7 @@ class EmptyFeaturesError(Exception):
 
 
 def _request_size(url: str, hf_token: Optional[str] = None) -> Optional[int]:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    headers = get_authentication_headers_for_url(url, token=hf_token)
     response = http_head(url, headers=headers, max_retries=3)
     response.raise_for_status()
     size = response.headers.get("Content-Length") if response.ok else None
@@ -435,7 +433,7 @@ def _is_too_big_from_external_data_files(
         return False
     # For datasets with a loading script however, we need to check the downloaded files
     mock_dl_manager = _MockStreamingDownloadManager(
-        base_path=builder.base_path, download_config=DownloadConfig(use_auth_token=hf_token)
+        base_path=builder.base_path, download_config=DownloadConfig(token=hf_token)
     )
     try:
         builder._split_generators(mock_dl_manager)
@@ -880,7 +878,7 @@ def stream_convert_to_parquet(
         builder._writer_batch_size = writer_batch_size
     dl_manager = StreamingDownloadManager(
         base_path=builder.base_path,
-        download_config=DownloadConfig(use_auth_token=builder.use_auth_token, storage_options=builder.storage_options),
+        download_config=DownloadConfig(token=builder.token, storage_options=builder.storage_options),
         dataset_name=builder.name,
         data_dir=builder.config.data_dir,
     )
@@ -1260,7 +1258,7 @@ def compute_config_parquet_and_info_response(
             path=dataset,
             name=config,
             revision=source_revision,
-            use_auth_token=hf_token,
+            token=hf_token,
             download_config=download_config,
         )
     except _EmptyDatasetError as err:

@@ -4,7 +4,7 @@
 import logging
 from asyncio import Semaphore, create_task, run, wait
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -151,7 +151,6 @@ def compute_opt_in_out_urls_scan_response(
     """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
-    use_auth_token: Union[bool, str, None] = hf_token if hf_token is not None else False
     if not spawning_token:
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
 
@@ -173,7 +172,7 @@ def compute_opt_in_out_urls_scan_response(
         info = get_dataset_config_info(
             path=dataset,
             config_name=config,
-            use_auth_token=use_auth_token,
+            token=hf_token,
         )
     except Exception as err:
         raise InfoError(
@@ -207,7 +206,7 @@ def compute_opt_in_out_urls_scan_response(
         split=split,
         info=info,
         rows_max_number=rows_max_number,
-        use_auth_token=use_auth_token,
+        token=hf_token,
         column_names=image_url_columns,
     )
     rows = rows_content["rows"]

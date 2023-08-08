@@ -1245,7 +1245,7 @@
                         "Traceback (most recent call last):\n",
                         "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset, hf_token)\n",
                         "  File \"/src/services/worker/src/worker/responses/splits.py\", line 35, in get_dataset_split_full_names\n    return [\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 38, in <listcomp>\n    for split in get_dataset_split_names(dataset, config, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 38, in <listcomp>\n    for split in get_dataset_split_names(dataset, config, token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 404, in get_dataset_split_names\n    info = get_dataset_config_info(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 359, in get_dataset_config_info\n    raise SplitsNotFoundError(\"The split names could not be parsed from the dataset config.\") from err\n",
                         "datasets.inspect.SplitsNotFoundError: The split names could not be parsed from the dataset config.\n"
@@ -1261,7 +1261,7 @@
                       "cause_traceback": [
                         "Traceback (most recent call last):\n",
                         "  File \"/src/services/worker/src/worker/responses/splits.py\", line 74, in get_splits_response\n    split_full_names = get_dataset_split_full_names(dataset, hf_token)\n",
-                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 37, in get_dataset_split_full_names\n    for config in get_dataset_config_names(dataset, use_auth_token=hf_token)\n",
+                        "  File \"/src/services/worker/src/worker/responses/splits.py\", line 37, in get_dataset_split_full_names\n    for config in get_dataset_config_names(dataset, token=hf_token)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/inspect.py\", line 289, in get_dataset_config_names\n    dataset_module = dataset_module_factory(\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/load.py\", line 1243, in dataset_module_factory\n    raise FileNotFoundError(\n",
                         "FileNotFoundError: Couldn't find a dataset script at /src/services/worker/akhaliq/test/test.py or any data file in the same directory. Couldn't find 'akhaliq/test' on the Hugging Face Hub either: FileNotFoundError: The dataset repository at 'akhaliq/test' doesn't contain any data file.\n"
@@ -2013,7 +2013,7 @@
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 708, in _iter\n    yield from ex_iterable\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
                         "  File \"/root/.cache/huggingface/modules/datasets_modules/datasets/ar_cov19/818d9b774f4b70542b6807e6ddb6db32c916aafeba4fbdcd228ec79d21edaeab/ar_cov19.py\", line 131, in _generate_examples\n    for fname in sorted(glob.glob(os.path.join(data_dir, \"ArCOV-19-master/dataset/all_tweets/2020-*\"))):\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/streaming.py\", line 67, in wrapper\n    return function(*args, use_auth_token=use_auth_token, **kwargs)\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/streaming.py\", line 67, in wrapper\n    return function(*args, token=token, **kwargs)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 522, in xglob\n    fs, *_ = fsspec.get_fs_token_paths(urlpath, storage_options=storage_options)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 632, in get_fs_token_paths\n    fs = filesystem(protocol, **inkwargs)\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/registry.py\", line 262, in filesystem\n    return cls(**storage_options)\n",
@@ -2060,7 +2060,7 @@
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/iterable_dataset.py\", line 112, in __iter__\n    yield from self.generate_examples_fn(**self.kwargs)\n",
                         "  File \"/root/.cache/huggingface/modules/datasets_modules/datasets/atomic/c0f0ec7d10713c41dfc87f0cf17f936b122d22e19216051217c99134d38f6d7b/atomic.py\", line 123, in _generate_examples\n    for path, f in files:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 760, in __iter__\n    yield from self.generator(*self.args, **self.kwargs)\n",
-                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 787, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", use_auth_token=use_auth_token) as f:\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 787, in _iter_from_urlpath\n    with xopen(urlpath, \"rb\", token=token) as f:\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/download/streaming_download_manager.py\", line 453, in xopen\n    file_obj = fsspec.open(file, mode=mode, *args, **kwargs).open()\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 141, in open\n    out = self.__enter__()\n",
                         "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/fsspec/core.py\", line 104, in __enter__\n    f = self.fs.open(self.path, mode=mode)\n",

@@ -218,17 +218,17 @@ def get_rows(
     split: str,
     streaming: bool,
     rows_max_number: int,
-    use_auth_token: Union[bool, str, None] = False,
+    token: Union[bool, str, None] = False,
     column_names: Optional[List[str]] = None,
 ) -> RowsContent:
-    download_config = DownloadConfig(delete_extracted=True, token=use_auth_token)
+    download_config = DownloadConfig(delete_extracted=True, token=token)
     PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
     ds = load_dataset(
         dataset,
         name=config,
         split=split,
         streaming=streaming,
-        use_auth_token=use_auth_token,
+        token=token,
         download_config=download_config,
     )
     if streaming:
@@ -254,7 +254,7 @@ def get_rows_or_raise(
     config: str,
     split: str,
     rows_max_number: int,
-    use_auth_token: Union[bool, str, None],
+    token: Union[bool, str, None],
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[List[str]] = [],
@@ -266,7 +266,7 @@ def get_rows_or_raise(
             split=split,
             streaming=True,
             rows_max_number=rows_max_number,
-            use_auth_token=use_auth_token,
+            token=token,
             column_names=column_names,
         )
     except Exception as err:
@@ -291,7 +291,7 @@ def get_rows_or_raise(
                 split=split,
                 streaming=False,
                 rows_max_number=rows_max_number,
-                use_auth_token=use_auth_token,
+                token=token,
             )
         except Exception as err:
             raise NormalRowsError(
@@ -307,7 +307,7 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
 
 
 def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    headers = get_authentication_headers_for_url(url, token=hf_token)
     return ParquetFile(fs.open(url, headers=headers))
 
 
