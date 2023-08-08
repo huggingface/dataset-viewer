@@ -37,5 +37,6 @@ spec:
         {{ include "volumeDuckDBIndex" . | nindent 8 }}
         {{ include "volumeHfDatasetsCache" . | nindent 8 }}
         {{ include "volumeNfs" . | nindent 8 }}
+        {{ include "volumeParquetMetadata" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
 {{- end -}}
