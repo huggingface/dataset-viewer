@@ -32,4 +32,5 @@ spec:
       tolerations: {{ toYaml .Values.rows.tolerations | nindent 8 }}
       volumes: 
         {{ include "volumeNfs" . | nindent 8 }}
+        {{ include "volumeParquetMetadata" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}

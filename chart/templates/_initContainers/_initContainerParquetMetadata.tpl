@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: volume-nfs
+    name: volume-parquet-metadata
     subPath: "{{ include "parquetMetadata.subpath" . }}"
     readOnly: false
   securityContext:
