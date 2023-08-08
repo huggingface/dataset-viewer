@@ -210,11 +210,11 @@ storageAdmin:
   replicas: 1
   resources:
     requests:
-      cpu: 50m
-      memory: "64Mi"
+      cpu: 4
+      memory: "4Gi"
     limits:
-      cpu: 1
-      memory: "256Mi"
+      cpu: 4
+      memory: "4Gi"
 
 # --- reverse proxy ---
 
@@ -312,10 +312,10 @@ rows:
   resources:
     requests:
       cpu: 1
-      memory: "6Gi"
+      memory: "6500Mi"
     limits:
       cpu: 4
-      memory: "8Gi"
+      memory: "6500Mi"
 
 search:
   # Number of uvicorn workers for running the application
@@ -324,16 +324,16 @@ search:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 12
+  replicas: 2
   service:
     type: NodePort
   resources:
     requests:
       cpu: 1
-      memory: "4Gi"
+      memory: "6500Mi"
     limits:
       cpu: 4
-      memory: "8Gi"
+      memory: "6500Mi"
 
 workers:
   -
@@ -344,7 +344,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 24
     resources:
       requests:
         cpu: 1
@@ -361,7 +361,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 25
+    replicas: 8
     resources:
       requests:
         cpu: 200m

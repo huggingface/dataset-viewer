@@ -156,6 +156,8 @@ worker:
   contentMaxBytes: "10_000_000"
   # the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue.
   heartbeatIntervalSeconds: 60
+  # the time interval at which the worker looks for long jobs to kill them
+  killLongJobIntervalSeconds: 60
   # the time interval at which the worker looks for zombie jobs to kill them
   killZombiesIntervalSeconds: 600
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.

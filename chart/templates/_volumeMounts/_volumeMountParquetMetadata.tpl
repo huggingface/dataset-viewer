@@ -4,7 +4,7 @@
 {{- define "volumeMountParquetMetadataRO" -}}
 - mountPath: {{ .Values.parquetMetadata.storageDirectory | quote }}
   mountPropagation: None
-  name: volume-nfs
+  name: volume-parquet-metadata
   subPath: "{{ include "parquetMetadata.subpath" . }}"
   readOnly: true
 {{- end -}}
@@ -12,7 +12,7 @@
 {{- define "volumeMountParquetMetadataRW" -}}
 - mountPath: {{ .Values.parquetMetadata.storageDirectory | quote }}
   mountPropagation: None
-  name: volume-nfs
+  name: volume-parquet-metadata
   subPath: "{{ include "parquetMetadata.subpath" . }}"
   readOnly: false
 {{- end -}}
