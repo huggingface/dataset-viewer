@@ -473,8 +473,15 @@ def get_valid_datasets(kind: str) -> Set[str]:
     return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
-def is_valid_for_kinds(dataset: str, kinds: List[str]) -> bool:
-    return CachedResponseDocument.objects(dataset=dataset, kind__in=kinds, http_status=HTTPStatus.OK).count() > 0
+def has_any_successful_response(
+    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> bool:
+    return (
+        CachedResponseDocument.objects(
+            dataset=dataset, config=config, split=split, kind__in=kinds, http_status=HTTPStatus.OK
+        ).count()
+        > 0
+    )
 
 
 # admin /metrics endpoint

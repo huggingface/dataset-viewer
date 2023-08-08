@@ -53,6 +53,7 @@ class ProcessingStepSpecification(TypedDict, total=False):
     triggered_by: Union[List[str], str, None]
     enables_preview: Literal[True]
     enables_viewer: Literal[True]
+    enables_search: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
     provides_config_split_names: bool
@@ -144,6 +145,7 @@ class ProcessingGraph:
     _first_processing_steps: List[ProcessingStep] = field(init=False)
     _processing_steps_enables_preview: List[ProcessingStep] = field(init=False)
     _processing_steps_enables_viewer: List[ProcessingStep] = field(init=False)
+    _processing_steps_enables_search: List[ProcessingStep] = field(init=False)
     _config_split_names_processing_steps: List[ProcessingStep] = field(init=False)
     _config_parquet_processing_steps: List[ProcessingStep] = field(init=False)
     _config_parquet_metadata_processing_steps: List[ProcessingStep] = field(init=False)
@@ -190,6 +192,7 @@ class ProcessingGraph:
                 name,
                 enables_preview=specification.get("enables_preview", False),
                 enables_viewer=specification.get("enables_viewer", False),
+                enables_search=specification.get("enables_search", False),
                 provides_dataset_config_names=provides_dataset_config_names,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
@@ -232,6 +235,11 @@ class ProcessingGraph:
         self._processing_steps_enables_viewer = [
             self._processing_steps[processing_step_name]
             for (processing_step_name, required) in _nx_graph.nodes(data="enables_viewer")
+            if required
+        ]
+        self._processing_steps_enables_search = [
+            self._processing_steps[processing_step_name]
+            for (processing_step_name, required) in _nx_graph.nodes(data="enables_search")
             if required
         ]
         self._config_parquet_processing_steps = [
@@ -409,6 +417,18 @@ class ProcessingGraph:
             List[ProcessingStep]: The list of processing steps that enable the dataset viewer
         """
         return copy_processing_steps_list(self._processing_steps_enables_viewer)
+
+    def get_processing_steps_enables_search(self) -> List[ProcessingStep]:
+        """
+        Get the processing steps that enable the dataset split search.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            List[ProcessingStep]: The list of processing steps that enable the dataset viewer
+        """
+        return copy_processing_steps_list(self._processing_steps_enables_search)
 
     def get_config_parquet_processing_steps(self) -> List[ProcessingStep]:
         """

@@ -77,6 +77,8 @@ class EndpointConfig:
             },
             "/is-valid": {
                 "dataset": ["dataset-is-valid"],
+                "config": ["config-is-valid"],
+                "split": ["split-is-valid"],
             },
             "/statistics": {"split": ["split-descriptive-statistics"]},
         }

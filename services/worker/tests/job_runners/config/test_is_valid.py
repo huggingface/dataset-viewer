@@ -11,7 +11,7 @@ from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
+from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 
 from ..utils import UpstreamResponse
 
@@ -22,62 +22,70 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig], DatasetIsValidJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], ConfigIsValidJobRunner]
 
 DATASET = "dataset"
-CONFIG_1 = "config1"
-CONFIG_2 = "config2"
+CONFIG = "config"
+SPLIT_1 = "split1"
+SPLIT_2 = "split2"
 
-UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
-    kind="dataset-config-names",
+UPSTREAM_RESPONSE_SPLIT_NAMES: UpstreamResponse = UpstreamResponse(
+    kind="config-split-names-from-streaming",
     dataset=DATASET,
+    config=CONFIG,
     http_status=HTTPStatus.OK,
     content={
-        "config_names": [
-            {"dataset": DATASET, "config": CONFIG_1},
-            {"dataset": DATASET, "config": CONFIG_2},
+        "splits": [
+            {"dataset": DATASET, "config": CONFIG, "split": SPLIT_1},
+            {"dataset": DATASET, "config": CONFIG, "split": SPLIT_2},
         ]
     },
 )
-UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_1_OK: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_1,
+    config=CONFIG,
+    split=SPLIT_1,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True},
 )
-UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_1,
+    config=CONFIG,
+    split=SPLIT_1,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": False, "search": False},
 )
-UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_2,
+    config=CONFIG,
+    split=SPLIT_2,
     http_status=HTTPStatus.OK,
     content={"viewer": False, "preview": False, "search": True},
 )
-UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_2_OK: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_2,
+    config=CONFIG,
+    split=SPLIT_2,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True},
 )
-UPSTREAM_RESPONSE_CONFIG_1_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_1_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_1,
+    config=CONFIG,
+    split=SPLIT_1,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
-UPSTREAM_RESPONSE_CONFIG_2_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="config-is-valid",
+UPSTREAM_RESPONSE_SPLIT_2_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="split-is-valid",
     dataset=DATASET,
-    config=CONFIG_2,
+    config=CONFIG,
+    split=SPLIT_2,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
@@ -110,16 +118,17 @@ def get_job_runner(
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
+        config: str,
         app_config: AppConfig,
-    ) -> DatasetIsValidJobRunner:
-        processing_step_name = DatasetIsValidJobRunner.get_job_type()
+    ) -> ConfigIsValidJobRunner:
+        processing_step_name = ConfigIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-        return DatasetIsValidJobRunner(
+        return ConfigIsValidJobRunner(
             job_info={
-                "type": DatasetIsValidJobRunner.get_job_type(),
+                "type": ConfigIsValidJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "config": None,
+                    "config": config,
                     "split": None,
                     "revision": "revision",
                 },
@@ -139,25 +148,25 @@ def get_job_runner(
     [
         (
             [
-                UPSTREAM_RESPONSE_CONFIG_1_OK,
-                UPSTREAM_RESPONSE_CONFIG_2_OK,
+                UPSTREAM_RESPONSE_SPLIT_1_OK,
+                UPSTREAM_RESPONSE_SPLIT_2_OK,
             ],
             EXPECTED_COMPLETED_ALL_TRUE,
         ),
         (
             [
-                UPSTREAM_RESPONSE_CONFIG_1_OK,
+                UPSTREAM_RESPONSE_SPLIT_1_OK,
             ],
             EXPECTED_PENDING_ALL_TRUE,
         ),
         (
             [
-                UPSTREAM_RESPONSE_CONFIG_1_ERROR,
-                UPSTREAM_RESPONSE_CONFIG_2_ERROR,
+                UPSTREAM_RESPONSE_SPLIT_1_ERROR,
+                UPSTREAM_RESPONSE_SPLIT_2_ERROR,
             ],
             EXPECTED_COMPLETED_ALL_FALSE,
         ),
-        ([UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER, UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH], EXPECTED_ALL_MIXED),
+        ([UPSTREAM_RESPONSE_SPLIT_1_OK_VIEWER, UPSTREAM_RESPONSE_SPLIT_2_OK_SEARCH], EXPECTED_ALL_MIXED),
         (
             [],
             EXPECTED_PENDING_ALL_FALSE,
@@ -170,11 +179,11 @@ def test_compute(
     upstream_responses: List[UpstreamResponse],
     expected: Any,
 ) -> None:
-    dataset = DATASET
-    upsert_response(**UPSTREAM_RESPONSE_CONFIG_NAMES)
+    dataset, config = DATASET, CONFIG
+    upsert_response(**UPSTREAM_RESPONSE_SPLIT_NAMES)
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
-    job_runner = get_job_runner(dataset, app_config)
+    job_runner = get_job_runner(dataset, config, app_config)
     compute_result = job_runner.compute()
     assert compute_result.content == expected[0]
     assert compute_result.progress == expected[1]

@@ -31,7 +31,7 @@ from libcommon.simple_cache import (
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     get_valid_datasets,
-    is_valid_for_kinds,
+    has_any_successful_response,
     upsert_response,
 )
 
@@ -267,45 +267,45 @@ def test_get_valid_dataset_names_only_invalid_responses() -> None:
     assert not get_valid_datasets(kind=kind)
 
 
-def test_is_valid_for_kinds_empty() -> None:
-    assert not is_valid_for_kinds(dataset="dataset", kinds=[])
+def test_has_any_successful_response_empty() -> None:
+    assert not has_any_successful_response(dataset="dataset", kinds=[])
 
 
-def test_is_valid_for_kinds_two_valid_datasets() -> None:
+def test_has_any_successful_response_two_valid_datasets() -> None:
     kind = "test_kind"
     other_kind = "other_kind"
     dataset_a = "test_dataset_a"
     dataset_b = "test_dataset_b"
     upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert is_valid_for_kinds(dataset=dataset_a, kinds=[kind])
-    assert is_valid_for_kinds(dataset=dataset_b, kinds=[kind])
-    assert not is_valid_for_kinds(dataset=dataset_b, kinds=[other_kind])
-    assert is_valid_for_kinds(dataset=dataset_b, kinds=[kind, other_kind])
+    assert has_any_successful_response(dataset=dataset_a, kinds=[kind])
+    assert has_any_successful_response(dataset=dataset_b, kinds=[kind])
+    assert not has_any_successful_response(dataset=dataset_b, kinds=[other_kind])
+    assert has_any_successful_response(dataset=dataset_b, kinds=[kind, other_kind])
 
 
-def test_is_valid_for_kinds_two_valid_kinds() -> None:
+def test_has_any_successful_response_two_valid_kinds() -> None:
     kind_a = "test_kind_a"
     kind_b = "test_kind_b"
     dataset = "test_dataset"
     upsert_response(kind=kind_a, dataset=dataset, content={}, http_status=HTTPStatus.OK)
     upsert_response(kind=kind_b, dataset=dataset, content={}, http_status=HTTPStatus.OK)
-    assert is_valid_for_kinds(dataset=dataset, kinds=[kind_a, kind_b])
+    assert has_any_successful_response(dataset=dataset, kinds=[kind_a, kind_b])
 
 
-def test_is_valid_for_kinds_at_least_one_valid_response() -> None:
-    kind = "test_kind"
+def test_has_any_successful_response_at_least_one_valid_response() -> None:
+    kind_a = "test_kind_a"
+    kind_b = "test_kind_b"
     dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
+    config = "test_config"
+    upsert_response(kind=kind_a, dataset=dataset, config=config, content={}, http_status=HTTPStatus.OK)
     upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+        kind=kind_b, dataset=dataset, config=config, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
-    assert is_valid_for_kinds(dataset=dataset, kinds=[kind])
+    assert has_any_successful_response(dataset=dataset, config=config, kinds=[kind_a, kind_b])
 
 
-def test_is_valid_for_kinds_only_invalid_responses() -> None:
+def test_has_any_successful_response_only_invalid_responses() -> None:
     kind = "test_kind"
     dataset = "test_dataset"
     config_a = "test_config_a"
@@ -316,7 +316,7 @@ def test_is_valid_for_kinds_only_invalid_responses() -> None:
     upsert_response(
         kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
-    assert not is_valid_for_kinds(dataset=dataset, kinds=[kind])
+    assert not has_any_successful_response(dataset=dataset, kinds=[kind])
 
 
 def test_count_by_status_and_error_code() -> None:
