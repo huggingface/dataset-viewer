@@ -13,7 +13,11 @@ from datasets import Dataset
 from fsspec import AbstractFileSystem
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority
@@ -33,6 +37,7 @@ def get_job_runner(
     parquet_metadata_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
+    metrics_mongo_resource: MetricsMongoResource,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,

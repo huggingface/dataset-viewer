@@ -1,7 +1,12 @@
 from dataclasses import replace
 
+import pytest
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -10,6 +15,16 @@ from worker.job_runner import JobRunner
 from worker.job_runner_factory import BaseJobRunnerFactory
 from worker.loop import Loop
 from worker.resources import LibrariesResource
+
+
+@pytest.fixture(autouse=True)
+def prepare_and_clean_mongo(
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    metrics_mongo_resource: MetricsMongoResource,
+) -> None:
+    # prepare the database before each test, and clean it afterwards
+    pass
 
 
 class DummyJobRunner(JobRunner):
@@ -46,8 +61,6 @@ def test_process_next_job(
     test_processing_step: ProcessingStep,
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
     job_type = test_processing_step.job_type

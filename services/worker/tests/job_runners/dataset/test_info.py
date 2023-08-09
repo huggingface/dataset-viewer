@@ -7,7 +7,11 @@ from typing import Any, Callable, List
 import pytest
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
 
@@ -110,6 +114,7 @@ EXPECTED_PARTIAL_FAILED = (
 def get_job_runner(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
+    metrics_mongo_resource: MetricsMongoResource,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,

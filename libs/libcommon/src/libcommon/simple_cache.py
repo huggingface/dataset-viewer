@@ -37,6 +37,7 @@ from mongoengine.fields import (
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
+from libcommon.metrics import CacheTotalMetricDocument
 from libcommon.utils import JobParams, get_datetime
 
 # START monkey patching ### hack ###
@@ -127,6 +128,19 @@ class CacheEntryDoesNotExistError(DoesNotExist):
     pass
 
 
+def increase_metrics(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
+    CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
+        inc__total=1
+    )
+
+
+def decrease_metrics(records: QuerySet[CachedResponseDocument]) -> None:
+    for record in records:
+        CacheTotalMetricDocument.objects(
+            kind=record.kind, http_status=record.http_status, error_code=record.error_code
+        ).upsert_one(inc__total=-1)
+
+
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
 def upsert_response(
     kind: str,
@@ -142,7 +156,10 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
+    records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
+    decrease_metrics(records=records)
+
+    records.upsert_one(
         content=content,
         http_status=http_status,
         error_code=error_code,
@@ -152,6 +169,7 @@ def upsert_response(
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
     )
+    increase_metrics(kind=kind, http_status=http_status, error_code=error_code)
 
 
 def upsert_response_params(
@@ -184,11 +202,15 @@ def upsert_response_params(
 def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
-    return CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
+    records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
+    decrease_metrics(records=records)
+    return records.delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
-    return CachedResponseDocument.objects(dataset=dataset).delete()
+    records = CachedResponseDocument.objects(dataset=dataset)
+    decrease_metrics(records=records)
+    return records.delete()
 
 
 T = TypeVar("T")

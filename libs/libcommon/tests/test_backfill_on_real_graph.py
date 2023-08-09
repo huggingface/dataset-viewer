@@ -9,7 +9,11 @@ from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import upsert_response
 
 from .utils import (
@@ -31,6 +35,11 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
+
+
+@pytest.fixture(autouse=True)
+def metrics_mongo_resource_autouse(metrics_mongo_resource: MetricsMongoResource) -> MetricsMongoResource:
+    return metrics_mongo_resource
 
 
 def test_plan_job_creation_and_termination() -> None:

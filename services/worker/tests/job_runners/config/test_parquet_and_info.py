@@ -33,7 +33,11 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
@@ -76,11 +80,19 @@ def blocked(app_config: AppConfig, repo_id: str) -> Iterator[None]:
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
 
+@pytest.fixture(autouse=True)
+def prepare_and_clean_mongo(
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    metrics_mongo_resource: MetricsMongoResource,
+) -> None:
+    # prepare the database before each test, and clean it afterwards
+    pass
+
+
 @pytest.fixture
 def get_job_runner(
     libraries_resource: LibrariesResource,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
@@ -670,8 +682,6 @@ GetDatasetConfigNamesJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJo
 @pytest.fixture
 def get_dataset_config_names_job_runner(
     libraries_resource: LibrariesResource,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> GetDatasetConfigNamesJobRunner:
     def _get_job_runner(
         dataset: str,
@@ -746,8 +756,6 @@ def test_concurrency(
     app_config: AppConfig,
     tmp_path: Path,
     get_dataset_config_names_job_runner: GetDatasetConfigNamesJobRunner,
-    queue_mongo_resource: QueueMongoResource,
-    cache_mongo_resource: CacheMongoResource,
 ) -> None:
     """
     Test that multiple job runners (to compute config-parquet-and-info) can run in parallel,
