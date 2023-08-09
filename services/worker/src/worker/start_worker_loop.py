@@ -5,7 +5,11 @@ import sys
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.resources import (
+    CacheMongoResource,
+    MetricsMongoResource,
+    QueueMongoResource,
+)
 from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
@@ -48,11 +52,16 @@ if __name__ == "__main__":
         QueueMongoResource(
             database=app_config.queue.mongo_database, host=app_config.queue.mongo_url
         ) as queue_resource,
+        MetricsMongoResource(
+            database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
+        ) as metrics_resource,
     ):
         if not cache_resource.is_available():
             raise RuntimeError("The connection to the cache database could not be established. Exiting.")
         if not queue_resource.is_available():
             raise RuntimeError("The connection to the queue database could not be established. Exiting.")
+        if not metrics_resource.is_available():
+            raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
         job_runner_factory = JobRunnerFactory(
             app_config=app_config,

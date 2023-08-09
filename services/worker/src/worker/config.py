@@ -10,6 +10,7 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
+    MetricsConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
@@ -323,6 +324,7 @@ class AppConfig:
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
     first_rows: FirstRowsConfig = field(default_factory=FirstRowsConfig)
     log: LogConfig = field(default_factory=LogConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
     numba: NumbaConfig = field(default_factory=NumbaConfig)
     parquet_and_info: ParquetAndInfoConfig = field(default_factory=ParquetAndInfoConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
@@ -343,6 +345,7 @@ class AppConfig:
             datasets_based=DatasetsBasedConfig.from_env(),
             first_rows=FirstRowsConfig.from_env(),
             log=LogConfig.from_env(),
+            metrics=MetricsConfig.from_env(),
             numba=NumbaConfig.from_env(),
             parquet_and_info=ParquetAndInfoConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),

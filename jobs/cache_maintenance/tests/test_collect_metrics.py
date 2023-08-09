@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
 
-from libcommon.metrics import CacheTotalMetricDocument, JobTotalMetricDocument
+from libcommon.metrics import JobTotalMetricDocument
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
@@ -42,10 +42,6 @@ def test_collect_metrics() -> None:
     )
 
     collect_metrics(processing_graph=processing_graph)
-
-    cache_metrics = CacheTotalMetricDocument.objects()
-    assert cache_metrics
-    assert len(cache_metrics) == 1
 
     job_metrics = JobTotalMetricDocument.objects()
     assert job_metrics

@@ -29,7 +29,6 @@ from libcommon.simple_cache import (
     get_response,
     get_response_with_details,
     get_response_without_content,
-    get_responses_count_by_kind_status_and_error_code,
     get_valid_datasets,
     has_any_successful_response,
     upsert_response,
@@ -317,38 +316,6 @@ def test_has_any_successful_response_only_invalid_responses() -> None:
         kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
     assert not has_any_successful_response(dataset=dataset, kinds=[kind])
-
-
-def test_count_by_status_and_error_code() -> None:
-    assert not get_responses_count_by_kind_status_and_error_code()
-
-    upsert_response(
-        kind="test_kind",
-        dataset="test_dataset",
-        content={"key": "value"},
-        http_status=HTTPStatus.OK,
-    )
-
-    assert get_responses_count_by_kind_status_and_error_code() == [
-        {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1}
-    ]
-
-    upsert_response(
-        kind="test_kind2",
-        dataset="test_dataset",
-        config="test_config",
-        split="test_split",
-        content={
-            "key": "value",
-        },
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        error_code="error_code",
-    )
-
-    metrics = get_responses_count_by_kind_status_and_error_code()
-    assert len(metrics) == 2
-    assert {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1} in metrics
-    assert {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1} in metrics
 
 
 def test_get_cache_reports() -> None:

@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Set, Union
 import pandas as pd
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
+from libcommon.metrics import CacheTotalMetricDocument
 from libcommon.processing_graph import (
     ProcessingGraph,
     ProcessingStep,
@@ -681,6 +682,11 @@ class DatasetOrchestrator:
             details=output["details"],
             progress=output["progress"],
         )
+
+        CacheTotalMetricDocument.objects(
+            kind=processing_step.cache_kind, http_status=output["http_status"], error_code=output["error_code"]
+        ).upsert_one(inc__total=1)
+
         logging.debug("the job output has been written to the cache.")
         # finish the job
         Queue().finish_job(job_id=job_info["job_id"], is_success=job_result["is_success"])

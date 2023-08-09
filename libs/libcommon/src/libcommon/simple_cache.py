@@ -494,45 +494,6 @@ class CountEntry(TypedDict):
     count: int
 
 
-def format_group(group: Dict[str, Any]) -> CountEntry:
-    kind = group["kind"]
-    if not isinstance(kind, str):
-        raise TypeError("kind must be a str")
-    http_status = group["http_status"]
-    if not isinstance(http_status, int):
-        raise TypeError("http_status must be an int")
-    error_code = group["error_code"]
-    if not isinstance(error_code, str) and error_code is not None:
-        raise TypeError("error_code must be a str or None")
-    count = group["count"]
-    if not isinstance(count, int):
-        raise TypeError("count must be an int")
-    return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
-
-
-def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
-    groups = CachedResponseDocument.objects().aggregate(
-        [
-            {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
-            {
-                "$group": {
-                    "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
-                    "count": {"$sum": 1},
-                }
-            },
-            {
-                "$project": {
-                    "kind": "$_id.kind",
-                    "http_status": "$_id.http_status",
-                    "error_code": "$_id.error_code",
-                    "count": "$count",
-                }
-            },
-        ]
-    )
-    return [format_group(group) for group in groups]
-
-
 # /cache-reports/... endpoints
 
 
