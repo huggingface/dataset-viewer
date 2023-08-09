@@ -7,7 +7,7 @@ Script to close stale issue. Taken in part from the AllenNLP repository.
 https://github.com/allenai/allennlp.
 Copied from https://github.com/huggingface/transformers
 """
-from datetime import datetime as dt, timezone
+from datetime import datetime as dt
 import os
 
 from github import Github
@@ -27,7 +27,7 @@ def main():
     open_issues = repo.get_issues(state="open")
 
     for issue in open_issues:
-        now = dt.now(timezone.utc)
+        now = dt.utcnow()
         if (
             (now - issue.created_at).days < 30
             or any(label.name.lower() in LABELS_TO_EXEMPT_IN_LOWERCASE for label in issue.get_labels())
