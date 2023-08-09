@@ -681,7 +681,6 @@ class DatasetOrchestrator:
             details=output["details"],
             progress=output["progress"],
         )
-
         logging.debug("the job output has been written to the cache.")
         # finish the job
         Queue().finish_job(job_id=job_info["job_id"], is_success=job_result["is_success"])

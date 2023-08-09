@@ -9,6 +9,7 @@ from libcommon.config import (
     CachedAssetsConfig,
     CommonConfig,
     LogConfig,
+    MetricsConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
@@ -22,6 +23,7 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -34,6 +36,7 @@ class AppConfig:
             cached_assets=CachedAssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
+            metrics=MetricsConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
