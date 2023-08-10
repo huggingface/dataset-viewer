@@ -67,12 +67,14 @@
     "python.formatting.provider": "black",
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "spectral.rulesetFile": ".spectral.yml"
   },
   "extensions": {
     "recommendations": [
       "ms-python.python",
-      "ms-kubernetes-tools.vscode-kubernetes-tools"
+      "ms-kubernetes-tools.vscode-kubernetes-tools",
+      "stoplight.spectral"
     ]
   }
 }
