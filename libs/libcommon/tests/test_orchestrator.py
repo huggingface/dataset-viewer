@@ -167,7 +167,6 @@ def test_finish_job(
             progress=1.0,
         ),
     )
-
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.finish_job(job_result=job_result)
 

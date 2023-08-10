@@ -29,15 +29,6 @@ from worker.resources import LibrariesResource
 _TIME = int(os.environ.get("WORKER_TEST_TIME", int(time.time() * 10e3)))
 
 
-@pytest.fixture(autouse=True)
-def prepare_and_clean_mongo(
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
-) -> None:
-    # prepare the database before each test, and clean it afterwards
-    pass
-
-
 def get_job_info(prefix: str = "base") -> JobInfo:
     job_id = prefix.encode().hex()
     assert len(job_id) <= 24, "please choose a smaller prefix"
@@ -114,7 +105,9 @@ def set_worker_state(worker_state_file_path: str) -> Iterator[WorkerState]:
 
 
 @fixture
-def set_just_started_job_in_queue() -> Iterator[JobDocument]:
+def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info()
     try:
         JobDocument.get(job_id=job_info["job_id"]).delete()
@@ -142,7 +135,11 @@ def set_just_started_job_in_queue() -> Iterator[JobDocument]:
 
 
 @fixture
-def set_long_running_job_in_queue(app_config: AppConfig) -> Iterator[JobDocument]:
+def set_long_running_job_in_queue(
+    app_config: AppConfig, queue_mongo_resource: QueueMongoResource
+) -> Iterator[JobDocument]:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("long")
     try:
         JobDocument.get(job_id=job_info["job_id"]).delete()
@@ -172,7 +169,9 @@ def set_long_running_job_in_queue(app_config: AppConfig) -> Iterator[JobDocument
 
 
 @fixture
-def set_zombie_job_in_queue() -> Iterator[JobDocument]:
+def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("zombie")
     try:
         JobDocument.get(job_id=job_info["job_id"]).delete()
@@ -258,6 +257,7 @@ def test_executor_kill_zombies(
     set_long_running_job_in_queue: JobDocument,
     set_zombie_job_in_queue: JobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
+    cache_mongo_resource: CacheMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
     normal_job = set_just_started_job_in_queue
@@ -283,10 +283,14 @@ def test_executor_kill_zombies(
 
 def test_executor_start(
     executor: WorkerExecutor,
+    queue_mongo_resource: QueueMongoResource,
     set_just_started_job_in_queue: JobDocument,
     set_zombie_job_in_queue: JobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
+    cache_mongo_resource: CacheMongoResource,
 ) -> None:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     zombie = set_zombie_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
     # tmp_dataset_repo_factory(zombie.dataset)
@@ -312,7 +316,11 @@ def test_executor_start(
 @pytest.mark.parametrize(
     "bad_worker_loop_type", ["start_worker_loop_that_crashes", "start_worker_loop_that_times_out"]
 )
-def test_executor_raises_on_bad_worker(executor: WorkerExecutor, tmp_path: Path, bad_worker_loop_type: str) -> None:
+def test_executor_raises_on_bad_worker(
+    executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, tmp_path: Path, bad_worker_loop_type: str
+) -> None:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     bad_start_worker_loop_path = tmp_path / "bad_start_worker_loop.py"
     with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
         bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
@@ -326,10 +334,14 @@ def test_executor_raises_on_bad_worker(executor: WorkerExecutor, tmp_path: Path,
 
 def test_executor_stops_on_long_job(
     executor: WorkerExecutor,
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
     tmp_dataset_repo_factory: Callable[[str], str],
     set_long_running_job_in_queue: JobDocument,
     set_just_started_job_in_queue: JobDocument,
 ) -> None:
+    if not queue_mongo_resource.is_available():
+        raise RuntimeError("Mongo resource is not available")
     long_job = set_long_running_job_in_queue
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(long_job.dataset)
