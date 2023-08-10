@@ -359,8 +359,7 @@ metricsCollector:
 cacheMetricsCollector:
   enabled: true
   action: "collect-cache-metrics"
-  schedule: "0 0 * * *"
-  # at 00:00
+  schedule: "13 00 * * *"
   nodeSelector: {}
   resources:
     requests:
