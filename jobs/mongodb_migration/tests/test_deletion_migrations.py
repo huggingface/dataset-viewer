@@ -3,8 +3,8 @@
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
+    CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
-    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
     METRICS_COLLECTION_JOB_TOTAL_METRIC,
     METRICS_MONGOENGINE_ALIAS,
     QUEUE_COLLECTION_JOBS,
@@ -89,11 +89,11 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
     ):
         db = get_db(METRICS_MONGOENGINE_ALIAS)
         db[METRICS_COLLECTION_JOB_TOTAL_METRIC].insert_many([{"queue": job_type, "status": "waiting", "total": 0}])
-        db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].insert_many([{"kind": cache_kind, "http_status": 400, "total": 0}])
+        db[CACHE_METRICS_COLLECTION].insert_many([{"kind": cache_kind, "http_status": 400, "total": 0}])
         assert db[METRICS_COLLECTION_JOB_TOTAL_METRIC].find_one(
             {"queue": job_type}
         )  # Ensure there is at least one record to delete
-        assert db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].find_one(
+        assert db[CACHE_METRICS_COLLECTION].find_one(
             {"kind": cache_kind}
         )  # Ensure there is at least one record to delete
 
@@ -108,12 +108,10 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
         assert not db[METRICS_COLLECTION_JOB_TOTAL_METRIC].find_one(
             {"queue": job_type}
         )  # Ensure 0 records after deletion
-        assert not db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].find_one(
-            {"kind": cache_kind}
-        )  # Ensure 0 records after deletion
+        assert not db[CACHE_METRICS_COLLECTION].find_one({"kind": cache_kind})  # Ensure 0 records after deletion
 
         db[METRICS_COLLECTION_JOB_TOTAL_METRIC].drop()
-        db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].drop()
+        db[CACHE_METRICS_COLLECTION].drop()
 
 
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
