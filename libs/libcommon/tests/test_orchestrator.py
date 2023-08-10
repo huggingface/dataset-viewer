@@ -6,15 +6,10 @@ from typing import List
 
 import pytest
 
-from libcommon.metrics import CacheTotalMetricDocument
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, upsert_response_params
 from libcommon.utils import JobOutput, JobResult, Priority, Status
 
@@ -55,11 +50,6 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-@pytest.fixture(autouse=True)
-def metrics_mongo_resource_autouse(metrics_mongo_resource: MetricsMongoResource) -> MetricsMongoResource:
-    return metrics_mongo_resource
 
 
 @pytest.mark.parametrize(
@@ -178,15 +168,8 @@ def test_finish_job(
         ),
     )
 
-    assert CacheTotalMetricDocument.objects().count() == 0
-
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.finish_job(job_result=job_result)
-
-    cache_metrics = CacheTotalMetricDocument.objects()
-    assert cache_metrics.count() > 0
-    for cache_metric in cache_metrics:
-        assert cache_metric.total == 1
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
 

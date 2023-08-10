@@ -4,14 +4,9 @@
 from pathlib import Path
 from typing import Iterator
 
-from libcommon.metrics import _clean_metrics_database
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
     StrPath,
@@ -74,7 +69,6 @@ def set_env_vars(
     mp = MonkeyPatch()
     mp.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     mp.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
-    mp.setenv("METRICS_MONGO_DATABASE", "datasets_server_metrics_test")
     mp.setenv("COMMON_HF_ENDPOINT", CI_HUB_ENDPOINT)
     mp.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
@@ -116,15 +110,6 @@ def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()
-
-
-@fixture
-def metrics_mongo_resource(app_config: AppConfig) -> Iterator[MetricsMongoResource]:
-    with MetricsMongoResource(
-        database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
-    ) as resource:
-        yield resource
-        _clean_metrics_database()
 
 
 @fixture

@@ -16,7 +16,8 @@ from prometheus_client import (
 from prometheus_client.multiprocess import MultiProcessCollector
 from psutil import disk_usage
 
-from libcommon.metrics import CacheTotalMetricDocument, JobTotalMetricDocument
+from libcommon.metrics import JobTotalMetricDocument
+from libcommon.simple_cache import CacheTotalMetricDocument
 from libcommon.storage import StrPath
 
 

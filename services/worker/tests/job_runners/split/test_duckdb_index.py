@@ -10,11 +10,7 @@ import duckdb
 import pytest
 import requests
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority
@@ -36,7 +32,6 @@ def get_job_runner(
     duckdb_index_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
@@ -90,7 +85,6 @@ def get_parquet_job_runner(
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> GetParquetJobRunner:
     def _get_job_runner(
         dataset: str,

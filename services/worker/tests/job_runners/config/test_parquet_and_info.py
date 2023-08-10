@@ -33,11 +33,7 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
@@ -84,7 +80,6 @@ GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 def prepare_and_clean_mongo(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> None:
     # prepare the database before each test, and clean it afterwards
     pass

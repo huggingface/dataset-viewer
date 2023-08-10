@@ -6,11 +6,7 @@ import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobDocument, Queue
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
@@ -26,7 +22,6 @@ from .fixtures.hub import get_default_config_split
 def prepare_and_clean_mongo(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> None:
     # prepare the database before each test, and clean it afterwards
     pass

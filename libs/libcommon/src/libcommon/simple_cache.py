@@ -36,8 +36,11 @@ from mongoengine.fields import (
 )
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
-from libcommon.metrics import CacheTotalMetricDocument
+from libcommon.constants import (
+    CACHE_COLLECTION_RESPONSES,
+    CACHE_METRICS_COLLECTION,
+    CACHE_MONGOENGINE_ALIAS,
+)
 from libcommon.utils import JobParams, get_datetime
 
 # START monkey patching ### hack ###
@@ -116,6 +119,36 @@ class CachedResponseDocument(Document):
     objects = QuerySetManager["CachedResponseDocument"]()
 
 
+DEFAULT_INCREASE_AMOUNT = 1
+DEFAULT_DECREASE_AMOUNT = -1
+
+
+class CacheTotalMetricDocument(Document):
+    """Cache total metric in the mongoDB database, used to compute prometheus metrics.
+
+    Args:
+        kind (`str`): kind name
+        http_status (`int`): cache http_status
+        error_code (`str`): error code name
+        total (`int`): total of jobs
+        created_at (`datetime`): when the metric has been created.
+    """
+
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
+    kind = StringField(required=True)
+    http_status = IntField(required=True)
+    error_code = StringField()
+    total = IntField(required=True, default=0)
+    created_at = DateTimeField(default=get_datetime)
+
+    meta = {
+        "collection": CACHE_METRICS_COLLECTION,
+        "db_alias": CACHE_MONGOENGINE_ALIAS,
+        "indexes": [("kind", "http_status", "error_code")],
+    }
+    objects = QuerySetManager["CacheTotalMetricDocument"]()
+
+
 # Fix issue with mongoengine: https://github.com/MongoEngine/mongoengine/issues/1242#issuecomment-810501601
 # mongoengine automatically sets "config" and "splits" as required fields, because they are listed in the unique_with
 # field of the "kind" field. But it's an error, since unique indexes (which are used to enforce unique_with) accept
@@ -128,17 +161,10 @@ class CacheEntryDoesNotExistError(DoesNotExist):
     pass
 
 
-def increase_metrics(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
+def update_metrics(kind: str, http_status: HTTPStatus, inc__total: int, error_code: Optional[str] = None) -> None:
     CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
-        inc__total=1
+        inc__total=inc__total
     )
-
-
-def decrease_metrics(records: QuerySet[CachedResponseDocument]) -> None:
-    for record in records:
-        CacheTotalMetricDocument.objects(
-            kind=record.kind, http_status=record.http_status, error_code=record.error_code
-        ).upsert_one(inc__total=-1)
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
@@ -157,7 +183,18 @@ def upsert_response(
     updated_at: Optional[datetime] = None,
 ) -> None:
     records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    decrease_metrics(records=records)
+    if records.count() > 1:
+        raise Exception(
+            "There should not exist more than one previous record for combination kind-dataset-config-split"
+        )
+    previous_record = records.first()
+    if previous_record is not None:
+        update_metrics(
+            kind=kind,
+            http_status=previous_record.http_status,
+            error_code=previous_record.error_code,
+            inc__total=DEFAULT_DECREASE_AMOUNT,
+        )
 
     records.upsert_one(
         content=content,
@@ -169,7 +206,7 @@ def upsert_response(
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
     )
-    increase_metrics(kind=kind, http_status=http_status, error_code=error_code)
+    update_metrics(kind=kind, http_status=http_status, error_code=error_code, inc__total=DEFAULT_INCREASE_AMOUNT)
 
 
 def upsert_response_params(
@@ -203,13 +240,31 @@ def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
     records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    decrease_metrics(records=records)
+    if records.count() > 1:
+        raise Exception(
+            "There should not exist more than one previous record for combination kind-dataset-config-split"
+        )
+    previous_record = records.first()
+    if previous_record is not None:
+        update_metrics(
+            kind=kind,
+            http_status=previous_record.http_status,
+            error_code=previous_record.error_code,
+            inc__total=DEFAULT_DECREASE_AMOUNT,
+        )
+
     return records.delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
     records = CachedResponseDocument.objects(dataset=dataset)
-    decrease_metrics(records=records)
+    for record in records:
+        update_metrics(
+            kind=record.kind,
+            http_status=record.http_status,
+            error_code=record.error_code,
+            inc__total=DEFAULT_DECREASE_AMOUNT,
+        )
     return records.delete()
 
 
@@ -516,6 +571,45 @@ class CountEntry(TypedDict):
     count: int
 
 
+def format_group(group: Dict[str, Any]) -> CountEntry:
+    kind = group["kind"]
+    if not isinstance(kind, str):
+        raise TypeError("kind must be a str")
+    http_status = group["http_status"]
+    if not isinstance(http_status, int):
+        raise TypeError("http_status must be an int")
+    error_code = group["error_code"]
+    if not isinstance(error_code, str) and error_code is not None:
+        raise TypeError("error_code must be a str or None")
+    count = group["count"]
+    if not isinstance(count, int):
+        raise TypeError("count must be an int")
+    return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
+
+
+def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
+    groups = CachedResponseDocument.objects().aggregate(
+        [
+            {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
+            {
+                "$group": {
+                    "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
+                    "count": {"$sum": 1},
+                }
+            },
+            {
+                "$project": {
+                    "kind": "$_id.kind",
+                    "http_status": "$_id.http_status",
+                    "error_code": "$_id.error_code",
+                    "count": "$count",
+                }
+            },
+        ]
+    )
+    return [format_group(group) for group in groups]
+
+
 # /cache-reports/... endpoints
 
 
@@ -797,3 +891,4 @@ def fetch_names(
 # only for the tests
 def _clean_cache_database() -> None:
     CachedResponseDocument.drop_collection()  # type: ignore
+    CacheTotalMetricDocument.drop_collection()  # type: ignore

@@ -13,11 +13,7 @@ import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority, Status, get_datetime
@@ -37,7 +33,6 @@ _TIME = int(os.environ.get("WORKER_TEST_TIME", int(time.time() * 10e3)))
 def prepare_and_clean_mongo(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> None:
     # prepare the database before each test, and clean it afterwards
     pass

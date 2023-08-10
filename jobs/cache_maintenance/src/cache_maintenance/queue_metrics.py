@@ -8,7 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 
 
-def collect_metrics(processing_graph: ProcessingGraph) -> None:
+def collect_queue_metrics(processing_graph: ProcessingGraph) -> None:
     logging.info("collecting jobs metrics")
     queue = Queue()
     for processing_step in processing_graph.get_processing_steps():

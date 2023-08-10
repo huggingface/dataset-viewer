@@ -2,11 +2,7 @@ from dataclasses import replace
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -21,7 +17,6 @@ from worker.resources import LibrariesResource
 def prepare_and_clean_mongo(
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> None:
     # prepare the database before each test, and clean it afterwards
     pass

@@ -8,11 +8,7 @@ import pytest
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority, Status, get_datetime
 
 from .utils import (
@@ -68,11 +64,6 @@ def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> Qu
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-@pytest.fixture(autouse=True)
-def metrics_mongo_resource_autouse(metrics_mongo_resource: MetricsMongoResource) -> MetricsMongoResource:
-    return metrics_mongo_resource
 
 
 @pytest.mark.parametrize(

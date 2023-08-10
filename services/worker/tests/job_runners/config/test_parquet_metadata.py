@@ -16,11 +16,7 @@ from huggingface_hub import hf_hub_url
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.parquet_utils import ParquetIndexWithMetadata
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority, SplitHubFile
@@ -54,7 +50,6 @@ def get_job_runner(
     parquet_metadata_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    metrics_mongo_resource: MetricsMongoResource,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,

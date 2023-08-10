@@ -343,9 +343,24 @@ deleteIndexes:
 
 
 metricsCollector:
+  enabled: true
   action: "collect-metrics"
   schedule: "*/5 * * * *"
   # every five minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
+cacheMetricsCollector:
+  enabled: true
+  action: "collect-cache-metrics"
+  schedule: "0 0 * * *"
+  # at 00:00
   nodeSelector: {}
   resources:
     requests:

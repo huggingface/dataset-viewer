@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- if .Values.images.jobs.cacheMaintenance }}
+{{- if and .Values.images.jobs.cacheMaintenance .Values.metricsCollector.enabled}}
 apiVersion: batch/v1
 kind: CronJob
 metadata:

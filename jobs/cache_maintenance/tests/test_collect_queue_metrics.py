@@ -9,10 +9,10 @@ from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Status
 
-from cache_maintenance.metrics import collect_metrics
+from cache_maintenance.queue_metrics import collect_queue_metrics
 
 
-def test_collect_metrics() -> None:
+def test_collect_queue_metrics() -> None:
     dataset = "test_dataset"
     config = None
     split = None
@@ -41,7 +41,7 @@ def test_collect_metrics() -> None:
         http_status=HTTPStatus.OK,
     )
 
-    collect_metrics(processing_graph=processing_graph)
+    collect_queue_metrics(processing_graph=processing_graph)
 
     job_metrics = JobTotalMetricDocument.objects()
     assert job_metrics
