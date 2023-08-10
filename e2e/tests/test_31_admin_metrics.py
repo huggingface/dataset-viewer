@@ -36,4 +36,4 @@ def test_metrics() -> None:
         name="assets_disk_usage",
         labels={"type": "total", "pid": "[0-9]*"},
         metric_names=metric_names,
-    ), f"assets_disk_usage"
+    ), "assets_disk_usage"
