@@ -17,7 +17,7 @@ from libcommon.exceptions import (
     SplitNamesFromStreamingError,
 )
 
-from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
+from worker.dtos import CompleteJobResult, FullSplitItem, JobRunnerInfo, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 
 
@@ -59,7 +59,7 @@ def compute_split_names_from_streaming_response(
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:
-        split_name_items: List[SplitItem] = [
+        split_name_items: List[FullSplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}
             for split in get_dataset_split_names(path=dataset, config_name=config, token=hf_token)
         ]

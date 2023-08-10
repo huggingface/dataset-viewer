@@ -87,7 +87,7 @@ class OptInOutUrlsCountResponse(TypedDict):
     num_urls: int
     num_scanned_rows: int
     has_urls_columns: bool
-    full_scan: bool
+    full_scan: Union[bool, None]
 
 
 class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
