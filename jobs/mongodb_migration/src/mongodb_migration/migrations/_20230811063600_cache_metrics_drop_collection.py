@@ -21,9 +21,9 @@ class MigrationDropCacheMetricsCollection(Migration):
         raise IrreversibleMigrationError("This migration does not support rollback")
 
     def validate(self) -> None:
-        logging.info("Check that collection does not exist")
+        logging.info("check that collection does not exist")
 
         db = get_db(METRICS_MONGOENGINE_ALIAS)
         collections = db.list_collection_names()  # type: ignore
         if CACHE_METRICS_COLLECTION in collections:
-            raise ValueError(f"Found collection with name {CACHE_METRICS_COLLECTION}")
+            raise ValueError(f"found collection with name {CACHE_METRICS_COLLECTION}")

@@ -132,31 +132,3 @@ class MigrationQueueDeleteTTLIndex(BaseQueueMigration):
         ttl_index_names = get_index_names(index_information=collection.index_information(), field_name=self.field_name)
         if len(ttl_index_names) > 0:
             raise ValueError(f"Found TTL index for field {self.field_name}")
-
-
-class CacheMetricsDeletionMigration(MetricsMigration):
-    def __init__(self, job_type: str, cache_kind: str, version: str, description: Optional[str] = None):
-        if not description:
-            description = f"delete the queue and cache metrics for step '{job_type}'"
-        super().__init__(job_type=job_type, cache_kind=cache_kind, version=version, description=description)
-
-    def up(self) -> None:
-        logging.info(f"Delete job metrics of type {self.job_type}")
-
-        db = get_db(self.MONGOENGINE_ALIAS)
-        result = db[self.COLLECTION_JOB_TOTAL_METRIC].delete_many({"queue": self.job_type})
-        logging.info(f"{result.deleted_count} deleted job metrics")
-        result = db[self.COLLECTION_CACHE_TOTAL_METRIC].delete_many({"kind": self.cache_kind})
-        logging.info(f"{result.deleted_count} deleted cache metrics")
-
-    def down(self) -> None:
-        raise IrreversibleMigrationError("This migration does not support rollback")
-
-    def validate(self) -> None:
-        logging.info(f"Check that none of the documents has the {self.job_type} type or {self.cache_kind} kind")
-
-        db = get_db(self.MONGOENGINE_ALIAS)
-        if db[self.COLLECTION_JOB_TOTAL_METRIC].count_documents({"queue": self.job_type}):
-            raise ValueError(f"Found documents with type {self.job_type}")
-        if db[self.COLLECTION_CACHE_TOTAL_METRIC].count_documents({"kind": self.cache_kind}):
-            raise ValueError(f"Found documents with kind {self.cache_kind}")

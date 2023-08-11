@@ -28,3 +28,10 @@ def test_collect_cache_metrics() -> None:
     cache_metrics = CacheTotalMetricDocument.objects()
     assert cache_metrics
     assert len(cache_metrics) == 1
+
+    metric = cache_metrics.first()
+    assert metric is not None
+    assert metric.kind == kind
+    assert metric.error_code is None
+    assert metric.http_status == HTTPStatus.OK
+    assert metric.total == 1

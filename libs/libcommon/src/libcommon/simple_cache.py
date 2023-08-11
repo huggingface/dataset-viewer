@@ -24,7 +24,7 @@ import pandas as pd
 from bson import ObjectId
 from bson.errors import InvalidId
 from mongoengine import Document
-from mongoengine.errors import DoesNotExist
+from mongoengine.errors import DoesNotExist, MultipleObjectsReturned
 from mongoengine.fields import (
     DateTimeField,
     DictField,
@@ -161,10 +161,29 @@ class CacheEntryDoesNotExistError(DoesNotExist):
     pass
 
 
+class MultipleCacheError(MultipleObjectsReturned):
+    pass
+
+
 def update_metrics(kind: str, http_status: HTTPStatus, inc__total: int, error_code: Optional[str] = None) -> None:
     CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
         inc__total=inc__total
     )
+
+
+def decrease_metrics(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> None:
+    query_set = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
+    if query_set.count() > 1:
+        raise MultipleCacheError("There should exist only one record for combination kind-dataset-config-split")
+
+    existing_cache = query_set.first()
+    if existing_cache is not None:
+        update_metrics(
+            kind=kind,
+            http_status=existing_cache.http_status,
+            error_code=existing_cache.error_code,
+            inc__total=DEFAULT_DECREASE_AMOUNT,
+        )
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
@@ -182,21 +201,8 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    if records.count() > 1:
-        raise Exception(
-            "There should not exist more than one previous record for combination kind-dataset-config-split"
-        )
-    previous_record = records.first()
-    if previous_record is not None:
-        update_metrics(
-            kind=kind,
-            http_status=previous_record.http_status,
-            error_code=previous_record.error_code,
-            inc__total=DEFAULT_DECREASE_AMOUNT,
-        )
-
-    records.upsert_one(
+    decrease_metrics(kind=kind, dataset=dataset, config=config, split=split)
+    CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
         error_code=error_code,
@@ -239,33 +245,20 @@ def upsert_response_params(
 def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
-    records = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    if records.count() > 1:
-        raise Exception(
-            "There should not exist more than one previous record for combination kind-dataset-config-split"
-        )
-    previous_record = records.first()
-    if previous_record is not None:
-        update_metrics(
-            kind=kind,
-            http_status=previous_record.http_status,
-            error_code=previous_record.error_code,
-            inc__total=DEFAULT_DECREASE_AMOUNT,
-        )
-
-    return records.delete()
+    decrease_metrics(kind=kind, dataset=dataset, config=config, split=split)
+    return CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
-    records = CachedResponseDocument.objects(dataset=dataset)
-    for record in records:
+    existing_cache = CachedResponseDocument.objects(dataset=dataset)
+    for cache in existing_cache:
         update_metrics(
-            kind=record.kind,
-            http_status=record.http_status,
-            error_code=record.error_code,
+            kind=cache.kind,
+            http_status=cache.http_status,
+            error_code=cache.error_code,
             inc__total=DEFAULT_DECREASE_AMOUNT,
         )
-    return records.delete()
+    return existing_cache.delete()
 
 
 T = TypeVar("T")
