@@ -202,19 +202,6 @@ queueMetricsCollector:
       memory: "512Mi"
   tolerations: []
 
-cacheMetricsCollector:
-  action: "collect-cache-metrics"
-  schedule: "*/10 * * * *"
-  # every ten minutes first time, then it will be changed to default
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 1
-    limits:
-      cpu: 1
-      memory: "512Mi"
-  tolerations: []
-
 # --- storage admin (to manually inspect the storage, in /data) ---
 
 storageAdmin:
