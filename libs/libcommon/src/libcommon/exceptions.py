@@ -139,35 +139,35 @@ class CacheableError(CustomError):
 
 
 class CacheDirectoryNotInitializedError(CacheableError):
-    """Raised when the cache directory has not been initialized before job compute."""
+    """The cache directory has not been initialized before job compute."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "CacheDirectoryNotInitializedError", cause, True)
 
 
 class ConfigNamesError(CacheableError):
-    """Raised when the config names could not be fetched."""
+    """The config names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
 
 
 class CreateCommitError(CacheableError):
-    """Raised when a commit could not be created on the Hub."""
+    """A commit could not be created on the Hub."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
 
 
 class DatasetInBlockListError(CacheableError):
-    """Raised when the dataset is in the list of blocked datasets."""
+    """The dataset is in the list of blocked datasets."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
 class DatasetInfoHubRequestError(CacheableError):
-    """Raised when the request to the Hub's dataset-info endpoint times out."""
+    """The request to the Hub's dataset-info endpoint times out."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -180,21 +180,21 @@ class DatasetInfoHubRequestError(CacheableError):
 
 
 class DatasetManualDownloadError(CacheableError):
-    """Raised when the dataset requires manual download."""
+    """The dataset requires manual download."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetManualDownloadError", cause, True)
 
 
 class DatasetModuleNotInstalledError(CacheableError):
-    """Raised when the dataset tries to import a module that is not installed."""
+    """The dataset tries to import a module that is not installed."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetModuleNotInstalledError", cause, True)
 
 
 class DatasetNotFoundError(CacheableError):
-    """Raised when the dataset does not exist."""
+    """The dataset does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -207,42 +207,42 @@ class DatasetNotFoundError(CacheableError):
 
 
 class DatasetRevisionEmptyError(CacheableError):
-    """Raised when the current git revision (branch, commit) could not be obtained."""
+    """The current git revision (branch, commit) could not be obtained."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetRevisionEmptyError", cause, False)
 
 
 class DatasetRevisionNotFoundError(CacheableError):
-    """Raised when the revision of a dataset repository does not exist."""
+    """The revision of a dataset repository does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
 class DatasetWithTooManyConfigsError(CacheableError):
-    """Raised when the number of configs of a dataset exceeded the limit."""
+    """The number of configs of a dataset exceeded the limit."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
 
 
 class DatasetWithTooManyParquetFilesError(CacheableError):
-    """Raised when the number of parquet files of a dataset is too big."""
+    """The number of parquet files of a dataset is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyParquetFilesError", cause, True)
 
 
 class DuckDBIndexFileNotFoundError(CacheableError):
-    """Raised when no duckdb index file was found for split."""
+    """No duckdb index file was found for split."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DuckDBIndexFileNotFoundError", cause, False)
 
 
 class DisabledViewerError(CacheableError):
-    """Raised when the dataset viewer is disabled."""
+    """The dataset viewer is disabled."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -255,70 +255,70 @@ class DisabledViewerError(CacheableError):
 
 
 class EmptyDatasetError(CacheableError):
-    """Raised when the dataset has no data."""
+    """The dataset has no data."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "EmptyDatasetError", cause, True)
 
 
 class ExternalFilesSizeRequestConnectionError(CacheableError):
-    """Raised when we failed to get the size of the external files."""
+    """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
 
 
 class ExternalFilesSizeRequestError(CacheableError):
-    """Raised when we failed to get the size of the external files."""
+    """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, True)
 
 
 class ExternalFilesSizeRequestHTTPError(CacheableError):
-    """Raised when we failed to get the size of the external files."""
+    """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
 
 
 class ExternalFilesSizeRequestTimeoutError(CacheableError):
-    """Raised when we failed to get the size of the external files."""
+    """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
 
 
 class ExternalServerError(CacheableError):
-    """Raised when the spawning.ai server is not responding."""
+    """The spawning.ai server is not responding."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ExternalServerError", cause, False)
 
 
 class FeaturesError(CacheableError):
-    """Raised when the features could not be fetched."""
+    """The features could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
 class FileSystemError(CacheableError):
-    """Raised when an error happen reading from File System."""
+    """An error happen reading from File System."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
 
 
 class InfoError(CacheableError):
-    """Raised when the info could not be fetched."""
+    """The info could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "InfoError", cause, True)
 
 
 class JobManagerCrashedError(CacheableError):
-    """Raised when the job runner crashed and the job became a zombie."""
+    """The job runner crashed and the job became a zombie."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -331,7 +331,7 @@ class JobManagerCrashedError(CacheableError):
 
 
 class JobManagerExceededMaximumDurationError(CacheableError):
-    """Raised when the job runner was killed because the job exceeded the maximum duration."""
+    """The job runner was killed because the job exceeded the maximum duration."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -344,47 +344,47 @@ class JobManagerExceededMaximumDurationError(CacheableError):
 
 
 class LockedDatasetTimeoutError(CacheableError):
-    """Raised when a dataset is locked by another job."""
+    """A dataset is locked by another job."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "LockedDatasetTimeoutError", cause, True)
 
 
 class MissingSpawningTokenError(CacheableError):
-    """Raised when the spawning.ai token is not set."""
+    """The spawning.ai token is not set."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "MissingSpawningTokenError", cause, False)
 
 
 class NormalRowsError(CacheableError):
-    """Raised when the rows could not be fetched in normal mode."""
+    """The rows could not be fetched in normal mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
 
 
 class NoIndexableColumnsError(CacheableError):
-    """Raised when split does not have string columns to index."""
+    """The split does not have string columns to index."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
 
 
 class NoSupportedFeaturesError(CacheableError):
-    """Raised when dataset does not have any features which types are supported by a worker's processing pipeline."""
+    """The dataset does not have any features which types are supported by a worker's processing pipeline."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoSupportedFeaturesError", cause, True)
 
 
 class ParameterMissingError(CacheableError):
-    """Raised when request is missing some parameter."""
+    """The request is missing some parameter."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message=message,
-            status_code=HTTPStatus.BAD_REQUEST,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             code="ParameterMissingError",
             cause=cause,
             disclose_cause=False,
@@ -392,28 +392,28 @@ class ParameterMissingError(CacheableError):
 
 
 class ParquetResponseEmptyError(CacheableError):
-    """Raised when no parquet files were found for split."""
+    """No parquet files were found for split."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
 
 
 class PreviousStepFormatError(CacheableError):
-    """Raised when the content of the previous step has not the expected format."""
+    """The content of the previous step has not the expected format."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepFormatError", cause, False)
 
 
 class PreviousStepStatusError(CacheableError):
-    """Raised when the previous step gave an error. The job should not have been created."""
+    """The previous step gave an error. The job should not have been created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
 class ResponseAlreadyComputedError(CacheableError):
-    """Raised when response has been already computed by another job runner."""
+    """The response has been already computed by another job runner."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -426,28 +426,28 @@ class ResponseAlreadyComputedError(CacheableError):
 
 
 class RowsPostProcessingError(CacheableError):
-    """Raised when the rows could not be post-processed successfully."""
+    """The rows could not be post-processed successfully."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "RowsPostProcessingError", cause, False)
 
 
 class SplitsNamesError(CacheableError):
-    """Raised when the split names could not be fetched."""
+    """The split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitsNamesError", cause, True)
 
 
 class SplitNamesFromStreamingError(CacheableError):
-    """Raised when the split names could not be fetched."""
+    """The split names could not be fetched."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitNamesFromStreamingError", cause, True)
 
 
 class SplitNotFoundError(CacheableError):
-    """Raised when the split does not exist."""
+    """The split does not exist."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -460,21 +460,21 @@ class SplitNotFoundError(CacheableError):
 
 
 class SplitWithTooBigParquetError(CacheableError):
-    """Raised when the split parquet size (sum of parquet sizes given) is too big."""
+    """The split parquet size (sum of parquet sizes given) is too big."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
 
 
 class StreamingRowsError(CacheableError):
-    """Raised when the rows could not be fetched in streaming mode."""
+    """The rows could not be fetched in streaming mode."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "StreamingRowsError", cause, True)
 
 
 class TooBigContentError(CacheableError):
-    """Raised when content size in bytes is bigger than the supported value."""
+    """The content size in bytes is bigger than the supported value."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -487,14 +487,14 @@ class TooBigContentError(CacheableError):
 
 
 class TooManyColumnsError(CacheableError):
-    """Raised when the dataset exceeded the max number of columns."""
+    """The dataset exceeded the max number of columns."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
 
 
 class UnexpectedError(CacheableError):
-    """Raised when the job runner raised an unexpected error."""
+    """The job runner raised an unexpected error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
@@ -508,14 +508,14 @@ class UnexpectedError(CacheableError):
 
 
 class UnsupportedExternalFilesError(CacheableError):
-    """Raised when we failed to get the size of the external files."""
+    """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
 
 
 class StatisticsComputationError(CacheableError):
-    """Raised in case of unexpected behaviour / errors during statistics computations."""
+    """An unexpected behavior or error occurred during statistics computations."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ComputationError", cause, True)

@@ -79,8 +79,9 @@ def poll_parquet(dataset: str, headers: Optional[Headers] = None) -> Response:
     return poll(f"/parquet?dataset={dataset}", error_field="error", headers=headers)
 
 
-def poll_splits(dataset: str, headers: Optional[Headers] = None) -> Response:
-    return poll(f"/splits?dataset={dataset}", error_field="error", headers=headers)
+def poll_splits(dataset: str, config: Optional[str], headers: Optional[Headers] = None) -> Response:
+    config_query = f"&config={config}" if config else ""
+    return poll(f"/splits?dataset={dataset}{config_query}", error_field="error", headers=headers)
 
 
 def poll_first_rows(dataset: str, config: str, split: str, headers: Optional[Headers] = None) -> Response:
@@ -92,9 +93,27 @@ def get_openapi_body_example(path: str, status: int, example_name: str) -> Any:
     openapi_filename = root / "docs" / "source" / "openapi.json"
     with open(openapi_filename) as json_file:
         openapi = json.load(json_file)
-    return openapi["paths"][path]["get"]["responses"][str(status)]["content"]["application/json"]["examples"][
-        example_name
-    ]["value"]
+    steps = [
+        "paths",
+        path,
+        "get",
+        "responses",
+        str(status),
+        "content",
+        "application/json",
+        "examples",
+        example_name,
+        "value",
+    ]
+    result = openapi
+    for step in steps:
+        if "$ref" in result:
+            new_steps = result["$ref"].split("/")[1:]
+            result = openapi
+            for new_step in new_steps:
+                result = result[new_step]
+        result = result[step]
+    return result
 
 
 def get_default_config_split() -> Tuple[str, str]:

@@ -11,7 +11,7 @@ from libcommon.constants import (
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
-from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitItem, SplitsList
+from worker.dtos import CompleteJobResult, FullSplitItem, JobRunnerInfo, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
@@ -45,7 +45,7 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
     except Exception as e:
         raise PreviousStepFormatError("Previous step 'config-info' did not return the expected content.") from e
 
-    split_name_items: List[SplitItem] = [
+    split_name_items: List[FullSplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 

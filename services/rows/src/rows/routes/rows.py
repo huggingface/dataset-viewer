@@ -3,7 +3,7 @@
 
 import logging
 import random
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import pyarrow as pa
 from datasets import Audio, Features, Value
@@ -29,6 +29,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError
 from libcommon.storage import StrPath
+from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
@@ -57,14 +58,14 @@ def create_response(
     features: Features,
     unsupported_columns: List[str],
     num_total_rows: int,
-) -> Any:
+) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
-    return {
-        "features": to_features_list(features),
-        "rows": to_rows_list(
+    return PaginatedResponse(
+        features=to_features_list(features),
+        rows=to_rows_list(
             pa_table,
             dataset,
             config,
@@ -75,8 +76,8 @@ def create_response(
             features,
             unsupported_columns,
         ),
-        "num_total_rows": num_total_rows,
-    }
+        num_total_rows=num_total_rows,
+    )
 
 
 def create_rows_endpoint(

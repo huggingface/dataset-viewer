@@ -76,24 +76,24 @@ class SplitHubFile(TypedDict):
     size: int
 
 
+Row = Dict[str, Any]
+
+
 class RowItem(TypedDict):
     row_idx: int
-    row: Mapping[str, Any]
+    row: Row
     truncated_cells: List[str]
-
-
-Row = Dict[str, Any]
 
 
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Row
+    type: Dict[str, Any]
 
 
 class PaginatedResponse(TypedDict):
     features: List[FeatureItem]
-    rows: Any
+    rows: List[RowItem]
     num_total_rows: int
 
 

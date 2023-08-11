@@ -71,7 +71,6 @@ images:
       repository: datasets-server-services-worker
       tag: sha-fb3399a
 
-
 common:
   # URL of the HuggingFace Hub
   hfEndpoint: ""
@@ -87,7 +86,7 @@ secrets:
     enabled: false
     secretName: ""
     secretStoreName: ""
-    parameters: { }
+    parameters: {}
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"
@@ -211,13 +210,13 @@ optInOutUrlsScan:
   columnsMaxNumber: 10
   # the max number of columns to scan
   maxConcurrentRequestsNumber: 10
-  # the max concurrent request number 
+  # the max concurrent request number
   maxRequestsPerSecond: 20
   # the max number of request allowed to process in parallel per second
   rowsMaxNumber: 1_000
   # the max number of rows to scan
   urlsNumberPerBatch: 1_000
-  # the number of grouped urls to be send in every request to spawning 
+  # the number of grouped urls to be send in every request to spawning
   spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
   # the URL for spawning requests
 
@@ -245,7 +244,6 @@ cachedAssets:
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
 
-
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/storage/parquet-metadata"
@@ -263,7 +261,7 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
-  # the time interval at which a downloaded index will be considered as expired and will be deleted 
+  # the time interval at which a downloaded index will be considered as expired and will be deleted
   expiredTimeIntervalSeconds: 600
 
 descriptiveStatistics:
@@ -324,7 +322,6 @@ backfill:
       cpu: 0
   tolerations: []
 
-
 deleteIndexes:
   enabled: true
   log:
@@ -341,7 +338,6 @@ deleteIndexes:
       cpu: 0
   tolerations: []
 
-
 queueMetricsCollector:
   enabled: true
   action: "collect-queue-metrics"
@@ -354,7 +350,6 @@ queueMetricsCollector:
     limits:
       cpu: 0
   tolerations: []
-
 
 cacheMetricsCollector:
   enabled: true
@@ -542,8 +537,7 @@ search:
   tolerations: []
 
 workers:
-  -
-    # name of the deployment
+  - # name of the deployment
     deployName: "all"
     # max difficulty of the jobs that this worker will process
     workerDifficultyMax: 100

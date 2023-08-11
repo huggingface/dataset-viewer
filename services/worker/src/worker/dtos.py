@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict, Union
 
 from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 
@@ -40,25 +40,36 @@ class SplitItem(ConfigItem):
     split: Optional[str]
 
 
+class FullConfigItem(DatasetItem):
+    config: str
+
+
+class FullSplitItem(FullConfigItem):
+    split: str
+
+
 class SplitsList(TypedDict):
-    splits: List[SplitItem]
+    splits: List[FullSplitItem]
 
 
-class FailedConfigItem(ConfigItem):
+class FailedConfigItem(FullConfigItem):
     error: Mapping[str, Any]
 
 
 class DatasetSplitNamesResponse(TypedDict):
-    splits: List[SplitItem]
-    pending: List[ConfigItem]
+    splits: List[FullSplitItem]
+    pending: List[FullConfigItem]
     failed: List[FailedConfigItem]
 
 
-class PreviousJob(SplitItem):
+class PreviousJob(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[Union[str, None]]
     kind: str
 
 
-class SplitFirstRowsResponse(SplitItem):
+class SplitFirstRowsResponse(FullSplitItem):
     features: List[FeatureItem]
     rows: List[RowItem]
 
@@ -76,7 +87,7 @@ class OptInOutUrlsCountResponse(TypedDict):
     num_urls: int
     num_scanned_rows: int
     has_urls_columns: bool
-    full_scan: Optional[bool]
+    full_scan: Union[bool, None]
 
 
 class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
@@ -136,7 +147,10 @@ class ConfigSize(TypedDict):
     num_columns: int
 
 
-class SplitSize(SplitItem):
+class SplitSize(TypedDict):
+    dataset: str
+    config: str
+    split: str
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int

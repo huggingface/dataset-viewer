@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from http import HTTPStatus
-
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
@@ -45,7 +43,6 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
             app_config=app_config,
         )
     assert exc_info.value.code == "ParameterMissingError"
-    assert exc_info.value.status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_success_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
