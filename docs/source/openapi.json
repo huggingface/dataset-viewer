@@ -1684,7 +1684,7 @@
                 "examples": {
                   "all splits in a dataset": {
                     "summary": "duorc: two configs, six splits",
-                    "description": "try it at https://datasets-server.huggingface.co/splits?dataset=duorc.",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=duorc.",
                     "value": {
                       "splits": [
                         {
@@ -1724,7 +1724,7 @@
                   },
                   "splits for a single config": {
                     "summary": "emotion has two configs. Setting config=unsplit only returns the splits for this config.",
-                    "description": "try it at https://datasets-server.huggingface.co/splits?dataset=emotion&config=unsplit.",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=emotion&config=unsplit.",
                     "value": {
                       "splits": [
                         {
@@ -1769,7 +1769,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "The dataset is empty, or a file is missing, or some other error that prevents the response to be created.",
-                    "description": "Try with dataset=severo/empty",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=severo/empty",
                     "value": {
                       "error": "The dataset is empty.",
                       "cause_exception": "EmptyDatasetError",
@@ -1827,7 +1827,7 @@
                 "examples": {
                   "too many configs in the dataset": {
                     "summary": "The dataset has too many configs. The server does not support more than 3,000 configs.",
-                    "description": "Try with dataset=facebook/flores",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=facebook/flores",
                     "value": {
                       "error": "The maximum number of configs allowed is 3000, dataset has 41617 configs."
                     }
@@ -1890,7 +1890,7 @@
                 "examples": {
                   "A simple dataset (imdb) with text and label": {
                     "summary": "Text, and label column. Only 3 rows are shown for brevity.",
-                    "description": "Try it at https://datasets-server.huggingface.co/first-rows?dataset=imdb&config=plain_text&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=imdb&config=plain_text&split=train.",
                     "value": {
                       "dataset": "imdb",
                       "config": "plain_text",
@@ -1943,7 +1943,7 @@
                   },
                   "Truncated cells": {
                     "summary": "Truncated cells due to the response size (has a timestamp column). Only 3 rows are shown for brevity.",
-                    "description": "Try it at https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
                     "value": {
                       "dataset": "ett",
                       "config": "m2",
@@ -2041,7 +2041,7 @@
                   },
                   "Image column": {
                     "summary": "A column with images. Only 3 rows are shown for brevity.",
-                    "description": "Try it at https://datasets-server.huggingface.co/first-rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train.",
                     "value": {
                       "dataset": "huggan/horse2zebra",
                       "config": "huggan--horse2zebra-aligned",
@@ -2116,7 +2116,7 @@
                   },
                   "Audio column": {
                     "summary": "A column with audio files. Only 3 rows are shown for brevity.",
-                    "description": "Try it at https://datasets-server.huggingface.co/first-rows?dataset=asapp%2Fslue&config=voxceleb&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=asapp%2Fslue&config=voxceleb&split=train.",
                     "value": {
                       "dataset": "asapp/slue",
                       "config": "voxceleb",
@@ -2283,7 +2283,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /first-rows?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=atomic&config=atomic&split=train",
                     "value": {
                       "error": "Cannot load the dataset split (in streaming mode) to extract the first rows.",
                       "cause_exception": "FileNotFoundError",
@@ -2447,7 +2447,7 @@
                 "examples": {
                   "A slice of a simple dataset (imdb)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3).",
-                    "description": "Try it at https://datasets-server.huggingface.co/rows?dataset=imdb&config=plain_text&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=imdb&config=plain_text&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -2495,7 +2495,7 @@
                   },
                   "A slice of an image dataset (huggan/horse2zebra)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3).",
-                    "description": "Try it at https://datasets-server.huggingface.co/rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -2564,7 +2564,7 @@
                   },
                   "Audio is not supported at the moment (example: asapp/slue)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3). The audio column is 'null'",
-                    "description": "Try it at https://datasets-server.huggingface.co/rows?dataset=asapp/slue&config=voxceleb&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=asapp/slue&config=voxceleb&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -2690,7 +2690,7 @@
                   },
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/datasets-server/issues/1661.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/datasets-server/issues/1661.",
                     "value": { "error": "Not found." }
                   }
                 }
@@ -2929,7 +2929,7 @@
                 "examples": {
                   "A slice of a simple dataset (imdb)": {
                     "summary": "The first 3 rows that match the 'dog' search query (query=dog&length=3).",
-                    "description": "Try it at https://datasets-server.huggingface.co/search?dataset=imdb&config=plain_text&split=train&query=dog&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=imdb&config=plain_text&split=train&query=dog&length=3.",
                     "value": {
                       "features": [
                         {
@@ -3086,7 +3086,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /search?dataset=atomic&config=atomic&split=train&query=dog",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=atomic&config=atomic&split=train&query=dog",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -3143,7 +3143,7 @@
                 "examples": {
                   "blocked dataset": {
                     "summary": "The dataset is blocked manually on the server.",
-                    "description": "Try with /search?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&query=test",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&query=test",
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
@@ -3200,7 +3200,7 @@
                 "examples": {
                   "duorc": {
                     "summary": "duorc: six parquet files, one per split",
-                    "description": "Try with /parquet?dataset=duorc",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=duorc",
                     "value": {
                       "parquet_files": [
                         {
@@ -3259,7 +3259,7 @@
                   },
                   "duorc with ParaphraseRC config": {
                     "summary": "duorc: three parquet files for ParaphraseRC, one per split",
-                    "description": "Try with /parquet?dataset=duorc&config=ParaphraseRC",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=duorc&config=ParaphraseRC",
                     "value": {
                       "parquet_files": [
                         {
@@ -3304,7 +3304,7 @@
                   },
                   "sharded parquet files": {
                     "summary": "alexandrainst/da-wit: the parquet file for the train split is partitioned into 17 shards",
-                    "description": "Try with /parquet?dataset=alexandrainst/da-wit",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=alexandrainst/da-wit",
                     "value": {
                       "parquet_files": [
                         {
@@ -3467,7 +3467,7 @@
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
-                    "description": "Try with /parquet?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic",
                     "value": {
                       "parquet_files": [],
                       "pending": [],
@@ -3516,7 +3516,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /parquet?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -3573,7 +3573,7 @@
                 "examples": {
                   "blocked dataset": {
                     "summary": "The dataset is blocked manually on the server.",
-                    "description": "Try with /parquet?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
@@ -3614,7 +3614,7 @@
                 "examples": {
                   "an example of the response format (only kept the first values in each array for brevity)": {
                     "summary": "list of datasets",
-                    "description": "Try with /valid",
+                    "description": "Try with https://datasets-server.huggingface.co/valid",
                     "value": {
                       "preview": [
                         "0n1xus/codexglue",
@@ -3718,7 +3718,7 @@
                 "examples": {
                   "all the capabilities": {
                     "summary": "valid dataset",
-                    "description": "Try with /is-valid?dataset=glue",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue",
                     "value": {
                       "preview": true,
                       "viewer": true,
@@ -3727,7 +3727,7 @@
                   },
                   "only preview": {
                     "summary": "dataset with only preview",
-                    "description": "Try with /is-valid?dataset=ehartford/dolphin",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=ehartford/dolphin",
                     "value": {
                       "preview": true,
                       "viewer": false,
@@ -3736,7 +3736,7 @@
                   },
                   "no capabilities": {
                     "summary": "dataset with no capabilities",
-                    "description": "Try with /is-valid?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=atomic",
                     "value": {
                       "preview": false,
                       "viewer": false,
@@ -3745,7 +3745,7 @@
                   },
                   "all the capabilities, for a config": {
                     "summary": "valid config",
-                    "description": "Try with /is-valid?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax",
                     "value": {
                       "preview": true,
                       "viewer": true,
@@ -3754,7 +3754,7 @@
                   },
                   "all the capabilities, for a split": {
                     "summary": "valid split",
-                    "description": "Try with /is-valid?dataset=glue&config=ax&split=test",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax&split=test",
                     "value": {
                       "preview": true,
                       "viewer": true,
@@ -3858,7 +3858,7 @@
                 "examples": {
                   "dataset metadata": {
                     "summary": "metadata of a dataset. It's an object, with one key per config",
-                    "description": "Try with /info?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=mnist",
                     "value": {
                       "dataset_info": {
                         "mnist": {
@@ -3946,7 +3946,7 @@
                   },
                   "config metadata": {
                     "summary": "metadata for a dataset config",
-                    "description": "Try with /info?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=glue&config=ax",
                     "value": {
                       "dataset_info": {
                         "description": "GLUE, the General Language Understanding Evaluation benchmark\n(https://gluebenchmark.com/) is a collection of resources for training,\nevaluating, and analyzing natural language understanding systems.\n\n",
@@ -3994,7 +3994,7 @@
                   },
                   "dataset metadata with failed configs": {
                     "summary": "metadata of a dataset which has failed configs. The failed configs are listed in 'failed'.",
-                    "description": "Try with /info?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic",
                     "value": {
                       "dataset_info": {},
                       "pending": [],
@@ -4043,7 +4043,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /info?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4100,7 +4100,7 @@
                 "examples": {
                   "blocked dataset": {
                     "summary": "The dataset is blocked manually on the server.",
-                    "description": "Try with /info?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
@@ -4157,7 +4157,7 @@
                 "examples": {
                   "dataset size": {
                     "summary": "size of a dataset.",
-                    "description": "Try with /size?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=mnist",
                     "value": {
                       "size": {
                         "dataset": {
@@ -4206,7 +4206,7 @@
                   },
                   "config size": {
                     "summary": "size of a dataset config",
-                    "description": "Try with /size?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=glue&config=ax",
                     "value": {
                       "size": {
                         "config": {
@@ -4235,7 +4235,7 @@
                   },
                   "dataset size with failed configs": {
                     "summary": "size of a dataset which has failed configs. The failed configs are listed in 'failed'.",
-                    "description": "Try with /size?dataset=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic",
                     "value": {
                       "size": {
                         "dataset": {
@@ -4294,7 +4294,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /size?dataset=atomic&config=atomic",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=atomic&config=atomic",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4351,7 +4351,7 @@
                 "examples": {
                   "blocked dataset": {
                     "summary": "The dataset is blocked manually on the server.",
-                    "description": "Try with /size?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
@@ -4411,7 +4411,7 @@
                 "examples": {
                   "number of URLS for a dataset": {
                     "summary": "number of URLs for a dataset.",
-                    "description": "Try with /opt-in-out-urls?dataset=conceptual_captions",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -4424,7 +4424,7 @@
                   },
                   "number of URLS for a config": {
                     "summary": "number of URLs for a config.",
-                    "description": "Try with /opt-in-out-urls?dataset=conceptual_captions&config=labeled",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled",
                     "value": {
                       "urls_columns": ["image_url"],
                       "has_urls_columns": true,
@@ -4437,7 +4437,7 @@
                   },
                   "number of URLS for a split": {
                     "summary": "number of URLs for a split.",
-                    "description": "Try with /opt-in-out-urls?dataset=conceptual_captions&config=labeled&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=conceptual_captions&config=labeled&split=train",
                     "value": {
                       "has_urls_columns": true,
                       "num_opt_in_urls": 0,
@@ -4450,7 +4450,7 @@
                   },
                   "dataset that has no image URLs columns": {
                     "summary": "no image URLs columns: values are zero.",
-                    "description": "Try with /opt-in-out-urls?dataset=mnist",
+                    "description": "Try with https://datasets-server.huggingface.co/opt-in-out-urls?dataset=mnist",
                     "value": {
                       "urls_columns": [],
                       "has_urls_columns": false,
@@ -4586,7 +4586,7 @@
                 "examples": {
                   "A split (mstz/wine) with numeric columns": {
                     "summary": "Statistics on numeric columns.",
-                    "description": "Try it at https://datasets-server.huggingface.co/statistics?dataset=mstz/wine&config=wine&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=mstz/wine&config=wine&split=train.",
                     "value": {
                       "num_examples": 6497,
                       "statistics": [
@@ -4857,7 +4857,7 @@
                   },
                   "A split (mnist) with a label column": {
                     "summary": "Statistics on a class label column. The image column is not processed.",
-                    "description": "Try it at https://datasets-server.huggingface.co/statistics?dataset=mnist&config=mnist&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=mnist&config=mnist&split=train.",
                     "value": {
                       "num_examples": 60000,
                       "statistics": [
@@ -4919,7 +4919,7 @@
                 "examples": {
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with /statistics?dataset=atomic&config=atomic&split=train",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=atomic&config=atomic&split=train",
                     "value": {
                       "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
                       "cause_exception": "HTTPError",
@@ -4976,7 +4976,7 @@
                 "examples": {
                   "blocked dataset": {
                     "summary": "The dataset is blocked manually on the server.",
-                    "description": "Try with /statistics?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation",
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
