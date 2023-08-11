@@ -294,7 +294,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
+  # ^ allowed values are {skip,backfill,upgrade,collect-queue-metrics,collect-cache-metrics}
   log:
     level: "info"
   backfill:
@@ -342,10 +342,24 @@ deleteIndexes:
   tolerations: []
 
 
-metricsCollector:
-  action: "collect-metrics"
+queueMetricsCollector:
+  enabled: true
+  action: "collect-queue-metrics"
   schedule: "*/5 * * * *"
   # every five minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+
+cacheMetricsCollector:
+  enabled: true
+  action: "collect-cache-metrics"
+  schedule: "13 00 * * *"
   nodeSelector: {}
   resources:
     requests:

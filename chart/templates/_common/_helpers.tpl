@@ -90,9 +90,14 @@ app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
 {{- end -}}
 
-{{- define "labels.metricsCollector" -}}
+{{- define "labels.queueMetricsCollector" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-metrics-collector"
+app.kubernetes.io/component: "{{ include "name" . }}-queue-metrics-collector"
+{{- end -}}
+
+{{- define "labels.cacheMetricsCollector" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-cache-metrics-collector"
 {{- end -}}
 
 {{- define "labels.backfill" -}}

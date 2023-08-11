@@ -10,7 +10,6 @@ from mongoengine.fields import DateTimeField, IntField, ObjectIdField, StringFie
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
-    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
     METRICS_COLLECTION_JOB_TOTAL_METRIC,
     METRICS_MONGOENGINE_ALIAS,
 )
@@ -60,33 +59,6 @@ class JobTotalMetricDocument(Document):
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
-class CacheTotalMetricDocument(Document):
-    """Cache total metric in the mongoDB database, used to compute prometheus metrics.
-
-    Args:
-        kind (`str`): kind name
-        http_status (`int`): cache http_status
-        error_code (`str`): error code name
-        total (`int`): total of jobs
-        created_at (`datetime`): when the metric has been created.
-    """
-
-    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    kind = StringField(required=True)
-    http_status = IntField(required=True)
-    error_code = StringField()
-    total = IntField(required=True, default=0)
-    created_at = DateTimeField(default=get_datetime)
-
-    meta = {
-        "collection": METRICS_COLLECTION_CACHE_TOTAL_METRIC,
-        "db_alias": METRICS_MONGOENGINE_ALIAS,
-        "indexes": [("kind", "http_status", "error_code")],
-    }
-    objects = QuerySetManager["CacheTotalMetricDocument"]()
-
-
 # only for the tests
 def _clean_metrics_database() -> None:
-    CacheTotalMetricDocument.drop_collection()  # type: ignore
     JobTotalMetricDocument.drop_collection()  # type: ignore

@@ -53,6 +53,9 @@ from mongodb_migration.migrations._20230703110100_cache_add_partial_field_in_con
 from mongodb_migration.migrations._20230705160600_queue_job_add_difficulty import (
     MigrationQueueAddDifficultyToJob,
 )
+from mongodb_migration.migrations._20230811063600_cache_metrics_drop_collection import (
+    MigrationDropCacheMetricsCollection,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -245,4 +248,5 @@ class MigrationsCollector:
                 version="20230703110100", description="add 'partial' field to config-parquet-and-info"
             ),
             MigrationQueueAddDifficultyToJob(version="20230705160600", description="add 'difficulty' field to jobs"),
+            MigrationDropCacheMetricsCollection(version="20230811063600", description="drop cache metrics collection"),
         ]

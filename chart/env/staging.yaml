@@ -148,10 +148,23 @@ cacheMaintenance:
 backfill:
   enabled: false
 
-metricsCollector:
-  action: "collect-metrics"
+queueMetricsCollector:
+  action: "collect-queue-metrics"
   schedule: "*/2 * * * *"
   # every two minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+      memory: "512Mi"
+  tolerations: []
+
+cacheMetricsCollector:
+  action: "collect-cache-metrics"
+  schedule: "*/10 * * * *"
+  # every ten minutes first time, then it will be changed to default
   nodeSelector: {}
   resources:
     requests:

@@ -15,15 +15,16 @@ from libcommon.resources import (
 from libcommon.storage import init_duckdb_index_cache_dir
 
 from cache_maintenance.backfill import backfill_cache
+from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.config import JobConfig
 from cache_maintenance.delete_indexes import delete_indexes
-from cache_maintenance.metrics import collect_metrics
+from cache_maintenance.queue_metrics import collect_queue_metrics
 
 
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = ["backfill", "collect-metrics", "delete-indexes", "skip"]
+    supported_actions = ["backfill", "collect-cache-metrics", "collect-queue-metrics", "delete-indexes", "skip"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
@@ -64,8 +65,10 @@ def run_job() -> None:
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
             )
-        elif action == "collect-metrics":
-            collect_metrics(processing_graph=processing_graph)
+        elif action == "collect-queue-metrics":
+            collect_queue_metrics(processing_graph=processing_graph)
+        elif action == "collect-cache-metrics":
+            collect_cache_metrics()
         elif action == "delete-indexes":
             duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
             delete_indexes(

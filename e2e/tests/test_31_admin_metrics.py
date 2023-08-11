@@ -31,9 +31,7 @@ def test_metrics() -> None:
 
     metric_names = set(metrics.keys())
 
-    # the cache and queue metrics are computed by the background jobs. Here, in the e2e tests, we don't run them,
-    # so we should not see any of these metrics.
-
+    # the queue metrics are computed by the background jobs. Here, in the e2e tests, we don't run them,
     for queue in ["dataset-config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows-from-streaming",status="started"}'
         assert not has_metric(
@@ -41,10 +39,13 @@ def test_metrics() -> None:
             labels={"pid": "[0-9]*", "queue": queue, "status": "started"},
             metric_names=metric_names,
         ), f"queue_jobs_total - queue={queue} found in {metrics}"
+
+    # the cache metrics are computed each time a job is processed
+    # they should exists at least for some of cache kinds
     for cache_kind in ["dataset-config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
         # cache should have been filled by the previous tests
         # eg. 'responses_in_cache_total{error_code="None",http_status="200",path="dataset-config-names",pid="10"}'
-        assert not has_metric(
+        assert has_metric(
             name="responses_in_cache_total",
             labels={"error_code": "None", "http_status": "200", "kind": cache_kind, "pid": "[0-9]*"},
             metric_names=metric_names,
@@ -55,4 +56,4 @@ def test_metrics() -> None:
         name="assets_disk_usage",
         labels={"type": "total", "pid": "[0-9]*"},
         metric_names=metric_names,
-    ), f"assets_disk_usage - cache kind {cache_kind} found in {metrics}"
+    ), "assets_disk_usage"
