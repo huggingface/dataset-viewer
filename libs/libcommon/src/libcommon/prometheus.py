@@ -53,7 +53,31 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
 )
 ASSETS_DISK_USAGE = Gauge(
     name="assets_disk_usage",
-    documentation="Usage of the disk where the assets are stored",
+    documentation="Usage of the disk where the assets and cached_assets are stored",
+    labelnames=["type"],
+    multiprocess_mode="liveall",
+)
+DESCRIPTIVE_STATISTICS_DISK_USAGE = Gauge(
+    name="descriptive_statistics_disk_usage",
+    documentation="Usage of the disk where the descriptive statistics temporary files are stored (workers)",
+    labelnames=["type"],
+    multiprocess_mode="liveall",
+)
+DUCKDB_DISK_USAGE = Gauge(
+    name="duckdb_disk_usage",
+    documentation="Usage of the disk where the temporary duckdb files are stored (/search)",
+    labelnames=["type"],
+    multiprocess_mode="liveall",
+)
+HF_DATASETS_DISK_USAGE = Gauge(
+    name="hf_datasets_disk_usage",
+    documentation="Usage of the disk where the HF datasets library stores its cache (workers)",
+    labelnames=["type"],
+    multiprocess_mode="liveall",
+)
+PARQUET_METADATA_DISK_USAGE = Gauge(
+    name="parquet_metadata_disk_usage",
+    documentation="Usage of the disk where the parquet metadata are stored (workers, used by /rows)",
     labelnames=["type"],
     multiprocess_mode="liveall",
 )
@@ -76,13 +100,33 @@ def update_responses_in_cache_total() -> None:
         ).set(cache_metric.total)
 
 
-def update_assets_disk_usage(assets_directory: StrPath) -> None:
+def update_disk_gauge(gauge: Gauge, directory: StrPath) -> None:
     # TODO: move to metrics, as for the other metrics (queue, cache)
-    total, used, free, percent = disk_usage(str(assets_directory))
+    total, used, free, percent = disk_usage(str(directory))
     ASSETS_DISK_USAGE.labels(type="total").set(total)
     ASSETS_DISK_USAGE.labels(type="used").set(used)
     ASSETS_DISK_USAGE.labels(type="free").set(free)
     ASSETS_DISK_USAGE.labels(type="percent").set(percent)
+
+
+def update_assets_disk_usage(directory: StrPath) -> None:
+    update_disk_gauge(ASSETS_DISK_USAGE, directory)
+
+
+def update_descriptive_statistics_disk_usage(directory: StrPath) -> None:
+    update_disk_gauge(DESCRIPTIVE_STATISTICS_DISK_USAGE, directory)
+
+
+def update_duckdb_disk_usage(directory: StrPath) -> None:
+    update_disk_gauge(DUCKDB_DISK_USAGE, directory)
+
+
+def update_hf_datasets_disk_usage(directory: StrPath) -> None:
+    update_disk_gauge(HF_DATASETS_DISK_USAGE, directory)
+
+
+def update_parquet_metadata_disk_usage(directory: StrPath) -> None:
+    update_disk_gauge(PARQUET_METADATA_DISK_USAGE, directory)
 
 
 T = TypeVar("T", bound="StepProfiler")

@@ -14,6 +14,7 @@ from libcommon.constants import (
     CACHED_ASSETS_CACHE_APPNAME,
     DESCRIPTIVE_STATISTICS_CACHE_APPNAME,
     DUCKDB_INDEX_CACHE_APPNAME,
+    HF_DATASETS_CACHE_APPNAME,
     PARQUET_METADATA_CACHE_APPNAME,
 )
 
@@ -95,6 +96,20 @@ def init_duckdb_index_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
         Union[str, PathLike[str]]: The directory.
     """
     return init_dir(directory, appname=DUCKDB_INDEX_CACHE_APPNAME)
+
+
+def init_hf_datasets_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
+    """Initialize the cache directory for the datasets library.
+
+    If directory is None, it will be set to the default cache location on the machine.
+
+    Args:
+        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+
+    Returns:
+        Union[str, PathLike[str]]: The directory.
+    """
+    return init_dir(directory, appname=HF_DATASETS_CACHE_APPNAME)
 
 
 def init_statistics_cache_dir(directory: Optional[StrPath] = None) -> StrPath:

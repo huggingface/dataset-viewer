@@ -26,8 +26,17 @@ spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers: 
         {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerDescriptiveStatistics" . | nindent 8 }}
+        {{ include "initContainerDuckDBIndex" . | nindent 8 }}
+        {{ include "initContainerHfDatasetsCache" . | nindent 8 }}
+        {{ include "initContainerParquetMetadata" . | nindent 8 }}
       containers: {{ include "containerAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.admin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.admin.tolerations | nindent 8 }}
-      volumes: {{ include "volumeNfs" . | nindent 8 }}
+      volumes:
+        {{ include "volumeDescriptiveStatistics" . | nindent 8 }}
+        {{ include "volumeDuckDBIndex" . | nindent 8 }}
+        {{ include "volumeHfDatasetsCache" . | nindent 8 }}
+        {{ include "volumeNfs" . | nindent 8 }}
+        {{ include "volumeParquetMetadata" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
