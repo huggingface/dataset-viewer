@@ -344,7 +344,7 @@ deleteIndexes:
 
 metricsCollector:
   enabled: true
-  action: "collect-metrics"
+  action: "collect-queue-metrics"
   schedule: "*/5 * * * *"
   # every five minutes
   nodeSelector: {}

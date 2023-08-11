@@ -24,7 +24,7 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = ["backfill", "collect-cache-metrics", "collect-metrics", "delete-indexes", "skip"]
+    supported_actions = ["backfill", "collect-cache-metrics", "collect-queue-metrics", "delete-indexes", "skip"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
@@ -65,7 +65,7 @@ def run_job() -> None:
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
             )
-        elif action == "collect-metrics":
+        elif action == "collect-queue-metrics":
             collect_queue_metrics(processing_graph=processing_graph)
         elif action == "collect-cache-metrics":
             collect_cache_metrics()
