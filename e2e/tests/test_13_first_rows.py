@@ -9,7 +9,6 @@ import requests
 
 from .utils import (
     URL,
-    get,
     get_openapi_body_example,
     poll,
     poll_first_rows,
