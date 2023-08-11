@@ -119,7 +119,7 @@
             { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
-        "required": true
+        "required": false
       },
       "X-Error-Code-500-common": {
         "description": "A string that identifies the underlying error for 500 on /parquet. It's marked as required: false because the header can be missing on text-plain response.",
@@ -134,7 +134,7 @@
             }
           ]
         },
-        "required": true
+        "required": false
       },
       "X-Error-Code-500-rows": {
         "description": "A string that identifies the underlying error for 500 on /rows. It's marked as required: false because the header can be missing on text-plain response.",
@@ -146,7 +146,7 @@
             }
           ]
         },
-        "required": true
+        "required": false
       },
       "X-Error-Code-500-search": {
         "description": "A string that identifies the underlying error for 500 on /search. It's marked as required: false because the header can be missing on text-plain response.",
@@ -158,13 +158,27 @@
             }
           ]
         },
-        "required": true
+        "required": false
       },
       "X-Error-Code-500-valid": {
         "description": "A string that identifies the underlying error for 500 on /valid. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
           "oneOf": [
             { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
+          ]
+        },
+        "required": false
+      },
+      "X-Error-Code-501": {
+        "description": "A string that identifies the underlying error for 501.",
+        "schema": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/X-Error-Code-DatasetInBlockListError"
+            },
+            {
+              "$ref": "#/components/schemas/X-Error-Code-DatasetWithTooManyConfigsError"
+            }
           ]
         },
         "required": true
@@ -1165,6 +1179,16 @@
           }
         }
       },
+      "X-Error-Code-DatasetInBlockListError": {
+        "type": "string",
+        "const": "DatasetInBlockListError",
+        "description": "The dataset is in the list of blocked datasets."
+      },
+      "X-Error-Code-DatasetWithTooManyConfigsError": {
+        "type": "string",
+        "const": "DatasetWithTooManyConfigsError",
+        "description": "The number of configs of a dataset exceeded the limit."
+      },
       "X-Error-Code-ExternalAuthenticatedError": {
         "type": "string",
         "const": "ExternalAuthenticatedError",
@@ -1781,6 +1805,36 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "too many configs in the dataset": {
+                    "summary": "The dataset has too many configs. The server does not support more than 3,000 configs.",
+                    "description": "Try with dataset=facebook/flores",
+                    "value": {
+                      "error": "The maximum number of configs allowed is 3000, dataset has 41617 configs."
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2282,6 +2336,28 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {}
+              }
+            }
           }
         }
       }
@@ -2727,6 +2803,28 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {}
+              }
+            }
           }
         }
       }
@@ -3019,6 +3117,36 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with /search?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&query=test",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
                   }
                 }
               }
@@ -3419,6 +3547,36 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with /parquet?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
                   }
                 }
               }
@@ -3920,6 +4078,36 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with /info?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4141,6 +4329,36 @@
                 }
               }
             }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with /size?dataset=echarlaix/vqa-lxmert&config=vqa",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4292,6 +4510,28 @@
                     "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {}
               }
             }
           }
@@ -4710,6 +4950,36 @@
                 "examples": {
                   "internal server error": {
                     "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with /statistics?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
                   }
                 }
               }
