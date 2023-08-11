@@ -214,7 +214,7 @@ def test_assets_metrics(usage_type: str, tmp_path: Path) -> None:
     name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})
     assert name not in metrics.metrics
 
-    update_assets_disk_usage(assets_directory=tmp_path)
+    update_assets_disk_usage(directory=tmp_path)
 
     metrics = get_metrics()
     name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})

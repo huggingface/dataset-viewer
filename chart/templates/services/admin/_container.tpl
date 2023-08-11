@@ -12,6 +12,10 @@
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   {{ include "envMetrics" . | nindent 2 }}
+  {{ include "envParquetMetadata" . | nindent 2 }}
+  {{ include "envWorker" . | nindent 2 }}
+  - name: DATASETS_BASED_HF_DATASETS_CACHE
+    value: {{ .Values.hfDatasetsCache.cacheDirectory | quote }}
   # service
   - name: ADMIN_HF_ORGANIZATION
     value: {{ .Values.admin.hfOrganization | quote }}
@@ -37,6 +41,10 @@
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountDescriptiveStatisticsRO" . | nindent 2 }}
+  {{ include "volumeMountDuckDBIndexRO" . | nindent 2 }}
+  {{ include "volumeMountHfDatasetsCacheRO" . | nindent 2 }}
+  {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
   readinessProbe:

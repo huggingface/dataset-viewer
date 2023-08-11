@@ -10,7 +10,14 @@ from libcommon.resources import (
     QueueMongoResource,
     Resource,
 )
-from libcommon.storage import exists, init_assets_dir
+from libcommon.storage import (
+    exists,
+    init_assets_dir,
+    init_duckdb_index_cache_dir,
+    init_hf_datasets_cache_dir,
+    init_parquet_metadata_dir,
+    init_statistics_cache_dir,
+)
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -38,6 +45,11 @@ def create_app() -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
+    hf_datasets_cache_directory = init_hf_datasets_cache_dir(app_config.datasets_based.hf_datasets_cache)
+    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
+    statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
+
     if not exists(assets_directory):
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
@@ -48,7 +60,6 @@ def create_app() -> Starlette:
     metrics_resource = MetricsMongoResource(
         database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
     )
-
     resources: list[Resource] = [cache_resource, queue_resource, metrics_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
@@ -66,7 +77,16 @@ def create_app() -> Starlette:
     ]
     routes = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=create_metrics_endpoint(assets_directory=assets_directory)),
+        Route(
+            "/metrics",
+            endpoint=create_metrics_endpoint(
+                assets_directory=assets_directory,
+                descriptive_statistics_directory=statistics_cache_directory,
+                duckdb_directory=duckdb_index_cache_directory,
+                hf_datasets_directory=hf_datasets_cache_directory,
+                parquet_metadata_directory=parquet_metadata_directory,
+            ),
+        ),
         # used in a browser tab to monitor the queue
         Route(
             "/pending-jobs",

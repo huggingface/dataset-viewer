@@ -30,6 +30,10 @@ services:
     build:
       context: ..
       dockerfile: services/admin/dev.Dockerfile
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: admin
@@ -47,6 +51,10 @@ services:
       ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
+      # storage
+      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
+      DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
     depends_on:
       - mongodb
     restart: always
@@ -220,14 +228,5 @@ volumes:
   assets:
   cached-assets:
   mongo:
-  splits-datasets-cache:
-  splits-modules-cache:
-  splits-numba-cache:
-  first-rows-datasets-cache:
-  first-rows-modules-cache:
-  first-rows-numba-cache:
-  parquet-datasets-cache:
-  parquet-modules-cache:
-  parquet-numba-cache:
   parquet-metadata:
   duckdb-index:
