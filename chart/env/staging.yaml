@@ -148,8 +148,8 @@ cacheMaintenance:
 backfill:
   enabled: false
 
-metricsCollector:
-  action: "collect-metrics"
+queueMetricsCollector:
+  action: "collect-queue-metrics"
   schedule: "*/2 * * * *"
   # every two minutes
   nodeSelector: {}

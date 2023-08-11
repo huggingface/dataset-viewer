@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.queueMetricsCollector.enabled}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.queueMetricsCollector" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-queue-metrics-collector"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.queueMetricsCollector.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 300
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.queueMetricsCollector.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.queueMetricsCollector.tolerations | nindent 12 }}
+          containers: {{ include "containerQueueMetricsCollector" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+{{- end}}
