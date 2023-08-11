@@ -384,7 +384,7 @@ class ParameterMissingError(CacheableError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message=message,
-            status_code=HTTPStatus.BAD_REQUEST,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             code="ParameterMissingError",
             cause=cause,
             disclose_cause=False,
