@@ -26,7 +26,7 @@ server {
   server_name ${HOST};
 
   location /openapi.json {
-    alias /static-files/openapi.json;
+    return 307 https://raw.githubusercontent.com/huggingface/datasets-server/main/${OPENAPI_FILE};
   }
 
   location /assets/ {

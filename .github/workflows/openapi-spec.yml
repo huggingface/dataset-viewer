@@ -8,11 +8,11 @@ on:
     branches:
       - main
     paths:
-      - "chart/static-files/opanapi.json"
+      - "docs/source/openapi.json"
       - ".github/workflows/openapi.yml"
   pull_request:
     paths:
-      - "chart/static-files/opanapi.json"
+      - "docs/source/openapi.json"
       - ".github/workflows/openapi.yml"
 env:
   python-version: 3.9.15
@@ -44,4 +44,4 @@ jobs:
           poetry install
       - name: Check openapi spec
         run: |
-          poetry run python -m openapi_spec_validator ../chart/static-files/openapi.json
+          poetry run python -m openapi_spec_validator ../docs/source/openapi.json

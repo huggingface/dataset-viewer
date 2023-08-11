@@ -168,7 +168,7 @@ worker:
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxMemoryPct: 0
-  # the number of hearbeats a job must have missed to be considered a zombie job.
+  # the number of heartbeats a job must have missed to be considered a zombie job.
   maxMissingHeartbeats: 5
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
@@ -390,7 +390,7 @@ reverseProxy:
   host: localhost
   port: 8080
   nginxTemplateFile: "nginx-templates/default.conf.template"
-  openapiFile: "static-files/openapi.json"
+  openapiFile: "docs/source/openapi.json"
   error404File: "nginx-templates/404.html"
 
   nodeSelector: {}

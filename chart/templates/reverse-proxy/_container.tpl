@@ -10,6 +10,8 @@
     value: {{ .Values.assets.storageDirectory | quote }}
   - name: CACHED_ASSETS_DIRECTORY
     value: {{ .Values.cachedAssets.storageDirectory | quote }}
+  - name: OPENAPI_FILE
+    value: {{ .Values.reverseProxy.openapiFile | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
@@ -31,10 +33,6 @@
     readOnly: true
   - name: error-pages
     mountPath: /error-pages
-    mountPropagation: None
-    readOnly: true
-  - name: static-files
-    mountPath: /static-files
     mountPropagation: None
     readOnly: true
   readinessProbe:

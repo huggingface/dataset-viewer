@@ -89,7 +89,7 @@ def poll_first_rows(dataset: str, config: str, split: str, headers: Optional[Hea
 
 def get_openapi_body_example(path: str, status: int, example_name: str) -> Any:
     root = Path(__file__).resolve().parent.parent.parent
-    openapi_filename = root / "chart" / "static-files" / "openapi.json"
+    openapi_filename = root / "docs" / "source" / "openapi.json"
     with open(openapi_filename) as json_file:
         openapi = json.load(json_file)
     return openapi["paths"][path]["get"]["responses"][str(status)]["content"]["application/json"]["examples"][

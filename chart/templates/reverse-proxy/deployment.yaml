@@ -50,11 +50,3 @@ spec:
           items:
             - key: "404.html"
               path: "404.html"
-      - name: static-files
-        configMap:
-          name: "{{ include "name" . }}-reverse-proxy"
-          defaultMode: 420
-          optional: false
-          items:
-            - key: "openapi.json"
-              path: "openapi.json"
