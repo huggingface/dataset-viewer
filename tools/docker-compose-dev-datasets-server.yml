@@ -7,12 +7,12 @@ services:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
-      - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      OPENAPI_FILE: ${OPENAPI_FILE-docs/source/openapi.json}
       HOST: localhost
       PORT: 80
       URL_ADMIN: http://host.docker.internal:${ADMIN_UVICORN_PORT-8081}
