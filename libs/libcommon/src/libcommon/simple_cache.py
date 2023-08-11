@@ -24,7 +24,7 @@ import pandas as pd
 from bson import ObjectId
 from bson.errors import InvalidId
 from mongoengine import Document
-from mongoengine.errors import DoesNotExist, MultipleObjectsReturned
+from mongoengine.errors import DoesNotExist
 from mongoengine.fields import (
     DateTimeField,
     DictField,
@@ -161,29 +161,30 @@ class CacheEntryDoesNotExistError(DoesNotExist):
     pass
 
 
-class MultipleCacheError(MultipleObjectsReturned):
-    pass
-
-
-def update_metrics(kind: str, http_status: HTTPStatus, inc__total: int, error_code: Optional[str] = None) -> None:
+def _update_metrics(kind: str, http_status: HTTPStatus, increase_by: int, error_code: Optional[str] = None) -> None:
     CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
-        inc__total=inc__total
+        inc__total=increase_by
     )
 
 
-def decrease_metrics(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> None:
-    query_set = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    if query_set.count() > 1:
-        raise MultipleCacheError("There should exist only one record for combination kind-dataset-config-split")
+def increase_metric(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
+    CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
+        inc__total=DEFAULT_INCREASE_AMOUNT
+    )
 
-    existing_cache = query_set.first()
-    if existing_cache is not None:
-        update_metrics(
-            kind=kind,
-            http_status=existing_cache.http_status,
-            error_code=existing_cache.error_code,
-            inc__total=DEFAULT_DECREASE_AMOUNT,
-        )
+
+def decrease_metric(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
+    CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
+        inc__total=DEFAULT_DECREASE_AMOUNT
+    )
+
+
+def decrease_metric_for_artifact(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> None:
+    try:
+        existing_cache = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).get()
+    except DoesNotExist:
+        return
+    decrease_metric(kind=kind, http_status=existing_cache.http_status, error_code=existing_cache.error_code)
 
 
 # Note: we let the exceptions throw (ie DocumentTooLarge): it's the responsibility of the caller to manage them
@@ -201,7 +202,7 @@ def upsert_response(
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
-    decrease_metrics(kind=kind, dataset=dataset, config=config, split=split)
+    decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
     CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
         content=content,
         http_status=http_status,
@@ -212,7 +213,7 @@ def upsert_response(
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
     )
-    update_metrics(kind=kind, http_status=http_status, error_code=error_code, inc__total=DEFAULT_INCREASE_AMOUNT)
+    increase_metric(kind=kind, http_status=http_status, error_code=error_code)
 
 
 def upsert_response_params(
@@ -245,19 +246,14 @@ def upsert_response_params(
 def delete_response(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> Optional[int]:
-    decrease_metrics(kind=kind, dataset=dataset, config=config, split=split)
+    decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
     return CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
 
 
 def delete_dataset_responses(dataset: str) -> Optional[int]:
     existing_cache = CachedResponseDocument.objects(dataset=dataset)
     for cache in existing_cache:
-        update_metrics(
-            kind=cache.kind,
-            http_status=cache.http_status,
-            error_code=cache.error_code,
-            inc__total=DEFAULT_DECREASE_AMOUNT,
-        )
+        decrease_metric(kind=cache.kind, http_status=cache.http_status, error_code=cache.error_code)
     return existing_cache.delete()
 
 
