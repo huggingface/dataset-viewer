@@ -7,7 +7,6 @@ from typing import List, Optional
 
 from datasets import (
     Audio,
-    DownloadConfig,
     Features,
     Image,
     IterableDataset,
@@ -148,7 +147,7 @@ def compute_first_rows_response(
         info = get_dataset_config_info(
             path=dataset,
             config_name=config,
-            download_config=DownloadConfig(token=hf_token),
+            token=hf_token,
         )
     except Exception as err:
         raise InfoError(
@@ -163,7 +162,6 @@ def compute_first_rows_response(
                 name=config,
                 split=split,
                 streaming=True,
-                download_config=DownloadConfig(token=hf_token),
                 token=hf_token,
             )
             if not isinstance(iterable_dataset, IterableDataset):
