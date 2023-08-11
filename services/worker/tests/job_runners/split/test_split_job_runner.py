@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from http import HTTPStatus
-
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingStep
