@@ -1043,7 +1043,7 @@
         }
       },
       "SizeResponse": {
-        "$anyOf": [
+        "$oneOf": [
           {
             "$ref": "#/components/schemas/DatasetSizeResponse"
           },
