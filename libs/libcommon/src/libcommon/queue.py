@@ -400,11 +400,11 @@ def _update_metrics(queue: str, status: str, increase_by: int) -> None:
 
 
 def increase_metric(queue: str, status: str) -> None:
-    JobTotalMetricDocument.objects(queue=queue, status=status).upsert_one(inc__total=DEFAULT_INCREASE_AMOUNT)
+    _update_metrics(queue=queue, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
 
 
 def decrease_metric(queue: str, status: str) -> None:
-    JobTotalMetricDocument.objects(queue=queue, status=status).upsert_one(inc__total=DEFAULT_DECREASE_AMOUNT)
+    _update_metrics(queue=queue, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
 
 
 def update_metrics_for_updated_job(job: Optional[JobDocument], status: str) -> None:
@@ -524,7 +524,8 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
-            update_metrics_for_updated_job(existing.first(), status=Status.CANCELLED)
+            for existing_job in existing.all():
+                update_metrics_for_updated_job(existing_job, status=Status.CANCELLED)
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
             return existing.count()
         except Exception:

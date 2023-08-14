@@ -8,7 +8,7 @@ import pytest
 
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue import JobDocument, JobTotalMetricDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, upsert_response_params
 from libcommon.utils import JobOutput, JobResult, Priority, Status
@@ -109,6 +109,7 @@ def test_after_job_plan_delete() -> None:
     # create two jobs for DG, and none for DH
     # one job should be deleted for DG, and one should be created for DH
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DG)] * 2)
+    assert JobTotalMetricDocument.objects().count() == 2
 
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
@@ -240,7 +241,7 @@ def test_set_revision_handle_existing_jobs(
 ) -> None:
     # create two pending jobs for DA
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
-
+    assert JobTotalMetricDocument.objects().count() == 2
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.set_revision(
         revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
@@ -279,6 +280,6 @@ def test_has_pending_ancestor_jobs(
     expected_has_pending_ancestor_jobs: bool,
 ) -> None:
     Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])
-
+    assert len(pending_artifacts) == JobTotalMetricDocument.objects().count()
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     assert dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names) == expected_has_pending_ancestor_jobs
