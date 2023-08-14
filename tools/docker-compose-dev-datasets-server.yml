@@ -31,9 +31,10 @@ services:
       context: ..
       dockerfile: services/admin/dev.Dockerfile
     volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
-      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
-      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
+      - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
     extends:
       file: docker-compose-dev-base.yml
       service: admin
@@ -53,8 +54,9 @@ services:
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
       # storage
       ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
+      DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     depends_on:
       - mongodb
     restart: always
@@ -174,6 +176,7 @@ services:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
+      - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
     extends:
       file: docker-compose-dev-base.yml
       service: datasets-worker
@@ -185,7 +188,7 @@ services:
       DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS: ${DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS-10}
       DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES: ${DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES-100_000_000}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
-      DUCKDB_INDEX_COMMIT_MESSAGE: ${DUCKDB_INDEX_COMMIT_MESSAGE-Update duckdb index files}
+      DUCKDB_INDEX_COMMIT_MESSAGE: ${DUCKDB_INDEX_COMMIT_MESSAGE-Update duckdb index file}
       DUCKDB_INDEX_COMMITTER_HF_TOKEN: ${DUCKDB_INDEX_COMMITTER_HF_TOKEN-}
       DUCKDB_INDEX_TARGET_REVISION: ${DUCKDB_INDEX_TARGET_REVISION-refs/convert/parquet}
       DUCKDB_INDEX_URL_TEMPLATE: ${DUCKDB_INDEX_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
@@ -230,3 +233,4 @@ volumes:
   mongo:
   parquet-metadata:
   duckdb-index:
+  descriptive-statistics:

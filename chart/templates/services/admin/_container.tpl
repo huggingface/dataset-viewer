@@ -6,14 +6,18 @@
   image: {{ include "services.admin.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
-  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   {{ include "envMetrics" . | nindent 2 }}
+  # storage
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
-  {{ include "envWorker" . | nindent 2 }}
+  - name: DUCKDB_INDEX_CACHE_DIRECTORY
+    value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
+  - name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
+    value: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
     value: {{ .Values.hfDatasetsCache.cacheDirectory | quote }}
   # service
