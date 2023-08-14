@@ -103,10 +103,10 @@ def update_responses_in_cache_total() -> None:
 def update_disk_gauge(gauge: Gauge, directory: StrPath) -> None:
     # TODO: move to metrics, as for the other metrics (queue, cache)
     total, used, free, percent = disk_usage(str(directory))
-    ASSETS_DISK_USAGE.labels(type="total").set(total)
-    ASSETS_DISK_USAGE.labels(type="used").set(used)
-    ASSETS_DISK_USAGE.labels(type="free").set(free)
-    ASSETS_DISK_USAGE.labels(type="percent").set(percent)
+    gauge.labels(type="total").set(total)
+    gauge.labels(type="used").set(used)
+    gauge.labels(type="free").set(free)
+    gauge.labels(type="percent").set(percent)
 
 
 def update_assets_disk_usage(directory: StrPath) -> None:
