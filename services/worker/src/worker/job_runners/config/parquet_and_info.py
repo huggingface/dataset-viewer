@@ -136,7 +136,7 @@ class ParquetFile:
 
 
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
-legacy_filename_pattern = re.compile(r"(?P<builder>[\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
+legacy_filename_pattern = re.compile(r"(?P<builder>[\.\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
