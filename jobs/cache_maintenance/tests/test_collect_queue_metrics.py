@@ -1,23 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from http import HTTPStatus
-
-from libcommon.metrics import JobTotalMetricDocument
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import Queue
-from libcommon.simple_cache import upsert_response
+from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.utils import Status
 
 from cache_maintenance.queue_metrics import collect_queue_metrics
 
 
 def test_collect_queue_metrics() -> None:
-    dataset = "test_dataset"
-    config = None
-    split = None
-    content = {"some": "content"}
-
     processing_step_name = "test_type"
     processing_graph = ProcessingGraph(
         processing_graph_specification={processing_step_name: {"input_type": "dataset", "job_runner_version": 1}}
@@ -31,14 +22,6 @@ def test_collect_queue_metrics() -> None:
         config="config",
         split="split",
         difficulty=50,
-    )
-    upsert_response(
-        kind=processing_step.cache_kind,
-        dataset=dataset,
-        config=config,
-        split=split,
-        content=content,
-        http_status=HTTPStatus.OK,
     )
 
     collect_queue_metrics(processing_graph=processing_graph)

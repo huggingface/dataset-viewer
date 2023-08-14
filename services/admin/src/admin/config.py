@@ -10,7 +10,6 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
-    MetricsConfig,
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
@@ -139,7 +138,6 @@ class AppConfig:
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    metrics: MetricsConfig = field(default_factory=MetricsConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -156,5 +154,4 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             admin=AdminConfig.from_env(common_config),
-            metrics=MetricsConfig.from_env(),
         )

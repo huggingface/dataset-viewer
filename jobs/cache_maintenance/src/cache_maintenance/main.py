@@ -7,11 +7,7 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_duckdb_index_cache_dir
 
 from cache_maintenance.backfill import backfill_cache
@@ -41,18 +37,12 @@ def run_job() -> None:
         QueueMongoResource(
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
-        MetricsMongoResource(
-            database=job_config.metrics.mongo_database, host=job_config.metrics.mongo_url
-        ) as metrics_resource,
     ):
         if not cache_resource.is_available():
             logging.warning("The connection to the cache database could not be established. The action is skipped.")
             return
         if not queue_resource.is_available():
             logging.warning("The connection to the queue database could not be established. The action is skipped.")
-            return
-        if not metrics_resource.is_available():
-            logging.warning("The connection to the metrics database could not be established. The action is skipped.")
             return
 
         processing_graph = ProcessingGraph(job_config.graph.specification)

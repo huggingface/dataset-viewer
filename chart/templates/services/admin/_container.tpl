@@ -11,7 +11,6 @@
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
-  {{ include "envMetrics" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envWorker" . | nindent 2 }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE

@@ -4,12 +4,7 @@
 import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-    Resource,
-)
+from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import (
     exists,
     init_assets_dir,
@@ -57,16 +52,11 @@ def create_app() -> Starlette:
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
-    metrics_resource = MetricsMongoResource(
-        database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
-    )
-    resources: list[Resource] = [cache_resource, queue_resource, metrics_resource]
+    resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
     if not queue_resource.is_available():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
-    if not metrics_resource.is_available():
-        raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
     middleware = [
         Middleware(

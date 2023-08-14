@@ -26,4 +26,4 @@ def collect_cache_metrics() -> None:
                 f"{new_total} difference={new_total-current_total}"
             )
         query_set.upsert_one(total=metric["count"])
-    logging.info("metrics have been collected")
+    logging.info("cache metrics have been collected")

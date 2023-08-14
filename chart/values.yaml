@@ -341,8 +341,7 @@ deleteIndexes:
 queueMetricsCollector:
   enabled: true
   action: "collect-queue-metrics"
-  schedule: "*/5 * * * *"
-  # every five minutes
+  schedule: "14 00 * * *"
   nodeSelector: {}
   resources:
     requests:

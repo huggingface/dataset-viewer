@@ -13,7 +13,6 @@
     {{ include "envCache" . | nindent 2 }}
     {{ include "envQueue" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
-    {{ include "envMetrics" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.queueMetricsCollector.action | quote }}
 {{- end -}}

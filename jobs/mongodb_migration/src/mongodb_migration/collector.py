@@ -3,12 +3,19 @@
 
 from typing import List
 
+from libcommon.constants import (
+    CACHE_METRICS_COLLECTION,
+    METRICS_MONGOENGINE_ALIAS,
+    QUEUE_METRICS_COLLECTION,
+)
+
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
     MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
 )
+from mongodb_migration.drop_migrations import MigrationDropCollection
 from mongodb_migration.migration import Migration
 from mongodb_migration.migrations._20221110230400_example import MigrationExample
 from mongodb_migration.migrations._20221116133500_queue_job_add_force import (
@@ -52,9 +59,6 @@ from mongodb_migration.migrations._20230703110100_cache_add_partial_field_in_con
 )
 from mongodb_migration.migrations._20230705160600_queue_job_add_difficulty import (
     MigrationQueueAddDifficultyToJob,
-)
-from mongodb_migration.migrations._20230811063600_cache_metrics_drop_collection import (
-    MigrationDropCacheMetricsCollection,
 )
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
@@ -248,5 +252,16 @@ class MigrationsCollector:
                 version="20230703110100", description="add 'partial' field to config-parquet-and-info"
             ),
             MigrationQueueAddDifficultyToJob(version="20230705160600", description="add 'difficulty' field to jobs"),
-            MigrationDropCacheMetricsCollection(version="20230811063600", description="drop cache metrics collection"),
+            MigrationDropCollection(
+                version="20230811063600",
+                description="drop cache metrics collection",
+                alias=METRICS_MONGOENGINE_ALIAS,
+                collection_name=CACHE_METRICS_COLLECTION,
+            ),
+            MigrationDropCollection(
+                version="20230814121400",
+                description="drop queue metrics collection",
+                alias=METRICS_MONGOENGINE_ALIAS,
+                collection_name=QUEUE_METRICS_COLLECTION,
+            ),
         ]
