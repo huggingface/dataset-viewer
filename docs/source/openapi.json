@@ -218,7 +218,7 @@
             "type": "string"
           },
           "error": {
-            "type": "object"
+            "$ref": "#/components/schemas/CustomError"
           }
         }
       },
@@ -1758,6 +1758,99 @@
                           "dataset": "emotion",
                           "config": "unsplit",
                           "split": "train"
+                        }
+                      ]
+                    }
+                  },
+                  "one of the config has an error": {
+                    "summary": "one of the configs require manual download, and fails to give the split names",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=superb.",
+                    "value": {
+                      "splits": [
+                        {
+                          "dataset": "superb",
+                          "config": "asr",
+                          "split": "train"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "asr",
+                          "split": "validation"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "asr",
+                          "split": "test"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ic",
+                          "split": "train"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ic",
+                          "split": "validation"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ic",
+                          "split": "test"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ks",
+                          "split": "train"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ks",
+                          "split": "validation"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "ks",
+                          "split": "test"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "sd",
+                          "split": "train"
+                        },
+                        { "dataset": "superb", "config": "sd", "split": "dev" },
+                        {
+                          "dataset": "superb",
+                          "config": "sd",
+                          "split": "test"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "si",
+                          "split": "train"
+                        },
+                        {
+                          "dataset": "superb",
+                          "config": "si",
+                          "split": "validation"
+                        },
+                        { "dataset": "superb", "config": "si", "split": "test" }
+                      ],
+                      "pending": [],
+                      "failed": [
+                        {
+                          "dataset": "superb",
+                          "config": "er",
+                          "error": {
+                            "error": "dataset=superb requires manual download.",
+                            "cause_exception": "ManualDownloadError",
+                            "cause_message": "                    The dataset superb with config er requires manual data.\n                    Please follow the manual download instructions:\n\nPlease download the IEMOCAP dataset after submitting the request form here:\nhttps://sail.usc.edu/iemocap/iemocap_release.htm\nHaving downloaded the dataset you can extract it with `tar -xvzf IEMOCAP_full_release.tar.gz`\nwhich should create a folder called `IEMOCAP_full_release`\n\n                    Manual data can be loaded with:\n                     datasets.load_dataset(\"superb\", data_dir=\"<path/to/manual/data>\")",
+                            "cause_traceback": [
+                              "Traceback (most recent call last):\n",
+                              "  File \"/src/services/worker/src/worker/job_runners/config/parquet_and_info.py\", line 299, in raise_if_requires_manual_download\n    builder._check_manual_download(\n",
+                              "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/datasets/builder.py\", line 932, in _check_manual_download\n    raise ManualDownloadError(\n",
+                              "datasets.builder.ManualDownloadError:                     The dataset superb with config er requires manual data.\n                    Please follow the manual download instructions:\n\nPlease download the IEMOCAP dataset after submitting the request form here:\nhttps://sail.usc.edu/iemocap/iemocap_release.htm\nHaving downloaded the dataset you can extract it with `tar -xvzf IEMOCAP_full_release.tar.gz`\nwhich should create a folder called `IEMOCAP_full_release`\n\n                    Manual data can be loaded with:\n                     datasets.load_dataset(\"superb\", data_dir=\"<path/to/manual/data>\")\n"
+                            ]
+                          }
                         }
                       ]
                     }
