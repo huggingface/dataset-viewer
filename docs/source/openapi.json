@@ -982,19 +982,16 @@
           }
         }
       },
-      "SizeResponse": {
+      "DatasetSizeResponse": {
         "type": "object",
-        "required": ["size", "partial"],
+        "required": ["size", "pending", "failed", "partial"],
         "properties": {
           "size": {
             "type": "object",
-            "required": ["splits"],
+            "required": ["dataset", "configs", "splits"],
             "properties": {
               "dataset": {
                 "$ref": "#/components/schemas/DatasetSize"
-              },
-              "config": {
-                "$ref": "#/components/schemas/ConfigSize"
               },
               "configs": {
                 "type": "array",
@@ -1020,6 +1017,40 @@
             "$ref": "#/components/schemas/Partial"
           }
         }
+      },
+      "ConfigSizeResponse": {
+        "type": "object",
+        "required": ["size", "partial"],
+        "properties": {
+          "size": {
+            "type": "object",
+            "required": ["config", "splits"],
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/ConfigSize"
+              },
+              "splits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SplitSize"
+                }
+              }
+            }
+          },
+          "partial": {
+            "$ref": "#/components/schemas/Partial"
+          }
+        }
+      },
+      "SizeResponse": {
+        "$anyOf": [
+          {
+            "$ref": "#/components/schemas/DatasetSizeResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ConfigSizeResponse"
+          }
+        ]
       },
       "OptInOutUrlsCountResponse": {
         "type": "object",
