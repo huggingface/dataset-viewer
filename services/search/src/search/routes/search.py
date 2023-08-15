@@ -187,7 +187,7 @@ def create_response(
             row_idx_column=ROW_IDX_COLUMN,
         ),
         num_rows_total=num_rows_total,
-        num_rows_per_page=MAX_ROWS
+        num_rows_per_page=MAX_ROWS,
     )
 
 
