@@ -481,6 +481,7 @@ def create_parquet_and_info_response(
         if data_type == "big_parquet"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
+    partial_path = "/partial" if partial else ""
     return {
         "parquet_files": [
             {
@@ -490,7 +491,7 @@ def create_parquet_and_info_response(
                 "url": CI_URL_TEMPLATE.format(
                     repo_id=f"datasets/{dataset}",
                     revision="refs%2Fconvert%2Fparquet",
-                    filename=f"{config}/partial/{split}/{filename}",
+                    filename=f"{config}{partial_path}/{split}/{filename}",
                 ),
                 "filename": filename,
                 "size": size,
