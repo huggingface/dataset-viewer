@@ -461,10 +461,7 @@ def create_parquet_and_info_response(
 ) -> Any:
     config, split = get_default_config_split()
     dataset_name = dataset.split("/")[-1]
-    if partial:
-        filename = "0000.parquet"
-    else:
-        filename = f"{dataset_name}-train.parquet"
+    filename = "0000.parquet"
     size = (
         CSV_PARQUET_SIZE
         if data_type == "csv"
