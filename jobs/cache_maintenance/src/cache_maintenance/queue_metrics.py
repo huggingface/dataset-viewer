@@ -13,7 +13,7 @@ def collect_queue_metrics(processing_graph: ProcessingGraph) -> None:
     for processing_step in processing_graph.get_processing_steps():
         for status, new_total in queue.get_jobs_count_by_status(job_type=processing_step.job_type).items():
             job_type = processing_step.job_type
-            query_set = JobTotalMetricDocument.objects(queue=job_type, status=status)
+            query_set = JobTotalMetricDocument.objects(job_type=job_type, status=status)
             current_metric = query_set.first()
             if current_metric is not None:
                 current_total = current_metric.total
