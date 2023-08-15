@@ -90,7 +90,7 @@ METHOD_STEPS_PROCESSING_TIME = Histogram(
 
 def update_queue_jobs_total() -> None:
     for job_metric in JobTotalMetricDocument.objects():
-        QUEUE_JOBS_TOTAL.labels(queue=job_metric.queue, status=job_metric.status).set(job_metric.total)
+        QUEUE_JOBS_TOTAL.labels(queue=job_metric.job_type, status=job_metric.status).set(job_metric.total)
 
 
 def update_responses_in_cache_total() -> None:

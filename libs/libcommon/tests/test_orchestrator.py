@@ -111,7 +111,7 @@ def test_after_job_plan_delete() -> None:
     # create two jobs for DG, and none for DH
     # one job should be deleted for DG, and one should be created for DH
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DG)] * 2)
-    assert_metric(queue=STEP_DG, status=Status.WAITING, total=2)
+    assert_metric(job_type=STEP_DG, status=Status.WAITING, total=2)
 
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
@@ -243,7 +243,7 @@ def test_set_revision_handle_existing_jobs(
 ) -> None:
     # create two pending jobs for DA
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
-    assert_metric(queue=STEP_DA, status=Status.WAITING, total=2)
+    assert_metric(job_type=STEP_DA, status=Status.WAITING, total=2)
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
     dataset_orchestrator.set_revision(
         revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS

@@ -254,14 +254,14 @@ class JobTotalMetricDocument(Document):
     """Jobs total metric in mongoDB database, used to compute prometheus metrics.
 
     Args:
-        queue (`str`): queue name
+        job_type (`str`): job type
         status (`str`): job status see libcommon.queue.Status
         total (`int`): total of jobs
         created_at (`datetime`): when the metric has been created.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    queue = StringField(required=True)
+    job_type = StringField(required=True, unique_with="status")
     status = StringField(required=True)
     total = IntField(required=True, default=0)
     created_at = DateTimeField(default=get_datetime)
@@ -269,7 +269,7 @@ class JobTotalMetricDocument(Document):
     meta = {
         "collection": QUEUE_METRICS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("queue", "status")],
+        "indexes": [("job_type", "status")],
     }
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
@@ -395,22 +395,22 @@ def release_locks(owner: str) -> None:
     )
 
 
-def _update_metrics(queue: str, status: str, increase_by: int) -> None:
-    JobTotalMetricDocument.objects(queue=queue, status=status).upsert_one(inc__total=increase_by)
+def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
+    JobTotalMetricDocument.objects(job_type=job_type, status=status).upsert_one(inc__total=increase_by)
 
 
-def increase_metric(queue: str, status: str) -> None:
-    _update_metrics(queue=queue, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+def increase_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
 
 
-def decrease_metric(queue: str, status: str) -> None:
-    _update_metrics(queue=queue, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+def decrease_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
 
 
 def update_metrics_for_updated_job(job: Optional[JobDocument], status: str) -> None:
     if job is not None:
-        decrease_metric(queue=job.type, status=job.status)
-        increase_metric(queue=job.type, status=status)
+        decrease_metric(job_type=job.type, status=job.status)
+        increase_metric(job_type=job.type, status=status)
 
 
 class Queue:
@@ -456,7 +456,7 @@ class Queue:
 
         Returns: the job
         """
-        increase_metric(queue=job_type, status=Status.WAITING)
+        increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -505,7 +505,7 @@ class Queue:
                 for job_info in job_infos
             ]
             for job in jobs:
-                increase_metric(queue=job.type, status=Status.WAITING)
+                increase_metric(job_type=job.type, status=Status.WAITING)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:

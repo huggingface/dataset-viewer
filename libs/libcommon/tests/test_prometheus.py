@@ -177,7 +177,7 @@ def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
     QUEUE_JOBS_TOTAL.clear()
 
     job_metric = {
-        "queue": "dummy",
+        "job_type": "dummy",
         "status": "waiting",
         "total": 1,
     }

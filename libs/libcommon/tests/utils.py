@@ -366,7 +366,7 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
     )
 
 
-def assert_metric(queue: str, status: str, total: int) -> None:
-    metric = JobTotalMetricDocument.objects(queue=queue, status=status).first()
+def assert_metric(job_type: str, status: str, total: int) -> None:
+    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
     assert metric is not None
     assert metric.total == total
