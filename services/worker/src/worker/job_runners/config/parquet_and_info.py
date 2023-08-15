@@ -137,7 +137,7 @@ filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
     if not filename_pattern.match(os.path.basename(filename)):
-        return ValueError(f"Cannot parse {filename}")
+        raise ValueError(f"Cannot parse {filename}")
     parts = filename.split("/")
     if len(parts) == 4 and parts[1] == "partial":
         parts.pop(1)
