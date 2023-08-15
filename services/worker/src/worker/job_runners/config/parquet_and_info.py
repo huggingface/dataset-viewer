@@ -129,7 +129,8 @@ class ParquetFile:
     @property
     def path_in_repo(self) -> str:
         # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
-        return f"{self.config}/partial/{self.split}/{self.shard_idx:04d}.parquet"
+        partial_path = "/partial" if self.partial else ""
+        return f"{self.config}{partial_path}/{self.split}/{self.shard_idx:04d}.parquet"
 
 
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
