@@ -490,7 +490,7 @@ def create_parquet_and_info_response(
                 "url": CI_URL_TEMPLATE.format(
                     repo_id=f"datasets/{dataset}",
                     revision="refs%2Fconvert%2Fparquet",
-                    filename=f"{config}/partial/{split}/{filename}" if partial else f"{config}/{filename}",
+                    filename=f"{config}/partial/{split}/{filename}",
                 ),
                 "filename": filename,
                 "size": size,
