@@ -15,9 +15,16 @@ from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, 
 
 import pandas as pd
 import pytz
+from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import DateTimeField, EnumField, IntField, StringField
+from mongoengine.fields import (
+    DateTimeField,
+    EnumField,
+    IntField,
+    ObjectIdField,
+    StringField,
+)
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -26,6 +33,7 @@ from libcommon.constants import (
     LOCK_TTL_SECONDS,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
+    QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
@@ -238,6 +246,34 @@ class JobDocument(Document):
         )
 
 
+DEFAULT_INCREASE_AMOUNT = 1
+DEFAULT_DECREASE_AMOUNT = -1
+
+
+class JobTotalMetricDocument(Document):
+    """Jobs total metric in mongoDB database, used to compute prometheus metrics.
+
+    Args:
+        job_type (`str`): job type
+        status (`str`): job status see libcommon.queue.Status
+        total (`int`): total of jobs
+        created_at (`datetime`): when the metric has been created.
+    """
+
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
+    job_type = StringField(required=True, unique_with="status")
+    status = StringField(required=True)
+    total = IntField(required=True, default=0)
+    created_at = DateTimeField(default=get_datetime)
+
+    meta = {
+        "collection": QUEUE_METRICS_COLLECTION,
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
+        "indexes": [("job_type", "status")],
+    }
+    objects = QuerySetManager["JobTotalMetricDocument"]()
+
+
 class Lock(Document):
     meta = {
         "collection": QUEUE_COLLECTION_LOCKS,
@@ -359,6 +395,24 @@ def release_locks(owner: str) -> None:
     )
 
 
+def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
+    JobTotalMetricDocument.objects(job_type=job_type, status=status).upsert_one(inc__total=increase_by)
+
+
+def increase_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+
+
+def decrease_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+
+
+def update_metrics_for_updated_job(job: Optional[JobDocument], status: str) -> None:
+    if job is not None:
+        decrease_metric(job_type=job.type, status=job.status)
+        increase_metric(job_type=job.type, status=status)
+
+
 class Queue:
     """A queue manages jobs.
 
@@ -402,6 +456,7 @@ class Queue:
 
         Returns: the job
         """
+        increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -449,6 +504,8 @@ class Queue:
                 )
                 for job_info in job_infos
             ]
+            for job in jobs:
+                increase_metric(job_type=job.type, status=Status.WAITING)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
@@ -467,6 +524,8 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
+            for existing_job in existing.all():
+                update_metrics_for_updated_job(existing_job, status=Status.CANCELLED)
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
             return existing.count()
         except Exception:
@@ -640,6 +699,7 @@ class Queue:
                 if not first_job:
                     raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
                 # start it
+                update_metrics_for_updated_job(job=first_job, status=Status.STARTED)
                 first_job.update(
                     started_at=datetime,
                     status=Status.STARTED,
@@ -649,6 +709,7 @@ class Queue:
                 # and cancel the other ones, if any
                 for job in waiting_jobs.skip(1):
                     # TODO: try to do a bulk update (not sure it's possible)
+                    update_metrics_for_updated_job(job=job, status=Status.CANCELLED)
                     job.update(
                         finished_at=datetime,
                         status=Status.CANCELLED,
@@ -796,6 +857,7 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
+        update_metrics_for_updated_job(job=job, status=finished_status)
         job.update(finished_at=get_datetime(), status=finished_status)
         release_locks(owner=job_id)
         return True
@@ -947,6 +1009,7 @@ class Queue:
         except DoesNotExist:
             logging.warning(f"Heartbeat skipped because job {job_id} doesn't exist in the queue.")
             return
+        # no need to update metrics since it is just the last_heartbeat
         job.update(last_heartbeat=get_datetime())
 
     def get_zombies(self, max_seconds_without_heartbeat: float) -> List[JobInfo]:
@@ -981,4 +1044,5 @@ class Queue:
 def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     JobDocument.drop_collection()  # type: ignore
+    JobTotalMetricDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore

@@ -12,7 +12,7 @@ spec:
   schedule: {{ .Values.queueMetricsCollector.schedule | quote }}
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 300
+      ttlSecondsAfterFinished: 3600
       template:
         spec:
           restartPolicy: OnFailure

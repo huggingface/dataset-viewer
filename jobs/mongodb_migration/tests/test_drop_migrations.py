@@ -6,16 +6,12 @@ from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 from pytest import raises
 
+from mongodb_migration.drop_migrations import MigrationDropCollection
 from mongodb_migration.migration import IrreversibleMigrationError
-from mongodb_migration.migrations._20230811063600_cache_metrics_drop_collection import (
-    MigrationDropCacheMetricsCollection,
-)
 
 
-def test_drop_cache_metrics_collection(mongo_host: str) -> None:
-    with MongoResource(
-        database="test_drop_cache_metrics_collection", host=mongo_host, mongoengine_alias=METRICS_MONGOENGINE_ALIAS
-    ):
+def test_drop_collection(mongo_host: str) -> None:
+    with MongoResource(database="test_drop_collection", host=mongo_host, mongoengine_alias=METRICS_MONGOENGINE_ALIAS):
         db = get_db(METRICS_MONGOENGINE_ALIAS)
         db[CACHE_METRICS_COLLECTION].insert_many(
             [
@@ -30,8 +26,11 @@ def test_drop_cache_metrics_collection(mongo_host: str) -> None:
         assert db[CACHE_METRICS_COLLECTION].find_one({"kind": "kind"}) is not None
         assert CACHE_METRICS_COLLECTION in db.list_collection_names()  # type: ignore
 
-        migration = MigrationDropCacheMetricsCollection(
-            version="20230811063600", description="drop cache metrics collection"
+        migration = MigrationDropCollection(
+            version="20230811063600",
+            description="drop cache metrics collection",
+            alias=METRICS_MONGOENGINE_ALIAS,
+            collection_name=CACHE_METRICS_COLLECTION,
         )
 
         migration.up()

@@ -9,7 +9,6 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
-    MetricsConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -65,7 +64,6 @@ class JobConfig:
     log: LogConfig = field(default_factory=LogConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    metrics: MetricsConfig = field(default_factory=MetricsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     backfill: BackfillConfig = field(default_factory=BackfillConfig)
@@ -80,7 +78,6 @@ class JobConfig:
             log=LogConfig.from_env(),
             cache=CacheConfig.from_env(),
             queue=QueueConfig.from_env(),
-            metrics=MetricsConfig.from_env(),
             common=CommonConfig.from_env(),
             graph=ProcessingGraphConfig.from_env(),
             backfill=BackfillConfig.from_env(),

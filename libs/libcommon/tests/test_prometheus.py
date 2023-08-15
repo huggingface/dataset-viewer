@@ -7,7 +7,6 @@ from typing import Dict, Optional
 
 import pytest
 
-from libcommon.metrics import JobTotalMetricDocument
 from libcommon.prometheus import (
     ASSETS_DISK_USAGE,
     QUEUE_JOBS_TOTAL,
@@ -18,7 +17,8 @@ from libcommon.prometheus import (
     update_queue_jobs_total,
     update_responses_in_cache_total,
 )
-from libcommon.resources import CacheMongoResource, MetricsMongoResource
+from libcommon.queue import JobTotalMetricDocument
+from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CacheTotalMetricDocument
 
 
@@ -173,11 +173,11 @@ def test_cache_metrics(cache_mongo_resource: CacheMongoResource) -> None:
     )
 
 
-def test_queue_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
+def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
     QUEUE_JOBS_TOTAL.clear()
 
     job_metric = {
-        "queue": "dummy",
+        "job_type": "dummy",
         "status": "waiting",
         "total": 1,
     }

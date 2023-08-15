@@ -168,15 +168,11 @@ def _update_metrics(kind: str, http_status: HTTPStatus, increase_by: int, error_
 
 
 def increase_metric(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
-    CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
-        inc__total=DEFAULT_INCREASE_AMOUNT
-    )
+    _update_metrics(kind=kind, http_status=http_status, error_code=error_code, increase_by=DEFAULT_INCREASE_AMOUNT)
 
 
 def decrease_metric(kind: str, http_status: HTTPStatus, error_code: Optional[str] = None) -> None:
-    CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
-        inc__total=DEFAULT_DECREASE_AMOUNT
-    )
+    _update_metrics(kind=kind, http_status=http_status, error_code=error_code, increase_by=DEFAULT_DECREASE_AMOUNT)
 
 
 def decrease_metric_for_artifact(kind: str, dataset: str, config: Optional[str], split: Optional[str]) -> None:
