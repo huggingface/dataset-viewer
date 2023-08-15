@@ -262,7 +262,7 @@ def rows_index_with_parquet_metadata(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with ds_sharded_fs.open("default/train/0004.parquet") as f:
+    with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             yield indexer.get_rows_index("ds_sharded", "default", "train")
 
@@ -292,7 +292,7 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_sharded_fs.open("default/train/0004.parquet") as f:
+    with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             index = indexer.get_rows_index("ds_sharded", "default", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
