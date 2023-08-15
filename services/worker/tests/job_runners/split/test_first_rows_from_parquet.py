@@ -86,7 +86,7 @@ def ds() -> Dataset:
 
 @pytest.fixture
 def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
-    with tmpfs.open("config/dataset-split.parquet", "wb") as f:
+    with tmpfs.open("config/train/0000.parquet", "wb") as f:
         ds.to_parquet(f)
     yield tmpfs
 
@@ -110,11 +110,11 @@ def test_compute(
     error_code: str,
 ) -> None:
     dataset, config, split = "dataset", "config", "split"
-    parquet_file = ds_fs.open("config/dataset-split.parquet")
+    parquet_file = ds_fs.open("config/train/0000.parquet")
     fake_url = (
-        "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/dataset-split.parquet"
+        "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/train/0000.parquet"
     )
-    fake_metadata_subpath = "fake-parquet-metadata/dataset/config/dataset-split.parquet"
+    fake_metadata_subpath = "fake-parquet-metadata/dataset/config/train/0000.parquet"
 
     config_parquet_metadata_content = {
         "parquet_files_metadata": [
@@ -123,7 +123,7 @@ def test_compute(
                 "config": config,
                 "split": split,
                 "url": fake_url,  # noqa: E501
-                "filename": "dataset-split.parquet",
+                "filename": "0000.parquet",
                 "size": parquet_file.size,
                 "num_rows": len(ds),
                 "parquet_metadata_subpath": fake_metadata_subpath,
@@ -139,7 +139,7 @@ def test_compute(
         http_status=HTTPStatus.OK,
     )
 
-    parquet_metadata = pq.read_metadata(ds_fs.open("config/dataset-split.parquet"))
+    parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
     with patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file) as mock_http_file, patch(
         "pyarrow.parquet.read_metadata", return_value=parquet_metadata
     ) as mock_read_metadata, patch("pyarrow.parquet.read_schema", return_value=ds.data.schema) as mock_read_schema:
@@ -171,8 +171,8 @@ def test_compute(
             assert response
             assert response["rows"]
             assert response["features"]
-            assert len(response["rows"]) == 3  # testing file has 3 rows see config/dataset-split.parquet file
-            assert len(response["features"]) == 2  # testing file has 2 columns see config/dataset-split.parquet file
+            assert len(response["rows"]) == 3  # testing file has 3 rows see config/train/0000.parquet file
+            assert len(response["features"]) == 2  # testing file has 2 columns see config/train/0000.parquet file
             assert response["features"][0]["feature_idx"] == 0
             assert response["features"][0]["name"] == "col1"
             assert response["features"][0]["type"]["_type"] == "Value"
