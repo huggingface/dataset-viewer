@@ -77,6 +77,7 @@ def create_response(
             unsupported_columns,
         ),
         num_total_rows=num_total_rows,
+        max_rows_per_page=MAX_ROWS,
     )
 
 

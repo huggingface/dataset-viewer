@@ -55,14 +55,14 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
 
-    num_total_rows: int = field(init=False)
+    num_rows_total: int = field(init=False)
 
     def __post_init__(self) -> None:
         if self.httpfs._session is None:
             self.httpfs_session = asyncio.run(self.httpfs.set_session())
         else:
             self.httpfs_session = self.httpfs._session
-        self.num_total_rows = sum(self.num_rows)
+        self.num_rows_total = sum(self.num_rows)
 
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
