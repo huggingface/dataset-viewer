@@ -19,7 +19,7 @@ def collect_queue_metrics(processing_graph: ProcessingGraph) -> None:
                 current_total = current_metric.total
                 logging.info(
                     f"{job_type=} {status=} current_total={current_total} new_total="
-                    f"{new_total} difference={int(new_total)-current_total}"
+                    f"{new_total} difference={int(new_total)-current_total}"  # type: ignore
                 )
             query_set.upsert_one(total=new_total)
     logging.info("queue metrics have been collected")

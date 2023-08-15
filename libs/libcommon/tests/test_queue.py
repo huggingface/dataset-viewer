@@ -26,6 +26,8 @@ from libcommon.queue import (
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import Priority, Status, get_datetime
 
+from .utils import assert_metric
+
 
 def get_old_datetime() -> datetime:
     # Beware: the TTL index is set to 10 minutes. So it will delete the finished jobs after 10 minutes.
@@ -36,12 +38,6 @@ def get_old_datetime() -> datetime:
 @pytest.fixture(autouse=True)
 def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
     return queue_mongo_resource
-
-
-def assert_metric(queue: str, status: str, total: int) -> None:
-    metric = JobTotalMetricDocument.objects(queue=queue, status=status).first()
-    assert metric is not None
-    assert metric.total == total
 
 
 def test_add_job() -> None:
