@@ -130,7 +130,7 @@ def get_job_runner(
                         config="config_1",
                         split="train",
                         url="url2",
-                        filename="parquet-train-00001-of-05534.parquet",
+                        filename="0001.parquet",
                         size=0,
                     ),
                     SplitHubFile(
@@ -138,7 +138,7 @@ def get_job_runner(
                         config="config_1",
                         split="train",
                         url="url1",
-                        filename="parquet-train-00000-of-05534.parquet",
+                        filename="0000.parquet",
                         size=0,
                     ),
                     SplitHubFile(
@@ -146,7 +146,7 @@ def get_job_runner(
                         config="config_1",
                         split="test",
                         url="url2",
-                        filename="parquet-test-00000-of-00001.parquet",
+                        filename="0000.parquet",
                         size=0,
                     ),
                 ],
@@ -161,7 +161,7 @@ def get_job_runner(
                         config="config_1",
                         split="test",
                         url="url2",
-                        filename="parquet-test-00000-of-00001.parquet",
+                        filename="0001.parquet",
                         size=0,
                     ),
                     SplitHubFile(
@@ -169,7 +169,7 @@ def get_job_runner(
                         config="config_1",
                         split="train",
                         url="url1",
-                        filename="parquet-train-00000-of-05534.parquet",
+                        filename="0000.parquet",
                         size=0,
                     ),
                     SplitHubFile(
@@ -177,7 +177,7 @@ def get_job_runner(
                         config="config_1",
                         split="train",
                         url="url2",
-                        filename="parquet-train-00001-of-05534.parquet",
+                        filename="0000.parquet",
                         size=0,
                     ),
                 ],
