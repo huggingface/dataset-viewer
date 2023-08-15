@@ -128,38 +128,22 @@ class ParquetFile:
 
     @property
     def path_in_repo(self) -> str:
-        if self.partial:
-            # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
-            return f"{self.config}/partial/{self.split}/{self.shard_idx:04d}.parquet"
-        else:
-            return f'{self.config}/{self.local_file.removeprefix(f"{self.local_dir}/")}'
+        # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
+        return f"{self.config}/partial/{self.split}/{self.shard_idx:04d}.parquet"
 
 
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
-legacy_filename_pattern = re.compile(r"(?P<builder>[\.\w-]+?)-(?P<split>\w+(\.\w+)*?)(-[0-9]{5}-of-[0-9]{5})?.parquet")
 
 
 def parse_repo_filename(filename: str) -> Tuple[str, str]:
     if not filename_pattern.match(os.path.basename(filename)):
-        return parse_legacy_repo_filename(filename)
+        return ValueError(f"Cannot parse {filename}")
     parts = filename.split("/")
     if len(parts) == 4 and parts[1] == "partial":
         parts.pop(1)
     if len(parts) != 3:
         raise ValueError(f"Invalid filename: {filename}")
     config, split, _ = parts
-    return config, split
-
-
-def parse_legacy_repo_filename(filename: str) -> Tuple[str, str]:
-    parts = filename.split("/")
-    if len(parts) != 2:
-        raise ValueError(f"Invalid filename: {filename}")
-    config, fname = parts
-    m = legacy_filename_pattern.match(fname)
-    if not m:
-        raise ValueError(f"Cannot parse {filename}")
-    split = m.group("split")
     return config, split
 
 
@@ -604,13 +588,12 @@ def copy_parquet_files(builder: DatasetBuilder) -> List[CommitOperationCopy]:
             f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
         )
     for split in data_files:
-        num_shards = len(data_files[split])
         for shard_idx, data_file in enumerate(data_files[split]):
+            # data_file format for hub files is hf://datasets/{repo_id}@{revision}/{path_in_repo}
             src_revision, src_path_in_repo = data_file.split("@")[1].split("/", 1)
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
-            filename_suffix = f"-{shard_idx:05d}-of-{num_shards:05d}" if num_shards > 1 else ""
-            path_in_repo = f"{builder.config.name}/{builder.dataset_name}-{split}{filename_suffix}.parquet"
+            path_in_repo = f"{builder.config.name}/{split}/{shard_idx:04d}.parquet"
             parquet_operations.append(
                 CommitOperationCopy(
                     src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision
