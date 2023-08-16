@@ -199,3 +199,35 @@ def test_bypass_auth_public_key(
             hf_jwt_public_key=hf_jwt_public_key,
             hf_jwt_algorithm=algorithm_rs256,
         )
+
+
+@pytest.mark.parametrize(
+    "hf_jwt_public_key,payload,prefix,expectation",
+    [
+        (None, payload_ok, "Bearer jwt:", pytest.raises(ValueError)),
+        (public_key, {}, "Bearer jwt:", pytest.raises(ValueError)),
+        (public_key, payload_ok, "jwt:", pytest.raises(ValueError)),
+        (public_key, payload_ok, "Bearer ", pytest.raises(ValueError)),
+        (public_key, payload_ok, "Bearer jwt:", does_not_raise()),
+    ],
+)
+def test_jwt(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    hf_jwt_public_key: Optional[str],
+    payload: Dict[str, str],
+    prefix: str,
+    expectation: Any,
+) -> None:
+    external_auth_url = hf_endpoint + hf_auth_path
+    httpserver.expect_request(hf_auth_path % dataset_ok).respond_with_handler(raise_value_error)
+    headers = {"authorization": prefix + jwt.encode(payload, private_key, algorithm=algorithm_rs256)}
+    with expectation:
+        auth_check(
+            dataset=dataset_ok,
+            external_auth_url=external_auth_url,
+            request=create_request(headers=headers),
+            hf_jwt_public_key=hf_jwt_public_key,
+            hf_jwt_algorithm=algorithm_rs256,
+        )

@@ -38,6 +38,19 @@ class RequestAuth(AuthBase):
         return r
 
 
+def get_jwt_token(request: Optional[Request] = None) -> Optional[str]:
+    if not request:
+        return None
+    # x-api-token is deprecated and will be removed in the future
+    if token := request.headers.get("x-api-key"):
+        return token
+    authorization = request.headers.get("authorization")
+    if not authorization:
+        return None
+    token = authorization.removeprefix("Bearer jwt:")
+    return None if token == authorization else token
+
+
 def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
@@ -70,29 +83,24 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="prepare parameters"):
-            if request:
+            if jwt_token := get_jwt_token(request):
+                if is_jwt_valid(
+                    dataset=dataset, token=jwt_token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                ):
+                    logging.debug(
+                        "By-passing the authentication step, because a valid JWT was passed in headers"
+                        f" for dataset {dataset}. JWT was: {jwt_token}"
+                    )
+                    return True
                 logging.debug(
-                    f"Looking if jwt is passed in request headers {request.headers} to bypass authentication."
+                    f"Error while validating the JWT passed in headers for dataset {dataset}. Trying"
+                    f" with the following authentication mechanisms. JWT was: {jwt_token}"
                 )
-                HEADER = "x-api-key"
-                if token := request.headers.get(HEADER):
-                    if is_jwt_valid(
-                        dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
-                    ):
-                        logging.debug(
-                            f"By-passing the authentication step, because a valid JWT was passed in header: '{HEADER}'"
-                            f" for dataset {dataset}. JWT was: {token}"
-                        )
-                        return True
-                    logging.debug(
-                        f"Error while validating the JWT passed in header: '{HEADER}' for dataset {dataset}. Trying"
-                        f" with the following authentication mechanisms. JWT was: {token}"
-                    )
-                else:
-                    logging.debug(
-                        f"No JWT was passed in header: '{HEADER}' for dataset {dataset}. Trying with the following"
-                        " authentication mechanisms."
-                    )
+            else:
+                logging.debug(
+                    f"No JWT was passed in the headers for dataset {dataset}. Trying with the following"
+                    " authentication mechanisms."
+                )
             if external_auth_url is None:
                 return True
             try:
