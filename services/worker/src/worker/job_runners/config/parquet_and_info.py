@@ -99,6 +99,10 @@ DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
 
+# For paths like "en/partial-train/0000.parquet" in the C4 dataset.
+# Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+PARTIAL_SPLIT_PREFIX = "partial-"
+
 T = TypeVar("T")
 
 
@@ -128,9 +132,9 @@ class ParquetFile:
 
     @property
     def path_in_repo(self) -> str:
+        partial_prefix = PARTIAL_SPLIT_PREFIX if self.partial else ""
         # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
-        partial_path = "/partial" if self.partial else ""
-        return f"{self.config}{partial_path}/{self.split}/{self.shard_idx:04d}.parquet"
+        return f"{self.config}/{partial_prefix}{self.split}/{self.shard_idx:04d}.parquet"
 
 
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
@@ -140,11 +144,11 @@ def parse_repo_filename(filename: str) -> Tuple[str, str]:
     if not filename_pattern.match(os.path.basename(filename)):
         raise ValueError(f"Cannot parse {filename}")
     parts = filename.split("/")
-    if len(parts) == 4 and parts[1] == "partial":
-        parts.pop(1)
     if len(parts) != 3:
         raise ValueError(f"Invalid filename: {filename}")
     config, split, _ = parts
+    if split.startswith(PARTIAL_SPLIT_PREFIX):
+        split = split[len(PARTIAL_SPLIT_PREFIX) :]
     return config, split
 
 
