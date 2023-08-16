@@ -396,7 +396,12 @@ def release_locks(owner: str) -> None:
 
 
 def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
-    JobTotalMetricDocument.objects(job_type=job_type, status=status).upsert_one(inc__total=increase_by)
+    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
+        upsert=True,
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        inc__total=increase_by,
+    )
 
 
 def increase_metric(job_type: str, status: str) -> None:
