@@ -188,7 +188,7 @@ def test_compute_legacy_configs(
     # (no files from 'main')
     assert ".gitattributes" in repo_files
     assert all(
-        fnmatch(file, "first/*.parquet") or fnmatch(file, "second/*.parquet")
+        fnmatch(file, "first/*/*.parquet") or fnmatch(file, "second/*/*.parquet")
         for file in repo_files.difference({".gitattributes"})
     )
     orig_repo_configs = {f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")}
@@ -215,7 +215,7 @@ def test_compute_legacy_configs(
     # assert that legacy config is removed from the repo
     # and there are only files for config that was just pushed and .gitattributes
     assert ".gitattributes" in updated_repo_files
-    assert all(fnmatch(file, "first/*") for file in updated_repo_files.difference({".gitattributes"}))
+    assert all(fnmatch(file, "first/*/*.parquet") for file in updated_repo_files.difference({".gitattributes"}))
     updated_repo_configs = {
         f.rfilename.split("/")[0] for f in dataset_info.siblings if f.rfilename.endswith(".parquet")
     }
@@ -405,7 +405,7 @@ def test_partially_converted_if_big_non_parquet(
     assert_content_is_equal(content, hub_responses_big_csv["parquet_and_info_response"])
     # dataset is partially generated
     assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size
-    assert content["parquet_files"][0]["url"].endswith("/partial/train/0000.parquet")
+    assert content["parquet_files"][0]["url"].endswith("/partial-train/0000.parquet")
 
 
 def test_supported_if_gated(
@@ -587,23 +587,14 @@ def test_previous_step_error(
 @pytest.mark.parametrize(
     "filename,split,config,raises",
     [
-        ("config/builder-split.parquet", "split", "config", False),
-        ("config/builder-with-dashes-split.parquet", "split", "config", False),
-        ("config/builder-split-00000-of-00001.parquet", "split", "config", False),
-        ("config/builder-with-dashes-split-00000-of-00001.parquet", "split", "config", False),
-        ("config/builder-split.with.dots-00000-of-00001.parquet", "split.with.dots", "config", False),
-        (
-            "config/builder-with-dashes-caveat-asplitwithdashesisnotsupported-00000-of-00001.parquet",
-            "asplitwithdashesisnotsupported",
-            "config",
-            False,
-        ),
-        ("config/partial/split/0000.parquet", "split", "config", False),
-        ("config/partial/split.with.dots/0000.parquet", "split.with.dots", "config", False),
-        ("config/partial/toomanyzeros/00000.parquet", "toomanyzeros", "config", True),
-        ("builder-split-00000-of-00001.parquet", "split", "config", True),
-        ("plain_text/openwebtext-10k-train.parquet", "train", "plain_text", False),
-        ("plain_text/openwebtext-10k-train-00000-of-00001.parquet", "train", "plain_text", False),
+        ("config/split/0000.parquet", "split", "config", False),
+        ("config/split.with.dots/0000.parquet", "split.with.dots", "config", False),
+        ("config/partial-split/0000.parquet", "split", "config", False),
+        ("config/partial-split.with.dots/0000.parquet", "split.with.dots", "config", False),
+        ("config/partial-toomanyzeros/00000.parquet", "toomanyzeros", "config", True),
+        ("config/builder-split.parquet", "split", "config", True),
+        ("plain_text/train/0000.parquet", "train", "plain_text", False),
+        ("plain_text/train/0001.parquet", "train", "plain_text", False),
     ],
 )
 def test_parse_repo_filename(filename: str, split: str, config: str, raises: bool) -> None:

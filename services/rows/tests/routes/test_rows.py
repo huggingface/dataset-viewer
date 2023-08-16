@@ -43,7 +43,7 @@ def ds() -> Dataset:
 
 @pytest.fixture
 def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
-    with tmpfs.open("plain_text/ds-train.parquet", "wb") as f:
+    with tmpfs.open("default/train/0000.parquet", "wb") as f:
         ds.to_parquet(f)
     yield tmpfs
 
@@ -57,7 +57,7 @@ def ds_sharded(ds: Dataset) -> Dataset:
 def ds_sharded_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
     num_shards = 4
     for shard_idx in range(num_shards):
-        with tmpfs.open(f"plain_text/ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet", "wb") as f:
+        with tmpfs.open(f"default/train/{shard_idx:04d}.parquet", "wb") as f:
             ds.to_parquet(f)
     yield tmpfs
 
@@ -70,7 +70,7 @@ def ds_image(image_path: str) -> Dataset:
 
 @pytest.fixture
 def ds_image_fs(ds_image: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
-    with tmpfs.open("plain_text/ds_image-train.parquet", "wb") as f:
+    with tmpfs.open("default/train/0000.parquet", "wb") as f:
         ds_image.to_parquet(f)
     yield tmpfs
 
@@ -96,10 +96,10 @@ def dataset_with_config_parquet() -> dict[str, Any]:
         "parquet_files": [
             {
                 "dataset": "ds",
-                "config": "plain_text",
+                "config": "default",
                 "split": "train",
-                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds-train.parquet",  # noqa: E501
-                "filename": "ds-train.parquet",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+                "filename": "0000.parquet",
                 "size": 128,
             }
         ]
@@ -107,7 +107,7 @@ def dataset_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds",
-        config="plain_text",
+        config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
         progress=1.0,
@@ -123,20 +123,20 @@ def dataset_with_config_parquet_metadata(
         "parquet_files_metadata": [
             {
                 "dataset": "ds",
-                "config": "plain_text",
+                "config": "default",
                 "split": "train",
-                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds-train.parquet",  # noqa: E501
-                "filename": "ds-train.parquet",
-                "size": ds_fs.info("plain_text/ds-train.parquet")["size"],
-                "num_rows": pq.read_metadata(ds_fs.open("plain_text/ds-train.parquet")).num_rows,
-                "parquet_metadata_subpath": "ds/--/plain_text/ds-train.parquet",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+                "filename": "0000.parquet",
+                "size": ds_fs.info("default/train/0000.parquet")["size"],
+                "num_rows": pq.read_metadata(ds_fs.open("default/train/0000.parquet")).num_rows,
+                "parquet_metadata_subpath": "ds/--/default/train/0000.parquet",
             }
         ]
     }
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds",
-        config="plain_text",
+        config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
         progress=1.0,
@@ -166,10 +166,10 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
         "parquet_files": [
             {
                 "dataset": "ds_sharded",
-                "config": "plain_text",
+                "config": "default",
                 "split": "train",
-                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet",  # noqa: E501
-                "filename": f"ds_sharded-train-{shard_idx:05d}-of-{num_shards:05d}.parquet",
+                "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train{shard_idx:04d}.parquet",  # noqa: E501
+                "filename": f"{shard_idx:04d}.parquet",
                 "size": 128,
             }
             for shard_idx in range(num_shards)
@@ -178,7 +178,7 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_sharded",
-        config="plain_text",
+        config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
         progress=1.0,
@@ -194,7 +194,7 @@ def dataset_sharded_with_config_parquet_metadata(
         "parquet_files_metadata": [
             {
                 "dataset": "ds_sharded",
-                "config": "plain_text",
+                "config": "default",
                 "split": "train",
                 "url": f"https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/{parquet_file_path}",  # noqa: E501
                 "filename": os.path.basename(parquet_file_path),
@@ -202,13 +202,13 @@ def dataset_sharded_with_config_parquet_metadata(
                 "num_rows": pq.read_metadata(ds_sharded_fs.open(parquet_file_path)).num_rows,
                 "parquet_metadata_subpath": f"ds_sharded/--/{parquet_file_path}",
             }
-            for parquet_file_path in ds_sharded_fs.glob("plain_text/*.parquet")
+            for parquet_file_path in ds_sharded_fs.glob("default/**.parquet")
         ]
     }
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds_sharded",
-        config="plain_text",
+        config="default",
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,
         progress=1.0,
@@ -222,10 +222,10 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
         "parquet_files": [
             {
                 "dataset": "ds_image",
-                "config": "plain_text",
+                "config": "default",
                 "split": "train",
-                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/plain_text/ds_image-train.parquet",  # noqa: E501
-                "filename": "ds_image-train.parquet",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+                "filename": "0000.parquet",
                 "size": 11128,
             }
         ]
@@ -233,7 +233,7 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_image",
-        config="plain_text",
+        config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
         progress=1.0,
@@ -262,17 +262,17 @@ def rows_index_with_parquet_metadata(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
-    with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
+    with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            yield indexer.get_rows_index("ds_sharded", "plain_text", "train")
+            yield indexer.get_rows_index("ds_sharded", "default", "train")
 
 
 def test_indexer_get_rows_index_with_parquet_metadata(
     indexer: Indexer, ds: Dataset, ds_fs: AbstractFileSystem, dataset_with_config_parquet_metadata: dict[str, Any]
 ) -> None:
-    with ds_fs.open("plain_text/ds-train.parquet") as f:
+    with ds_fs.open("default/train/0000.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = indexer.get_rows_index("ds", "plain_text", "train")
+            index = indexer.get_rows_index("ds", "default", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds.features
     assert index.parquet_index.num_rows == [len(ds)]
@@ -292,9 +292,9 @@ def test_indexer_get_rows_index_sharded_with_parquet_metadata(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> None:
-    with ds_sharded_fs.open("plain_text/ds_sharded-train-00000-of-00004.parquet") as f:
+    with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
-            index = indexer.get_rows_index("ds_sharded", "plain_text", "train")
+            index = indexer.get_rows_index("ds_sharded", "default", "train")
     assert isinstance(index.parquet_index, ParquetIndexWithMetadata)
     assert index.parquet_index.features == ds_sharded.features
     assert index.parquet_index.num_rows == [len(ds)] * 4
@@ -323,7 +323,7 @@ def test_rows_index_query_with_parquet_metadata(
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     response = create_response(
         dataset="ds",
-        config="plain_text",
+        config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
@@ -347,7 +347,7 @@ def test_create_response_with_image(
 ) -> None:
     response = create_response(
         dataset="ds_image",
-        config="plain_text",
+        config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
@@ -363,7 +363,7 @@ def test_create_response_with_image(
             "row_idx": 0,
             "row": {
                 "image": {
-                    "src": "http://localhost/cached-assets/ds_image/--/plain_text/train/0/image/image.jpg",
+                    "src": "http://localhost/cached-assets/ds_image/--/default/train/0/image/image.jpg",
                     "height": 480,
                     "width": 640,
                 }
@@ -371,13 +371,13 @@ def test_create_response_with_image(
             "truncated_cells": [],
         }
     ]
-    cached_image_path = Path(cached_assets_directory) / "ds_image/--/plain_text/train/0/image/image.jpg"
+    cached_image_path = Path(cached_assets_directory) / "ds_image/--/default/train/0/image/image.jpg"
     assert cached_image_path.is_file()
 
 
 def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None:
     cached_assets_directory = tmp_path / "cached-assets"
-    split_dir = cached_assets_directory / "ds/--/plain_text/train"
+    split_dir = cached_assets_directory / "ds/--/default/train"
     split_dir.mkdir(parents=True)
     n_rows = 8
     for i in range(n_rows):
@@ -385,7 +385,7 @@ def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None
         time.sleep(0.01)
     update_last_modified_date_of_rows_in_assets_dir(
         dataset="ds",
-        config="plain_text",
+        config="default",
         split="train",
         offset=2,
         length=3,

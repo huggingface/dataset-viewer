@@ -41,7 +41,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
             parquet_file for parquet_file in content["parquet_files"] if parquet_file.get("config") == config
         ]
         # sort by filename, which ensures the shards are in order: 00000, 00001, 00002, ...
-        parquet_files.sort(key=lambda x: x["filename"])  # type: ignore
+        parquet_files.sort(key=lambda x: (x["split"], x["filename"]))
         if "features" in content["dataset_info"] and isinstance(content["dataset_info"]["features"], dict):
             features = content["dataset_info"]["features"]
         else:

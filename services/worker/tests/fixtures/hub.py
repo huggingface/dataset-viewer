@@ -460,11 +460,7 @@ def create_parquet_and_info_response(
     partial: bool = False,
 ) -> Any:
     config, split = get_default_config_split()
-    dataset_name = dataset.split("/")[-1]
-    if partial:
-        filename = "0000.parquet"
-    else:
-        filename = f"{dataset_name}-train.parquet"
+    filename = "0000.parquet"
     size = (
         CSV_PARQUET_SIZE
         if data_type == "csv"
@@ -485,6 +481,7 @@ def create_parquet_and_info_response(
         if data_type == "big_parquet"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
+    partial_prefix = "partial-" if partial else ""
     return {
         "parquet_files": [
             {
@@ -494,7 +491,7 @@ def create_parquet_and_info_response(
                 "url": CI_URL_TEMPLATE.format(
                     repo_id=f"datasets/{dataset}",
                     revision="refs%2Fconvert%2Fparquet",
-                    filename=f"{config}/partial/{split}/{filename}" if partial else f"{config}/{filename}",
+                    filename=f"{config}/{partial_prefix}{split}/{filename}",
                 ),
                 "filename": filename,
                 "size": size,
