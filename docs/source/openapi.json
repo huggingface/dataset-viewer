@@ -3592,6 +3592,113 @@
                       "partial": false
                     }
                   },
+                  "partial parquet export": {
+                    "summary": "c4 (en): the parquet export is partial (first 5GB)",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=c4&config=en",
+                    "value": {
+                      "parquet_files": [
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
+                          "filename": "0000.parquet",
+                          "size": 309207547
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
+                          "filename": "0001.parquet",
+                          "size": 308665905
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
+                          "filename": "0002.parquet",
+                          "size": 309066442
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
+                          "filename": "0003.parquet",
+                          "size": 309257276
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
+                          "filename": "0004.parquet",
+                          "size": 309040649
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
+                          "filename": "0005.parquet",
+                          "size": 308850445
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
+                          "filename": "0006.parquet",
+                          "size": 308432549
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
+                          "filename": "0007.parquet",
+                          "size": 308621018
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
+                          "filename": "0008.parquet",
+                          "size": 309109536
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
+                          "filename": "0009.parquet",
+                          "size": 300817682
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0000.parquet",
+                          "filename": "0000.parquet",
+                          "size": 308896113
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0001.parquet",
+                          "filename": "0001.parquet",
+                          "size": 200085262
+                        },
+                      ],
+                      "pending": [],
+                      "failed": [],
+                      "partial": true
+                    }
+                  },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=atomic",
