@@ -105,15 +105,15 @@ def download_index_file(
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> Tuple[int, pa.Table]:
     con = duckdb.connect(index_file_location, read_only=True)
     count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
-    num_total_rows = count_result[0][0]  # it will always return a non empty list with one element in a tuple
-    logging.debug(f"got {num_total_rows=} results for {query=}")
+    num_rows_total = count_result[0][0]  # it will always return a non empty list with one element in a tuple
+    logging.debug(f"got {num_rows_total=} results for {query=}")
     query_result = con.execute(
         query=FTS_COMMAND.format(offset=offset, length=length),
         parameters=[query],
     )
     pa_table = query_result.arrow()
     con.close()
-    return (num_total_rows, pa_table)
+    return (num_rows_total, pa_table)
 
 
 def get_cache_entry_from_steps(
@@ -160,7 +160,7 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     offset: int,
-    num_total_rows: int,
+    num_rows_total: int,
 ) -> PaginatedResponse:
     features = Features.from_arrow_schema(pa_table.schema)
 
@@ -186,7 +186,8 @@ def create_response(
             unsupported_columns=unsupported_columns,
             row_idx_column=ROW_IDX_COLUMN,
         ),
-        num_total_rows=num_total_rows,
+        num_rows_total=num_rows_total,
+        num_rows_per_page=MAX_ROWS,
     )
 
 
@@ -302,7 +303,7 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
-                    (num_total_rows, pa_table) = full_text_search(index_file_location, query, offset, length)
+                    (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
                     index_path.touch()
 
                 with StepProfiler(method="search_endpoint", step="clean cache"):
@@ -335,7 +336,7 @@ def create_search_endpoint(
                         cached_assets_base_url,
                         cached_assets_directory,
                         offset,
-                        num_total_rows,
+                        num_rows_total,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)

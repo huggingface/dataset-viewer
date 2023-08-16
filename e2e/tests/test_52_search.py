@@ -33,13 +33,16 @@ def test_search_endpoint(
         content = search_response.json()
         assert "rows" in content, search_response
         assert "features" in content, search_response
-        assert "num_total_rows" in content, search_response
+        assert "num_rows_total" in content, search_response
+        assert "num_rows_per_page" in content, search_response
         rows = content["rows"]
         features = content["features"]
-        num_total_rows = content["num_total_rows"]
+        num_rows_total = content["num_rows_total"]
+        num_rows_per_page = content["num_rows_per_page"]
         assert isinstance(rows, list), rows
         assert isinstance(features, list), features
-        assert num_total_rows == 3
+        assert num_rows_total == 3
+        assert num_rows_per_page == 100
         assert rows[0] == {
             "row_idx": 2,
             "row": {"col_1": "We count thirty Rebel ships, Lord Vader.", "col_2": 2, "col_3": 2.0},

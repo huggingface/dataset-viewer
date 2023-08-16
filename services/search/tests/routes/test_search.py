@@ -21,7 +21,7 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
 
 
 @pytest.mark.parametrize(
-    "query,offset,length,expected_result, expected_num_total_rows",
+    "query,offset,length,expected_result, expected_num_rows_total",
     [
         (
             "Lord Vader",
@@ -56,7 +56,7 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
     ],
 )
 def test_full_text_search(
-    query: str, offset: int, length: int, expected_result: Any, expected_num_total_rows: int
+    query: str, offset: int, length: int, expected_result: Any, expected_num_rows_total: int
 ) -> None:
     # simulate index file
     index_file_location = "index.duckdb"
@@ -86,10 +86,10 @@ def test_full_text_search(
     con.close()
 
     # assert search results
-    (num_total_rows, pa_table) = full_text_search(index_file_location, query, offset, length)
-    assert num_total_rows is not None
+    (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
+    assert num_rows_total is not None
     assert pa_table is not None
-    assert num_total_rows == expected_num_total_rows
+    assert num_rows_total == expected_num_rows_total
 
     fields = [pa.field("__hf_index_id", pa.int64()), pa.field("text", pa.string())]
     filtered_df = pd.DataFrame(expected_result)

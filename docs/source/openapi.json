@@ -311,7 +311,7 @@
       },
       "PaginatedResponse": {
         "type": "object",
-        "required": ["features", "rows", "num_total_rows"],
+        "required": ["features", "rows", "num_rows_total", "num_rows_per_page"],
         "properties": {
           "features": {
             "type": "array",
@@ -325,7 +325,10 @@
               "$ref": "#/components/schemas/RowItem"
             }
           },
-          "num_total_rows": {
+          "num_rows_total": {
+            "type": "integer"
+          },
+          "num_rows_per_page": {
             "type": "integer"
           }
         }
@@ -2610,7 +2613,8 @@
                           "truncated_cells": []
                         }
                       ],
-                      "num_total_rows": 25000
+                      "num_rows_total": 25000,
+                      "num_rows_per_page": 100
                     }
                   },
                   "A slice of an image dataset (huggan/horse2zebra)": {
@@ -2679,7 +2683,8 @@
                           "truncated_cells": []
                         }
                       ],
-                      "num_total_rows": 1334
+                      "num_rows_total": 1334,
+                      "num_rows_per_page": 100
                     }
                   },
                   "Audio is not supported at the moment (example: asapp/slue)": {
@@ -2764,7 +2769,8 @@
                           "truncated_cells": []
                         }
                       ],
-                      "num_total_rows": 5777
+                      "num_rows_total": 5777,
+                      "num_rows_per_page": 100
                     }
                   }
                 }
@@ -3089,7 +3095,8 @@
                           "truncated_cells": []
                         }
                       ],
-                      "num_total_rows": 624
+                      "num_rows_total": 624,
+                      "num_rows_per_page": 100
                     }
                   }
                 }
