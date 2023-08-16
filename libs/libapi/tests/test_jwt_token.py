@@ -16,7 +16,7 @@ from libapi.exceptions import (
     JWTInvalidSignature,
     JWTMissingRequiredClaim,
 )
-from libapi.jwt_token import validate_jwt, parse_jwt_public_key
+from libapi.jwt_token import parse_jwt_public_key, validate_jwt
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 HUB_JWT_ALGORITHM = "EdDSA"
