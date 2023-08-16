@@ -148,7 +148,7 @@ def parse_repo_filename(filename: str) -> Tuple[str, str]:
         raise ValueError(f"Invalid filename: {filename}")
     config, split, _ = parts
     if split.startswith(PARTIAL_SPLIT_PREFIX):
-        split = split[len(PARTIAL_SPLIT_PREFIX) :]
+        split = split[len(PARTIAL_SPLIT_PREFIX) :]  # noqa: E203
     return config, split
 
 
