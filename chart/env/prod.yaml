@@ -189,10 +189,6 @@ backfill:
       memory: "8Gi"
   tolerations: []
 
-cacheMetricsCollector:
-  action: "collect-cache-metrics"
-  schedule: "*/10 * * * *"
-
 queueMetricsCollector:
   action: "collect-queue-metrics"
   schedule: "*/2 * * * *"
