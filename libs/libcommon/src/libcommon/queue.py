@@ -688,7 +688,7 @@ class Queue:
         RETRIES = 20
         # uuid is used to differentiate between workers
         # otherwise another worker might acquire the lock
-        lock_owner = str(job.pk) + "-" + str(uuid4())
+        lock_owner = str(uuid4())
         try:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES):
