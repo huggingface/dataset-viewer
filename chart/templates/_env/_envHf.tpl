@@ -5,7 +5,7 @@
 - name: API_HF_AUTH_PATH
   value: {{ .Values.hf.authPath | quote }}
 - name: API_HF_JWT_PUBLIC_KEY_URL
-  value: {{ .Values.hf. | quote }}
+  value: {{ .Values.hf.jwtPublicKeyUrl | quote }}
 - name: API_HF_JWT_ADDITIONAL_PUBLIC_KEYS
   {{- if .Values.secrets.hfJwtAdditionalPublicKeys.fromSecret }}
   valueFrom:
