@@ -28,7 +28,16 @@ from jwt.algorithms import (
     RSAPSSAlgorithm,
 )
 
-from libapi.exceptions import JWKError
+from libapi.exceptions import (
+    JWKError,
+    JWTExpiredSignature,
+    JWTInvalidClaimRead,
+    JWTInvalidClaimSub,
+    JWTInvalidKeyOrAlgorithm,
+    JWTInvalidSignature,
+    JWTMissingRequiredClaim,
+    UnexpectedApiError,
+)
 
 ASYMMETRIC_ALGORITHMS = (ECAlgorithm, OKPAlgorithm, RSAAlgorithm, RSAPSSAlgorithm)
 SYMMETRIC_ALGORITHMS = (HMACAlgorithm,)
@@ -113,34 +122,25 @@ def fetch_jwt_public_key(
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
 
-def is_jwt_valid(
-    dataset: str, token: Any, public_key: Optional[str], algorithm: Optional[str], verify_exp: Optional[bool] = True
-) -> bool:
+def validate_jwt(dataset: str, token: Any, public_key: str, algorithm: str, verify_exp: Optional[bool] = True) -> None:
     """
     Check if the JWT is valid for the dataset.
 
-    The JWT is decoded with the public key, and the "sub" claim must be:
-      {"repoName": <...>, "repoType": "dataset", "read": true}
-    where <...> is the dataset identifier.
+    The JWT is decoded with the public key, and the payload must be:
+      {"sub": "datasets/<...dataset identifier...>", "read": true, "exp": <...date...>}
 
-    Returns True only if all the conditions are met. Else, it returns False.
+    Raise an exception if any of the condition is not met.
 
     Args:
         dataset (str): the dataset identifier
         token (Any): the JWT token to decode
-        public_key (str|None): the public key to use to decode the JWT token
-        algorithm (str|None): the algorithm to use to decode the JWT token
+        public_key (str): the public key to use to decode the JWT token
+        algorithm (str): the algorithm to use to decode the JWT token
         verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
 
-    Returns:
-        bool: True if the JWT is valid for the input dataset, else False
+    Raise:
+
     """
-    if not public_key or not algorithm:
-        logging.debug(
-            f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
-            " validation."
-        )
-        return False
     try:
         decoded = jwt.decode(
             jwt=token,
@@ -149,14 +149,34 @@ def is_jwt_valid(
             options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
         )
         logging.debug(f"Decoded JWT is: '{public_key}'.")
-    except Exception:
+    except jwt.exceptions.MissingRequiredClaimError as e:
+        raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
+    except jwt.exceptions.ExpiredSignatureError as e:
+        raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
+    except jwt.exceptions.InvalidSignatureError as e:
+        raise JWTInvalidSignature(
+            "The JWT signature verification failed. Check the signing key and the algorithm.", e
+        ) from e
+    except (jwt.exceptions.InvalidKeyError, jwt.exceptions.InvalidAlgorithmError) as e:
+        raise JWTInvalidKeyOrAlgorithm(
+            (
+                "The key used to verify the signature is not compatible with the algorithm. Check the signing key and"
+                " the algorithm."
+            ),
+            e,
+        ) from e
+    except Exception as e:
         logging.debug(
             f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
             " validation."
         )
-        return False
+        raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
     sub = decoded.get("sub")
     if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
-        return False
+        raise JWTInvalidClaimSub(
+            "The 'sub' claim in JWT payload is invalid. It should be in the form 'datasets/<...dataset"
+            " identifier...>'."
+        )
     read = decoded.get("read")
-    return read is True
+    if read is not True:
+        raise JWTInvalidClaimRead("The 'read' claim in JWT payload is invalid. It should be set to 'true'.")

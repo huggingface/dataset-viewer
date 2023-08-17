@@ -4,7 +4,7 @@
 import datetime
 import time
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Mapping, Optional
 
 import jwt
 import pytest
@@ -35,38 +35,72 @@ public_key = """-----BEGIN PUBLIC KEY-----
 MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAZTmplhS/Jd73ycVut7TglMObheQqXM7R
 ZYlwazLU4wpfIVIwOh9IsCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQAB
 -----END PUBLIC KEY-----"""
-
-dataset_ok = "dataset"
 exp_ok = datetime.datetime.now().timestamp() + 1000
 read_ok = True
-sub_ok = f"datasets/{dataset_ok}"
-payload_ok = {"sub": sub_ok, "read": read_ok, "exp": exp_ok}
 algorithm_rs256 = "RS256"
+
+dataset_public = "dataset_public"
+dataset_protected_with_access = "dataset_protected_with_access"
+dataset_protected_without_access = "dataset_protected_without_access"
+dataset_inexistent = "dataset_inexistent"
+dataset_throttled = "dataset_throttled"
+
+cookie_ok = "cookie ok"
+cookie_wrong = "cookie wrong"
+api_token_ok = "api token ok"
+api_token_wrong = "api token wrong"
 
 
 def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
-    # return 401 if a cookie has been provided, 404 if a token has been provided,
-    # and 200 if none has been provided
-    #
-    # caveat: the returned status codes don't simulate the reality
-    # they're just used to check every case
-    return WerkzeugResponse(
-        status=401 if request.headers.get("cookie") else 404 if request.headers.get("authorization") else 200
-    )
+    """Simulates the https://huggingface.co/api/datasets/%s/auth-check Hub API endpoint.
+
+    It returns:
+    - 200: if the user can access the dataset
+    - 401: if the user is not authenticated
+    - 403: if the user is authenticated but can't access the dataset
+    - 404: if the user is authenticated but the dataset doesn't exist
+    - 429: if the user is authenticated but the request is throttled
+
+    Args:
+        request (WerkzeugRequest): the request sent to the endpoint
+
+    Returns:
+        WerkzeugResponse: the response sent by the endpoint
+    """
+    dataset = request.path.split("/")[-2]
+    if dataset == dataset_public:
+        # a public dataset always has read access
+        return WerkzeugResponse(status=200)
+    if request.headers.get("cookie") != cookie_ok and request.headers.get("authorization") != f"Bearer {api_token_ok}":
+        # the user is not authenticated
+        return WerkzeugResponse(status=401)
+    if dataset == dataset_protected_with_access:
+        # the user is authenticated and has access to the dataset
+        return WerkzeugResponse(status=200)
+    if dataset == dataset_protected_without_access:
+        # the user is authenticated but doesn't have access to the dataset
+        return WerkzeugResponse(status=403)
+    if dataset == dataset_inexistent:
+        # the user is authenticated but the dataset doesn't exist
+        return WerkzeugResponse(status=404)
+    if dataset == dataset_throttled:
+        # the user is authenticated but the request is throttled (too many requests)
+        return WerkzeugResponse(status=429)
+    raise RuntimeError(f"Unexpected dataset: {dataset}")
 
 
-def test_no_auth_check() -> None:
-    assert auth_check("dataset")
+def test_no_external_auth_check() -> None:
+    assert auth_check(dataset_public)
 
 
-def test_invalid_auth_check_url() -> None:
+def test_invalid_external_auth_check_url() -> None:
     with pytest.raises(ValueError):
-        auth_check("dataset", external_auth_url="https://auth.check/")
+        auth_check(dataset_public, external_auth_url="https://doesnotexist/")
 
 
 def test_unreachable_external_auth_check_service() -> None:
     with pytest.raises(AuthCheckHubRequestError):
-        auth_check("dataset", external_auth_url="https://auth.check/%s")
+        auth_check(dataset_public, external_auth_url="https://doesnotexist/%s")
 
 
 @pytest.mark.parametrize(
@@ -138,22 +172,20 @@ def create_request(headers: Mapping[str, str]) -> Request:
     )
 
 
-@pytest.mark.parametrize(
-    "headers,expectation",
-    [
-        ({"Cookie": "some cookie"}, pytest.raises(ExternalUnauthenticatedError)),
-        ({"Authorization": "Bearer invalid"}, pytest.raises(ExternalAuthenticatedError)),
-        ({}, does_not_raise()),
-    ],
-)
-def test_valid_responses_with_request(
+def get_jwt(dataset: str) -> str:
+    return jwt.encode(
+        {"sub": f"datasets/{dataset}", "read": read_ok, "exp": exp_ok}, private_key, algorithm=algorithm_rs256
+    )
+
+
+def assert_auth_headers(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
+    dataset: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    dataset = "dataset"
     external_auth_url = hf_endpoint + hf_auth_path
     httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(auth_callback)
     with expectation:
@@ -161,41 +193,121 @@ def test_valid_responses_with_request(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
+            hf_jwt_public_key=public_key,
+            hf_jwt_algorithm=algorithm_rs256,
         )
-
-
-def raise_value_error(request: WerkzeugRequest) -> WerkzeugResponse:
-    return WerkzeugResponse(status=500)  # <- will raise ValueError in auth_check
 
 
 @pytest.mark.parametrize(
-    "hf_jwt_public_key,header,payload,expectation",
+    "headers,expectation",
     [
-        (None, None, payload_ok, pytest.raises(ValueError)),
-        (None, "X-Api-Key", payload_ok, pytest.raises(ValueError)),
-        (public_key, None, payload_ok, pytest.raises(ValueError)),
-        (public_key, "X-Api-Key", {}, pytest.raises(ValueError)),
-        (public_key, "X-Api-Key", payload_ok, does_not_raise()),
-        (public_key, "x-api-key", payload_ok, does_not_raise()),
+        ({}, does_not_raise()),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, does_not_raise()),
+        ({"Authorization": api_token_ok}, does_not_raise()),
+        ({"Cookie": cookie_wrong}, does_not_raise()),
+        ({"Authorization": f"Bearer {api_token_ok}"}, does_not_raise()),
+        ({"Cookie": cookie_ok}, does_not_raise()),
+        ({"X-Api-Key": get_jwt(dataset_public)}, does_not_raise()),
+        ({"Authorization": f"Bearer {get_jwt(dataset_public)}"}, does_not_raise()),
     ],
 )
-def test_bypass_auth_public_key(
+def test_external_auth_service_dataset_public(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
-    hf_jwt_public_key: Optional[str],
-    header: Optional[str],
-    payload: Dict[str, str],
+    headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    external_auth_url = hf_endpoint + hf_auth_path
-    httpserver.expect_request(hf_auth_path % dataset_ok).respond_with_handler(raise_value_error)
-    headers = {header: jwt.encode(payload, private_key, algorithm=algorithm_rs256)} if header else {}
-    with expectation:
-        auth_check(
-            dataset=dataset_ok,
-            external_auth_url=external_auth_url,
-            request=create_request(headers=headers),
-            hf_jwt_public_key=hf_jwt_public_key,
-            hf_jwt_algorithm=algorithm_rs256,
-        )
+    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_public, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expectation",
+    [
+        ({}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_ok}"}, does_not_raise()),
+        ({"Cookie": cookie_ok}, does_not_raise()),
+        ({"X-Api-Key": get_jwt(dataset_protected_with_access)}, does_not_raise()),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_with_access)}"}, does_not_raise()),
+    ],
+)
+def test_external_auth_service_dataset_protected_with_access(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_protected_with_access, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expectation",
+    [
+        ({}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ExternalAuthenticatedError)),
+        ({"Cookie": cookie_ok}, pytest.raises(ExternalAuthenticatedError)),
+        ({"X-Api-Key": get_jwt(dataset_protected_without_access)}, does_not_raise()),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_without_access)}"}, does_not_raise()),
+    ],
+)
+def test_external_auth_service_dataset_protected_without_access(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_protected_without_access, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expectation",
+    [
+        ({}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ExternalAuthenticatedError)),
+        ({"Cookie": cookie_ok}, pytest.raises(ExternalAuthenticatedError)),
+        ({"X-Api-Key": get_jwt(dataset_inexistent)}, does_not_raise()),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_inexistent)}"}, does_not_raise()),
+    ],
+)
+def test_external_auth_service_dataset_inexistent(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_inexistent, headers, expectation)
+
+
+@pytest.mark.parametrize(
+    "headers,expectation",
+    [
+        ({}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ValueError)),
+        ({"Cookie": cookie_ok}, pytest.raises(ValueError)),
+        ({"X-Api-Key": get_jwt(dataset_throttled)}, does_not_raise()),
+        ({"Authorization": f"Bearer jwt:{get_jwt(dataset_throttled)}"}, does_not_raise()),
+    ],
+)
+def test_external_auth_service_dataset_throttled(
+    httpserver: HTTPServer,
+    hf_endpoint: str,
+    hf_auth_path: str,
+    headers: Mapping[str, str],
+    expectation: Any,
+) -> None:
+    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_throttled, headers, expectation)

@@ -3,12 +3,20 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import jwt
 import pytest
 
-from libapi.jwt_token import is_jwt_valid, parse_jwt_public_key
+from libapi.exceptions import (
+    JWTExpiredSignature,
+    JWTInvalidClaimRead,
+    JWTInvalidClaimSub,
+    JWTInvalidKeyOrAlgorithm,
+    JWTInvalidSignature,
+    JWTMissingRequiredClaim,
+)
+from libapi.jwt_token import parse_jwt_public_key, validate_jwt
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 HUB_JWT_ALGORITHM = "EdDSA"
@@ -37,7 +45,7 @@ UNSUPPORTED_ALGORITHM_JWT_KEYS = [
     ],
 )
 def test_parse_jwk(
-    keys: Any,
+    keys: str,
     expectation: Any,
 ) -> None:
     with expectation:
@@ -53,16 +61,13 @@ DATASET_SEVERO_GLUE = "severo/glue"
 
 
 def test_is_jwt_valid_with_ec() -> None:
-    assert (
-        is_jwt_valid(
-            dataset=DATASET_SEVERO_GLUE,
-            token=HUB_JWT_TOKEN_FOR_SEVERO_GLUE,
-            public_key=HUB_JWT_PUBLIC_KEY,
-            algorithm=HUB_JWT_ALGORITHM,
-            verify_exp=False,
-            # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
-        )
-        is True
+    validate_jwt(
+        dataset=DATASET_SEVERO_GLUE,
+        token=HUB_JWT_TOKEN_FOR_SEVERO_GLUE,
+        public_key=HUB_JWT_PUBLIC_KEY,
+        algorithm=HUB_JWT_ALGORITHM,
+        verify_exp=False,
+        # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
     )
 
 
@@ -75,7 +80,7 @@ pDhW91x/14uXjnLXPypgY9bcfggJUwIhAJQG1LzrzjQWRUPMmgZKuhBkC3BmxhM8
 LlwzmCXVjEw5AiA7JnAFEb9+q82T71d3q/DxD0bWvb6hz5ASoBfXK2jGBQIgbaQp
 h4Tk6UJuj1xgKNs75Pk3pG2tj8AQiuBk3l62vRU=
 -----END RSA PRIVATE KEY-----"""
-public_key = """-----BEGIN PUBLIC KEY-----
+public_key_ok = """-----BEGIN PUBLIC KEY-----
 MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAZTmplhS/Jd73ycVut7TglMObheQqXM7R
 ZYlwazLU4wpfIVIwOh9IsCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQAB
 -----END PUBLIC KEY-----"""
@@ -99,27 +104,94 @@ read_ok = True
 read_wrong_1 = False
 read_wrong_2 = "True"
 payload_ok = {"sub": sub_ok, "read": read_ok, "exp": exp_ok}
-algorithm_rs256 = "RS256"
+algorithm_ok = "RS256"
+algorithm_wrong = "HS256"
+
+
+def encode_jwt(payload: Dict[str, Any]) -> str:
+    return jwt.encode(payload, private_key, algorithm=algorithm_ok)
+
+
+def assert_jwt(token: str, expectation: Any, public_key: str = public_key_ok, algorithm: str = algorithm_ok) -> None:
+    with expectation:
+        validate_jwt(dataset=dataset_ok, token=token, public_key=public_key, algorithm=algorithm)
 
 
 @pytest.mark.parametrize(
-    "public_key,payload,expected",
+    "public_key,expectation",
     [
-        (None, payload_ok, False),
-        (other_public_key, payload_ok, False),
-        (public_key, {}, False),
-        (public_key, {"sub": dataset_ok}, False),
-        (public_key, {"sub": sub_wrong_1, "read": read_ok, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_wrong_2, "read": read_ok, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_wrong_3, "read": read_ok, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_wrong_4, "read": read_ok, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_ok, "read": read_wrong_1, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_ok, "read": read_wrong_2, "exp": exp_ok}, False),
-        (public_key, {"sub": sub_ok, "read": read_ok, "exp": wrong_exp_1}, False),
-        (public_key, {"sub": sub_ok, "read": read_ok, "exp": wrong_exp_2}, False),
-        (public_key, payload_ok, True),
+        (other_public_key, pytest.raises(JWTInvalidSignature)),
+        (public_key_ok, does_not_raise()),
     ],
 )
-def test_is_jwt_valid(public_key: Optional[str], payload: Dict[str, str], expected: bool) -> None:
-    token = jwt.encode(payload, private_key, algorithm=algorithm_rs256)
-    assert is_jwt_valid(dataset=dataset_ok, token=token, public_key=public_key, algorithm=algorithm_rs256) is expected
+def test_validate_jwt_public_key(public_key: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt(payload_ok), expectation, public_key=public_key)
+
+
+@pytest.mark.parametrize(
+    "algorithm,expectation",
+    [
+        (algorithm_wrong, pytest.raises(JWTInvalidKeyOrAlgorithm)),
+        (algorithm_ok, does_not_raise()),
+    ],
+)
+def test_validate_jwt_algorithm(algorithm: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt(payload_ok), expectation, algorithm=algorithm)
+
+
+@pytest.mark.parametrize(
+    "payload,expectation",
+    [
+        ({}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"sub": sub_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"read": read_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"read": read_ok, "exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"sub": sub_ok, "exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"sub": sub_ok, "read": read_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"sub": sub_ok, "read": read_ok, "exp": exp_ok}, does_not_raise()),
+    ],
+)
+def test_validate_jwt_content_format(payload: Dict[str, str], expectation: Any) -> None:
+    assert_jwt(encode_jwt(payload), expectation)
+
+
+@pytest.mark.parametrize(
+    "read,expectation",
+    [
+        (read_wrong_1, pytest.raises(JWTInvalidClaimRead)),
+        (read_wrong_2, pytest.raises(JWTInvalidClaimRead)),
+        (read_ok, does_not_raise()),
+    ],
+)
+def test_validate_jwt_read(read: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt({"sub": sub_ok, "read": read, "exp": exp_ok}), expectation)
+
+
+@pytest.mark.parametrize(
+    "sub,expectation",
+    [
+        (sub_wrong_1, pytest.raises(JWTInvalidClaimSub)),
+        (sub_wrong_2, pytest.raises(JWTInvalidClaimSub)),
+        (sub_wrong_3, pytest.raises(JWTInvalidClaimSub)),
+        (sub_wrong_4, pytest.raises(JWTInvalidClaimSub)),
+        (sub_ok, does_not_raise()),
+    ],
+)
+def test_validate_jwt_subject(sub: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt({"sub": sub, "read": read_ok, "exp": exp_ok}), expectation)
+
+
+@pytest.mark.parametrize(
+    "expiration,expectation",
+    [
+        (wrong_exp_1, pytest.raises(JWTExpiredSignature)),
+        (wrong_exp_2, pytest.raises(JWTExpiredSignature)),
+        (exp_ok, does_not_raise()),
+    ],
+)
+def test_validate_jwt_expiration(expiration: str, expectation: Any) -> None:
+    assert_jwt(
+        encode_jwt({"sub": sub_ok, "read": read_ok, "exp": expiration}),
+        expectation,
+    )

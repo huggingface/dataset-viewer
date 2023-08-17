@@ -15,7 +15,7 @@ from libapi.exceptions import (
     ExternalAuthenticatedError,
     ExternalUnauthenticatedError,
 )
-from libapi.jwt_token import is_jwt_valid
+from libapi.jwt_token import validate_jwt
 
 
 class RequestAuth(AuthBase):
@@ -36,6 +36,19 @@ class RequestAuth(AuthBase):
         if self.authorization:
             r.headers["authorization"] = self.authorization
         return r
+
+
+def get_jwt_token(request: Optional[Request] = None) -> Optional[str]:
+    if not request:
+        return None
+    # x-api-token is deprecated and will be removed in the future
+    if token := request.headers.get("x-api-key"):
+        return token
+    authorization = request.headers.get("authorization")
+    if not authorization:
+        return None
+    token = authorization.removeprefix("Bearer jwt:")
+    return None if token == authorization else token
 
 
 def auth_check(
@@ -69,30 +82,17 @@ def auth_check(
         None: the dataset is authorized for the request
     """
     with StepProfiler(method="auth_check", step="all"):
-        with StepProfiler(method="auth_check", step="prepare parameters"):
-            if request:
-                logging.debug(
-                    f"Looking if jwt is passed in request headers {request.headers} to bypass authentication."
+        with StepProfiler(method="auth_check", step="check JWT"):
+            if (jwt_token := get_jwt_token(request)) and hf_jwt_public_key and hf_jwt_algorithm:
+                validate_jwt(
+                    dataset=dataset, token=jwt_token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
                 )
-                HEADER = "x-api-key"
-                if token := request.headers.get(HEADER):
-                    if is_jwt_valid(
-                        dataset=dataset, token=token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
-                    ):
-                        logging.debug(
-                            f"By-passing the authentication step, because a valid JWT was passed in header: '{HEADER}'"
-                            f" for dataset {dataset}. JWT was: {token}"
-                        )
-                        return True
-                    logging.debug(
-                        f"Error while validating the JWT passed in header: '{HEADER}' for dataset {dataset}. Trying"
-                        f" with the following authentication mechanisms. JWT was: {token}"
-                    )
-                else:
-                    logging.debug(
-                        f"No JWT was passed in header: '{HEADER}' for dataset {dataset}. Trying with the following"
-                        " authentication mechanisms."
-                    )
+                logging.debug(
+                    "By-passing the authentication step, because a valid JWT was passed in headers"
+                    f" for dataset {dataset}. JWT was: {jwt_token}"
+                )
+                return True
+        with StepProfiler(method="auth_check", step="prepare parameters"):
             if external_auth_url is None:
                 return True
             try:
@@ -128,7 +128,7 @@ def auth_check(
                 "The dataset does not exist, or is not accessible without authentication (private or gated). Please"
                 " check the spelling of the dataset name or retry with authentication."
             )
-        elif response.status_code in [403, 404]:
+        elif response.status_code in {403, 404}:
             raise ExternalAuthenticatedError(
                 "The dataset does not exist, or is not accessible with the current credentials (private or gated)."
                 " Please check the spelling of the dataset name or retry with other authentication credentials."
