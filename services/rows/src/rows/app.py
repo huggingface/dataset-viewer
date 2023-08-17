@@ -76,7 +76,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 parquet_metadata_directory=parquet_metadata_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_public_keys=[hf_jwt_public_key] if hf_jwt_public_key else None,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
