@@ -18,6 +18,8 @@
     value: {{ .Values.hf.authPath | quote }}
   - name: API_HF_JWT_PUBLIC_KEY_URL
     value: {{ .Values.hf.jwtPublicKeyUrl | quote }}
+  - name: API_HF_JWT_ADDITIONAL_PUBLIC_KEYS
+    value: {{ .Values.hf.jwtAdditionalPublicKeys | quote }}
   - name: API_HF_JWT_ALGORITHM
     value: {{ .Values.hf.jwtAlgorithm | quote }}
   - name: API_HF_TIMEOUT_SECONDS
