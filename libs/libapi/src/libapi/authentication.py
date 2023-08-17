@@ -85,7 +85,7 @@ def auth_check(
         with StepProfiler(method="auth_check", step="check JWT"):
             if (jwt_token := get_jwt_token(request)) and hf_jwt_public_key and hf_jwt_algorithm:
                 validate_jwt(
-                    dataset=dataset, token=jwt_token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                    dataset=dataset, token=jwt_token, public_keys=[hf_jwt_public_key], algorithm=hf_jwt_algorithm
                 )
                 logging.debug(
                     "By-passing the authentication step, because a valid JWT was passed in headers"
