@@ -12,6 +12,7 @@ from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
 from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
+from uuid import uuid4
 
 import pandas as pd
 import pytz
@@ -657,9 +658,12 @@ class Queue:
         """
         # could be a method of Job
         RETRIES = 20
+        # uuid is used to differentiate between workers
+        # otherwise another worker might acquire the lock
+        lock_owner = str(uuid4())
         try:
             # retry for 2 seconds
-            with lock(key=job.unicity_id, owner=str(job.pk), sleeps=[0.1] * RETRIES):
+            with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES):
                 # get all the pending jobs for the same unicity_id
                 waiting_jobs = JobDocument.objects(
                     unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
