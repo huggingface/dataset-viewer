@@ -137,7 +137,7 @@ def create_rows_endpoint(
                         dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
-                        hf_jwt_public_key=hf_jwt_public_key,
+                        hf_jwt_public_keys=[hf_jwt_public_key] if hf_jwt_public_key else None,
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
