@@ -28,6 +28,7 @@ from jwt.algorithms import (
     RSAPSSAlgorithm,
 )
 
+from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWKError,
     JWTExpiredSignature,
@@ -120,6 +121,20 @@ def fetch_jwt_public_key(
         return parse_jwt_public_key(keys=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
     except Exception as err:
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
+
+
+def get_jwt_public_keys(api_config: ApiConfig) -> List[str]:
+    return (
+        [
+            fetch_jwt_public_key(
+                url=api_config.hf_jwt_public_key_url,
+                hf_jwt_algorithm=api_config.hf_jwt_algorithm,
+                hf_timeout_seconds=api_config.hf_timeout_seconds,
+            )
+        ]
+        if api_config.hf_jwt_public_key_url and api_config.hf_jwt_algorithm
+        else []
+    ) + api_config.hf_jwt_additional_public_keys
 
 
 def validate_jwt(
