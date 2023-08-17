@@ -144,7 +144,6 @@ class CacheTotalMetricDocument(Document):
     meta = {
         "collection": CACHE_METRICS_COLLECTION,
         "db_alias": CACHE_MONGOENGINE_ALIAS,
-        "indexes": [("kind", "http_status", "error_code")],
     }
     objects = QuerySetManager["CacheTotalMetricDocument"]()
 
