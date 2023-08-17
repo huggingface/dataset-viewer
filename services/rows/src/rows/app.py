@@ -37,12 +37,14 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    hf_jwt_public_key = (
-        fetch_jwt_public_key(
-            url=app_config.api.hf_jwt_public_key_url,
-            hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
-            hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-        )
+    hf_jwt_public_keys = (
+        [
+            fetch_jwt_public_key(
+                url=app_config.api.hf_jwt_public_key_url,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+            )
+        ]
         if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
         else None
     )
@@ -76,7 +78,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 parquet_metadata_directory=parquet_metadata_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                hf_jwt_public_keys=[hf_jwt_public_key] if hf_jwt_public_key else None,
+                hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
