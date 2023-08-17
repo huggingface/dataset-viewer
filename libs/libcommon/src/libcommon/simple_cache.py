@@ -135,7 +135,7 @@ class CacheTotalMetricDocument(Document):
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    kind = StringField(required=True, unique_with=["http_status", "error_code"])
+    kind = StringField(required=True)
     http_status = IntField(required=True)
     error_code = StringField()
     total = IntField(required=True, default=0)
