@@ -4,7 +4,7 @@ Datasets can be published in any format (CSV, JSONL, directories of images, etc.
 
 <Tip>
 
-In order for Datasets Server to generate a Parquet version of a dataset, the dataset must be *public* and it must be *less than 5GB* in size.
+In order for Datasets Server to generate a Parquet version of a dataset, the dataset must be *public*.
 
 </Tip>
 
@@ -63,48 +63,48 @@ The endpoint also gives the filename and size of each file:
       "dataset": "duorc",
       "config": "ParaphraseRC",
       "split": "test",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet",
-      "filename": "duorc-test.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
+      "filename": "0000.parquet",
       "size": 6136590
     },
     {
       "dataset": "duorc",
       "config": "ParaphraseRC",
       "split": "train",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet",
-      "filename": "duorc-train.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
+      "filename": "0000.parquet",
       "size": 26005667
     },
     {
       "dataset": "duorc",
       "config": "ParaphraseRC",
       "split": "validation",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet",
-      "filename": "duorc-validation.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
+      "filename": "0000.parquet",
       "size": 5566867
     },
     {
       "dataset": "duorc",
       "config": "SelfRC",
       "split": "test",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-test.parquet",
-      "filename": "duorc-test.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
+      "filename": "0000.parquet",
       "size": 3035735
     },
     {
       "dataset": "duorc",
       "config": "SelfRC",
       "split": "train",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-train.parquet",
-      "filename": "duorc-train.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
+      "filename": "0000.parquet",
       "size": 14851719
     },
     {
       "dataset": "duorc",
       "config": "SelfRC",
       "split": "validation",
-      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-validation.parquet",
-      "filename": "duorc-validation.parquet",
+      "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
+      "filename": "0000.parquet",
       "size": 3114389
     }
   ]
@@ -122,40 +122,40 @@ Big datasets are partitioned into Parquet files (shards) of about 500MB each. Th
       "dataset": "amazon_polarity",
       "config": "amazon_polarity",
       "split": "test",
-      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-test.parquet",
-      "filename": "amazon_polarity-test.parquet",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/test/0000.parquet",
+      "filename": "0000.parquet",
       "size": 117422359
    },
    {
       "dataset": "amazon_polarity",
       "config": "amazon_polarity",
       "split": "train",
-      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00000-of-00004.parquet",
-      "filename": "amazon_polarity-train-00000-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0000.parquet",
+      "filename": "0000.parquet",
       "size": 320281121
     },
     {
       "dataset": "amazon_polarity",
       "config": "amazon_polarity",
       "split": "train",
-      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00001-of-00004.parquet",
-      "filename": "amazon_polarity-train-00001-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0001.parquet",
+      "filename": "0001.parquet",
       "size": 320627716
     },
     {
       "dataset": "amazon_polarity",
       "config": "amazon_polarity",
       "split": "train",
-      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00002-of-00004.parquet",
-      "filename": "amazon_polarity-train-00002-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0002.parquet",
+      "filename": "0002.parquet",
       "size": 320587882
     },
     {
       "dataset": "amazon_polarity",
       "config": "amazon_polarity",
       "split": "train",
-      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/amazon_polarity-train-00003-of-00004.parquet",
-      "filename": "amazon_polarity-train-00003-of-00004.parquet",
+      "url": "https://huggingface.co/datasets/amazon_polarity/resolve/refs%2Fconvert%2Fparquet/amazon_polarity/train/0003.parquet",
+      "filename": "0003.parquet",
       "size": 66515954
     }
   ],
@@ -164,6 +164,12 @@ Big datasets are partitioned into Parquet files (shards) of about 500MB each. Th
 ```
 
 To read and query the Parquet files, take a look at the [Query datasets from Datasets Server](parquet_process) guide.
+
+## Partially converted datasets
+
+The Parquet version can be partial if the dataset is not already in Parquet format or if it is bigger than 5GB.
+
+In that case the Parquet files are generated up to 5GB and placed in a split directory prefixed with "partial", e.g. "partial-train" instead of "train".
 
 ## Using the Hugging Face Hub API
 
@@ -286,4 +292,4 @@ curl https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train \
 ]
 ```
 
-Each parquet file can also be accessed using its shard index: `https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train/0.parquet` redirects to `https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet` for example.
+Each parquet file can also be accessed using its shard index: `https://huggingface.co/api/datasets/duorc/parquet/ParaphraseRC/train/0.parquet` redirects to `https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet` for example.

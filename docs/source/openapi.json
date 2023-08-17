@@ -1411,7 +1411,7 @@
           },
           "yangdong/ecqa": {
             "summary": "The default configuration given by the 🤗 Datasets library",
-            "value": "yangdong--ecqa"
+            "value": "default"
           }
         }
       },
@@ -1452,7 +1452,7 @@
           },
           "yangdong/ecqa": {
             "summary": "The default configuration given by the 🤗 Datasets library",
-            "value": "yangdong--ecqa"
+            "value": "default"
           }
         }
       },
@@ -2176,10 +2176,10 @@
                   },
                   "Image column": {
                     "summary": "A column with images. Only 3 rows are shown for brevity.",
-                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=huggan/horse2zebra&config=default&split=train.",
                     "value": {
                       "dataset": "huggan/horse2zebra",
-                      "config": "huggan--horse2zebra-aligned",
+                      "config": "default",
                       "split": "train",
                       "features": [
                         {
@@ -2202,12 +2202,12 @@
                           "row_idx": 0,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/0/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/0/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/0/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2218,12 +2218,12 @@
                           "row_idx": 1,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/1/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/1/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/1/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2234,12 +2234,12 @@
                           "row_idx": 2,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/2/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/2/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/2/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2634,7 +2634,7 @@
                   },
                   "A slice of an image dataset (huggan/horse2zebra)": {
                     "summary": "Get a slice of length 3 from row 234 (offset=234&length=3).",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=huggan/horse2zebra&config=huggan--horse2zebra-aligned&split=train&offset=234&length=3.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=huggan/horse2zebra&config=default&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
                         {
@@ -2653,12 +2653,12 @@
                           "row_idx": 234,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/234/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/234/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/234/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/234/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2669,12 +2669,12 @@
                           "row_idx": 235,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/235/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/235/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/235/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/235/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2685,12 +2685,12 @@
                           "row_idx": 236,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/236/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/236/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/huggan--horse2zebra-aligned/train/236/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/236/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -3355,7 +3355,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 6136591
                         },
@@ -3363,7 +3363,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 26005668
                         },
@@ -3371,7 +3371,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 5566868
                         },
@@ -3379,7 +3379,7 @@
                           "dataset": "duorc",
                           "config": "SelfRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-test.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 3035736
                         },
@@ -3387,7 +3387,7 @@
                           "dataset": "duorc",
                           "config": "SelfRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-train.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 14851720
                         },
@@ -3395,7 +3395,7 @@
                           "dataset": "duorc",
                           "config": "SelfRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/duorc-validation.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 3114390
                         }
@@ -3414,7 +3414,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-test.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 6136591
                         },
@@ -3422,7 +3422,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-train.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 26005668
                         },
@@ -3430,7 +3430,7 @@
                           "dataset": "duorc",
                           "config": "ParaphraseRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/duorc-validation.parquet",
+                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 5566868
                         }
@@ -3457,153 +3457,153 @@
                       "parquet_files": [
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-test.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet",
                           "filename": "parquet-test.parquet",
                           "size": 48684227
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00000-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
                           "filename": "parquet-train-00000-of-00017.parquet",
                           "size": 465549291
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00001-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0001.parquet",
                           "filename": "parquet-train-00001-of-00017.parquet",
                           "size": 465701535
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00002-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0002.parquet",
                           "filename": "parquet-train-00002-of-00017.parquet",
                           "size": 463857123
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00003-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0003.parquet",
                           "filename": "parquet-train-00003-of-00017.parquet",
                           "size": 456197486
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00004-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0004.parquet",
                           "filename": "parquet-train-00004-of-00017.parquet",
                           "size": 465412051
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00005-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0005.parquet",
                           "filename": "parquet-train-00005-of-00017.parquet",
                           "size": 469114305
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00006-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0006.parquet",
                           "filename": "parquet-train-00006-of-00017.parquet",
                           "size": 460338645
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00007-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0007.parquet",
                           "filename": "parquet-train-00007-of-00017.parquet",
                           "size": 468309376
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00008-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0008.parquet",
                           "filename": "parquet-train-00008-of-00017.parquet",
                           "size": 490063121
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00009-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0009.parquet",
                           "filename": "parquet-train-00009-of-00017.parquet",
                           "size": 460462764
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00010-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0010.parquet",
                           "filename": "parquet-train-00010-of-00017.parquet",
                           "size": 476525998
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00011-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0011.parquet",
                           "filename": "parquet-train-00011-of-00017.parquet",
                           "size": 470327354
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00012-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0012.parquet",
                           "filename": "parquet-train-00012-of-00017.parquet",
                           "size": 457138334
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00013-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0013.parquet",
                           "filename": "parquet-train-00013-of-00017.parquet",
                           "size": 464485292
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00014-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0014.parquet",
                           "filename": "parquet-train-00014-of-00017.parquet",
                           "size": 466549376
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00015-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0015.parquet",
                           "filename": "parquet-train-00015-of-00017.parquet",
                           "size": 460452174
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-train-00016-of-00017.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/train/0016.parquet",
                           "filename": "parquet-train-00016-of-00017.parquet",
                           "size": 480583533
                         },
                         {
                           "dataset": "alexandrainst/da-wit",
-                          "config": "alexandrainst--danish-wit",
+                          "config": "default",
                           "split": "val",
-                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/alexandrainst--danish-wit/parquet-val.parquet",
+                          "url": "https://huggingface.co/datasets/alexandrainst/da-wit/resolve/refs%2Fconvert%2Fparquet/default/val/0000.parquet",
                           "filename": "parquet-val.parquet",
                           "size": 11434278
                         }
@@ -3611,6 +3611,113 @@
                       "pending": [],
                       "failed": [],
                       "partial": false
+                    }
+                  },
+                  "partial parquet export": {
+                    "summary": "c4 (en): the parquet export is partial (first 5GB)",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=c4&config=en",
+                    "value": {
+                      "parquet_files": [
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
+                          "filename": "0000.parquet",
+                          "size": 309207547
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
+                          "filename": "0001.parquet",
+                          "size": 308665905
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
+                          "filename": "0002.parquet",
+                          "size": 309066442
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
+                          "filename": "0003.parquet",
+                          "size": 309257276
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
+                          "filename": "0004.parquet",
+                          "size": 309040649
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
+                          "filename": "0005.parquet",
+                          "size": 308850445
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
+                          "filename": "0006.parquet",
+                          "size": 308432549
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
+                          "filename": "0007.parquet",
+                          "size": 308621018
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
+                          "filename": "0008.parquet",
+                          "size": 309109536
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "train",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
+                          "filename": "0009.parquet",
+                          "size": 300817682
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0000.parquet",
+                          "filename": "0000.parquet",
+                          "size": 308896113
+                        },
+                        {
+                          "dataset": "c4",
+                          "config": "en",
+                          "split": "validation",
+                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0001.parquet",
+                          "filename": "0001.parquet",
+                          "size": 200085262
+                        }
+                      ],
+                      "pending": [],
+                      "failed": [],
+                      "partial": true
                     }
                   },
                   "dataset where no parquet file could be created": {
