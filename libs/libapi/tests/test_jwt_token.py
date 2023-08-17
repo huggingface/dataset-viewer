@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import jwt
 import pytest
 
+from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWTExpiredSignature,
     JWTInvalidClaimRead,
@@ -16,7 +17,7 @@ from libapi.exceptions import (
     JWTInvalidSignature,
     JWTMissingRequiredClaim,
 )
-from libapi.jwt_token import parse_jwt_public_key, validate_jwt
+from libapi.jwt_token import get_jwt_public_keys, parse_jwt_public_key, validate_jwt
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 HUB_JWT_ALGORITHM = "EdDSA"
@@ -34,6 +35,35 @@ UNSUPPORTED_ALGORITHM_JWT_KEYS = [
         "kid": "1",
     }
 ]
+
+
+@pytest.mark.parametrize(
+    "keys_env_var,expected_keys",
+    [
+        ("", []),
+        (
+            (
+                "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END"
+                " PUBLIC KEY-----\n"
+            ),
+            [HUB_JWT_PUBLIC_KEY],
+        ),
+        (
+            (
+                "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END"
+                " PUBLIC KEY-----\n,-----BEGIN PUBLIC"
+                " KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END PUBLIC KEY-----\n"
+            ),
+            [HUB_JWT_PUBLIC_KEY, HUB_JWT_PUBLIC_KEY],
+        ),
+    ],
+)
+def test_get_jwt_public_keys(keys_env_var: str, expected_keys: List[str]) -> None:
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("API_HF_JWT_ADDITIONAL_PUBLIC_KEYS", keys_env_var)
+    api_config = ApiConfig.from_env(hf_endpoint="")
+    assert get_jwt_public_keys(api_config) == expected_keys
+    monkeypatch.undo()
 
 
 @pytest.mark.parametrize(

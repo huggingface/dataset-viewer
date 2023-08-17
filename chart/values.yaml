@@ -103,6 +103,13 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  # a comma-separated list of additional public keys to use to decode the JWT sent by the Hugging Face Hub.
+  # The public keys must be in PEM format and include "\n" for line breaks
+  # ("-----BEGIN PUBLIC KEY-----\n....\n-----END PUBLIC KEY-----\n"). Defaults to empty.
+  hfJwtAdditionalPublicKeys:
+    fromSecret: false
+    secretName: ""
+    value: ""
   spawningToken:
     fromSecret: true
     secretName: "spawning-token"
@@ -449,9 +456,6 @@ hf:
   # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
   # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
   jwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
-  # a comma-separated list of additional public keys to use to decode the JWT sent by the Hugging Face Hub.
-  # The keys must be in JWK format. Defaults to empty.
-  jwtAdditionalPublicKeys: ""
   # the algorithm used to encode the JWT.
   jwtAlgorithm: "EdDSA"
   # the timeout in seconds for the requests to the Hugging Face Hub.
