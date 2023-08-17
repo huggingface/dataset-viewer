@@ -395,29 +395,6 @@ def release_locks(owner: str) -> None:
     )
 
 
-def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
-    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
-        upsert=True,
-        write_concern={"w": "majority", "fsync": True},
-        read_concern={"level": "majority"},
-        inc__total=increase_by,
-    )
-
-
-def increase_metric(job_type: str, status: str) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
-
-
-def decrease_metric(job_type: str, status: str) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
-
-
-def update_metrics_for_updated_job(job: Optional[JobDocument], status: str) -> None:
-    if job is not None:
-        decrease_metric(job_type=job.type, status=job.status)
-        increase_metric(job_type=job.type, status=status)
-
-
 class Queue:
     """A queue manages jobs.
 
@@ -461,7 +438,6 @@ class Queue:
 
         Returns: the job
         """
-        increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -509,8 +485,6 @@ class Queue:
                 )
                 for job_info in job_infos
             ]
-            for job in jobs:
-                increase_metric(job_type=job.type, status=Status.WAITING)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
@@ -529,8 +503,6 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
-            for existing_job in existing.all():
-                update_metrics_for_updated_job(existing_job, status=Status.CANCELLED)
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
             return existing.count()
         except Exception:
@@ -704,7 +676,6 @@ class Queue:
                 if not first_job:
                     raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
                 # start it
-                update_metrics_for_updated_job(job=first_job, status=Status.STARTED)
                 first_job.update(
                     started_at=datetime,
                     status=Status.STARTED,
@@ -714,7 +685,6 @@ class Queue:
                 # and cancel the other ones, if any
                 for job in waiting_jobs.skip(1):
                     # TODO: try to do a bulk update (not sure it's possible)
-                    update_metrics_for_updated_job(job=job, status=Status.CANCELLED)
                     job.update(
                         finished_at=datetime,
                         status=Status.CANCELLED,
@@ -862,7 +832,6 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
-        update_metrics_for_updated_job(job=job, status=finished_status)
         job.update(finished_at=get_datetime(), status=finished_status)
         release_locks(owner=job_id)
         return True
