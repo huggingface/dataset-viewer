@@ -14,10 +14,10 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.rows_utils import transform_rows
 from libcommon.storage import StrPath
-from libcommon.utils import Priority, RowItem, orjson_dumps
+from libcommon.utils import Priority, Row, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
+from libcommon.viewer_utils.s3_features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -237,3 +237,33 @@ def clean_cached_assets(
         ]
         for row_dir_to_delete in row_dirs_to_delete:
             shutil.rmtree(row_dir_to_delete, ignore_errors=True)
+
+
+def transform_rows(
+    dataset: str,
+    config: str,
+    split: str,
+    rows: List[Row],
+    features: Features,
+    cached_assets_base_url: str,
+    cached_assets_directory: StrPath,
+    offset: int,
+    row_idx_column: Optional[str],
+) -> List[Row]:
+    return [
+        {
+            featureName: get_cell_value(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
+                cell=row[featureName] if featureName in row else None,
+                featureName=featureName,
+                fieldType=fieldType,
+                assets_base_url=cached_assets_base_url,
+                assets_directory=cached_assets_directory,
+            )
+            for (featureName, fieldType) in features.items()
+        }
+        for row_idx, row in enumerate(rows)
+    ]
