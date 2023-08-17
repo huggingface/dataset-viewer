@@ -23,10 +23,11 @@ def test_collect_queue_metrics() -> None:
         split="split",
         difficulty=50,
     )
+    assert JobTotalMetricDocument.objects().count() == 0
 
     collect_queue_metrics(processing_graph=processing_graph)
 
-    job_metrics = JobTotalMetricDocument.objects()
+    job_metrics = JobTotalMetricDocument.objects().all()
     assert job_metrics
     assert len(job_metrics) == len(Status)  # One by each job state, see libcommon.queue.get_jobs_count_by_status
     waiting_job = next((job for job in job_metrics if job.status == "waiting"), None)

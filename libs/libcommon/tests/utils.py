@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobTotalMetricDocument, Queue
+from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import JobInfo, Priority
 
@@ -364,9 +364,3 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
         priority=Priority.NORMAL,
         difficulty=DIFFICULTY,
     )
-
-
-def assert_metric(job_type: str, status: str, total: int) -> None:
-    metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
-    assert metric is not None
-    assert metric.total == total
