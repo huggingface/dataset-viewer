@@ -61,7 +61,7 @@ class ApiConfig:
                 external_auth_url=external_auth_url,
                 hf_auth_path=hf_auth_path,
                 hf_jwt_public_key_url=env.str(name="HF_JWT_PUBLIC_KEY_URL", default=API_HF_JWT_PUBLIC_KEY_URL),
-                hf_jwt_additional_public_keys=env.str(
+                hf_jwt_additional_public_keys=env.list(
                     name="HF_JWT_ADDITIONAL_PUBLIC_KEYS", default=API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy()
                 ),
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
