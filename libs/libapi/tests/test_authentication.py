@@ -193,7 +193,7 @@ def assert_auth_headers(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
-            hf_jwt_public_keys=[public_key],
+            hf_jwt_public_key=public_key,
             hf_jwt_algorithm=algorithm_rs256,
         )
 

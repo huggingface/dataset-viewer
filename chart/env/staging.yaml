@@ -72,7 +72,6 @@ secrets:
       PARQUET_CONVERTER_HF_TOKEN: "hub-ephemeral-datasets-server-parquet-converter-hf-token"
       WEBHOOK_SECRET: "hub-ephemeral-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-ephemeral-datasets-server-spawning-token"
-      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
@@ -84,9 +83,6 @@ secrets:
     secretName: "datasets-server-staging-secrets"
   hfWebhookSecret:
     fromSecret: false
-    secretName: "datasets-server-staging-secrets"
-  hfJwtAdditionalPublicKeys:
-    fromSecret: true
     secretName: "datasets-server-staging-secrets"
   spawningToken:
     fromSecret: true

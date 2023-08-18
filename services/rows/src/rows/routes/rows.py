@@ -89,7 +89,7 @@ def create_rows_endpoint(
     cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-    hf_jwt_public_keys: Optional[List[str]] = None,
+    hf_jwt_public_key: Optional[str] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
@@ -137,7 +137,7 @@ def create_rows_endpoint(
                         dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
-                        hf_jwt_public_keys=hf_jwt_public_keys,
+                        hf_jwt_public_key=hf_jwt_public_key,
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )

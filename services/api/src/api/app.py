@@ -3,7 +3,7 @@
 
 import uvicorn
 from libapi.config import UvicornConfig
-from libapi.jwt_token import get_jwt_public_keys
+from libapi.jwt_token import fetch_jwt_public_key
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libcommon.log import init_logging
@@ -34,7 +34,15 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
-    hf_jwt_public_keys = get_jwt_public_keys(app_config.api)
+    hf_jwt_public_key = (
+        fetch_jwt_public_key(
+            url=app_config.api.hf_jwt_public_key_url,
+            hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+            hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+        )
+        if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
+        else None
+    )
 
     middleware = [
         Middleware(
@@ -61,7 +69,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                hf_jwt_public_keys=hf_jwt_public_keys,
+                hf_jwt_public_key=hf_jwt_public_key,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
