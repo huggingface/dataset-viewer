@@ -76,7 +76,6 @@ secrets:
       PARQUET_CONVERTER_HF_TOKEN: "hub-prod-datasets-server-parquet-converter-hf-token"
       WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
-      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
@@ -87,9 +86,6 @@ secrets:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
   hfWebhookSecret:
-    fromSecret: true
-    secretName: "datasets-server-prod-secrets"
-  hfJwtAdditionalPublicKeys:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
   spawningToken:
