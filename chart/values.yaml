@@ -103,13 +103,6 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
-  # a comma-separated list of additional public keys to use to decode the JWT sent by the Hugging Face Hub.
-  # The public keys must be in PEM format and include "\n" for line breaks
-  # ("-----BEGIN PUBLIC KEY-----\n....\n-----END PUBLIC KEY-----\n"). Defaults to empty.
-  hfJwtAdditionalPublicKeys:
-    fromSecret: false
-    secretName: ""
-    value: ""
   spawningToken:
     fromSecret: true
     secretName: "spawning-token"

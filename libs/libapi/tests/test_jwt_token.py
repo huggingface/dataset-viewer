@@ -3,12 +3,11 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import jwt
 import pytest
 
-from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWTExpiredSignature,
     JWTInvalidClaimRead,
@@ -17,7 +16,7 @@ from libapi.exceptions import (
     JWTInvalidSignature,
     JWTMissingRequiredClaim,
 )
-from libapi.jwt_token import get_jwt_public_keys, parse_jwt_public_key, validate_jwt
+from libapi.jwt_token import parse_jwt_public_key, validate_jwt
 
 HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
 HUB_JWT_ALGORITHM = "EdDSA"
@@ -35,35 +34,6 @@ UNSUPPORTED_ALGORITHM_JWT_KEYS = [
         "kid": "1",
     }
 ]
-
-
-@pytest.mark.parametrize(
-    "keys_env_var,expected_keys",
-    [
-        ("", []),
-        (
-            (
-                "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END"
-                " PUBLIC KEY-----\n"
-            ),
-            [HUB_JWT_PUBLIC_KEY],
-        ),
-        (
-            (
-                "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END"
-                " PUBLIC KEY-----\n,-----BEGIN PUBLIC"
-                " KEY-----\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\n-----END PUBLIC KEY-----\n"
-            ),
-            [HUB_JWT_PUBLIC_KEY, HUB_JWT_PUBLIC_KEY],
-        ),
-    ],
-)
-def test_get_jwt_public_keys(keys_env_var: str, expected_keys: List[str]) -> None:
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setenv("API_HF_JWT_ADDITIONAL_PUBLIC_KEYS", keys_env_var)
-    api_config = ApiConfig.from_env(hf_endpoint="")
-    assert get_jwt_public_keys(api_config) == expected_keys
-    monkeypatch.undo()
 
 
 @pytest.mark.parametrize(
@@ -94,7 +64,7 @@ def test_is_jwt_valid_with_ec() -> None:
     validate_jwt(
         dataset=DATASET_SEVERO_GLUE,
         token=HUB_JWT_TOKEN_FOR_SEVERO_GLUE,
-        public_keys=[HUB_JWT_PUBLIC_KEY],
+        public_key=HUB_JWT_PUBLIC_KEY,
         algorithm=HUB_JWT_ALGORITHM,
         verify_exp=False,
         # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
@@ -142,26 +112,20 @@ def encode_jwt(payload: Dict[str, Any]) -> str:
     return jwt.encode(payload, private_key, algorithm=algorithm_ok)
 
 
-def assert_jwt(
-    token: str, expectation: Any, public_keys: Optional[List[str]] = None, algorithm: str = algorithm_ok
-) -> None:
-    if public_keys is None:
-        public_keys = [public_key_ok]
+def assert_jwt(token: str, expectation: Any, public_key: str = public_key_ok, algorithm: str = algorithm_ok) -> None:
     with expectation:
-        validate_jwt(dataset=dataset_ok, token=token, public_keys=public_keys, algorithm=algorithm)
+        validate_jwt(dataset=dataset_ok, token=token, public_key=public_key, algorithm=algorithm)
 
 
 @pytest.mark.parametrize(
-    "public_keys,expectation",
+    "public_key,expectation",
     [
-        ([other_public_key], pytest.raises(JWTInvalidSignature)),
-        ([public_key_ok], does_not_raise()),
-        ([public_key_ok, other_public_key], does_not_raise()),
-        ([other_public_key, public_key_ok], does_not_raise()),
+        (other_public_key, pytest.raises(JWTInvalidSignature)),
+        (public_key_ok, does_not_raise()),
     ],
 )
-def test_validate_jwt_public_key(public_keys: List[str], expectation: Any) -> None:
-    assert_jwt(encode_jwt(payload_ok), expectation, public_keys=public_keys)
+def test_validate_jwt_public_key(public_key: str, expectation: Any) -> None:
+    assert_jwt(encode_jwt(payload_ok), expectation, public_key=public_key)
 
 
 @pytest.mark.parametrize(
