@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import jwt
 import requests
@@ -29,100 +29,212 @@ from jwt.algorithms import (
 )
 
 from libapi.exceptions import (
-    JWKError,
     JWTExpiredSignature,
     JWTInvalidClaimRead,
     JWTInvalidClaimSub,
     JWTInvalidKeyOrAlgorithm,
     JWTInvalidSignature,
+    JWTKeysError,
     JWTMissingRequiredClaim,
     UnexpectedApiError,
 )
 
 ASYMMETRIC_ALGORITHMS = (ECAlgorithm, OKPAlgorithm, RSAAlgorithm, RSAPSSAlgorithm)
 SYMMETRIC_ALGORITHMS = (HMACAlgorithm,)
+SupportedAlgorithm = Union[ECAlgorithm, OKPAlgorithm, RSAAlgorithm, RSAPSSAlgorithm, HMACAlgorithm]
+SupportedKey = Union[
+    Ed448PrivateKey,
+    Ed448PublicKey,
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+    EllipticCurvePrivateKey,
+    EllipticCurvePublicKey,
+    RSAPrivateKey,
+    RSAPublicKey,
+    bytes,
+]
 
 
-def is_public_key(
-    key: Union[
-        EllipticCurvePublicKey,
-        EllipticCurvePrivateKey,
-        Ed25519PublicKey,
-        Ed448PublicKey,
-        Ed25519PrivateKey,
-        Ed448PrivateKey,
-        RSAPrivateKey,
-        RSAPublicKey,
-    ]
-) -> bool:
+def is_public_key(key: SupportedKey) -> bool:
     return hasattr(key, "public_bytes")
 
 
-def parse_jwt_public_key(keys: Any, hf_jwt_algorithm: str) -> str:
-    """parse the input JSON to extract the public key
-
-    Note that the return type is Any in order not to enter in too much details. See
-    https://github.com/jpadilla/pyjwt/blob/777efa2f51249f63b0f95804230117723eca5d09/jwt/algorithms.py#L629-L651
-    In our case, the type should be cryptography.hazmat.backends.openssl.ed25519._Ed25519PublicKey
+def create_algorithm(algorithm_name: str) -> SupportedAlgorithm:
+    """
+    Create an algorithm object from the algorithm name.
 
     Args:
-        keys (Any): the JSON to parse
-        hf_jwt_algorithm (str): the JWT algorithm to use.
+        algorithm_name (str): the algorithm name
 
     Returns:
-        str: the public key
+        SupportedAlgorithm: the algorithm object
+
+    Raises:
+        RuntimeError: if the algorithm is not supported
     """
     try:
-        expected_algorithm = jwt.get_algorithm_by_name(hf_jwt_algorithm)
-        if not isinstance(expected_algorithm, (*ASYMMETRIC_ALGORITHMS, *SYMMETRIC_ALGORITHMS)):
+        algorithm = jwt.get_algorithm_by_name(algorithm_name)
+        if not isinstance(algorithm, (*ASYMMETRIC_ALGORITHMS, *SYMMETRIC_ALGORITHMS)):
             raise NotImplementedError()
     except NotImplementedError as err:
-        raise RuntimeError(f"Invalid algorithm for JWT verification: {hf_jwt_algorithm} is not supported") from err
+        raise RuntimeError(f"Invalid algorithm for JWT verification: {algorithm_name} is not supported") from err
+    return algorithm
 
-    if not isinstance(keys, list):
-        raise ValueError("Payload from moon must be a list of JWK formatted keys.")
+
+def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
+    """
+    Convert the key to PEM format.
+
+    Args:
+        key (SupportedKey): the key to convert
+
+    Returns:
+        str: the key in PEM format (PKCS#8)
+
+    Raises:
+        RuntimeError: if the key is not a public key
+    """
+    if isinstance(algorithm, SYMMETRIC_ALGORITHMS) or isinstance(key, bytes):
+        return key.decode("utf-8")  # type: ignore
+    if not is_public_key(key):
+        raise RuntimeError("Failed to parse JWT key: the provided key is a private key")
+    return key.public_bytes(  # type: ignore
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode("utf-8")
+    # ^ we assume that the key contain UTF-8 encoded bytes, which is why we use type ignore for mypy
+
+
+def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> str:
+    """
+    Parse the payload (JSON format) to extract the public key, validating that it's a public key, and that it is
+    compatible with the algorithm
+
+    Args:
+        keys (Any): the JSON to parse. It must be a list of keys in JWK format
+        algorithm (SupportedAlgorithm): the algorithm the key should implement
+
+    Returns:
+        str: the public key in PEM format
+
+    Raises:
+        RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
+        ValueError: if the input is not a list
+    """
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("Payload must be a list of JWK formatted keys.")
     try:
-        key = expected_algorithm.from_jwk(keys[0])
-        if not isinstance(expected_algorithm, ASYMMETRIC_ALGORITHMS) or isinstance(key, bytes):
-            return key.decode("utf-8")
-        if not is_public_key(key):
-            raise RuntimeError("Failed to parse JWT key: the provided key is a private key")
-        return key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        ).decode("utf-8")
-        # ^ we assume that the key contain UTF-8 encoded bytes, which is why we use type ignore for mypy
+        key = algorithm.from_jwk(payload[0])
     except (jwt.InvalidKeyError, KeyError) as err:
         raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
+    return _key_to_pem(key, algorithm)
 
 
-def fetch_jwt_public_key(
+def parse_jwt_public_key_pem(payload: str, algorithm: SupportedAlgorithm) -> str:
+    """
+    Parse the input string to validate it's a public key in PEM format, and that it is compatible
+    with the algorithm
+
+    Args:
+        key (str): the key to parse. It should be a public key in PEM format
+        algorithm (SupportedAlgorithm): the algorithm the key should implement
+
+    Returns:
+        str: the public key in PEM format
+
+    Raises:
+        RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
+        ValueError: if the input is not a list
+    """
+    try:
+        key = algorithm.prepare_key(payload)
+    except (jwt.InvalidKeyError, KeyError) as err:
+        raise RuntimeError(f"Failed to parse JWT key: {err.args[0]}") from err
+    return _key_to_pem(key, algorithm)
+
+
+def fetch_jwt_public_key_json(
     url: str,
-    hf_jwt_algorithm: str,
     hf_timeout_seconds: Optional[float] = None,
-) -> str:
-    """fetch the public key to decode the JWT token from the input URL
+) -> Any:
+    """
+    Fetch the public key from the input URL
 
     See https://huggingface.co/api/keys/jwt
 
     Args:
         url (str): the URL to fetch the public key from
-        hf_jwt_algorithm (str): the JWT algorithm to use.
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
             is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
-        str: the public key
+        Any: the response JSON payload
+
+    Raises:
+        RuntimeError: if the request fails
     """
     try:
         response = requests.get(url, timeout=hf_timeout_seconds)
         response.raise_for_status()
-        return parse_jwt_public_key(keys=response.json(), hf_jwt_algorithm=hf_jwt_algorithm)
+        return response.json()
     except Exception as err:
-        raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
+        raise RuntimeError(f"Failed to fetch the JWT public key from {url}. ") from err
 
 
-def validate_jwt(dataset: str, token: Any, public_key: str, algorithm: str, verify_exp: Optional[bool] = True) -> None:
+def get_jwt_public_keys(
+    algorithm_name: Optional[str] = None,
+    public_key_url: Optional[str] = None,
+    additional_public_keys: Optional[List[str]] = None,
+    timeout_seconds: Optional[float] = None,
+) -> List[str]:
+    """
+    Get the public keys to use to decode the JWT token.
+
+    The keys can be created by two mechanisms:
+    - one key can be fetched from the public_key_url (must be in JWK format, ie. JSON)
+    - additional keys can be provided as a list of PEM formatted keys
+    All of these keys are then converted to PEM format (PKCS#8) and returned as a list. The remote key is first.
+    The keys must be compatible with the algorithm.
+
+    Args:
+        algorithm_name (str|None): the algorithm to use to decode the JWT token. If not provided, no keys will be
+          returned
+        public_key_url (str|None): the URL to fetch the public key from
+        additional_public_keys (List[str]|None): additional public keys to use to decode the JWT token
+        timeout_seconds (float|None): the timeout in seconds for fetching the remote key
+
+    Returns:
+        List[str]: the list of public keys in PEM format
+
+    Raises:
+        JWTKeysError: if some exception occurred while creating the public keys. Some reasons: if the algorithm
+          is not supported, if a payload could not be parsed, if a key is not compatible with the algorithm,
+            if a key is not public, if th remote key could not be fetch or parsed
+    """
+    try:
+        keys: List[str] = []
+        if not algorithm_name:
+            return keys
+        algorithm = create_algorithm(algorithm_name)
+        if public_key_url:
+            payload = fetch_jwt_public_key_json(
+                url=public_key_url,
+                hf_timeout_seconds=timeout_seconds,
+            )
+            keys.append(parse_jwt_public_key_json(payload=payload, algorithm=algorithm))
+        if additional_public_keys:
+            keys.extend(
+                parse_jwt_public_key_pem(payload=payload, algorithm=algorithm) for payload in additional_public_keys
+            )
+        logging.debug(f"JWT public keys are: {', '.join(keys)}.")
+        return keys
+    except Exception as err:
+        raise JWTKeysError("Failed to create the JWT public keys.") from err
+
+
+def validate_jwt(
+    dataset: str, token: Any, public_keys: List[str], algorithm: str, verify_exp: Optional[bool] = True
+) -> None:
     """
     Check if the JWT is valid for the dataset.
 
@@ -134,43 +246,51 @@ def validate_jwt(dataset: str, token: Any, public_key: str, algorithm: str, veri
     Args:
         dataset (str): the dataset identifier
         token (Any): the JWT token to decode
-        public_key (str): the public key to use to decode the JWT token
+        public_keys (List[str]): the public keys to use to decode the JWT token. They are tried in order.
         algorithm (str): the algorithm to use to decode the JWT token
         verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
-
+        JWTInvalidSignature: if the signature verification failed
+        JWTMissingRequiredClaim: if a claim is missing in the JWT payload
+        JWTExpiredSignature: if the JWT signature has expired
+        JWTInvalidKeyOrAlgorithm: if the key used to verify the signature is not compatible with the algorithm
+        JWTInvalidClaimSub: if the 'sub' claim in JWT payload is invalid
+        JWTInvalidClaimRead: if the 'read' claim in JWT payload is invalid
+        UnexpectedApiError: if another error occurred while decoding the JWT
     """
-    try:
-        decoded = jwt.decode(
-            jwt=token,
-            key=public_key,
-            algorithms=[algorithm],
-            options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
-        )
-        logging.debug(f"Decoded JWT is: '{public_key}'.")
-    except jwt.exceptions.MissingRequiredClaimError as e:
-        raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
-    except jwt.exceptions.ExpiredSignatureError as e:
-        raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
-    except jwt.exceptions.InvalidSignatureError as e:
-        raise JWTInvalidSignature(
-            "The JWT signature verification failed. Check the signing key and the algorithm.", e
-        ) from e
-    except (jwt.exceptions.InvalidKeyError, jwt.exceptions.InvalidAlgorithmError) as e:
-        raise JWTInvalidKeyOrAlgorithm(
-            (
-                "The key used to verify the signature is not compatible with the algorithm. Check the signing key and"
-                " the algorithm."
-            ),
-            e,
-        ) from e
-    except Exception as e:
-        logging.debug(
-            f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
-            " validation."
-        )
-        raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
+    for public_key in public_keys:
+        logging.debug(f"Trying to decode the JWT with key #{public_keys.index(public_key)}: {public_key}.")
+        try:
+            decoded = jwt.decode(
+                jwt=token,
+                key=public_key,
+                algorithms=[algorithm],
+                options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
+            )
+            logging.debug(f"Decoded JWT is: '{public_key}'.")
+            break
+        except jwt.exceptions.InvalidSignatureError as e:
+            if public_key == public_keys[-1]:
+                raise JWTInvalidSignature(
+                    "The JWT signature verification failed. Check the signing key and the algorithm.", e
+                ) from e
+            logging.debug(f"JWT signature verification failed with key: '{public_key}'. Trying next key.")
+        except jwt.exceptions.MissingRequiredClaimError as e:
+            raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
+        except jwt.exceptions.ExpiredSignatureError as e:
+            raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
+
+        except (jwt.exceptions.InvalidKeyError, jwt.exceptions.InvalidAlgorithmError) as e:
+            raise JWTInvalidKeyOrAlgorithm(
+                (
+                    "The key used to verify the signature is not compatible with the algorithm. Check the signing key"
+                    " and the algorithm."
+                ),
+                e,
+            ) from e
+        except Exception as e:
+            raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
     sub = decoded.get("sub")
     if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
         raise JWTInvalidClaimSub(

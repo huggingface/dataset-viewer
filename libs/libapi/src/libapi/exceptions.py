@@ -12,12 +12,12 @@ ApiErrorCode = Literal[
     "ExternalAuthenticatedError",
     "ExternalUnauthenticatedError",
     "InvalidParameter",
-    "JWKError",
     "JWTExpiredSignature",
     "JWTInvalidClaimRead",
     "JWTInvalidClaimSub",
     "JWTInvalidKeyOrAlgorithm",
     "JWTInvalidSignature",
+    "JWTKeysError",
     "JWTMissingRequiredClaim",
     "MissingProcessingStepsError",
     "MissingRequiredParameter",
@@ -80,11 +80,11 @@ class InvalidParameterError(ApiError):
         super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
 
 
-class JWKError(ApiError):
-    """The JWT key (JWK) could not be fetched or parsed."""
+class JWTKeysError(ApiError):
+    """The public keys for decoding JWT could not be created."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWKError", cause=cause, disclose_cause=False)
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "JWTKeysError", cause=cause, disclose_cause=False)
 
 
 class MissingRequiredParameterError(ApiError):
