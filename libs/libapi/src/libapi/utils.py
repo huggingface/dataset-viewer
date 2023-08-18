@@ -17,7 +17,7 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import Priority, Row, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
-from libcommon.viewer_utils.s3_features import get_cell_value
+from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -132,6 +132,8 @@ def try_backfill_dataset_then_raise(
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
+
+S3_CACHED_ASSETS_SUPPORTED_DATASET = ["duorc"]
 
 def to_rows_list(
     pa_table: pa.Table,

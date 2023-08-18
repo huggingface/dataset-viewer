@@ -6,7 +6,7 @@ import os
 from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
-
+import boto3
 import soundfile  # type:ignore
 from numpy import ndarray
 from PIL import Image  # type: ignore
@@ -18,6 +18,7 @@ DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
 
+s3_client = boto3.client('s3')
 
 def create_asset_dir(
     dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: StrPath
@@ -78,21 +79,31 @@ def create_image_file(
     assets_base_url: str,
     assets_directory: StrPath,
     overwrite: bool = True,
+    use_s3_storage: bool = True,
+    s3_bucket: str = None,
+    s3_api_key: str = None,
 ) -> ImageSource:
-    dir_path, url_dir_path = create_asset_dir(
-        dataset=dataset,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        assets_directory=assets_directory,
-    )
-    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    file_path = dir_path / filename
-    if overwrite or not file_path.exists():
-        image.save(file_path)
+    if use_s3_storage:
+        s3_client.upload_fileobj(image, s3_bucket, s3_api_key, filename)
+    else:
+        dir_path, url_dir_path = create_asset_dir(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            assets_directory=assets_directory,
+        )
+        makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+        file_path = dir_path / filename
+        if overwrite or not file_path.exists():
+            image.save(file_path)
+        src = f"{assets_base_url}/{url_dir_path}/{filename}"
+
+        
+
     return {
-        "src": f"{assets_base_url}/{url_dir_path}/{filename}",
+        "src": src,
         "height": image.height,
         "width": image.width,
     }
@@ -115,6 +126,9 @@ def create_audio_files(
     filename_base: str,
     assets_directory: StrPath,
     overwrite: bool = True,
+    use_s3_storage: bool = True,
+    s3_bucket: str = None,
+    s3_api_key: str = None,
 ) -> List[AudioSource]:
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"

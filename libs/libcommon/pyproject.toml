@@ -25,6 +25,7 @@ requests = "^2.31.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 tqdm = "^4.65.0"
+boto3 = "^1.28.29"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
