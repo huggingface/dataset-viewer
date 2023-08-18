@@ -34,7 +34,12 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
-    hf_jwt_public_keys = get_jwt_public_keys(app_config.api)
+    hf_jwt_public_keys = get_jwt_public_keys(
+        algorithm_name=app_config.api.hf_jwt_algorithm,
+        public_key_url=app_config.api.hf_jwt_public_key_url,
+        additional_public_keys=app_config.api.hf_jwt_additional_public_keys,
+        timeout_seconds=app_config.api.hf_timeout_seconds,
+    )
 
     middleware = [
         Middleware(

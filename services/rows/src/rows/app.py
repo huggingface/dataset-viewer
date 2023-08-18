@@ -37,7 +37,12 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    hf_jwt_public_keys = get_jwt_public_keys(app_config.api)
+    hf_jwt_public_keys = get_jwt_public_keys(
+        algorithm_name=app_config.api.hf_jwt_algorithm,
+        public_key_url=app_config.api.hf_jwt_public_key_url,
+        additional_public_keys=app_config.api.hf_jwt_additional_public_keys,
+        timeout_seconds=app_config.api.hf_timeout_seconds,
+    )
 
     middleware = [
         Middleware(
