@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import requests
 from libcommon.prometheus import StepProfiler
@@ -55,7 +55,7 @@ def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
-    hf_jwt_public_key: Optional[str] = None,
+    hf_jwt_public_keys: Optional[List[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Literal[True]:
@@ -73,7 +73,7 @@ def auth_check(
           If None, the dataset is always authorized.
         request (Request | None): the request which optionally bears authentication headers: "cookie",
           "authorization" or "X-Api-Key"
-        hf_jwt_public_key (str|None): the public key to use to decode the JWT token
+        hf_jwt_public_keys (List[str]|None): the public keys to use to decode the JWT token
         hf_jwt_algorithm (str): the algorithm to use to decode the JWT token
         hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
@@ -83,9 +83,9 @@ def auth_check(
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="check JWT"):
-            if (jwt_token := get_jwt_token(request)) and hf_jwt_public_key and hf_jwt_algorithm:
+            if (jwt_token := get_jwt_token(request)) and hf_jwt_public_keys and hf_jwt_algorithm:
                 validate_jwt(
-                    dataset=dataset, token=jwt_token, public_key=hf_jwt_public_key, algorithm=hf_jwt_algorithm
+                    dataset=dataset, token=jwt_token, public_keys=hf_jwt_public_keys, algorithm=hf_jwt_algorithm
                 )
                 logging.debug(
                     "By-passing the authentication step, because a valid JWT was passed in headers"

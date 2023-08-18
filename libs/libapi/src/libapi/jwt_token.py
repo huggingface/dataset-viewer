@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Union
 
 import jwt
 import requests
@@ -28,6 +28,7 @@ from jwt.algorithms import (
     RSAPSSAlgorithm,
 )
 
+from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWKError,
     JWTExpiredSignature,
@@ -122,7 +123,23 @@ def fetch_jwt_public_key(
         raise JWKError(f"Failed to fetch or parse the JWT public key from {url}. ", cause=err) from err
 
 
-def validate_jwt(dataset: str, token: Any, public_key: str, algorithm: str, verify_exp: Optional[bool] = True) -> None:
+def get_jwt_public_keys(api_config: ApiConfig) -> List[str]:
+    return (
+        [
+            fetch_jwt_public_key(
+                url=api_config.hf_jwt_public_key_url,
+                hf_jwt_algorithm=api_config.hf_jwt_algorithm,
+                hf_timeout_seconds=api_config.hf_timeout_seconds,
+            )
+        ]
+        if api_config.hf_jwt_public_key_url and api_config.hf_jwt_algorithm
+        else []
+    ) + api_config.hf_jwt_additional_public_keys
+
+
+def validate_jwt(
+    dataset: str, token: Any, public_keys: List[str], algorithm: str, verify_exp: Optional[bool] = True
+) -> None:
     """
     Check if the JWT is valid for the dataset.
 
@@ -134,43 +151,44 @@ def validate_jwt(dataset: str, token: Any, public_key: str, algorithm: str, veri
     Args:
         dataset (str): the dataset identifier
         token (Any): the JWT token to decode
-        public_key (str): the public key to use to decode the JWT token
+        public_keys (List[str]): the public keys to use to decode the JWT token. They are tried in order.
         algorithm (str): the algorithm to use to decode the JWT token
         verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
 
     """
-    try:
-        decoded = jwt.decode(
-            jwt=token,
-            key=public_key,
-            algorithms=[algorithm],
-            options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
-        )
-        logging.debug(f"Decoded JWT is: '{public_key}'.")
-    except jwt.exceptions.MissingRequiredClaimError as e:
-        raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
-    except jwt.exceptions.ExpiredSignatureError as e:
-        raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
-    except jwt.exceptions.InvalidSignatureError as e:
-        raise JWTInvalidSignature(
-            "The JWT signature verification failed. Check the signing key and the algorithm.", e
-        ) from e
-    except (jwt.exceptions.InvalidKeyError, jwt.exceptions.InvalidAlgorithmError) as e:
-        raise JWTInvalidKeyOrAlgorithm(
-            (
-                "The key used to verify the signature is not compatible with the algorithm. Check the signing key and"
-                " the algorithm."
-            ),
-            e,
-        ) from e
-    except Exception as e:
-        logging.debug(
-            f"Missing public key '{public_key}' or algorithm '{algorithm}' to decode JWT token. Skipping JWT"
-            " validation."
-        )
-        raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
+    for public_key in public_keys:
+        try:
+            decoded = jwt.decode(
+                jwt=token,
+                key=public_key,
+                algorithms=[algorithm],
+                options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
+            )
+            logging.debug(f"Decoded JWT is: '{public_key}'.")
+            break
+        except jwt.exceptions.InvalidSignatureError as e:
+            if public_key == public_keys[-1]:
+                raise JWTInvalidSignature(
+                    "The JWT signature verification failed. Check the signing key and the algorithm.", e
+                ) from e
+            logging.debug(f"JWT signature verification failed with key: '{public_key}'. Trying next key.")
+        except jwt.exceptions.MissingRequiredClaimError as e:
+            raise JWTMissingRequiredClaim("A claim is missing in the JWT payload.", e) from e
+        except jwt.exceptions.ExpiredSignatureError as e:
+            raise JWTExpiredSignature("The JWT signature has expired. Try to refresh the token.", e) from e
+
+        except (jwt.exceptions.InvalidKeyError, jwt.exceptions.InvalidAlgorithmError) as e:
+            raise JWTInvalidKeyOrAlgorithm(
+                (
+                    "The key used to verify the signature is not compatible with the algorithm. Check the signing key"
+                    " and the algorithm."
+                ),
+                e,
+            ) from e
+        except Exception as e:
+            raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
     sub = decoded.get("sub")
     if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
         raise JWTInvalidClaimSub(
