@@ -1,6 +1,6 @@
 # ClickHouse
 
-[ClickHouse](https://clickhouse.com/docs/en/intro) is a fast and efficient column-oriented database for analytical workloads, making it easy to analyze Hub hosted datasets with SQL. To get started quickly, use [`clickhouse-local`](https://clickhouse.com/docs/en/operations/utilities/clickhouse-local) to run SQL queries from the command line and avoid the need to fully install ClickHouse.
+[ClickHouse](https://clickhouse.com/docs/en/intro) is a fast and efficient column-oriented database for analytical workloads, making it easy to analyze Hub-hosted datasets with SQL. To get started quickly, use [`clickhouse-local`](https://clickhouse.com/docs/en/operations/utilities/clickhouse-local) to run SQL queries from the command line and avoid the need to fully install ClickHouse.
 
 <Tip>
 
