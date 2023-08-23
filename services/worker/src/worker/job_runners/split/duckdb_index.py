@@ -2,10 +2,12 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import os
 from pathlib import Path
 from typing import List, Optional, Set
 
 import duckdb
+from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -53,6 +55,8 @@ CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial')
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
+REPO_TYPE = "dataset"
+HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
 def compute_index_rows(
@@ -96,9 +100,8 @@ def compute_index_rows(
                 f"Current size of sum of split parquets is {split_parquets_size} bytes."
             )
 
-        parquet_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
-
-        if not parquet_urls:
+        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
+        if not parquet_file_names:
             raise ParquetResponseEmptyError("No parquet files found.")
 
         # get the features
@@ -138,7 +141,22 @@ def compute_index_rows(
     logging.debug(CREATE_SEQUENCE_COMMAND)
     con.sql(CREATE_SEQUENCE_COMMAND)
 
-    create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} read_parquet({parquet_urls});"
+    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
+    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+    for parquet_file in parquet_file_names:
+        hf_hub_download(
+            repo_type=REPO_TYPE,
+            revision=target_revision,
+            repo_id=dataset,
+            filename=f"{config}/{split}/{parquet_file}",
+            local_dir=duckdb_index_file_directory,
+            local_dir_use_symlinks=False,
+            token=hf_token,
+            cache_dir=duckdb_index_file_directory,
+        )
+
+    all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split}/*.parquet"
+    create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} '{all_split_parquets}';"
     logging.debug(create_command_sql)
     con.sql(create_command_sql)
 
