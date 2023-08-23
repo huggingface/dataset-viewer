@@ -55,8 +55,11 @@ def image(
     featureName: str,
     assets_base_url: str,
     assets_directory: StrPath,
+    s3_bucket: str,
+    s3_api_key: str,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
+    use_s3_storage: bool = False,
 ) -> Any:
     if value is None:
         return None
@@ -80,7 +83,10 @@ def image(
                 image=value,
                 assets_base_url=assets_base_url,
                 assets_directory=assets_directory,
+                s3_bucket=s3_bucket,
+                s3_api_key=s3_api_key,
                 overwrite=overwrite,
+                use_s3_storage=use_s3_storage,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -99,8 +105,11 @@ def audio(
     featureName: str,
     assets_base_url: str,
     assets_directory: StrPath,
+    s3_bucket: str,
+    s3_api_key: str,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
+    use_s3_storage: bool = False,
 ) -> Any:
     if value is None:
         return None
@@ -128,9 +137,12 @@ def audio(
         array=array,
         sampling_rate=sampling_rate,
         assets_base_url=assets_base_url,
-        filename_base=append_hash_suffix("audio", json_path),
         assets_directory=assets_directory,
+        s3_bucket=s3_bucket,
+        s3_api_key=s3_api_key,
+        filename_base=append_hash_suffix("audio", json_path),
         overwrite=overwrite,
+        use_s3_storage=use_s3_storage
     )
 
 
@@ -144,6 +156,9 @@ def get_cell_value(
     fieldType: Any,
     assets_base_url: str,
     assets_directory: StrPath,
+    s3_bucket: str,
+    s3_api_key: str,
+    use_s3_storage: bool = False,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
 ) -> Any:
@@ -160,6 +175,9 @@ def get_cell_value(
             featureName=featureName,
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
+            s3_bucket=s3_bucket,
+            s3_api_key=s3_api_key,
+            use_s3_storage=use_s3_storage,
             json_path=json_path,
             overwrite=overwrite,
         )
@@ -173,6 +191,8 @@ def get_cell_value(
             featureName=featureName,
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
+            s3_bucket=s3_bucket,
+            s3_api_key=s3_api_key,
             json_path=json_path,
             overwrite=overwrite,
         )

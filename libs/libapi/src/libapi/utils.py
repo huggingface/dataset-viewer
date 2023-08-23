@@ -133,8 +133,6 @@ def try_backfill_dataset_then_raise(
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
 
-S3_CACHED_ASSETS_SUPPORTED_DATASET = ["duorc"]
-
 def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
@@ -142,10 +140,13 @@ def to_rows_list(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_api_key: str,
     offset: int,
     features: Features,
     unsupported_columns: List[str],
     row_idx_column: Optional[str] = None,
+    use_s3_storage: bool = False,
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -161,6 +162,9 @@ def to_rows_list(
             features=features,
             cached_assets_base_url=cached_assets_base_url,
             cached_assets_directory=cached_assets_directory,
+            cached_assets_s3_bucket=cached_assets_s3_bucket,
+            cached_assets_s3_api_key=cached_assets_s3_api_key,
+            use_s3_storage=use_s3_storage,
             offset=offset,
             row_idx_column=row_idx_column,
         )
@@ -249,8 +253,11 @@ def transform_rows(
     features: Features,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_api_key: str,
     offset: int,
     row_idx_column: Optional[str],
+    use_s3_storage: bool = False,
 ) -> List[Row]:
     return [
         {
@@ -264,6 +271,9 @@ def transform_rows(
                 fieldType=fieldType,
                 assets_base_url=cached_assets_base_url,
                 assets_directory=cached_assets_directory,
+                s3_bucket=cached_assets_s3_bucket,
+                s3_api_key=cached_assets_s3_api_key,
+                use_s3_storage=use_s3_storage,
             )
             for (featureName, fieldType) in features.items()
         }

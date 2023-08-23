@@ -79,9 +79,9 @@ def create_image_file(
     assets_base_url: str,
     assets_directory: StrPath,
     overwrite: bool = True,
-    use_s3_storage: bool = True,
     s3_bucket: str = None,
     s3_api_key: str = None,
+    use_s3_storage: bool = False,
 ) -> ImageSource:
     if use_s3_storage:
         s3_client.upload_fileobj(image, s3_bucket, s3_api_key, filename)
@@ -126,9 +126,9 @@ def create_audio_files(
     filename_base: str,
     assets_directory: StrPath,
     overwrite: bool = True,
-    use_s3_storage: bool = True,
     s3_bucket: str = None,
     s3_api_key: str = None,
+    use_s3_storage: bool = False,
 ) -> List[AudioSource]:
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"
@@ -148,6 +148,10 @@ def create_audio_files(
     if overwrite or not mp3_file_path.exists():
         segment = AudioSegment.from_wav(wav_file_path)
         segment.export(mp3_file_path, format="mp3")
+
+    if use_s3_storage:
+        s3_client.upload_fileobj(segment, s3_bucket, s3_api_key, mp3_file_path)
+
     return [
         {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
         {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},

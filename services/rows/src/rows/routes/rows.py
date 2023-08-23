@@ -46,6 +46,8 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
 
+S3_CACHED_ASSETS_SUPPORTED_DATASET = ["duorc"]
+
 
 def create_response(
     dataset: str,
@@ -53,6 +55,8 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_api_key: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -66,15 +70,18 @@ def create_response(
     return PaginatedResponse(
         features=to_features_list(features),
         rows=to_rows_list(
-            pa_table,
-            dataset,
-            config,
-            split,
-            cached_assets_base_url,
-            cached_assets_directory,
-            offset,
-            features,
-            unsupported_columns,
+            pa_table=pa_table,
+            dataset=dataset,
+            config=config,
+            split=split,
+            cached_assets_base_url=cached_assets_base_url,
+            cached_assets_s3_bucket=cached_assets_directory,
+            cached_assets_s3_bucket=cached_assets_s3_bucket,
+            cached_assets_s3_api_key=cached_assets_s3_api_key,
+            use_s3_storage = dataset in S3_CACHED_ASSETS_SUPPORTED_DATASET,
+            offset=offset,
+            features=features,
+            unsupported_columns=unsupported_columns,
         ),
         num_rows_total=num_rows_total,
         num_rows_per_page=MAX_ROWS,
@@ -85,6 +92,8 @@ def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_api_key : str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     hf_endpoint: str,
@@ -194,6 +203,8 @@ def create_rows_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
+                        cached_assets_s3_bucket=cached_assets_s3_bucket,
+                        cached_assets_s3_api_key=cached_assets_s3_api_key,
                         pa_table=pa_table,
                         offset=offset,
                         features=rows_index.parquet_index.features,

@@ -12,6 +12,7 @@ from libcommon.config import (
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    CachedAssetsS3Config,
 )
 
 
@@ -19,6 +20,7 @@ from libcommon.config import (
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
+    cached_assets_s3: CachedAssetsS3Config = field(default_factory=CachedAssetsS3Config)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
@@ -32,6 +34,7 @@ class AppConfig:
         return cls(
             common=common_config,
             cached_assets=CachedAssetsConfig.from_env(),
+            cached_assets_s3=CachedAssetsS3Config.from_env(),
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),

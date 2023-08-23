@@ -182,6 +182,25 @@ class QueueConfig:
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
+        
+
+CACHED_ASSETS_S3_BUCKET = ""
+CACHED_ASSETS_S3_API_KEY = ""
+
+
+@dataclass(frozen=True)
+class CachedAssetsS3Config:
+    bucket: str = CACHED_ASSETS_S3_BUCKET
+    api_key: str = CACHED_ASSETS_S3_API_KEY
+
+    @classmethod
+    def from_env(cls) -> "QueueConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("CACHED_ASSETS_S3_"):
+            return cls(
+                bucket=env.str(name="BUCKET", default=CACHED_ASSETS_S3_BUCKET),
+                api_key=env.str(name="API_KEY", default=CACHED_ASSETS_S3_API_KEY),
+            )
 
 
 @dataclass(frozen=True)
