@@ -195,8 +195,8 @@ backfill:
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
-  schedule: "*/2 * * * *"
-  # every two minutes
+  schedule: "0 */2 * * *"
+  # every two hours
   nodeSelector: {}
   resources:
     requests:
@@ -348,7 +348,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 50
+    replicas: 100
     resources:
       requests:
         cpu: 1
@@ -365,7 +365,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 20
+    replicas: 50
     resources:
       requests:
         cpu: 200m
