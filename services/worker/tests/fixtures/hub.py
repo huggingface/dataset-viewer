@@ -197,6 +197,17 @@ def hub_gated_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_gated_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="descriptive_statistics_gated",
+        dataset=datasets["descriptive_statistics"],
+        gated="auto",
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="jsonl", file_paths=[jsonl_path])
     yield repo_id
@@ -867,6 +878,17 @@ def hub_responses_descriptive_statistics(hub_public_descriptive_statistics: str)
         "name": hub_public_descriptive_statistics,
         "config_names_response": create_config_names_response(hub_public_descriptive_statistics),
         "splits_response": create_splits_response(hub_public_descriptive_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_gated_descriptive_statistics(hub_gated_descriptive_statistics: str) -> HubDatasetTest:
+    return {
+        "name": hub_gated_descriptive_statistics,
+        "config_names_response": create_config_names_response(hub_gated_descriptive_statistics),
+        "splits_response": create_splits_response(hub_gated_descriptive_statistics),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

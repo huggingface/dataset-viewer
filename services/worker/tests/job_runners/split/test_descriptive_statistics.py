@@ -217,6 +217,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
+        ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
         ("big", "SplitWithTooBigParquetError"),
     ],
@@ -226,6 +227,7 @@ def test_compute(
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
+    hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
@@ -234,6 +236,7 @@ def test_compute(
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
+        "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
         "big": hub_responses_big,
     }
