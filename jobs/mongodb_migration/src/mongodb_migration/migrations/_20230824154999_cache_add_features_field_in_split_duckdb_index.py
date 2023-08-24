@@ -12,7 +12,7 @@ from mongodb_migration.migration import Migration
 
 
 # connection already occurred in the main.py (caveat: we use globals)
-class MigrationAddPartialToCacheResponse(Migration):
+class MigrationAddFeaturesToSplitDuckdbIndexCacheResponse(Migration):
     def up(self) -> None:
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info(
