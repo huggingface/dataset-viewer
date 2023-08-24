@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
+
 import enum
 import logging
 import os
@@ -30,7 +31,6 @@ from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import check_split_exists
 
-PARQUET_FILENAME = "dataset.parquet"
 REPO_TYPE = "dataset"
 
 DECIMALS = 5
@@ -53,7 +53,7 @@ COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
 COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
         JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
-"""  # `bins` is the name of preinjected table with bin edges data
+"""  # `bins` is the name of a preinjected table with bin edges data
 
 
 class ColumnType(str, enum.Enum):
