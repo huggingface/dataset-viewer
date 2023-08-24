@@ -97,7 +97,6 @@ def create_image_file(
     )
     if use_s3_storage:
         image_byte_arr = io.BytesIO()
-        # TODO: get format from file name extension?
         image.save(image_byte_arr, format="JPEG")
         image_byte_arr.seek(0)
         s3_client = boto3.client(
