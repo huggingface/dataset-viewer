@@ -99,6 +99,11 @@ def get_json_response(
     return OrjsonResponse(content, status_code=status_code.value, headers=headers)
 
 
+EXPOSED_HEADERS = [
+    "X-Error-Code",
+]
+
+
 def get_json_ok_response(content: Any, max_age: int) -> Response:
     return get_json_response(content=content, max_age=max_age)
 

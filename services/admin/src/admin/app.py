@@ -32,6 +32,7 @@ from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.metrics import create_metrics_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
+from admin.utils import EXPOSED_HEADERS
 
 
 def create_app() -> Starlette:
@@ -60,7 +61,12 @@ def create_app() -> Starlette:
 
     middleware = [
         Middleware(
-            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+            allow_credentials=True,
+            expose_headers=EXPOSED_HEADERS,
         ),
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
