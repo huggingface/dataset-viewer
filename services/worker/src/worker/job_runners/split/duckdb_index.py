@@ -4,7 +4,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Any, List, Optional, Set
 
 import duckdb
 from huggingface_hub import hf_hub_download
@@ -60,7 +60,7 @@ HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
 class DuckdbIndexWithFeatures(SplitHubFile):
-    features: Optional[dict[str: str]]
+    features: Optional[dict[str, Any]]
 
 
 def compute_index_rows(
@@ -247,7 +247,7 @@ def compute_index_rows(
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
     # we added the __hf_index_id column for the index
-    features["__hf_index_id"] = {'dtype': 'int64', '_type': 'Value'}
+    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
     return DuckdbIndexWithFeatures(
         dataset=dataset,
