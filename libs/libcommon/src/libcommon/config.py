@@ -182,24 +182,33 @@ class QueueConfig:
                 mongo_database=env.str(name="MONGO_DATABASE", default=QUEUE_MONGO_DATABASE),
                 mongo_url=env.str(name="MONGO_URL", default=QUEUE_MONGO_URL),
             )
-        
+
 
 CACHED_ASSETS_S3_BUCKET = ""
-CACHED_ASSETS_S3_API_KEY = ""
+CACHED_ASSETS_S3_ACCESS_KEY_ID = ""
+CACHED_ASSETS_S3_SECRET_ACCESS_KEY = ""
+CACHED_ASSETS_S3_REGION = ""
+CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
 
 
 @dataclass(frozen=True)
 class CachedAssetsS3Config:
     bucket: str = CACHED_ASSETS_S3_BUCKET
-    api_key: str = CACHED_ASSETS_S3_API_KEY
+    access_key_id: str = CACHED_ASSETS_S3_ACCESS_KEY_ID
+    secret_access_key: str = CACHED_ASSETS_S3_SECRET_ACCESS_KEY
+    region: str = CACHED_ASSETS_S3_REGION
+    folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
 
     @classmethod
-    def from_env(cls) -> "QueueConfig":
+    def from_env(cls) -> "CachedAssetsS3Config":
         env = Env(expand_vars=True)
         with env.prefixed("CACHED_ASSETS_S3_"):
             return cls(
                 bucket=env.str(name="BUCKET", default=CACHED_ASSETS_S3_BUCKET),
-                api_key=env.str(name="API_KEY", default=CACHED_ASSETS_S3_API_KEY),
+                access_key_id=env.str(name="ACCESS_KEY_ID", default=CACHED_ASSETS_S3_ACCESS_KEY_ID),
+                secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=CACHED_ASSETS_S3_SECRET_ACCESS_KEY),
+                region=env.str(name="REGION", default=CACHED_ASSETS_S3_REGION),
+                folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_S3_FOLDER_NAME),
             )
 
 

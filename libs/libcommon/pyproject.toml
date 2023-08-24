@@ -73,6 +73,7 @@ module = [
     "pyarrow.*",
     "tqdm.*",
     "fsspec.*",
+    "boto3.*",
 ]
 # ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true

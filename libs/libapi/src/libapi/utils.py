@@ -140,13 +140,16 @@ def to_rows_list(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    cached_assets_s3_bucket: str,
-    cached_assets_s3_api_key: str,
     offset: int,
     features: Features,
     unsupported_columns: List[str],
     row_idx_column: Optional[str] = None,
     use_s3_storage: bool = False,
+    cached_assets_s3_bucket: Optional[str] = None,
+    cached_assets_s3_access_key_id: Optional[str] = None,
+    cached_assets_s3_secret_access_key: Optional[str] = None,
+    cached_assets_s3_region: Optional[str] = None,
+    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -162,11 +165,14 @@ def to_rows_list(
             features=features,
             cached_assets_base_url=cached_assets_base_url,
             cached_assets_directory=cached_assets_directory,
-            cached_assets_s3_bucket=cached_assets_s3_bucket,
-            cached_assets_s3_api_key=cached_assets_s3_api_key,
-            use_s3_storage=use_s3_storage,
             offset=offset,
             row_idx_column=row_idx_column,
+            use_s3_storage=use_s3_storage,
+            cached_assets_s3_bucket=cached_assets_s3_bucket,
+            cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
+            cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
+            cached_assets_s3_region=cached_assets_s3_region,
+            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
         )
     except Exception as err:
         raise TransformRowsProcessingError(
@@ -253,11 +259,14 @@ def transform_rows(
     features: Features,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    cached_assets_s3_bucket: str,
-    cached_assets_s3_api_key: str,
     offset: int,
     row_idx_column: Optional[str],
     use_s3_storage: bool = False,
+    cached_assets_s3_bucket: Optional[str] = None,
+    cached_assets_s3_access_key_id: Optional[str] = None,
+    cached_assets_s3_secret_access_key: Optional[str] = None,
+    cached_assets_s3_region: Optional[str] = None,
+    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[Row]:
     return [
         {
@@ -271,9 +280,12 @@ def transform_rows(
                 fieldType=fieldType,
                 assets_base_url=cached_assets_base_url,
                 assets_directory=cached_assets_directory,
-                s3_bucket=cached_assets_s3_bucket,
-                s3_api_key=cached_assets_s3_api_key,
                 use_s3_storage=use_s3_storage,
+                s3_bucket=cached_assets_s3_bucket,
+                s3_access_key_id=cached_assets_s3_access_key_id,
+                s3_secret_access_key=cached_assets_s3_secret_access_key,
+                s3_region=cached_assets_s3_region,
+                s3_folder_name=cached_assets_s3_folder_name,
             )
             for (featureName, fieldType) in features.items()
         }

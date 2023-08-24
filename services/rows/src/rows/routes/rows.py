@@ -46,7 +46,7 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
 
-S3_CACHED_ASSETS_SUPPORTED_DATASET = ["duorc"]
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: List[str] = []
 
 
 def create_response(
@@ -56,7 +56,10 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     cached_assets_s3_bucket: str,
-    cached_assets_s3_api_key: str,
+    cached_assets_s3_access_key_id: str,
+    cached_assets_s3_secret_access_key: str,
+    cached_assets_s3_region: str,
+    cached_assets_s3_folder_name: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -75,10 +78,13 @@ def create_response(
             config=config,
             split=split,
             cached_assets_base_url=cached_assets_base_url,
-            cached_assets_s3_bucket=cached_assets_directory,
+            cached_assets_directory=cached_assets_directory,
             cached_assets_s3_bucket=cached_assets_s3_bucket,
-            cached_assets_s3_api_key=cached_assets_s3_api_key,
-            use_s3_storage = dataset in S3_CACHED_ASSETS_SUPPORTED_DATASET,
+            cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
+            cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
+            cached_assets_s3_region=cached_assets_s3_region,
+            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+            use_s3_storage=dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -93,7 +99,10 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     cached_assets_s3_bucket: str,
-    cached_assets_s3_api_key : str,
+    cached_assets_s3_access_key_id: str,
+    cached_assets_s3_secret_access_key: str,
+    cached_assets_s3_region: str,
+    cached_assets_s3_folder_name: str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     hf_endpoint: str,
@@ -204,7 +213,10 @@ def create_rows_endpoint(
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
                         cached_assets_s3_bucket=cached_assets_s3_bucket,
-                        cached_assets_s3_api_key=cached_assets_s3_api_key,
+                        cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
+                        cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
+                        cached_assets_s3_region=cached_assets_s3_region,
+                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,
                         features=rows_index.parquet_index.features,
