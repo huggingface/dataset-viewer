@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 
 import duckdb
 import pyarrow as pa
-from datasets import Audio, Features, Image, Value
+from datasets import Audio, Features, Value
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -339,8 +339,8 @@ def create_search_endpoint(
                         cached_assets_base_url,
                         cached_assets_directory,
                         offset,
+                        features,
                         num_rows_total,
-                        features=features,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)
