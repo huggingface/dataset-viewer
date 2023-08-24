@@ -39,6 +39,8 @@ INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
+BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
+
 
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;
@@ -52,8 +54,8 @@ COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
 """
 COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
-        JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
-"""  # `bins` is the name of a preinjected table with bin edges data
+        JOIN {BINS_TABLE_NAME} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
+"""
 
 
 class ColumnType(str, enum.Enum):
@@ -140,7 +142,7 @@ def compute_histogram(
 ) -> Histogram:
     bins_df = generate_bins(min_value=min_value, max_value=max_value, column_type=column_type, n_bins=n_bins)
     n_bins = bins_df.shape[0]
-    con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
+    con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")
     compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
     logging.debug(f"Compute histogram for {column_name}")
     # query returns list of tuples (bin_id, bin_max, n_count):
