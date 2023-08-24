@@ -59,6 +59,10 @@ REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
+class DuckdbIndexWithFeatures(SplitHubFile):
+    features: Optional[dict[str: str]]
+
+
 def compute_index_rows(
     job_id: str,
     dataset: str,
@@ -73,7 +77,7 @@ def compute_index_rows(
     max_parquet_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
-) -> SplitHubFile:
+) -> DuckdbIndexWithFeatures:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
     check_split_exists(dataset=dataset, config=config, split=split)
 
@@ -242,7 +246,10 @@ def compute_index_rows(
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
-    return SplitHubFile(
+    # we added the __hf_index_id column for the index
+    features["__hf_index_id"] = {'dtype': 'int64', '_type': 'Value'}
+
+    return DuckdbIndexWithFeatures(
         dataset=dataset,
         config=config,
         split=split,
@@ -255,6 +262,7 @@ def compute_index_rows(
         ),
         filename=Path(repo_file.rfilename).name,
         size=repo_file.size,
+        features=features,
     )
 
 
