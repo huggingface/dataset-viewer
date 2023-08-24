@@ -185,8 +185,8 @@ class QueueConfig:
 
 
 CACHED_ASSETS_S3_BUCKET = ""
-CACHED_ASSETS_S3_ACCESS_KEY_ID = ""
-CACHED_ASSETS_S3_SECRET_ACCESS_KEY = ""
+CACHED_ASSETS_S3_ACCESS_KEY_ID = None
+CACHED_ASSETS_S3_SECRET_ACCESS_KEY = None
 CACHED_ASSETS_S3_REGION = ""
 CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
 
@@ -194,8 +194,8 @@ CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
 @dataclass(frozen=True)
 class CachedAssetsS3Config:
     bucket: str = CACHED_ASSETS_S3_BUCKET
-    access_key_id: str = CACHED_ASSETS_S3_ACCESS_KEY_ID
-    secret_access_key: str = CACHED_ASSETS_S3_SECRET_ACCESS_KEY
+    access_key_id: Optional[str] = CACHED_ASSETS_S3_ACCESS_KEY_ID
+    secret_access_key: Optional[str] = CACHED_ASSETS_S3_SECRET_ACCESS_KEY
     region: str = CACHED_ASSETS_S3_REGION
     folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
 
