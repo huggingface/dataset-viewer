@@ -85,43 +85,53 @@ To get a deeper understanding about a dataset, ClickHouse provides statistical a
 
 A user-defined function (UDF) allows you to reuse custom logic. Many Hub datasets are often sharded into more than one Parquet file, so it can be easier and more efficient to create a UDF to list and query all the Parquet files of a given dataset from just the dataset name.
 
-For example, let's create a function to return a list of Parquet files from the [blog_authorship_corpus](https://huggingface.co/datasets/blog_authorship_corpus):
+For this example, you'll need to run `clickhouse-local` in console mode so the UDF persists between queries:
 
 ```bash
-./clickhouse local -q "
-    CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
-        SELECT arrayMap(x -> (x.1), JSONExtract(json, 'parquet_files', 'Array(Tuple(url String))'))
-        FROM url('https://datasets-server.huggingface.co/parquet?dataset=' || dataset, 'JSONAsString')
-    )
+./clickhouse local
+```
 
-    SELECT hf('blog_authorship_corpus') AS paths"
+Remember to set `enable_url_encoding` to 0 and `max_https_get_redirects` to 1 to redirect to the path of the Parquet files:
+
+```bash
+SET max_http_get_redirects = 1
+SET enable_url_encoding = 0
+```
+
+Let's create a function to return a list of Parquet files from the [blog_authorship_corpus](https://huggingface.co/datasets/blog_authorship_corpus):
+
+```bash
+CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
+    SELECT arrayMap(x -> (x.1), JSONExtract(json, 'parquet_files', 'Array(Tuple(url String))'))
+    FROM url('https://datasets-server.huggingface.co/parquet?dataset=' || dataset, 'JSONAsString')
+);
+
+SELECT hugging_paths('blog_authorship_corpus') AS paths
 
 ['https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0000.parquet','https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/train/0001.parquet','https://huggingface.co/datasets/blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/validation/0000.parquet']
 ```
 
-Let's make this even easier by creating another function that calls `hugging_paths` and outputs all the files based on the dataset name:
+You can make this even easier by creating another function that calls `hugging_paths` and outputs all the files based on the dataset name:
 
 ```bash
-./clickhouse local -q" 
-    CREATE OR REPLACE FUNCTION hf AS dataset -> (
-        WITH hugging_paths(dataset) as urls
-        SELECT multiIf(length(urls) = 0, '', length(urls) = 1, urls[1], 'https://huggingface.co/datasets/{' || arrayStringConcat(arrayMap(x -> replaceRegexpOne(replaceOne(x, 'https://huggingface.co/datasets/', ''), '\\.parquet$', ''), urls), ',') || '}.parquet')
-    )
+CREATE OR REPLACE FUNCTION hf AS dataset -> (
+    WITH hugging_paths(dataset) as urls
+    SELECT multiIf(length(urls) = 0, '', length(urls) = 1, urls[1], 'https://huggingface.co/datasets/{' || arrayStringConcat(arrayMap(x -> replaceRegexpOne(replaceOne(x, 'https://huggingface.co/datasets/', ''), '\\.parquet$', ''), urls), ',') || '}.parquet')
+);
 
-    SELECT hf('blog_authorship_corpus') AS pattern"
+SELECT hf('blog_authorship_corpus') AS pattern
+
 ['https://huggingface.co/datasets/{blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00000-of-00002,blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-train-00001-of-00002,blog_authorship_corpus/resolve/refs%2Fconvert%2Fparquet/blog_authorship_corpus/blog_authorship_corpus-validation}.parquet']
 ```
 
-Now you can use the `hf` function to query any dataset by passing the dataset name:
+Now use the `hf` function to query any dataset by passing the dataset name:
 
 ```bash
-./clickhouse local -q "
-    SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length 
-    FROM url(hf('blog_authorship_corpus')) 
-    GROUP BY horoscope 
-    ORDER BY avg_blog_length 
-    DESC LIMIT(5) 
-    SETTINGS enable_url_encoding=0, max_http_get_redirects=1"
+SELECT horoscope, count(*), AVG(LENGTH(text)) AS avg_blog_length 
+FROM url(hf('blog_authorship_corpus')) 
+GROUP BY horoscope 
+ORDER BY avg_blog_length 
+DESC LIMIT(5) 
 
 ┌─────────────┬───────┬────────────────────┐
 │  Aquarius   │ 51747 │ 1132.487873693161  │
