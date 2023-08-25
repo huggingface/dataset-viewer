@@ -3,11 +3,10 @@
 
 from dataclasses import dataclass, field
 
-from libapi.config import ApiConfig
+from libapi.config import ApiConfig, CachedAssetsS3Config
 from libcommon.config import (
     CacheConfig,
     CachedAssetsConfig,
-    CachedAssetsS3Config,
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,

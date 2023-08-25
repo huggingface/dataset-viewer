@@ -7,6 +7,7 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
   {{ include "envCachedAssets" . | nindent 2 }}
+  {{ include "envCachedAssetsS3" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}

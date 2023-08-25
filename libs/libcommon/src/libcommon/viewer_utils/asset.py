@@ -110,7 +110,7 @@ def create_image_file(
                     Bucket=s3_bucket,
                     Key=key,
                 )
-            except:
+            except Exception:
                 exists = False
         if overwrite or not exists:
             image_byte_arr = io.BytesIO()
@@ -154,7 +154,6 @@ def create_audio_files(
     s3_region: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> List[AudioSource]:
-    print("About to create an audio file")
     wav_filename = f"{filename_base}.wav"
     mp3_filename = f"{filename_base}.mp3"
     dir_path, url_dir_path = get_asset_dir_name(
@@ -166,47 +165,14 @@ def create_audio_files(
         assets_directory=assets_directory,
     )
 
-    if use_s3_storage:
-        wav_key = f"{s3_folder_name}/{url_dir_path}/{wav_filename}"
-        mp3_key = f"{s3_folder_name}/{url_dir_path}/{mp3_filename}"
-        s3_client = boto3.client(
-            S3_RESOURCE,
-            region_name=s3_region,
-            aws_access_key_id=s3_access_key_id,
-            aws_secret_access_key=s3_secret_access_key,
-        )
-        wav_exists = True
-        mp3_exists = True
-        if not overwrite:
-            try:
-                s3_client.head_object(
-                    Bucket=s3_bucket,
-                    Key=wav_key,
-                )
-            except:
-                wav_exists = False
-            try:
-                s3_client.head_object(
-                    Bucket=s3_bucket,
-                    Key=mp3_key,
-                )
-            except:
-                mp3_exists = False
-        if overwrite or not wav_exists:
-            s3_client.upload_fileobj(array, s3_bucket, wav_key)
-        if overwrite or not mp3_exists:
-            segment = AudioSegment.from_wav(wav_file_path)
-            segment.export(mp3_file_path, format="mp3")
-            s3_client.upload_fileobj(segment, s3_bucket, mp3_key)
-    else:
-        makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-        wav_file_path = dir_path / wav_filename
-        mp3_file_path = dir_path / mp3_filename
-        if overwrite or not wav_file_path.exists():
-            soundfile.write(wav_file_path, array, sampling_rate)
-        if overwrite or not mp3_file_path.exists():
-            segment = AudioSegment.from_wav(wav_file_path)
-            segment.export(mp3_file_path, format="mp3")
+    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+    wav_file_path = dir_path / wav_filename
+    mp3_file_path = dir_path / mp3_filename
+    if overwrite or not wav_file_path.exists():
+        soundfile.write(wav_file_path, array, sampling_rate)
+    if overwrite or not mp3_file_path.exists():
+        segment = AudioSegment.from_wav(wav_file_path)
+        segment.export(mp3_file_path, format="mp3")
 
     return [
         {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
