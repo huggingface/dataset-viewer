@@ -249,7 +249,7 @@ def compute_descriptive_statistics_response(
     split: str,
     local_parquet_directory: Path,
     hf_token: Optional[str],
-    target_revision: str,
+    parquet_revision: str,
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -302,7 +302,7 @@ def compute_descriptive_statistics_response(
     for parquet_filename in parquet_filenames:
         hf_hub_download(
             repo_type=REPO_TYPE,
-            revision=target_revision,
+            revision=parquet_revision,
             repo_id=dataset,
             filename=f"{config}/{split}/{parquet_filename}",
             local_dir=local_parquet_directory,
@@ -419,7 +419,7 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 split=self.split,
                 local_parquet_directory=self.cache_subdirectory,
                 hf_token=self.app_config.common.hf_token,
-                target_revision=self.descriptive_statistics_config.target_revision,
+                parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_statistics_config.max_parquet_size_bytes,
             )

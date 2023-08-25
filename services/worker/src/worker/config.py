@@ -288,7 +288,6 @@ class DuckDbIndexConfig:
 
 
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
-DESCRIPTIVE_STATISTICS_TARGET_REVISION = "refs/convert/parquet"
 DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS = 10
 DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES = 100_000_000
 
@@ -296,17 +295,18 @@ DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES = 100_000_000
 @dataclass(frozen=True)
 class DescriptiveStatisticsConfig:
     cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
-    target_revision: str = DESCRIPTIVE_STATISTICS_TARGET_REVISION
+    parquet_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     histogram_num_bins: int = DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
     max_parquet_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
 
     @classmethod
     def from_env(cls) -> "DescriptiveStatisticsConfig":
         env = Env(expand_vars=True)
+        parquet_revision = env.str(name="PARQUET_AND_INFO_TARGET_REVISION", default=PARQUET_AND_INFO_TARGET_REVISION)
         with env.prefixed("DESCRIPTIVE_STATISTICS_"):
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
-                target_revision=env.str(name="TARGET_REVISION", default=DESCRIPTIVE_STATISTICS_TARGET_REVISION),
+                parquet_revision=parquet_revision,
                 histogram_num_bins=env.int(
                     name="HISTOGRAM_NUM_BINS",
                     default=DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS,
