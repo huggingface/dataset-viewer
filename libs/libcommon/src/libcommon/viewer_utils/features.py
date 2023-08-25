@@ -113,7 +113,6 @@ def audio(
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
-    use_s3_storage: bool = False,
 ) -> Any:
     if value is None:
         return None
