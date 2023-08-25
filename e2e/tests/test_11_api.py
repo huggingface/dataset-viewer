@@ -59,6 +59,7 @@ def test_auth_e2e(
         ("/size", "config"),
         ("/is-valid", "dataset"),
         ("/valid", "all"),
+        ("/statistics", "split"),
     ],
 )
 def test_endpoint(
