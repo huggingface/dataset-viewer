@@ -6,7 +6,7 @@ from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_AL
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20230824154999_cache_add_features_field_in_split_duckdb_index import (
+from mongodb_migration.migrations._20230824154900_cache_add_features_field_in_split_duckdb_index import (
     MigrationAddFeaturesToSplitDuckdbIndexCacheResponse,
 )
 
@@ -103,7 +103,7 @@ def test_cache_add_features(mongo_host: str) -> None:
         db[CACHE_COLLECTION_RESPONSES].insert_many(cache)
 
         migration = MigrationAddFeaturesToSplitDuckdbIndexCacheResponse(
-            version="20230824154999",
+            version="20230824154900",
             description="add features field to split-duckdb-index",
         )
         migration.up()
