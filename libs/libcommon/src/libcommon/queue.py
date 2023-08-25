@@ -680,21 +680,20 @@ class Queue:
                 if not first_job:
                     raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
                 # start it
-                first_job.update(
+                if not JobDocument.objects(pk=str(first_job.pk), status=Status.WAITING).update(
                     started_at=datetime,
                     status=Status.STARTED,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
-                )
+                ):
+                    raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 # and cancel the other ones, if any
-                for job in waiting_jobs.skip(1):
-                    # TODO: try to do a bulk update (not sure it's possible)
-                    job.update(
-                        finished_at=datetime,
-                        status=Status.CANCELLED,
-                        write_concern={"w": "majority", "fsync": True},
-                        read_concern={"level": "majority"},
-                    )
+                waiting_jobs(status=Status.WAITING).update(
+                    finished_at=datetime,
+                    status=Status.CANCELLED,
+                    write_concern={"w": "majority", "fsync": True},
+                    read_concern={"level": "majority"},
+                )
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(

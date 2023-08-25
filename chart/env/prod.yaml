@@ -76,6 +76,7 @@ secrets:
       PARQUET_CONVERTER_HF_TOKEN: "hub-prod-datasets-server-parquet-converter-hf-token"
       WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
+      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
@@ -86,6 +87,9 @@ secrets:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
   hfWebhookSecret:
+    fromSecret: true
+    secretName: "datasets-server-prod-secrets"
+  hfJwtAdditionalPublicKeys:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
   spawningToken:
@@ -125,7 +129,7 @@ parquetAndInfo:
   maxDatasetSize: "5_000_000_000"
   maxRowGroupByteSizeForCopy: "500_000_000"
   # See https://observablehq.com/@huggingface/blocked-datasets
-  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert"
+  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives"
   supportedDatasets: ""
   noMaxSizeLimitDatasets: "Open-Orca/OpenOrca"
 
@@ -191,8 +195,8 @@ backfill:
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
-  schedule: "*/2 * * * *"
-  # every two minutes
+  schedule: "0 */2 * * *"
+  # every two hours
   nodeSelector: {}
   resources:
     requests:
@@ -344,7 +348,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 96
+    replicas: 100
     resources:
       requests:
         cpu: 1
@@ -361,7 +365,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 32
+    replicas: 50
     resources:
       requests:
         cpu: 200m

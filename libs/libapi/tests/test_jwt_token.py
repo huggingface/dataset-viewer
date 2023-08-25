@@ -3,91 +3,197 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+from unittest.mock import patch
 
 import jwt
 import pytest
+from ecdsa import Ed25519, SigningKey
 
+from libapi.config import ApiConfig
 from libapi.exceptions import (
     JWTExpiredSignature,
     JWTInvalidClaimRead,
     JWTInvalidClaimSub,
     JWTInvalidKeyOrAlgorithm,
     JWTInvalidSignature,
+    JWTKeysError,
     JWTMissingRequiredClaim,
 )
-from libapi.jwt_token import parse_jwt_public_key, validate_jwt
+from libapi.jwt_token import (
+    create_algorithm,
+    get_jwt_public_keys,
+    parse_jwt_public_key_json,
+    parse_jwt_public_key_pem,
+    validate_jwt,
+)
 
-HUB_JWT_KEYS = [{"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}]
-HUB_JWT_ALGORITHM = "EdDSA"
-HUB_JWT_PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=
------END PUBLIC KEY-----
-"""
-UNSUPPORTED_ALGORITHM_JWT_KEYS = [
-    {
-        "alg": "EC",
-        "crv": "P-256",
-        "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
-        "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-        "use": "enc",
-        "kid": "1",
-    }
-]
+algorithm_name_eddsa = "EdDSA"
+algorithm_name_rs256 = "RS256"
+algorithm_name_hs256 = "HS256"
+algorithm_name_unknown = "unknown"
 
 
 @pytest.mark.parametrize(
-    "keys,expectation",
+    "algorithm_name,expectation",
     [
-        (HUB_JWT_KEYS, does_not_raise()),
-        ([], pytest.raises(Exception)),
-        (UNSUPPORTED_ALGORITHM_JWT_KEYS, pytest.raises(Exception)),
+        (algorithm_name_eddsa, does_not_raise()),
+        (algorithm_name_rs256, does_not_raise()),
+        (algorithm_name_hs256, does_not_raise()),
+        (algorithm_name_unknown, pytest.raises(RuntimeError)),
     ],
 )
-def test_parse_jwk(
-    keys: str,
-    expectation: Any,
-) -> None:
+def test_create_algorithm(algorithm_name: str, expectation: Any) -> None:
     with expectation:
-        key = parse_jwt_public_key(keys=keys, hf_jwt_algorithm=HUB_JWT_ALGORITHM)
-        assert key == HUB_JWT_PUBLIC_KEY
+        create_algorithm(algorithm_name)
 
 
-HUB_JWT_TOKEN_FOR_SEVERO_GLUE = (
+algorithm_eddsa = create_algorithm(algorithm_name_eddsa)
+eddsa_public_key_json_payload = {"crv": "Ed25519", "x": "-RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM", "kty": "OKP"}
+# ^ given by https://huggingface.co/api/keys/jwt (as of 2023/08/18)
+eddsa_public_key_pem = """-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=
+-----END PUBLIC KEY-----
+"""
+another_algorithm_public_key_json_payload = {
+    "alg": "EC",
+    "crv": "P-256",
+    "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+    "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+    "use": "enc",
+    "kid": "1",
+}
+
+
+@pytest.mark.parametrize(
+    "payload,expected_pem,expectation",
+    [
+        ([], None, pytest.raises(ValueError)),
+        (eddsa_public_key_json_payload, None, pytest.raises(ValueError)),
+        ([another_algorithm_public_key_json_payload], None, pytest.raises(RuntimeError)),
+        ([eddsa_public_key_json_payload], eddsa_public_key_pem, does_not_raise()),
+    ],
+)
+def test_parse_jwt_public_key_json(payload: Any, expected_pem: str, expectation: Any) -> None:
+    with expectation:
+        pem = parse_jwt_public_key_json(algorithm=algorithm_eddsa, payload=payload)
+        if expected_pem:
+            assert pem == expected_pem
+
+
+eddsa_public_key_pem_with_bad_linebreaks = (
+    "-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEA+RBhgyNluwaIL5KFJb6ZOL2H1nmyI8mW4Z2EHGDGCXM=\\n-----END PUBLIC"
+    " KEY-----"
+)
+
+
+@pytest.mark.parametrize(
+    "payload,expected_pem,expectation",
+    [
+        (eddsa_public_key_pem_with_bad_linebreaks, None, pytest.raises(Exception)),
+        (eddsa_public_key_pem, eddsa_public_key_pem, does_not_raise()),
+    ],
+)
+def test_parse_jwt_public_key_pem(payload: Any, expected_pem: str, expectation: Any) -> None:
+    with expectation:
+        pem = parse_jwt_public_key_pem(algorithm=algorithm_eddsa, payload=payload)
+        if expected_pem:
+            assert pem == expected_pem
+
+
+private_key_ok = SigningKey.generate(curve=Ed25519)
+private_key_pem_ok = private_key_ok.to_pem(format="pkcs8")
+public_key_pem_ok = private_key_ok.get_verifying_key().to_pem().decode("utf-8")
+
+other_private_key = SigningKey.generate(curve=Ed25519)
+other_private_key_pem = other_private_key.to_pem(format="pkcs8")
+other_public_key_pem = other_private_key.get_verifying_key().to_pem().decode("utf-8")
+
+
+@pytest.mark.parametrize(
+    "keys_env_var,expected_keys",
+    [
+        ("", []),
+        (public_key_pem_ok, [public_key_pem_ok]),
+        (f"{public_key_pem_ok},{public_key_pem_ok}", [public_key_pem_ok, public_key_pem_ok]),
+        (f"{public_key_pem_ok},{other_public_key_pem}", [public_key_pem_ok, other_public_key_pem]),
+        (
+            f"{public_key_pem_ok},{other_public_key_pem},{eddsa_public_key_pem}",
+            [public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+        ),
+    ],
+)
+def test_get_jwt_public_keys_from_env(keys_env_var: str, expected_keys: List[str]) -> None:
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setenv("API_HF_JWT_ADDITIONAL_PUBLIC_KEYS", keys_env_var)
+    api_config = ApiConfig.from_env(hf_endpoint="")
+    assert (
+        get_jwt_public_keys(
+            algorithm_name=algorithm_name_eddsa,
+            additional_public_keys=api_config.hf_jwt_additional_public_keys,
+        )
+        == expected_keys
+    )
+    monkeypatch.undo()
+
+
+@pytest.mark.parametrize(
+    "remote_payload,keys_payload,expected_keys,expectation",
+    [
+        ([], [], None, pytest.raises(JWTKeysError)),
+        ([another_algorithm_public_key_json_payload], [], None, pytest.raises(JWTKeysError)),
+        (None, [eddsa_public_key_pem_with_bad_linebreaks], None, pytest.raises(JWTKeysError)),
+        ([eddsa_public_key_json_payload], [], [eddsa_public_key_pem], does_not_raise()),
+        (
+            None,
+            [public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+            [public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+            does_not_raise(),
+        ),
+        (
+            [eddsa_public_key_json_payload],
+            [public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+            [eddsa_public_key_pem, public_key_pem_ok, other_public_key_pem, eddsa_public_key_pem],
+            does_not_raise(),
+        ),
+    ],
+)
+def test_get_jwt_public_keys(
+    remote_payload: Any, keys_payload: List[str], expected_keys: List[str], expectation: Any
+) -> None:
+    def fake_fetch(
+        url: str,
+        hf_timeout_seconds: Optional[float] = None,
+    ) -> Any:
+        return remote_payload
+
+    with patch("libapi.jwt_token.fetch_jwt_public_key_json", wraps=fake_fetch):
+        with expectation:
+            keys = get_jwt_public_keys(
+                algorithm_name=algorithm_name_eddsa,
+                public_key_url=None if remote_payload is None else "mock",
+                additional_public_keys=keys_payload,
+            )
+            if expected_keys:
+                assert keys == expected_keys
+
+
+token_for_severo_glue = (
     "eyJhbGciOiJFZERTQSJ9.eyJyZWFkIjp0cnVlLCJzdWIiOiJkYXRhc2V0cy9zZXZlcm8vZ2x1ZSIsImV4cCI6MTY3ODgwMjk0NH0"
     ".nIi1ZKinMBpYi4kKtirW-cQEt1cGnAziTGmJsZeN5UpE62jz4DcPaIPlSI5P5ciGOlTxy4SEhD1WITkQzpo3Aw"
 )
-DATASET_SEVERO_GLUE = "severo/glue"
+dataset_severo_glue = "severo/glue"
 
 
 def test_is_jwt_valid_with_ec() -> None:
     validate_jwt(
-        dataset=DATASET_SEVERO_GLUE,
-        token=HUB_JWT_TOKEN_FOR_SEVERO_GLUE,
-        public_key=HUB_JWT_PUBLIC_KEY,
-        algorithm=HUB_JWT_ALGORITHM,
+        dataset=dataset_severo_glue,
+        token=token_for_severo_glue,
+        public_keys=[eddsa_public_key_pem],
+        algorithm=algorithm_name_eddsa,
         verify_exp=False,
         # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
     )
-
-
-private_key = """-----BEGIN RSA PRIVATE KEY-----
-MIIBOQIBAAJAZTmplhS/Jd73ycVut7TglMObheQqXM7RZYlwazLU4wpfIVIwOh9I
-sCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQABAkAMyF9WCICq86Eu5bO5lynV
-H26AVfPTjHp87AI6R00C7p9n8hO/DhHaHpc3InOSsXsw9d2hmz37jwwBFiwMHMMh
-AiEAtbttHlIO+yO29oXw4P6+yO11lMy1UpT1sPVTnR9TXbUCIQCOl7Zuyy2ZY9ZW
-pDhW91x/14uXjnLXPypgY9bcfggJUwIhAJQG1LzrzjQWRUPMmgZKuhBkC3BmxhM8
-LlwzmCXVjEw5AiA7JnAFEb9+q82T71d3q/DxD0bWvb6hz5ASoBfXK2jGBQIgbaQp
-h4Tk6UJuj1xgKNs75Pk3pG2tj8AQiuBk3l62vRU=
------END RSA PRIVATE KEY-----"""
-public_key_ok = """-----BEGIN PUBLIC KEY-----
-MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAZTmplhS/Jd73ycVut7TglMObheQqXM7R
-ZYlwazLU4wpfIVIwOh9IsCZGSgLyFq42KWIikKLEs/yqx3pRGfq+rwIDAQAB
------END PUBLIC KEY-----"""
-other_public_key = """-----BEGIN PUBLIC KEY-----
-MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAecoNIHMXczWkzTp9ePEcx6vPibrZVz/z
-xYGX6G2jFcwFdsrO9nCecrtpSw5lwjW40aNVL9NL9yxPxDi2dyq4wQIDAQAB
------END PUBLIC KEY-----"""
 
 
 dataset_ok = "dataset"
@@ -104,28 +210,34 @@ read_ok = True
 read_wrong_1 = False
 read_wrong_2 = "True"
 payload_ok = {"sub": sub_ok, "read": read_ok, "exp": exp_ok}
-algorithm_ok = "RS256"
-algorithm_wrong = "HS256"
+algorithm_ok = algorithm_name_eddsa
+algorithm_wrong = algorithm_name_rs256
 
 
 def encode_jwt(payload: Dict[str, Any]) -> str:
-    return jwt.encode(payload, private_key, algorithm=algorithm_ok)
+    return jwt.encode(payload, private_key_pem_ok, algorithm=algorithm_ok)
 
 
-def assert_jwt(token: str, expectation: Any, public_key: str = public_key_ok, algorithm: str = algorithm_ok) -> None:
+def assert_jwt(
+    token: str, expectation: Any, public_keys: Optional[List[str]] = None, algorithm: str = algorithm_ok
+) -> None:
+    if public_keys is None:
+        public_keys = [public_key_pem_ok]
     with expectation:
-        validate_jwt(dataset=dataset_ok, token=token, public_key=public_key, algorithm=algorithm)
+        validate_jwt(dataset=dataset_ok, token=token, public_keys=public_keys, algorithm=algorithm)
 
 
 @pytest.mark.parametrize(
-    "public_key,expectation",
+    "public_keys,expectation",
     [
-        (other_public_key, pytest.raises(JWTInvalidSignature)),
-        (public_key_ok, does_not_raise()),
+        ([other_public_key_pem], pytest.raises(JWTInvalidSignature)),
+        ([public_key_pem_ok], does_not_raise()),
+        ([public_key_pem_ok, other_public_key_pem], does_not_raise()),
+        ([other_public_key_pem, public_key_pem_ok], does_not_raise()),
     ],
 )
-def test_validate_jwt_public_key(public_key: str, expectation: Any) -> None:
-    assert_jwt(encode_jwt(payload_ok), expectation, public_key=public_key)
+def test_validate_jwt_public_keys(public_keys: List[str], expectation: Any) -> None:
+    assert_jwt(encode_jwt(payload_ok), expectation, public_keys=public_keys)
 
 
 @pytest.mark.parametrize(

@@ -20,6 +20,7 @@ boto3 = "^1.28.34"
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 black = "^22.12.0"
+ecdsa = "^0.18.0"
 flake8 = "^3.9.2"
 isort = "^5.12.0"
 mypy = "^1.0.0"
@@ -51,6 +52,7 @@ strict = true
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
+    "ecdsa.*",
     "prometheus_client.*",
     "pyarrow.*"
 ]

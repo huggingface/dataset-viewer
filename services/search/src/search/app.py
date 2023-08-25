@@ -3,9 +3,10 @@
 
 import uvicorn
 from libapi.config import UvicornConfig
-from libapi.jwt_token import fetch_jwt_public_key
+from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
+from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -42,19 +43,21 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         raise RuntimeError("The duckdb_index cache directory could not be accessed. Exiting.")
 
     processing_graph = ProcessingGraph(app_config.processing_graph.specification)
-    hf_jwt_public_key = (
-        fetch_jwt_public_key(
-            url=app_config.api.hf_jwt_public_key_url,
-            hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
-            hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-        )
-        if app_config.api.hf_jwt_public_key_url and app_config.api.hf_jwt_algorithm
-        else None
+    hf_jwt_public_keys = get_jwt_public_keys(
+        algorithm_name=app_config.api.hf_jwt_algorithm,
+        public_key_url=app_config.api.hf_jwt_public_key_url,
+        additional_public_keys=app_config.api.hf_jwt_additional_public_keys,
+        timeout_seconds=app_config.api.hf_timeout_seconds,
     )
 
     middleware = [
         Middleware(
-            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+            allow_credentials=True,
+            expose_headers=EXPOSED_HEADERS,
         ),
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
@@ -82,7 +85,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
-                hf_jwt_public_key=hf_jwt_public_key,
+                hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,

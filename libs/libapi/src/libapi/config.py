@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 from environs import Env
 
@@ -31,6 +31,7 @@ class UvicornConfig:
 API_EXTERNAL_AUTH_URL = None
 API_HF_AUTH_PATH = "/api/datasets/%s/auth-check"
 API_HF_JWT_PUBLIC_KEY_URL = None
+API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: List[str] = []
 API_HF_JWT_ALGORITHM = "EdDSA"
 API_HF_TIMEOUT_SECONDS = 0.2
 API_HF_WEBHOOK_SECRET = None
@@ -43,6 +44,7 @@ class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented
     hf_auth_path: str = API_HF_AUTH_PATH
     hf_jwt_public_key_url: Optional[str] = API_HF_JWT_PUBLIC_KEY_URL
+    hf_jwt_additional_public_keys: List[str] = field(default_factory=API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy)
     hf_jwt_algorithm: Optional[str] = API_HF_JWT_ALGORITHM
     hf_timeout_seconds: Optional[float] = API_HF_TIMEOUT_SECONDS
     hf_webhook_secret: Optional[str] = API_HF_WEBHOOK_SECRET
@@ -59,6 +61,9 @@ class ApiConfig:
                 external_auth_url=external_auth_url,
                 hf_auth_path=hf_auth_path,
                 hf_jwt_public_key_url=env.str(name="HF_JWT_PUBLIC_KEY_URL", default=API_HF_JWT_PUBLIC_KEY_URL),
+                hf_jwt_additional_public_keys=env.list(
+                    name="HF_JWT_ADDITIONAL_PUBLIC_KEYS", default=API_HF_JWT_ADDITIONAL_PUBLIC_KEYS.copy()
+                ),
                 hf_jwt_algorithm=env.str(name="HF_JWT_ALGORITHM", default=API_HF_JWT_ALGORITHM),
                 hf_timeout_seconds=env.float(name="HF_TIMEOUT_SECONDS", default=API_HF_TIMEOUT_SECONDS),
                 hf_webhook_secret=env.str(name="HF_WEBHOOK_SECRET", default=API_HF_WEBHOOK_SECRET),

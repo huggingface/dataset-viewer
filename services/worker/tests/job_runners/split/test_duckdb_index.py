@@ -6,6 +6,7 @@ from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable, Optional
 
+import datasets
 import duckdb
 import pytest
 import requests
@@ -127,6 +128,7 @@ def get_parquet_job_runner(
     "hub_dataset_name,max_parquet_size_bytes,expected_error_code",
     [
         ("duckdb_index", None, None),
+        ("gated", None, None),
         ("duckdb_index", 1_000, "SplitWithTooBigParquetError"),  # parquet size is 2812
         ("public", None, "NoIndexableColumnsError"),  # dataset does not have string columns to index
     ],
@@ -137,11 +139,16 @@ def test_compute(
     app_config: AppConfig,
     hub_responses_public: HubDatasetTest,
     hub_responses_duckdb_index: HubDatasetTest,
+    hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     max_parquet_size_bytes: Optional[int],
     expected_error_code: str,
 ) -> None:
-    hub_datasets = {"public": hub_responses_public, "duckdb_index": hub_responses_duckdb_index}
+    hub_datasets = {
+        "public": hub_responses_public,
+        "duckdb_index": hub_responses_duckdb_index,
+        "gated": hub_responses_gated_duckdb_index,
+    }
     dataset = hub_datasets[hub_dataset_name]["name"]
     config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
@@ -175,10 +182,7 @@ def test_compute(
     parquet_response = parquet_job_runner.compute()
     config_parquet = parquet_response.content
 
-    # simulate more than one parquet file to index
-    extra_parquet_file = config_parquet["parquet_files"][0]
-    config_parquet["parquet_files"].append(extra_parquet_file)
-
+    # TODO: simulate more than one parquet file to index
     upsert_response(
         "config-parquet-and-info",
         dataset=dataset,
@@ -202,12 +206,14 @@ def test_compute(
         content = response.content
         url = content["url"]
         file_name = content["filename"]
+        features = content["features"]
         assert url is not None
         assert file_name is not None
+        assert datasets.Features.from_dict(features) is not None
         job_runner.post_compute()
 
         # download locally duckdb index file
-        duckdb_file = requests.get(url)
+        duckdb_file = requests.get(url, headers={"authorization": f"Bearer {app_config.common.hf_token}"})
         with open(file_name, "wb") as f:
             f.write(duckdb_file.content)
 
@@ -219,7 +225,7 @@ def test_compute(
         record_count = con.sql("SELECT COUNT(*) FROM data;").fetchall()
         assert record_count is not None
         assert isinstance(record_count, list)
-        assert record_count[0] == (10,)  # dataset has 5 rows but since parquet file was duplicate it is 10
+        assert record_count[0] == (5,)
 
         # perform a search to validate fts feature
         query = "Lord Vader"

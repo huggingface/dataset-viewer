@@ -53,6 +53,13 @@ def get_json_response(
     return OrjsonResponse(content=content, status_code=status_code.value, headers=headers)
 
 
+# these headers are exposed to the client (browser)
+EXPOSED_HEADERS = [
+    "X-Error-Code",
+    "X-Revision",
+]
+
+
 def get_json_ok_response(content: Any, max_age: int = 0, revision: Optional[str] = None) -> Response:
     return get_json_response(content=content, max_age=max_age, revision=revision)
 
