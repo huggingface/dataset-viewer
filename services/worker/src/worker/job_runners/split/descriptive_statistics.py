@@ -1,13 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
+
 import enum
 import logging
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
 import pandas as pd
+from huggingface_hub import hf_hub_download
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -28,7 +31,7 @@ from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import check_split_exists
 
-PARQUET_FILENAME = "dataset.parquet"
+REPO_TYPE = "dataset"
 
 DECIMALS = 5
 
@@ -36,10 +39,9 @@ INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 
+BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
 
-COPY_PARQUET_DATA_COMMAND = """
-COPY (SELECT * FROM read_parquet({parquet_files_urls})) TO '{local_parquet_path}' (FORMAT PARQUET);
-"""
+
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;
 """
@@ -52,8 +54,8 @@ COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
 """
 COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
-        JOIN bins ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
-"""  # `bins` is the name of preinjected table with bin edges data
+        JOIN {bins_table_name} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
+"""
 
 
 class ColumnType(str, enum.Enum):
@@ -140,8 +142,11 @@ def compute_histogram(
 ) -> Histogram:
     bins_df = generate_bins(min_value=min_value, max_value=max_value, column_type=column_type, n_bins=n_bins)
     n_bins = bins_df.shape[0]
-    con.sql("CREATE OR REPLACE TEMPORARY TABLE bins AS SELECT * from bins_df")
-    compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
+    # create auxiliary table with bin edges
+    con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")  # nosec
+    compute_hist_command = COMPUTE_HIST_COMMAND.format(
+        parquet_filename=parquet_filename, bins_table_name=BINS_TABLE_NAME, column_name=column_name
+    )
     logging.debug(f"Compute histogram for {column_name}")
     # query returns list of tuples (bin_id, bin_max, n_count):
     hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
@@ -246,9 +251,53 @@ def compute_descriptive_statistics_response(
     config: str,
     split: str,
     local_parquet_directory: Path,
+    hf_token: Optional[str],
+    parquet_revision: str,
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
+    """
+    Compute statistics and get response for the `split-descriptive-statistics` step.
+    Currently, integers, floats and ClassLabel features are supported.
+    Args:
+        dataset (`str`):
+            Name of a dataset.
+        config (`str`):
+            Requested dataset configuration name.
+        split (`str`):
+            Requested dataset split.
+        local_parquet_directory (`Path`):
+            Path to a local directory where the dataset's parquet files are stored. We download these files locally
+            because it enables fast querying and statistics computation.
+        hf_token (`str`, `optional`):
+            An app authentication token with read access to all the datasets.
+        parquet_revision (`str`):
+            The git revision (e.g. "ref/convert/parquet") from where to download the dataset's parquet files.
+        histogram_num_bins (`int`):
+            (Maximum) number of bins to compute histogram for numerical data.
+            The resulting number of bins might be lower than the requested one for integer data.
+        max_parquet_size_bytes (`int`):
+            The maximum size in bytes of the dataset's parquet files to compute statistics.
+            Datasets with bigger size are ignored.
+
+    Returns:
+        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
+        numerical (int and float) or ClassLabel feature.
+
+    Raises the following errors:
+        - [`libcommon.exceptions.PreviousStepFormatError`]
+            If the content of the previous step does not have the expected format.
+        - [`libcommon.exceptions.ParquetResponseEmptyError`]
+            If response for `config-parquet-and-info` doesn't have any parquet files.
+        - [`libcommon.exceptions.SplitWithTooBigParquetError`]
+            If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
+        - [`libcommon.exceptions.NoSupportedFeaturesError`]
+            If requested dataset doesn't have any supported for statistics computation features.
+            Currently, floats, integers and ClassLabels are supported.
+        - [`libcommon.exceptions.StatisticsComputationError`]
+            If there was some unexpected behaviour during statistics computation.
+    """
+
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
     check_split_exists(dataset=dataset, config=config, split=split)
 
@@ -290,7 +339,24 @@ def compute_descriptive_statistics_response(
             f"Statistics computation is limited to split parquets under {max_parquet_size_bytes} bytes. "
             f"Current size of sum of split parquets is {split_parquets_size} bytes."
         )
-    parquet_files_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
+    parquet_filenames = [parquet_file["filename"] for parquet_file in split_parquet_files]
+
+    # store data as local parquet files for fast querying
+    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+    logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
+    for parquet_filename in parquet_filenames:
+        hf_hub_download(
+            repo_type=REPO_TYPE,
+            revision=parquet_revision,
+            repo_id=dataset,
+            filename=f"{config}/{split}/{parquet_filename}",
+            local_dir=local_parquet_directory,
+            local_dir_use_symlinks=False,
+            token=hf_token,
+            cache_dir=local_parquet_directory,
+        )
+
+    local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split}/*.parquet"
 
     stats: List[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
@@ -315,15 +381,6 @@ def compute_descriptive_statistics_response(
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
 
-    # store data as local parquet file for fast querying
-    local_parquet_path = (
-        Path(local_parquet_directory) / PARQUET_FILENAME if local_parquet_directory else Path(PARQUET_FILENAME)
-    )
-    logging.info(f"Downloading remote data to a local parquet file {local_parquet_path}. ")
-    con.sql(
-        COPY_PARQUET_DATA_COMMAND.format(parquet_files_urls=parquet_files_urls, local_parquet_path=local_parquet_path)
-    )
-
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
@@ -335,7 +392,7 @@ def compute_descriptive_statistics_response(
             feature_name,
             class_label_names=class_label_names,
             n_samples=num_examples,
-            parquet_filename=local_parquet_path,
+            parquet_filename=local_parquet_glob_path,
         )
         stats.append(
             StatisticsPerColumnItem(
@@ -352,7 +409,7 @@ def compute_descriptive_statistics_response(
         num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
             con,
             feature_name,
-            parquet_filename=local_parquet_path,
+            parquet_filename=local_parquet_glob_path,
             n_bins=histogram_num_bins,
             n_samples=num_examples,
             column_type=column_type,
@@ -406,6 +463,8 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 config=self.config,
                 split=self.split,
                 local_parquet_directory=self.cache_subdirectory,
+                hf_token=self.app_config.common.hf_token,
+                parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_parquet_size_bytes=self.descriptive_statistics_config.max_parquet_size_bytes,
             )
