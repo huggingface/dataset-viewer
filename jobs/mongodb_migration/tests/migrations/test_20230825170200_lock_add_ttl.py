@@ -12,7 +12,7 @@ from mongodb_migration.migrations._20230825170200_lock_add_ttl import (
 )
 
 
-def assert_ttl(key: str, ttl: Optional[str]) -> None:
+def assert_ttl(key: str, ttl: Optional[int]) -> None:
     db = get_db(QUEUE_MONGOENGINE_ALIAS)
     entry = db[QUEUE_COLLECTION_LOCKS].find_one({"key": key})
     assert entry is not None
