@@ -189,6 +189,13 @@ class IsValidResponse(TypedDict):
     search: bool
 
 
+class DatasetHubCacheResponse(TypedDict):
+    preview: bool
+    viewer: bool
+    partial: bool
+    num_rows: int
+
+
 class DatasetParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     pending: list[PreviousJob]
