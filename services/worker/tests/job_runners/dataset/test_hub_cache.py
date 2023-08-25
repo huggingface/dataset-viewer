@@ -130,24 +130,26 @@ def test_compute(
 
 
 @pytest.mark.parametrize(
-    "upstream_responses,expected",
+    "upstream_responses,expectation",
     [
-        [
-            UPSTREAM_RESPONSE_IS_VALID_ERROR,
-            UPSTREAM_RESPONSE_SIZE_OK,
-        ],
-        pytest.raises(CachedArtifactError),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_ERROR,
+                UPSTREAM_RESPONSE_SIZE_OK,
+            ],
+            pytest.raises(CachedArtifactError),
+        )
     ],
 )
 def test_compute_error(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     upstream_responses: List[UpstreamResponse],
-    expected: Any,
+    expectation: Any,
 ) -> None:
     dataset = DATASET
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
-    with expected:
+    with expectation:
         job_runner.compute()
