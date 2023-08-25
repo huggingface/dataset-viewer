@@ -6,6 +6,7 @@ from dataclasses import replace
 from http import HTTPStatus
 from typing import Callable, Optional
 
+import datasets
 import duckdb
 import pytest
 import requests
@@ -205,8 +206,10 @@ def test_compute(
         content = response.content
         url = content["url"]
         file_name = content["filename"]
+        features = content["features"]
         assert url is not None
         assert file_name is not None
+        assert datasets.Features.from_dict(features) is not None
         job_runner.post_compute()
 
         # download locally duckdb index file
