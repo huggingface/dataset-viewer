@@ -17,9 +17,7 @@ class MigrationAddTtlToQueueLock(Migration):
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info("If missing, add the ttl field to the locks")
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
-        db[QUEUE_COLLECTION_LOCKS].update_many(
-            {"ttl": {"$exists": False}}, [{"$set": {"ttl": None}}]  # type: ignore
-        )
+        db[QUEUE_COLLECTION_LOCKS].update_many({"ttl": {"$exists": False}}, [{"$set": {"ttl": None}}])  # type: ignore
 
     def down(self) -> None:
         logging.info("Remove the ttl field from all the locks")
