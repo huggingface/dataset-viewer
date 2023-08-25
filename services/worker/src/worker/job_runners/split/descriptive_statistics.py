@@ -257,7 +257,7 @@ def compute_descriptive_statistics_response(
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
-    Get response for `split-descriptive-statistics` steps.
+    Compute statistics and get response for the `split-descriptive-statistics` step.
     Currently, integers, floats and ClassLabel features are supported.
     Args:
         dataset (`str`):
