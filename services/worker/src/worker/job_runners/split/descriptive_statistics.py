@@ -253,6 +253,48 @@ def compute_descriptive_statistics_response(
     histogram_num_bins: int,
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
+    """
+    Get response for `split-descriptive-statistics` steps.
+    Currently, integers, floats and ClassLabel features are supported.
+    Args:
+        dataset (`str`):
+            Name of a dataset.
+        config (`str`):
+            Requested dataset configuration name.
+        split (`str`):
+            Requested dataset split.
+        local_parquet_directory (`Path`):
+            Path to a local directory where the dataset's parquet files are stored. We download these files locally
+            because it enables fast querying and statistics computation.
+        hf_token (`str`, `optional`):
+            An app authentication token with read access to all the datasets.
+        parquet_revision (`str`):
+            The git revision (e.g. "ref/convert/parquet") from where to download the dataset's parquet files.
+        histogram_num_bins (`int`):
+            (Maximum) number of bins to compute histogram for numerical data.
+            The resulting number of bins might be lower than the requested one for integer data.
+        max_parquet_size_bytes (`int`):
+            The maximum size in bytes of the dataset's parquet files to compute statistics.
+            Datasets with bigger size are ignored.
+
+    Returns:
+        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
+        numerical (int and float) or ClassLabel feature.
+
+    Raises the following errors:
+        - [`libcommon.exceptions.PreviousStepFormatError`]
+            If the content of the previous step does not have the expected format.
+        - [`libcommon.exceptions.ParquetResponseEmptyError`]
+            If response for `config-parquet-and-info` doesn't have any parquet files.
+        - [`libcommon.exceptions.SplitWithTooBigParquetError`]
+            If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
+        - [`libcommon.exceptions.NoSupportedFeaturesError`]
+            If requested dataset doesn't have any supported for statistics computation features.
+            Currently, floats, integers and ClassLabels are supported.
+        - [`libcommon.exceptions.StatisticsComputationError`]
+            If there was some unexpected behaviour during statistics computation.
+    """
+
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
     check_split_exists(dataset=dataset, config=config, split=split)
 
