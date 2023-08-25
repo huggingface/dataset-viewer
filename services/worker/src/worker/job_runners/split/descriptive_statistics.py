@@ -54,7 +54,7 @@ COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
 """
 COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
-        JOIN {BINS_TABLE_NAME} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
+        JOIN {bins_table_name} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
 """
 
 
@@ -142,8 +142,11 @@ def compute_histogram(
 ) -> Histogram:
     bins_df = generate_bins(min_value=min_value, max_value=max_value, column_type=column_type, n_bins=n_bins)
     n_bins = bins_df.shape[0]
-    con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")
-    compute_hist_command = COMPUTE_HIST_COMMAND.format(parquet_filename=parquet_filename, column_name=column_name)
+    # create auxiliary table with bin edges
+    con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")  # nosec
+    compute_hist_command = COMPUTE_HIST_COMMAND.format(
+        parquet_filename=parquet_filename, bins_table_name=BINS_TABLE_NAME, column_name=column_name
+    )
     logging.debug(f"Compute histogram for {column_name}")
     # query returns list of tuples (bin_id, bin_max, n_count):
     hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
