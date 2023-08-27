@@ -284,13 +284,14 @@ class Lock(Document):
             {
                 "fields": ["updated_at"],
                 "expireAfterSeconds": LOCK_TTL_SECONDS,
-                "partialFilterExpression": {"owner": None},
+                "partialFilterExpression": {"$or": [{"owner": None}, {"ttl": LOCK_TTL_SECONDS}]},
             },
         ],
     }
 
     key = StringField(primary_key=True)
     owner = StringField()
+    ttl = IntField()
     job_id = StringField()  # deprecated
 
     created_at = DateTimeField()
@@ -327,10 +328,15 @@ class lock(contextlib.AbstractContextManager["lock"]):
 
     _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
 
-    def __init__(self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> None:
+    def __init__(
+        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[int] = None
+    ) -> None:
         self.key = key
         self.owner = owner
         self.sleeps = sleeps
+        self.ttl = ttl
+        if ttl is not None and ttl != LOCK_TTL_SECONDS:
+            raise ValueError(f"Only TTL of LOCK_TTL_SECONDS={LOCK_TTL_SECONDS} is supported by the TTL index.")
 
     def acquire(self) -> None:
         for sleep in self.sleeps:
@@ -341,6 +347,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
                     read_concern={"level": "majority"},
                     owner=self.owner,
                     updated_at=get_datetime(),
+                    ttl=self.ttl,
                 )
                 return
             except NotUniqueError:
@@ -663,7 +670,7 @@ class Queue:
         lock_owner = str(uuid4())
         try:
             # retry for 2 seconds
-            with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES):
+            with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES, ttl=LOCK_TTL_SECONDS):
                 # get all the pending jobs for the same unicity_id
                 waiting_jobs = JobDocument.objects(
                     unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
