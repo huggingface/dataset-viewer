@@ -27,6 +27,7 @@ from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
+from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
@@ -251,6 +252,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 duckdb_index_cache_directory=self.duckdb_index_cache_directory,
             )
 
+        if job_type == DatasetHubCacheJobRunner.get_job_type():
+            return DatasetHubCacheJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
+
         supported_job_types = [
             DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
@@ -274,5 +282,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
             SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatisticsJobRunner.get_job_type(),
+            DatasetHubCacheJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
