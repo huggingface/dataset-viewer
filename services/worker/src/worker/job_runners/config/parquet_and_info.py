@@ -6,6 +6,7 @@ import logging
 import os
 import re
 from contextlib import ExitStack
+from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
@@ -192,17 +193,20 @@ def raise_if_blocked(
             by a `/`.
         blocked_datasets (`List[str]`):
             The list of blocked datasets. If empty, no dataset is blocked.
+            Patterns are supported, e.g. "open-llm-leaderboard/*"
+
     Returns:
         `None`
     Raises the following errors:
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
-    if dataset in blocked_datasets:
-        raise DatasetInBlockListError(
-            "The parquet conversion has been disabled for this dataset for now. Please open an issue in"
-            " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
-        )
+    for blocked_dataset in blocked_datasets:
+        if fnmatch(dataset, blocked_dataset):
+            raise DatasetInBlockListError(
+                "The parquet conversion has been disabled for this dataset for now. Please open an issue in"
+                " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+            )
 
 
 def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
