@@ -256,7 +256,7 @@ class DisabledViewerError(CacheableError):
 
 
 class DiskError(CacheableError):
-    """Disk-related issues, for example, incorrect permissions. """
+    """Disk-related issues, for example, incorrect permissions."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
