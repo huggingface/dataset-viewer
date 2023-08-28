@@ -2,9 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from environs import Env
 from typing import List, Mapping
 
+from environs import Env
 from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
@@ -14,7 +14,6 @@ from libcommon.config import (
     QueueConfig,
 )
 from libcommon.processing_graph import InputType
-
 
 HUB_CACHE_CACHE_KIND = "dataset-hub-cache"
 HUB_CACHE_NUM_RESULTS_PER_PAGE = 1000
