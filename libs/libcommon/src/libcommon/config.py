@@ -19,6 +19,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
+    PROCESSING_STEP_DATASET_HUB_CACHE_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_IS_VALID_VERSION,
     PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -367,6 +368,12 @@ class ProcessingGraphConfig:
                 "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
+            },
+            "dataset-hub-cache": {
+                "input_type": "dataset",
+                "triggered_by": ["dataset-is-valid", "dataset-size"],
+                "job_runner_version": PROCESSING_STEP_DATASET_HUB_CACHE_VERSION,
+                "difficulty": 20,
             },
         }
     )
