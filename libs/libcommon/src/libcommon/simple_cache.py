@@ -594,7 +594,8 @@ def get_contents_page(kind: str, limit: int, cursor: Optional[str] = None) -> Co
             A string representing the last object (id). An empty string means to start from the beginning.
     Returns:
         [`PageByUpdatedAt`]: A dict with the list of contents and the next cursor. The next cursor is
-        an empty string if there are no more items to be fetched.
+        an empty string if there are no more items to be fetched. Note that the contents always contain the
+        dataset field.
     Raises the following errors:
         - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
@@ -610,10 +611,10 @@ def get_contents_page(kind: str, limit: int, cursor: Optional[str] = None) -> Co
             raise InvalidCursor("Invalid cursor.") from err
     if limit <= 0:
         raise InvalidLimit("Invalid limit.")
-    objects = queryset.order_by("+id").only("content").limit(limit)
+    objects = queryset.order_by("+id").only("content", "dataset").limit(limit)
     length = objects.count(with_limit_and_skip=True)
     new_cursor = str(objects[length - 1].id) if length >= limit else None
-    return ContentsPage(contents=[o.content for o in objects], cursor=new_cursor)
+    return ContentsPage(contents=[{**o.content, "dataset": o.dataset} for o in objects], cursor=new_cursor)
 
 
 # admin /metrics endpoint

@@ -353,10 +353,12 @@ def test_get_contents_page() -> None:
 
     assert get_contents_page(kind=kind, limit=2) == {"contents": [], "cursor": None}
 
+    dataset_a = "test_dataset_a"
     content_a = {"key": "a"}
+    expected_content_a = {"key": "a", "dataset": dataset_a}
     upsert_response(
         kind=kind,
-        dataset="test_dataset_a",
+        dataset=dataset_a,
         content=content_a,
         http_status=HTTPStatus.OK,
     )
@@ -369,10 +371,12 @@ def test_get_contents_page() -> None:
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
 
+    dataset_c = "test_dataset_c"
     content_c = {"key": "c"}
+    expected_content_c = {"key": "c", "dataset": dataset_c}
     upsert_response(
         kind=kind,
-        dataset="test_dataset_c",
+        dataset=dataset_c,
         content=content_c,
         http_status=HTTPStatus.OK,
     )
@@ -385,21 +389,23 @@ def test_get_contents_page() -> None:
         http_status=HTTPStatus.OK,
     )
 
+    dataset_e = "test_dataset_e"
     content_e = {"key": "e"}
+    expected_content_e = {"key": "e", "dataset": dataset_e}
     upsert_response(
         kind=kind,
-        dataset="test_dataset_e",
+        dataset=dataset_e,
         content=content_e,
         http_status=HTTPStatus.OK,
     )
 
     response = get_contents_page(kind=kind, limit=2)
-    assert response["contents"] == [content_a, content_c]
+    assert response["contents"] == [expected_content_a, expected_content_c]
     assert response["cursor"] is not None
     next_cursor = response["cursor"]
 
     response = get_contents_page(kind=kind, limit=2, cursor=next_cursor)
-    assert response["contents"] == [content_e]
+    assert response["contents"] == [expected_content_e]
     assert response["cursor"] is None
 
     with pytest.raises(InvalidCursor):

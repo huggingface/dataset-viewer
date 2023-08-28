@@ -16,9 +16,8 @@ def test_hub_cache_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRe
         assert response.status_code == 200
         body = response.json()
         print(body)
-        assert "contents" in body
-        assert len(body["contents"]) > 0
-        assert all(item["viewer"] and item["num_rows"] > 0 for item in body["contents"])
+        assert len(body) > 0
+        assert all(item["viewer"] and item["num_rows"] > 0 for item in body)
         if "Link" not in response.headers:
             return
         link = response.headers["Link"].split(";")[0][1:-1]
