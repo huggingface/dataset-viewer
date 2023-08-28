@@ -6,7 +6,7 @@ import os
 import shutil
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Callable, Coroutine, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -49,8 +49,11 @@ def get_json_response(
     max_age: int = 0,
     error_code: Optional[str] = None,
     revision: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
 ) -> Response:
-    headers = {"Cache-Control": f"max-age={max_age}" if max_age > 0 else "no-store"}
+    if not headers:
+        headers = {}
+    headers["Cache-Control"] = f"max-age={max_age}" if max_age > 0 else "no-store"
     if error_code is not None:
         headers["X-Error-Code"] = error_code
     if revision is not None:
@@ -65,8 +68,10 @@ EXPOSED_HEADERS = [
 ]
 
 
-def get_json_ok_response(content: Any, max_age: int = 0, revision: Optional[str] = None) -> Response:
-    return get_json_response(content=content, max_age=max_age, revision=revision)
+def get_json_ok_response(
+    content: Any, max_age: int = 0, revision: Optional[str] = None, headers: Optional[Dict[str, str]] = None
+) -> Response:
+    return get_json_response(content=content, max_age=max_age, revision=revision, headers=headers)
 
 
 def get_json_error_response(

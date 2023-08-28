@@ -464,6 +464,8 @@ hf:
   timeoutSeconds: "0.2"
 
 api:
+  # the number of results per page. Defaults to `1_000`.
+  hubCacheNumResultsPerPage: "1_000"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints

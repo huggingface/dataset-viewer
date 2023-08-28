@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
+from environs import Env
 from typing import List, Mapping
 
 from libapi.config import ApiConfig
@@ -15,6 +16,25 @@ from libcommon.config import (
 from libcommon.processing_graph import InputType
 
 
+HUB_CACHE_CACHE_KIND = "dataset-hub-cache"
+HUB_CACHE_NUM_RESULTS_PER_PAGE = 1000
+
+
+@dataclass(frozen=True)
+class HubCacheConfig:
+    cache_kind: str = HUB_CACHE_CACHE_KIND
+    num_results_per_page: int = HUB_CACHE_NUM_RESULTS_PER_PAGE
+
+    @classmethod
+    def from_env(cls) -> "HubCacheConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("HUB_CACHE_"):
+            return cls(
+                cache_kind=HUB_CACHE_CACHE_KIND,  # don't allow changing the cache kind
+                num_results_per_page=env.int(name="NUM_RESULTS_PER_PAGE", default=HUB_CACHE_NUM_RESULTS_PER_PAGE),
+            )
+
+
 @dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
@@ -23,6 +43,7 @@ class AppConfig:
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
+    hub_cache: HubCacheConfig = field(default_factory=HubCacheConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -34,6 +55,7 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
+            hub_cache=HubCacheConfig.from_env(),
         )
 
 
