@@ -4,7 +4,7 @@
 
 <Tip>
 
-Learn more about the Hugging Face and ClickHouse integration in this blog post for more details about how to analyze datasets on the Hub with ClickHouse.
+Learn more about the Hugging Face and ClickHouse integration in this [blog](https://clickhouse.com/blog/query-analyze-hugging-face-datasets-with-clickhouse) for more details about how to analyze datasets on the Hub with ClickHouse.
 
 </Tip>
 
