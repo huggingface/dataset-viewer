@@ -209,8 +209,8 @@ with gr.Blocks() as demo:
             }
         else:
             return {
-                cached_responses_table: gr.update(value=None),
-                jobs_table: gr.update(value=None)
+                cached_responses_table: gr.update(value=pd.DataFrame([{"error": f"❌ Failed to get status for {dataset} (error {response.status_code})"}])),
+                jobs_table: gr.update(value=pd.DataFrame([{"content": str(response.content)}]))
             }
     
     def get_backfill_plan(token, dataset):
