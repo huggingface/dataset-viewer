@@ -57,7 +57,9 @@ def image(
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
     s3_access_key_id: Optional[str] = None,
     s3_secret_access_key: Optional[str] = None,
@@ -113,7 +115,9 @@ def audio(
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
     s3_access_key_id: Optional[str] = None,
     s3_secret_access_key: Optional[str] = None,
@@ -168,7 +172,9 @@ def get_cell_value(
     fieldType: Any,
     assets_base_url: str,
     assets_directory: StrPath,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
     s3_access_key_id: Optional[str] = None,
     s3_secret_access_key: Optional[str] = None,
