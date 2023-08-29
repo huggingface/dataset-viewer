@@ -113,6 +113,12 @@ def audio(
     assets_directory: StrPath,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
+    use_s3_storage: bool = False,
+    s3_bucket: Optional[str] = None,
+    s3_access_key_id: Optional[str] = None,
+    s3_secret_access_key: Optional[str] = None,
+    s3_region: Optional[str] = None,
+    s3_folder_name: Optional[str] = None,
 ) -> Any:
     if value is None:
         return None
@@ -143,6 +149,12 @@ def audio(
         assets_directory=assets_directory,
         filename_base=append_hash_suffix("audio", json_path),
         overwrite=overwrite,
+        use_s3_storage=use_s3_storage,
+        s3_bucket=s3_bucket,
+        s3_access_key_id=s3_access_key_id,
+        s3_secret_access_key=s3_secret_access_key,
+        s3_region=s3_region,
+        s3_folder_name=s3_folder_name,
     )
 
 
@@ -199,6 +211,12 @@ def get_cell_value(
             assets_directory=assets_directory,
             json_path=json_path,
             overwrite=overwrite,
+            use_s3_storage=use_s3_storage,
+            s3_bucket=s3_bucket,
+            s3_access_key_id=s3_access_key_id,
+            s3_secret_access_key=s3_secret_access_key,
+            s3_region=s3_region,
+            s3_folder_name=s3_folder_name,
         )
     elif isinstance(fieldType, list):
         if type(cell) != list:

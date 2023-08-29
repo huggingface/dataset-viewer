@@ -3,7 +3,10 @@
 
 import contextlib
 import io
+import json
 import os
+import random
+from hashlib import sha1
 from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple, TypedDict
@@ -164,15 +167,64 @@ def create_audio_files(
         column=column,
         assets_directory=assets_directory,
     )
+    if not use_s3_storage:
+        wav_file_path = dir_path / wav_filename
+        mp3_file_path = dir_path / mp3_filename
+        makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+    else:
+        random_str = f"{random.randrange(10**13, 10**14)}"  # nosec B311
+        payload = (
+            random_str,
+            dataset,
+            config,
+            split,
+            row_idx,
+            column,
+        )
+        prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
+        wav_file_path = Path(assets_directory).resolve() / f"{prefix}-{wav_filename}"
+        mp3_file_path = Path(assets_directory).resolve() / f"{prefix}-{mp3_filename}"
 
-    makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    wav_file_path = dir_path / wav_filename
-    mp3_file_path = dir_path / mp3_filename
     if overwrite or not wav_file_path.exists():
         soundfile.write(wav_file_path, array, sampling_rate)
     if overwrite or not mp3_file_path.exists():
         segment = AudioSegment.from_wav(wav_file_path)
         segment.export(mp3_file_path, format="mp3")
+
+    if use_s3_storage:
+        wav_key = f"{s3_folder_name}/{url_dir_path}/{wav_filename}"
+        mp3_key = f"{s3_folder_name}/{url_dir_path}/{mp3_filename}"
+
+        s3_client = boto3.client(
+            S3_RESOURCE,
+            region_name=s3_region,
+            aws_access_key_id=s3_access_key_id,
+            aws_secret_access_key=s3_secret_access_key,
+        )
+        wav_exists = True
+        mp3_exists = True
+        if not overwrite:
+            try:
+                s3_client.head_object(
+                    Bucket=s3_bucket,
+                    Key=wav_key,
+                )
+            except Exception:
+                wav_exists = False
+            try:
+                s3_client.head_object(
+                    Bucket=s3_bucket,
+                    Key=mp3_key,
+                )
+            except Exception:
+                mp3_exists = False
+
+        if overwrite or not wav_exists:
+            s3_client.upload_file(wav_file_path, s3_bucket, wav_key)
+            os.remove(wav_file_path)
+        if overwrite or not mp3_exists:
+            s3_client.upload_file(mp3_file_path, s3_bucket, mp3_key)
+            os.remove(mp3_file_path)
 
     return [
         {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},

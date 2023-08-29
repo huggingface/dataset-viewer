@@ -369,6 +369,55 @@ def test_image_s3(
         assert image is not None
 
 
+def test_audio_s3(
+    datasets: Mapping[str, Dataset],
+    cached_assets_directory: StrPath,
+) -> None:
+    dataset = datasets["audio"]
+    feature = dataset.features["col"]
+    with mock_s3():
+        bucket_name = "bucket"
+        access_key_id = "access_key_id"
+        secret_access_key = "secret_access_key"
+        region = "us-east-1"
+        folder_name = "assets"
+        conn = boto3.resource("s3", region_name=region)
+        conn.create_bucket(Bucket=bucket_name)
+        value = get_cell_value(
+            dataset="dataset",
+            config="config",
+            split="split",
+            row_idx=7,
+            cell=dataset[0]["col"],
+            featureName="col",
+            fieldType=feature,
+            assets_base_url="http://localhost/assets",
+            assets_directory=cached_assets_directory,
+            use_s3_storage=True,
+            s3_bucket=bucket_name,
+            s3_access_key_id=access_key_id,
+            s3_secret_access_key=secret_access_key,
+            s3_region=region,
+            s3_folder_name=folder_name,
+        )
+
+        assert value == [
+            {
+                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.mp3",
+                "type": "audio/mpeg",
+            },
+            {
+                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                "type": "audio/wav",
+            },
+        ]
+        mp3_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.mp3").get()["Body"].read()
+        assert mp3_object is not None
+
+        wav_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.wav").get()["Body"].read()
+        assert wav_object is not None
+
+
 def test_get_supported_unsupported_columns() -> None:
     features = Features(
         {
