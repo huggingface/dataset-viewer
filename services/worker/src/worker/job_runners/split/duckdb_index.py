@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import copy
 import logging
 import os
 from pathlib import Path
@@ -130,8 +131,9 @@ def compute_index_rows(
         column_names = ",".join('"' + column + '"' for column in list(features.keys()))
 
         # look for indexable columns (= possibly nested columns containing string data)
+        # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
         indexable_columns = ",".join(
-            '"' + column + '"' for column in get_indexable_columns(Features.from_dict(features))
+            '"' + column + '"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
         )
         if not indexable_columns:
             raise NoIndexableColumnsError("No string columns available to index.")
