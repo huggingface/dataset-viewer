@@ -8,6 +8,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Optional
 
+from libcommon.exceptions import DiskError
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import init_dir, remove_dir
 from libcommon.utils import JobInfo
@@ -53,7 +54,10 @@ class JobRunnerWithCache(JobRunner):
 
     def pre_compute(self) -> None:
         new_directory = self.base_cache_directory / self.get_cache_subdirectory()
-        self.cache_subdirectory = Path(init_dir(new_directory))
+        try:
+            self.cache_subdirectory = Path(init_dir(new_directory))
+        except PermissionError as e:
+            raise DiskError(f"Incorrect permissions on {new_directory}", e) from e
 
     def post_compute(self) -> None:
         # empty the cache after the job to save storage space
