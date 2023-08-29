@@ -51,6 +51,7 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
+                "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -65,7 +66,7 @@ def test_plan_job_creation_and_termination() -> None:
         # The queue is empty, so no step is in process.
         queue_status={"in_process": []},
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
-        tasks=["CreateJobs,7"],
+        tasks=["CreateJobs,8"],
     )
 
     dataset_backfill_plan.run()
@@ -84,6 +85,7 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
+                "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -99,6 +101,7 @@ def test_plan_job_creation_and_termination() -> None:
         queue_status={
             "in_process": [
                 "dataset-config-names,dataset,revision",
+                "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -158,6 +161,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "config-size,dataset,revision,config2",
                 "config-is-valid,dataset,revision,config1",
                 "config-is-valid,dataset,revision,config2",
+                "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",
@@ -172,6 +176,7 @@ def test_plan_job_creation_and_termination() -> None:
         # the job "dataset-config-names,dataset,revision" is no more in process
         queue_status={
             "in_process": [
+                "dataset-hub-cache,dataset,revision",
                 "dataset-info,dataset,revision",
                 "dataset-is-valid,dataset,revision",
                 "dataset-opt-in-out-urls-count,dataset,revision",

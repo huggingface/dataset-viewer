@@ -15,3 +15,4 @@ class _UpstreamResponse(TypedDict):
 class UpstreamResponse(_UpstreamResponse, total=False):
     config: Optional[str]
     split: Optional[str]
+    progress: Optional[float]

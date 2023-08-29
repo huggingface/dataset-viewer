@@ -87,6 +87,7 @@ CacheableErrorCode = Literal[
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
+    "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
     "ExternalFilesSizeRequestConnectionError",
@@ -249,6 +250,19 @@ class DisabledViewerError(CacheableError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="DisabledViewerError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class DiskError(CacheableError):
+    """Disk-related issues, for example, incorrect permissions."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            code="DiskError",
             cause=cause,
             disclose_cause=False,
         )
@@ -466,6 +480,13 @@ class SplitWithTooBigParquetError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
 
 
+class StatisticsComputationError(CacheableError):
+    """An unexpected behavior or error occurred during statistics computations."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ComputationError", cause, True)
+
+
 class StreamingRowsError(CacheableError):
     """The rows could not be fetched in streaming mode."""
 
@@ -512,10 +533,3 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
-
-
-class StatisticsComputationError(CacheableError):
-    """An unexpected behavior or error occurred during statistics computations."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ComputationError", cause, True)
