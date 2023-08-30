@@ -2,7 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
+import os
 from io import BytesIO
+from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
@@ -26,7 +28,7 @@ from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage import StrPath
 from libcommon.utils import FeatureItem
-from libcommon.viewer_utils.asset import create_audio_files, create_image_file
+from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -104,34 +106,37 @@ def audio(
 ) -> Any:
     if value is None:
         return None
-    if isinstance(value, dict) and value.get("bytes"):
-        value = Audio().decode_example(value)
-    try:
-        array = value["array"]
-        sampling_rate = value["sampling_rate"]
-    except Exception as e:
+    if not isinstance(value, dict):
         raise TypeError(
-            "audio cell must contain 'array' and 'sampling_rate' fields, "
+            "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
-        ) from e
-    if type(array) != ndarray:
-        raise TypeError("'array' field must be a numpy.ndarray")
-    if type(sampling_rate) != int:
-        raise TypeError("'sampling_rate' field must be an integer")
-    # this function can raise, we don't catch it
-    return create_audio_files(
-        dataset=dataset,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=featureName,
-        array=array,
-        sampling_rate=sampling_rate,
-        assets_base_url=assets_base_url,
-        filename_base=append_hash_suffix("audio", json_path),
-        assets_directory=assets_directory,
-        overwrite=overwrite,
-    )
+        )
+    if "path" in value and isinstance(value["path"], str):
+        tmp_file_suffix = os.path.splitext(value["path"])
+    else:
+        tmp_file_suffix = None
+    with NamedTemporaryFile("wb", suffix=tmp_file_suffix) as tmp_audio_file:
+        if "bytes" in value and isinstance(value["bytes"], bytes):
+            with open(tmp_audio_file.name, "wb") as f:
+                f.write(value["bytes"])
+            audio_file_path = tmp_audio_file.name
+        elif "path" in value and os.path.exists(value["path"]):
+            audio_file_path = value["path"]
+        else:
+            raise ValueError(f"An audio sample should have one of 'path' or 'bytes' but both are None in {value}.")
+        # this function can raise, we don't catch it
+        return create_audio_file(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=featureName,
+            audio_file_path=audio_file_path,
+            assets_base_url=assets_base_url,
+            filename=f"{append_hash_suffix('audio', json_path)}.mp3",
+            assets_directory=assets_directory,
+            overwrite=overwrite,
+        )
 
 
 def get_cell_value(
