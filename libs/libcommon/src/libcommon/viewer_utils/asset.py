@@ -7,9 +7,7 @@ from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
 
-import soundfile  # type:ignore
-from numpy import ndarray
-from PIL import Image  # type: ignore
+from PIL import Image
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.storage import StrPath

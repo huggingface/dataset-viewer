@@ -23,8 +23,7 @@ from datasets import (
     Value,
 )
 from datasets.features.features import FeatureType, _visit
-from numpy import ndarray
-from PIL import Image as PILImage  # type: ignore
+from PIL import Image as PILImage
 
 from libcommon.storage import StrPath
 from libcommon.utils import FeatureItem
@@ -112,7 +111,7 @@ def audio(
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
     if "path" in value and isinstance(value["path"], str):
-        tmp_file_suffix = os.path.splitext(value["path"])
+        tmp_file_suffix = os.path.splitext(value["path"])[1]
     else:
         tmp_file_suffix = None
     with NamedTemporaryFile("wb", suffix=tmp_file_suffix) as tmp_audio_file:
