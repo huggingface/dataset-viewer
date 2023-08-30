@@ -126,7 +126,7 @@ def create_audio_file(
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     file_path = dir_path / filename
     if overwrite or not file_path.exists():
-        # might spawn a process to convert the audio file using ffmpeg 
+        # might spawn a process to convert the audio file using ffmpeg
         segment: AudioSegment = AudioSegment.from_file(audio_file_path)
         segment.export(file_path, format="mp3")
     return [
