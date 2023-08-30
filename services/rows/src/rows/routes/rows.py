@@ -44,7 +44,7 @@ MAX_ROWS = 100
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
 
 # audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
+UNSUPPORTED_FEATURES = [Value("binary")]
 
 
 def create_response(
