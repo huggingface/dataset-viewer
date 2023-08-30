@@ -101,6 +101,7 @@ class SplitDescriptiveStatisticsResponse(TypedDict):
 def generate_bins(
     min_value: Union[int, float],
     max_value: Union[int, float],
+    column_name: str,
     column_type: ColumnType,
     n_bins: int,
 ) -> pd.DataFrame:
@@ -113,17 +114,17 @@ def generate_bins(
         bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
         if len(bin_edges) != n_bins:
             raise StatisticsComputationError(
-                f"Incorrect number of bins generated, expected {n_bins}, got {len(bin_edges)}."
+                f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
             )
     elif column_type is ColumnType.INT:
         bin_size = np.ceil((max_value - min_value + 1) / n_bins)
         bin_edges = np.arange(min_value, max_value + 1, bin_size).astype(int).tolist()
         if len(bin_edges) > n_bins:
             raise StatisticsComputationError(
-                f"Incorrect number of bins generated, expected {n_bins}, got {len(bin_edges)}."
+                f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
             )
     else:
-        raise ValueError(f"Incorrect column type {column_type}. ")
+        raise ValueError(f"Incorrect column type of {column_name=}: {column_type}. ")
     bin_max_edges = bin_edges[1:] + [max_value + 1]  # add 1 to include exact max values in the last bin
     return pd.DataFrame.from_dict(
         {"bin_id": list(range(len(bin_edges))), "bin_min": bin_edges, "bin_max": bin_max_edges}
@@ -140,20 +141,22 @@ def compute_histogram(
     n_bins: int,
     n_samples: Optional[int] = None,
 ) -> Histogram:
-    bins_df = generate_bins(min_value=min_value, max_value=max_value, column_type=column_type, n_bins=n_bins)
+    bins_df = generate_bins(
+        min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
+    )
     n_bins = bins_df.shape[0]
     # create auxiliary table with bin edges
     con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")  # nosec
     compute_hist_command = COMPUTE_HIST_COMMAND.format(
         parquet_filename=parquet_filename, bins_table_name=BINS_TABLE_NAME, column_name=column_name
     )
-    logging.debug(f"Compute histogram for {column_name}")
+    logging.debug(f"Compute histogram for {column_name=}")
     # query returns list of tuples (bin_id, bin_max, n_count):
     hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
     if len(hist_query_result) > n_bins + 1:
         raise StatisticsComputationError(
-            "Got unexpected result during histogram computation: returned more bins than requested. "
-            f"{n_bins=} {hist_query_result=}. "
+            f"Got unexpected result during histogram computation for {column_name=}: returned more bins than"
+            f" requested. {n_bins=} {hist_query_result=}. "
         )
     hist = []
     for bin_idx in range(n_bins):
@@ -161,8 +164,8 @@ def compute_histogram(
         hist.append(hist_query_result.get(bin_idx, 0))
     if n_samples and sum(hist) != n_samples:
         raise StatisticsComputationError(
-            "Got unexpected result during histogram computation: histogram sum and number of non-null samples don't"
-            f" match. histogram sum={sum(hist)}, {n_samples=}"
+            f"Got unexpected result during histogram computation for {column_name=}: "
+            f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
         )
     bins = bins_df["bin_min"].round(DECIMALS).tolist()
     bins = bins + [np.round(max_value, DECIMALS).item()]  # put exact max value back to bins
@@ -177,7 +180,7 @@ def compute_numerical_statistics(
     n_samples: int,
     column_type: ColumnType,
 ) -> NumericalStatisticsItem:
-    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name}")
+    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name=}")
     min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
         column_name=column_name, parquet_filename=parquet_filename
     )
@@ -203,7 +206,7 @@ def compute_numerical_statistics(
     elif column_type == ColumnType.INT:
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
     else:
-        raise ValueError(f"Incorrect column type {column_type}")
+        raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
     return NumericalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
@@ -230,7 +233,6 @@ def compute_categorical_statistics(
         categorical_counts_query
     ).fetchall()  # list of tuples (idx, num_samples)
 
-    logging.debug(f"Statistics for {column_name} computed")
     frequencies, nan_count = {}, 0
     for cat_id, freq in categories:
         if cat_id is not None:
@@ -238,6 +240,8 @@ def compute_categorical_statistics(
         else:
             nan_count = freq
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+    logging.debug(f"Statistics for {column_name=} computed")
+
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
@@ -385,7 +389,7 @@ def compute_descriptive_statistics_response(
     if categorical_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
     for feature_name, feature in tqdm(categorical_features.items()):
-        logging.debug(f"Compute statistics for ClassLabel feature {feature_name}")
+        logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
         class_label_names = feature["names"]
         cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
             con,
