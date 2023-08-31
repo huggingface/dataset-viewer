@@ -17,7 +17,7 @@ from libcommon.exceptions import PreviousStepFormatError
 from libcommon.parquet_utils import ParquetIndexWithMetadata
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
+from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import Priority, SplitHubFile
 
@@ -141,7 +141,7 @@ def get_job_runner(
             "config_1",
             HTTPStatus.NOT_FOUND,
             {"error": "error"},
-            CachedArtifactNotFoundError.__name__,
+            CachedArtifactError.__name__,
             None,
             True,
         ),
