@@ -64,7 +64,7 @@ def transform_rows(
     )
     if "Audio(" in str(features):
         # use multithreading to parallelize audio files processing
-        # (we use pydub which might spawn one ffmpeg process per conversion)
+        # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
         desc = f"transform_rows(audio) for {dataset}"
         return thread_map(fn, enumerate(rows), desc=desc, total=len(rows))  # type: ignore
     else:
