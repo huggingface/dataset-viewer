@@ -7,7 +7,7 @@ from typing import Any, Callable, List
 import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -177,7 +177,7 @@ def get_job_runner(
             False,
         ),
         (
-            "previos_step_error",
+            "previous_step_error",
             "config",
             HTTPStatus.INTERNAL_SERVER_ERROR,
             {},
@@ -249,5 +249,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = config = "doesnotexist"
     job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CachedArtifactError):
+    with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()

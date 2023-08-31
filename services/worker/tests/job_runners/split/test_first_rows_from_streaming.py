@@ -106,7 +106,7 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("does_not_exist_config", False, "CachedArtifactError", None),
+        ("does_not_exist_config", False, "CachedArtifactNotFoundError", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist_split", False, "SplitNotFoundError", None),
