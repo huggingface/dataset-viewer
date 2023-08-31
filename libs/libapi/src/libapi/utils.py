@@ -15,6 +15,11 @@ from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.rows_utils import transform_rows
+from libcommon.simple_cache import (
+    CACHED_RESPONSE_NOT_FOUND,
+    CacheEntry,
+    get_best_response,
+)
 from libcommon.storage import StrPath
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
@@ -135,6 +140,43 @@ def try_backfill_dataset_then_raise(
     else:
         # no pending job: the cache entry will not be created
         raise ResponseNotFoundError("Not found.")
+
+
+def get_cache_entry_from_steps(
+    processing_steps: List[ProcessingStep],
+    dataset: str,
+    config: Optional[str],
+    split: Optional[str],
+    processing_graph: ProcessingGraph,
+    cache_max_days: int,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+) -> CacheEntry:
+    """Gets the cache from the first successful step in the processing steps list.
+    If no successful result is found, it will return the last one even if it's an error,
+    Checks if job is still in progress by each processing step in case of no entry found.
+    Raises:
+        - [`~utils.ResponseNotFoundError`]
+          if no result is found.
+        - [`~utils.ResponseNotReadyError`]
+          if the response is not ready yet.
+
+    Returns: the cached record
+    """
+    kinds = [processing_step.cache_kind for processing_step in processing_steps]
+    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+        try_backfill_dataset_then_raise(
+            processing_steps=processing_steps,
+            processing_graph=processing_graph,
+            dataset=dataset,
+            hf_endpoint=hf_endpoint,
+            hf_timeout_seconds=hf_timeout_seconds,
+            hf_token=hf_token,
+            cache_max_days=cache_max_days,
+        )
+    return best_response.response
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
