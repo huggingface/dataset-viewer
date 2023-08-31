@@ -8,6 +8,8 @@ from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
+import numpy as np
+import soundfile  # type: ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -119,8 +121,16 @@ def audio(
             with open(tmp_audio_file.name, "wb") as f:
                 f.write(value["bytes"])
             audio_file_path = tmp_audio_file.name
-        elif "path" in value and os.path.exists(value["path"]):
+        elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
             audio_file_path = value["path"]
+        elif (
+            "array" in value
+            and isinstance(value["array"], np.ndarray)
+            and "sampling_rate" in value
+            and isinstance(value["sampling_rate"], int)
+        ):
+            soundfile.write(tmp_audio_file.name, value["array"], value["sampling_rate"], format="wav")
+            audio_file_path = tmp_audio_file.name
         else:
             raise ValueError(f"An audio sample should have one of 'path' or 'bytes' but both are None in {value}.")
         # this function can raise, we don't catch it
