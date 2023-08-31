@@ -65,6 +65,13 @@ def image(
         return None
     if isinstance(value, dict) and value.get("bytes"):
         value = PILImage.open(BytesIO(value["bytes"]))
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
+        value = PILImage.open(value["path"])
     if not isinstance(value, PILImage.Image):
         raise TypeError(
             "Image cell must be a PIL image or an encoded dict of an image, "
