@@ -18,8 +18,8 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
+    assets_base_url: str,
+    assets_directory: StrPath,
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -33,8 +33,8 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
         )
         for (featureName, fieldType) in features.items()
     }
