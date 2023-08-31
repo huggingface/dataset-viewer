@@ -65,6 +65,6 @@ def transform_rows(
     if "Audio(" in str(features):
         # use multithreading to parallelize audio files processing
         # (we use pydub which might spawn one ffmpeg process per conversion)
-        return thread_map(fn, enumerate(rows), description="transform_rows(audio)")  # type: ignore
+        return thread_map(fn, enumerate(rows), desc=f"transform_rows(audio) for {dataset}", total=len(rows))  # type: ignore
     else:
         return [fn((row_idx, row)) for row_idx, row in enumerate(rows)]
