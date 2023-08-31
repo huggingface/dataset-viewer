@@ -4,12 +4,13 @@
 import os
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
-import datasets
 import duckdb
+import pandas as pd
 import pytest
 import requests
+from datasets import Features, Image, Sequence, Value
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -18,7 +19,13 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
-from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
+from worker.job_runners.split.duckdb_index import (
+    CREATE_INDEX_COMMAND,
+    CREATE_SEQUENCE_COMMAND,
+    CREATE_TABLE_COMMAND,
+    SplitDuckDbIndexJobRunner,
+    get_indexable_columns,
+)
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
@@ -209,7 +216,7 @@ def test_compute(
         features = content["features"]
         assert url is not None
         assert file_name is not None
-        assert datasets.Features.from_dict(features) is not None
+        assert Features.from_dict(features) is not None
         job_runner.post_compute()
 
         # download locally duckdb index file
@@ -249,3 +256,60 @@ def test_compute(
         con.close()
         os.remove(file_name)
     job_runner.post_compute()
+
+
+@pytest.mark.parametrize(
+    "features, expected",
+    [
+        (Features({"col_1": Value("string"), "col_2": Value("int64")}), ["col_1"]),
+        (
+            Features(
+                {
+                    "nested_1": [Value("string")],
+                    "nested_2": Sequence(Value("string")),
+                    "nested_3": Sequence({"foo": Value("string")}),
+                    "nested_4": {"foo": Value("string"), "bar": Value("int64")},
+                    "nested_int": [Value("int64")],
+                }
+            ),
+            ["nested_1", "nested_2", "nested_3", "nested_4"],
+        ),
+        (Features({"col_1": Image()}), []),
+    ],
+)
+def test_get_indexable_columns(features: Features, expected: List[str]) -> None:
+    indexable_columns = get_indexable_columns(features)
+    assert indexable_columns == expected
+
+
+DATA = """Hello there !
+General Kenobi.
+You are a bold one.
+Kill him !
+...
+Back away ! I will deal with this Jedi slime myself"""
+
+
+FTS_COMMAND = (
+    "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
+    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_index_id;"
+)
+
+
+@pytest.mark.parametrize(
+    "df, query, expected_ids",
+    [
+        (pd.DataFrame([{"line": line} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [line]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
+    ],
+)
+def test_index_command(df: pd.DataFrame, query: str, expected_ids: List[int]) -> None:
+    columns = ",".join('"' + str(column) + '"' for column in df.columns)
+    duckdb.sql(CREATE_SEQUENCE_COMMAND)
+    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns) + " df;")
+    duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
+    result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
+    assert list(result.__hf_index_id) == expected_ids
