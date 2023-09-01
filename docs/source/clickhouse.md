@@ -94,8 +94,7 @@ For this example, you'll need to run `clickhouse-local` in console mode so the U
 Remember to set `enable_url_encoding` to 0 and `max_https_get_redirects` to 1 to redirect to the path of the Parquet files:
 
 ```bash
-SET max_http_get_redirects = 1
-SET enable_url_encoding = 0
+SET max_http_get_redirects = 1, enable_url_encoding = 0
 ```
 
 Let's create a function to return a list of Parquet files from the [blog_authorship_corpus](https://huggingface.co/datasets/blog_authorship_corpus):
