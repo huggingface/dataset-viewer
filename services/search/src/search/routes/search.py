@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 
 import duckdb
 import pyarrow as pa
-from datasets import Audio, Features, Value
+from datasets import Features, Value
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 ROW_IDX_COLUMN = "__hf_index_id"
 MAX_ROWS = 100
-UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
+UNSUPPORTED_FEATURES = [Value("binary")]
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"

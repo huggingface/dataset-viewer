@@ -7,8 +7,6 @@ from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Tuple, TypedDict
 
-import soundfile  # type:ignore
-from numpy import ndarray
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
@@ -103,21 +101,18 @@ class AudioSource(TypedDict):
     type: str
 
 
-def create_audio_files(
+def create_audio_file(
     dataset: str,
     config: str,
     split: str,
     row_idx: int,
     column: str,
-    array: ndarray,  # type: ignore
-    sampling_rate: int,
+    audio_file_path: str,
     assets_base_url: str,
-    filename_base: str,
+    filename: str,
     assets_directory: StrPath,
     overwrite: bool = True,
 ) -> List[AudioSource]:
-    wav_filename = f"{filename_base}.wav"
-    mp3_filename = f"{filename_base}.mp3"
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset,
         config=config,
@@ -127,14 +122,11 @@ def create_audio_files(
         assets_directory=assets_directory,
     )
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    wav_file_path = dir_path / wav_filename
-    mp3_file_path = dir_path / mp3_filename
-    if overwrite or not wav_file_path.exists():
-        soundfile.write(wav_file_path, array, sampling_rate)
-    if overwrite or not mp3_file_path.exists():
-        segment = AudioSegment.from_wav(wav_file_path)
-        segment.export(mp3_file_path, format="mp3")
+    file_path = dir_path / filename
+    if overwrite or not file_path.exists():
+        # might spawn a process to convert the audio file using ffmpeg
+        segment: AudioSegment = AudioSegment.from_file(audio_file_path)
+        segment.export(file_path, format="mp3")
     return [
-        {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
-        {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "audio/mpeg"},
     ]
