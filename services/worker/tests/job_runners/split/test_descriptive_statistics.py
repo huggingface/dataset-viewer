@@ -122,7 +122,9 @@ def get_parquet_and_info_job_runner(
     return _get_job_runner
 
 
-def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: ColumnType) -> dict:  # type: ignore
+def count_expected_statistics_for_numerical_column(
+    column: pd.Series, column_name: str, dtype: ColumnType  # type: ignore
+) -> dict:  # type: ignore
     minimum, maximum, mean, median, std = (
         column.min(),
         column.max(),
@@ -136,7 +138,8 @@ def count_expected_statistics_for_numerical_column(column: pd.Series, dtype: Col
         hist, bin_edges = np.histogram(column[~column.isna()])
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
-        bins = generate_bins(minimum, maximum, dtype, 10)  # TODO: N BINS
+        # TODO: n_bins is hardcoded here but should be fetched from the app_config.descriptive_statistics_config
+        bins = generate_bins(minimum, maximum, column_name=column_name, column_type=dtype, n_bins=10)
         hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
@@ -194,7 +197,9 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
         else:
             continue
         if column_type in [ColumnType.FLOAT, ColumnType.INT]:
-            column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
+            column_stats = count_expected_statistics_for_numerical_column(
+                df[column_name], column_name=column_name, dtype=column_type
+            )
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
                 raise ValueError(column_name, column_stats)
             expected_statistics[column_name] = {
