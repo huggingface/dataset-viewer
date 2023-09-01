@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import copy
 import logging
 import os
 from pathlib import Path
 from typing import Any, List, Optional, Set
 
 import duckdb
+from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
     CommitOperation,
@@ -63,6 +65,22 @@ class DuckdbIndexWithFeatures(SplitHubFile):
     features: Optional[dict[str, Any]]
 
 
+def get_indexable_columns(features: Features) -> List[str]:
+    indexable_columns: List[str] = []
+    for column, feature in features.items():
+        indexable = False
+
+        def check_indexable(feature: FeatureType) -> None:
+            nonlocal indexable
+            if isinstance(feature, Value) and feature.dtype == "string":
+                indexable = True
+
+        _visit(feature, check_indexable)
+        if indexable:
+            indexable_columns.append(column)
+    return indexable_columns
+
+
 def compute_index_rows(
     job_id: str,
     dataset: str,
@@ -112,16 +130,12 @@ def compute_index_rows(
         features = content_parquet_and_info["dataset_info"]["features"]
         column_names = ",".join('"' + column + '"' for column in list(features.keys()))
 
-        # look for string columns
-        string_columns = [
-            column
-            for column, feature in features.items()
-            if "dtype" in feature
-            and "_type" in feature
-            and feature["dtype"] == STRING_FEATURE_DTYPE
-            and feature["_type"] == VALUE_FEATURE_TYPE
-        ]
-        if not string_columns:
+        # look for indexable columns (= possibly nested columns containing string data)
+        # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
+        indexable_columns = ",".join(
+            '"' + column + '"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
+        )
+        if not indexable_columns:
             raise NoIndexableColumnsError("No string columns available to index.")
 
     except KeyError as e:
@@ -166,7 +180,7 @@ def compute_index_rows(
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    create_index_sql = CREATE_INDEX_COMMAND.format(columns=column_names)
+    create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
     logging.debug(create_index_sql)
     con.sql(create_index_sql)
     con.close()
