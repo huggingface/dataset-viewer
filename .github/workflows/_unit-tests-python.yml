@@ -22,7 +22,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
