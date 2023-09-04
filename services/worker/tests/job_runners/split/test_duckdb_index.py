@@ -135,6 +135,7 @@ def get_parquet_job_runner(
     "hub_dataset_name,max_parquet_size_bytes,expected_error_code",
     [
         ("duckdb_index", None, None),
+        ("partial_duckdb_index", None, None),
         ("gated", None, None),
         ("duckdb_index", 1_000, "SplitWithTooBigParquetError"),  # parquet size is 2812
         ("public", None, "NoIndexableColumnsError"),  # dataset does not have string columns to index
@@ -154,6 +155,7 @@ def test_compute(
     hub_datasets = {
         "public": hub_responses_public,
         "duckdb_index": hub_responses_duckdb_index,
+        "partial_duckdb_index": hub_responses_duckdb_index,
         "gated": hub_responses_gated_duckdb_index,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
@@ -161,6 +163,7 @@ def test_compute(
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     split = "train"
+    partial = hub_dataset_name.startswith("partial_")
 
     upsert_response(
         "dataset-config-names",
@@ -184,10 +187,22 @@ def test_compute(
             app_config, duckdb_index=replace(app_config.duckdb_index, max_parquet_size_bytes=max_parquet_size_bytes)
         )
     )
+    app_config = (
+        app_config
+        if not partial
+        else replace(
+            app_config,
+            parquet_and_info=replace(
+                app_config.parquet_and_info, max_dataset_size=1, max_row_group_byte_size_for_copy=1
+            ),
+        )
+    )
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
     parquet_response = parquet_job_runner.compute()
     config_parquet = parquet_response.content
+
+    assert config_parquet["partial"] is partial
 
     # TODO: simulate more than one parquet file to index
     upsert_response(
@@ -214,7 +229,11 @@ def test_compute(
         url = content["url"]
         file_name = content["filename"]
         features = content["features"]
-        assert url is not None
+        assert isinstance(url, str)
+        if partial:
+            assert url.rsplit("/", 2)[1] == "partial-" + split
+        else:
+            assert url.rsplit("/", 2)[1] == split
         assert file_name is not None
         assert Features.from_dict(features) is not None
         job_runner.post_compute()
