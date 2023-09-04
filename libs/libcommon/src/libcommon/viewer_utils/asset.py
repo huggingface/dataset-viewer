@@ -141,16 +141,15 @@ class AudioSource(TypedDict):
     type: str
 
 
-def create_audio_files(
+def create_audio_file(
     dataset: str,
     config: str,
     split: str,
     row_idx: int,
     column: str,
-    array: ndarray,  # type: ignore
-    sampling_rate: int,
+    audio_file_path: str,
     assets_base_url: str,
-    filename_base: str,
+    filename: str,
     assets_directory: StrPath,
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
@@ -162,8 +161,6 @@ def create_audio_files(
     s3_region: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> List[AudioSource]:
-    wav_filename = f"{filename_base}.wav"
-    mp3_filename = f"{filename_base}.mp3"
     dir_path, url_dir_path = get_asset_dir_name(
         dataset=dataset,
         config=config,
@@ -173,9 +170,9 @@ def create_audio_files(
         assets_directory=assets_directory,
     )
     if not use_s3_storage:
-        wav_file_path = dir_path / wav_filename
-        mp3_file_path = dir_path / mp3_filename
+        mp3_file_path = dir_path / filename
         makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
+
     else:
         payload = (
             str(uuid4()),
@@ -186,18 +183,16 @@ def create_audio_files(
             column,
         )
         prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        wav_file_path = Path(assets_directory).resolve() / f"{prefix}-{wav_filename}"
-        mp3_file_path = Path(assets_directory).resolve() / f"{prefix}-{mp3_filename}"
+        mp3_file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
 
-    if overwrite or not wav_file_path.exists():
-        soundfile.write(wav_file_path, array, sampling_rate)
-    if overwrite or not mp3_file_path.exists():
-        segment = AudioSegment.from_wav(wav_file_path)
-        segment.export(mp3_file_path, format="mp3")
+    file_path = dir_path / filename
+    if overwrite or not file_path.exists():
+        # might spawn a process to convert the audio file using ffmpeg
+        segment: AudioSegment = AudioSegment.from_file(audio_file_path)
+        segment.export(file_path, format="mp3")
 
     if use_s3_storage:
-        wav_key = f"{s3_folder_name}/{url_dir_path}/{wav_filename}"
-        mp3_key = f"{s3_folder_name}/{url_dir_path}/{mp3_filename}"
+        mp3_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
 
         s3_client = boto3.client(
             S3_RESOURCE,
@@ -205,16 +200,8 @@ def create_audio_files(
             aws_access_key_id=s3_access_key_id,
             aws_secret_access_key=s3_secret_access_key,
         )
-        wav_exists = True
         mp3_exists = True
         if not overwrite:
-            try:
-                s3_client.head_object(
-                    Bucket=s3_bucket,
-                    Key=wav_key,
-                )
-            except Exception:
-                wav_exists = False
             try:
                 s3_client.head_object(
                     Bucket=s3_bucket,
@@ -223,14 +210,10 @@ def create_audio_files(
             except Exception:
                 mp3_exists = False
 
-        if overwrite or not wav_exists:
-            s3_client.upload_file(wav_file_path, s3_bucket, wav_key)
-            os.remove(wav_file_path)
         if overwrite or not mp3_exists:
             s3_client.upload_file(mp3_file_path, s3_bucket, mp3_key)
             os.remove(mp3_file_path)
 
     return [
-        {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
-        {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "audio/mpeg"},
     ]

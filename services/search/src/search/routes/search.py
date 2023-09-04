@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 
 import duckdb
 import pyarrow as pa
-from datasets import Audio, Features, Value
+from datasets import Features, Value
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -26,19 +26,14 @@ from libapi.utils import (
     Endpoint,
     are_valid_parameters,
     clean_cached_assets,
+    get_cache_entry_from_steps,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
     to_rows_list,
-    try_backfill_dataset_then_raise,
 )
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import (
-    CACHED_RESPONSE_NOT_FOUND,
-    CacheEntry,
-    get_best_response,
-)
 from libcommon.storage import StrPath, init_dir
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
@@ -53,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 ROW_IDX_COLUMN = "__hf_index_id"
 MAX_ROWS = 100
-UNSUPPORTED_FEATURES = [Value("binary"), Audio()]
+UNSUPPORTED_FEATURES = [Value("binary")]
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"
@@ -114,42 +109,6 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
     pa_table = query_result.arrow()
     con.close()
     return (num_rows_total, pa_table)
-
-
-def get_cache_entry_from_steps(
-    processing_steps: List[ProcessingStep],
-    dataset: str,
-    config: Optional[str],
-    split: Optional[str],
-    processing_graph: ProcessingGraph,
-    cache_max_days: int,
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-    hf_timeout_seconds: Optional[float] = None,
-) -> CacheEntry:
-    """Gets the cache from the first successful step in the processing steps list.
-    If no successful result is found, it will return the last one even if it's an error,
-    Checks if job is still in progress by each processing step in case of no entry found.
-    Raises:
-        - [`~utils.ResponseNotFoundError`]
-          if no result is found.
-        - [`~utils.ResponseNotReadyError`]
-          if the response is not ready yet.
-    Returns: the cached record
-    """
-    kinds = [processing_step.cache_kind for processing_step in processing_steps]
-    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
-    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        try_backfill_dataset_then_raise(
-            processing_steps=processing_steps,
-            processing_graph=processing_graph,
-            dataset=dataset,
-            hf_endpoint=hf_endpoint,
-            hf_timeout_seconds=hf_timeout_seconds,
-            hf_token=hf_token,
-            cache_max_days=cache_max_days,
-        )
-    return best_response.response
 
 
 def create_response(
@@ -286,7 +245,11 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
                     index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
-                    repo_file_location = f"{config}/{split}/{file_name}"
+                    # For directories like "partial-train" for the file
+                    # at "en/partial-train/0000.parquet" in the C4 dataset.
+                    # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+                    split_directory = content["url"].rsplit("/", 2)[1]
+                    repo_file_location = f"{config}/{split_directory}/{file_name}"
                     index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)
                     if not index_path.is_file():

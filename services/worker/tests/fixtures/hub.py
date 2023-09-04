@@ -567,10 +567,6 @@ def get_AUDIO_rows(dataset: str) -> Any:
                     "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.mp3",
                     "type": "audio/mpeg",
                 },
-                {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
-                    "type": "audio/wav",
-                },
             ]
         }
     ]
@@ -857,6 +853,19 @@ def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
         "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
         "parquet_and_info_response": create_parquet_and_info_response(
             dataset=hub_public_duckdb_index, data_type="csv"
+        ),
+    }
+
+
+@pytest.fixture
+def hub_responses_partial_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index),
+        "splits_response": create_splits_response(hub_public_duckdb_index),
+        "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index, data_type="csv", partial=True
         ),
     }
 
