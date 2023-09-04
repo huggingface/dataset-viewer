@@ -126,6 +126,10 @@ def compute_index_rows(
         if not parquet_file_names:
             raise ParquetResponseEmptyError("No parquet files found.")
 
+        # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
         column_names = ",".join('"' + column + '"' for column in list(features.keys()))
@@ -166,14 +170,14 @@ def compute_index_rows(
             repo_type=REPO_TYPE,
             revision=target_revision,
             repo_id=dataset,
-            filename=f"{config}/{split}/{parquet_file}",
+            filename=f"{config}/{split_directory}/{parquet_file}",
             local_dir=duckdb_index_file_directory,
             local_dir_use_symlinks=False,
             token=hf_token,
             cache_dir=duckdb_index_file_directory,
         )
 
-    all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split}/*.parquet"
+    all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
     create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} '{all_split_parquets}';"
     logging.debug(create_command_sql)
     con.sql(create_command_sql)
@@ -187,7 +191,7 @@ def compute_index_rows(
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    index_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
 
     try:
         with lock.git_branch(
