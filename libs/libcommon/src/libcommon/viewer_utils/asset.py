@@ -10,6 +10,7 @@ from hashlib import sha1
 from os import makedirs
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple, TypedDict
+from uuid import uuid4
 
 import boto3
 import soundfile  # type:ignore
@@ -176,9 +177,8 @@ def create_audio_files(
         mp3_file_path = dir_path / mp3_filename
         makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     else:
-        random_str = f"{random.randrange(10**13, 10**14)}"  # nosec B311
         payload = (
-            random_str,
+            str(uuid4()),
             dataset,
             config,
             split,
