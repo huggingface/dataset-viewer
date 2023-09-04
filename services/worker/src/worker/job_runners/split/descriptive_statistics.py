@@ -343,17 +343,19 @@ def compute_descriptive_statistics_response(
             f"Statistics computation is limited to split parquets under {max_parquet_size_bytes} bytes. "
             f"Current size of sum of split parquets is {split_parquets_size} bytes."
         )
-    parquet_filenames = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
     # store data as local parquet files for fast querying
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
-    for parquet_filename in parquet_filenames:
+    for parquet_file in split_parquet_files:
+        # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        split_directory = parquet_file["url"].rsplit("/", 2)[1]
         hf_hub_download(
             repo_type=REPO_TYPE,
             revision=parquet_revision,
             repo_id=dataset,
-            filename=f"{config}/{split}/{parquet_filename}",
+            filename=f"{config}/{split_directory}/{parquet_file['filename']}",
             local_dir=local_parquet_directory,
             local_dir_use_symlinks=False,
             token=hf_token,

@@ -245,7 +245,11 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
                     index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
-                    repo_file_location = f"{config}/{split}/{file_name}"
+                    # For directories like "partial-train" for the file
+                    # at "en/partial-train/0000.parquet" in the C4 dataset.
+                    # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+                    split_directory = content["url"].rsplit("/", 2)[1]
+                    repo_file_location = f"{config}/{split_directory}/{file_name}"
                     index_file_location = f"{index_folder}/{repo_file_location}"
                     index_path = Path(index_file_location)
                     if not index_path.is_file():
