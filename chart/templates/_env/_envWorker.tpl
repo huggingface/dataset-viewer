@@ -2,6 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envWorker" -}}
+- name: WORKER_BLOCKED_DATASETS
+  value: {{ .Values.worker.blockedDatasets | quote}}
 - name: WORKER_CONTENT_MAX_BYTES
   value: {{ .Values.worker.contentMaxBytes | quote}}
 - name: WORKER_HEARTBEAT_INTERVAL_SECONDS
