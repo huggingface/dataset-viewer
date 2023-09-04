@@ -5,11 +5,10 @@ from functools import partial
 from typing import List, Optional, Tuple
 
 from datasets import Features
-from tqdm.contrib.concurrent import thread_map
-
 from libcommon.storage import StrPath
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
+from tqdm.contrib.concurrent import thread_map
 
 
 def _transform_row(
@@ -22,6 +21,15 @@ def _transform_row(
     assets_directory: StrPath,
     offset: int,
     row_idx_column: Optional[str],
+    overwrite: bool = True,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
+    use_s3_storage: bool = False,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
+    cached_assets_s3_bucket: Optional[str] = None,
+    cached_assets_s3_access_key_id: Optional[str] = None,
+    cached_assets_s3_secret_access_key: Optional[str] = None,
+    cached_assets_s3_region: Optional[str] = None,
+    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> Row:
     row_idx, row = row_idx_and_row
     return {
@@ -35,6 +43,13 @@ def _transform_row(
             fieldType=fieldType,
             assets_base_url=assets_base_url,
             assets_directory=assets_directory,
+            overwrite=overwrite,
+            use_s3_storage=use_s3_storage,
+            s3_bucket=cached_assets_s3_bucket,
+            s3_access_key_id=cached_assets_s3_access_key_id,
+            s3_secret_access_key=cached_assets_s3_secret_access_key,
+            s3_region=cached_assets_s3_region,
+            s3_folder_name=cached_assets_s3_folder_name,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -50,6 +65,15 @@ def transform_rows(
     cached_assets_directory: StrPath,
     offset: int,
     row_idx_column: Optional[str],
+    overwrite: bool = True,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
+    use_s3_storage: bool = False,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
+    cached_assets_s3_bucket: Optional[str] = None,
+    cached_assets_s3_access_key_id: Optional[str] = None,
+    cached_assets_s3_secret_access_key: Optional[str] = None,
+    cached_assets_s3_region: Optional[str] = None,
+    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[Row]:
     fn = partial(
         _transform_row,
@@ -61,6 +85,13 @@ def transform_rows(
         assets_directory=cached_assets_directory,
         offset=offset,
         row_idx_column=row_idx_column,
+        overwrite=overwrite,
+        use_s3_storage=use_s3_storage,
+        s3_bucket=cached_assets_s3_bucket,
+        s3_access_key_id=cached_assets_s3_access_key_id,
+        s3_secret_access_key=cached_assets_s3_secret_access_key,
+        s3_region=cached_assets_s3_region,
+        s3_folder_name=cached_assets_s3_folder_name,
     )
     if "Audio(" in str(features):
         # use multithreading to parallelize audio files processing

@@ -14,16 +14,14 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.rows_utils import transform_rows
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
     get_best_response,
 )
 from libcommon.storage import StrPath
-from libcommon.utils import Priority, Row, RowItem, orjson_dumps
+from libcommon.utils import Priority, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
-from libcommon.viewer_utils.features import get_cell_value
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -32,6 +30,7 @@ from libapi.exceptions import (
     ResponseNotReadyError,
     TransformRowsProcessingError,
 )
+from libapi.rows_utils import transform_rows
 
 
 class OrjsonResponse(JSONResponse):
@@ -302,49 +301,3 @@ def clean_cached_assets(
         ]
         for row_dir_to_delete in row_dirs_to_delete:
             shutil.rmtree(row_dir_to_delete, ignore_errors=True)
-
-
-def transform_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    rows: List[Row],
-    features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    offset: int,
-    row_idx_column: Optional[str],
-    overwrite: bool = True,
-    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
-    use_s3_storage: bool = False,
-    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
-    cached_assets_s3_bucket: Optional[str] = None,
-    cached_assets_s3_access_key_id: Optional[str] = None,
-    cached_assets_s3_secret_access_key: Optional[str] = None,
-    cached_assets_s3_region: Optional[str] = None,
-    cached_assets_s3_folder_name: Optional[str] = None,
-) -> List[Row]:
-    return [
-        {
-            featureName: get_cell_value(
-                dataset=dataset,
-                config=config,
-                split=split,
-                row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
-                cell=row[featureName] if featureName in row else None,
-                featureName=featureName,
-                fieldType=fieldType,
-                assets_base_url=cached_assets_base_url,
-                assets_directory=cached_assets_directory,
-                overwrite=overwrite,
-                use_s3_storage=use_s3_storage,
-                s3_bucket=cached_assets_s3_bucket,
-                s3_access_key_id=cached_assets_s3_access_key_id,
-                s3_secret_access_key=cached_assets_s3_secret_access_key,
-                s3_region=cached_assets_s3_region,
-                s3_folder_name=cached_assets_s3_folder_name,
-            )
-            for (featureName, fieldType) in features.items()
-        }
-        for row_idx, row in enumerate(rows)
-    ]
