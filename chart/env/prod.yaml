@@ -347,14 +347,14 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 64
     resources:
       requests:
         cpu: 1
-        memory: "8Gi"
+        memory: "16Gi"
       limits:
         cpu: 2
-        memory: "8Gi"
+        memory: "16Gi"
     tolerations: []
   - deployName: "light"
     workerDifficultyMax: 40
@@ -363,7 +363,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 50
+    replicas: 32
     resources:
       requests:
         cpu: 200m
