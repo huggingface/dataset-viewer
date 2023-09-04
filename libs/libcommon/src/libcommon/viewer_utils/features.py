@@ -179,7 +179,7 @@ def audio(
             s3_access_key_id=s3_access_key_id,
             s3_secret_access_key=s3_secret_access_key,
             s3_region=s3_region,
-            s3_folder_name=s3_folder_name,            
+            s3_folder_name=s3_folder_name,
         )
 
 
