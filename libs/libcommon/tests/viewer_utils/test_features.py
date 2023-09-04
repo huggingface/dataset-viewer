@@ -13,6 +13,7 @@ from datasets import Audio, Dataset, Features, Image, Value
 from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import (
     get_cell_value,
@@ -308,6 +309,9 @@ def test_image_s3(
         bucket_name = "bucket"
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
+        s3_client = S3Client(
+            region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+        )
         region = "us-east-1"
         folder_name = "assets"
         conn = boto3.resource("s3", region_name=region)
@@ -323,10 +327,8 @@ def test_image_s3(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
             use_s3_storage=True,
+            s3_client=s3_client,
             s3_bucket=bucket_name,
-            s3_access_key_id=access_key_id,
-            s3_secret_access_key=secret_access_key,
-            s3_region=region,
             s3_folder_name=folder_name,
         )
         assert value == {
@@ -352,6 +354,9 @@ def test_audio_s3(
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
         region = "us-east-1"
+        s3_client = S3Client(
+            region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+        )
         folder_name = "assets"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
@@ -366,10 +371,8 @@ def test_audio_s3(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
             use_s3_storage=True,
+            s3_client=s3_client,
             s3_bucket=bucket_name,
-            s3_access_key_id=access_key_id,
-            s3_secret_access_key=secret_access_key,
-            s3_region=region,
             s3_folder_name=folder_name,
         )
 

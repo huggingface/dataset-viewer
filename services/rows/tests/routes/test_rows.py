@@ -19,6 +19,7 @@ from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.parquet_utils import Indexer, ParquetIndexWithMetadata, RowsIndex
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
@@ -325,16 +326,19 @@ def test_rows_index_query_with_parquet_metadata(
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+    s3_client = S3Client(
+        region_name=app_config.cached_assets_s3.region,
+        aws_access_key_id=app_config.cached_assets_s3.access_key_id,
+        aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
+    )
     response = create_response(
         dataset="ds",
         config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
+        s3_client=s3_client,
         cached_assets_s3_bucket=app_config.cached_assets_s3.bucket,
-        cached_assets_s3_access_key_id=app_config.cached_assets_s3.access_key_id,
-        cached_assets_s3_secret_access_key=app_config.cached_assets_s3.secret_access_key,
-        cached_assets_s3_region=app_config.cached_assets_s3.region,
         cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
         pa_table=ds.data,
         offset=0,
@@ -360,6 +364,9 @@ def test_create_response_with_image(
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
         region = "us-east-1"
+        s3_client = S3Client(
+            region_name=region, aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+        )
         folder_name = "cached-assets"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
@@ -370,11 +377,9 @@ def test_create_response_with_image(
                 config=config,
                 split=split,
                 cached_assets_base_url=app_config.cached_assets.base_url,
+                s3_client=s3_client,
                 cached_assets_directory=cached_assets_directory,
                 cached_assets_s3_bucket=bucket_name,
-                cached_assets_s3_access_key_id=access_key_id,
-                cached_assets_s3_secret_access_key=secret_access_key,
-                cached_assets_s3_region=region,
                 cached_assets_s3_folder_name=folder_name,
                 pa_table=ds_image.data,
                 offset=0,

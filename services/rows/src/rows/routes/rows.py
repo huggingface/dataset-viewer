@@ -28,6 +28,7 @@ from libapi.utils import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.utils import PaginatedResponse
@@ -57,9 +58,7 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     cached_assets_s3_bucket: Optional[str],
-    cached_assets_s3_access_key_id: Optional[str],
-    cached_assets_s3_secret_access_key: Optional[str],
-    cached_assets_s3_region: Optional[str],
+    s3_client: Optional[S3Client],
     cached_assets_s3_folder_name: Optional[str],
     pa_table: pa.Table,
     offset: int,
@@ -81,11 +80,9 @@ def create_response(
             cached_assets_base_url=cached_assets_base_url,
             cached_assets_directory=cached_assets_directory,
             cached_assets_s3_bucket=cached_assets_s3_bucket,
-            cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
-            cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
-            cached_assets_s3_region=cached_assets_s3_region,
             cached_assets_s3_folder_name=cached_assets_s3_folder_name,
             use_s3_storage=dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS,
+            s3_client=s3_client,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -99,10 +96,8 @@ def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
     cached_assets_s3_bucket: Optional[str],
-    cached_assets_s3_access_key_id: Optional[str],
-    cached_assets_s3_secret_access_key: Optional[str],
-    cached_assets_s3_region: Optional[str],
     cached_assets_s3_folder_name: Optional[str],
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
@@ -214,9 +209,7 @@ def create_rows_endpoint(
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
                         cached_assets_s3_bucket=cached_assets_s3_bucket,
-                        cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
-                        cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
-                        cached_assets_s3_region=cached_assets_s3_region,
+                        s3_client=s3_client,
                         cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,

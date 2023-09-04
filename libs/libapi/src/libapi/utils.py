@@ -14,6 +14,7 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
@@ -197,9 +198,7 @@ def to_rows_list(
     use_s3_storage: bool = False,
     # TODO: Once cached-assets is migrated to S3, the following parameters dont need to be optional
     cached_assets_s3_bucket: Optional[str] = None,
-    cached_assets_s3_access_key_id: Optional[str] = None,
-    cached_assets_s3_secret_access_key: Optional[str] = None,
-    cached_assets_s3_region: Optional[str] = None,
+    s3_client: Optional[S3Client] = None,
     cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
@@ -221,9 +220,7 @@ def to_rows_list(
             overwrite=False,
             use_s3_storage=use_s3_storage,
             cached_assets_s3_bucket=cached_assets_s3_bucket,
-            cached_assets_s3_access_key_id=cached_assets_s3_access_key_id,
-            cached_assets_s3_secret_access_key=cached_assets_s3_secret_access_key,
-            cached_assets_s3_region=cached_assets_s3_region,
+            s3_client=s3_client,
             cached_assets_s3_folder_name=cached_assets_s3_folder_name,
         )
     except Exception as err:

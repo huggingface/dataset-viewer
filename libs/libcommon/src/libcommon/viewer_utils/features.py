@@ -27,6 +27,7 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage  # type: ignore
 
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
@@ -62,11 +63,9 @@ def image(
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    s3_client: Optional[S3Client] = None,
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
-    s3_access_key_id: Optional[str] = None,
-    s3_secret_access_key: Optional[str] = None,
-    s3_region: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> Any:
     if value is None:
@@ -100,10 +99,8 @@ def image(
                 assets_directory=assets_directory,
                 overwrite=overwrite,
                 use_s3_storage=use_s3_storage,
+                s3_client=s3_client,
                 s3_bucket=s3_bucket,
-                s3_access_key_id=s3_access_key_id,
-                s3_secret_access_key=s3_secret_access_key,
-                s3_region=s3_region,
                 s3_folder_name=s3_folder_name,
             )
         except OSError:
@@ -127,11 +124,9 @@ def audio(
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    s3_client: Optional[S3Client] = None,
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
-    s3_access_key_id: Optional[str] = None,
-    s3_secret_access_key: Optional[str] = None,
-    s3_region: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> Any:
     if value is None:
@@ -176,9 +171,7 @@ def audio(
             overwrite=overwrite,
             use_s3_storage=use_s3_storage,
             s3_bucket=s3_bucket,
-            s3_access_key_id=s3_access_key_id,
-            s3_secret_access_key=s3_secret_access_key,
-            s3_region=s3_region,
+            s3_client=s3_client,
             s3_folder_name=s3_folder_name,
         )
 
@@ -195,11 +188,9 @@ def get_cell_value(
     assets_directory: StrPath,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
+    s3_client: Optional[S3Client] = None,
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
-    s3_access_key_id: Optional[str] = None,
-    s3_secret_access_key: Optional[str] = None,
-    s3_region: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
     json_path: Optional[List[Union[str, int]]] = None,
     overwrite: bool = True,
@@ -221,9 +212,7 @@ def get_cell_value(
             overwrite=overwrite,
             use_s3_storage=use_s3_storage,
             s3_bucket=s3_bucket,
-            s3_access_key_id=s3_access_key_id,
-            s3_secret_access_key=s3_secret_access_key,
-            s3_region=s3_region,
+            s3_client=s3_client,
             s3_folder_name=s3_folder_name,
         )
     elif isinstance(fieldType, Audio):
@@ -240,9 +229,7 @@ def get_cell_value(
             overwrite=overwrite,
             use_s3_storage=use_s3_storage,
             s3_bucket=s3_bucket,
-            s3_access_key_id=s3_access_key_id,
-            s3_secret_access_key=s3_secret_access_key,
-            s3_region=s3_region,
+            s3_client=s3_client,
             s3_folder_name=s3_folder_name,
         )
     elif isinstance(fieldType, list):
