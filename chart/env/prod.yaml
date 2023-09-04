@@ -276,10 +276,10 @@ admin:
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "1Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
 
 hf:
   timeoutSeconds: "1.5"
