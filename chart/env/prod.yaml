@@ -195,8 +195,8 @@ backfill:
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
-  schedule: "0 */2 * * *"
-  # every two hours
+  schedule: "*/2 * * * *"
+  # every two minutes
   nodeSelector: {}
   resources:
     requests:
