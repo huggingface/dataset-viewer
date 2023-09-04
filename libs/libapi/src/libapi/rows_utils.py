@@ -25,11 +25,11 @@ def _transform_row(
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
-    cached_assets_s3_bucket: Optional[str] = None,
-    cached_assets_s3_access_key_id: Optional[str] = None,
-    cached_assets_s3_secret_access_key: Optional[str] = None,
-    cached_assets_s3_region: Optional[str] = None,
-    cached_assets_s3_folder_name: Optional[str] = None,
+    s3_bucket: Optional[str] = None,
+    s3_access_key_id: Optional[str] = None,
+    s3_secret_access_key: Optional[str] = None,
+    s3_region: Optional[str] = None,
+    s3_folder_name: Optional[str] = None,
 ) -> Row:
     row_idx, row = row_idx_and_row
     return {
@@ -45,11 +45,11 @@ def _transform_row(
             assets_directory=assets_directory,
             overwrite=overwrite,
             use_s3_storage=use_s3_storage,
-            s3_bucket=cached_assets_s3_bucket,
-            s3_access_key_id=cached_assets_s3_access_key_id,
-            s3_secret_access_key=cached_assets_s3_secret_access_key,
-            s3_region=cached_assets_s3_region,
-            s3_folder_name=cached_assets_s3_folder_name,
+            s3_bucket=s3_bucket,
+            s3_access_key_id=s3_access_key_id,
+            s3_secret_access_key=s3_secret_access_key,
+            s3_region=s3_region,
+            s3_folder_name=s3_folder_name,
         )
         for (featureName, fieldType) in features.items()
     }

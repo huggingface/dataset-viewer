@@ -378,16 +378,9 @@ def test_audio_s3(
                 "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.mp3",
                 "type": "audio/mpeg",
             },
-            {
-                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
-                "type": "audio/wav",
-            },
         ]
         mp3_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.mp3").get()["Body"].read()
         assert mp3_object is not None
-
-        wav_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.wav").get()["Body"].read()
-        assert wav_object is not None
 
 
 def test_get_supported_unsupported_columns() -> None:

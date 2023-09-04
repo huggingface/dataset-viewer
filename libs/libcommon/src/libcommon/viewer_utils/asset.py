@@ -5,7 +5,6 @@ import contextlib
 import io
 import json
 import os
-import random
 from hashlib import sha1
 from os import makedirs
 from pathlib import Path
@@ -13,8 +12,6 @@ from typing import Generator, List, Optional, Tuple, TypedDict
 from uuid import uuid4
 
 import boto3
-import soundfile  # type:ignore
-from numpy import ndarray
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
@@ -170,9 +167,8 @@ def create_audio_file(
         assets_directory=assets_directory,
     )
     if not use_s3_storage:
-        mp3_file_path = dir_path / filename
+        file_path = dir_path / filename
         makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-
     else:
         payload = (
             str(uuid4()),
@@ -183,9 +179,8 @@ def create_audio_file(
             column,
         )
         prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        mp3_file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
+        file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
 
-    file_path = dir_path / filename
     if overwrite or not file_path.exists():
         # might spawn a process to convert the audio file using ffmpeg
         segment: AudioSegment = AudioSegment.from_file(audio_file_path)
@@ -211,8 +206,8 @@ def create_audio_file(
                 mp3_exists = False
 
         if overwrite or not mp3_exists:
-            s3_client.upload_file(mp3_file_path, s3_bucket, mp3_key)
-            os.remove(mp3_file_path)
+            s3_client.upload_file(file_path, s3_bucket, mp3_key)
+            os.remove(file_path)
 
     return [
         {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "audio/mpeg"},

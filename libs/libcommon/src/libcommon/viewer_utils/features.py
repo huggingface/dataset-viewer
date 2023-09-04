@@ -174,6 +174,12 @@ def audio(
             filename=f"{append_hash_suffix('audio', json_path)}.mp3",
             assets_directory=assets_directory,
             overwrite=overwrite,
+            use_s3_storage=use_s3_storage,
+            s3_bucket=s3_bucket,
+            s3_access_key_id=s3_access_key_id,
+            s3_secret_access_key=s3_secret_access_key,
+            s3_region=s3_region,
+            s3_folder_name=s3_folder_name,            
         )
 
 
