@@ -34,7 +34,7 @@ from libcommon.exceptions import (
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
@@ -532,25 +532,16 @@ def test_compute_splits_response_simple_csv_error(
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
 
 
-@pytest.mark.parametrize(
-    "name,error_code,cause",
-    [
-        ("public", "CachedResponseNotFound", None),  # no cache for dataset-config-names -> CachedResponseNotFound
-    ],
-)
 def test_compute_splits_response_simple_csv_error_2(
     hub_responses_public: HubDatasetTest,
     get_job_runner: GetJobRunner,
-    name: str,
-    error_code: str,
-    cause: str,
     app_config: AppConfig,
 ) -> None:
     dataset = hub_responses_public["name"]
     config_names_response = hub_responses_public["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
     job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CachedArtifactError):
+    with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()
 
 

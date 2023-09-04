@@ -8,7 +8,11 @@ import pytest
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import (
+    CachedArtifactError,
+    CachedArtifactNotFoundError,
+    upsert_response,
+)
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -141,5 +145,5 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset = "non_existent"
     config = "non_existent"
     worker = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CachedArtifactError):
+    with pytest.raises(CachedArtifactNotFoundError):
         worker.compute()

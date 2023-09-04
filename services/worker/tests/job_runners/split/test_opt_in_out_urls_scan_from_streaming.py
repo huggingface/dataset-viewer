@@ -212,7 +212,7 @@ def test_compute(
 @pytest.mark.parametrize(
     "dataset,columns_max_number,upstream_content,upstream_status,exception_name",
     [
-        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactError"),
+        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactNotFoundError"),
         ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError"),
         (
             "upstream_failed",

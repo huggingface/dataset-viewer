@@ -20,6 +20,7 @@ from libapi.utils import (
     are_valid_parameters,
     clean_cached_assets,
     get_json_api_error_response,
+    get_json_error_response,
     get_json_ok_response,
     to_rows_list,
     try_backfill_dataset_then_raise,
@@ -27,7 +28,7 @@ from libapi.utils import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import CachedArtifactError
+from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
@@ -149,7 +150,7 @@ def create_rows_endpoint(
                             split=split,
                         )
                         revision = rows_index.revision
-                except CachedArtifactError:
+                except CachedArtifactNotFoundError:
                     config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
                     config_parquet_metadata_processing_steps = (
                         processing_graph.get_config_parquet_metadata_processing_steps()
@@ -211,6 +212,17 @@ def create_rows_endpoint(
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
+            except CachedArtifactError as e:
+                content = e.cache_entry_with_details["content"]
+                http_status = e.cache_entry_with_details["http_status"]
+                error_code = e.cache_entry_with_details["error_code"]
+                return get_json_error_response(
+                    content=content,
+                    status_code=http_status,
+                    max_age=max_age_short,
+                    error_code=error_code,
+                    revision=revision,
+                )
             except Exception as e:
                 error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="rows_endpoint", step="generate API error response"):

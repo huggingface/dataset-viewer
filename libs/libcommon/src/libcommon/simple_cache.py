@@ -357,6 +357,26 @@ class CacheEntryWithDetails(CacheEntry):
     details: Mapping[str, str]
 
 
+class CachedArtifactNotFoundError(Exception):
+    kind: str
+    dataset: str
+    config: Optional[str]
+    split: Optional[str]
+
+    def __init__(
+        self,
+        kind: str,
+        dataset: str,
+        config: Optional[str],
+        split: Optional[str],
+    ):
+        super().__init__("The cache entry has not been found.")
+        self.kind = kind
+        self.dataset = dataset
+        self.config = config
+        self.split = split
+
+
 class CachedArtifactError(Exception):
     kind: str
     dataset: str
@@ -524,6 +544,8 @@ def get_previous_step_or_raise(
 ) -> BestResponse:
     """Get the previous step from the cache, or raise an exception if it failed."""
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+        raise CachedArtifactNotFoundError(kind=best_response.kind, dataset=dataset, config=config, split=split)
     if best_response.response["http_status"] != HTTPStatus.OK:
         raise CachedArtifactError(
             message="The previous step failed.",
