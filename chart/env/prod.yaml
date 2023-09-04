@@ -276,7 +276,7 @@ admin:
   resources:
     requests:
       cpu: 1
-      memory: "1Gi"
+      memory: "8Gi"
     limits:
       cpu: 4
       memory: "8Gi"
@@ -347,7 +347,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 20
+    replicas: 60
     resources:
       requests:
         cpu: 1
@@ -363,7 +363,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 8
+    replicas: 16
     resources:
       requests:
         cpu: 200m
