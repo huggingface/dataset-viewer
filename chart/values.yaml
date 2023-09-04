@@ -158,6 +158,8 @@ metrics:
   mongoDatabase: "datasets_server_metrics"
 
 worker:
+  # comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
+  blockedDatasets: "alexandrainst/nota"
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
   # the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue.

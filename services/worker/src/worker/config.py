@@ -15,6 +15,7 @@ from libcommon.config import (
     QueueConfig,
 )
 
+WORKER_BLOCKED_DATASETS: List[str] = []
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_DIFFICULTY_MAX = None
 WORKER_DIFFICULTY_MIN = None
@@ -36,6 +37,7 @@ def get_empty_str_list() -> List[str]:
 
 @dataclass(frozen=True)
 class WorkerConfig:
+    blocked_datasets: List[str] = field(default_factory=WORKER_BLOCKED_DATASETS.copy)
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
     difficulty_max: Optional[int] = WORKER_DIFFICULTY_MAX
     difficulty_min: Optional[int] = WORKER_DIFFICULTY_MIN
@@ -58,6 +60,7 @@ class WorkerConfig:
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_"):
             return cls(
+                blocked_datasets=env.list(name="BLOCKED_DATASETS", default=WORKER_BLOCKED_DATASETS.copy()),
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
                 difficulty_max=env.int(name="DIFFICULTY_MAX", default=WORKER_DIFFICULTY_MAX),
                 difficulty_min=env.int(name="DIFFICULTY_MIN", default=WORKER_DIFFICULTY_MIN),

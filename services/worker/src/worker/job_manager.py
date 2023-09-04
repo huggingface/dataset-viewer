@@ -147,6 +147,14 @@ class JobManager:
         self,
     ) -> JobResult:
         self.info(f"compute {self}")
+        if self.job_info["params"]["dataset"] in self.worker_config.blocked_datasets:
+            self.debug(f"the dataset={self.job_params['dataset']} is blocked, don't update the cache")
+            return {
+                "job_info": self.job_info,
+                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "is_success": False,
+                "output": None,
+            }
         try:
             try:
                 self.job_runner.pre_compute()
