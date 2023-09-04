@@ -242,7 +242,7 @@ reverseProxy:
 ingress:
   tls:
     - hosts:
-      - "datasets-server.huggingface.co"
+        - "datasets-server.huggingface.co"
   annotations:
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:707930574880:certificate/971187a3-2baa-40e5-bcae-94d6ec55cd24
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-prod"
@@ -270,16 +270,16 @@ admin:
 
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 1
+  replicas: 2
   service:
     type: NodePort
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "1Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
 
 hf:
   timeoutSeconds: "1.5"
@@ -340,8 +340,7 @@ search:
       memory: "6500Mi"
 
 workers:
-  -
-    deployName: "all"
+  - deployName: "all"
     workerDifficultyMax: 100
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
@@ -357,8 +356,7 @@ workers:
         cpu: 2
         memory: "8Gi"
     tolerations: []
-  -
-    deployName: "light"
+  - deployName: "light"
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
