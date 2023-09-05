@@ -94,7 +94,7 @@ class ParquetIndexWithMetadata:
 
         Returns:
             pa.Table: The requested rows.
-        
+
         Raises:
             TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
         """

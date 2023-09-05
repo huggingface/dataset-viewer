@@ -5,7 +5,6 @@ import logging
 from typing import List
 
 from datasets import Audio, Features, Image
-from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
