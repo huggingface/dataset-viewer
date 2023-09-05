@@ -3,7 +3,6 @@
 
 from dataclasses import dataclass, field
 
-from environs import Env
 from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
@@ -13,24 +12,8 @@ from libcommon.config import (
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    RowsIndexConfig,
 )
-
-ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY = 300_000_000
-
-
-@dataclass(frozen=True)
-class RowsIndexConfig:
-    max_arrow_data_in_memory: int = ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
-
-    @classmethod
-    def from_env(cls) -> "RowsIndexConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("ROWS_INDEX_"):
-            return cls(
-                max_arrow_data_in_memory=env.int(
-                    name="MAX_ARROW_DATA_IN_MEMORY", default=ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
-                ),
-            )
 
 
 @dataclass(frozen=True)
