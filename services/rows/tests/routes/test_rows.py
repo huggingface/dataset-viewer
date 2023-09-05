@@ -15,7 +15,12 @@ from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.parquet_utils import Indexer, ParquetIndexWithMetadata, RowsIndex
+from libcommon.parquet_utils import (
+    Indexer,
+    ParquetIndexWithMetadata,
+    RowsIndex,
+    TooBigRows,
+)
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
@@ -252,6 +257,7 @@ def indexer(
         hf_token=app_config.common.hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=9999999999,
     )
 
 
@@ -262,6 +268,27 @@ def rows_index_with_parquet_metadata(
     ds_sharded_fs: AbstractFileSystem,
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
+    with ds_sharded_fs.open("default/train/0003.parquet") as f:
+        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
+            yield indexer.get_rows_index("ds_sharded", "default", "train")
+
+
+@pytest.fixture
+def rows_index_with_too_big_rows(
+    app_config: AppConfig,
+    processing_graph: ProcessingGraph,
+    parquet_metadata_directory: StrPath,
+    ds_sharded: Dataset,
+    ds_sharded_fs: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+) -> Generator[RowsIndex, None, None]:
+    indexer = Indexer(
+        processing_graph=processing_graph,
+        hf_token=app_config.common.hf_token,
+        parquet_metadata_directory=parquet_metadata_directory,
+        httpfs=HTTPFileSystem(),
+        max_arrow_data_in_memory=1,
+    )
     with ds_sharded_fs.open("default/train/0003.parquet") as f:
         with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
             yield indexer.get_rows_index("ds_sharded", "default", "train")
@@ -318,6 +345,11 @@ def test_rows_index_query_with_parquet_metadata(
     assert rows_index_with_parquet_metadata.query(offset=1, length=99999999).to_pydict() == ds_sharded[1:]
     with pytest.raises(IndexError):
         rows_index_with_parquet_metadata.query(offset=-1, length=2)
+
+
+def test_rows_index_query_with_too_big_rows(rows_index_with_too_big_rows: RowsIndex, ds_sharded: Dataset) -> None:
+    with pytest.raises(TooBigRows):
+        rows_index_with_too_big_rows.query(offset=0, length=3)
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:

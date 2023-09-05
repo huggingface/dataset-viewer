@@ -109,6 +109,24 @@ class ParquetMetadataConfig:
             )
 
 
+ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY = 300_000_000
+
+
+@dataclass(frozen=True)
+class RowsIndexConfig:
+    max_arrow_data_in_memory: int = ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+
+    @classmethod
+    def from_env(cls) -> "RowsIndexConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("ROWS_INDEX_"):
+            return cls(
+                max_arrow_data_in_memory=env.int(
+                    name="MAX_ARROW_DATA_IN_MEMORY", default=ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+                ),
+            )
+
+
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 

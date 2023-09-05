@@ -29,6 +29,8 @@
     value: {{ .Values.rows.uvicornNumWorkers | quote }}
   - name: API_UVICORN_PORT
     value: {{ .Values.rows.uvicornPort | quote }}
+  - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+    value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   volumeMounts:
   {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
