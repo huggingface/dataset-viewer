@@ -88,6 +88,7 @@ def create_rows_endpoint(
     cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
+    max_arrow_data_in_memory: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[List[str]] = None,
@@ -106,6 +107,7 @@ def create_rows_endpoint(
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
+        max_arrow_data_in_memory=max_arrow_data_in_memory,
         unsupported_features=UNSUPPORTED_FEATURES,
         all_columns_supported_datasets_allow_list=ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST,
     )
