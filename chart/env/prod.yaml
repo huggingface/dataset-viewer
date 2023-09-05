@@ -307,10 +307,11 @@ rows:
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  uvicornNumWorkers: "9"
+  # but we only set to 2 to avoid OOM
+  uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-rows: "true"
-  replicas: 20
+  replicas: 12
   service:
     type: NodePort
   resources:
