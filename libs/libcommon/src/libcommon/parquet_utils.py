@@ -2,8 +2,8 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass, field
-from functools import lru_cache, partial
-from typing import Callable, List, Literal, Optional, TypedDict, Union
+from functools import lru_cache
+from typing import List, Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
