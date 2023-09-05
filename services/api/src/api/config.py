@@ -17,7 +17,7 @@ from libcommon.processing_graph import InputType
 
 HUB_CACHE_BASE_URL = "https://datasets-server.huggingface.co"
 HUB_CACHE_CACHE_KIND = "dataset-hub-cache"
-HUB_CACHE_NUM_RESULTS_PER_PAGE = 1000
+HUB_CACHE_NUM_RESULTS_PER_PAGE = 1_000
 
 
 @dataclass(frozen=True)

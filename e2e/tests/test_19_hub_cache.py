@@ -31,5 +31,5 @@ def test_hub_cache_after_datasets_processed(hf_dataset_repos_csv_data: DatasetRe
         assert all(item["viewer"] and item["num_rows"] > 0 for item in body)
 
     NUM_DATASETS = 4
-    NUM_RESULTS_PER_PAGE = int(os.environ.get("HUB_CACHE_NUM_RESULTS_PER_PAGE", 100))
+    NUM_RESULTS_PER_PAGE = int(os.environ.get("HUB_CACHE_NUM_RESULTS_PER_PAGE", 1_000))
     assert iteration >= NUM_DATASETS // NUM_RESULTS_PER_PAGE
