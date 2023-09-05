@@ -18,6 +18,8 @@
       title: Preview a dataset
     - local: rows
       title: Download slices of rows
+    - local: search
+      title: Search text in a dataset
     - local: parquet
       title: List Parquet files
     - local: size

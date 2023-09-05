@@ -19,6 +19,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                                                                                                         |
 | [/first-rows](./first_rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                                     |
 | [/rows](./rows)             | GET    | Get a slice of rows of a dataset split.                                          | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
+| [/search](./search)         | GET    | Search text in a dataset split.                                                  | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `query`: text to search for<br>                                                |
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                                                                                                         |
 | [/size](./size)             | GET    | Get the size of a dataset.                                                       | `dataset`: name of the dataset                                                                                                                                                         |
 
@@ -430,6 +431,92 @@ The response looks like:
     ...
   ],
   "num_rows_total": 8530,
+  "num_rows_per_page": 100
+}
+```
+
+## Search text in a dataset
+
+The `/search` endpoint returns a JSON list of a slice of rows of a dataset that match a text query. The text is searched in the columns of type `string` or `ClassLabel`, even if the values are nested in a dictionary.
+It also returns the types of data features ("columns" data types). The response format is the same as the /rows endpoint.
+You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the search query you'd like to find in the text columns:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+You can get slices of 100 rows maximum at a time, and you can ask for other slices using the `offset` and `length` parameters, as for the `/rows` endpoint.
+
+The response looks like:
+
+```json
+{
+  "features": [
+    {
+      "feature_idx": 0,
+      "name": "text",
+      "type": { "dtype": "string", "_type": "Value" }
+    },
+    {
+      "feature_idx": 1,
+      "name": "label",
+      "type": { "dtype": "int64", "_type": "Value" }
+    }
+  ],
+  "rows": [
+    {
+      "row_idx": 9,
+      "row": {
+        "text": "take care of my cat offers a refreshingly different slice of asian cinema .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 472,
+      "row": {
+        "text": "[ \" take care of my cat \" ] is an honestly nice little film that takes us on an examination of young adult life in urban south korea through the hearts and minds of the five principals .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    ...,
+    ...
+  ],
+  "num_rows_total": 12,
   "num_rows_per_page": 100
 }
 ```
