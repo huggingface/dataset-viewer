@@ -341,7 +341,7 @@ search:
 
 workers:
   - deployName: "all"
-    workerDifficultyMax: 100
+    workerDifficultyMax: 70
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
