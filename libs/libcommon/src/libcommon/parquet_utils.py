@@ -55,9 +55,9 @@ class RowGroupReader:
 
     def read(self, columns: List[str]) -> pa.Table:
         return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
-    
+
     def read_size(self) -> int:
-        return self.parquet_file.metadata.row_group(self.group_id).total_byte_size
+        return self.parquet_file.metadata.row_group(self.group_id).total_byte_size  # type: ignore
 
 
 @dataclass
@@ -157,19 +157,24 @@ class ParquetIndexWithMetadata:
                 row_group_offsets, [first_row, last_row], side="right"
             )
 
-        with StepProfiler(method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"):
+        with StepProfiler(
+            method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
+        ):
             row_groups_size = sum(
-                [
-                    row_group_readers[i].read_size()
-                    for i in range(first_row_group_id, last_row_group_id + 1)
-                ]
+                [row_group_readers[i].read_size() for i in range(first_row_group_id, last_row_group_id + 1)]
             )
             if row_groups_size > self.max_arrow_data_in_memory:
-                raise TooBigRows(f"Rows from parquet row groups are too big to be read: {size_str(row_groups_size)} (max={size_str(self.max_arrow_data_in_memory)})")
+                raise TooBigRows(
+                    "Rows from parquet row groups are too big to be read:"
+                    f" {size_str(row_groups_size)} (max={size_str(self.max_arrow_data_in_memory)})"
+                )
 
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
             pa_table = pa.concat_tables(
-                [row_group_readers[i].read(self.supported_columns) for i in range(first_row_group_id, last_row_group_id + 1)]
+                [
+                    row_group_readers[i].read(self.supported_columns)
+                    for i in range(first_row_group_id, last_row_group_id + 1)
+                ]
             )
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
