@@ -25,6 +25,8 @@
     value: {{ .workerValues.workerJobTypesBlocked | quote }}
   - name: WORKER_JOB_TYPES_ONLY
     value: {{ .workerValues.workerJobTypesOnly | quote }}
+  - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
+    value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}

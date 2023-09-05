@@ -360,4 +360,5 @@ class AppConfig:
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
+            rows_index=RowsIndexConfig.from_env(),
         )

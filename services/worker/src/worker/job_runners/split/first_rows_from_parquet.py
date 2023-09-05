@@ -5,6 +5,7 @@ import logging
 from typing import List
 
 from datasets import Audio, Features, Image
+from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
@@ -15,7 +16,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import Indexer
+from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Row, RowItem
@@ -103,7 +104,10 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    pa_table = rows_index.query(offset=0, length=rows_max_number)
+    try:
+        pa_table = rows_index.query(offset=0, length=rows_max_number)
+    except TooBigRows as err:
+        raise TooBigContentError(str(err))
     rows = [
         RowItem(
             {

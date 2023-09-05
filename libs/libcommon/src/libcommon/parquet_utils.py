@@ -94,6 +94,9 @@ class ParquetIndexWithMetadata:
 
         Returns:
             pa.Table: The requested rows.
+        
+        Raises:
+            TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
         """
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
