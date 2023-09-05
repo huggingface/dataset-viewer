@@ -1230,29 +1230,25 @@
         }
       },
       "HubCacheResponse": {
-        "type": "object",
-        "required": ["cache_files"],
-        "properties": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["dataset", "preview", "viewer", "partial", "num_rows"],
-            "properties": {
-              "dataset": {
-                "type": "string"
-              },
-              "preview": {
-                "type": "boolean"
-              },
-              "viewer": {
-                "type": "boolean"
-              },
-              "partial": {
-                "type": "boolean"
-              },
-              "num_rows": {
-                "type": "integer"
-              }
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["dataset", "preview", "viewer", "partial", "num_rows"],
+          "properties": {
+            "dataset": {
+              "type": "string"
+            },
+            "preview": {
+              "type": "boolean"
+            },
+            "viewer": {
+              "type": "boolean"
+            },
+            "partial": {
+              "type": "boolean"
+            },
+            "num_rows": {
+              "type": "integer"
             }
           }
         }
