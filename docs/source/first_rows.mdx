@@ -4,14 +4,6 @@ Datasets Server provides a `/first-rows` endpoint for visualizing the first 100 
 
 ![dataset-viewer](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/dataset-viewer.png)
 
-<Tip warning={true}>
-  Currently, only {" "}
-  <a href="https://huggingface.co/docs/datasets/stream">streamable</a> datasets
-  are supported so Datasets Server can extract the first 100 rows without downloading the
-  whole dataset. This is especially useful for large datasets where downloading
-  an entire dataset may take hours!
-</Tip>
-
 This guide shows you how to use Datasets Server's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
 
 The `/first-rows` endpoint accepts three query parameters:
