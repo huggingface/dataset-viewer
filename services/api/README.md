@@ -20,6 +20,7 @@ The `/hub-cache` endpoint is used to cache the datasets' metadata from the Huggi
 
 Set environment variables to configure the application (`HUB_CACHE_` prefix):
 
+- `HUB_CACHE_BASE_URL`: the base URL of the Datasets Server. Defaults to `https://datasets-server.huggingface.co`.
 - `HUB_CACHE_NUM_RESULTS_PER_PAGE`: the number of results per page. Defaults to `1_000`.
 
 ## Endpoints

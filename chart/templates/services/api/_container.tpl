@@ -21,6 +21,8 @@
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .Values.api.prometheusMultiprocDirectory | quote }}
   # /hub-cache
+  - name: HUB_CACHE_BASE_URL
+    value: "https://{{ include "datasetsServer.ingress.hostname" . }}"
   - name: HUB_CACHE_NUM_RESULTS_PER_PAGE
     value: {{ .Values.api.hubCacheNumResultsPerPage | quote }}
   # uvicorn
