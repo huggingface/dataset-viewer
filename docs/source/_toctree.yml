@@ -26,6 +26,8 @@
       title: Overview
     - local: duckdb
       title: DuckDB
+    - local: clickhouse
+      title: ClickHouse
     - local: polars
       title: Polars
     - local: pandas
