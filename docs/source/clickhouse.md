@@ -4,7 +4,7 @@
 
 <Tip>
 
-Learn more about the Hugging Face and ClickHouse integration in this [blog](https://clickhouse.com/blog/query-analyze-hugging-face-datasets-with-clickhouse) for more details about how to analyze datasets on the Hub with ClickHouse.
+Check this [blog](https://clickhouse.com/blog/query-analyze-hugging-face-datasets-with-clickhouse) for more details about how to analyze datasets on the Hub with ClickHouse.
 
 </Tip>
 
@@ -97,7 +97,7 @@ Remember to set `enable_url_encoding` to 0 and `max_https_get_redirects` to 1 to
 SET max_http_get_redirects = 1, enable_url_encoding = 0
 ```
 
-Let's create a function to return a list of Parquet files from the [blog_authorship_corpus](https://huggingface.co/datasets/blog_authorship_corpus):
+Let's create a function to return a list of Parquet files from the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus):
 
 ```bash
 CREATE OR REPLACE FUNCTION hugging_paths AS dataset -> (
