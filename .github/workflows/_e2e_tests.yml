@@ -46,6 +46,8 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
+          # hub-cache
+          HUB_CACHE_NUM_RESULTS_PER_PAGE: "2"
         run: docker compose -f docker-compose-datasets-server.yml up -d
         working-directory: ./tools
       - name: Install poetry
@@ -87,5 +89,7 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
+          # hub-cache
+          HUB_CACHE_NUM_RESULTS_PER_PAGE: "2"
         run: |
           poetry run python -m pytest -vv -s tests
