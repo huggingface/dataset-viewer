@@ -7,10 +7,15 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountAssetsRW" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
+  - mountPath: /volumes/cached-assets
+    mountPropagation: None
+    name: volume-cached-assets
+    readOnly: false
   - mountPath: /volumes/descriptive-statistics
     mountPropagation: None
     name: volume-descriptive-statistics

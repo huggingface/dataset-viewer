@@ -118,6 +118,8 @@ uid: 1000
 gid: 3000
 
 persistence:
+  cachedAssets:
+    existingClaim: ""
   descriptiveStatistics:
     existingClaim: ""
   duckDBIndex:
