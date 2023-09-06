@@ -1,42 +1,46 @@
 - title: Get Started
   sections:
-  - local: index
-    title: 🤗 Datasets server
-  - local: quick_start
-    title: Quickstart
-  - local: analyze_data
-    title: Analyze a dataset on the Hub
+    - local: index
+      title: 🤗 Datasets server
+    - local: quick_start
+      title: Quickstart
+    - local: analyze_data
+      title: Analyze a dataset on the Hub
 - title: Guides
   sections:
-  - local: valid
-    title: Check dataset validity
-  - local: splits
-    title: List splits and configurations
-  - local: info
-    title: Get dataset information
-  - local: first_rows
-    title: Preview a dataset
-  - local: rows
-    title: Download slices of rows
-  - local: parquet
-    title: List Parquet files
-  - title: Query datasets from Datasets Server
-    sections:
-    - local: parquet_process
-      title: Overview
-    - local: duckdb
-      title: DuckDB
-    - local: clickhouse
-      title: ClickHouse
-    - local: polars
-      title: Polars
-    - local: pandas
-      title: Pandas
+    - local: valid
+      title: Check dataset validity
+    - local: splits
+      title: List splits and configurations
+    - local: info
+      title: Get dataset information
+    - local: first_rows
+      title: Preview a dataset
+    - local: rows
+      title: Download slices of rows
+    - local: search
+      title: Search text in a dataset
+    - local: parquet
+      title: List Parquet files
+    - local: size
+      title: Get the number of rows and the bytes size
+    - title: Query datasets from Datasets Server
+      sections:
+        - local: parquet_process
+          title: Overview
+        - local: duckdb
+          title: DuckDB
+        - local: clickhouse
+          title: ClickHouse
+        - local: polars
+          title: Polars
+        - local: pandas
+          title: Pandas
 - title: Conceptual Guides
   sections:
-  - local: configs_and_splits
-    title: Splits and configurations
-  - local: data_types
-    title: Data types
-  - local: server
-    title: Server infrastructure
+    - local: configs_and_splits
+      title: Splits and configurations
+    - local: data_types
+      title: Data types
+    - local: server
+      title: Server infrastructure

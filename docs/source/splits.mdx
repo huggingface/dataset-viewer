@@ -1,14 +1,6 @@
 # List splits and configurations
 
-Datasets typically have splits and may also have configurations. A *split* is a subset of the dataset, like `train` and `test`, that are used during different stages of training and evaluating a model. A *configuration* is a sub-dataset contained within a larger dataset. Configurations are especially common in multilingual speech datasets where there may be a different configuration for each language. If you're interested in learning more about splits and configurations, check out the [Load a dataset from the Hub tutorial](https://huggingface.co/docs/datasets/main/en/load_hub)!
-
-<Tip warning={true}>
-  Currently, only {" "}
-  <a href="https://huggingface.co/docs/datasets/stream">streamable</a> datasets
-  are supported so Datasets Server can extract the first 100 rows without downloading the
-  whole dataset. This is especially useful for large datasets where downloading
-  an entire dataset may take hours!
-</Tip>
+Datasets typically have splits and may also have configurations. A _split_ is a subset of the dataset, like `train` and `test`, that are used during different stages of training and evaluating a model. A _configuration_ is a sub-dataset contained within a larger dataset. Configurations are especially common in multilingual speech datasets where there may be a different configuration for each language. If you're interested in learning more about splits and configurations, check out the [Load a dataset from the Hub tutorial](https://huggingface.co/docs/datasets/main/en/load_hub)!
 
 This guide shows you how to use Datasets Server's `/splits` endpoint to retrieve a dataset's splits and configurations programmatically. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits)
 
@@ -59,48 +51,14 @@ The endpoint response is a JSON containing a list of the dataset's splits and co
 ```json
 {
   "splits": [
-    {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "train",
-      "num_bytes": 239852925,
-      "num_examples": 60721
-    },
-    {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "validation",
-      "num_bytes": 51662575,
-      "num_examples": 12961
-    },
-    {
-      "dataset": "duorc",
-      "config": "SelfRC",
-      "split": "test",
-      "num_bytes": 49142766,
-      "num_examples": 12559
-    },
-    {
-      "dataset": "duorc",
-      "config": "ParaphraseRC",
-      "split": "train",
-      "num_bytes": 496683105,
-      "num_examples": 69524
-    },
-    {
-      "dataset": "duorc",
-      "config": "ParaphraseRC",
-      "split": "validation",
-      "num_bytes": 106510545,
-      "num_examples": 15591
-    },
-    {
-      "dataset": "duorc",
-      "config": "ParaphraseRC",
-      "split": "test",
-      "num_bytes": 115215816,
-      "num_examples": 15857
-    }
-  ]
+    { "dataset": "duorc", "config": "ParaphraseRC", "split": "train" },
+    { "dataset": "duorc", "config": "ParaphraseRC", "split": "validation" },
+    { "dataset": "duorc", "config": "ParaphraseRC", "split": "test" },
+    { "dataset": "duorc", "config": "SelfRC", "split": "train" },
+    { "dataset": "duorc", "config": "SelfRC", "split": "validation" },
+    { "dataset": "duorc", "config": "SelfRC", "split": "test" }
+  ],
+  "pending": [],
+  "failed": []
 }
 ```

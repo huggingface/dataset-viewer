@@ -12,14 +12,16 @@ In this quickstart, you'll learn how to use the Datasets Server's REST API to:
 
 Each feature is served through an endpoint summarized in the table below:
 
-| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                   |
-| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                               |
-| [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                     |
-| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                     |
-| [/first-rows](./first_rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split |
+| Endpoint                    | Method | Description                                                                      | Query parameters                                                                                                                                                                       |
+| --------------------------- | ------ | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [/valid](./valid)           | GET    | Get the list of datasets hosted in the Hub and supported by the datasets server. | none                                                                                                                                                                                   |
+| [/is-valid](./valid)        | GET    | Check whether a specific dataset is valid.                                       | `dataset`: name of the dataset                                                                                                                                                         |
+| [/splits](./splits)         | GET    | Get the list of configurations and splits of a dataset.                          | `dataset`: name of the dataset                                                                                                                                                         |
+| [/first-rows](./first_rows) | GET    | Get the first rows of a dataset split.                                           | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                                     |
 | [/rows](./rows)             | GET    | Get a slice of rows of a dataset split.                                          | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
-| [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                     |
+| [/search](./search)         | GET    | Search text in a dataset split.                                                  | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `query`: text to search for<br>                                                |
+| [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.                                      | `dataset`: name of the dataset                                                                                                                                                         |
+| [/size](./size)             | GET    | Get the size of a dataset.                                                       | `dataset`: name of the dataset                                                                                                                                                         |
 
 There is no installation or setup required to use Datasets Server.
 
@@ -137,18 +139,25 @@ curl https://datasets-server.huggingface.co/valid \
 </curl>
 </inferencesnippet>
 
-This returns a list of all the datasets that load without an error:
+This returns a list of all the datasets that load without an error for the viewer (/rows) or only the preview (/first-rows):
 
-```py
-print(data)
+```json
 {
-  "valid": [
-    "0n1xus/codexglue",
-    "0n1xus/pytorrent-standalone",
-    "0x7194633/rupile",
-    "51la5/keyword-extraction",
+  "viewer": [
+    "0-hero/OIG-small-chip2",
+    "000alen/semantic",
+	"04-07-22/wep-probes",
+	"042A/hako_content",
     ...,
+    ...
+  ],
+  "preview": [
+    "0xMonolith/PixelArtConcepts_1",
+	"13GP/training",
+	"2413016570gjh/vae_zip",
+	"255doesnotexist/GreendamOpencpop",
     ...,
+    ...
   ]
 }
 ```
@@ -192,11 +201,10 @@ curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
 </curl>
 </inferencesnippet>
 
-This returns whether the `valid` key is `true` or `false`:
+This returns whether the dataset provides a preview (see /first-rows), the viewer (see /rows) and the search (see /search):
 
-```py
-print(data)
-{'valid': True}
+```json
+{ "preview": true, "viewer": true, "search": true }
 ```
 
 ## List configurations and splits
@@ -242,16 +250,19 @@ curl https://datasets-server.huggingface.co/splits?dataset=rotten_tomatoes \
 
 This returns the available configuration and splits in the dataset:
 
-```py
-print(data)
-{'splits': 
-    [
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'train'}, 
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'validation'}, 
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'test'}
-    ], 
- 'pending': [], 
- 'failed': []
+```json
+{
+  "splits": [
+    { "dataset": "rotten_tomatoes", "config": "default", "split": "train" },
+    {
+      "dataset": "rotten_tomatoes",
+      "config": "default",
+      "split": "validation"
+    },
+    { "dataset": "rotten_tomatoes", "config": "default", "split": "test" }
+  ],
+  "pending": [],
+  "failed": []
 }
 ```
 
@@ -298,21 +309,43 @@ curl https://datasets-server.huggingface.co/first-rows?dataset=rotten_tomatoes&c
 
 This returns the first 100 rows of the dataset:
 
-```py
-print(data)
-{'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'train', 
- 'features': 
-    [
-        {'feature_idx': 0, 'name': 'text', 'type': {'dtype': 'string', '_type': 'Value'}}, 
-        {'feature_idx': 1, 'name': 'label', 'type': {'names': ['neg', 'pos'], '_type': 'ClassLabel'}}
-    ], 
- 'rows': 
-    [
-        {'row_idx': 0, 'row': {'text': 'the rock is destined to be the 21st century\'s new " conan " and that he\'s going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .', 'label': 1}, 'truncated_cells': []}, 
-        {'row_idx': 1, 'row': {'text': 'the gorgeously elaborate continuation of " the lord of the rings " trilogy is so huge that a column of words cannot adequately describe co-writer/director peter jackson\'s expanded vision of j . r . r . tolkien\'s middle-earth .', 'label': 1}, 'truncated_cells': []}
-        ...,
-        ...,
-    ],
+```json
+{
+  "dataset": "rotten_tomatoes",
+  "config": "default",
+  "split": "train",
+  "features": [
+    {
+      "feature_idx": 0,
+      "name": "text",
+      "type": { "dtype": "string", "_type": "Value" }
+    },
+    {
+      "feature_idx": 1,
+      "name": "label",
+      "type": { "names": ["neg", "pos"], "_type": "ClassLabel" }
+    }
+  ],
+  "rows": [
+    {
+      "row_idx": 0,
+      "row": {
+        "text": "the rock is destined to be the 21st century's new \" conan \" and that he's going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 1,
+      "row": {
+        "text": "the gorgeously elaborate continuation of \" the lord of the rings \" trilogy is so huge that a column of words cannot adequately describe co-writer/director peter jackson's expanded vision of j . r . r . tolkien's middle-earth .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    ...,
+    ...
+  ]
 }
 ```
 
@@ -363,22 +396,128 @@ You can download slices of 100 rows maximum at a time.
 
 The response looks like:
 
-```py
-print(data)
-{'features': 
-    [
-        {'feature_idx': 0, 'name': 'text', 'type': {'dtype': 'string', '_type': 'Value'}}, 
-        {'feature_idx': 1, 'name': 'label', 'type': {'names': ['neg', 'pos'], '_type': 'ClassLabel'}}], 
- 'rows': 
-    [
-        {'row_idx': 150, 'row': {'text': 'enormously likable , partly because it is aware of its own grasp of the absurd .', 'label': 1}, 'truncated_cells': []}, 
-        {'row_idx': 151, 'row': {'text': "here's a british flick gleefully unconcerned with plausibility , yet just as determined to entertain you .", 'label': 1}, 'truncated_cells': []}, 
-        {'row_idx': 152, 'row': {'text': "it's an old story , but a lively script , sharp acting and partially animated interludes make just a kiss seem minty fresh .", 'label': 1}, 'truncated_cells': []}, 
-        {'row_idx': 153, 'row': {'text': 'must be seen to be believed .', 'label': 1}, 'truncated_cells': []}, 
-        {'row_idx': 154, 'row': {'text': "ray liotta and jason patric do some of their best work in their underwritten roles , but don't be fooled : nobody deserves any prizes here .", 'label': 1}, 'truncated_cells': []}, 
-        ...,
-        ...,
-    ]
+```json
+{
+  "features": [
+    {
+      "feature_idx": 0,
+      "name": "text",
+      "type": { "dtype": "string", "_type": "Value" }
+    },
+    {
+      "feature_idx": 1,
+      "name": "label",
+      "type": { "names": ["neg", "pos"], "_type": "ClassLabel" }
+    }
+  ],
+  "rows": [
+    {
+      "row_idx": 150,
+      "row": {
+        "text": "enormously likable , partly because it is aware of its own grasp of the absurd .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 151,
+      "row": {
+        "text": "here's a british flick gleefully unconcerned with plausibility , yet just as determined to entertain you .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    ...,
+    ...
+  ],
+  "num_rows_total": 8530,
+  "num_rows_per_page": 100
+}
+```
+
+## Search text in a dataset
+
+The `/search` endpoint returns a JSON list of a slice of rows of a dataset that match a text query. The text is searched in the columns of type `string` or `ClassLabel`, even if the values are nested in a dictionary.
+It also returns the types of data features ("columns" data types). The response format is the same as the /rows endpoint.
+You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the search query you'd like to find in the text columns:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/search?dataset=rotten_tomatoes&config=default&split=train&query=cat \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+You can get slices of 100 rows maximum at a time, and you can ask for other slices using the `offset` and `length` parameters, as for the `/rows` endpoint.
+
+The response looks like:
+
+```json
+{
+  "features": [
+    {
+      "feature_idx": 0,
+      "name": "text",
+      "type": { "dtype": "string", "_type": "Value" }
+    },
+    {
+      "feature_idx": 1,
+      "name": "label",
+      "type": { "dtype": "int64", "_type": "Value" }
+    }
+  ],
+  "rows": [
+    {
+      "row_idx": 9,
+      "row": {
+        "text": "take care of my cat offers a refreshingly different slice of asian cinema .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    {
+      "row_idx": 472,
+      "row": {
+        "text": "[ \" take care of my cat \" ] is an honestly nice little film that takes us on an examination of young adult life in urban south korea through the hearts and minds of the five principals .",
+        "label": 1
+      },
+      "truncated_cells": []
+    },
+    ...,
+    ...
+  ],
+  "num_rows_total": 12,
+  "num_rows_per_page": 100
 }
 ```
 
@@ -425,15 +564,137 @@ curl https://datasets-server.huggingface.co/parquet?dataset=rotten_tomatoes \
 
 This returns a URL to the Parquet file for each split:
 
-```py
-print(data)
-{'parquet_files': 
-    [
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'test', 'url': 'https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet', 'filename': '0000.parquet', 'size': 92206}, 
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'train', 'url': 'https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet', 'filename': '0000.parquet' 'size': 698845}, 
-        {'dataset': 'rotten_tomatoes', 'config': 'default', 'split': 'validation', 'url': 'https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/validation/0000.parquet', 'filename': '0000.parquet' 'size': 90001}
-    ], 
- 'pending': [], 
- 'failed': []
+```json
+{
+  "parquet_files": [
+    {
+      "dataset": "rotten_tomatoes",
+      "config": "default",
+      "split": "test",
+      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet",
+      "filename": "0000.parquet",
+      "size": 92206
+    },
+    {
+      "dataset": "rotten_tomatoes",
+      "config": "default",
+      "split": "train",
+      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
+      "filename": "0000.parquet",
+      "size": 698845
+    },
+    {
+      "dataset": "rotten_tomatoes",
+      "config": "default",
+      "split": "validation",
+      "url": "https://huggingface.co/datasets/rotten_tomatoes/resolve/refs%2Fconvert%2Fparquet/default/validation/0000.parquet",
+      "filename": "0000.parquet",
+      "size": 90001
+    }
+  ],
+  "pending": [],
+  "failed": [],
+  "partial": false
+}
+```
+
+## Get the size of the dataset
+
+The `/size` endpoint returns a JSON with the size (number of rows and size in bytes) of the dataset, and for every configuration and split:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+API_URL = "https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes"
+def query():
+    response = requests.get(API_URL)
+    return response.json()
+data = query()
+````
+
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes",
+        {
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes \
+        -X GET
+```
+</curl>
+</inferencesnippet>
+
+This returns a URL to the Parquet file for each split:
+
+```json
+{
+  "size": {
+    "dataset": {
+      "dataset": "rotten_tomatoes",
+      "num_bytes_original_files": 487770,
+      "num_bytes_parquet_files": 881052,
+      "num_bytes_memory": 1345449,
+      "num_rows": 10662
+    },
+    "configs": [
+      {
+        "dataset": "rotten_tomatoes",
+        "config": "default",
+        "num_bytes_original_files": 487770,
+        "num_bytes_parquet_files": 881052,
+        "num_bytes_memory": 1345449,
+        "num_rows": 10662,
+        "num_columns": 2
+      }
+    ],
+    "splits": [
+      {
+        "dataset": "rotten_tomatoes",
+        "config": "default",
+        "split": "train",
+        "num_bytes_parquet_files": 698845,
+        "num_bytes_memory": 1074806,
+        "num_rows": 8530,
+        "num_columns": 2
+      },
+      {
+        "dataset": "rotten_tomatoes",
+        "config": "default",
+        "split": "validation",
+        "num_bytes_parquet_files": 90001,
+        "num_bytes_memory": 134675,
+        "num_rows": 1066,
+        "num_columns": 2
+      },
+      {
+        "dataset": "rotten_tomatoes",
+        "config": "default",
+        "split": "test",
+        "num_bytes_parquet_files": 92206,
+        "num_bytes_memory": 135968,
+        "num_rows": 1066,
+        "num_columns": 2
+      }
+    ]
+  },
+  "pending": [],
+  "failed": [],
+  "partial": false
 }
 ```
