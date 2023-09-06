@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+import uvicorn
+from libapi.config import UvicornConfig
+from libapi.routes.healthcheck import healthcheck_endpoint
+from libapi.utils import EXPOSED_HEADERS
+from libcommon.log import init_logging
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
+from starlette.routing import Route
+from starlette_prometheus import PrometheusMiddleware
+
+from sse_api.config import AppConfig
+
+
+def create_app() -> Starlette:
+    app_config = AppConfig.from_env()
+    return create_app_with_config(app_config=app_config)
+
+
+def create_app_with_config(app_config: AppConfig) -> Starlette:
+    init_logging(level=app_config.log.level)
+    # ^ set first to have logs as soon as possible
+
+    middleware = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+            allow_credentials=True,
+            expose_headers=EXPOSED_HEADERS,
+        ),
+        Middleware(GZipMiddleware),
+        Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
+    ]
+
+    routes = [Route("/healthcheck", endpoint=healthcheck_endpoint)]
+
+    return Starlette(routes=routes, middleware=middleware)
+
+
+def start() -> None:
+    uvicorn_config = UvicornConfig.from_env()
+    uvicorn.run(
+        "app:create_app",
+        host=uvicorn_config.hostname,
+        port=uvicorn_config.port,
+        factory=True,
+        workers=uvicorn_config.num_workers,
+    )
