@@ -162,12 +162,12 @@ services:
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
-      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
-      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+      API_UVICORN_NUM_WORKERS: ${SSE_API_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${SSE_API_UVICORN_PORT-8084}
     network_mode: ${DEV_NETWORK_MODE}
     ports:
       # for debug
-      - ${API_UVICORN_PORT-8084}:${API_UVICORN_PORT-8084}
+      - ${SSE_API_UVICORN_PORT-8084}:${SSE_API_UVICORN_PORT-8084}
     depends_on:
       - mongodb
     restart: unless-stopped
