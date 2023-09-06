@@ -3,10 +3,9 @@
 Datasets Server provides a `/search` endpoint for searching words in a dataset.
 
 <Tip warning={true}>
-  Currently, only {" "}
-  <a href="./parquet">datasets with Parquet exports</a>
-  are supported so Datasets Server can index the contents and run the search without downloading the
-  whole dataset.
+  Currently, only <a href="./parquet">datasets with Parquet exports</a>
+  are supported so Datasets Server can index the contents and run the search without
+  downloading the whole dataset.
 </Tip>
 
 This guide shows you how to use Datasets Server's `/search` endpoint to search for a query string.
@@ -22,6 +21,8 @@ The `/search` endpoint accepts five query parameters:
 - `query`: the text to search
 - `offset`: the offset of the slice, for example `150`
 - `length`: the length of the slice, for example `10` (maximum: `100`)
+
+For example, let's search for the text `"dog"` in the `train` split of the `SelfRC` configuration of the `duorc` dataset, restricting the results to the slice 150-151:
 
 <inferencesnippet>
 <python>
