@@ -31,13 +31,7 @@ class S3Client:
             aws_secret_access_key=aws_secret_access_key,
         )
 
-    def is_available(self) -> bool:
-        """Check if the client has been initialized."""
-        return self._client is not None
-
     def exists_in_bucket(self, bucket: str, object_key: str) -> bool:
-        if not self.is_available():
-            raise Exception("S3 Resource is not initialized")
         try:
             self._client.head_object(Bucket=bucket, Key=object_key)
             return True

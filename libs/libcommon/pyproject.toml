@@ -75,7 +75,6 @@ module = [
     "tqdm.*",
     "fsspec.*",
     "boto3.*",
-    "botocore.*",
     "moto.*",
 ]
 # ^ huggingface_hub is not typed since version 0.13.0

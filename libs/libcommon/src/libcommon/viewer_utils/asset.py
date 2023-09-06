@@ -4,6 +4,7 @@
 import contextlib
 import json
 import os
+from functools import partial
 from hashlib import sha1
 from os import makedirs
 from pathlib import Path
@@ -69,16 +70,16 @@ class ImageSource(TypedDict):
     width: int
 
 
-def create_image_file(
+def create_asset_file(
     dataset: str,
     config: str,
     split: str,
     row_idx: int,
     column: str,
     filename: str,
-    image: Image.Image,
     assets_base_url: str,
     assets_directory: StrPath,
+    fun: partial,  # type: ignore
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
@@ -86,7 +87,7 @@ def create_image_file(
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
-) -> ImageSource:
+) -> str:
     dir_path, url_dir_path = get_asset_dir_name(
         dataset=dataset,
         config=config,
@@ -112,16 +113,62 @@ def create_image_file(
         file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
 
     if overwrite or not file_path.exists():
-        image.save(file_path)
+        fun(file_path=file_path)
 
     if use_s3_storage and s3_client is not None and s3_bucket is not None:
-        key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        create_object = overwrite or not s3_client.exists_in_bucket(s3_bucket, key)
+        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
+        create_object = overwrite or not s3_client.exists_in_bucket(s3_bucket, object_key)
         if create_object:
-            s3_client.upload_to_bucket(str(file_path), s3_bucket, key)
+            s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
             os.remove(file_path)
 
-    src = f"{assets_base_url}/{url_dir_path}/{filename}"
+    return f"{assets_base_url}/{url_dir_path}/{filename}"
+
+
+def save_image(image: Image.Image, file_path: str) -> None:
+    image.save(file_path)
+
+
+def save_audio(audio_file_path: str, file_path: str) -> None:
+    segment: AudioSegment = AudioSegment.from_file(audio_file_path)
+    segment.export(file_path, format="mp3")
+
+
+def create_image_file(
+    dataset: str,
+    config: str,
+    split: str,
+    row_idx: int,
+    column: str,
+    filename: str,
+    image: Image.Image,
+    assets_base_url: str,
+    assets_directory: StrPath,
+    overwrite: bool = True,
+    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
+    use_s3_storage: bool = False,
+    s3_client: Optional[S3Client] = None,
+    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
+    s3_bucket: Optional[str] = None,
+    s3_folder_name: Optional[str] = None,
+) -> ImageSource:
+    fun = partial(save_image, image=image)
+    src = create_asset_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
+        assets_base_url=assets_base_url,
+        assets_directory=assets_directory,
+        fun=fun,
+        overwrite=overwrite,
+        use_s3_storage=use_s3_storage,
+        s3_client=s3_client,
+        s3_bucket=s3_bucket,
+        s3_folder_name=s3_folder_name,
+    )
     return {
         "src": src,
         "height": image.height,
@@ -152,41 +199,24 @@ def create_audio_file(
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> List[AudioSource]:
-    dir_path, url_dir_path = get_asset_dir_name(
+    fun = partial(save_audio, audio_file_path=audio_file_path)
+    src = create_asset_file(
         dataset=dataset,
         config=config,
         split=split,
         row_idx=row_idx,
         column=column,
+        filename=filename,
+        assets_base_url=assets_base_url,
         assets_directory=assets_directory,
+        fun=fun,
+        overwrite=overwrite,
+        use_s3_storage=use_s3_storage,
+        s3_client=s3_client,
+        s3_bucket=s3_bucket,
+        s3_folder_name=s3_folder_name,
     )
-    if not use_s3_storage:
-        file_path = dir_path / filename
-        makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    else:
-        payload = (
-            str(uuid4()),
-            dataset,
-            config,
-            split,
-            row_idx,
-            column,
-        )
-        prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
-
-    if overwrite or not file_path.exists():
-        # might spawn a process to convert the audio file using ffmpeg
-        segment: AudioSegment = AudioSegment.from_file(audio_file_path)
-        segment.export(file_path, format="mp3")
-
-    if use_s3_storage and s3_client is not None and s3_bucket is not None:
-        mp3_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        create_object = overwrite or not s3_client.exists_in_bucket(s3_bucket, mp3_key)
-        if create_object:
-            s3_client.upload_to_bucket(str(file_path), s3_bucket, mp3_key)
-            os.remove(file_path)
 
     return [
-        {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": "audio/mpeg"},
+        {"src": src, "type": "audio/mpeg"},
     ]
