@@ -160,15 +160,6 @@
         },
         "required": false
       },
-      "X-Error-Code-500-valid": {
-        "description": "A string that identifies the underlying error for 500 on /valid. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
-          ]
-        },
-        "required": false
-      },
       "X-Error-Code-501": {
         "description": "A string that identifies the underlying error for 501.",
         "schema": {
@@ -761,24 +752,6 @@
               "type": "null"
             }
           ]
-        }
-      },
-      "ValidResponse": {
-        "type": "object",
-        "required": ["preview", "viewer"],
-        "properties": {
-          "viewer": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preview": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
         }
       },
       "IsValidResponse": {
@@ -3890,91 +3863,6 @@
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/valid": {
-      "get": {
-        "summary": "Valid datasets",
-        "description": "The lists of the Hub datasets that work without an error, by type. It lists the datasets that have a Dataset Viewer (i.e. have been converted to Parquet format, and can be paginated) and the datasets that only have the Dataset Preview (the first 100 rows).",
-        "externalDocs": {
-          "description": "See Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
-        },
-        "operationId": "listValidDatasets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The valid datasets.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first values in each array for brevity)": {
-                    "summary": "list of datasets",
-                    "description": "Try with https://datasets-server.huggingface.co/valid",
-                    "value": {
-                      "preview": [
-                        "0n1xus/codexglue",
-                        "0x7194633/rupile",
-                        "AHussain0418/day2_data"
-                      ],
-                      "viewer": [
-                        "0n1xus/pytorrent-standalone",
-                        "51la5/keyword-extraction"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-valid"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
               }

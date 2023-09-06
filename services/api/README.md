@@ -21,7 +21,6 @@ See https://huggingface.co/docs/datasets-server
 - /healthcheck: Ensure the app is running
 - /metrics: Return a list of metrics in the Prometheus format
 - /webhook: Add, update or remove a dataset
-- /valid: Give the list of the [valid](https://huggingface.co/docs/datasets-server/valid) datasets
 - /is-valid: Tell if a dataset is [valid](https://huggingface.co/docs/datasets-server/valid)
 - /splits: List the [splits](https://huggingface.co/docs/datasets-server/splits) names for a dataset
 - /first-rows: Extract the [first rows](https://huggingface.co/docs/datasets-server/first_rows) for a dataset split
