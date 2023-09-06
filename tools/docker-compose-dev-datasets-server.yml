@@ -19,6 +19,7 @@ services:
       URL_API: http://host.docker.internal:${API_UVICORN_PORT-8080}
       URL_ROWS: http://host.docker.internal:${ROWS_UVICORN_PORT-8082}
       URL_SEARCH: http://host.docker.internal:${SEARCH_UVICORN_PORT-8083}
+      URL_SSE_API: http://host.docker.internal:${API_UVICORN_PORT-8084}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -146,6 +147,27 @@ services:
     ports:
       # for debug
       - ${SEARCH_UVICORN_PORT-8083}:${SEARCH_UVICORN_PORT-8083}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+  sse-api:
+    build:
+      context: ..
+      dockerfile: services/sse-api/dev.Dockerfile
+    extends:
+      file: docker-compose-dev-base.yml
+      service: api
+    environment:
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+    network_mode: ${DEV_NETWORK_MODE}
+    ports:
+      # for debug
+      - ${API_UVICORN_PORT-8084}:${API_UVICORN_PORT-8084}
     depends_on:
       - mongodb
     restart: unless-stopped

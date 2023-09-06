@@ -54,6 +54,10 @@ Docker image management
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.search "global" .Values.global.huggingface) }}
 {{- end -}}
 
+{{- define "services.sseApi.image" -}}
+{{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.sseApi "global" .Values.global.huggingface) }}
+{{- end -}}
+
 {{- define "services.storageAdmin.image" -}}
 {{ include "hf.common.images.image" (dict "imageRoot" .Values.images.services.storageAdmin "global" .Values.global.huggingface) }}
 {{- end -}}
@@ -128,6 +132,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-rows"
 {{- define "labels.search" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-search"
+{{- end -}}
+
+{{- define "labels.sseApi" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-sse-api"
 {{- end -}}
 
 {{- define "labels.worker" -}}
@@ -266,6 +275,14 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 */}}
 {{- define "search.url" -}}
 {{- printf "http://%s-search.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
+The URL to access the SSE API service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "sseApi.url" -}}
+{{- printf "http://%s-sse-api.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
 {{- end }}
 
 {{/*

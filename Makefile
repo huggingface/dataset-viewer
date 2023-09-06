@@ -4,6 +4,7 @@ export PORT_ADMIN := 8181
 export PORT_API := 8180
 export PORT_ROWS := 8182
 export PORT_SEARCH := 8183
+export PORT_SSE_API := 8184
 export PORT_REVERSE_PROXY := 8100
 
 # environment variables per target

@@ -24,6 +24,8 @@
     value: {{ include "rows.url" . | quote }}
   - name: URL_SEARCH
     value: {{ include "search.url" . | quote }}
+  - name: URL_SSE_API
+    value: {{ include "sseApi.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}

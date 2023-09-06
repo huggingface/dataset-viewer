@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 import uvicorn
 from libapi.config import UvicornConfig
 from libapi.routes.healthcheck import healthcheck_endpoint
+from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from starlette.applications import Starlette
@@ -38,7 +39,11 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
 
-    routes = [Route("/healthcheck", endpoint=healthcheck_endpoint)]
+    routes = [
+        Route("/healthcheck", endpoint=healthcheck_endpoint),
+        Route("/metrics", endpoint=create_metrics_endpoint()),
+        # ^ called by Prometheus
+    ]
 
     return Starlette(routes=routes, middleware=middleware)
 

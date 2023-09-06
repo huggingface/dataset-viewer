@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: services/sse-api
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "libs/libapi/**"
+      - "libs/libcommon/**"
+      - "services/sse-api/**"
+      - ".github/workflows/s-sse-api.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+  pull_request:
+    paths:
+      - "libs/libapi/**"
+      - "libs/libcommon/**"
+      - "services/sse-api/**"
+      - ".github/workflows/s-sse-api.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: services/sse-api
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: services/sse-api
