@@ -97,6 +97,8 @@ secrets:
     secretName: "datasets-server-prod-secrets"
 
 persistence:
+  cachedAssets:
+    existingClaim: "datasets-server-cached-assets-pvc"
   descriptiveStatistics:
     existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:

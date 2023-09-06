@@ -93,6 +93,8 @@ secrets:
     secretName: "datasets-server-staging-secrets"
 
 persistence:
+  cachedAssets:
+    existingClaim: "datasets-server-cached-assets-pvc"
   descriptiveStatistics:
     existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
@@ -197,7 +199,7 @@ reverseProxy:
 ingress:
   tls:
     - hosts:
-      - "datasets-server.us.dev.moon.huggingface.tech"
+        - "datasets-server.us.dev.moon.huggingface.tech"
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
     external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
@@ -267,8 +269,7 @@ search:
       memory: "4Gi"
 
 workers:
-  -
-    deployName: "all"
+  - deployName: "all"
     workerDifficultyMax: 100
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
@@ -283,8 +284,7 @@ workers:
         cpu: 1
         memory: "4Gi"
     tolerations: []
-  -
-    deployName: "light"
+  - deployName: "light"
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
