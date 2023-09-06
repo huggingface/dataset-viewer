@@ -31,6 +31,6 @@ spec:
       nodeSelector: {{ toYaml .Values.search.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.search.tolerations | nindent 8 }}
       volumes: 
-        {{ include "volumeNfs" . | nindent 8 }}
+        {{ include "volumeCachedAssets" . | nindent 8 }}
         {{ include "volumeDuckDBIndex" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
