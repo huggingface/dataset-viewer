@@ -11,8 +11,6 @@ class S3Client:
     """
     A resource that represents a connection to S3.
 
-    The method is_available() allows to check if the resource is available. It's not called automatically.
-
     Args:
         region_name (:obj:`str`): The AWS region
         aws_access_key_id (:obj:`str`): The AWS access key id,
