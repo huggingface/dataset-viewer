@@ -564,8 +564,8 @@ def get_AUDIO_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.mp3",
-                    "type": "audio/mpeg",
+                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
+                    "type": "audio/wav",
                 },
             ]
         }
