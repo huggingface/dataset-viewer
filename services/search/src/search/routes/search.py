@@ -34,6 +34,7 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath, init_dir
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
@@ -61,6 +62,8 @@ FTS_COMMAND = (
 )
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
+
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: List[str] = ["asoria/image", "asoria/mnist"]
 
 
 def get_download_folder(
@@ -118,6 +121,9 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: Optional[S3Client],
+    cached_assets_s3_bucket: Optional[str],
+    cached_assets_s3_folder_name: Optional[str],
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -139,6 +145,10 @@ def create_response(
             split,
             cached_assets_base_url,
             cached_assets_directory,
+            use_s3_storage=dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS,
+            s3_client=s3_client,
+            cached_assets_s3_bucket=cached_assets_s3_bucket,
+            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -154,6 +164,9 @@ def create_search_endpoint(
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_bucket: Optional[str],
+    cached_assets_s3_folder_name: Optional[str],
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -301,6 +314,9 @@ def create_search_endpoint(
                         split,
                         cached_assets_base_url,
                         cached_assets_directory,
+                        s3_client,
+                        cached_assets_s3_bucket,
+                        cached_assets_s3_folder_name,
                         offset,
                         features,
                         num_rows_total,
