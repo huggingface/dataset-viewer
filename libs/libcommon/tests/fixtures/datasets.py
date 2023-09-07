@@ -73,6 +73,9 @@ def datasets() -> Mapping[str, Dataset]:
         "array4d": other(np.zeros((2, 2, 2, 2), dtype="float32"), Array4D(shape=(2, 2, 2, 2), dtype="float32")),
         "array5d": other(np.zeros((2, 2, 2, 2, 2), dtype="float32"), Array5D(shape=(2, 2, 2, 2, 2), dtype="float32")),
         "audio": other({"array": [0.1, 0.2, 0.3], "sampling_rate": sampling_rate}, Audio(sampling_rate=sampling_rate)),
+        "audio_ogg": other(
+            str(Path(__file__).resolve().parent / "data" / "test_audio_vorbis.ogg"), Audio(sampling_rate=sampling_rate)
+        ),
         "image": other(str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"), Image()),
         "translation": other({"en": "the cat", "fr": "le chat"}, Translation(languages=["en", "fr"])),
         "translation_variable_languages": other(

@@ -139,6 +139,16 @@ def test_value(
             ],
             "Audio",
         ),
+        (
+            "audio_ogg",
+            [
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                    "type": "audio/wav",
+                }
+            ],
+            "Audio",
+        ),
         # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a
         #   :obj:`PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
         #   its bytes content ("bytes" key). This feature extracts the image data.
