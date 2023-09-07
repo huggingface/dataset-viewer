@@ -57,7 +57,7 @@ FTS_COMMAND_COUNT = (
 
 FTS_COMMAND = (
     "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
-    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_index_id OFFSET {offset} LIMIT {length};"
+    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_fts_score DESC OFFSET {offset} LIMIT {length};"
 )
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
