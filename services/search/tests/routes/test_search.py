@@ -45,7 +45,7 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
                 "__hf_index_id": [4, 2],
                 "text": [
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                    "Vader turns round and round in circles as his ship spins into space.",                    
+                    "Vader turns round and round in circles as his ship spins into space.",
                 ],
             },
             3,
