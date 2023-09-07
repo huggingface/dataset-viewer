@@ -153,8 +153,8 @@ def audio(
             f" {','.join(value)}."
         )
 
-    # convert to mp3 if the file is not wav or mp3 already
-    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".mp3"
+    # convert to wav if the file is not wav or mp3 already
+    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
 
     # this function can raise, we don't catch it
     return create_audio_file(

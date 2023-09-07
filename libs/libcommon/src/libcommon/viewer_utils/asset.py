@@ -131,16 +131,16 @@ def create_audio_file(
             f"Audio format {file_path.suffix} is not supported. Supported formats are"
             f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
         )
-    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[audio_file_extension]
+    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[file_path.suffix]
     if overwrite or not file_path.exists():
         if audio_file_extension == file_path.suffix:
             with open(file_path, "wb") as f:
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmp_f:
-                tmp_f.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(tmp_f)
+            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                tmpfile.write(audio_file_bytes)
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
                 segment.export(file_path, format=file_path.suffix[1:])
     return [
         {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": media_type},
