@@ -10,11 +10,11 @@ from libcommon.log import init_logging
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from sse_api.config import AppConfig
+from sse_api.routes.numbers import numbers_endpoint
 
 
 def create_app() -> Starlette:
@@ -35,11 +35,15 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             allow_credentials=True,
             expose_headers=EXPOSED_HEADERS,
         ),
-        Middleware(GZipMiddleware),
+        # Middleware(GZipMiddleware),
+        # ^ we have to remove this middleware
+        # https://github.com/sysid/sse-starlette
+        # > Caveat: SSE streaming does not work in combination with GZipMiddleware.
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
 
     routes = [
+        Route("/numbers", endpoint=numbers_endpoint),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
