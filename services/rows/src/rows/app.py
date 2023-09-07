@@ -86,6 +86,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 cached_assets_s3_bucket=app_config.cached_assets_s3.bucket,
                 cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
                 parquet_metadata_directory=parquet_metadata_directory,
+                max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_keys=hf_jwt_public_keys,

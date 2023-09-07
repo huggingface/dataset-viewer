@@ -13,6 +13,7 @@ from libcommon.config import (
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    RowsIndexConfig,
 )
 
 WORKER_BLOCKED_DATASETS: List[str] = []
@@ -333,6 +334,7 @@ class AppConfig:
     parquet_and_info: ParquetAndInfoConfig = field(default_factory=ParquetAndInfoConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
+    rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -358,4 +360,5 @@ class AppConfig:
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
+            rows_index=RowsIndexConfig.from_env(),
         )

@@ -15,7 +15,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import Indexer
+from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Row, RowItem
@@ -103,7 +103,10 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    pa_table = rows_index.query(offset=0, length=rows_max_number)
+    try:
+        pa_table = rows_index.query(offset=0, length=rows_max_number)
+    except TooBigRows as err:
+        raise TooBigContentError(str(err))
     rows = [
         RowItem(
             {
@@ -192,6 +195,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),
             unsupported_features=[],
             all_columns_supported_datasets_allow_list="all",
+            max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
 
     def compute(self) -> CompleteJobResult:

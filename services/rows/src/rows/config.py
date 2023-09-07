@@ -12,6 +12,7 @@ from libcommon.config import (
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    RowsIndexConfig,
 )
 
 
@@ -24,6 +25,7 @@ class AppConfig:
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
+    rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
 
@@ -40,4 +42,5 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
+            rows_index=RowsIndexConfig.from_env(),
         )

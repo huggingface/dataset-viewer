@@ -2,14 +2,15 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass, field
-from functools import lru_cache, partial
-from typing import Callable, List, Literal, Optional, TypedDict, Union
+from functools import lru_cache
+from typing import List, Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
 from datasets.features.features import FeatureType
+from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 
@@ -32,6 +33,10 @@ class FileSystemError(Exception):
     pass
 
 
+class TooBigRows(Exception):
+    pass
+
+
 class ParquetFileMetadataItem(TypedDict):
     dataset: str
     config: str
@@ -41,6 +46,18 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
+
+
+@dataclass
+class RowGroupReader:
+    parquet_file: pq.ParquetFile
+    group_id: int
+
+    def read(self, columns: List[str]) -> pa.Table:
+        return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
+
+    def read_size(self) -> int:
+        return self.parquet_file.metadata.row_group(self.group_id).total_byte_size  # type: ignore
 
 
 @dataclass
@@ -54,6 +71,7 @@ class ParquetIndexWithMetadata:
     num_rows: List[int]
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
+    max_arrow_data_in_memory: int
 
     num_rows_total: int = field(init=False)
 
@@ -76,6 +94,9 @@ class ParquetIndexWithMetadata:
 
         Returns:
             pa.Table: The requested rows.
+
+        Raises:
+            TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
         """
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
@@ -125,8 +146,8 @@ class ParquetIndexWithMetadata:
                     for group_id in range(parquet_file.metadata.num_row_groups)
                 ]
             )
-            row_group_readers: List[Callable[[], pa.Table]] = [
-                partial(parquet_file.read_row_group, i=group_id, columns=self.supported_columns)
+            row_group_readers = [
+                RowGroupReader(parquet_file=parquet_file, group_id=group_id)
                 for parquet_file in parquet_files
                 for group_id in range(parquet_file.metadata.num_row_groups)
             ]
@@ -139,9 +160,24 @@ class ParquetIndexWithMetadata:
                 row_group_offsets, [first_row, last_row], side="right"
             )
 
+        with StepProfiler(
+            method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
+        ):
+            row_groups_size = sum(
+                [row_group_readers[i].read_size() for i in range(first_row_group_id, last_row_group_id + 1)]
+            )
+            if row_groups_size > self.max_arrow_data_in_memory:
+                raise TooBigRows(
+                    "Rows from parquet row groups are too big to be read:"
+                    f" {size_str(row_groups_size)} (max={size_str(self.max_arrow_data_in_memory)})"
+                )
+
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
             pa_table = pa.concat_tables(
-                [row_group_readers[i]() for i in range(first_row_group_id, last_row_group_id + 1)]
+                [
+                    row_group_readers[i].read(self.supported_columns)
+                    for i in range(first_row_group_id, last_row_group_id + 1)
+                ]
             )
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
@@ -153,6 +189,7 @@ class ParquetIndexWithMetadata:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         hf_token: Optional[str],
+        max_arrow_data_in_memory: int,
         unsupported_features: List[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
@@ -195,6 +232,7 @@ class ParquetIndexWithMetadata:
             num_rows=num_rows,
             httpfs=httpfs,
             hf_token=hf_token,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
         )
 
 
@@ -208,6 +246,7 @@ class RowsIndex:
         httpfs: HfFileSystem,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
+        max_arrow_data_in_memory: int,
         unsupported_features: List[FeatureType] = [],
     ):
         self.dataset = dataset
@@ -219,6 +258,7 @@ class RowsIndex:
         self.parquet_index = self._init_parquet_index(
             hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
+            max_arrow_data_in_memory=max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
         )
 
@@ -226,6 +266,7 @@ class RowsIndex:
         self,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
+        max_arrow_data_in_memory: int,
         unsupported_features: List[FeatureType] = [],
     ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
@@ -260,6 +301,7 @@ class RowsIndex:
                 parquet_metadata_directory=parquet_metadata_directory,
                 httpfs=self.httpfs,
                 hf_token=hf_token,
+                max_arrow_data_in_memory=max_arrow_data_in_memory,
                 unsupported_features=unsupported_features,
             )
 
@@ -291,6 +333,7 @@ class Indexer:
         processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
+        max_arrow_data_in_memory: int,
         unsupported_features: List[FeatureType] = [],
         all_columns_supported_datasets_allow_list: Union[Literal["all"], List[str]] = "all",
         hf_token: Optional[str] = None,
@@ -299,6 +342,7 @@ class Indexer:
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
         self.hf_token = hf_token
+        self.max_arrow_data_in_memory = max_arrow_data_in_memory
         self.unsupported_features = unsupported_features
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
@@ -322,5 +366,6 @@ class Indexer:
             httpfs=self.httpfs,
             hf_token=self.hf_token,
             parquet_metadata_directory=self.parquet_metadata_directory,
+            max_arrow_data_in_memory=self.max_arrow_data_in_memory,
             unsupported_features=unsupported_features,
         )

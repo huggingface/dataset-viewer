@@ -97,6 +97,8 @@ secrets:
     secretName: "datasets-server-prod-secrets"
 
 persistence:
+  cachedAssets:
+    existingClaim: "datasets-server-cached-assets-pvc"
   descriptiveStatistics:
     existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
@@ -142,6 +144,9 @@ optInOutUrlsScan:
 duckDBIndex:
   maxParquetSizeBytes: "5_000_000_000"
   expiredTimeIntervalSeconds: 259_200 # 3 days
+
+rowsIndex:
+  maxArrowDataInMemory: "300_000_000"
 
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
@@ -276,7 +281,7 @@ admin:
   resources:
     requests:
       cpu: 1
-      memory: "1Gi"
+      memory: "8Gi"
     limits:
       cpu: 4
       memory: "8Gi"
@@ -307,7 +312,8 @@ rows:
   # Number of uvicorn workers for running the application
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
-  uvicornNumWorkers: "9"
+  # but we only set to 2 to avoid OOM
+  uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-rows: "true"
   replicas: 12
@@ -328,7 +334,7 @@ search:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 12
+  replicas: 4
   service:
     type: NodePort
   resources:
@@ -341,7 +347,7 @@ search:
 
 workers:
   - deployName: "all"
-    workerDifficultyMax: 100
+    workerDifficultyMax: 70
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
@@ -363,7 +369,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 8
+    replicas: 6
     resources:
       requests:
         cpu: 200m

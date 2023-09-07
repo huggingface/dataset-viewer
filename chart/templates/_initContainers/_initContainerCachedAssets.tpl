@@ -11,7 +11,7 @@
   volumeMounts:
   - mountPath: /mounted-path
     mountPropagation: None
-    name: volume-nfs
+    name: volume-cached-assets
     subPath: "{{ include "cachedAssets.subpath" . }}"
     readOnly: false
   securityContext:

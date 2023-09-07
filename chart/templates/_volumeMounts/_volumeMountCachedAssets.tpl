@@ -4,7 +4,7 @@
 {{- define "volumeMountCachedAssetsRO" -}}
 - mountPath: {{ .Values.cachedAssets.storageDirectory | quote }}
   mountPropagation: None
-  name: volume-nfs
+  name: volume-cached-assets
   subPath: "{{ include "cachedAssets.subpath" . }}"
   readOnly: true
 {{- end -}}
@@ -12,7 +12,7 @@
 {{- define "volumeMountCachedAssetsRW" -}}
 - mountPath: {{ .Values.cachedAssets.storageDirectory | quote }}
   mountPropagation: None
-  name: volume-nfs
+  name: volume-cached-assets
   subPath: "{{ include "cachedAssets.subpath" . }}"
   readOnly: false
 {{- end -}}
