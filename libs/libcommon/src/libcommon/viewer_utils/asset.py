@@ -8,8 +8,9 @@ from functools import partial
 from hashlib import sha1
 from os import makedirs
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple, TypedDict
+from typing import Generator, List, Optional, Tuple, TypedDict, Union
 from uuid import uuid4
+from tempfile import NamedTemporaryFile
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -21,6 +22,7 @@ DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
 S3_RESOURCE = "s3"
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
 def get_asset_dir_name(
@@ -70,6 +72,14 @@ class ImageSource(TypedDict):
     width: int
 
 
+class AudioSource(TypedDict):
+    src: str
+    type: str
+
+
+SupportedSource = Union[ImageSource, AudioSource]
+
+
 def create_asset_file(
     dataset: str,
     config: str,
@@ -87,7 +97,7 @@ def create_asset_file(
     # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
-) -> str:
+) -> SupportedSource:
     dir_path, url_dir_path = get_asset_dir_name(
         dataset=dataset,
         config=config,
@@ -112,8 +122,8 @@ def create_asset_file(
         prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
         file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
 
-    if overwrite or not file_path.exists():
-        fn(file_path=file_path)
+    src = f"{assets_base_url}/{url_dir_path}/{filename}"
+    source = fn(file_path=file_path, src=src, overwrite=overwrite)
 
     if use_s3_storage and s3_client is not None and s3_bucket is not None:
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
@@ -122,16 +132,37 @@ def create_asset_file(
             s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
             os.remove(file_path)
 
-    return f"{assets_base_url}/{url_dir_path}/{filename}"
+    return source
 
 
-def save_image(image: Image.Image, file_path: str) -> None:
-    image.save(file_path)
+def save_image(image: Image.Image, file_path: str, src: str, overwrite: bool) -> ImageSource:
+    if overwrite or not file_path.exists():
+        image.save(file_path)
+    return ImageSource(src=src, height=image.height, width=image.width)
 
 
-def save_audio(audio_file_path: str, file_path: str) -> None:
-    segment: AudioSegment = AudioSegment.from_file(audio_file_path)
-    segment.export(file_path, format="mp3")
+def save_audio(
+    audio_file_bytes: bytes, audio_file_extension: str, file_path: str, src: str, overwrite: bool
+) -> AudioSource:
+    if file_path.suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+        raise ValueError(
+            f"Audio format {file_path.suffix} is not supported. Supported formats are"
+            f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
+        )
+    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[file_path.suffix]
+
+    if overwrite or not file_path.exists():
+        if audio_file_extension == file_path.suffix:
+            with open(file_path, "wb") as f:
+                f.write(audio_file_bytes)
+        else:  # we need to convert
+            # might spawn a process to convert the audio file using ffmpeg
+            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                tmpfile.write(audio_file_bytes)
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                segment.export(file_path, format=file_path.suffix[1:])
+
+    return AudioSource(src=src, type=media_type)
 
 
 def create_image_file(
@@ -153,7 +184,7 @@ def create_image_file(
     s3_folder_name: Optional[str] = None,
 ) -> ImageSource:
     fn = partial(save_image, image=image)
-    src = create_asset_file(
+    return create_asset_file(
         dataset=dataset,
         config=config,
         split=split,
@@ -169,16 +200,6 @@ def create_image_file(
         s3_bucket=s3_bucket,
         s3_folder_name=s3_folder_name,
     )
-    return {
-        "src": src,
-        "height": image.height,
-        "width": image.width,
-    }
-
-
-class AudioSource(TypedDict):
-    src: str
-    type: str
 
 
 def create_audio_file(
@@ -187,7 +208,8 @@ def create_audio_file(
     split: str,
     row_idx: int,
     column: str,
-    audio_file_path: str,
+    audio_file_bytes: bytes,
+    audio_file_extension: str,
     assets_base_url: str,
     filename: str,
     assets_directory: StrPath,
@@ -199,24 +221,22 @@ def create_audio_file(
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> List[AudioSource]:
-    fn = partial(save_audio, audio_file_path=audio_file_path)
-    src = create_asset_file(
-        dataset=dataset,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        filename=filename,
-        assets_base_url=assets_base_url,
-        assets_directory=assets_directory,
-        fn=fn,
-        overwrite=overwrite,
-        use_s3_storage=use_s3_storage,
-        s3_client=s3_client,
-        s3_bucket=s3_bucket,
-        s3_folder_name=s3_folder_name,
-    )
-
+    fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
     return [
-        {"src": src, "type": "audio/mpeg"},
+        create_asset_file(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            filename=filename,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+            fn=fn,
+            overwrite=overwrite,
+            use_s3_storage=use_s3_storage,
+            s3_client=s3_client,
+            s3_bucket=s3_bucket,
+            s3_folder_name=s3_folder_name,
+        )
     ]

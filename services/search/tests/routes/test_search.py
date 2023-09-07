@@ -21,18 +21,18 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
 
 
 @pytest.mark.parametrize(
-    "query,offset,length,expected_result, expected_num_rows_total",
+    "query,offset,length,expected_result,expected_num_rows_total",
     [
         (
             "Lord Vader",
             0,
             100,
             {
-                "__hf_index_id": [0, 2, 4],
+                "__hf_index_id": [0, 4, 2],
                 "text": [
                     "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink",
-                    "Vader turns round and round in circles as his ship spins into space.",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
+                    "Vader turns round and round in circles as his ship spins into space.",
                 ],
             },
             3,
@@ -42,10 +42,10 @@ def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
             1,
             2,
             {
-                "__hf_index_id": [2, 4],
+                "__hf_index_id": [4, 2],
                 "text": [
-                    "Vader turns round and round in circles as his ship spins into space.",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
+                    "Vader turns round and round in circles as his ship spins into space.",
                 ],
             },
             3,

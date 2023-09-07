@@ -138,8 +138,18 @@ def test_value(
             "audio",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.mp3",
-                    "type": "audio/mpeg",
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                    "type": "audio/wav",
+                }
+            ],
+            "Audio",
+        ),
+        (
+            "audio_ogg",
+            [
+                {
+                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                    "type": "audio/wav",
                 }
             ],
             "Audio",
@@ -186,14 +196,14 @@ def test_value(
             [
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.mp3",
-                        "type": "audio/mpeg",
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "type": "audio/wav",
                     },
                 ],
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.mp3",
-                        "type": "audio/mpeg",
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "type": "audio/wav",
                     },
                 ],
             ],
@@ -220,14 +230,14 @@ def test_value(
             [
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.mp3",
-                        "type": "audio/mpeg",
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "type": "audio/wav",
                     },
                 ],
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.mp3",
-                        "type": "audio/mpeg",
+                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "type": "audio/wav",
                     },
                 ],
             ],
@@ -253,14 +263,14 @@ def test_value(
                     "ca": [
                         [
                             {
-                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.mp3",
-                                "type": "audio/mpeg",
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.wav",
+                                "type": "audio/wav",
                             },
                         ],
                         [
                             {
-                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.mp3",
-                                "type": "audio/mpeg",
+                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.wav",
+                                "type": "audio/wav",
                             },
                         ],
                     ]

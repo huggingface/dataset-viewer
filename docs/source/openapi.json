@@ -3115,7 +3115,7 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "A slice of a simple dataset (imdb)": {
+                  "Search on a text dataset (imdb)": {
                     "summary": "The first 3 rows that match the 'dog' search query (query=dog&length=3).",
                     "description": "Try with https://datasets-server.huggingface.co/search?dataset=imdb&config=plain_text&split=train&query=dog&length=3.",
                     "value": {
@@ -3158,6 +3158,64 @@
                         }
                       ],
                       "num_rows_total": 624,
+                      "num_rows_per_page": 100
+                    }
+                  },
+                  "Search on an image dataset": {
+                    "summary": "The first 3 rows that match the 'bird' search query (query=bird&length=3). Images are included.",
+                    "description": "Try with https://datasets-server.huggingface.co/search?dataset=lambdalabs/pokemon-blip-captions&config=default&split=train&query=bird&length=3.",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "image",
+                          "type": { "_type": "Image" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "text",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 16,
+                          "row": {
+                            "image": {
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/16/image/image.jpg",
+                              "height": 431,
+                              "width": 431
+                            },
+                            "text": "a pink bird sitting on top of a white surface"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 54,
+                          "row": {
+                            "image": {
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/54/image/image.jpg",
+                              "height": 1280,
+                              "width": 1280
+                            },
+                            "text": "a blue and white bird with its wings spread"
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 56,
+                          "row": {
+                            "image": {
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/56/image/image.jpg",
+                              "height": 1280,
+                              "width": 1280
+                            },
+                            "text": "a yellow bird flying through the air"
+                          },
+                          "truncated_cells": []
+                        }
+                      ],
+                      "num_rows_total": 94,
                       "num_rows_per_page": 100
                     }
                   }
