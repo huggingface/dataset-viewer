@@ -13,7 +13,7 @@
   valueFrom:
     secretKeyRef:
       name: {{ .Values.secrets.cachedAssetsS3.accessKeyId.secretName | quote }}
-      key: API_HF_JWT_ADDITIONAL_PUBLIC_KEYS
+      key: CACHED_ASSETS_S3_ACCESS_KEY_ID
       optional: false
   {{- else }}
   value: {{ .Values.secrets.cachedAssetsS3.accessKeyId.value | quote }}
@@ -23,7 +23,7 @@
   valueFrom:
     secretKeyRef:
       name: {{ .Values.secrets.cachedAssetsS3.secretAccessKey.secretName | quote }}
-      key: API_HF_JWT_ADDITIONAL_PUBLIC_KEYS
+      key: CACHED_ASSETS_S3_SECRET_ACCESS_KEY
       optional: false
   {{- else }}
   value: {{ .Values.secrets.cachedAssetsS3.secretAccessKey.value | quote }}

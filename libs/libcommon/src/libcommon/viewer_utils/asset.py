@@ -8,9 +8,9 @@ from functools import partial
 from hashlib import sha1
 from os import makedirs
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple, TypedDict, Union
-from uuid import uuid4
 from tempfile import NamedTemporaryFile
+from typing import Callable, Generator, List, Optional, Tuple, TypedDict, Union, cast
+from uuid import uuid4
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -21,7 +21,6 @@ from libcommon.storage import StrPath
 DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
-S3_RESOURCE = "s3"
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
@@ -89,7 +88,7 @@ def create_asset_file(
     filename: str,
     assets_base_url: str,
     assets_directory: StrPath,
-    fn: partial,  # type: ignore
+    fn: Callable[[Path, str, bool], SupportedSource],
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
@@ -111,19 +110,10 @@ def create_asset_file(
         file_path = dir_path / filename
         makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     else:
-        payload = (
-            str(uuid4()),
-            dataset,
-            config,
-            split,
-            row_idx,
-            column,
-        )
-        prefix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-        file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
+        file_path = Path(assets_directory).resolve() / f"{str(uuid4())}-{filename}"
 
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
-    source = fn(file_path=file_path, src=src, overwrite=overwrite)
+    asset_file = fn(file_path=file_path, src=src, overwrite=overwrite)  # type: ignore
 
     if use_s3_storage and s3_client is not None and s3_bucket is not None:
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
@@ -132,17 +122,17 @@ def create_asset_file(
             s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
             os.remove(file_path)
 
-    return source
+    return asset_file
 
 
-def save_image(image: Image.Image, file_path: str, src: str, overwrite: bool) -> ImageSource:
+def save_image(image: Image.Image, file_path: Path, src: str, overwrite: bool) -> ImageSource:
     if overwrite or not file_path.exists():
         image.save(file_path)
     return ImageSource(src=src, height=image.height, width=image.width)
 
 
 def save_audio(
-    audio_file_bytes: bytes, audio_file_extension: str, file_path: str, src: str, overwrite: bool
+    audio_file_bytes: bytes, audio_file_extension: str, file_path: Path, src: str, overwrite: bool
 ) -> AudioSource:
     if file_path.suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(
@@ -184,21 +174,24 @@ def create_image_file(
     s3_folder_name: Optional[str] = None,
 ) -> ImageSource:
     fn = partial(save_image, image=image)
-    return create_asset_file(
-        dataset=dataset,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=column,
-        filename=filename,
-        assets_base_url=assets_base_url,
-        assets_directory=assets_directory,
-        fn=fn,
-        overwrite=overwrite,
-        use_s3_storage=use_s3_storage,
-        s3_client=s3_client,
-        s3_bucket=s3_bucket,
-        s3_folder_name=s3_folder_name,
+    return cast(
+        ImageSource,
+        create_asset_file(
+            dataset=dataset,
+            config=config,
+            split=split,
+            row_idx=row_idx,
+            column=column,
+            filename=filename,
+            assets_base_url=assets_base_url,
+            assets_directory=assets_directory,
+            fn=fn,
+            overwrite=overwrite,
+            use_s3_storage=use_s3_storage,
+            s3_client=s3_client,
+            s3_bucket=s3_bucket,
+            s3_folder_name=s3_folder_name,
+        ),
     )
 
 
@@ -223,20 +216,23 @@ def create_audio_file(
 ) -> List[AudioSource]:
     fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
     return [
-        create_asset_file(
-            dataset=dataset,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=column,
-            filename=filename,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
-            fn=fn,
-            overwrite=overwrite,
-            use_s3_storage=use_s3_storage,
-            s3_client=s3_client,
-            s3_bucket=s3_bucket,
-            s3_folder_name=s3_folder_name,
+        cast(
+            AudioSource,
+            create_asset_file(
+                dataset=dataset,
+                config=config,
+                split=split,
+                row_idx=row_idx,
+                column=column,
+                filename=filename,
+                assets_base_url=assets_base_url,
+                assets_directory=assets_directory,
+                fn=fn,
+                overwrite=overwrite,
+                use_s3_storage=use_s3_storage,
+                s3_client=s3_client,
+                s3_bucket=s3_bucket,
+                s3_folder_name=s3_folder_name,
+            ),
         )
     ]
