@@ -4,7 +4,6 @@
 import json
 import os
 from io import BytesIO
-from tempfile import NamedTemporaryFile
 from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
@@ -119,40 +118,58 @@ def audio(
             "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
+
     if "path" in value and isinstance(value["path"], str):
-        tmp_file_suffix = os.path.splitext(value["path"])[1]
+        audio_file_extension = os.path.splitext(value["path"])[1]
+        if not audio_file_extension:
+            raise ValueError(
+                f"An audio sample should have a 'path' with a valid extension but got '{audio_file_extension}'."
+            )
+    elif "array" in value:
+        audio_file_extension = ".wav"
     else:
-        tmp_file_suffix = None
-    with NamedTemporaryFile("wb", suffix=tmp_file_suffix) as tmp_audio_file:
-        if "bytes" in value and isinstance(value["bytes"], bytes):
-            with open(tmp_audio_file.name, "wb") as f:
-                f.write(value["bytes"])
-            audio_file_path = tmp_audio_file.name
-        elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
-            audio_file_path = value["path"]
-        elif (
-            "array" in value
-            and isinstance(value["array"], np.ndarray)
-            and "sampling_rate" in value
-            and isinstance(value["sampling_rate"], int)
-        ):
-            soundfile.write(tmp_audio_file.name, value["array"], value["sampling_rate"], format="wav")
-            audio_file_path = tmp_audio_file.name
-        else:
-            raise ValueError(f"An audio sample should have one of 'path' or 'bytes' but both are None in {value}.")
-        # this function can raise, we don't catch it
-        return create_audio_file(
-            dataset=dataset,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=featureName,
-            audio_file_path=audio_file_path,
-            assets_base_url=assets_base_url,
-            filename=f"{append_hash_suffix('audio', json_path)}.mp3",
-            assets_directory=assets_directory,
-            overwrite=overwrite,
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {','.join(value)}."
         )
+
+    if "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_bytes = value["bytes"]
+    elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
+        with open(value["path"], "rb") as f:
+            audio_file_bytes = f.read()
+    elif (
+        "array" in value
+        and isinstance(value["array"], np.ndarray)
+        and "sampling_rate" in value
+        and isinstance(value["sampling_rate"], int)
+    ):
+        buffer = BytesIO()
+        soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
+        audio_file_bytes = buffer.read()
+    else:
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {','.join(value)}."
+        )
+
+    # convert to wav if the file is not wav or mp3 already
+    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+
+    # this function can raise, we don't catch it
+    return create_audio_file(
+        dataset=dataset,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        audio_file_bytes=audio_file_bytes,
+        audio_file_extension=audio_file_extension,
+        assets_base_url=assets_base_url,
+        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
+        assets_directory=assets_directory,
+        overwrite=overwrite,
+    )
 
 
 def get_cell_value(
