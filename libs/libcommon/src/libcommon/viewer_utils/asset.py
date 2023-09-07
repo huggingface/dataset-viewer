@@ -79,7 +79,7 @@ def create_asset_file(
     filename: str,
     assets_base_url: str,
     assets_directory: StrPath,
-    fun: partial,  # type: ignore
+    fn: partial,  # type: ignore
     overwrite: bool = True,
     # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
     use_s3_storage: bool = False,
@@ -113,7 +113,7 @@ def create_asset_file(
         file_path = Path(assets_directory).resolve() / f"{prefix}-{filename}"
 
     if overwrite or not file_path.exists():
-        fun(file_path=file_path)
+        fn(file_path=file_path)
 
     if use_s3_storage and s3_client is not None and s3_bucket is not None:
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
@@ -152,7 +152,7 @@ def create_image_file(
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> ImageSource:
-    fun = partial(save_image, image=image)
+    fn = partial(save_image, image=image)
     src = create_asset_file(
         dataset=dataset,
         config=config,
@@ -162,7 +162,7 @@ def create_image_file(
         filename=filename,
         assets_base_url=assets_base_url,
         assets_directory=assets_directory,
-        fun=fun,
+        fn=fn,
         overwrite=overwrite,
         use_s3_storage=use_s3_storage,
         s3_client=s3_client,
@@ -199,7 +199,7 @@ def create_audio_file(
     s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> List[AudioSource]:
-    fun = partial(save_audio, audio_file_path=audio_file_path)
+    fn = partial(save_audio, audio_file_path=audio_file_path)
     src = create_asset_file(
         dataset=dataset,
         config=config,
@@ -209,7 +209,7 @@ def create_audio_file(
         filename=filename,
         assets_base_url=assets_base_url,
         assets_directory=assets_directory,
-        fun=fun,
+        fn=fn,
         overwrite=overwrite,
         use_s3_storage=use_s3_storage,
         s3_client=s3_client,
