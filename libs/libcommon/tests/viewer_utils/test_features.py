@@ -2,30 +2,18 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import datetime
-import io
 from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
-import boto3
 import numpy as np
 import pytest
 from datasets import Audio, Dataset, Features, Image, Value
-from moto import mock_s3
-from PIL import Image as PILImage  # type: ignore
 
-from libcommon.s3_client import S3Client
-from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import DirectoryStorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
 )
-
-
-@pytest.fixture
-def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions:
-    return DirectoryStorageOptions(assets_base_url="http://localhost/assets", assets_directory=cached_assets_directory)
-
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -72,7 +60,6 @@ def test_value(
     output_value: Any,
     output_dtype: str,
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -313,89 +300,6 @@ def test_others(
         storage_options=storage_options,
     )
     assert value == output_value
-
-
-@pytest.fixture
-def s3_storage_options(cached_assets_directory: StrPath) -> S3StorageOptions:
-    bucket_name = "bucket"
-    access_key_id = "access_key_id"
-    secret_access_key = "secret_access_key"
-    folder_name = "assets"
-    s3_client = S3Client(
-        region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
-    )
-    return S3StorageOptions(
-        assets_base_url="http://localhost/assets",
-        assets_directory=cached_assets_directory,
-        s3_bucket=bucket_name,
-        s3_client=s3_client,
-        s3_folder_name=folder_name,
-    )
-
-
-def test_image_s3(
-    datasets: Mapping[str, Dataset],
-    s3_storage_options: S3StorageOptions,
-) -> None:
-    dataset = datasets["image"]
-    feature = dataset.features["col"]
-    with mock_s3():
-        region = "us-east-1"
-        bucket_name = "bucket"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
-        value = get_cell_value(
-            dataset="dataset",
-            config="config",
-            split="split",
-            row_idx=7,
-            cell=dataset[0]["col"],
-            featureName="col",
-            fieldType=feature,
-            storage_options=s3_storage_options,
-        )
-        assert value == {
-            "src": "http://localhost/assets/dataset/--/config/split/7/col/image.jpg",
-            "height": 480,
-            "width": 640,
-        }
-        body = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/image.jpg").get()["Body"].read()
-        assert body is not None
-
-        image = PILImage.open(io.BytesIO(body))
-        assert image is not None
-
-
-def test_audio_s3(
-    datasets: Mapping[str, Dataset],
-    s3_storage_options: S3StorageOptions,
-) -> None:
-    dataset = datasets["audio"]
-    feature = dataset.features["col"]
-    with mock_s3():
-        bucket_name = "bucket"
-        region = "us-east-1"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
-        value = get_cell_value(
-            dataset="dataset",
-            config="config",
-            split="split",
-            row_idx=7,
-            cell=dataset[0]["col"],
-            featureName="col",
-            fieldType=feature,
-            storage_options=s3_storage_options,
-        )
-
-        assert value == [
-            {
-                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
-                "type": "audio/wav",
-            },
-        ]
-        audio_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.wav").get()["Body"].read()
-        assert audio_object is not None
 
 
 def test_get_supported_unsupported_columns() -> None:

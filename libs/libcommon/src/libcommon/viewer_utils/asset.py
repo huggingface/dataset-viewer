@@ -23,16 +23,14 @@ DATASETS_SERVER_MDATE_FILENAME = ".dss"
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
-def get_and_create_dir_path(
-    dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: StrPath
-) -> Path:
-    dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
+def get_and_create_dir_path(assets_directory: StrPath, url_dir_path: str) -> Path:
+    dir_path = Path(assets_directory).resolve() / url_dir_path
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     return dir_path
 
 
 def get_url_dir_path(dataset: str, config: str, split: str, row_idx: int, column: str) -> str:
-    return f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
+    return f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
 
 
 def get_unique_path_for_filename(assets_directory: StrPath, filename: str) -> Path:
@@ -97,8 +95,7 @@ def upload_asset_file(
 ) -> None:
     if s3_client is not None and s3_bucket is not None:
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        create_object = overwrite or not s3_client.exists_in_bucket(s3_bucket, object_key)
-        if create_object:
+        if overwrite or not s3_client.exists_in_bucket(s3_bucket, object_key):
             s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
             os.remove(file_path)
 
@@ -126,12 +123,8 @@ def create_asset_file(
         get_unique_path_for_filename(assets_directory, filename)
         if use_s3_storage
         else get_and_create_dir_path(
-            dataset=dataset,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=column,
             assets_directory=assets_directory,
+            url_dir_path=url_dir_path,
         )
         / filename
     )
