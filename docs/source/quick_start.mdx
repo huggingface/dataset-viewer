@@ -438,7 +438,7 @@ The response looks like:
 
 ## Search text in a dataset
 
-The `/search` endpoint returns a JSON list of a slice of rows of a dataset that match a text query. The text is searched in the columns of type `string` or `ClassLabel`, even if the values are nested in a dictionary.
+The `/search` endpoint returns a JSON list of a slice of rows of a dataset that match a text query. The text is searched in the columns of type `string`, even if the values are nested in a dictionary.
 It also returns the types of data features ("columns" data types). The response format is the same as the /rows endpoint.
 You should specify the dataset name, configuration name (you can find out the configuration name from the `/splits` endpoint), the split name and the search query you'd like to find in the text columns:
 
