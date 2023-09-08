@@ -20,7 +20,6 @@ def _transform_row(
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
-    overwrite: bool = True,
 ) -> Row:
     row_idx, row = row_idx_and_row
     return {
@@ -33,7 +32,6 @@ def _transform_row(
             featureName=featureName,
             fieldType=fieldType,
             storage_options=storage_options,
-            overwrite=overwrite,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -48,7 +46,6 @@ def transform_rows(
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
-    overwrite: bool = True,
 ) -> List[Row]:
     fn = partial(
         _transform_row,
@@ -59,7 +56,6 @@ def transform_rows(
         storage_options=storage_options,
         offset=offset,
         row_idx_column=row_idx_column,
-        overwrite=overwrite,
     )
     # use multithreading to parallelize audio files processing
     # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)

@@ -75,13 +75,16 @@ def create_response(
     storage_options = (
         S3StorageOptions(
             assets_base_url=cached_assets_base_url,
-            s3_client=s3_client,
             assets_directory=cached_assets_directory,
+            overwrite=False,
+            s3_client=s3_client,
             s3_bucket=cached_assets_s3_bucket,
             s3_folder_name=cached_assets_s3_folder_name,
         )
         if use_s3_storage
-        else DirectoryStorageOptions(assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory)
+        else DirectoryStorageOptions(
+            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
+        )
     )
     return PaginatedResponse(
         features=to_features_list(features),

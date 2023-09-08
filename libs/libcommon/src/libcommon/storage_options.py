@@ -10,6 +10,7 @@ from libcommon.storage import StrPath
 class DirectoryStorageOptions:
     assets_base_url: str
     assets_directory: StrPath
+    overwrite: bool
 
 
 @dataclass

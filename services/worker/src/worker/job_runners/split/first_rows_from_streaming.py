@@ -290,7 +290,9 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 config=self.config,
                 split=self.split,
                 storage_options=DirectoryStorageOptions(
-                    assets_base_url=self.assets_base_url, assets_directory=self.assets_directory
+                    assets_base_url=self.assets_base_url,
+                    assets_directory=self.assets_directory,
+                    overwrite=True,
                 ),
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,

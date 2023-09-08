@@ -9,11 +9,20 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Features, Image, Value
 
+from libcommon.storage import StrPath
 from libcommon.storage_options import DirectoryStorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
 )
+
+
+@pytest.fixture
+def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions:
+    return DirectoryStorageOptions(
+        assets_base_url="http://localhost/assets", assets_directory=cached_assets_directory, overwrite=True
+    )
+
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API

@@ -214,7 +214,6 @@ def to_rows_list(
             storage_options=storage_options,
             offset=offset,
             row_idx_column=row_idx_column,
-            overwrite=False,
         )
     except Exception as err:
         raise TransformRowsProcessingError(

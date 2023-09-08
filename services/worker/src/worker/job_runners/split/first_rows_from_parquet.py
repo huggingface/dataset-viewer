@@ -202,7 +202,9 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 config=self.config,
                 split=self.split,
                 storage_options=DirectoryStorageOptions(
-                    assets_base_url=self.assets_base_url, assets_directory=self.assets_directory
+                    assets_base_url=self.assets_base_url,
+                    assets_directory=self.assets_directory,
+                    overwrite=True,
                 ),
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,

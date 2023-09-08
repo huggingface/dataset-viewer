@@ -109,11 +109,11 @@ def create_asset_file(
     filename: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     fn: Callable[[Path, str, bool], SupportedSource],
-    overwrite: bool = True,
 ) -> SupportedSource:
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     assets_directory = storage_options.assets_directory
+    overwrite = storage_options.overwrite
     use_s3_storage = isinstance(storage_options, S3StorageOptions)
     url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
@@ -190,7 +190,6 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     storage_options: DirectoryStorageOptions,
-    overwrite: bool = True,
 ) -> ImageSource:
     fn = partial(save_image, image=image)
     return cast(
@@ -204,7 +203,6 @@ def create_image_file(
             filename=filename,
             storage_options=storage_options,
             fn=fn,
-            overwrite=overwrite,
         ),
     )
 
@@ -219,7 +217,6 @@ def create_audio_file(
     audio_file_extension: str,
     filename: str,
     storage_options: DirectoryStorageOptions,
-    overwrite: bool = True,
 ) -> List[AudioSource]:
     fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
     return [
@@ -234,7 +231,6 @@ def create_audio_file(
                 filename=filename,
                 storage_options=storage_options,
                 fn=fn,
-                overwrite=overwrite,
             ),
         )
     ]

@@ -28,6 +28,7 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         storage_options = S3StorageOptions(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
+            overwrite=True,
             s3_bucket=bucket_name,
             s3_client=s3_client,
             s3_folder_name=folder_name,
@@ -42,7 +43,6 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
             image=dataset[0]["col"],
             column="col",
             filename="image.jpg",
-            overwrite=False,
             row_idx=7,
             storage_options=storage_options,
         )
@@ -76,6 +76,7 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         storage_options = S3StorageOptions(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
+            overwrite=True,
             s3_bucket=bucket_name,
             s3_client=s3_client,
             s3_folder_name=folder_name,
