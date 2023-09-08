@@ -125,7 +125,6 @@ firstRows:
 
 parquetAndInfo:
   maxDatasetSize: "500_000_000"
-  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*,CyberHarem/*"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
