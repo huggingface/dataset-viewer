@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
+import logging
 from typing import Optional
 
 import boto3
 
 S3_RESOURCE = "s3"
+
+
+class S3ClientInitializeError(Exception):
+    pass
 
 
 class S3Client:
@@ -22,14 +27,20 @@ class S3Client:
     def __init__(
         self, region_name: str, aws_access_key_id: Optional[str], aws_secret_access_key: Optional[str]
     ) -> None:
-        self._client = boto3.client(
-            S3_RESOURCE,
-            region_name=region_name,
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-        )
+        try:
+            self._client = boto3.client(
+                S3_RESOURCE,
+                region_name=region_name,
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+            )
+        except Exception as e:
+            logging.error("unable to initialize S3 client ", e)
+            self._client = None
 
     def exists_in_bucket(self, bucket: str, object_key: str) -> bool:
+        if self._client is None:
+            raise S3ClientInitializeError()
         try:
             self._client.head_object(Bucket=bucket, Key=object_key)
             return True
@@ -37,4 +48,6 @@ class S3Client:
             return False
 
     def upload_to_bucket(self, file_path: str, bucket: str, object_key: str) -> None:
+        if self._client is None:
+            raise S3ClientInitializeError()
         self._client.upload_file(file_path, bucket, object_key)

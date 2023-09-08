@@ -6,7 +6,7 @@ import os
 import shutil
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Union
 
 import pyarrow as pa
 from datasets import Features
@@ -14,13 +14,13 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.s3_client import S3Client
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
     get_best_response,
 )
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
 from starlette.requests import Request
@@ -193,18 +193,11 @@ def to_rows_list(
     dataset: str,
     config: str,
     split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
     offset: int,
     features: Features,
     unsupported_columns: List[str],
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     row_idx_column: Optional[str] = None,
-    # TODO: Once cached-assets is migrated to S3, this parameter is no more needed
-    use_s3_storage: bool = False,
-    # TODO: Once cached-assets is migrated to S3, the following parameters dont need to be optional
-    cached_assets_s3_bucket: Optional[str] = None,
-    s3_client: Optional[S3Client] = None,
-    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -218,15 +211,10 @@ def to_rows_list(
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            cached_assets_base_url=cached_assets_base_url,
-            cached_assets_directory=cached_assets_directory,
+            storage_options=storage_options,
             offset=offset,
             row_idx_column=row_idx_column,
             overwrite=False,
-            use_s3_storage=use_s3_storage,
-            cached_assets_s3_bucket=cached_assets_s3_bucket,
-            s3_client=s3_client,
-            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
         )
     except Exception as err:
         raise TransformRowsProcessingError(

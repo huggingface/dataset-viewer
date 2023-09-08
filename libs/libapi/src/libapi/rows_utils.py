@@ -2,11 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from datasets import Features
-from libcommon.s3_client import S3Client
-from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
@@ -18,17 +17,10 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
     overwrite: bool = True,
-    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
-    use_s3_storage: bool = False,
-    s3_client: Optional[S3Client] = None,
-    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
-    s3_bucket: Optional[str] = None,
-    s3_folder_name: Optional[str] = None,
 ) -> Row:
     row_idx, row = row_idx_and_row
     return {
@@ -40,13 +32,8 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            storage_options=storage_options,
             overwrite=overwrite,
-            use_s3_storage=use_s3_storage,
-            s3_bucket=s3_bucket,
-            s3_client=s3_client,
-            s3_folder_name=s3_folder_name,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -58,17 +45,10 @@ def transform_rows(
     split: str,
     rows: List[Row],
     features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
     overwrite: bool = True,
-    s3_client: Optional[S3Client] = None,
-    # TODO: Once assets and cached-assets are migrated to S3, this parameter is no more needed
-    use_s3_storage: bool = False,
-    # TODO: Once assets and cached-assets are migrated to S3, the following parameters dont need to be optional
-    cached_assets_s3_bucket: Optional[str] = None,
-    cached_assets_s3_folder_name: Optional[str] = None,
 ) -> List[Row]:
     fn = partial(
         _transform_row,
@@ -76,15 +56,10 @@ def transform_rows(
         config=config,
         split=split,
         features=features,
-        assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
         offset=offset,
         row_idx_column=row_idx_column,
         overwrite=overwrite,
-        use_s3_storage=use_s3_storage,
-        s3_client=s3_client,
-        s3_bucket=cached_assets_s3_bucket,
-        s3_folder_name=cached_assets_s3_folder_name,
     )
     # use multithreading to parallelize audio files processing
     # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)

@@ -31,6 +31,7 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
@@ -57,9 +58,9 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    s3_client: Optional[S3Client],
-    cached_assets_s3_bucket: Optional[str],
-    cached_assets_s3_folder_name: Optional[str],
+    s3_client: S3Client,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -70,6 +71,18 @@ def create_response(
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
+    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
+    storage_options = (
+        S3StorageOptions(
+            assets_base_url=cached_assets_base_url,
+            s3_client=s3_client,
+            assets_directory=cached_assets_directory,
+            s3_bucket=cached_assets_s3_bucket,
+            s3_folder_name=cached_assets_s3_folder_name,
+        )
+        if use_s3_storage
+        else DirectoryStorageOptions(assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory)
+    )
     return PaginatedResponse(
         features=to_features_list(features),
         rows=to_rows_list(
@@ -77,12 +90,7 @@ def create_response(
             dataset=dataset,
             config=config,
             split=split,
-            cached_assets_base_url=cached_assets_base_url,
-            cached_assets_directory=cached_assets_directory,
-            cached_assets_s3_bucket=cached_assets_s3_bucket,
-            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
-            use_s3_storage=dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS,
-            s3_client=s3_client,
+            storage_options=storage_options,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -97,8 +105,8 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     s3_client: S3Client,
-    cached_assets_s3_bucket: Optional[str],
-    cached_assets_s3_folder_name: Optional[str],
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     max_arrow_data_in_memory: int,

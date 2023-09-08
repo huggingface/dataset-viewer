@@ -15,10 +15,17 @@ from PIL import Image as PILImage  # type: ignore
 
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
 )
+
+
+@pytest.fixture
+def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions:
+    return DirectoryStorageOptions(assets_base_url="http://localhost/assets", assets_directory=cached_assets_directory)
+
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -60,6 +67,7 @@ from libcommon.viewer_utils.features import (
     ],
 )
 def test_value(
+    storage_options: DirectoryStorageOptions,
     dataset_type: str,
     output_value: Any,
     output_dtype: str,
@@ -78,8 +86,7 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url="http://localhost/assets",
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
     )
     assert value == output_value
 
@@ -287,7 +294,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
+    storage_options: DirectoryStorageOptions,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -303,27 +310,38 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url="http://localhost/assets",
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
     )
     assert value == output_value
 
 
+@pytest.fixture
+def s3_storage_options(cached_assets_directory: StrPath) -> S3StorageOptions:
+    bucket_name = "bucket"
+    access_key_id = "access_key_id"
+    secret_access_key = "secret_access_key"
+    folder_name = "assets"
+    s3_client = S3Client(
+        region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+    )
+    return S3StorageOptions(
+        assets_base_url="http://localhost/assets",
+        assets_directory=cached_assets_directory,
+        s3_bucket=bucket_name,
+        s3_client=s3_client,
+        s3_folder_name=folder_name,
+    )
+
+
 def test_image_s3(
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
+    s3_storage_options: S3StorageOptions,
 ) -> None:
     dataset = datasets["image"]
     feature = dataset.features["col"]
     with mock_s3():
-        bucket_name = "bucket"
-        access_key_id = "access_key_id"
-        secret_access_key = "secret_access_key"
-        s3_client = S3Client(
-            region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
-        )
         region = "us-east-1"
-        folder_name = "assets"
+        bucket_name = "bucket"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
         value = get_cell_value(
@@ -334,12 +352,7 @@ def test_image_s3(
             cell=dataset[0]["col"],
             featureName="col",
             fieldType=feature,
-            assets_base_url="http://localhost/assets",
-            assets_directory=cached_assets_directory,
-            use_s3_storage=True,
-            s3_client=s3_client,
-            s3_bucket=bucket_name,
-            s3_folder_name=folder_name,
+            storage_options=s3_storage_options,
         )
         assert value == {
             "src": "http://localhost/assets/dataset/--/config/split/7/col/image.jpg",
@@ -355,19 +368,13 @@ def test_image_s3(
 
 def test_audio_s3(
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
+    s3_storage_options: S3StorageOptions,
 ) -> None:
     dataset = datasets["audio"]
     feature = dataset.features["col"]
     with mock_s3():
         bucket_name = "bucket"
-        access_key_id = "access_key_id"
-        secret_access_key = "secret_access_key"
         region = "us-east-1"
-        s3_client = S3Client(
-            region_name="us-east-1", aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
-        )
-        folder_name = "assets"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
         value = get_cell_value(
@@ -378,12 +385,7 @@ def test_audio_s3(
             cell=dataset[0]["col"],
             featureName="col",
             fieldType=feature,
-            assets_base_url="http://localhost/assets",
-            assets_directory=cached_assets_directory,
-            use_s3_storage=True,
-            s3_client=s3_client,
-            s3_bucket=bucket_name,
-            s3_folder_name=folder_name,
+            storage_options=s3_storage_options,
         )
 
         assert value == [
