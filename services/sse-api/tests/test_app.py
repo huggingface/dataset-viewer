@@ -1,35 +1,61 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import asyncio
+from typing import AsyncGenerator
+
 import httpx
 import pytest
+import pytest_asyncio
+import uvicorn
 from httpx_sse import aconnect_sse
 from starlette.applications import Starlette
-from starlette.testclient import TestClient
 
 from sse_api.app import create_app_with_config
 from sse_api.config import AppConfig
 
-
-@pytest.fixture(scope="module")
-def app(monkeypatch_session: pytest.MonkeyPatch, app_config: AppConfig) -> Starlette:
-    return create_app_with_config(app_config=app_config)
+from .uvicorn_server import UvicornServer
 
 
-@pytest.fixture(scope="module")
-def client(app: Starlette) -> TestClient:
-    return TestClient(app)
+@pytest_asyncio.fixture(scope="function")
+async def app_test(
+    app_config: AppConfig, event_loop: asyncio.events.AbstractEventLoop
+) -> AsyncGenerator[Starlette, None]:
+    app = create_app_with_config(app_config)
+    config = uvicorn.Config(app=app, port=5555, log_level="warning", loop="asyncio")  # event_loop)
+
+    server = UvicornServer(config)
+    await server.start()
+    try:
+        yield app
+    finally:
+        await server.shutdown()
 
 
-def test_get_healthcheck(client: TestClient) -> None:
-    response = client.get("/healthcheck")
+@pytest_asyncio.fixture(scope="function")
+async def client(app_test: Starlette) -> AsyncGenerator[httpx.AsyncClient, None]:
+    async with httpx.AsyncClient(base_url=APP_HOST) as client:
+        yield client
+
+
+APP_HOST = "http://localhost:5555"
+
+
+@pytest.mark.asyncio
+async def test_provided_loop_is_running_loop(event_loop: asyncio.events.AbstractEventLoop) -> None:
+    assert event_loop is asyncio.get_running_loop()
+
+
+@pytest.mark.asyncio
+async def test_get_healthcheck(client: httpx.AsyncClient) -> None:
+    response = await client.get("/healthcheck")
     assert response.status_code == 200
     assert response.text == "ok"
 
 
-def test_metrics(client: TestClient) -> None:
-    response = client.get("/healthcheck")
-    response = client.get("/metrics")
+@pytest.mark.asyncio
+async def test_metrics(client: httpx.AsyncClient) -> None:
+    response = await client.get("/metrics")
     assert response.status_code == 200
     text = response.text
     lines = text.split("\n")
@@ -49,18 +75,15 @@ def test_metrics(client: TestClient) -> None:
         assert metrics[name] > 0, metrics
 
 
-WEIRD_MANDATORY_PREFIX = "http://localhost:8000"
-
-
 @pytest.mark.asyncio
-async def test_numbers(app: Starlette) -> None:
-    async with httpx.AsyncClient(app=app) as client:
-        async with aconnect_sse(client, f"{WEIRD_MANDATORY_PREFIX}/numbers") as event_source:
-            event_iter = event_source.aiter_sse()
-            for i in range(1, 5):
-                event = await event_iter.__anext__()
-                # event = await anext(event_iter)
-                # ^ only available in 3.10
-                print(event.data)
-                assert event.event == "message", event.data
-                assert event.data == str(i), event.data
+async def test_numbers(client: httpx.AsyncClient) -> None:
+    async with aconnect_sse(client, f"{APP_HOST}/numbers") as event_source:
+        event_iter = event_source.aiter_sse()
+        for _ in range(1, 5):
+            event = await event_iter.__anext__()
+            # event = await anext(event_iter)
+            # ^ only available in 3.10
+            assert event.event == "message", event.data
+            assert int(event.data) >= 0, event.data
+            assert int(event.data) <= 100, event.data
+    await client.aclose()

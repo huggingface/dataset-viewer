@@ -7,7 +7,6 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 environs = "^9.5.0"
-# httpx = "^0.23.3" # why?
 libapi = {path = "../../libs/libapi", develop = true}
 python = "3.9.15"
 sse-starlette = "^1.2.1"
