@@ -7,7 +7,7 @@ from typing import Any, Mapping, Optional, TypedDict
 
 import duckdb
 import pyarrow.parquet as pq
-from datasets import Features
+from datasets import Features, Value
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
@@ -36,7 +36,7 @@ MAX_ROWS = 100
 
 # TODO: duplicated in /rows
 # audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES_MAGIC_STRINGS = ["'binary'", "Audio("]
+UNSUPPORTED_FEATURES = [Value("binary")]
 
 
 Feature = Mapping[str, Any]
@@ -135,7 +135,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, _ = get_supported_unsupported_columns(
                         features,
-                        unsupported_features_magic_strings=UNSUPPORTED_FEATURES_MAGIC_STRINGS,
+                        unsupported_features=UNSUPPORTED_FEATURES,
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     table = execute_filter_query(
