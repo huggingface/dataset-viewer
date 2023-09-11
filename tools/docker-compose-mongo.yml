@@ -1,6 +1,8 @@
 version: "3.9"
+
 services:
   mongodb-test:
-    image: mongo:latest
+    image: 'mongo:6.0.9'
     ports:
-      - ${MONGO_PORT-27017}:27017
+      - ${MONGO_PORT:-27017}:${MONGO_PORT:-27017}
+    command: mongod --port ${MONGO_PORT:-27017} --replSet rs0 --bind_ip_all
