@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import contextlib
 import os
 from os import makedirs
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Generator, List, Tuple, TypedDict
 
-import soundfile  # type:ignore
-from numpy import ndarray
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
@@ -16,6 +16,7 @@ from libcommon.storage import StrPath
 DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
+SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
 def create_asset_dir(
@@ -34,6 +35,18 @@ def glob_rows_in_assets_dir(
     return Path(assets_directory).resolve().glob(os.path.join(dataset, DATASET_SEPARATOR, "*", "*", "*"))
 
 
+def update_directory_modification_date(path: Path) -> None:
+    if path.is_dir():
+        # update the directory's last modified date
+        temporary_file = path / DATASETS_SERVER_MDATE_FILENAME
+        if temporary_file.is_dir():
+            raise ValueError(f"Cannot create temporary file {temporary_file} in {path}")
+        temporary_file.touch(exist_ok=True)
+        if temporary_file.is_file():
+            with contextlib.suppress(FileNotFoundError):
+                temporary_file.unlink()
+
+
 def update_last_modified_date_of_rows_in_assets_dir(
     dataset: str,
     config: str,
@@ -42,13 +55,10 @@ def update_last_modified_date_of_rows_in_assets_dir(
     length: int,
     assets_directory: StrPath,
 ) -> None:
+    update_directory_modification_date(Path(assets_directory).resolve() / dataset.split("/")[0])
     row_dirs_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
     for row_idx in range(offset, offset + length):
-        if (row_dirs_path / str(row_idx)).is_dir():
-            # update the directory's last modified date
-            if (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).is_file():
-                (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).unlink()
-            (row_dirs_path / str(row_idx) / DATASETS_SERVER_MDATE_FILENAME).touch()
+        update_directory_modification_date(row_dirs_path / str(row_idx))
 
 
 class ImageSource(TypedDict):
@@ -93,21 +103,19 @@ class AudioSource(TypedDict):
     type: str
 
 
-def create_audio_files(
+def create_audio_file(
     dataset: str,
     config: str,
     split: str,
     row_idx: int,
     column: str,
-    array: ndarray,  # type: ignore
-    sampling_rate: int,
+    audio_file_bytes: bytes,
+    audio_file_extension: str,
     assets_base_url: str,
-    filename_base: str,
+    filename: str,
     assets_directory: StrPath,
     overwrite: bool = True,
 ) -> List[AudioSource]:
-    wav_filename = f"{filename_base}.wav"
-    mp3_filename = f"{filename_base}.mp3"
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset,
         config=config,
@@ -117,14 +125,23 @@ def create_audio_files(
         assets_directory=assets_directory,
     )
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
-    wav_file_path = dir_path / wav_filename
-    mp3_file_path = dir_path / mp3_filename
-    if overwrite or not wav_file_path.exists():
-        soundfile.write(wav_file_path, array, sampling_rate)
-    if overwrite or not mp3_file_path.exists():
-        segment = AudioSegment.from_wav(wav_file_path)
-        segment.export(mp3_file_path, format="mp3")
+    file_path = dir_path / filename
+    if file_path.suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+        raise ValueError(
+            f"Audio format {file_path.suffix} is not supported. Supported formats are"
+            f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
+        )
+    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[file_path.suffix]
+    if overwrite or not file_path.exists():
+        if audio_file_extension == file_path.suffix:
+            with open(file_path, "wb") as f:
+                f.write(audio_file_bytes)
+        else:  # we need to convert
+            # might spawn a process to convert the audio file using ffmpeg
+            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                tmpfile.write(audio_file_bytes)
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                segment.export(file_path, format=file_path.suffix[1:])
     return [
-        {"src": f"{assets_base_url}/{url_dir_path}/{mp3_filename}", "type": "audio/mpeg"},
-        {"src": f"{assets_base_url}/{url_dir_path}/{wav_filename}", "type": "audio/wav"},
+        {"src": f"{assets_base_url}/{url_dir_path}/{filename}", "type": media_type},
     ]

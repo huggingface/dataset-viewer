@@ -73,6 +73,7 @@ def graph() -> ProcessingGraph:
                 "dataset-parquet",
                 "dataset-info",
                 "dataset-size",
+                "dataset-is-valid",
             ],
             [],
             [],
@@ -95,6 +96,8 @@ def graph() -> ProcessingGraph:
                 "split-first-rows-from-streaming",
                 "dataset-split-names",
                 "split-duckdb-index",
+                "split-descriptive-statistics",
+                "config-is-valid",
             ],
             ["config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
@@ -106,13 +109,15 @@ def graph() -> ProcessingGraph:
                 "dataset-split-names",
                 "config-opt-in-out-urls-count",
                 "split-duckdb-index",
+                "split-descriptive-statistics",
+                "config-is-valid",
             ],
             ["dataset-config-names"],
             ["dataset-config-names"],
         ),
         (
             "dataset-split-names",
-            ["dataset-is-valid"],
+            [],
             [
                 "dataset-config-names",
                 "config-split-names-from-info",
@@ -128,13 +133,13 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-first-rows-from-parquet",
-            ["dataset-is-valid", "split-image-url-columns"],
-            ["config-parquet"],
-            ["config-parquet", "dataset-config-names", "config-parquet-and-info"],
+            ["split-is-valid", "split-image-url-columns"],
+            ["config-parquet-metadata"],
+            ["config-parquet", "dataset-config-names", "config-parquet-and-info", "config-parquet-metadata"],
         ),
         (
             "split-first-rows-from-streaming",
-            ["dataset-is-valid", "split-image-url-columns"],
+            ["split-is-valid", "split-image-url-columns"],
             [
                 "config-split-names-from-streaming",
                 "config-split-names-from-info",
@@ -149,13 +154,13 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-parquet",
-            ["config-parquet-metadata", "split-first-rows-from-parquet", "dataset-parquet"],
+            ["config-parquet-metadata", "dataset-parquet"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
         (
             "config-parquet-metadata",
-            [],
+            ["split-first-rows-from-parquet"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -179,34 +184,37 @@ def graph() -> ProcessingGraph:
         ),
         (
             "config-size",
-            ["dataset-size"],
+            ["split-is-valid", "dataset-size"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
         (
             "dataset-size",
-            [],
+            ["dataset-hub-cache"],
             ["dataset-config-names", "config-size"],
             ["dataset-config-names", "config-parquet-and-info", "config-size"],
         ),
         (
             "dataset-is-valid",
-            [],
+            ["dataset-hub-cache"],
             [
-                "dataset-split-names",
-                "split-first-rows-from-parquet",
-                "split-first-rows-from-streaming",
+                "config-is-valid",
+                "dataset-config-names",
             ],
             [
                 "dataset-config-names",
                 "config-parquet-and-info",
-                "dataset-split-names",
                 "config-info",
                 "config-parquet",
+                "config-size",
                 "config-split-names-from-info",
+                "config-parquet-metadata",
                 "config-split-names-from-streaming",
                 "split-first-rows-from-parquet",
                 "split-first-rows-from-streaming",
+                "config-is-valid",
+                "split-is-valid",
+                "split-duckdb-index",
             ],
         ),
         (
@@ -219,6 +227,7 @@ def graph() -> ProcessingGraph:
                 "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
+                "config-parquet-metadata",
                 "split-first-rows-from-streaming",
                 "config-parquet",
                 "split-first-rows-from-parquet",
@@ -234,6 +243,7 @@ def graph() -> ProcessingGraph:
                 "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
+                "config-parquet-metadata",
                 "split-first-rows-from-streaming",
                 "config-parquet",
                 "split-first-rows-from-parquet",
@@ -251,6 +261,7 @@ def graph() -> ProcessingGraph:
                 "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
+                "config-parquet-metadata",
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
                 "split-first-rows-from-parquet",
@@ -268,6 +279,7 @@ def graph() -> ProcessingGraph:
                 "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
+                "config-parquet-metadata",
                 "split-opt-in-out-urls-count",
                 "split-opt-in-out-urls-scan",
                 "config-parquet",
@@ -286,6 +298,7 @@ def graph() -> ProcessingGraph:
                 "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
+                "config-parquet-metadata",
                 "config-opt-in-out-urls-count",
                 "split-opt-in-out-urls-count",
                 "split-opt-in-out-urls-scan",
@@ -296,7 +309,7 @@ def graph() -> ProcessingGraph:
         ),
         (
             "split-duckdb-index",
-            [],
+            ["split-is-valid"],
             ["config-split-names-from-info", "config-split-names-from-streaming", "config-parquet-and-info"],
             [
                 "config-split-names-from-info",
@@ -304,6 +317,40 @@ def graph() -> ProcessingGraph:
                 "config-parquet-and-info",
                 "config-info",
                 "dataset-config-names",
+            ],
+        ),
+        (
+            "split-descriptive-statistics",
+            [],
+            ["config-split-names-from-info", "config-split-names-from-streaming"],
+            [
+                "dataset-config-names",
+                "config-parquet-and-info",
+                "config-info",
+                "config-split-names-from-info",
+                "config-split-names-from-streaming",
+            ],
+        ),
+        (
+            "dataset-hub-cache",
+            [],
+            ["dataset-is-valid", "dataset-size"],
+            [
+                "config-info",
+                "config-is-valid",
+                "config-parquet",
+                "config-parquet-and-info",
+                "config-parquet-metadata",
+                "config-size",
+                "config-split-names-from-info",
+                "config-split-names-from-streaming",
+                "dataset-config-names",
+                "dataset-is-valid",
+                "dataset-size",
+                "split-duckdb-index",
+                "split-first-rows-from-parquet",
+                "split-first-rows-from-streaming",
+                "split-is-valid",
             ],
         ),
     ],
@@ -327,6 +374,11 @@ def test_default_graph_enables_preview(graph: ProcessingGraph) -> None:
 def test_default_graph_enables_viewer(graph: ProcessingGraph) -> None:
     enables_viewer = ["config-size"]
     assert_lists_are_equal(graph.get_processing_steps_enables_viewer(), enables_viewer)
+
+
+def test_default_graph_enables_search(graph: ProcessingGraph) -> None:
+    enables_search = ["split-duckdb-index"]
+    assert_lists_are_equal(graph.get_processing_steps_enables_search(), enables_search)
 
 
 def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:

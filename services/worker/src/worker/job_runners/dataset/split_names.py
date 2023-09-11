@@ -10,11 +10,11 @@ from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_best_response, get_previous_step_or_raise
 
 from worker.dtos import (
-    ConfigItem,
     DatasetSplitNamesResponse,
     FailedConfigItem,
+    FullConfigItem,
+    FullSplitItem,
     JobResult,
-    SplitItem,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
@@ -48,8 +48,8 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
 
     split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:
-        splits: List[SplitItem] = []
-        pending: List[ConfigItem] = []
+        splits: List[FullSplitItem] = []
+        pending: List[FullConfigItem] = []
         failed: List[FailedConfigItem] = []
         total = 0
         for config in config_names:
@@ -60,7 +60,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
                     "No response (successful or erroneous) found in cache for the previous steps"
                     f" '{split_names_cache_kinds}' for this dataset."
                 )
-                pending.append(ConfigItem({"dataset": dataset, "config": config}))
+                pending.append(FullConfigItem({"dataset": dataset, "config": config}))
                 continue
             if best_response.response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"No successful response found in the previous steps {split_names_cache_kinds}.")
@@ -76,7 +76,7 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
                 continue
             splits.extend(
                 [
-                    SplitItem({"dataset": dataset, "config": config, "split": split_content["split"]})
+                    FullSplitItem({"dataset": dataset, "config": config, "split": split_content["split"]})
                     for split_content in best_response.response["content"]["splits"]
                 ]
             )

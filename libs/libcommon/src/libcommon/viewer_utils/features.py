@@ -2,10 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import json
+import os
 from io import BytesIO
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 from zlib import adler32
 
+import numpy as np
+import soundfile  # type: ignore
 from datasets import (
     Array2D,
     Array3D,
@@ -13,17 +16,19 @@ from datasets import (
     Array5D,
     Audio,
     ClassLabel,
+    Features,
     Image,
     Sequence,
     Translation,
     TranslationVariableLanguages,
     Value,
 )
-from numpy import ndarray
+from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import create_audio_files, create_image_file
+from libcommon.utils import FeatureItem
+from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
@@ -59,6 +64,13 @@ def image(
         return None
     if isinstance(value, dict) and value.get("bytes"):
         value = PILImage.open(BytesIO(value["bytes"]))
+    elif (
+        isinstance(value, dict)
+        and "path" in value
+        and isinstance(value["path"], str)
+        and os.path.exists(value["path"])
+    ):
+        value = PILImage.open(value["path"])
     if not isinstance(value, PILImage.Image):
         raise TypeError(
             "Image cell must be a PIL image or an encoded dict of an image, "
@@ -101,31 +113,60 @@ def audio(
 ) -> Any:
     if value is None:
         return None
-    if isinstance(value, dict) and value.get("bytes"):
-        value = Audio().decode_example(value)
-    try:
-        array = value["array"]
-        sampling_rate = value["sampling_rate"]
-    except Exception as e:
+    if not isinstance(value, dict):
         raise TypeError(
-            "audio cell must contain 'array' and 'sampling_rate' fields, "
+            "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
-        ) from e
-    if type(array) != ndarray:
-        raise TypeError("'array' field must be a numpy.ndarray")
-    if type(sampling_rate) != int:
-        raise TypeError("'sampling_rate' field must be an integer")
+        )
+
+    if "path" in value and isinstance(value["path"], str):
+        audio_file_extension = os.path.splitext(value["path"])[1]
+        if not audio_file_extension:
+            raise ValueError(
+                f"An audio sample should have a 'path' with a valid extension but got '{audio_file_extension}'."
+            )
+    elif "array" in value:
+        audio_file_extension = ".wav"
+    else:
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {','.join(value)}."
+        )
+
+    if "bytes" in value and isinstance(value["bytes"], bytes):
+        audio_file_bytes = value["bytes"]
+    elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
+        with open(value["path"], "rb") as f:
+            audio_file_bytes = f.read()
+    elif (
+        "array" in value
+        and isinstance(value["array"], np.ndarray)
+        and "sampling_rate" in value
+        and isinstance(value["sampling_rate"], int)
+    ):
+        buffer = BytesIO()
+        soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
+        audio_file_bytes = buffer.read()
+    else:
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {','.join(value)}."
+        )
+
+    # convert to wav if the file is not wav or mp3 already
+    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+
     # this function can raise, we don't catch it
-    return create_audio_files(
+    return create_audio_file(
         dataset=dataset,
         config=config,
         split=split,
         row_idx=row_idx,
         column=featureName,
-        array=array,
-        sampling_rate=sampling_rate,
+        audio_file_bytes=audio_file_bytes,
+        audio_file_extension=audio_file_extension,
         assets_base_url=assets_base_url,
-        filename_base=append_hash_suffix("audio", json_path),
+        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
         assets_directory=assets_directory,
         overwrite=overwrite,
     )
@@ -277,3 +318,49 @@ def get_cell_value(
         return cell
     else:
         raise TypeError("could not determine the type of the data cell.")
+
+
+# in JSON, dicts do not carry any order, so we need to return a list
+#
+# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
+#   is a string, number, boolean, null, object, or array.
+# > An array is an *ordered* sequence of zero or more values.
+# > The terms "object" and "array" come from the conventions of JavaScript.
+# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
+def to_features_list(features: Features) -> List[FeatureItem]:
+    features_dict = features.to_dict()
+    return [
+        {
+            "feature_idx": idx,
+            "name": name,
+            "type": features_dict[name],
+        }
+        for idx, name in enumerate(features)
+    ]
+
+
+def get_supported_unsupported_columns(
+    features: Features,
+    unsupported_features: List[FeatureType] = [],
+) -> Tuple[List[str], List[str]]:
+    supported_columns, unsupported_columns = [], []
+
+    for column, feature in features.items():
+        str_column = str(column)
+        supported = True
+
+        def classify(feature: FeatureType) -> None:
+            nonlocal supported
+            for unsupported_feature in unsupported_features:
+                if type(unsupported_feature) == type(feature) == Value:
+                    if unsupported_feature.dtype == feature.dtype:
+                        supported = False
+                elif type(unsupported_feature) == type(feature):
+                    supported = False
+
+        _visit(feature, classify)
+        if supported:
+            supported_columns.append(str_column)
+        else:
+            unsupported_columns.append(str_column)
+    return supported_columns, unsupported_columns

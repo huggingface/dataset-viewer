@@ -17,6 +17,8 @@ global:
           proxy: 30020
           admin: 30021
           api: 30022
+          rows: 30023
+          search: 30024
 
 images:
   pullPolicy: IfNotPresent
@@ -48,12 +50,26 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-api
       tag: sha-fb3399a
+    rows:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-rows
+      tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
+      tag: sha-fb3399a
+    storageAdmin:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-storage-admin
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-worker
       tag: sha-fb3399a
-
 
 common:
   # URL of the HuggingFace Hub
@@ -70,7 +86,7 @@ secrets:
     enabled: false
     secretName: ""
     secretStoreName: ""
-    parameters: { }
+    parameters: {}
   mongoUrl:
     fromSecret: false
     secretName: "mongo-url"
@@ -87,6 +103,13 @@ secrets:
     fromSecret: false
     secretName: "webhook-secret"
     value: ""
+  # a comma-separated list of additional public keys to use to decode the JWT sent by the Hugging Face Hub.
+  # The public keys must be in PEM format and include "\n" for line breaks
+  # ("-----BEGIN PUBLIC KEY-----\n....\n-----END PUBLIC KEY-----\n"). Defaults to empty.
+  hfJwtAdditionalPublicKeys:
+    fromSecret: false
+    secretName: ""
+    value: ""
   spawningToken:
     fromSecret: true
     secretName: "spawning-token"
@@ -95,9 +118,20 @@ uid: 1000
 gid: 3000
 
 persistence:
-  existingClaim: ""
-  storageClass: ""
-  size: 20Gi
+  cachedAssets:
+    existingClaim: ""
+  descriptiveStatistics:
+    existingClaim: ""
+  duckDBIndex:
+    existingClaim: ""
+  hfDatasetsCache:
+    existingClaim: ""
+  nfs:
+    existingClaim: ""
+    storageClass: ""
+    size: 20Gi
+  parquetMetadata:
+    existingClaim: ""
 
 monitoring:
   enabled: false
@@ -112,6 +146,8 @@ mongodb:
     create: false
 
 cache:
+  # Maximum number of days to keep the cached API responses
+  maxDays: 90
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
@@ -124,10 +160,14 @@ metrics:
   mongoDatabase: "datasets_server_metrics"
 
 worker:
+  # comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
+  blockedDatasets: "alexandrainst/nota"
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
   # the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue.
   heartbeatIntervalSeconds: 60
+  # the time interval at which the worker looks for long jobs to kill them
+  killLongJobIntervalSeconds: 60
   # the time interval at which the worker looks for zombie jobs to kill them
   killZombiesIntervalSeconds: 600
   # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
@@ -138,7 +178,7 @@ worker:
   maxLoadPct: 0
   # Max memory (RAM + SWAP) (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
   maxMemoryPct: 0
-  # the number of hearbeats a job must have missed to be considered a zombie job.
+  # the number of heartbeats a job must have missed to be considered a zombie job.
   maxMissingHeartbeats: 5
   # Number of seconds a worker will sleep before trying to process a new job
   sleepSeconds: 5
@@ -160,8 +200,14 @@ parquetAndInfo:
   blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
-  # the maximum size of the supported datasets. Bigger datasets, or datasets that cannot provide the size, are ignored.
+  # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.
   maxDatasetSize: "100_000_000"
+  # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
+  maxExternalDataFiles: "10_000"
+  # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
+  maxRowGroupByteSizeForCopy: "100_000_000"
+  # comma-separated list of datasets that are fully converted to parquet (no partial conversion).
+  noMaxSizeLimitDatasets: ""
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
   # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
@@ -175,13 +221,13 @@ optInOutUrlsScan:
   columnsMaxNumber: 10
   # the max number of columns to scan
   maxConcurrentRequestsNumber: 10
-  # the max concurrent request number 
+  # the max concurrent request number
   maxRequestsPerSecond: 20
   # the max number of request allowed to process in parallel per second
   rowsMaxNumber: 1_000
   # the max number of rows to scan
   urlsNumberPerBatch: 1_000
-  # the number of grouped urls to be send in every request to spawning 
+  # the number of grouped urls to be send in every request to spawning
   spawningUrl: "https://opts-api.spawningaiapi.com/api/v2/query/urls"
   # the URL for spawning requests
 
@@ -193,13 +239,13 @@ assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
   # Directory on the shared storage (audio files and images)
-  storageDirectory: "/assets"
+  storageDirectory: "/storage/assets"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
   # baseUrl: "not used for now"
   # Directory on the cached shared storage (audio files and images)
-  storageDirectory: "/cached-assets"
+  storageDirectory: "/storage/cached-assets"
   # Probability of cleaning the cached assets directory at each request.
   cleanCacheProba: 0.05
   # When cleaning the cached assets directory: keep the rows with an index below a certain number.
@@ -209,14 +255,15 @@ cachedAssets:
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
 
-
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
-  storageDirectory: "/parquet-metadata"
+  storageDirectory: "/storage/parquet-metadata"
+  # Temporary - to synchronize the files from NFS to dedicated EFS
+  storageDirectoryNew: "/storage/parquet-metadata-new"
 
 duckDBIndex:
   # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
-  storageDirectory: "/duckdb-index"
+  cacheDirectory: "/storage/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
   # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/parquet`.
@@ -225,9 +272,24 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
+  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
 
-# Directory where the cache data will be stored
-cacheDirectory: "/datasets-server-cache"
+rowsIndex:
+  # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
+  maxArrowDataInMemory: "300_000_000"
+
+descriptiveStatistics:
+  # Directory on the shared storage (used temporarily to download dataset locally in .parquet to compute statistics)
+  cacheDirectory: "/storage/stats-cache"
+  # fixed number of bins for histogram count
+  histogramNumBins: 10
+  # the maximum size of the split parquets.
+  maxParquetSizeBytes: "100_000_000"
+
+hfDatasetsCache:
+  # Directory where the HF datasets cache data will be stored
+  cacheDirectory: "/storage/hf-datasets-cache"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -245,7 +307,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade,collect-metrics}
+  # ^ allowed values are {skip,backfill,upgrade,collect-queue-metrics,collect-cache-metrics}
   log:
     level: "info"
   backfill:
@@ -275,11 +337,38 @@ backfill:
       cpu: 0
   tolerations: []
 
+deleteIndexes:
+  enabled: true
+  log:
+    level: "info"
+  action: "delete-indexes"
+  error_codes_to_retry: ""
+  schedule: "0 0 * * *"
+  # at 00:00
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
 
-metricsCollector:
-  action: "collect-metrics"
-  schedule: "*/5 * * * *"
-  # every five minutes
+queueMetricsCollector:
+  enabled: true
+  action: "collect-queue-metrics"
+  schedule: "14 00 * * *"
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+cacheMetricsCollector:
+  enabled: true
+  action: "collect-cache-metrics"
+  schedule: "13 00 * * *"
   nodeSelector: {}
   resources:
     requests:
@@ -310,7 +399,7 @@ reverseProxy:
   host: localhost
   port: 8080
   nginxTemplateFile: "nginx-templates/default.conf.template"
-  openapiFile: "static-files/openapi.json"
+  openapiFile: "docs/source/openapi.json"
   error404File: "nginx-templates/404.html"
 
   nodeSelector: {}
@@ -367,18 +456,76 @@ admin:
     annotations: {}
   tolerations: []
 
-api:
+hf:
   # the path of the external authentication service on the hub.
   # The string must contain `%s` which will be replaced with the dataset name.
-  hfAuthPath: "/api/datasets/%s/auth-check"
+  authPath: "/api/datasets/%s/auth-check"
   # the URL where the "Hub JWT public key" is published. The "Hub JWT public key" must be in JWK format.
   # It helps to decode a JWT sent by the Hugging Face Hub, for example, to bypass the external authentication
   # check (JWT in the 'X-Api-Key' header). If not set, the JWT are ignored.
-  hfJwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
+  jwtPublicKeyUrl: "https://huggingface.co/api/keys/jwt"
   # the algorithm used to encode the JWT.
-  hfJwtAlgorithm: "EdDSA"
+  jwtAlgorithm: "EdDSA"
   # the timeout in seconds for the requests to the Hugging Face Hub.
-  hfTimeoutSeconds: "0.2"
+  timeoutSeconds: "0.2"
+
+api:
+  # the number of results per page. Defaults to `1_000`.
+  hubCacheNumResultsPerPage: "1_000"
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  tolerations: []
+
+rows:
+  # Number of seconds to set in the `max-age` header on data endpoints
+  maxAgeLong: "120"
+  # Number of seconds to set in the `max-age` header on technical endpoints
+  maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  tolerations: []
+
+search:
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
@@ -406,9 +553,12 @@ api:
   tolerations: []
 
 workers:
-  -
-    # name of the deployment
+  - # name of the deployment
     deployName: "all"
+    # max difficulty of the jobs that this worker will process
+    workerDifficultyMax: 100
+    # min difficulty of the jobs that this worker will process
+    workerDifficultyMin: 0
     # job types that this worker will not process
     workerJobTypesBlocked: ""
     # job types that this worker can process

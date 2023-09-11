@@ -26,6 +26,7 @@ Set the common environment variables to configure the logs:
 
 Set environment variables to configure the storage of precomputed API responses in a MongoDB database (the "cache"):
 
+- `CACHE_MAX_DAYS`: maximum number of days to keep the cache entries. Defaults to `90`.
 - `CACHE_MONGO_DATABASE`: name of the database used for storing the cache. Defaults to `datasets_server_cache`.
 - `CACHE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
 
@@ -35,10 +36,3 @@ Set environment variables to configure the job queues to precompute API response
 
 - `QUEUE_MONGO_DATABASE`: name of the database used for storing the queue. Defaults to `datasets_server_queue`.
 - `QUEUE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
-
-## Metrics configuration
-
-Set environment variables to configure the storage of calculated metrics in a MongoDB database:
-
-- `METRICS_MONGO_DATABASE`: name of the database used for storing the metrics. Defaults to `datasets_server_metrics`.
-- `METRICS_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.

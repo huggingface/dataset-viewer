@@ -2,9 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict, Union
 
-from libcommon.utils import SplitHubFile
+from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -40,37 +40,36 @@ class SplitItem(ConfigItem):
     split: Optional[str]
 
 
+class FullConfigItem(DatasetItem):
+    config: str
+
+
+class FullSplitItem(FullConfigItem):
+    split: str
+
+
 class SplitsList(TypedDict):
-    splits: List[SplitItem]
+    splits: List[FullSplitItem]
 
 
-class FailedConfigItem(ConfigItem):
+class FailedConfigItem(FullConfigItem):
     error: Mapping[str, Any]
 
 
 class DatasetSplitNamesResponse(TypedDict):
-    splits: List[SplitItem]
-    pending: List[ConfigItem]
+    splits: List[FullSplitItem]
+    pending: List[FullConfigItem]
     failed: List[FailedConfigItem]
 
 
-class PreviousJob(SplitItem):
+class PreviousJob(TypedDict):
+    dataset: str
+    config: Optional[str]
+    split: Optional[Union[str, None]]
     kind: str
 
 
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Mapping[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: List[str]
-
-
-class SplitFirstRowsResponse(SplitItem):
+class SplitFirstRowsResponse(FullSplitItem):
     features: List[FeatureItem]
     rows: List[RowItem]
 
@@ -88,7 +87,7 @@ class OptInOutUrlsCountResponse(TypedDict):
     num_urls: int
     num_scanned_rows: int
     has_urls_columns: bool
-    full_scan: Optional[bool]
+    full_scan: Union[bool, None]
 
 
 class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
@@ -100,9 +99,6 @@ class ImageUrlColumnsResponse(TypedDict):
     columns: List[str]
 
 
-Row = Mapping[str, Any]
-
-
 class RowsContent(TypedDict):
     rows: List[Row]
     all_fetched: bool
@@ -110,11 +106,13 @@ class RowsContent(TypedDict):
 
 class ConfigInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
+    partial: bool
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     dataset_info: Dict[str, Any]
+    partial: bool
 
 
 class ParquetFileMetadataItem(SplitItem):
@@ -127,23 +125,32 @@ class ParquetFileMetadataItem(SplitItem):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: List[ParquetFileMetadataItem]
+    features: Optional[Dict[str, Any]]
+    partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
+    features: Optional[Dict[str, Any]]
+    partial: bool
 
 
 class ConfigSize(TypedDict):
     dataset: str
     config: str
-    num_bytes_original_files: int
+    num_bytes_original_files: Optional[
+        int
+    ]  # optional because partial parquet conversion can't provide the size of the original data
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int
     num_columns: int
 
 
-class SplitSize(SplitItem):
+class SplitSize(TypedDict):
+    dataset: str
+    config: str
+    split: str
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int
@@ -157,6 +164,7 @@ class ConfigSizeContent(TypedDict):
 
 class ConfigSizeResponse(TypedDict):
     size: ConfigSizeContent
+    partial: bool
 
 
 class ConfigNameItem(TypedDict):
@@ -172,21 +180,32 @@ class DatasetInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
     pending: List[PreviousJob]
     failed: List[PreviousJob]
+    partial: bool
 
 
-class DatasetIsValidResponse(TypedDict):
-    valid: bool
+class IsValidResponse(TypedDict):
+    preview: bool
+    viewer: bool
+    search: bool
+
+
+class DatasetHubCacheResponse(TypedDict):
+    preview: bool
+    viewer: bool
+    partial: bool
+    num_rows: int
 
 
 class DatasetParquetResponse(TypedDict):
     parquet_files: List[SplitHubFile]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
+    partial: bool
 
 
 class DatasetSize(TypedDict):
     dataset: str
-    num_bytes_original_files: int
+    num_bytes_original_files: Optional[int]
     num_bytes_parquet_files: int
     num_bytes_memory: int
     num_rows: int
@@ -202,3 +221,4 @@ class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
     pending: list[PreviousJob]
     failed: list[PreviousJob]
+    partial: bool

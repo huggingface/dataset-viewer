@@ -8,7 +8,11 @@ import pytest
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import (
+    CachedArtifactError,
+    CachedArtifactNotFoundError,
+    upsert_response,
+)
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -46,7 +50,7 @@ UPSTREAM_RESPONSE_CONFIG_INFO_1: UpstreamResponse = UpstreamResponse(
     dataset="dataset_ok",
     config="config_1",
     http_status=HTTPStatus.OK,
-    content={"dataset_info": CONFIG_INFO_1},
+    content={"dataset_info": CONFIG_INFO_1, "partial": False},
 )
 
 UPSTREAM_RESPONSE_CONFIG_INFO_2: UpstreamResponse = UpstreamResponse(
@@ -54,7 +58,7 @@ UPSTREAM_RESPONSE_CONFIG_INFO_2: UpstreamResponse = UpstreamResponse(
     dataset="dataset_ok",
     config="config_2",
     http_status=HTTPStatus.OK,
-    content={"dataset_info": CONFIG_INFO_2},
+    content={"dataset_info": CONFIG_INFO_2, "partial": False},
 )
 
 EXPECTED_OK = (
@@ -62,6 +66,7 @@ EXPECTED_OK = (
         "dataset_info": DATASET_INFO_OK,
         "pending": [],
         "failed": [],
+        "partial": False,
     },
     1.0,
 )
@@ -80,6 +85,7 @@ EXPECTED_PARTIAL_PENDING = (
             )
         ],
         "failed": [],
+        "partial": False,
     },
     0.5,
 )
@@ -98,6 +104,7 @@ EXPECTED_PARTIAL_FAILED = (
                 split=None,
             )
         ],
+        "partial": False,
     },
     1.0,
 )
@@ -132,6 +139,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -235,5 +243,5 @@ def test_compute(
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
-    with pytest.raises(CachedArtifactError):
+    with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()

@@ -3,14 +3,14 @@
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
+    CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
-    METRICS_COLLECTION_CACHE_TOTAL_METRIC,
-    METRICS_COLLECTION_JOB_TOTAL_METRIC,
     METRICS_MONGOENGINE_ALIAS,
     QUEUE_COLLECTION_JOBS,
+    QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
 )
-from libcommon.queue import Job
+from libcommon.queue import JobDocument
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
@@ -88,12 +88,12 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
         mongoengine_alias=METRICS_MONGOENGINE_ALIAS,
     ):
         db = get_db(METRICS_MONGOENGINE_ALIAS)
-        db[METRICS_COLLECTION_JOB_TOTAL_METRIC].insert_many([{"queue": job_type, "status": "waiting", "total": 0}])
-        db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].insert_many([{"kind": cache_kind, "http_status": 400, "total": 0}])
-        assert db[METRICS_COLLECTION_JOB_TOTAL_METRIC].find_one(
+        db[QUEUE_METRICS_COLLECTION].insert_many([{"queue": job_type, "status": "waiting", "total": 0}])
+        db[CACHE_METRICS_COLLECTION].insert_many([{"kind": cache_kind, "http_status": 400, "total": 0}])
+        assert db[QUEUE_METRICS_COLLECTION].find_one(
             {"queue": job_type}
         )  # Ensure there is at least one record to delete
-        assert db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].find_one(
+        assert db[CACHE_METRICS_COLLECTION].find_one(
             {"kind": cache_kind}
         )  # Ensure there is at least one record to delete
 
@@ -105,26 +105,23 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
         )
         migration.up()
 
-        assert not db[METRICS_COLLECTION_JOB_TOTAL_METRIC].find_one(
-            {"queue": job_type}
-        )  # Ensure 0 records after deletion
-        assert not db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].find_one(
-            {"kind": cache_kind}
-        )  # Ensure 0 records after deletion
+        assert not db[QUEUE_METRICS_COLLECTION].find_one({"queue": job_type})  # Ensure 0 records after deletion
+        assert not db[CACHE_METRICS_COLLECTION].find_one({"kind": cache_kind})  # Ensure 0 records after deletion
 
-        db[METRICS_COLLECTION_JOB_TOTAL_METRIC].drop()
-        db[METRICS_COLLECTION_CACHE_TOTAL_METRIC].drop()
+        db[QUEUE_METRICS_COLLECTION].drop()
+        db[CACHE_METRICS_COLLECTION].drop()
 
 
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
-        Job(
+        JobDocument(
             type="test",
             dataset="test",
             revision="test",
             unicity_id="test",
             namespace="test",
             created_at=get_datetime(),
+            difficulty=50,
         ).save()
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         assert (

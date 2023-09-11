@@ -8,7 +8,7 @@ import pytest
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactError, upsert_response
+from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -46,6 +46,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -266,5 +267,5 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
     dataset = "doesnotexist"
     job_runner = get_job_runner(dataset, app_config)
-    with pytest.raises(CachedArtifactError):
+    with pytest.raises(CachedArtifactNotFoundError):
         job_runner.compute()

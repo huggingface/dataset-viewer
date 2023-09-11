@@ -10,6 +10,8 @@
     value: {{ .Values.assets.storageDirectory | quote }}
   - name: CACHED_ASSETS_DIRECTORY
     value: {{ .Values.cachedAssets.storageDirectory | quote }}
+  - name: OPENAPI_FILE
+    value: {{ .Values.reverseProxy.openapiFile | quote }}
   - name: HOST
     value: {{ .Values.reverseProxy.host | quote }}
   - name: PORT
@@ -18,6 +20,10 @@
     value: {{ include "admin.url" . | quote }}
   - name: URL_API
     value: {{ include "api.url" . | quote }}
+  - name: URL_ROWS
+    value: {{ include "rows.url" . | quote }}
+  - name: URL_SEARCH
+    value: {{ include "search.url" . | quote }}
   volumeMounts:
   {{ include "volumeMountAssetsRO" . | nindent 2 }}
   {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
@@ -27,10 +33,6 @@
     readOnly: true
   - name: error-pages
     mountPath: /error-pages
-    mountPropagation: None
-    readOnly: true
-  - name: static-files
-    mountPath: /static-files
     mountPropagation: None
     readOnly: true
   readinessProbe:

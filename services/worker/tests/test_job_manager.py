@@ -5,9 +5,9 @@ from typing import Optional
 import pytest
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import Job, Queue
+from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponse, get_response, upsert_response
+from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
@@ -71,6 +71,7 @@ def test_check_type(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -93,6 +94,7 @@ def test_check_type(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -124,7 +126,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
-    assert Job.objects().count() == 0
+    assert JobDocument.objects().count() == 0
     queue.add_job(
         job_type=root_step.job_type,
         dataset="dataset",
@@ -132,6 +134,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         config=None,
         split=None,
         priority=priority,
+        difficulty=50,
     )
     job_info = queue.start_job()
     assert job_info["priority"] == priority
@@ -194,7 +197,7 @@ def test_job_runner_set_crashed(
     message = "I'm crashed :("
 
     queue = Queue()
-    assert Job.objects().count() == 0
+    assert JobDocument.objects().count() == 0
     queue.add_job(
         job_type=test_processing_step.job_type,
         dataset=dataset,
@@ -202,6 +205,7 @@ def test_job_runner_set_crashed(
         config=config,
         split=split,
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     job_info = queue.start_job()
 
@@ -216,7 +220,7 @@ def test_job_runner_set_crashed(
     )
 
     job_manager.set_crashed(message=message)
-    response = CachedResponse.objects()[0]
+    response = CachedResponseDocument.objects()[0]
     expected_error = {"error": message}
     assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerCrashedError"
@@ -260,6 +264,7 @@ def test_raise_if_parallel_response_exists(
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -279,7 +284,7 @@ def test_raise_if_parallel_response_exists(
 def test_doesnotexist(app_config: AppConfig) -> None:
     dataset = "doesnotexist"
     revision = "revision"
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
 
     job_info = JobInfo(
         job_id="job_id",
@@ -291,6 +296,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
             "split": split,
         },
         priority=Priority.NORMAL,
+        difficulty=50,
     )
     processing_step_name = "dummy"
     processing_graph = ProcessingGraph(

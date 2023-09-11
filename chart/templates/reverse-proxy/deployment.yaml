@@ -33,7 +33,8 @@ spec:
       nodeSelector: {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
       volumes:
-      {{ include "volumeData" . | nindent 6 }}
+      {{ include "volumeCachedAssets" . | nindent 6 }}
+      {{ include "volumeNfs" . | nindent 6 }}
       - name: nginx-templates
         configMap:
           name: "{{ include "name" . }}-reverse-proxy"
@@ -50,11 +51,3 @@ spec:
           items:
             - key: "404.html"
               path: "404.html"
-      - name: static-files
-        configMap:
-          name: "{{ include "name" . }}-reverse-proxy"
-          defaultMode: 420
-          optional: false
-          items:
-            - key: "openapi.json"
-              path: "openapi.json"

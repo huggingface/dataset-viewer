@@ -4,13 +4,15 @@
 import uvicorn
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.resources import (
-    CacheMongoResource,
-    MetricsMongoResource,
-    QueueMongoResource,
-    Resource,
+from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
+from libcommon.storage import (
+    exists,
+    init_assets_dir,
+    init_duckdb_index_cache_dir,
+    init_hf_datasets_cache_dir,
+    init_parquet_metadata_dir,
+    init_statistics_cache_dir,
 )
-from libcommon.storage import exists, init_assets_dir
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -23,7 +25,6 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
-from admin.routes.cancel_jobs import create_cancel_jobs_endpoint
 from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
 from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
@@ -31,6 +32,7 @@ from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.metrics import create_metrics_endpoint
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
+from admin.utils import EXPOSED_HEADERS
 
 
 def create_app() -> Starlette:
@@ -39,6 +41,11 @@ def create_app() -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+    duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
+    hf_datasets_cache_directory = init_hf_datasets_cache_dir(app_config.datasets_based.hf_datasets_cache)
+    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
+    statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
+
     if not exists(assets_directory):
         raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
@@ -46,28 +53,36 @@ def create_app() -> Starlette:
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
-    metrics_resource = MetricsMongoResource(
-        database=app_config.metrics.mongo_database, host=app_config.metrics.mongo_url
-    )
-
-    resources: list[Resource] = [cache_resource, queue_resource, metrics_resource]
+    resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
     if not queue_resource.is_available():
         raise RuntimeError("The connection to the queue database could not be established. Exiting.")
-    if not metrics_resource.is_available():
-        raise RuntimeError("The connection to the metrics database could not be established. Exiting.")
 
     middleware = [
         Middleware(
-            CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+            allow_credentials=True,
+            expose_headers=EXPOSED_HEADERS,
         ),
         Middleware(GZipMiddleware),
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
     routes = [
         Route("/healthcheck", endpoint=healthcheck_endpoint),
-        Route("/metrics", endpoint=create_metrics_endpoint(assets_directory=assets_directory)),
+        Route(
+            "/metrics",
+            endpoint=create_metrics_endpoint(
+                assets_directory=assets_directory,
+                descriptive_statistics_directory=statistics_cache_directory,
+                duckdb_directory=duckdb_index_cache_directory,
+                hf_datasets_directory=hf_datasets_cache_directory,
+                parquet_metadata_directory=parquet_metadata_directory,
+            ),
+        ),
         # used in a browser tab to monitor the queue
         Route(
             "/pending-jobs",
@@ -85,6 +100,7 @@ def create_app() -> Starlette:
                 processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                cache_max_days=app_config.cache.max_days,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
@@ -97,6 +113,7 @@ def create_app() -> Starlette:
                 processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                cache_max_days=app_config.cache.max_days,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
@@ -127,6 +144,7 @@ def create_app() -> Starlette:
                     endpoint=create_force_refresh_endpoint(
                         input_type=input_type,
                         job_type=job_type,
+                        difficulty=processing_step.difficulty,
                         hf_endpoint=app_config.common.hf_endpoint,
                         hf_token=app_config.common.hf_token,
                         external_auth_url=app_config.admin.external_auth_url,
@@ -156,16 +174,6 @@ def create_app() -> Starlette:
                         organization=app_config.admin.hf_organization,
                         hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                     ),
-                ),
-                Route(
-                    f"/cancel-jobs/{job_type}",
-                    endpoint=create_cancel_jobs_endpoint(
-                        job_type=job_type,
-                        external_auth_url=app_config.admin.external_auth_url,
-                        organization=app_config.admin.hf_organization,
-                        hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                    ),
-                    methods=["POST"],
                 ),
             ]
         )

@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from datasets import Dataset, Features
+from datasets import Dataset, Features, Value
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
 from libcommon.exceptions import PreviousStepFormatError
@@ -78,6 +78,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -103,6 +104,8 @@ def get_job_runner(
                         dataset="ok", config="config_1", split="train", url="url2", filename="filename2", size=0
                     ),
                 ],
+                partial=False,
+                features=None,
             ),
             None,
             ConfigParquetMetadataResponse(
@@ -115,7 +118,7 @@ def get_job_runner(
                         filename="filename1",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="ok/--/config_1/filename1",
+                        parquet_metadata_subpath="ok/--/config_1/train/filename1",
                     ),
                     ParquetFileMetadataItem(
                         dataset="ok",
@@ -125,9 +128,11 @@ def get_job_runner(
                         filename="filename2",
                         size=0,
                         num_rows=3,
-                        parquet_metadata_subpath="ok/--/config_1/filename2",
+                        parquet_metadata_subpath="ok/--/config_1/train/filename2",
                     ),
-                ]
+                ],
+                partial=False,
+                features=None,
             ),
             False,
         ),
@@ -148,6 +153,61 @@ def get_job_runner(
             PreviousStepFormatError.__name__,
             None,
             True,
+        ),
+        (
+            "with_features",
+            "config_1",
+            HTTPStatus.OK,
+            ConfigParquetResponse(
+                parquet_files=[
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                    ),
+                    SplitHubFile(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                    ),
+                ],
+                partial=False,
+                features=Features({"a": Value("string")}).to_dict(),
+            ),
+            None,
+            ConfigParquetMetadataResponse(
+                parquet_files_metadata=[
+                    ParquetFileMetadataItem(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url1",
+                        filename="filename1",
+                        size=0,
+                        num_rows=3,
+                        parquet_metadata_subpath="with_features/--/config_1/train/filename1",
+                    ),
+                    ParquetFileMetadataItem(
+                        dataset="with_features",
+                        config="config_1",
+                        split="train",
+                        url="url2",
+                        filename="filename2",
+                        size=0,
+                        num_rows=3,
+                        parquet_metadata_subpath="with_features/--/config_1/train/filename2",
+                    ),
+                ],
+                partial=False,
+                features=Features({"a": Value("string")}).to_dict(),
+            ),
+            False,
         ),
     ],
 )
@@ -181,8 +241,9 @@ def test_compute(
             assert mock_ParquetFile.call_count == len(upstream_content["parquet_files"])
             for parquet_file_item in upstream_content["parquet_files"]:
                 mock_ParquetFile.assert_any_call(
-                    parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
+                    url=parquet_file_item["url"], fs=HTTPFileSystem(), hf_token=app_config.common.hf_token
                 )
+        assert expected_content["parquet_files_metadata"]
         for parquet_file_metadata_item in expected_content["parquet_files_metadata"]:
             assert (
                 pq.read_metadata(
@@ -257,6 +318,7 @@ def test_ParquetIndexWithMetadata_query(
         num_bytes=[num_bytes],
         httpfs=httpfs,
         hf_token=CI_USER_TOKEN,
+        max_arrow_data_in_memory=999999999,
     )
     with patch("libcommon.parquet_utils.HTTPFile", AuthenticatedHTTPFile):
         out = index.query(offset=0, length=2).to_pydict()

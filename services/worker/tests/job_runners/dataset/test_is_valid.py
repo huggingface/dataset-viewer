@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
 from typing import Any, Callable, List
@@ -24,44 +24,82 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 GetJobRunner = Callable[[str, AppConfig], DatasetIsValidJobRunner]
 
+DATASET = "dataset"
+CONFIG_1 = "config1"
+CONFIG_2 = "config2"
 
-UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
-    kind="config-split-names-from-streaming", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
-)
-UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO: UpstreamResponse = UpstreamResponse(
-    kind="config-split-names-from-info", dataset="dataset_ok", config=None, http_status=HTTPStatus.OK, content={}
-)
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-streaming",
-    dataset="dataset_ok",
-    config="config",
+UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
+    kind="dataset-config-names",
+    dataset=DATASET,
     http_status=HTTPStatus.OK,
-    content={},
+    content={
+        "config_names": [
+            {"dataset": DATASET, "config": CONFIG_1},
+            {"dataset": DATASET, "config": CONFIG_2},
+        ]
+    },
 )
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-parquet", dataset="dataset_ok", config="config", http_status=HTTPStatus.OK, content={}
+UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_1,
+    http_status=HTTPStatus.OK,
+    content={"viewer": True, "preview": True, "search": True},
 )
-UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="config-split-names-from-info",
-    dataset="dataset_ok",
-    config=None,
+UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_1,
+    http_status=HTTPStatus.OK,
+    content={"viewer": True, "preview": False, "search": False},
+)
+UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_2,
+    http_status=HTTPStatus.OK,
+    content={"viewer": False, "preview": False, "search": True},
+)
+UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_2,
+    http_status=HTTPStatus.OK,
+    content={"viewer": True, "preview": True, "search": True},
+)
+UPSTREAM_RESPONSE_CONFIG_1_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_1,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-streaming",
-    dataset="dataset_ok",
-    config="config",
+UPSTREAM_RESPONSE_CONFIG_2_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="config-is-valid",
+    dataset=DATASET,
+    config=CONFIG_2,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
-EXPECTED_OK = (
-    {"valid": True},
+EXPECTED_COMPLETED_ALL_FALSE = (
+    {"viewer": False, "preview": False, "search": False},
     1.0,
 )
-EXPECTED_ERROR = (
-    {"valid": False},
+EXPECTED_ALL_MIXED = (
+    {"viewer": True, "preview": False, "search": True},
     1.0,
+)
+EXPECTED_COMPLETED_ALL_TRUE = (
+    {"viewer": True, "preview": True, "search": True},
+    1.0,
+)
+EXPECTED_PENDING_ALL_TRUE = (
+    {"viewer": True, "preview": True, "search": True},
+    0.5,
+)
+EXPECTED_PENDING_ALL_FALSE = (
+    {"viewer": False, "preview": False, "search": False},
+    0.0,
 )
 
 
@@ -75,25 +113,19 @@ def get_job_runner(
         app_config: AppConfig,
     ) -> DatasetIsValidJobRunner:
         processing_step_name = DatasetIsValidJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            {
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": DatasetIsValidJobRunner.get_job_runner_version(),
-                }
-            }
-        )
+        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
         return DatasetIsValidJobRunner(
             job_info={
                 "type": DatasetIsValidJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
                     "config": None,
                     "split": None,
+                    "revision": "revision",
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 20,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -103,85 +135,46 @@ def get_job_runner(
 
 
 @pytest.mark.parametrize(
-    "dataset,upstream_responses,expected_error_code,expected,should_raise",
+    "upstream_responses,expected",
     [
         (
-            "dataset_ok",
             [
-                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
+                UPSTREAM_RESPONSE_CONFIG_1_OK,
+                UPSTREAM_RESPONSE_CONFIG_2_OK,
             ],
-            None,
-            EXPECTED_OK,
-            False,
+            EXPECTED_COMPLETED_ALL_TRUE,
         ),
         (
-            "dataset_ok",
             [
-                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
-                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
+                UPSTREAM_RESPONSE_CONFIG_1_OK,
             ],
-            None,
-            EXPECTED_OK,
-            False,
-        ),
-        ("dataset_ok", [], None, EXPECTED_ERROR, False),
-        ("dataset_ok", [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO], None, EXPECTED_ERROR, False),
-        ("dataset_ok", [UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING], None, EXPECTED_ERROR, False),
-        (
-            "dataset_ok",
-            [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING],
-            None,
-            EXPECTED_ERROR,
-            False,
+            EXPECTED_PENDING_ALL_TRUE,
         ),
         (
-            "dataset_ok",
-            [UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO, UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR],
-            None,
-            EXPECTED_ERROR,
-            False,
-        ),
-        (
-            "dataset_ok",
             [
-                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_STREAMING,
-                UPSTREAM_RESPONSE_SPLIT_NAMES_FROM_DATASET_INFO_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR,
+                UPSTREAM_RESPONSE_CONFIG_1_ERROR,
+                UPSTREAM_RESPONSE_CONFIG_2_ERROR,
             ],
-            None,
-            EXPECTED_OK,
-            False,
+            EXPECTED_COMPLETED_ALL_FALSE,
+        ),
+        ([UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER, UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH], EXPECTED_ALL_MIXED),
+        (
+            [],
+            EXPECTED_PENDING_ALL_FALSE,
         ),
     ],
 )
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    dataset: str,
     upstream_responses: List[UpstreamResponse],
-    expected_error_code: str,
     expected: Any,
-    should_raise: bool,
 ) -> None:
+    dataset = DATASET
+    upsert_response(**UPSTREAM_RESPONSE_CONFIG_NAMES)
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
-    if should_raise:
-        with pytest.raises(Exception) as e:
-            job_runner.compute()
-        assert e.typename == expected_error_code
-    else:
-        compute_result = job_runner.compute()
-        assert compute_result.content == expected[0]
-        assert compute_result.progress == expected[1]
-
-
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
-    dataset = "doesnotexist"
-    job_runner = get_job_runner(dataset, app_config)
     compute_result = job_runner.compute()
-    assert compute_result.content == {"valid": False}
+    assert compute_result.content == expected[0]
+    assert compute_result.progress == expected[1]

@@ -30,11 +30,17 @@ jobs:
           - directory: services
             project: api
           - directory: services
+            project: rows
+          - directory: services
+            project: search
+          - directory: services
+            project: storage-admin
+          - directory: services
             project: worker
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Set outputs
@@ -69,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Update dependencies
         run: helm dependencies update
         working-directory: chart
@@ -90,7 +96,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set outputs
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -107,6 +113,12 @@ jobs:
                 admin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 api:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                rows:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                search:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                storageAdmin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 worker:
                   tag: sha-${{ steps.vars.outputs.sha_short }}

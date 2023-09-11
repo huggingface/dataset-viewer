@@ -15,22 +15,16 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import Indexer
+from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.utils import JobInfo, Row, RowItem
+from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import (
-    CompleteJobResult,
-    JobRunnerInfo,
-    Row,
-    RowItem,
-    SplitFirstRowsResponse,
-)
+from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
-from worker.utils import create_truncated_row_items, get_json_size, to_features_list
+from worker.utils import create_truncated_row_items, get_json_size
 
 
 def transform_rows(
@@ -109,7 +103,10 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    pa_table = rows_index.query(offset=0, length=rows_max_number)
+    try:
+        pa_table = rows_index.query(offset=0, length=rows_max_number)
+    except TooBigRows as err:
+        raise TooBigContentError(str(err))
     rows = [
         RowItem(
             {
@@ -195,9 +192,10 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             processing_graph=processing_graph,
             hf_token=self.app_config.common.hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
-            httpfs=HTTPFileSystem(),
-            unsupported_features_magic_strings=[],
+            httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),
+            unsupported_features=[],
             all_columns_supported_datasets_allow_list="all",
+            max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
 
     def compute(self) -> CompleteJobResult:

@@ -24,7 +24,7 @@ data = query()
 print(data)
 {'parquet_files': 
     [
-        {'dataset': 'codeparrot/codecomplex', 'config': 'codeparrot--codecomplex', 'split': 'train', 'url': 'https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/codeparrot--codecomplex/json-train.parquet', 'filename': 'json-train.parquet', 'size': 4115908}
+        {'dataset': 'codeparrot/codecomplex', 'config': 'default', 'split': 'train', 'url': 'https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet', 'filename': '0000.parquet', 'size': 4115908}
     ], 
  'pending': [], 'failed': []
 }
@@ -37,7 +37,7 @@ With the URL, you can read the Parquet file into a Pandas DataFrame:
 ```py
 import pandas as pd
 
-url = "https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/codeparrot--codecomplex/json-train.parquet"
+url = "https://huggingface.co/datasets/codeparrot/codecomplex/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet"
 df = pd.read_parquet(url)
 df.head(5)
 ```

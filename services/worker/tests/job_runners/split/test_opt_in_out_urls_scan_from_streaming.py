@@ -75,6 +75,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -174,7 +175,7 @@ DEFAULT_EMPTY_RESPONSE = {
 )
 def test_compute(
     hub_responses_public: HubDatasetTest,
-    hub_reponses_spawning_opt_in_out: HubDatasetTest,
+    hub_responses_spawning_opt_in_out: HubDatasetTest,
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     name: str,
@@ -182,8 +183,9 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
-    hub_datasets = {"public": hub_responses_public, "spawning_opt_in_out": hub_reponses_spawning_opt_in_out}
-    dataset, config, split = get_default_config_split(hub_datasets[name]["name"])
+    hub_datasets = {"public": hub_responses_public, "spawning_opt_in_out": hub_responses_spawning_opt_in_out}
+    dataset = hub_datasets[name]["name"]
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -210,7 +212,7 @@ def test_compute(
 @pytest.mark.parametrize(
     "dataset,columns_max_number,upstream_content,upstream_status,exception_name",
     [
-        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactError"),
+        ("doesnotexist", 10, {}, HTTPStatus.OK, "CachedArtifactNotFoundError"),
         ("wrong_format", 10, {}, HTTPStatus.OK, "PreviousStepFormatError"),
         (
             "upstream_failed",
@@ -237,7 +239,7 @@ def test_compute(
 )
 def test_compute_failed(
     app_config: AppConfig,
-    hub_reponses_spawning_opt_in_out: HubDatasetTest,
+    hub_responses_spawning_opt_in_out: HubDatasetTest,
     get_job_runner: GetJobRunner,
     dataset: str,
     columns_max_number: int,
@@ -246,8 +248,8 @@ def test_compute_failed(
     exception_name: str,
 ) -> None:
     if dataset == "too_many_columns":
-        dataset = hub_reponses_spawning_opt_in_out["name"]
-    dataset, config, split = get_default_config_split(dataset)
+        dataset = hub_responses_spawning_opt_in_out["name"]
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -276,7 +278,8 @@ def test_compute_error_from_spawning(
     get_job_runner: GetJobRunner,
     hub_public_spawning_opt_in_out: str,
 ) -> None:
-    dataset, config, split = get_default_config_split(hub_public_spawning_opt_in_out)
+    dataset = hub_public_spawning_opt_in_out
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -298,6 +301,12 @@ def test_compute_error_from_spawning(
         job_runner.compute()
 
 
+@pytest.mark.skip(
+    reason=(
+        "Temporarily disabled, we can't use secrets on fork repos. See"
+        " https://github.com/huggingface/datasets-server/issues/1085"
+    )
+)
 @pytest.mark.asyncio
 async def test_real_check_spawning_response(app_config: AppConfig) -> None:
     semaphore = Semaphore(value=10)

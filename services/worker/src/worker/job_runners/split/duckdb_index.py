@@ -1,29 +1,32 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import copy
 import logging
+import os
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Any, List, Optional, Set
 
 import duckdb
+from datasets.features.features import Features, FeatureType, Value, _visit
+from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import HfApi
-from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.config import DuckDbIndexConfig
+from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
+    CreateCommitError,
     DatasetNotFoundError,
     DuckDBIndexFileNotFoundError,
     LockedDatasetTimeoutError,
     NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
-    SplitNotFoundError,
     SplitWithTooBigParquetError,
 )
 from libcommon.processing_graph import ProcessingStep
@@ -32,21 +35,50 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
 
-from worker.config import AppConfig
+from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import LOCK_GIT_BRANCH_RETRY_SLEEPS, create_branch, hf_hub_url
+from worker.utils import (
+    HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
+    LOCK_GIT_BRANCH_RETRY_SLEEPS,
+    check_split_exists,
+    create_branch,
+    hf_hub_url,
+    retry,
+)
 
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
-CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 1;"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);"
+CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
+CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
+REPO_TYPE = "dataset"
+HUB_DOWNLOAD_CACHE_FOLDER = "cache"
+
+
+class DuckdbIndexWithFeatures(SplitHubFile):
+    features: Optional[dict[str, Any]]
+
+
+def get_indexable_columns(features: Features) -> List[str]:
+    indexable_columns: List[str] = []
+    for column, feature in features.items():
+        indexable = False
+
+        def check_indexable(feature: FeatureType) -> None:
+            nonlocal indexable
+            if isinstance(feature, Value) and feature.dtype == "string":
+                indexable = True
+
+        _visit(feature, check_indexable)
+        if indexable:
+            indexable_columns.append(column)
+    return indexable_columns
 
 
 def compute_index_rows(
@@ -63,20 +95,9 @@ def compute_index_rows(
     max_parquet_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
-) -> SplitHubFile:
+) -> DuckdbIndexWithFeatures:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
-
-    # validate split
-    split_names_best_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
-    )
-    try:
-        splits_content = split_names_best_response.response["content"]["splits"]
-    except Exception as e:
-        raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
-
-    if split not in [split_item["split"] for split_item in splits_content]:
-        raise SplitNotFoundError(f"The split '{split}' does not exist for the config '{config}' of the dataset.")
+    check_split_exists(dataset=dataset, config=config, split=split)
 
     # get parquet urls and dataset_info
     config_parquet_and_info_step = "config-parquet-and-info"
@@ -101,25 +122,24 @@ def compute_index_rows(
                 f"Current size of sum of split parquets is {split_parquets_size} bytes."
             )
 
-        parquet_urls = [parquet_file["url"] for parquet_file in split_parquet_files]
-
-        if not parquet_urls:
+        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
+        if not parquet_file_names:
             raise ParquetResponseEmptyError("No parquet files found.")
+
+        # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
 
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
-        column_names = ",".join(list(features.keys()))
+        column_names = ",".join('"' + column + '"' for column in list(features.keys()))
 
-        # look for string columns
-        string_columns = [
-            column
-            for column, feature in features.items()
-            if "dtype" in feature
-            and "_type" in feature
-            and feature["dtype"] == STRING_FEATURE_DTYPE
-            and feature["_type"] == VALUE_FEATURE_TYPE
-        ]
-        if not string_columns:
+        # look for indexable columns (= possibly nested columns containing string data)
+        # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
+        indexable_columns = ",".join(
+            '"' + column + '"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
+        )
+        if not indexable_columns:
             raise NoIndexableColumnsError("No string columns available to index.")
 
     except KeyError as e:
@@ -143,24 +163,41 @@ def compute_index_rows(
     logging.debug(CREATE_SEQUENCE_COMMAND)
     con.sql(CREATE_SEQUENCE_COMMAND)
 
-    create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} read_parquet({parquet_urls});"
+    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
+    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+    for parquet_file in parquet_file_names:
+        hf_hub_download(
+            repo_type=REPO_TYPE,
+            revision=target_revision,
+            repo_id=dataset,
+            filename=f"{config}/{split_directory}/{parquet_file}",
+            local_dir=duckdb_index_file_directory,
+            local_dir_use_symlinks=False,
+            token=hf_token,
+            cache_dir=duckdb_index_file_directory,
+        )
+
+    all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
+    create_command_sql = f"{CREATE_TABLE_COMMAND.format(columns=column_names)} '{all_split_parquets}';"
     logging.debug(create_command_sql)
     con.sql(create_command_sql)
 
     # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
     # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    logging.debug(CREATE_INDEX_COMMAND)
-    con.sql(CREATE_INDEX_COMMAND)
+    create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
+    logging.debug(create_index_sql)
+    con.sql(create_index_sql)
     con.close()
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    index_file_location = f"{config}/{split}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
 
     try:
         with lock.git_branch(
             dataset=dataset, branch=target_revision, owner=job_id, sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS
         ):
+            logging.debug(f"try to create branch for {dataset=} with {target_revision=} on {hf_endpoint=}")
             create_branch(
                 dataset=dataset,
                 target_revision=target_revision,
@@ -168,28 +205,48 @@ def compute_index_rows(
                 committer_hf_api=committer_hf_api,
             )
 
+            logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
             delete_operations: List[CommitOperation] = []
             if index_file_location in all_repo_files:
                 delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+            logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision
             add_operations: List[CommitOperation] = [
                 CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path.resolve())
             ]
+            logging.debug(f"add operations for {dataset=} {add_operations=}")
 
-            committer_hf_api.create_commit(
-                repo_id=dataset,
-                repo_type=DATASET_TYPE,
-                revision=target_revision,
-                operations=delete_operations + add_operations,
-                commit_message=commit_message,
-                parent_commit=target_dataset_info.sha,
+            retry_create_commit = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+                committer_hf_api.create_commit
             )
+            try:
+                retry_create_commit(
+                    repo_id=dataset,
+                    repo_type=DATASET_TYPE,
+                    revision=target_revision,
+                    operations=delete_operations + add_operations,
+                    commit_message=commit_message,
+                    parent_commit=target_dataset_info.sha,
+                )
+            except RuntimeError as e:
+                if e.__cause__ and isinstance(e.__cause__, HfHubHTTPError):
+                    raise CreateCommitError(
+                        message=(
+                            f"Commit {commit_message} could not be created on the Hub (after"
+                            f" {len(HF_HUB_HTTP_ERROR_RETRY_SLEEPS)} attempts)."
+                        ),
+                        cause=e.__cause__,
+                    ) from e.__cause__
+                raise e
+
+            logging.debug(f"create commit {commit_message} for {dataset=} {add_operations=}")
 
             # call the API again to get the index file
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=True)
+            logging.debug(f"dataset info for {dataset=} {target_dataset_info=}")
     except TimeoutError as err:
         raise LockedDatasetTimeoutError("the dataset is currently locked, please try again later.") from err
     except RepositoryNotFoundError as err:
@@ -207,7 +264,10 @@ def compute_index_rows(
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
-    return SplitHubFile(
+    # we added the __hf_index_id column for the index
+    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
+
+    return DuckdbIndexWithFeatures(
         dataset=dataset,
         config=config,
         split=split,
@@ -220,6 +280,7 @@ def compute_index_rows(
         ),
         filename=Path(repo_file.rfilename).name,
         size=repo_file.size,
+        features=features,
     )
 
 

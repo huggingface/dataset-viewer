@@ -13,7 +13,7 @@ env:
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
   python-version: "3.9.15"
-  poetry-version: "1.4.0"
+  poetry-version: "1.4.2"
 jobs:
   unit-tests:
     defaults:
@@ -22,7 +22,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python

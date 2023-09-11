@@ -21,6 +21,10 @@
       "path": "../libs/libcommon"
     },
     {
+      "name": "libs/libapi",
+      "path": "../libs/libapi"
+    },
+    {
       "name": "services/admin",
       "path": "../services/admin"
     },
@@ -29,12 +33,24 @@
       "path": "../services/api"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
-    },
-    {
       "name": "services/reverse-proxy",
       "path": "../services/reverse-proxy"
+    },
+    {
+      "name": "services/rows",
+      "path": "../services/rows"
+    },
+    {
+      "name": "services/search",
+      "path": "../services/search"
+    },
+    {
+      "name": "services/storage-admin",
+      "path": "../services/storage-admin"
+    },
+    {
+      "name": "services/worker",
+      "path": "../services/worker"
     },
     {
       "name": "front/admin_ui",
@@ -51,12 +67,14 @@
     "python.formatting.provider": "black",
     "python.linting.enabled": true,
     "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "spectral.rulesetFile": ".spectral.yml"
   },
   "extensions": {
     "recommendations": [
       "ms-python.python",
-      "ms-kubernetes-tools.vscode-kubernetes-tools"
+      "ms-kubernetes-tools.vscode-kubernetes-tools",
+      "stoplight.spectral"
     ]
   }
 }

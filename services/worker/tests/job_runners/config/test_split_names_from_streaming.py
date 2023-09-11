@@ -55,6 +55,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -65,7 +66,8 @@ def get_job_runner(
 
 
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset, config, _ = get_default_config_split(hub_public_csv)
+    dataset = hub_public_csv
+    config, _ = get_default_config_split()
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     content = response.content
@@ -89,11 +91,11 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
 )
 def test_compute_split_names_from_streaming_response(
     hub_responses_public: HubDatasetTest,
-    hub_reponses_audio: HubDatasetTest,
-    hub_reponses_gated: HubDatasetTest,
-    hub_reponses_private: HubDatasetTest,
-    hub_reponses_empty: HubDatasetTest,
-    hub_reponses_does_not_exist: HubDatasetTest,
+    hub_responses_audio: HubDatasetTest,
+    hub_responses_gated: HubDatasetTest,
+    hub_responses_private: HubDatasetTest,
+    hub_responses_empty: HubDatasetTest,
+    hub_responses_does_not_exist: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -103,13 +105,14 @@ def test_compute_split_names_from_streaming_response(
 ) -> None:
     hub_datasets = {
         "public": hub_responses_public,
-        "audio": hub_reponses_audio,
-        "gated": hub_reponses_gated,
-        "private": hub_reponses_private,
-        "empty": hub_reponses_empty,
-        "does_not_exist": hub_reponses_does_not_exist,
+        "audio": hub_responses_audio,
+        "gated": hub_responses_gated,
+        "private": hub_responses_private,
+        "empty": hub_responses_empty,
+        "does_not_exist": hub_responses_does_not_exist,
     }
-    dataset, config, _ = get_default_config_split(hub_datasets[name]["name"])
+    dataset = hub_datasets[name]["name"]
+    config, _ = get_default_config_split()
     expected_configs_response = hub_datasets[name]["splits_response"]
     job_runner = get_job_runner(
         dataset,

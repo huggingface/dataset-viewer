@@ -23,7 +23,7 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
+def compute_parquet_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
     """
     Get the response of dataset-parquet for one specific dataset on huggingface.co.
     Args:
@@ -50,6 +50,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
         total = 0
         pending = []
         failed = []
+        partial = False
         for config_item in content["config_names"]:
             config = config_item["config"]
             total += 1
@@ -81,19 +82,20 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetParquetResponse, float]
                     )
                 )
                 continue
-            config_parquet_content = ConfigParquetResponse(parquet_files=response["content"]["parquet_files"])
+            config_parquet_content = ConfigParquetResponse(
+                parquet_files=response["content"]["parquet_files"],
+                partial=response["content"]["partial"],
+                features=None,  # we can keep it None since we don't pass it to DatasetParquetResponse anyway
+            )
             parquet_files.extend(config_parquet_content["parquet_files"])
+            partial = partial or config_parquet_content["partial"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - len(pending)) / total if total else 1.0
 
     return (
-        DatasetParquetResponse(
-            parquet_files=parquet_files,
-            pending=pending,
-            failed=failed,
-        ),
+        DatasetParquetResponse(parquet_files=parquet_files, pending=pending, failed=failed, partial=partial),
         progress,
     )
 
@@ -108,5 +110,5 @@ class DatasetParquetJobRunner(DatasetJobRunner):
         return PROCESSING_STEP_DATASET_PARQUET_VERSION
 
     def compute(self) -> JobResult:
-        response_content, progress = compute_sizes_response(dataset=self.dataset)
+        response_content, progress = compute_parquet_response(dataset=self.dataset)
         return JobResult(response_content, progress=progress)

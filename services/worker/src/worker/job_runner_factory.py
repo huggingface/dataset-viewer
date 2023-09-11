@@ -12,6 +12,7 @@ from libcommon.utils import JobInfo
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
 from worker.job_runners.config.info import ConfigInfoJobRunner
+from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 from worker.job_runners.config.opt_in_out_urls_count import (
     ConfigOptInOutUrlsCountJobRunner,
 )
@@ -26,6 +27,7 @@ from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
+from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
@@ -34,6 +36,9 @@ from worker.job_runners.dataset.opt_in_out_urls_count import (
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 from worker.job_runners.dataset.size import DatasetSizeJobRunner
 from worker.job_runners.dataset.split_names import DatasetSplitNamesJobRunner
+from worker.job_runners.split.descriptive_statistics import (
+    SplitDescriptiveStatisticsJobRunner,
+)
 from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
@@ -42,6 +47,7 @@ from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
+from worker.job_runners.split.is_valid import SplitIsValidJobRunner
 from worker.job_runners.split.opt_in_out_urls_count import (
     SplitOptInOutUrlsCountJobRunner,
 )
@@ -75,6 +81,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     assets_directory: StrPath
     parquet_metadata_directory: StrPath
     duckdb_index_cache_directory: StrPath
+    statistics_cache_directory: StrPath
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
@@ -178,6 +185,19 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 assets_directory=self.assets_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
+        if job_type == SplitIsValidJobRunner.get_job_type():
+            return SplitIsValidJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                processing_graph=self.processing_graph,
+                app_config=self.app_config,
+            )
+        if job_type == ConfigIsValidJobRunner.get_job_type():
+            return ConfigIsValidJobRunner(
+                job_info=job_info,
+                processing_step=processing_step,
+                app_config=self.app_config,
+            )
         if job_type == DatasetIsValidJobRunner.get_job_type():
             return DatasetIsValidJobRunner(
                 job_info=job_info,
@@ -216,6 +236,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
             )
+        if job_type == SplitDescriptiveStatisticsJobRunner.get_job_type():
+            return SplitDescriptiveStatisticsJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+                statistics_cache_directory=self.statistics_cache_directory,
+            )
 
         if job_type == SplitDuckDbIndexJobRunner.get_job_type():
             return SplitDuckDbIndexJobRunner(
@@ -223,6 +250,13 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 duckdb_index_cache_directory=self.duckdb_index_cache_directory,
+            )
+
+        if job_type == DatasetHubCacheJobRunner.get_job_type():
+            return DatasetHubCacheJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
             )
 
         supported_job_types = [
@@ -238,6 +272,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigSizeJobRunner.get_job_type(),
             ConfigSplitNamesFromInfoJobRunner.get_job_type(),
             SplitFirstRowsFromParquetJobRunner.get_job_type(),
+            SplitIsValidJobRunner.get_job_type(),
+            ConfigIsValidJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),
             SplitImageUrlColumnsJobRunner.get_job_type(),
             SplitOptInOutUrlsScanJobRunner.get_job_type(),
@@ -245,5 +281,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
             SplitDuckDbIndexJobRunner.get_job_type(),
+            SplitDescriptiveStatisticsJobRunner.get_job_type(),
+            DatasetHubCacheJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

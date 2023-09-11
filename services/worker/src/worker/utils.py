@@ -22,14 +22,7 @@ from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import (
-    Dataset,
-    DatasetInfo,
-    DownloadConfig,
-    Features,
-    IterableDataset,
-    load_dataset,
-)
+from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
@@ -37,34 +30,18 @@ from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.exceptions import (
     DatasetNotFoundError,
     NormalRowsError,
+    PreviousStepFormatError,
+    SplitNotFoundError,
     StreamingRowsError,
 )
-from libcommon.utils import orjson_dumps
+from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.utils import Row, RowItem, orjson_dumps
 from pyarrow.parquet import ParquetFile
 
-from worker.dtos import FeatureItem, Row, RowItem, RowsContent
+from worker.dtos import RowsContent
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-# in JSON, dicts do not carry any order, so we need to return a list
-#
-# > An object is an *unordered* collection of zero or more name/value pairs, where a name is a string and a value
-#   is a string, number, boolean, null, object, or array.
-# > An array is an *ordered* sequence of zero or more values.
-# > The terms "object" and "array" come from the conventions of JavaScript.
-# from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(features: Features) -> List[FeatureItem]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "feature_idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
 
 
 def get_json_size(obj: Any) -> int:
@@ -241,7 +218,7 @@ def get_rows(
     split: str,
     streaming: bool,
     rows_max_number: int,
-    use_auth_token: Union[bool, str, None] = False,
+    token: Union[bool, str, None] = False,
     column_names: Optional[List[str]] = None,
 ) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
@@ -251,7 +228,7 @@ def get_rows(
         name=config,
         split=split,
         streaming=streaming,
-        use_auth_token=use_auth_token,
+        token=token,
         download_config=download_config,
     )
     if streaming:
@@ -277,7 +254,7 @@ def get_rows_or_raise(
     config: str,
     split: str,
     rows_max_number: int,
-    use_auth_token: Union[bool, str, None],
+    token: Union[bool, str, None],
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[List[str]] = [],
@@ -289,7 +266,7 @@ def get_rows_or_raise(
             split=split,
             streaming=True,
             rows_max_number=rows_max_number,
-            use_auth_token=use_auth_token,
+            token=token,
             column_names=column_names,
         )
     except Exception as err:
@@ -314,7 +291,7 @@ def get_rows_or_raise(
                 split=split,
                 streaming=False,
                 rows_max_number=rows_max_number,
-                use_auth_token=use_auth_token,
+                token=token,
             )
         except Exception as err:
             raise NormalRowsError(
@@ -330,12 +307,13 @@ def hf_hub_url(repo_id: str, filename: str, hf_endpoint: str, revision: str, url
 
 
 def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> ParquetFile:
-    headers = get_authentication_headers_for_url(url, use_auth_token=hf_token)
+    headers = get_authentication_headers_for_url(url, token=hf_token)
     return ParquetFile(fs.open(url, headers=headers))
 
 
 DATASET_TYPE = "dataset"
 
+HF_HUB_HTTP_ERROR_RETRY_SLEEPS = [1, 1, 1, 10, 10, 10]
 LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
 LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 
@@ -352,3 +330,26 @@ def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_h
             )
     except RepositoryNotFoundError as err:
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
+
+
+def check_split_exists(dataset: str, config: str, split: str) -> None:
+    """
+    Check if dataset has a provided split in a provided config. Dataset's splits are taken from the best response
+    of 'config-split-names-from-streaming' and 'config-split-names-from-info' steps' cache.
+    """
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
+    )
+    try:
+        splits_content = split_names_best_response.response["content"]["splits"]
+    except Exception as e:
+        raise PreviousStepFormatError(
+            (
+                "Previous steps 'config-split-names-from-streaming' and 'config-split-names-from-info did not return"
+                " the expected content."
+            ),
+            e,
+        ) from e
+
+    if split not in [split_item["split"] for split_item in splits_content]:
+        raise SplitNotFoundError(f"Split '{split}' does not exist for the config '{config}' of the dataset.")

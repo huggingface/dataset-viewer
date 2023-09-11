@@ -1,0 +1,140 @@
+# Get the number of rows and the size in bytes
+
+This guide shows you how to use Datasets Server's `/size` endpoint to retrieve a dataset's size programmatically. Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/getSize).
+
+The `/size` endpoint accepts the dataset name as its query parameter:
+
+<inferencesnippet>
+<python>
+```python
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/size?dataset=duorc"
+def query():
+    response = requests.get(API_URL, headers=headers)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/size?dataset=duorc",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/size?dataset=duorc \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+The endpoint response is a JSON containing the size of the dataset, as well as each of its configurations and splits. It provides the number of rows, the number of colums (where applicable) and the size in bytes for the different forms of the data: original files, size in memory (RAM) and auto-converted parquet files. For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has 187.213 rows along all its configurations and splits, for a total of 97MB.
+
+```json
+{
+  "size": {
+    "dataset": {
+      "dataset": "duorc",
+      "num_bytes_original_files": 97383710,
+      "num_bytes_parquet_files": 58710973,
+      "num_bytes_memory": 1059067116,
+      "num_rows": 187213
+    },
+    "configs": [
+      {
+        "dataset": "duorc",
+        "config": "ParaphraseRC",
+        "num_bytes_original_files": 62921050,
+        "num_bytes_parquet_files": 37709127,
+        "num_bytes_memory": 718409158,
+        "num_rows": 100972,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "SelfRC",
+        "num_bytes_original_files": 34462660,
+        "num_bytes_parquet_files": 21001846,
+        "num_bytes_memory": 340657958,
+        "num_rows": 86241,
+        "num_columns": 7
+      }
+    ],
+    "splits": [
+      {
+        "dataset": "duorc",
+        "config": "ParaphraseRC",
+        "split": "train",
+        "num_bytes_parquet_files": 26005668,
+        "num_bytes_memory": 496682909,
+        "num_rows": 69524,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "ParaphraseRC",
+        "split": "validation",
+        "num_bytes_parquet_files": 5566868,
+        "num_bytes_memory": 106510489,
+        "num_rows": 15591,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "ParaphraseRC",
+        "split": "test",
+        "num_bytes_parquet_files": 6136591,
+        "num_bytes_memory": 115215760,
+        "num_rows": 15857,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "SelfRC",
+        "split": "train",
+        "num_bytes_parquet_files": 14851720,
+        "num_bytes_memory": 239852729,
+        "num_rows": 60721,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "SelfRC",
+        "split": "validation",
+        "num_bytes_parquet_files": 3114390,
+        "num_bytes_memory": 51662519,
+        "num_rows": 12961,
+        "num_columns": 7
+      },
+      {
+        "dataset": "duorc",
+        "config": "SelfRC",
+        "split": "test",
+        "num_bytes_parquet_files": 3035736,
+        "num_bytes_memory": 49142710,
+        "num_rows": 12559,
+        "num_columns": 7
+      }
+    ]
+  },
+  "pending": [],
+  "failed": [],
+  "partial": false
+}
+```

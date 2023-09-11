@@ -4,9 +4,9 @@
 import base64
 import enum
 import mimetypes
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, Dict, List, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -36,6 +36,7 @@ class JobInfo(TypedDict):
     type: str
     params: JobParams
     priority: Priority
+    difficulty: int
 
 
 class FlatJobInfo(TypedDict):
@@ -47,6 +48,7 @@ class FlatJobInfo(TypedDict):
     split: Optional[str]
     priority: str
     status: str
+    difficulty: int
     created_at: datetime
 
 
@@ -74,6 +76,28 @@ class SplitHubFile(TypedDict):
     size: int
 
 
+Row = Dict[str, Any]
+
+
+class RowItem(TypedDict):
+    row_idx: int
+    row: Row
+    truncated_cells: List[str]
+
+
+class FeatureItem(TypedDict):
+    feature_idx: int
+    name: str
+    type: Dict[str, Any]
+
+
+class PaginatedResponse(TypedDict):
+    features: List[FeatureItem]
+    rows: List[RowItem]
+    num_rows_total: int
+    num_rows_per_page: int
+
+
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 def orjson_default(obj: Any) -> Any:
     if isinstance(obj, bytes):
@@ -88,8 +112,11 @@ def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
 
 
-def get_datetime() -> datetime:
-    return datetime.now(timezone.utc)
+def get_datetime(days: Optional[int] = None) -> datetime:
+    date = datetime.now(timezone.utc)
+    if days is not None:
+        date = date - timedelta(days=days)
+    return date
 
 
 def inputs_to_string(

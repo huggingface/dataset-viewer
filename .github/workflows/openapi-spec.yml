@@ -8,15 +8,15 @@ on:
     branches:
       - main
     paths:
-      - "chart/static-files/opanapi.json"
+      - "docs/source/openapi.json"
       - ".github/workflows/openapi.yml"
   pull_request:
     paths:
-      - "chart/static-files/opanapi.json"
+      - "docs/source/openapi.json"
       - ".github/workflows/openapi.yml"
 env:
   python-version: 3.9.15
-  poetry-version: 1.4.0
+  poetry-version: "1.4.2"
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
@@ -28,7 +28,7 @@ jobs:
         working-directory: e2e
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
@@ -44,4 +44,4 @@ jobs:
           poetry install
       - name: Check openapi spec
         run: |
-          poetry run python -m openapi_spec_validator ../chart/static-files/openapi.json
+          poetry run python -m openapi_spec_validator ../docs/source/openapi.json

@@ -58,6 +58,11 @@ class WorkerExecutor:
         heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds
         self.max_seconds_without_heartbeat_for_zombies = heartbeat_interval_seconds * max_missing_heartbeats
 
+        self.heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds
+        self.max_job_duration_seconds = self.app_config.worker.max_job_duration_seconds
+        self.kill_zombies_interval_seconds = self.app_config.worker.kill_zombies_interval_seconds
+        self.kill_long_job_interval_seconds = self.app_config.worker.kill_long_job_interval_seconds
+
     def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.state_file_path
         start_worker_loop_command = [
@@ -85,13 +90,13 @@ class WorkerExecutor:
         loop = asyncio.get_event_loop()
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")
-        loop.create_task(every(self.heartbeat, seconds=self.app_config.worker.heartbeat_interval_seconds))
+        loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
         loop.create_task(
             every(
                 self.kill_zombies,
                 seconds=(
-                    self.app_config.worker.kill_zombies_interval_seconds * 0.5,
-                    self.app_config.worker.kill_zombies_interval_seconds * 1.5,
+                    self.kill_zombies_interval_seconds * 0.5,
+                    self.kill_zombies_interval_seconds * 1.5,
                 ),
             )
         )
@@ -100,8 +105,8 @@ class WorkerExecutor:
                 self.kill_long_job,
                 worker_loop_executor=worker_loop_executor,
                 seconds=(
-                    self.app_config.worker.kill_long_job_interval_seconds * 0.5,
-                    self.app_config.worker.kill_long_job_interval_seconds * 1.5,
+                    self.kill_long_job_interval_seconds * 0.5,
+                    self.kill_long_job_interval_seconds * 1.5,
                 ),
             )
         )
@@ -152,14 +157,11 @@ class WorkerExecutor:
             long_job = worker_state["current_job_info"]
             last_updated = worker_state["last_updated"]
             coefficient = 10 if long_job["params"]["dataset"] == "cerebras/SlimPajama-627B" else 1
-            if (
-                last_updated + timedelta(seconds=coefficient * self.app_config.worker.max_job_duration_seconds)
-                <= get_datetime()
-            ):
+            if last_updated + timedelta(seconds=coefficient * self.max_job_duration_seconds) <= get_datetime():
                 _duration_seconds = int((get_datetime() - last_updated).total_seconds())
                 logging.warning(
                     f"Job {long_job} exceeded maximum duration of"
-                    f" {self.app_config.worker.max_job_duration_seconds} seconds ({_duration_seconds} seconds)."
+                    f" {self.max_job_duration_seconds} seconds ({_duration_seconds} seconds)."
                 )
                 try:
                     worker_loop_executor.stop()  # raises an error if the worker returned exit code 1

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  labels: {{ include "labels.search" . | nindent 4 }}
+  name: "{{ include "name" . }}-search"
+  namespace: {{ .Release.Namespace }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {{ include "labels.search" . | nindent 6 }}

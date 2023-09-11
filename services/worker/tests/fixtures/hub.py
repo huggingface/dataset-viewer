@@ -34,10 +34,10 @@ DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
-def get_default_config_split(dataset: str) -> Tuple[str, str, str]:
-    config = dataset.replace("/", "--")
+def get_default_config_split() -> Tuple[str, str]:
+    config = "default"
     split = "train"
-    return dataset, config, split
+    return config, split
 
 
 def update_repo_settings(
@@ -190,6 +190,24 @@ def hub_gated_csv(csv_path: str) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_gated_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="duckdb_index_gated", dataset=datasets["duckdb_index"], gated="auto")
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_gated_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="descriptive_statistics_gated",
+        dataset=datasets["descriptive_statistics"],
+        gated="auto",
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_jsonl(jsonl_path: str) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="jsonl", file_paths=[jsonl_path])
     yield repo_id
@@ -288,6 +306,13 @@ def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="descriptive_statistics", dataset=datasets["descriptive_statistics"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -300,7 +325,7 @@ HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_config_names_response(dataset: str) -> Any:
-    dataset, config, _ = get_default_config_split(dataset)
+    config, _ = get_default_config_split()
     return {
         "config_names": [
             {
@@ -312,7 +337,7 @@ def create_config_names_response(dataset: str) -> Any:
 
 
 def create_splits_response(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "splits": [
             {
@@ -325,7 +350,7 @@ def create_splits_response(dataset: str) -> Any:
 
 
 def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return {
         "dataset": dataset,
         "config": config,
@@ -350,6 +375,7 @@ def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List
 
 
 def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
@@ -358,8 +384,9 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "features": DATA_cols,
         "builder_name": "csv",
         "config_name": config,
+        "dataset_name": dataset_name,
         "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
-        "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": "csv"}},
+        "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
                 "num_bytes": 50,
@@ -372,13 +399,38 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
     }
 
 
-def create_dataset_info_response_for_big_parquet() -> Any:
+def create_dataset_info_response_for_partially_generated_big_csv(dataset: str, config: str) -> Any:
+    # Dataset is partially converted to parquet: the first 10KB instead of the full 5MB
+    # Missing fields:
+    # - download_size: not applicable, because the dataset is generated using partially downloaded files
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
         "homepage": "",
         "license": "",
         "features": BIG_cols,
+        "builder_name": "csv",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 12380, "num_examples": 10, "dataset_name": "csv"}},
+        "dataset_size": 12380,
+    }
+
+
+def create_dataset_info_response_for_big_parquet(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
+    return {
+        "description": "",
+        "citation": "",
+        "homepage": "",
+        "license": "",
+        "features": BIG_cols,
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
         "splits": {
             "train": {"name": "train", "num_bytes": 5653946, "num_examples": len(BIG_rows), "dataset_name": None}
         },
@@ -402,35 +454,52 @@ def create_dataset_info_response_for_big_parquet_no_info() -> Any:
     }
 
 
-def create_dataset_info_response_for_audio() -> Any:
+def create_dataset_info_response_for_audio(dataset: str, config: str) -> Any:
+    dataset_name = dataset.split("/")[-1]
     return {
         "description": "",
         "citation": "",
         "homepage": "",
         "license": "",
         "features": AUDIO_cols,
-        "splits": {"train": {"name": "train", "num_bytes": 54, "num_examples": 1, "dataset_name": None}},
+        "builder_name": "parquet",
+        "config_name": config,
+        "dataset_name": dataset_name,
+        "version": {"version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0},
+        "splits": {"train": {"name": "train", "num_bytes": 59, "num_examples": 1, "dataset_name": None}},
         "download_size": AUDIO_PARQUET_SIZE,
-        "dataset_size": 54,
+        "dataset_size": 59,
     }
 
 
 def create_parquet_and_info_response(
-    dataset: str, data_type: Literal["csv", "audio", "big_parquet", "big_parquet_no_info"]
+    dataset: str,
+    data_type: Literal["csv", "big-csv", "audio", "big_parquet", "big_parquet_no_info"],
+    partial: bool = False,
 ) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
-
-    filename = "csv-train.parquet" if data_type == "csv" else "parquet-train.parquet"
-    size = CSV_PARQUET_SIZE if data_type == "csv" else AUDIO_PARQUET_SIZE if data_type == "audio" else BIG_PARQUET_FILE
+    config, split = get_default_config_split()
+    filename = "0000.parquet"
+    size = (
+        CSV_PARQUET_SIZE
+        if data_type == "csv"
+        else PARTIAL_CSV_PARQUET_SIZE
+        if data_type == "big-csv"
+        else AUDIO_PARQUET_SIZE
+        if data_type == "audio"
+        else BIG_PARQUET_FILE
+    )
     info = (
         create_dataset_info_response_for_csv(dataset, config)
         if data_type == "csv"
-        else create_dataset_info_response_for_audio()
+        else create_dataset_info_response_for_partially_generated_big_csv(dataset, config)
+        if data_type == "big-csv"
+        else create_dataset_info_response_for_audio(dataset, config)
         if data_type == "audio"
-        else create_dataset_info_response_for_big_parquet()
+        else create_dataset_info_response_for_big_parquet(dataset, config)
         if data_type == "big_parquet"
         else create_dataset_info_response_for_big_parquet_no_info()
     )
+    partial_prefix = "partial-" if partial else ""
     return {
         "parquet_files": [
             {
@@ -438,17 +507,21 @@ def create_parquet_and_info_response(
                 "config": config,
                 "split": split,
                 "url": CI_URL_TEMPLATE.format(
-                    repo_id=f"datasets/{dataset}", revision="refs%2Fconvert%2Fparquet", filename=f"{config}/{filename}"
+                    repo_id=f"datasets/{dataset}",
+                    revision="refs%2Fconvert%2Fparquet",
+                    filename=f"{config}/{partial_prefix}{split}/{filename}",
                 ),
                 "filename": filename,
                 "size": size,
             }
         ],
         "dataset_info": info,
+        "partial": partial,
     }
 
 
 CSV_PARQUET_SIZE = 1_866
+PARTIAL_CSV_PARQUET_SIZE = 8_188
 AUDIO_PARQUET_SIZE = 1_384
 BIG_PARQUET_FILE = 38_896
 
@@ -486,14 +559,10 @@ AUDIO_cols = {
 
 
 def get_AUDIO_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [
-                {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.mp3",
-                    "type": "audio/mpeg",
-                },
                 {
                     "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
                     "type": "audio/wav",
@@ -509,7 +578,7 @@ IMAGE_cols = {
 
 
 def get_IMAGE_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": {
@@ -527,7 +596,7 @@ IMAGES_LIST_cols = {
 
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     return [
         {
             "col": [
@@ -588,7 +657,7 @@ SPAWNING_OPT_IN_OUT_rows = ["http://testurl.test/test_image.jpg", "http://testur
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist() -> HubDatasetTest:
+def hub_responses_does_not_exist() -> HubDatasetTest:
     return {
         "name": "does_not_exist",
         "config_names_response": None,
@@ -599,7 +668,7 @@ def hub_reponses_does_not_exist() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist_config() -> HubDatasetTest:
+def hub_responses_does_not_exist_config() -> HubDatasetTest:
     return {
         "name": "does_not_exist_config",
         "config_names_response": None,
@@ -610,7 +679,7 @@ def hub_reponses_does_not_exist_config() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_does_not_exist_split() -> HubDatasetTest:
+def hub_responses_does_not_exist_split() -> HubDatasetTest:
     return {
         "name": "does_not_exist_split",
         "config_names_response": None,
@@ -621,7 +690,7 @@ def hub_reponses_does_not_exist_split() -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_empty(hub_public_empty: str) -> HubDatasetTest:
+def hub_responses_empty(hub_public_empty: str) -> HubDatasetTest:
     return {
         "name": hub_public_empty,
         "config_names_response": None,
@@ -643,7 +712,7 @@ def hub_responses_public(hub_public_csv: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_private(hub_private_csv: str) -> HubDatasetTest:
+def hub_responses_private(hub_private_csv: str) -> HubDatasetTest:
     return {
         "name": hub_private_csv,
         "config_names_response": create_config_names_response(hub_private_csv),
@@ -654,7 +723,7 @@ def hub_reponses_private(hub_private_csv: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_gated(hub_gated_csv: str) -> HubDatasetTest:
+def hub_responses_gated(hub_gated_csv: str) -> HubDatasetTest:
     return {
         "name": hub_gated_csv,
         "config_names_response": create_config_names_response(hub_gated_csv),
@@ -676,7 +745,7 @@ def hub_reponses_jsonl(hub_public_jsonl: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_audio(hub_public_audio: str) -> HubDatasetTest:
+def hub_responses_audio(hub_public_audio: str) -> HubDatasetTest:
     return {
         "name": hub_public_audio,
         "config_names_response": create_config_names_response(hub_public_audio),
@@ -689,7 +758,7 @@ def hub_reponses_audio(hub_public_audio: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_image(hub_public_image: str) -> HubDatasetTest:
+def hub_responses_image(hub_public_image: str) -> HubDatasetTest:
     return {
         "name": hub_public_image,
         "config_names_response": create_config_names_response(hub_public_image),
@@ -702,7 +771,7 @@ def hub_reponses_image(hub_public_image: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_images_list(hub_public_images_list: str) -> HubDatasetTest:
+def hub_responses_images_list(hub_public_images_list: str) -> HubDatasetTest:
     return {
         "name": hub_public_images_list,
         "config_names_response": create_config_names_response(hub_public_images_list),
@@ -715,7 +784,7 @@ def hub_reponses_images_list(hub_public_images_list: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big(hub_public_big: str) -> HubDatasetTest:
+def hub_responses_big(hub_public_big: str) -> HubDatasetTest:
     return {
         "name": hub_public_big,
         "config_names_response": create_config_names_response(hub_public_big),
@@ -726,7 +795,7 @@ def hub_reponses_big(hub_public_big: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
+def hub_responses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
     return {
         "name": hub_public_big_no_info,
         "config_names_response": create_config_names_response(hub_public_big_no_info),
@@ -739,18 +808,20 @@ def hub_reponses_big_no_info(hub_public_big_no_info: str) -> HubDatasetTest:
 
 
 @pytest.fixture
-def hub_reponses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
+def hub_responses_big_csv(hub_public_big_csv: str) -> HubDatasetTest:
     return {
         "name": hub_public_big_csv,
         "config_names_response": create_config_names_response(hub_public_big_csv),
         "splits_response": create_splits_response(hub_public_big_csv),
         "first_rows_response": create_first_rows_response(hub_public_big_csv, BIG_cols, BIG_rows),
-        "parquet_and_info_response": None,
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_big_csv, data_type="big-csv", partial=True
+        ),
     }
 
 
 @pytest.fixture
-def hub_reponses_external_files(hub_public_external_files: str) -> HubDatasetTest:
+def hub_responses_external_files(hub_public_external_files: str) -> HubDatasetTest:
     return {
         "name": hub_public_external_files,
         "config_names_response": create_config_names_response(hub_public_external_files),
@@ -761,7 +832,7 @@ def hub_reponses_external_files(hub_public_external_files: str) -> HubDatasetTes
 
 
 @pytest.fixture
-def hub_reponses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> HubDatasetTest:
+def hub_responses_spawning_opt_in_out(hub_public_spawning_opt_in_out: str) -> HubDatasetTest:
     return {
         "name": hub_public_spawning_opt_in_out,
         "config_names_response": create_config_names_response(hub_public_spawning_opt_in_out),
@@ -783,4 +854,50 @@ def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
         "parquet_and_info_response": create_parquet_and_info_response(
             dataset=hub_public_duckdb_index, data_type="csv"
         ),
+    }
+
+
+@pytest.fixture
+def hub_responses_partial_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index),
+        "splits_response": create_splits_response(hub_public_duckdb_index),
+        "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index, data_type="csv", partial=True
+        ),
+    }
+
+
+@pytest.fixture
+def hub_responses_gated_duckdb_index(hub_gated_duckdb_index: str) -> HubDatasetTest:
+    return {
+        "name": hub_gated_duckdb_index,
+        "config_names_response": create_config_names_response(hub_gated_duckdb_index),
+        "splits_response": create_splits_response(hub_gated_duckdb_index),
+        "first_rows_response": create_first_rows_response(hub_gated_duckdb_index, TEXT_cols, TEXT_rows),
+        "parquet_and_info_response": create_parquet_and_info_response(dataset=hub_gated_duckdb_index, data_type="csv"),
+    }
+
+
+@pytest.fixture
+def hub_responses_descriptive_statistics(hub_public_descriptive_statistics: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_descriptive_statistics,
+        "config_names_response": create_config_names_response(hub_public_descriptive_statistics),
+        "splits_response": create_splits_response(hub_public_descriptive_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_gated_descriptive_statistics(hub_gated_descriptive_statistics: str) -> HubDatasetTest:
+    return {
+        "name": hub_gated_descriptive_statistics,
+        "config_names_response": create_config_names_response(hub_gated_descriptive_statistics),
+        "splits_response": create_splits_response(hub_gated_descriptive_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
     }

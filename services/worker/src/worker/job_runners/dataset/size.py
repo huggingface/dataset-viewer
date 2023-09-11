@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple
+from typing import Optional, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -53,6 +53,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
         total = 0
         pending = []
         failed = []
+        partial = False
         for config_item in content["config_names"]:
             config = config_item["config"]
             total += 1
@@ -84,12 +85,22 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
                     )
                 )
                 continue
-            config_size_content = ConfigSizeResponse(size=response["content"]["size"])
+            config_size_content = ConfigSizeResponse(
+                size=response["content"]["size"], partial=response["content"]["partial"]
+            )
             config_sizes.append(config_size_content["size"]["config"])
             split_sizes.extend(config_size_content["size"]["splits"])
+            partial = partial or config_size_content["partial"]
+        num_bytes_original_files: Optional[int] = 0
+        for config_size in config_sizes:
+            if num_bytes_original_files is not None and isinstance(config_size["num_bytes_original_files"], int):
+                num_bytes_original_files += config_size["num_bytes_original_files"]
+            else:
+                num_bytes_original_files = None
+                break
         dataset_size: DatasetSize = {
             "dataset": dataset,
-            "num_bytes_original_files": sum(config_size["num_bytes_original_files"] for config_size in config_sizes),
+            "num_bytes_original_files": num_bytes_original_files,
             "num_bytes_parquet_files": sum(config_size["num_bytes_parquet_files"] for config_size in config_sizes),
             "num_bytes_memory": sum(config_size["num_bytes_memory"] for config_size in config_sizes),
             "num_rows": sum(config_size["num_rows"] for config_size in config_sizes),
@@ -109,6 +120,7 @@ def compute_sizes_response(dataset: str) -> Tuple[DatasetSizeResponse, float]:
                 },
                 "pending": pending,
                 "failed": failed,
+                "partial": partial,
             }
         ),
         progress,

@@ -46,4 +46,3 @@ The admin service provides endpoints:
   - `dataset`: `?dataset={dataset}`
   - `config`: `?dataset={dataset}&config={config}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
-- `/cancel-jobs{processing_step}`: cancel all the started jobs for the processing step (stop the corresponding workers before!). It's a POST endpoint.:

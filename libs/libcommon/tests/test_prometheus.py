@@ -7,7 +7,6 @@ from typing import Dict, Optional
 
 import pytest
 
-from libcommon.metrics import CacheTotalMetric, JobTotalMetric
 from libcommon.prometheus import (
     ASSETS_DISK_USAGE,
     QUEUE_JOBS_TOTAL,
@@ -18,7 +17,9 @@ from libcommon.prometheus import (
     update_queue_jobs_total,
     update_responses_in_cache_total,
 )
-from libcommon.resources import MetricsMongoResource
+from libcommon.queue import JobTotalMetricDocument
+from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import CacheTotalMetricDocument
 
 
 def parse_metrics(content: str) -> dict[str, float]:
@@ -138,7 +139,7 @@ def get_metrics() -> Metrics:
     return Metrics(metrics=metrics)
 
 
-def test_cache_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
+def test_cache_metrics(cache_mongo_resource: CacheMongoResource) -> None:
     RESPONSES_IN_CACHE_TOTAL.clear()
 
     cache_metric = {
@@ -148,7 +149,7 @@ def test_cache_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
         "total": 1,
     }
 
-    collection = CacheTotalMetric._get_collection()
+    collection = CacheTotalMetricDocument._get_collection()
     collection.insert_one(cache_metric)
 
     metrics = get_metrics()
@@ -172,16 +173,16 @@ def test_cache_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
     )
 
 
-def test_queue_metrics(metrics_mongo_resource: MetricsMongoResource) -> None:
+def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
     QUEUE_JOBS_TOTAL.clear()
 
     job_metric = {
-        "queue": "dummy",
+        "job_type": "dummy",
         "status": "waiting",
         "total": 1,
     }
 
-    collection = JobTotalMetric._get_collection()
+    collection = JobTotalMetricDocument._get_collection()
     collection.insert_one(job_metric)
 
     metrics = get_metrics()
@@ -213,7 +214,7 @@ def test_assets_metrics(usage_type: str, tmp_path: Path) -> None:
     name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})
     assert name not in metrics.metrics
 
-    update_assets_disk_usage(assets_directory=tmp_path)
+    update_assets_disk_usage(directory=tmp_path)
 
     metrics = get_metrics()
     name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})

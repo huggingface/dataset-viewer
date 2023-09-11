@@ -57,6 +57,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -184,7 +185,7 @@ def test_compute(
     upstream_content: Mapping[str, Any],
     expected_content: Mapping[str, Any],
 ) -> None:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,
@@ -210,7 +211,7 @@ def test_compute(
 @pytest.mark.parametrize(
     "dataset,upstream_content,upstream_status,exception_name",
     [
-        ("doesnotexist", {}, HTTPStatus.OK, "CachedArtifactError"),
+        ("doesnotexist", {}, HTTPStatus.OK, "CachedArtifactNotFoundError"),
         ("wrong_format", {}, HTTPStatus.OK, "PreviousStepFormatError"),
         (
             "upstream_failed",
@@ -228,7 +229,7 @@ def test_compute_failed(
     upstream_status: HTTPStatus,
     exception_name: str,
 ) -> None:
-    dataset, config, split = get_default_config_split(dataset)
+    config, split = get_default_config_split()
     job_runner = get_job_runner(
         dataset,
         config,

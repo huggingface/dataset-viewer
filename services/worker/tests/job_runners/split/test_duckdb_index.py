@@ -4,11 +4,13 @@
 import os
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import duckdb
+import pandas as pd
 import pytest
 import requests
+from datasets import Features, Image, Sequence, Value
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -17,7 +19,13 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
-from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
+from worker.job_runners.split.duckdb_index import (
+    CREATE_INDEX_COMMAND,
+    CREATE_SEQUENCE_COMMAND,
+    CREATE_TABLE_COMMAND,
+    SplitDuckDbIndexJobRunner,
+    get_indexable_columns,
+)
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
@@ -70,6 +78,7 @@ def get_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -112,6 +121,7 @@ def get_parquet_job_runner(
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
+                "difficulty": 50,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -125,6 +135,8 @@ def get_parquet_job_runner(
     "hub_dataset_name,max_parquet_size_bytes,expected_error_code",
     [
         ("duckdb_index", None, None),
+        ("partial_duckdb_index", None, None),
+        ("gated", None, None),
         ("duckdb_index", 1_000, "SplitWithTooBigParquetError"),  # parquet size is 2812
         ("public", None, "NoIndexableColumnsError"),  # dataset does not have string columns to index
     ],
@@ -135,16 +147,23 @@ def test_compute(
     app_config: AppConfig,
     hub_responses_public: HubDatasetTest,
     hub_responses_duckdb_index: HubDatasetTest,
+    hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     max_parquet_size_bytes: Optional[int],
     expected_error_code: str,
 ) -> None:
-    hub_datasets = {"public": hub_responses_public, "duckdb_index": hub_responses_duckdb_index}
+    hub_datasets = {
+        "public": hub_responses_public,
+        "duckdb_index": hub_responses_duckdb_index,
+        "partial_duckdb_index": hub_responses_duckdb_index,
+        "gated": hub_responses_gated_duckdb_index,
+    }
     dataset = hub_datasets[hub_dataset_name]["name"]
     config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     split = "train"
+    partial = hub_dataset_name.startswith("partial_")
 
     upsert_response(
         "dataset-config-names",
@@ -168,15 +187,24 @@ def test_compute(
             app_config, duckdb_index=replace(app_config.duckdb_index, max_parquet_size_bytes=max_parquet_size_bytes)
         )
     )
+    app_config = (
+        app_config
+        if not partial
+        else replace(
+            app_config,
+            parquet_and_info=replace(
+                app_config.parquet_and_info, max_dataset_size=1, max_row_group_byte_size_for_copy=1
+            ),
+        )
+    )
 
     parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
     parquet_response = parquet_job_runner.compute()
     config_parquet = parquet_response.content
 
-    # simulate more than one parquet file to index
-    extra_parquet_file = config_parquet["parquet_files"][0]
-    config_parquet["parquet_files"].append(extra_parquet_file)
+    assert config_parquet["partial"] is partial
 
+    # TODO: simulate more than one parquet file to index
     upsert_response(
         "config-parquet-and-info",
         dataset=dataset,
@@ -200,12 +228,18 @@ def test_compute(
         content = response.content
         url = content["url"]
         file_name = content["filename"]
-        assert url is not None
+        features = content["features"]
+        assert isinstance(url, str)
+        if partial:
+            assert url.rsplit("/", 2)[1] == "partial-" + split
+        else:
+            assert url.rsplit("/", 2)[1] == split
         assert file_name is not None
+        assert Features.from_dict(features) is not None
         job_runner.post_compute()
 
         # download locally duckdb index file
-        duckdb_file = requests.get(url)
+        duckdb_file = requests.get(url, headers={"authorization": f"Bearer {app_config.common.hf_token}"})
         with open(file_name, "wb") as f:
             f.write(duckdb_file.content)
 
@@ -217,12 +251,12 @@ def test_compute(
         record_count = con.sql("SELECT COUNT(*) FROM data;").fetchall()
         assert record_count is not None
         assert isinstance(record_count, list)
-        assert record_count[0] == (10,)  # dataset has 5 rows but since parquet file was duplicate it is 10
+        assert record_count[0] == (5,)
 
         # perform a search to validate fts feature
         query = "Lord Vader"
         result = con.execute(
-            "SELECT text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+            "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
             [query],
         )
         rows = result.df()
@@ -236,7 +270,65 @@ def test_compute(
             )
         ).any()
         assert not (rows["text"].eq("There goes another one.")).any()
+        assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
 
         con.close()
         os.remove(file_name)
     job_runner.post_compute()
+
+
+@pytest.mark.parametrize(
+    "features, expected",
+    [
+        (Features({"col_1": Value("string"), "col_2": Value("int64")}), ["col_1"]),
+        (
+            Features(
+                {
+                    "nested_1": [Value("string")],
+                    "nested_2": Sequence(Value("string")),
+                    "nested_3": Sequence({"foo": Value("string")}),
+                    "nested_4": {"foo": Value("string"), "bar": Value("int64")},
+                    "nested_int": [Value("int64")],
+                }
+            ),
+            ["nested_1", "nested_2", "nested_3", "nested_4"],
+        ),
+        (Features({"col_1": Image()}), []),
+    ],
+)
+def test_get_indexable_columns(features: Features, expected: List[str]) -> None:
+    indexable_columns = get_indexable_columns(features)
+    assert indexable_columns == expected
+
+
+DATA = """Hello there !
+General Kenobi.
+You are a bold one.
+Kill him !
+...
+Back away ! I will deal with this Jedi slime myself"""
+
+
+FTS_COMMAND = (
+    "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
+    " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_index_id;"
+)
+
+
+@pytest.mark.parametrize(
+    "df, query, expected_ids",
+    [
+        (pd.DataFrame([{"line": line} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [line]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
+    ],
+)
+def test_index_command(df: pd.DataFrame, query: str, expected_ids: List[int]) -> None:
+    columns = ",".join('"' + str(column) + '"' for column in df.columns)
+    duckdb.sql(CREATE_SEQUENCE_COMMAND)
+    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns) + " df;")
+    duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
+    result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
+    assert list(result.__hf_index_id) == expected_ids

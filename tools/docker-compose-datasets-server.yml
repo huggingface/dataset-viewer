@@ -7,23 +7,32 @@ services:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
       - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
-      - ../chart/static-files/openapi.json:/static-files/openapi.json:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
       ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      OPENAPI_FILE: ${OPENAPI_FILE-docs/source/openapi.json}
       HOST: localhost
       PORT: 80
       URL_ADMIN: http://admin:${ADMIN_UVICORN_PORT-8081}
       URL_API: http://api:${API_UVICORN_PORT-8080}
+      URL_ROWS: http://rows:${ROWS_UVICORN_PORT-8082}
+      URL_SEARCH: http://search:${SEARCH_UVICORN_PORT-8083}
     depends_on:
-      - api
       - admin
+      - api
+      - rows
+      - search
   admin:
     build:
       context: ..
       dockerfile: services/admin/Dockerfile
+    volumes:
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
+      - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
+      - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
     extends:
       file: docker-compose-base.yml
       service: common
@@ -41,6 +50,11 @@ services:
       ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
+      # storage
+      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
+      DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     depends_on:
       - mongodb
     restart: always
@@ -51,6 +65,29 @@ services:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
+    extends:
+      file: docker-compose-base.yml
+      service: api
+    environment:
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # hub-cache
+      HUB_CACHE_BASE_URL: http://localhost:${PORT_REVERSE_PROXY-8000}
+      HUB_CACHE_NUM_RESULTS_PER_PAGE: ${HUB_CACHE_NUM_RESULTS_PER_PAGE-1000}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+    ports:
+      # for debug
+      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+  rows:
+    build:
+      context: ..
+      dockerfile: services/rows/Dockerfile
     extends:
       file: docker-compose-base.yml
       service: api
@@ -65,22 +102,46 @@ services:
       CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER-200}
       CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER: ${CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER-10000}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
-      # service
-      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
-      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL-https://huggingface.co/api/keys/jwt}
-      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
-      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-0.2}
-      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
-      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+      ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
-      API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
-      API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+      API_UVICORN_NUM_WORKERS: ${ROWS_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${ROWS_UVICORN_PORT-8082}
     ports:
       # for debug
-      - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
+      - ${ROWS_UVICORN_PORT-8082}:${ROWS_UVICORN_PORT-8082}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+  search:
+    build:
+      context: ..
+      dockerfile: services/search/Dockerfile
+    extends:
+      file: docker-compose-base.yml
+      service: api
+    volumes:
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+    environment:
+      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
+      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      CACHED_ASSETS_CLEAN_CACHE_PROBA: ${CACHED_ASSETS_CLEAN_CACHE_PROBA-0.05}
+      CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER-100}
+      CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER: ${CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER-200}
+      CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER: ${CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER-10000}
+      DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
+      # uvicorn
+      API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      API_UVICORN_NUM_WORKERS: ${SEARCH_UVICORN_NUM_WORKERS-2}
+      API_UVICORN_PORT: ${SEARCH_UVICORN_PORT-8083}
+    ports:
+      # for debug
+      - ${SEARCH_UVICORN_PORT-8083}:${SEARCH_UVICORN_PORT-8083}
     depends_on:
       - mongodb
     restart: unless-stopped
@@ -91,7 +152,8 @@ services:
     volumes:
       - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
-      - duckdb-index:${DUCKDB_INDEX_STORAGE_DIRECTORY-/duckdb-index}:rw
+      - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
+      - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
     extends:
       file: docker-compose-base.yml
       service: datasets-worker
@@ -99,28 +161,20 @@ services:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
       CONFIG_NAMES_MAX_NUMBER: ${CONFIG_NAMES_MAX_NUMBER-3_000}
-      FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
-      FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
-      FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
-      FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
-      FIRST_ROWS_COLUMNS_MAX_NUMBER: ${FIRST_ROWS_COLUMNS_MAX_NUMBER-1_000}
-      PARQUET_AND_INFO_BLOCKED_DATASETS: ${PARQUET_AND_INFO_BLOCKED_DATASETS-}
-      PARQUET_AND_INFO_COMMIT_MESSAGE: ${PARQUET_AND_INFO_COMMIT_MESSAGE-Update parquet files}
-      PARQUET_AND_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_INFO_COMMITTER_HF_TOKEN-}
-      PARQUET_AND_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_INFO_MAX_DATASET_SIZE-100_000_000}
-      PARQUET_AND_INFO_SOURCE_REVISION: ${PARQUET_AND_INFO_SOURCE_REVISION-main}
-      PARQUET_AND_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_INFO_SUPPORTED_DATASETS-}
-      PARQUET_AND_INFO_TARGET_REVISION: ${PARQUET_AND_INFO_TARGET_REVISION-refs/convert/parquet}
-      PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
-      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
-      DUCKDB_INDEX_STORAGE_DIRECTORY: ${DUCKDB_INDEX_STORAGE_DIRECTORY-/duckdb-index}
+      DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
+      DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS: ${DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS-10}
+      DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES: ${DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES-100_000_000}
+      DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       DUCKDB_INDEX_COMMIT_MESSAGE: ${DUCKDB_INDEX_COMMIT_MESSAGE-Update duckdb index file}
       DUCKDB_INDEX_COMMITTER_HF_TOKEN: ${DUCKDB_INDEX_COMMITTER_HF_TOKEN-}
       DUCKDB_INDEX_TARGET_REVISION: ${DUCKDB_INDEX_TARGET_REVISION-refs/convert/parquet}
       DUCKDB_INDEX_URL_TEMPLATE: ${DUCKDB_INDEX_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
       DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES: ${DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES-100_000_000}
-      WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      # ^ note: the datasets cache is automatically added, so no need to add it here
+      FIRST_ROWS_MAX_BYTES: ${FIRST_ROWS_MAX_BYTES-1_000_000}
+      FIRST_ROWS_MAX_NUMBER: ${FIRST_ROWS_MAX_NUMBER-100}
+      FIRST_ROWS_MIN_CELL_BYTES: ${FIRST_ROWS_MIN_CELL_BYTES-100}
+      FIRST_ROWS_MIN_NUMBER: ${FIRST_ROWS_MIN_NUMBER-10}
+      FIRST_ROWS_COLUMNS_MAX_NUMBER: ${FIRST_ROWS_COLUMNS_MAX_NUMBER-1_000}
       OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER: ${OPT_IN_OUT_URLS_SCAN_COLUMNS_MAX_NUMBER-10}
       OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER: ${OPT_IN_OUT_URLS_SCAN_MAX_CONCURRENT_REQUESTS_NUMBER-100}
       OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND: ${OPT_IN_OUT_URLS_SCAN_MAX_REQUESTS_PER_SECOND-50}
@@ -128,6 +182,21 @@ services:
       OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN-}
       OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH: ${OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH-1000}
       OPT_IN_OUT_URLS_SCAN_SPAWNING_URL: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_URL-https://opts-api.spawningaiapi.com/api/v2/query/urls}
+      PARQUET_AND_INFO_BLOCKED_DATASETS: ${PARQUET_AND_INFO_BLOCKED_DATASETS-}
+      PARQUET_AND_INFO_COMMIT_MESSAGE: ${PARQUET_AND_INFO_COMMIT_MESSAGE-Update parquet files}
+      PARQUET_AND_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_INFO_COMMITTER_HF_TOKEN-}
+      PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS: ${PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS-}
+      PARQUET_AND_INFO_MAX_DATASET_SIZE: ${PARQUET_AND_INFO_MAX_DATASET_SIZE-100_000_000}
+      PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES: ${PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES-10_000}
+      PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY: ${PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY-100_000_000}
+      PARQUET_AND_INFO_SOURCE_REVISION: ${PARQUET_AND_INFO_SOURCE_REVISION-main}
+      PARQUET_AND_INFO_SUPPORTED_DATASETS: ${PARQUET_AND_INFO_SUPPORTED_DATASETS-}
+      PARQUET_AND_INFO_TARGET_REVISION: ${PARQUET_AND_INFO_TARGET_REVISION-refs/convert/parquet}
+      PARQUET_AND_INFO_URL_TEMPLATE: ${PARQUET_AND_INFO_URL_TEMPLATE-/datasets/%s/resolve/%s/%s}
+      PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
+      ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
+      WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      # ^ note: the datasets cache is automatically added, so no need to add it here
     depends_on:
       - mongodb
     restart: always
@@ -142,14 +211,6 @@ volumes:
   assets:
   cached-assets:
   mongo:
-  splits-datasets-cache:
-  splits-modules-cache:
-  splits-numba-cache:
-  first-rows-datasets-cache:
-  first-rows-modules-cache:
-  first-rows-numba-cache:
-  parquet-datasets-cache:
-  parquet-modules-cache:
-  parquet-numba-cache:
   parquet-metadata:
   duckdb-index:
+  descriptive-statistics:

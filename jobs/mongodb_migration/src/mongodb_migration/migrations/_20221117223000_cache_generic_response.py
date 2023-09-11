@@ -4,7 +4,7 @@
 import contextlib
 import logging
 
-from libcommon.simple_cache import CachedResponse
+from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 from pymongo.errors import InvalidName
 
@@ -92,7 +92,7 @@ class MigrationMoveToGenericCachedResponse(Migration):
     def validate(self) -> None:
         logging.info("Validate the migrated documents")
 
-        check_documents(DocCls=CachedResponse, sample_size=10)
+        check_documents(DocCls=CachedResponseDocument, sample_size=10)
 
         db = get_db(db_name)
         try:
@@ -103,7 +103,7 @@ class MigrationMoveToGenericCachedResponse(Migration):
             first_rows_responses_count = db[firstRowsResponseCollection].count_documents({})
         except InvalidName:
             first_rows_responses_count = 0
-        cached_responses_count = CachedResponse.objects.count()
+        cached_responses_count = CachedResponseDocument.objects.count()
         if splits_responses_count + first_rows_responses_count > cached_responses_count:
             raise ValueError(
                 f"Some documents are missing in the new collection: splitsResponse ({splits_responses_count}),"

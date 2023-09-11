@@ -10,7 +10,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_NO_INTERACTION=1 \
     # Versions:
-    POETRY_VERSION=1.4.0 \
+    POETRY_VERSION=1.4.2 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
     PATH="$PATH:/root/.local/bin"
 
@@ -26,6 +26,7 @@ WORKDIR /src
 COPY services/api/poetry.lock ./services/api/poetry.lock
 COPY services/api/pyproject.toml ./services/api/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/api/
 RUN poetry install --no-cache
 COPY services/api/src ./src

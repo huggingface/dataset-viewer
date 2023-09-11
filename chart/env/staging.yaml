@@ -40,6 +40,21 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-api
       tag: sha-fb3399a
+    rows:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-rows
+      tag: sha-fb3399a
+    search:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-search
+      tag: sha-fb3399a
+    storageAdmin:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-storage-admin
+      tag: sha-fb3399a
     worker:
       registry: huggingface
       useGlobalRegistry: false
@@ -57,6 +72,7 @@ secrets:
       PARQUET_CONVERTER_HF_TOKEN: "hub-ephemeral-datasets-server-parquet-converter-hf-token"
       WEBHOOK_SECRET: "hub-ephemeral-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-ephemeral-datasets-server-spawning-token"
+      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
@@ -69,12 +85,26 @@ secrets:
   hfWebhookSecret:
     fromSecret: false
     secretName: "datasets-server-staging-secrets"
+  hfJwtAdditionalPublicKeys:
+    fromSecret: true
+    secretName: "datasets-server-staging-secrets"
   spawningToken:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
 
 persistence:
-  existingClaim: "nfs-datasets-server-pvc"
+  cachedAssets:
+    existingClaim: "datasets-server-cached-assets-pvc"
+  descriptiveStatistics:
+    existingClaim: "datasets-server-statistics-pvc"
+  duckDBIndex:
+    existingClaim: "datasets-server-duckdb-pvc"
+  hfDatasetsCache:
+    existingClaim: "datasets-server-cache-pvc"
+  nfs:
+    existingClaim: "nfs-datasets-server-pvc"
+  parquetMetadata:
+    existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
   enabled: false
@@ -124,10 +154,10 @@ cacheMaintenance:
 backfill:
   enabled: false
 
-metricsCollector:
-  action: "collect-metrics"
-  schedule: "*/2 * * * *"
-  # every two minutes
+queueMetricsCollector:
+  action: "collect-queue-metrics"
+  schedule: "*/10 * * * *"
+  # every ten minutes, then it will be changed to default
   nodeSelector: {}
   resources:
     requests:
@@ -169,7 +199,7 @@ reverseProxy:
 ingress:
   tls:
     - hosts:
-      - "datasets-server.us.dev.moon.huggingface.tech"
+        - "datasets-server.us.dev.moon.huggingface.tech"
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
     external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
@@ -211,9 +241,37 @@ api:
       cpu: 1
       memory: "4Gi"
 
+rows:
+  uvicornNumWorkers: "1"
+
+  replicas: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
+
+search:
+  uvicornNumWorkers: "1"
+  replicas: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 100m
+      memory: "512Mi"
+    limits:
+      cpu: 1
+      memory: "4Gi"
+
 workers:
-  -
-    deployName: "all"
+  - deployName: "all"
+    workerDifficultyMax: 100
+    workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
@@ -226,9 +284,10 @@ workers:
         cpu: 1
         memory: "4Gi"
     tolerations: []
-  -
-    deployName: "light"
-    workerJobTypesBlocked: "dataset-config-names,config-split-names-from-streaming,config-parquet-and-info,split-first-rows-from-parquet,split-first-rows-from-streaming,split-opt-in-out-urls-scan"
+  - deployName: "light"
+    workerDifficultyMax: 40
+    workerDifficultyMin: 0
+    workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector: {}
     replicas: 1

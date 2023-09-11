@@ -153,11 +153,54 @@ DOCKERHUB_PASSWORD=xxx
 GITHUB_TOKEN=xxx
 ```
 
-## Mac OS
+## Set up development environment
+
+### Linux
+
+Install pyenv:
+
+```bash
+$ curl https://pyenv.run | bash
+```
+
+Install Python 3.9.15:
+
+```bash
+$ pyenv install 3.9.15
+```
+
+Check that the expected local version of Python is used:
+
+```bash
+$ cd services/worker
+$ python --version
+Python 3.9.15
+```
+
+Install Poetry:
+
+```bash
+curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python3 -
+```
+
+Set the Python version to use with Poetry:
+
+```bash
+poetry env use 3.9.15
+```
+
+Install the dependencies:
+
+```bash
+make install
+```
+
+
+### Mac OS
 
 To install the [worker](./services/worker) on Mac OS, you can follow the next steps.
 
-### First: as an administrator
+#### First: as an administrator
 
 Install brew:
 
@@ -184,7 +227,7 @@ For compilers to find icu4c you may need to set:
   export CPPFLAGS="-I/opt/homebrew/opt/icu4c/include"
 ```
 
-### Then: as a normal user
+#### Then: as a normal user
 
 Add ICU to the path:
 
@@ -226,7 +269,7 @@ Python 3.9.15
 Install poetry:
 
 ```bash
-curl -sSL https://install.python-poetry.org | python3 -
+curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.4.2 python3 -
 ```
 
 append the following lines to ~/.zshrc:

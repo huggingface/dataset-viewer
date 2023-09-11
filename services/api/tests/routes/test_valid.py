@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
 from http import HTTPStatus
 from typing import List
 
@@ -32,25 +35,24 @@ def clean_mongo_databases(app_config: AppConfig) -> None:
 def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
     valid_datasets = ValidDatasets(processing_graph=processing_graph)
-    assert valid_datasets.content == {"valid": [], "preview": [], "viewer": []}
+    assert valid_datasets.content == {"preview": [], "viewer": []}
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer",
     [
-        ({step_1: {}, step_2: {}}, [], [], []),
-        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset"], [], ["dataset"]),
-        ({step_1: {}, step_2: {"enables_preview": True}}, [], [], []),
-        ({step_1: {"enables_viewer": True}, step_2: {}}, [], ["dataset"], ["dataset"]),
-        ({step_1: {}, step_2: {"enables_viewer": True}}, [], [], []),
-        ({step_1: {"enables_preview": True, "enables_viewer": True}, step_2: {}}, [], ["dataset"], ["dataset"]),
+        ({step_1: {}, step_2: {}}, [], []),
+        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset"], []),
+        ({step_1: {}, step_2: {"enables_preview": True}}, [], []),
+        ({step_1: {"enables_viewer": True}, step_2: {}}, [], ["dataset"]),
+        ({step_1: {}, step_2: {"enables_viewer": True}}, [], []),
+        ({step_1: {"enables_preview": True, "enables_viewer": True}, step_2: {}}, [], ["dataset"]),
     ],
 )
 def test_one_dataset(
     processing_graph_specification: ProcessingGraphSpecification,
     expected_preview: List[str],
     expected_viewer: List[str],
-    expected_valid: List[str],
 ) -> None:
     dataset = "dataset"
     processing_graph = ProcessingGraph(processing_graph_specification)
@@ -58,29 +60,26 @@ def test_one_dataset(
     upsert_response(kind=processing_step.cache_kind, dataset=dataset, content={}, http_status=HTTPStatus.OK)
     valid_datasets = ValidDatasets(processing_graph=processing_graph)
     assert valid_datasets.content == {
-        "valid": expected_valid,
         "preview": expected_preview,
         "viewer": expected_viewer,
     }
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer",
     [
-        ({step_1: {}, step_2: {}}, [], [], []),
-        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset1"], [], ["dataset1"]),
-        ({step_1: {}, step_2: {"enables_preview": True}}, ["dataset2"], [], ["dataset2"]),
+        ({step_1: {}, step_2: {}}, [], []),
+        ({step_1: {"enables_preview": True}, step_2: {}}, ["dataset1"], []),
+        ({step_1: {}, step_2: {"enables_preview": True}}, ["dataset2"], []),
         (
             {step_1: {"enables_preview": True}, step_2: {"enables_preview": True}},
             ["dataset1", "dataset2"],
             [],
-            ["dataset1", "dataset2"],
         ),
         (
             {step_1: {"enables_preview": True}, step_2: {"enables_viewer": True}},
             ["dataset1"],
             ["dataset2"],
-            ["dataset1", "dataset2"],
         ),
     ],
 )
@@ -88,7 +87,6 @@ def test_two_datasets(
     processing_graph_specification: ProcessingGraphSpecification,
     expected_preview: List[str],
     expected_viewer: List[str],
-    expected_valid: List[str],
 ) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
     upsert_response(
@@ -105,14 +103,13 @@ def test_two_datasets(
     )
     valid_datasets = ValidDatasets(processing_graph=processing_graph)
     assert valid_datasets.content == {
-        "valid": expected_valid,
         "preview": expected_preview,
         "viewer": expected_viewer,
     }
 
 
 @pytest.mark.parametrize(
-    "processing_graph_specification,expected_preview,expected_viewer,expected_valid",
+    "processing_graph_specification,expected_preview,expected_viewer",
     [
         (
             {
@@ -122,7 +119,6 @@ def test_two_datasets(
             },
             [],
             [],
-            [],
         ),
         (
             {
@@ -132,7 +128,6 @@ def test_two_datasets(
             },
             ["dataset"],
             [],
-            ["dataset"],
         ),
         (
             {
@@ -146,7 +141,6 @@ def test_two_datasets(
             },
             ["dataset"],
             [],
-            ["dataset"],
         ),
         (
             {
@@ -156,7 +150,6 @@ def test_two_datasets(
             },
             ["dataset"],
             [],
-            ["dataset"],
         ),
         (
             {
@@ -170,7 +163,6 @@ def test_two_datasets(
             },
             ["dataset"],
             [],
-            ["dataset"],
         ),
         (
             {
@@ -184,7 +176,6 @@ def test_two_datasets(
             },
             [],
             ["dataset"],
-            ["dataset"],
         ),
     ],
 )
@@ -192,7 +183,6 @@ def test_three_steps(
     processing_graph_specification: ProcessingGraphSpecification,
     expected_preview: List[str],
     expected_viewer: List[str],
-    expected_valid: List[str],
 ) -> None:
     dataset = "dataset"
     config = "config"
@@ -221,7 +211,6 @@ def test_three_steps(
     )
     valid_datasets = ValidDatasets(processing_graph=processing_graph)
     assert valid_datasets.content == {
-        "valid": expected_valid,
         "preview": expected_preview,
         "viewer": expected_viewer,
     }
@@ -238,10 +227,6 @@ def test_errors() -> None:
     upsert_response(kind=cache_kind, dataset=dataset_c, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR)
     valid_datasets = ValidDatasets(processing_graph=processing_graph)
     assert valid_datasets.content == {
-        "valid": [
-            dataset_a,
-            dataset_b,
-        ],
         "preview": [
             dataset_a,
             dataset_b,

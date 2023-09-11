@@ -48,7 +48,6 @@ def test_cors(client: TestClient, first_dataset_endpoint: str) -> None:
 def test_get_valid_datasets(client: TestClient) -> None:
     response = client.get("/valid")
     assert response.status_code == 200
-    assert "valid" in response.json()
     assert "preview" in response.json()
     assert "viewer" in response.json()
 
@@ -68,24 +67,17 @@ def test_get_endpoint(client: TestClient, first_dataset_endpoint: str) -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.parametrize(
-    "dataset,config",
-    [
-        (None, None),
-        ("a", None),
-        ("a", ""),
-    ],
-)
-def test_get_config_missing_parameter(
+@pytest.mark.parametrize("dataset", (None, ""))
+def test_get_dataset_missing_parameter(
     client: TestClient,
     dataset: Optional[str],
-    config: Optional[str],
-    first_config_endoint: str,
+    first_dataset_endpoint: str,
 ) -> None:
-    response = client.get(first_config_endoint, params={"dataset": dataset, "config": config, "split": None})
+    response = client.get(first_dataset_endpoint, params={"dataset": dataset, "config": None, "split": None})
     assert response.status_code == 422
 
 
+# this test might fail someday, if `first_split_endpoint` fixture appears to be not an only-split-level endpoint
 @pytest.mark.parametrize(
     "dataset,config,split",
     [

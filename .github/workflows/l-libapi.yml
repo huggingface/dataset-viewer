@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+name: libs/libapi
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "libs/libapi/**"
+      - ".github/workflows/l-libapi.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+  pull_request:
+    paths:
+      - "libs/libapi/**"
+      - ".github/workflows/l-libapi.yml"
+      - ".github/workflows/_quality-python.yml"
+      - ".github/workflows/_unit-tests-python.yml"
+      - "tools/docker-compose-mongo.yml"
+jobs:
+  quality:
+    uses: ./.github/workflows/_quality-python.yml
+    with:
+      working-directory: libs/libapi
+  unit-tests:
+    uses: ./.github/workflows/_unit-tests-python.yml
+    with:
+      working-directory: libs/libapi

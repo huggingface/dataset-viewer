@@ -4,7 +4,7 @@
 import logging
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
-from libcommon.queue import Job
+from libcommon.queue import JobDocument
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents
@@ -24,4 +24,4 @@ class MigrationRemoveForceFromJob(Migration):
     def validate(self) -> None:
         logging.info("Ensure that a random selection of cached results don't have 'force' field")
 
-        check_documents(DocCls=Job, sample_size=10)
+        check_documents(DocCls=JobDocument, sample_size=10)
