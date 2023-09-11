@@ -31,10 +31,11 @@ def test_metrics() -> None:
 
     metric_names = set(metrics.keys())
 
-    # the queue metrics are computed by the background jobs. Here, in the e2e tests, we don't run them,
+    # the queue metrics are computed each time a job is created and processed
+    # they should exists at least for some of jobs types
     for queue in ["dataset-config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
         # eg. 'queue_jobs_total{pid="10",queue="split-first-rows-from-streaming",status="started"}'
-        assert not has_metric(
+        assert has_metric(
             name="queue_jobs_total",
             labels={"pid": "[0-9]*", "queue": queue, "status": "started"},
             metric_names=metric_names,
