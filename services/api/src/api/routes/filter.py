@@ -8,29 +8,28 @@ from typing import Any, Mapping, Optional, TypedDict
 import duckdb
 import pyarrow.parquet as pq
 from datasets import Features
-from libcommon.parquet_utils import (
-    ParquetFileMetadataItem,
-    StrPath,
-    get_supported_unsupported_columns,
-)
-from libcommon.processing_graph import ProcessingGraph
-from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.viewer_utils.features import get_cell_value
-from starlette.requests import Request
-from starlette.responses import Response
-
-from api.authentication import auth_check
-from api.utils import (
-    ApiCustomError,
-    Endpoint,
+from libapi.authentication import auth_check
+from libapi.exceptions import (
+    ApiError,
     InvalidParameterError,
     MissingRequiredParameterError,
-    UnexpectedError,
+)
+from libapi.utils import (
+    Endpoint,
     are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
 )
+from libcommon.exceptions import UnexpectedError
+from libcommon.parquet_utils import ParquetFileMetadataItem
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.storage import StrPath
+from libcommon.viewer_utils.features import get_cell_value, get_supported_unsupported_columns
+from starlette.requests import Request
+from starlette.responses import Response
+
 
 # TODO: duplicated in /rows
 MAX_ROWS = 100
@@ -160,7 +159,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiCustomError) else UnexpectedError("Unexpected error.", e)
+                error = e if isinstance(e, ApiError) else UnexpectedError("Unexpected error.", e)
                 with StepProfiler(method="filter_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
