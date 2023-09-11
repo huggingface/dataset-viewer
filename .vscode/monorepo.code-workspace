@@ -33,6 +33,10 @@
       "path": "../services/api"
     },
     {
+      "name": "services/filter",
+      "path": "../services/filter"
+    },
+    {
       "name": "services/reverse-proxy",
       "path": "../services/reverse-proxy"
     },
