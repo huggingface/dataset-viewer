@@ -78,7 +78,7 @@ def create_filter_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
-    hf_jwt_public_key: Optional[str] = None,
+    hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
@@ -117,7 +117,7 @@ def create_filter_endpoint(
                         dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
-                        hf_jwt_public_key=hf_jwt_public_key,
+                        hf_jwt_public_keys=hf_jwt_public_keys,
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
