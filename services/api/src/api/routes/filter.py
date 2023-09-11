@@ -26,10 +26,12 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.features import get_cell_value, get_supported_unsupported_columns
+from libcommon.viewer_utils.features import (
+    get_cell_value,
+    get_supported_unsupported_columns,
+)
 from starlette.requests import Request
 from starlette.responses import Response
-
 
 # TODO: duplicated in /rows
 MAX_ROWS = 100
