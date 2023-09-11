@@ -59,6 +59,7 @@ def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
         yield resource
         _clean_cache_database()
 
+
 @fixture(autouse=True)
 def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
