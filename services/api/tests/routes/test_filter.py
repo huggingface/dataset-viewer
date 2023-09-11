@@ -12,7 +12,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
-from api.config import AppConfig
+from api.config import FilterAppConfig
 from api.routes.filter import (
     Table,
     create_response,
@@ -117,7 +117,7 @@ def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
     assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+def test_create_response(ds: Dataset, filter_app_config: FilterAppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     offset = 2
     table: Table = {
@@ -128,7 +128,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         dataset=dataset,
         config=config,
         split=split,
-        cached_assets_base_url=app_config.cached_assets.base_url,
+        cached_assets_base_url=filter_app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
         table=table,
         offset=offset,
