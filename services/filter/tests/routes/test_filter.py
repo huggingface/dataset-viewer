@@ -1,4 +1,6 @@
-"""Test filter."""
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
 import shutil
 from http import HTTPStatus
 from pathlib import Path
@@ -12,8 +14,8 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
-from api.config import FilterAppConfig
-from api.routes.filter import (
+from filter.config import AppConfig
+from filter.routes.filter import (
     Table,
     create_response,
     execute_filter_query,
@@ -117,7 +119,7 @@ def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
     assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
 
 
-def test_create_response(ds: Dataset, filter_app_config: FilterAppConfig, cached_assets_directory: StrPath) -> None:
+def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     offset = 2
     table: Table = {
@@ -128,7 +130,7 @@ def test_create_response(ds: Dataset, filter_app_config: FilterAppConfig, cached
         dataset=dataset,
         config=config,
         split=split,
-        cached_assets_base_url=filter_app_config.cached_assets.base_url,
+        cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
         table=table,
         offset=offset,
