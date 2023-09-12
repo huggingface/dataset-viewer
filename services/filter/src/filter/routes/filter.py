@@ -3,7 +3,7 @@
 
 import logging
 import os.path
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import duckdb
 import pyarrow.parquet as pq
