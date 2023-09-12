@@ -5,20 +5,13 @@ import asyncio
 import contextlib
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Dict, Mapping, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 
 from sse_api.constants import HUB_CACHE_KIND
-
-# see services/worker/src/worker/dtos.py
-# class DatasetHubCacheResponse(TypedDict):
-#     preview: bool
-#     viewer: bool
-#     partial: bool
-#     num_rows: int
 
 DatasetHubCacheResponse = Mapping[str, Any]
 
@@ -59,10 +52,18 @@ class HubCacheChangedEvent(asyncio.Event):
 class HubCachePublisher:
     _watchers: Dict[str, HubCacheChangedEvent]
 
-    def _notify_change(self, *, dataset: str, operation: str, hub_cache: Optional[DatasetHubCacheResponse]) -> None:
+    def _notify_change(
+        self,
+        *,
+        dataset: str,
+        operation: str,
+        hub_cache: Optional[DatasetHubCacheResponse],
+        suscriber: Optional[str] = None,
+    ) -> None:
         hub_cache_value = HubCacheChangedEventValue(dataset=dataset, operation=operation, hub_cache=hub_cache)
-        for event in self._watchers.values():
-            event.set_value(hub_cache_value=hub_cache_value)
+        for watcher, event in self._watchers.items():
+            if suscriber is None or suscriber == watcher:
+                event.set_value(hub_cache_value=hub_cache_value)
 
     def _unsubscribe(self, uuid: str) -> None:
         self._watchers.pop(uuid)
@@ -85,6 +86,9 @@ class HubCacheWatcher:
         self._client = client
         self._collection = self._client[db_name][collection_name]
         self._publisher = HubCachePublisher(_watchers={})
+
+    def run_initialization(self, suscriber: str) -> asyncio.Task[Any]:
+        return asyncio.create_task(self._init_loop(suscriber=suscriber))
 
     def start_watching(self) -> None:
         self._watch_task = asyncio.create_task(self._watch_loop())
@@ -114,11 +118,33 @@ class HubCacheWatcher:
         pub = self._publisher
         pub._unsubscribe(uuid)
 
+    async def _init_loop(self, suscriber: str) -> None:
+        """
+        publish an event for each initial dataset-hub-cache cache entry.
+
+        TODO: we don't want to send to all the suscribers
+        """
+
+        async for document in self._collection.find(
+            filter={"kind": HUB_CACHE_KIND},
+            projection={"dataset": 1, "content": 1, "http_status": 1},
+            sort=[("_id", 1)],
+            batch_size=1,
+        ):
+            # ^ should we use batch_size=100 instead, and send a list of contents?
+            dataset = document["dataset"]
+            self._publisher._notify_change(
+                suscriber=suscriber,
+                dataset=dataset,
+                operation="init",
+                hub_cache=(document["content"] if document["http_status"] == HTTPStatus.OK else None),
+            )
+
     async def _watch_loop(self) -> None:
         """
         publish a new event, on every change in a dataset-hub-cache cache entry.
         """
-        pipeline = [
+        pipeline: Sequence[Mapping[str, Any]] = [
             {
                 "$match": {
                     "$or": [
@@ -127,8 +153,15 @@ class HubCacheWatcher:
                     ],
                     "operationType": {"$in": ["insert", "update", "replace", "delete"]},
                 },
-                # "$project" <- TODO: only the fields we need
-            }
+            },
+            {
+                "$project": {
+                    "fullDocument": 1,
+                    "fullDocumentBeforeChange": 1,
+                    "updateDescription": 1,
+                    "operationType": 1,
+                },
+            },
         ]
         resume_token = None
         while True:

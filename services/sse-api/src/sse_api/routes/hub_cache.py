@@ -27,6 +27,7 @@ def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
         logging.info("/hub-cache")
 
         uuid, event = hub_cache_watcher.subscribe()
+        init_task = hub_cache_watcher.run_initialization(uuid)
 
         async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
             try:
@@ -37,6 +38,7 @@ def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
                         yield ServerSentEvent(data=json.dumps(dataclasses.asdict(new_value)), event="message")
             finally:
                 hub_cache_watcher.unsubscribe(uuid)
+                await init_task
 
         return EventSourceResponse(error_handling(event_generator()), media_type="text/event-stream")
 

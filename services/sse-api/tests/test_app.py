@@ -81,7 +81,7 @@ async def test_metrics(client: httpx.AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_hub_cache(
+async def test_hub_cache_only_updates(
     client: httpx.AsyncClient,
     cache_mongo_resource: CacheMongoResource,
     event_loop: asyncio.AbstractEventLoop,
@@ -96,7 +96,7 @@ async def test_hub_cache(
                 "viewer": True,
                 "partial": False,
                 "num_rows": 100,
-            },  # also test errors, suppresion, etc. error_code, details
+            },
             http_status=HTTPStatus.OK,
         )
         await asyncio.sleep(0.2)
@@ -108,7 +108,7 @@ async def test_hub_cache(
                 "viewer": True,
                 "partial": False,
                 "num_rows": 100,
-            },  # also test errors, suppresion, etc. error_code, details
+            },
             http_status=HTTPStatus.OK,
         )
         await asyncio.sleep(0.2)
@@ -120,7 +120,7 @@ async def test_hub_cache(
                 "viewer": True,
                 "partial": False,
                 "num_rows": 100,
-            },  # also test errors, suppresion, etc. error_code, details
+            },
             http_status=HTTPStatus.OK,
         )
         await asyncio.sleep(0.2)
@@ -132,7 +132,7 @@ async def test_hub_cache(
                 "viewer": True,
                 "partial": False,
                 "num_rows": 100,
-            },  # also test errors, suppresion, etc. error_code, details
+            },
             http_status=HTTPStatus.OK,
         )
         await asyncio.sleep(0.2)
@@ -144,7 +144,7 @@ async def test_hub_cache(
                 "viewer": True,
                 "partial": False,
                 "num_rows": 100,
-            },  # also test errors, suppresion, etc. error_code, details
+            },
             http_status=HTTPStatus.OK,
         )
         await asyncio.sleep(0.2)
@@ -215,6 +215,312 @@ async def test_hub_cache(
                         "num_rows": 100,
                     },
                 },
+                {
+                    "dataset": "dataset1",
+                    "operation": "update",
+                    "hub_cache": {
+                        "preview": False,
+                        "viewer": True,
+                        "partial": False,
+                        "num_rows": 100,
+                    },
+                },
+                {"dataset": "dataset1", "operation": "update", "hub_cache": None},
+                {"dataset": "dataset1", "operation": "delete", "hub_cache": None},
+                {"dataset": "dataset1", "operation": "insert", "hub_cache": None},
+                {
+                    "dataset": "dataset1",
+                    "operation": "update",
+                    "hub_cache": {
+                        "preview": False,
+                        "viewer": True,
+                        "partial": False,
+                        "num_rows": 100,
+                    },
+                },
+            ]:
+                event = await event_iter.__anext__()
+                # event = await anext(event_iter)
+                # ^ only available in 3.10
+                assert event.event == "message", event.data
+                assert event.data == json.dumps(expected_data)
+    except Exception as err:
+        update_task.cancel()
+        raise err
+    else:
+        await update_task
+
+
+@pytest.mark.asyncio
+async def test_hub_cache_only_initialization(
+    client: httpx.AsyncClient,
+    cache_mongo_resource: CacheMongoResource,
+    event_loop: asyncio.AbstractEventLoop,
+) -> None:
+    # prepare the content of the cache
+    upsert_response(
+        kind=HUB_CACHE_KIND,
+        dataset="dataset1",
+        content={
+            "preview": True,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=HUB_CACHE_KIND,
+        dataset="dataset2",
+        content={
+            "preview": True,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=HUB_CACHE_KIND + "-NOT",
+        dataset="dataset1",
+        content={
+            "preview": True,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=HUB_CACHE_KIND,
+        dataset="dataset3",
+        content={
+            "preview": False,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
+    async with aconnect_sse(client, f"{APP_HOST}/hub-cache") as event_source:
+        event_iter = event_source.aiter_sse()
+        for expected_data in [
+            {
+                "dataset": "dataset1",
+                "operation": "init",
+                "hub_cache": {
+                    "preview": True,
+                    "viewer": True,
+                    "partial": False,
+                    "num_rows": 100,
+                },
+            },
+            {
+                "dataset": "dataset2",
+                "operation": "init",
+                "hub_cache": {
+                    "preview": True,
+                    "viewer": True,
+                    "partial": False,
+                    "num_rows": 100,
+                },
+            },
+            {"dataset": "dataset3", "operation": "init", "hub_cache": None},
+        ]:
+            event = await event_iter.__anext__()
+            # event = await anext(event_iter)
+            # ^ only available in 3.10
+            assert event.event == "message", event.data
+            assert event.data == json.dumps(expected_data)
+
+
+@pytest.mark.asyncio
+async def test_hub_cache_initialization_and_updates(
+    client: httpx.AsyncClient,
+    cache_mongo_resource: CacheMongoResource,
+    event_loop: asyncio.AbstractEventLoop,
+) -> None:
+    def prepare_initial_content() -> None:
+        # prepare the content of the cache
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset2",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        upsert_response(
+            kind=HUB_CACHE_KIND + "-NOT",
+            dataset="dataset1",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset3",
+            content={
+                "preview": False,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    async def update_hub_cache() -> None:
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset2",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND + "-NOT",
+            dataset="dataset2",
+            content={
+                "preview": True,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": False,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },
+            http_status=HTTPStatus.OK,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": False,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },  # ^ not important
+            http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        await asyncio.sleep(0.2)
+        delete_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": False,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },  # ^ not important
+            http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+        await asyncio.sleep(0.2)
+        upsert_response(
+            kind=HUB_CACHE_KIND,
+            dataset="dataset1",
+            content={
+                "preview": False,
+                "viewer": True,
+                "partial": False,
+                "num_rows": 100,
+            },  # ^ not important
+            http_status=HTTPStatus.OK,
+        )
+
+    prepare_initial_content()
+    update_task = event_loop.create_task(update_hub_cache())
+    # ^ I don't think we are testing concurrency between the loop on the initial content and the loop on the updates
+    # We should
+
+    try:
+        async with aconnect_sse(client, f"{APP_HOST}/hub-cache") as event_source:
+            event_iter = event_source.aiter_sse()
+            for expected_data in [
+                {
+                    "dataset": "dataset1",
+                    "operation": "init",
+                    "hub_cache": {
+                        "preview": True,
+                        "viewer": True,
+                        "partial": False,
+                        "num_rows": 100,
+                    },
+                },
+                {
+                    "dataset": "dataset2",
+                    "operation": "init",
+                    "hub_cache": {
+                        "preview": True,
+                        "viewer": True,
+                        "partial": False,
+                        "num_rows": 100,
+                    },
+                },
+                {"dataset": "dataset3", "operation": "init", "hub_cache": None},
                 {
                     "dataset": "dataset1",
                     "operation": "update",

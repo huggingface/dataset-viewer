@@ -1,21 +1,22 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import asyncio
 from typing import Iterator
 
+import pytest
 from environs import Env
 from libcommon.constants import CACHE_COLLECTION_RESPONSES
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import CachedResponseDocument, _clean_cache_database
-from pytest import MonkeyPatch, fixture
 
 from sse_api.config import AppConfig
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
-@fixture(scope="session")
-def monkeypatch_session() -> Iterator[MonkeyPatch]:
-    monkeypatch_session = MonkeyPatch()
+@pytest.fixture(scope="session")
+def monkeypatch_session() -> Iterator[pytest.MonkeyPatch]:
+    monkeypatch_session = pytest.MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     hostname = "localhost"
@@ -28,20 +29,20 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session.undo()
 
 
-@fixture(scope="session")
-def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
+@pytest.fixture(scope="session")
+def app_config(monkeypatch_session: pytest.MonkeyPatch) -> AppConfig:
     app_config = AppConfig.from_env()
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return app_config
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def env() -> Env:
     return Env(expand_vars=True)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def cache_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="CACHE_MONGO_URL")
@@ -52,7 +53,7 @@ def cache_mongo_host(env: Env) -> str:
         raise ValueError("CACHE_MONGO_URL is not set") from e
 
 
-@fixture
+@pytest.fixture(scope="function")
 def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
     database = "datasets_server_cache_test"
     host = cache_mongo_host
@@ -65,3 +66,15 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
         yield cache_mongo_resource
         _clean_cache_database()
         cache_mongo_resource.release()
+
+
+@pytest.fixture(scope="session")
+def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
+    """
+    Create an instance of the default event loop for each test case.
+
+    See https://github.com/pytest-dev/pytest-asyncio/issues/38#issuecomment-264418154
+    """
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
