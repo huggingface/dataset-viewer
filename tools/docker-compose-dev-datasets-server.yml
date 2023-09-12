@@ -228,11 +228,12 @@ services:
     network_mode: ${DEV_NETWORK_MODE}
     restart: always
   mongodb:
-    image: docker.io/mongo
+    image: 'mongo:6.0.9'
+    ports:
+      - ${MONGO_PORT:-27017}:${MONGO_PORT:-27017}
+    command: mongod --port ${MONGO_PORT:-27017} --replSet ${MONGO_REPLICASET:-rs0} --bind_ip_all
     volumes:
       - mongo:/data/db:rw
-    ports:
-      - "${MONGO_PORT-27017}:27017"
 volumes:
   assets:
   cached-assets:

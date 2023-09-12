@@ -12,8 +12,10 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   mongo-port: "27017"
+  mongo-version: "6.0.9"
   python-version: "3.9.15"
   poetry-version: "1.4.2"
+  replicaset: "rs0"
 jobs:
   unit-tests:
     defaults:
@@ -39,8 +41,10 @@ jobs:
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: Create mongoDB Docker container
-        run: sudo docker run -d -p ${{ env.mongo-port }}:27017 mongo:latest
+      - name: Create mongoDB Docker container and set up replica set (required by sse-api)
+        run: |
+          sudo docker run -d -p ${{ env.mongo-port }}:${{ env.mongo-port }} --replSet ${{ env.replicaset }} mongo:${{ env.mongo-version }}
+          echo "rs.initiate({_id:'${{ env.replicaset }}',version:1,members:[{_id:0,host:'localhost:${{ env.mongo-port }}'}]})" | mongosh --port ${{ env.mongo-port }} --quiet
       - name: Run unit tests
         env:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}

@@ -10,6 +10,8 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
+  replicaset: "rs0"
+  mongo-port: 27017
 jobs:
   e2e-tests:
     defaults:
@@ -50,8 +52,12 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           # hub-cache
           HUB_CACHE_NUM_RESULTS_PER_PAGE: "2"
+          MONGO_PORT: ${{ env.mongo-port }}
+          MONGO_REPLICASET: ${{ env.replicaset }}
         run: docker compose -f docker-compose-datasets-server.yml up -d
         working-directory: ./tools
+      - name: Set up replica set (required by sse-api)
+        run: echo "rs.initiate({_id:'${{ env.replicaset }}',version:1,members:[{_id:0,host:'localhost:${{ env.mongo-port }}'}]})" | mongosh --port ${{ env.mongo-port }} --quiet
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
