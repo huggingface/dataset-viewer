@@ -26,7 +26,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import Row, RowItem
+from libcommon.utils import PaginatedResponse, Row, RowItem
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
@@ -148,6 +148,7 @@ def create_filter_endpoint(
                         table=table,
                         offset=offset,
                         features=features,
+                        num_rows_total=num_rows_total,
                     )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
@@ -216,7 +217,8 @@ def create_response(
     table: Table,
     offset: int,
     features: Features,
-) -> Any:
+    num_rows_total: int,
+) -> PaginatedResponse:
     return {
         "features": to_features_list(features),
         "rows": to_rows_list(
@@ -229,6 +231,8 @@ def create_response(
             offset,
             features,
         ),
+        "num_rows_total": num_rows_total,
+        "num_rows_per_page": MAX_ROWS,
     }
 
 
