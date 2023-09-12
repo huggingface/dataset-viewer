@@ -234,6 +234,13 @@ services:
     command: mongod --port ${MONGO_PORT:-27017} --replSet ${MONGO_REPLICASET:-rs0} --bind_ip_all
     volumes:
       - mongo:/data/db:rw
+    healthcheck:
+      test: mongosh --port ${MONGO_PORT:-27017} --quiet --eval "rs.initiate({_id:'${MONGO_REPLICASET:-rs0}',version:1,members:[{_id:0,host:'localhost:${MONGO_PORT:-27017}'}]}) || rs.status().ok"
+      interval: 2s
+      timeout: 20s
+      retries: 10
+      start_period: 20s
+      start_interval: 2s
 volumes:
   assets:
   cached-assets:
