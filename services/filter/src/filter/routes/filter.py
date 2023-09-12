@@ -26,6 +26,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.utils import Row, RowItem
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
@@ -40,17 +41,6 @@ MAX_ROWS = 100
 # TODO: duplicated in /rows
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
-
-
-# TODO: duplicated
-Row = Mapping[str, Any]
-
-
-# TODO: duplicated
-class RowItem(TypedDict):
-    row_idx: int
-    row: Mapping[str, Any]
-    truncated_cells: list[str]
 
 
 class Table(TypedDict):
