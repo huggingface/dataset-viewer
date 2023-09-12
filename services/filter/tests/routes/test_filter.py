@@ -136,6 +136,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         table=table,
         offset=offset,
         features=ds.features,
+        num_rows_total=4,
     )
     assert response == {
         "features": [
@@ -149,4 +150,6 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
             {"row_idx": 4, "row": {"name": "Leo", "gender": "male", "age": 25}, "truncated_cells": []},
             {"row_idx": 5, "row": {"name": "Simone", "gender": "female", "age": 30}, "truncated_cells": []},
         ],
+        "num_rows_total": 4,
+        "num_rows_per_page": 100,
     }
