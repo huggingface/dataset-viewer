@@ -29,6 +29,7 @@ from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
+    to_features_list,
 )
 from starlette.requests import Request
 from starlette.responses import Response
@@ -39,16 +40,6 @@ MAX_ROWS = 100
 # TODO: duplicated in /rows
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
-
-
-Feature = Mapping[str, Any]
-
-
-# TODO: duplicated
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: Feature
 
 
 # TODO: duplicated
@@ -241,19 +232,6 @@ def create_response(
             features,
         ),
     }
-
-
-# TODO: duplicated in /rows
-def to_features_list(features: Features) -> list[FeatureItem]:
-    features_dict = features.to_dict()
-    return [
-        {
-            "feature_idx": idx,
-            "name": name,
-            "type": features_dict[name],
-        }
-        for idx, name in enumerate(features)
-    ]
 
 
 # TODO: duplicated in /rows except Table
