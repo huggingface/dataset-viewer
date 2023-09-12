@@ -41,10 +41,14 @@ jobs:
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: Create mongoDB Docker container and set up replica set (required by sse-api)
-        run: |
-          sudo docker run -d -p ${{ env.mongo-port }}:${{ env.mongo-port }} --replSet ${{ env.replicaset }} mongo:${{ env.mongo-version }}
-          echo "rs.initiate({_id:'${{ env.replicaset }}',version:1,members:[{_id:0,host:'localhost:${{ env.mongo-port }}'}]})" | mongosh --port ${{ env.mongo-port }} --quiet
+      - name: launch mongo
+        env:
+          MONGO_PORT: ${{ env.mongo-port }}
+          MONGO_REPLICASET: ${{ env.replicaset }}
+        run: docker compose -f docker-compose-mongo.yml up -d
+        working-directory: ./tools
+      - name: Set up replica set (required by sse-api)
+        run: echo "rs.initiate({_id:'${{ env.replicaset }}',version:1,members:[{_id:0,host:'localhost:${{ env.mongo-port }}'}]})" | mongosh --port ${{ env.mongo-port }} --quiet
       - name: Run unit tests
         env:
           CACHE_MONGO_URL: mongodb://localhost:${{ env.mongo-port }}
