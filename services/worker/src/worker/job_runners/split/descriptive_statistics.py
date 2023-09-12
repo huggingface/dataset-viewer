@@ -367,12 +367,14 @@ def compute_descriptive_statistics_response(
     stats: List[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
-        feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if isinstance(feature, dict) and feature.get("_type") == "ClassLabel"
     }
     numerical_features = {
         feature_name: feature
         for feature_name, feature in features.items()
-        if feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
+        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
     }
     if not categorical_features and not numerical_features:
         raise NoSupportedFeaturesError(
