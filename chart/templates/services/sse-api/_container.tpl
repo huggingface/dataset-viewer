@@ -20,11 +20,6 @@
   # prometheus
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .Values.sseApi.prometheusMultiprocDirectory | quote }}
-  # /hub-cache
-  - name: HUB_CACHE_BASE_URL
-    value: "https://{{ include "datasetsServer.ingress.hostname" . }}"
-  - name: HUB_CACHE_NUM_RESULTS_PER_PAGE
-    value: {{ .Values.sseApi.hubCacheNumResultsPerPage | quote }}
   # uvicorn
   - name: API_UVICORN_HOSTNAME
     value: {{ .Values.sseApi.uvicornHostname | quote }}
