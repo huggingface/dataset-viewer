@@ -50,6 +50,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-search
       tag: sha-fb3399a
+    sseApi:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-sse-api
+      tag: sha-fb3399a
     storageAdmin:
       registry: huggingface
       useGlobalRegistry: false

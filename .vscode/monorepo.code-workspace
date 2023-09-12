@@ -49,6 +49,10 @@
       "path": "../services/storage-admin"
     },
     {
+      "name": "services/sse-api",
+      "path": "../services/sse-api"
+    },
+    {
       "name": "services/worker",
       "path": "../services/worker"
     },

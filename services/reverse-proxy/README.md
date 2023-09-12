@@ -23,6 +23,7 @@ It takes various environment variables, all of them are mandatory:
 - `URL_API`= URL of the API, eg `http://api:8080`
 - `URL_ROWS`= URL of the rows service, eg `http://rows:8082`
 - `URL_SEARCH`= URL of the search service, eg `http://search:8083`
+- `URL_SSE_API`= URL of the SSE API service, eg `http://sse-api:8085`
 
 The image requires three directories to be mounted (from volumes):
 
