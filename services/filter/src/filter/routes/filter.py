@@ -35,12 +35,22 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-# TODO: duplicated in /rows
 MAX_ROWS = 100
 
-# TODO: duplicated in /rows
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
+
+FILTER_QUERY = """\
+    SELECT {columns}
+    FROM read_parquet({parquet_file_urls})
+    WHERE {where}
+    LIMIT {limit}
+    OFFSET {offset}"""
+
+FILTER_COUNT_QUERY = """\
+    SELECT COUNT(*)
+    FROM read_parquet({parquet_file_urls})
+    WHERE {where}"""
 
 
 class Table(TypedDict):
@@ -121,7 +131,7 @@ def create_filter_endpoint(
                         unsupported_features=UNSUPPORTED_FEATURES,
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
-                    table = execute_filter_query(
+                    num_rows_total, table = execute_filter_query(
                         columns=supported_columns,
                         parquet_file_urls=parquet_file_urls,
                         where=where,
@@ -184,18 +194,16 @@ def get_features_from_parquet_file_metadata(
 
 def execute_filter_query(
     columns: list[str], parquet_file_urls: list[str], where: str, limit: int, offset: int
-) -> Table:
+) -> tuple[int, Table]:
     # TODO: Address possible SQL injection CWE-89
-    query = con.sql(
-        f"""\
-        SELECT {",".join(columns)}
-        FROM read_parquet({parquet_file_urls})
-        WHERE {where}
-        LIMIT {limit}
-        OFFSET {offset}"""  # nosec B608
-    )
-    rows = query.fetchall()
-    return {"columns": columns, "rows": rows}
+    rows = con.sql(
+        FILTER_QUERY.format(
+            columns=",".join(columns), parquet_file_urls=parquet_file_urls, where=where, limit=limit, offset=offset
+        )
+    ).fetchall()
+    count_results = con.sql(FILTER_COUNT_QUERY.format(parquet_file_urls=parquet_file_urls, where=where)).fetchall()
+    num_rows_total = count_results[0][0]
+    return num_rows_total, {"columns": columns, "rows": rows}
 
 
 # TODO: duplicated in /rows except Table

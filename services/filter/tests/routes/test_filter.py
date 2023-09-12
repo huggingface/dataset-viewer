@@ -113,9 +113,10 @@ def test_get_features_from_parquet_file_metadata(
 def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
     parquet_file_paths = [str(ds_fs.tmp_dir.joinpath(path)) for path in ds_fs.ls("default", detail=False)]
     columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
-    table = execute_filter_query(
+    num_rows_total, table = execute_filter_query(
         columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
     )
+    assert num_rows_total == 2
     assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
 
 
