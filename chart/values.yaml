@@ -559,12 +559,6 @@ search:
   tolerations: []
 
 sseApi:
-  # # the number of results per page. Defaults to `1_000`.
-  hubCacheNumResultsPerPage: "1_000"
-  # Number of seconds to set in the `max-age` header on data endpoints
-  maxAgeLong: "120"
-  # Number of seconds to set in the `max-age` header on technical endpoints
-  maxAgeShort: "10"
   # Directory where the uvicorn workers will write the prometheus metrics
   # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
   prometheusMultiprocDirectory: "/tmp"

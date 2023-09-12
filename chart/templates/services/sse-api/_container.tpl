@@ -12,11 +12,6 @@
   {{ include "envHf" . | nindent 2 }}
   {{ include "envLog" . | nindent 2 }}
   {{ include "envNumba" . | nindent 2 }}
-  # service
-  - name: API_MAX_AGE_LONG
-    value: {{ .Values.sseApi.maxAgeLong | quote }}
-  - name: API_MAX_AGE_SHORT
-    value: {{ .Values.sseApi.maxAgeShort | quote }}
   # prometheus
   - name: PROMETHEUS_MULTIPROC_DIR
     value:  {{ .Values.sseApi.prometheusMultiprocDirectory | quote }}
