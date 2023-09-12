@@ -23,7 +23,7 @@ def test_collect_queue_metrics() -> None:
         split="split",
         difficulty=50,
     )
-    assert JobTotalMetricDocument.objects().count() == 0
+    assert JobTotalMetricDocument.objects().count() == 1
 
     collect_queue_metrics(processing_graph=processing_graph)
 

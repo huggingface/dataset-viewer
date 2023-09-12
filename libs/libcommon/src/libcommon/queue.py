@@ -275,6 +275,29 @@ class JobTotalMetricDocument(Document):
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
+def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
+    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
+        upsert=True,
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        inc__total=increase_by,
+    )
+
+
+def increase_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+
+
+def decrease_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+
+
+def update_metrics_for_type(job_type: str, previous_status: str, new_status: str) -> None:
+    if job_type is not None:
+        decrease_metric(job_type=job_type, status=previous_status)
+        increase_metric(job_type=job_type, status=new_status)
+
+
 class Lock(Document):
     meta = {
         "collection": QUEUE_COLLECTION_LOCKS,
@@ -446,6 +469,7 @@ class Queue:
 
         Returns: the job
         """
+        increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -493,6 +517,8 @@ class Queue:
                 )
                 for job_info in job_infos
             ]
+            for job in jobs:
+                increase_metric(job_type=job.type, status=Status.WAITING)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
@@ -511,7 +537,10 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
+            previous_status = [(job.type, job.status) for job in existing.all()]
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            for job_type, status in previous_status:
+                update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
             return existing.count()
         except Exception:
             return 0
@@ -694,6 +723,9 @@ class Queue:
                     read_concern={"level": "majority"},
                 ):
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
+                update_metrics_for_type(
+                    job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
+                )
                 # and cancel the other ones, if any
                 waiting_jobs(status=Status.WAITING).update(
                     finished_at=datetime,
@@ -701,6 +733,10 @@ class Queue:
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
                 )
+                for waiting_job in waiting_jobs(status=Status.WAITING):
+                    update_metrics_for_type(
+                        job_type=waiting_job.type, previous_status=Status.WAITING, new_status=Status.CANCELLED
+                    )
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
@@ -842,7 +878,9 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
+        previous_status = job.status
         job.update(finished_at=get_datetime(), status=finished_status)
+        update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
         return True
 
