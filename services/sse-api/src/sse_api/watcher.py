@@ -3,64 +3,88 @@
 
 import asyncio
 import contextlib
-import random
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from http import HTTPStatus
+from typing import Any, Dict, Mapping, Optional, Tuple
 from uuid import uuid4
 
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import PyMongoError
 
-class RandomValueChangedEvent(asyncio.Event):
-    """Subclass of asyncio.Event which is able to send a value to the waiter"""
+from sse_api.constants import HUB_CACHE_KIND
 
-    _random_value: int
+# see services/worker/src/worker/dtos.py
+# class DatasetHubCacheResponse(TypedDict):
+#     preview: bool
+#     viewer: bool
+#     partial: bool
+#     num_rows: int
 
-    def __init__(self, *, random_value: int) -> None:
-        super().__init__()
-        self.set_random_value(random_value=random_value)
+DatasetHubCacheResponse = Mapping[str, Any]
 
-    def set_random_value(self, *, random_value: int) -> None:
-        self._random_value = random_value
-        return super().set()
 
-    async def wait_random_value(self) -> int:
-        """The caller is responsible to call self.clear() when the event has been handled"""
-        await super().wait()
-        return self._random_value
+class ChangeStreamInitError(Exception):
+    pass
 
 
 @dataclass
-class RandomValuePublisher:
-    _watchers: Dict[str, RandomValueChangedEvent]
-    _value: int
+class HubCacheChangedEventValue:
+    dataset: str
+    operation: str
+    hub_cache: Optional[DatasetHubCacheResponse]
+    # ^ None if the dataset has been deleted, or the value is an error response
 
-    @property
-    def value(self) -> int:
-        return self._value
 
-    def _notify_change(self, *, random_value: int) -> None:
-        self._value = random_value
+class HubCacheChangedEvent(asyncio.Event):
+    """Subclass of asyncio.Event which is able to send a value to the waiter"""
+
+    _hub_cache_value: Optional[HubCacheChangedEventValue]
+
+    def __init__(self, *, hub_cache_value: Optional[HubCacheChangedEventValue] = None):
+        super().__init__()
+        self._hub_cache_value = hub_cache_value
+        super().set()
+
+    def set_value(self, *, hub_cache_value: Optional[HubCacheChangedEventValue] = None) -> None:
+        self._hub_cache_value = hub_cache_value
+        return super().set()
+
+    async def wait_value(self) -> Optional[HubCacheChangedEventValue]:
+        """The caller is responsible to call self.clear() when the event has been handled"""
+        await super().wait()
+        return self._hub_cache_value
+
+
+@dataclass
+class HubCachePublisher:
+    _watchers: Dict[str, HubCacheChangedEvent]
+
+    def _notify_change(self, *, dataset: str, operation: str, hub_cache: Optional[DatasetHubCacheResponse]) -> None:
+        hub_cache_value = HubCacheChangedEventValue(dataset=dataset, operation=operation, hub_cache=hub_cache)
         for event in self._watchers.values():
-            event.set_random_value(random_value=self._value)
+            event.set_value(hub_cache_value=hub_cache_value)
 
     def _unsubscribe(self, uuid: str) -> None:
         self._watchers.pop(uuid)
 
-    def _subscribe(self) -> Tuple[str, RandomValueChangedEvent]:
-        event = RandomValueChangedEvent(random_value=self._value)
+    def _subscribe(self) -> Tuple[str, HubCacheChangedEvent]:
+        event = HubCacheChangedEvent()
         uuid = uuid4().hex
         self._watchers[uuid] = event
         return (uuid, event)
 
 
-class RandomValueWatcher:
+class HubCacheWatcher:
     """
-    Utility to watch the value of a randomly generated value (silly example for test purpose).
+    Utility to watch the value of the cache entries with kind 'dataset-hub-cache'.
     """
 
     _watch_task: asyncio.Task[None]  # <- not sure about the type
 
-    def __init__(self) -> None:
-        self._publisher = RandomValuePublisher(_value=42, _watchers={})
+    def __init__(self, client: AsyncIOMotorClient, db_name: str, collection_name: str) -> None:
+        self._client = client
+        self._collection = self._client[db_name][collection_name]
+        self._publisher = HubCachePublisher(_watchers={})
 
     def start_watching(self) -> None:
         self._watch_task = asyncio.create_task(self._watch_loop())
@@ -70,7 +94,7 @@ class RandomValueWatcher:
         with contextlib.suppress(asyncio.CancelledError):
             await self._watch_task
 
-    def subscribe(self) -> Tuple[str, RandomValueChangedEvent]:
+    def subscribe(self) -> Tuple[str, HubCacheChangedEvent]:
         """
         Subscribe to random value changes for the given space.
         The caller is responsible for calling `self.unsubscribe` to release resources.
@@ -92,10 +116,60 @@ class RandomValueWatcher:
 
     async def _watch_loop(self) -> None:
         """
-        Change the random value every 10ms to 200ms.
+        publish a new event, on every change in a dataset-hub-cache cache entry.
         """
+        pipeline = [
+            {
+                "$match": {
+                    "$or": [
+                        {"fullDocument.kind": HUB_CACHE_KIND},
+                        {"fullDocumentBeforeChange.kind": HUB_CACHE_KIND},
+                    ],
+                    "operationType": {"$in": ["insert", "update", "replace", "delete"]},
+                },
+                # "$project" <- TODO: only the fields we need
+            }
+        ]
+        resume_token = None
         while True:
-            random_duration_s = random.randint(10, 200) / 100  # nosec
-            await asyncio.sleep(random_duration_s)
-            random_value = random.randint(0, 100)  # nosec
-            self._publisher._notify_change(random_value=random_value)
+            try:
+                async with self._collection.watch(
+                    pipeline,
+                    resume_after=resume_token,
+                    full_document="updateLookup",
+                    full_document_before_change="whenAvailable",
+                ) as stream:
+                    async for change in stream:
+                        resume_token = stream.resume_token
+                        operation = change["operationType"]
+                        if (
+                            operation == "delete"
+                            and "fullDocumentBeforeChange" in change
+                            and change["fullDocumentBeforeChange"]["kind"] == HUB_CACHE_KIND
+                        ):
+                            dataset = change["fullDocumentBeforeChange"]["dataset"]
+                            self._publisher._notify_change(dataset=dataset, operation=operation, hub_cache=None)
+                            continue
+
+                        if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
+                            continue
+
+                        if operation == "update" and not any(
+                            field in change["updateDescription"]["updatedFields"]
+                            for field in ["content", "http_status"]
+                        ):
+                            # ^ no change, skip
+                            continue
+
+                        self._publisher._notify_change(
+                            dataset=change["fullDocument"]["dataset"],
+                            operation=operation,
+                            hub_cache=(
+                                change["fullDocument"]["content"]
+                                if change["fullDocument"]["http_status"] == HTTPStatus.OK
+                                else None
+                            ),
+                        )
+            except PyMongoError:
+                if resume_token is None:
+                    raise ChangeStreamInitError()

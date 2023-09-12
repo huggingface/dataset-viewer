@@ -3,6 +3,10 @@
 
 from typing import Iterator
 
+from environs import Env
+from libcommon.constants import CACHE_COLLECTION_RESPONSES
+from libcommon.resources import CacheMongoResource
+from libcommon.simple_cache import CachedResponseDocument, _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from sse_api.config import AppConfig
@@ -30,3 +34,34 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
     if "test" not in app_config.cache.mongo_database or "test" not in app_config.queue.mongo_database:
         raise ValueError("Test must be launched on a test mongo database")
     return app_config
+
+
+@fixture(scope="session")
+def env() -> Env:
+    return Env(expand_vars=True)
+
+
+@fixture(scope="session")
+def cache_mongo_host(env: Env) -> str:
+    try:
+        url = env.str(name="CACHE_MONGO_URL")
+        if type(url) is not str:
+            raise ValueError("CACHE_MONGO_URL is not set")
+        return url
+    except Exception as e:
+        raise ValueError("CACHE_MONGO_URL is not set") from e
+
+
+@fixture
+def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
+    database = "datasets_server_cache_test"
+    host = cache_mongo_host
+    if "test" not in database:
+        raise ValueError("Test must be launched on a test mongo database")
+    with CacheMongoResource(database=database, host=host) as cache_mongo_resource:
+        _clean_cache_database()
+        cache_mongo_resource.create_collection(CachedResponseDocument)
+        cache_mongo_resource.enable_pre_and_post_images(CACHE_COLLECTION_RESPONSES)
+        yield cache_mongo_resource
+        _clean_cache_database()
+        cache_mongo_resource.release()

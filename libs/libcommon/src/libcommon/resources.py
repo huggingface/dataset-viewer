@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from types import TracebackType
 from typing import Any, Optional, Type, TypeVar
 
+from mongoengine import Document
 from mongoengine.connection import ConnectionFailure, connect, disconnect
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
@@ -100,6 +101,12 @@ class MongoResource(Resource):
             return True
         except ServerSelectionTimeoutError:
             return False
+
+    def create_collection(self, document: Any) -> None:
+        document.ensure_indexes()
+
+    def enable_pre_and_post_images(self, collection_name: str) -> None:
+        self._client[self.database].command("collMod", collection_name, changeStreamPreAndPostImages={"enabled": True})  # type: ignore
 
     def release(self) -> None:
         disconnect(alias=self.mongoengine_alias)

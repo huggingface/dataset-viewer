@@ -38,6 +38,7 @@ requires = ["poetry-core>=1.0.0"]
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = []
+log_cli = true
 
 [tool.coverage.run]
 source = ["sse_api"]
