@@ -6,6 +6,7 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Generator
 
+import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
@@ -16,7 +17,6 @@ from libcommon.storage import StrPath
 
 from filter.config import AppConfig
 from filter.routes.filter import (
-    Table,
     create_response,
     execute_filter_query,
     get_config_parquet_metadata_from_cache,
@@ -113,27 +113,30 @@ def test_get_features_from_parquet_file_metadata(
 def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
     parquet_file_paths = [str(ds_fs.tmp_dir.joinpath(path)) for path in ds_fs.ls("default", detail=False)]
     columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
-    num_rows_total, table = execute_filter_query(
+    num_rows_total, pa_table = execute_filter_query(
         columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2
-    assert table == {"columns": ["name", "age"], "rows": [("Simone", 30)]}
+    assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     offset = 2
-    table: Table = {
-        "columns": ["name", "gender", "age"],
-        "rows": [("Marie", "female", 35), ("Paul", "male", 30), ("Leo", "male", 25), ("Simone", "female", 30)],
-    }
+    pa_table = pa.Table.from_pydict(
+        {
+            "name": ["Marie", "Paul", "Leo", "Simone"],
+            "gender": ["female", "male", "male", "female"],
+            "age": [35, 30, 25, 30],
+        }
+    )
     response = create_response(
         dataset=dataset,
         config=config,
         split=split,
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
-        table=table,
+        pa_table=pa_table,
         offset=offset,
         features=ds.features,
         num_rows_total=4,

@@ -6,6 +6,7 @@ import os.path
 from typing import Any, Optional, TypedDict
 
 import duckdb
+import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features, Value
 from libapi.authentication import auth_check
@@ -51,11 +52,6 @@ FILTER_COUNT_QUERY = """\
     SELECT COUNT(*)
     FROM read_parquet({parquet_file_urls})
     WHERE {where}"""
-
-
-class Table(TypedDict):
-    columns: list[str]
-    rows: list[tuple[Any, ...]]
 
 
 logger = logging.getLogger(__name__)
@@ -131,7 +127,7 @@ def create_filter_endpoint(
                         unsupported_features=UNSUPPORTED_FEATURES,
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
-                    num_rows_total, table = execute_filter_query(
+                    num_rows_total, pa_table = execute_filter_query(
                         columns=supported_columns,
                         parquet_file_urls=parquet_file_urls,
                         where=where,
@@ -145,7 +141,7 @@ def create_filter_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
-                        table=table,
+                        pa_table=pa_table,
                         offset=offset,
                         features=features,
                         num_rows_total=num_rows_total,
@@ -195,26 +191,25 @@ def get_features_from_parquet_file_metadata(
 
 def execute_filter_query(
     columns: list[str], parquet_file_urls: list[str], where: str, limit: int, offset: int
-) -> tuple[int, Table]:
+) -> tuple[int, pa.Table]:
     # TODO: Address possible SQL injection CWE-89
-    rows = con.sql(
-        FILTER_QUERY.format(
-            columns=",".join(columns), parquet_file_urls=parquet_file_urls, where=where, limit=limit, offset=offset
-        )
-    ).fetchall()
-    count_results = con.sql(FILTER_COUNT_QUERY.format(parquet_file_urls=parquet_file_urls, where=where)).fetchall()
-    num_rows_total = count_results[0][0]
-    return num_rows_total, {"columns": columns, "rows": rows}
+    filter_query = FILTER_QUERY.format(
+        columns=",".join(columns), parquet_file_urls=parquet_file_urls, where=where, limit=limit, offset=offset
+    )
+    pa_table = con.sql(filter_query).arrow()
+    filter_count_query = FILTER_COUNT_QUERY.format(parquet_file_urls=parquet_file_urls, where=where)
+    num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
+    return num_rows_total, pa_table
 
 
-# TODO: duplicated in /rows except Table
+# TODO: duplicated in /rows
 def create_response(
     dataset: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    table: Table,
+    pa_table: pa.Table,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -222,7 +217,7 @@ def create_response(
     return {
         "features": to_features_list(features),
         "rows": to_rows_list(
-            table,
+            pa_table,
             dataset,
             config,
             split,
@@ -236,9 +231,9 @@ def create_response(
     }
 
 
-# TODO: duplicated in /rows except Table
+# TODO: duplicated in libapi
 def to_rows_list(
-    table: Table,
+    pa_table: pa.Table,
     dataset: str,
     config: str,
     split: str,
@@ -252,7 +247,7 @@ def to_rows_list(
         dataset=dataset,
         config=config,
         split=split,
-        table=table,
+        rows=pa_table.to_pylist(),
         features=features,
         cached_assets_base_url=cached_assets_base_url,
         cached_assets_directory=cached_assets_directory,
@@ -268,12 +263,12 @@ def to_rows_list(
     ]
 
 
-# TODO: duplicated in /rows except Table
+# TODO: duplicated in libcommon
 def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    table: Table,
+    rows: list[Row],
     features: Features,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
@@ -286,7 +281,7 @@ def transform_rows(
                 config=config,
                 split=split,
                 row_idx=offset + row_idx,
-                cell=row[table["columns"].index(featureName)] if featureName in table["columns"] else None,
+                cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
                 assets_base_url=cached_assets_base_url,
@@ -294,5 +289,5 @@ def transform_rows(
             )
             for (featureName, fieldType) in features.items()
         }
-        for row_idx, row in enumerate(table["rows"])
+        for row_idx, row in enumerate(rows)
     ]
