@@ -20,6 +20,7 @@ from libapi.utils import (
     are_valid_parameters,
     get_json_api_error_response,
     get_json_ok_response,
+    to_rows_list,
 )
 from libcommon.exceptions import UnexpectedError
 from libcommon.parquet_utils import ParquetFileMetadataItem
@@ -27,9 +28,8 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import PaginatedResponse, Row, RowItem
+from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
-    get_cell_value,
     get_supported_unsupported_columns,
     to_features_list,
 )
@@ -122,7 +122,7 @@ def create_filter_endpoint(
                         parquet_metadata_directory=parquet_metadata_directory,
                     )
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, _ = get_supported_unsupported_columns(
+                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
                         unsupported_features=UNSUPPORTED_FEATURES,
                     )
@@ -144,6 +144,7 @@ def create_filter_endpoint(
                         pa_table=pa_table,
                         offset=offset,
                         features=features,
+                        unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                     )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
@@ -212,6 +213,7 @@ def create_response(
     pa_table: pa.Table,
     offset: int,
     features: Features,
+    unsupported_columns: list[str],
     num_rows_total: int,
 ) -> PaginatedResponse:
     return {
@@ -225,69 +227,8 @@ def create_response(
             cached_assets_directory,
             offset,
             features,
+            unsupported_columns,
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_ROWS,
     }
-
-
-# TODO: duplicated in libapi
-def to_rows_list(
-    pa_table: pa.Table,
-    dataset: str,
-    config: str,
-    split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    offset: int,
-    features: Features,
-) -> list[RowItem]:
-    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
-    transformed_rows = transform_rows(
-        dataset=dataset,
-        config=config,
-        split=split,
-        rows=pa_table.to_pylist(),
-        features=features,
-        cached_assets_base_url=cached_assets_base_url,
-        cached_assets_directory=cached_assets_directory,
-        offset=offset,
-    )
-    return [
-        {
-            "row_idx": idx + offset,
-            "row": row,
-            "truncated_cells": [],
-        }
-        for idx, row in enumerate(transformed_rows)
-    ]
-
-
-# TODO: duplicated in libcommon
-def transform_rows(
-    dataset: str,
-    config: str,
-    split: str,
-    rows: list[Row],
-    features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    offset: int,
-) -> list[Row]:
-    return [
-        {
-            featureName: get_cell_value(
-                dataset=dataset,
-                config=config,
-                split=split,
-                row_idx=offset + row_idx,
-                cell=row[featureName] if featureName in row else None,
-                featureName=featureName,
-                fieldType=fieldType,
-                assets_base_url=cached_assets_base_url,
-                assets_directory=cached_assets_directory,
-            )
-            for (featureName, fieldType) in features.items()
-        }
-        for row_idx, row in enumerate(rows)
-    ]

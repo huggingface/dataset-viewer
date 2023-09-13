@@ -139,6 +139,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         pa_table=pa_table,
         offset=offset,
         features=ds.features,
+        unsupported_columns=[],
         num_rows_total=4,
     )
     assert response == {
