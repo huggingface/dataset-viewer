@@ -36,6 +36,13 @@ class DummySplitJobRunner(SplitJobRunner):
 
 @pytest.mark.parametrize("config,split", [(None, None), (None, "split"), ("config", None)])
 def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig, config: str, split: str) -> None:
+    upsert_response(
+        kind="dataset-config-names",
+        dataset="dataset",
+        content={"config_names": [{"dataset": "dataset", "config": config}]},
+        http_status=HTTPStatus.OK,
+    )
+
     with pytest.raises(CustomError) as exc_info:
         DummySplitJobRunner(
             job_info={
