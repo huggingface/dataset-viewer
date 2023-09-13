@@ -183,9 +183,7 @@ def test_compute(
         "gated": hub_responses_gated_duckdb_index,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
-    config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
-    splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     split = "train"
     partial = hub_dataset_name.startswith("partial_")
 
