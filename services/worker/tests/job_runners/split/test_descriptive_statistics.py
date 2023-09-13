@@ -270,18 +270,8 @@ def test_compute(
         "big": hub_responses_big,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
-    config_names_response = hub_datasets[hub_dataset_name]["config_names_response"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     config, split = splits_response["splits"][0]["config"], splits_response["splits"][0]["split"]
-
-    # upsert_response("dataset-config-names", dataset=dataset, http_status=HTTPStatus.OK, content=config_names_response)
-    # upsert_response(
-    #     "config-split-names-from-info",
-    #     dataset=dataset,
-    #     config=config,
-    #     http_status=HTTPStatus.OK,
-    #     content=splits_response,
-    # )
 
     # computing and pushing real parquet files because we need them for stats computation
     parquet_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
