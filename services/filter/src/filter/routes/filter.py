@@ -82,20 +82,26 @@ def create_filter_endpoint(
                     dataset = request.query_params.get("dataset")
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
-                    if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
-                        raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-                    # TODO: validate where
                     where = request.query_params.get("where")
-                    if not where:
-                        raise MissingRequiredParameterError("Parameter 'where' is required")
+                    if (
+                        not dataset
+                        or not config
+                        or not split
+                        or not where
+                        or not are_valid_parameters([dataset, config, split, where])
+                    ):
+                        raise MissingRequiredParameterError(
+                            "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                        )
+                    # TODO: validate where
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
-                        raise InvalidParameterError(message="Offset must be positive")
+                        raise InvalidParameterError(message="Parameter 'offset' must be positive")
                     length = int(request.query_params.get("length", MAX_ROWS))
                     if length < 0:
-                        raise InvalidParameterError("Length must be positive")
-                    if length > MAX_ROWS:
-                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+                        raise InvalidParameterError("Parameter 'length' must be positive")
+                    elif length > MAX_ROWS:
+                        raise InvalidParameterError(f"Parameter 'length' must not be bigger than {MAX_ROWS}")
                     logger.info(
                         f'/filter, dataset={dataset}, config={config}, split={split}, where="{where}",'
                         f" offset={offset}, length={length}"
