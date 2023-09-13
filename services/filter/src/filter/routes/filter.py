@@ -3,7 +3,7 @@
 
 import logging
 import os.path
-from typing import Any, Optional, TypedDict
+from typing import Optional
 
 import duckdb
 import pyarrow as pa
