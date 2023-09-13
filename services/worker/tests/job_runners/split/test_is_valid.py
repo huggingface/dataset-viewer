@@ -117,6 +117,22 @@ def get_job_runner(
     ) -> SplitIsValidJobRunner:
         processing_step_name = SplitIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitIsValidJobRunner(
             job_info={
                 "type": SplitIsValidJobRunner.get_job_type(),

@@ -12,6 +12,7 @@ from worker.job_runners._job_runner_with_datasets_cache import (
     JobRunnerWithDatasetsCache,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.utils import check_config_exists
 
 
 class ConfigJobRunner(DatasetJobRunner):
@@ -27,6 +28,7 @@ class ConfigJobRunner(DatasetJobRunner):
         if job_info["params"]["config"] is None:
             raise ParameterMissingError("'config' parameter is required")
         self.config = job_info["params"]["config"]
+        check_config_exists(dataset=self.dataset, config=self.config)
 
 
 class ConfigJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, ConfigJobRunner):

@@ -28,6 +28,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.exceptions import (
+    ConfigNotFoundError,
     DatasetNotFoundError,
     NormalRowsError,
     PreviousStepFormatError,
@@ -332,11 +333,29 @@ def create_branch(dataset: str, target_revision: str, hf_api: HfApi, committer_h
         raise DatasetNotFoundError("The dataset does not exist on the Hub (was deleted during job).") from err
 
 
+def check_config_exists(dataset: str, config: str) -> None:
+    """
+    Check if dataset has a provided config. Dataset's configs are taken from 'dataset-config-names' step's cache.
+    """
+    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
+    try:
+        configs_content = config_names_best_response.response["content"]["config_names"]
+    except Exception as e:
+        raise PreviousStepFormatError(
+            "Previous steps 'dataset-config-names' did not return the expected content.",
+            e,
+        ) from e
+
+    if config not in [config_item["config"] for config_item in configs_content]:
+        raise ConfigNotFoundError(f"Config '{config}' does not exist for dataset '{dataset}'")
+
+
 def check_split_exists(dataset: str, config: str, split: str) -> None:
     """
     Check if dataset has a provided split in a provided config. Dataset's splits are taken from the best response
     of 'config-split-names-from-streaming' and 'config-split-names-from-info' steps' cache.
     """
+    check_config_exists(dataset, config)
     split_names_best_response = get_previous_step_or_raise(
         kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
     )

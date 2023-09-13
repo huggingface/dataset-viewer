@@ -44,6 +44,14 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigSplitNamesFromInfoJobRunner(
             job_info={
                 "type": ConfigSplitNamesFromInfoJobRunner.get_job_type(),
