@@ -51,6 +51,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitFirstRowsFromStreamingJobRunner(
             job_info={
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
@@ -77,13 +93,6 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     dataset = hub_public_csv
     config, split = get_default_config_split()
     job_runner = get_job_runner(dataset, config, split, app_config)
-    upsert_response(
-        kind="config-split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-        http_status=HTTPStatus.OK,
-    )
     response = job_runner.compute()
     assert response
     content = response.content
@@ -106,10 +115,8 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
         ("jsonl", False, None, None),
         ("gated", True, None, None),
         ("private", True, None, None),
-        ("does_not_exist_config", False, "CachedArtifactNotFoundError", None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist_split", False, "SplitNotFoundError", None),
         ("gated", False, "InfoError", "FileNotFoundError"),
         ("private", False, "InfoError", "FileNotFoundError"),
     ],
@@ -161,36 +168,12 @@ def test_number_rows(
     )
 
     if exception_name is None:
-        upsert_response(
-            kind="config-split-names-from-streaming",
-            dataset=dataset,
-            config=config,
-            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-            http_status=HTTPStatus.OK,
-        )
         result = job_runner.compute().content
         assert result == expected_first_rows_response
-        return
-    elif exception_name == "SplitNotFoundError":
-        upsert_response(
-            kind="config-split-names-from-streaming",
-            dataset=dataset,
-            config=config,
-            content={"splits": [{"dataset": dataset, "config": config, "split": "other_split"}]},
-            http_status=HTTPStatus.OK,
-        )
-    elif exception_name in {"InfoError", "SplitsNamesError"}:
-        upsert_response(
-            kind="config-split-names-from-streaming",
-            dataset=dataset,
-            config=config,
-            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-            http_status=HTTPStatus.OK,
-        )
-
-    with pytest.raises(Exception) as exc_info:
-        job_runner.compute()
-    assert exc_info.typename == exception_name
+    else:
+        with pytest.raises(Exception) as exc_info:
+            job_runner.compute()
+        assert exc_info.typename == exception_name
 
 
 @pytest.mark.parametrize(
@@ -234,14 +217,6 @@ def test_truncation(
                 columns_max_number=columns_max_number,
             ),
         ),
-    )
-
-    upsert_response(
-        kind="config-split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
-        http_status=HTTPStatus.OK,
     )
 
     if error_code:

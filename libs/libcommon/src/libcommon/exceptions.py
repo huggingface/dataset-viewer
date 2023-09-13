@@ -74,8 +74,9 @@ class CustomError(LoggedError):
 
 CacheableErrorCode = Literal[
     "CacheDirectoryNotInitializedError",
-    "ConfigNamesError",
     "ComputationError",
+    "ConfigNamesError",
+    "ConfigNotFoundError",
     "CreateCommitError",
     "DatasetInBlockListError",
     "DatasetInfoHubRequestError",
@@ -151,6 +152,19 @@ class ConfigNamesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ConfigNamesError", cause, True)
+
+
+class ConfigNotFoundError(CacheableError):
+    """The config does not exist."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.NOT_FOUND,
+            code="ConfigNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
 
 
 class CreateCommitError(CacheableError):

@@ -29,7 +29,6 @@ from tqdm import tqdm
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import check_split_exists
 
 REPO_TYPE = "dataset"
 
@@ -303,7 +302,6 @@ def compute_descriptive_statistics_response(
     """
 
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
-    check_split_exists(dataset=dataset, config=config, split=split)
 
     config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(

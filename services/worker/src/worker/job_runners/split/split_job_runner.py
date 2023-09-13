@@ -13,6 +13,7 @@ from worker.job_runners._job_runner_with_datasets_cache import (
     JobRunnerWithDatasetsCache,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import check_split_exists
 
 
 class SplitJobRunner(ConfigJobRunner):
@@ -28,6 +29,7 @@ class SplitJobRunner(ConfigJobRunner):
         if job_info["params"]["split"] is None:
             raise ParameterMissingError("'split' parameter is required")
         self.split = job_info["params"]["split"]
+        check_split_exists(dataset=self.dataset, config=self.config, split=self.split)
 
 
 class SplitJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, SplitJobRunner):

@@ -41,7 +41,6 @@ from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
-    check_split_exists,
     create_branch,
     hf_hub_url,
     retry,
@@ -97,7 +96,6 @@ def compute_index_rows(
     committer_hf_token: Optional[str],
 ) -> DuckdbIndexWithFeatures:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
-    check_split_exists(dataset=dataset, config=config, split=split)
 
     # get parquet urls and dataset_info
     config_parquet_and_info_step = "config-parquet-and-info"
