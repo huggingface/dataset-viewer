@@ -2,7 +2,6 @@
 export COMPOSE_PROJECT_NAME := sse-api
 export MONGO_PORT := 27035
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
-export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests
