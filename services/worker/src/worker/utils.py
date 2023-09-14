@@ -6,8 +6,8 @@ import itertools
 import logging
 import time
 import warnings
-from collections.abc import Callable
-from typing import Any, Optional, Sequence, TypeVar, Union, cast
+from collections.abc import Callable, Sequence
+from typing import Any, Optional, TypeVar, Union, cast
 from urllib.parse import quote
 
 import PIL

@@ -7,11 +7,12 @@ import logging
 import time
 import types
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, Literal, Optional, Sequence, TypedDict, TypeVar
+from typing import Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
