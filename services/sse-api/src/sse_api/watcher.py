@@ -6,7 +6,7 @@ import contextlib
 from collections.abc import Mapping
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -69,7 +69,7 @@ class HubCachePublisher:
     def _unsubscribe(self, uuid: str) -> None:
         self._watchers.pop(uuid)
 
-    def _subscribe(self) -> Tuple[str, HubCacheChangedEvent]:
+    def _subscribe(self) -> tuple[str, HubCacheChangedEvent]:
         event = HubCacheChangedEvent()
         uuid = uuid4().hex
         self._watchers[uuid] = event
@@ -99,7 +99,7 @@ class HubCacheWatcher:
         with contextlib.suppress(asyncio.CancelledError):
             await self._watch_task
 
-    def subscribe(self) -> Tuple[str, HubCacheChangedEvent]:
+    def subscribe(self) -> tuple[str, HubCacheChangedEvent]:
         """
         Subscribe to random value changes for the given space.
         The caller is responsible for calling `self.unsubscribe` to release resources.

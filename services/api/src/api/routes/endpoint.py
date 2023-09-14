@@ -5,7 +5,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -101,7 +101,7 @@ class InputTypeValidator(ABC):
     @abstractmethod
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         pass
 
     @staticmethod
@@ -126,7 +126,7 @@ class DatasetInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, None, None)
 
 
@@ -141,7 +141,7 @@ class ConfigInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, config, None)
 
 
@@ -156,7 +156,7 @@ class SplitInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, config, split)
 
 

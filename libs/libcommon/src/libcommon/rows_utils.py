@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import Optional, Tuple
+from typing import Optional
 
 from datasets import Features
 from tqdm.contrib.concurrent import thread_map
@@ -13,7 +13,7 @@ from libcommon.viewer_utils.features import get_cell_value
 
 
 def _transform_row(
-    row_idx_and_row: Tuple[int, Row],
+    row_idx_and_row: tuple[int, Row],
     dataset: str,
     config: str,
     split: str,

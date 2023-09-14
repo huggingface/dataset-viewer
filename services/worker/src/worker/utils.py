@@ -6,7 +6,7 @@ import itertools
 import logging
 import time
 import warnings
-from typing import Any, Callable, Optional, Sequence, Tuple, Type, TypeVar, Union, cast
+from typing import Any, Callable, Optional, Sequence, Type, TypeVar, Union, cast
 from urllib.parse import quote
 
 import PIL
@@ -170,7 +170,7 @@ def create_truncated_row_items(
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
-RETRY_ON: Tuple[Type[Exception]] = (Exception,)
+RETRY_ON: tuple[Type[Exception]] = (Exception,)
 
 
 class retry:

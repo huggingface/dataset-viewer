@@ -4,7 +4,7 @@
 import logging
 from asyncio import Semaphore, create_task, run, wait
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
@@ -43,7 +43,7 @@ async def check_spawning(
 
 async def opt_in_out_task(
     image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
-) -> Tuple[list[Any], list[Any]]:
+) -> tuple[list[Any], list[Any]]:
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
     except Exception:
@@ -62,7 +62,7 @@ async def opt_in_out_scan_urls(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> Tuple[list[int], list[int]]:
+) -> tuple[list[int], list[int]]:
     offsets = []
     tasks = []
     semaphore = Semaphore(value=max_concurrent_requests_number)

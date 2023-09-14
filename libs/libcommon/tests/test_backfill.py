@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 import pytest
 
@@ -724,7 +724,7 @@ def test_plan_incoherent_state(
     )
 
 
-JobSpec = Tuple[Priority, Status, Optional[datetime]]
+JobSpec = tuple[Priority, Status, Optional[datetime]]
 
 OLD = datetime.strptime("20000101", "%Y%m%d")
 NEW = datetime.strptime("20000102", "%Y%m%d")

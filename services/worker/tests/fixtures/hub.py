@@ -8,7 +8,7 @@ import time
 from collections.abc import Mapping
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Callable, Iterator, Literal, Optional, Tuple, TypedDict, Union
+from typing import Any, Callable, Iterator, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
@@ -23,7 +23,7 @@ DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 
-def get_default_config_split() -> Tuple[str, str]:
+def get_default_config_split() -> tuple[str, str]:
     config = "default"
     split = "train"
     return config, split

@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Tuple
+from typing import Any
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -17,7 +17,7 @@ from worker.dtos import DatasetInfoResponse, JobResult, PreviousJob
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, float]:
+def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, float]:
     """
     Get the response of dataset-info for one specific dataset on huggingface.co.
     Args:

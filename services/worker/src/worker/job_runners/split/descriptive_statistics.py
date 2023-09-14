@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Tuple, TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 import duckdb
 import numpy as np
@@ -228,7 +228,7 @@ def compute_categorical_statistics(
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, parquet_filename=parquet_filename
     )
-    categories: list[Tuple[int, int]] = con.sql(
+    categories: list[tuple[int, int]] = con.sql(
         categorical_counts_query
     ).fetchall()  # list of tuples (idx, num_samples)
 

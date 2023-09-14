@@ -9,7 +9,7 @@ import re
 from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import duckdb
 import pyarrow as pa
@@ -97,7 +97,7 @@ def download_index_file(
     )
 
 
-def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> Tuple[int, pa.Table]:
+def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
     con = duckdb.connect(index_file_location, read_only=True)
     count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
     num_rows_total = count_result[0][0]  # it will always return a non empty list with one element in a tuple

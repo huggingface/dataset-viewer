@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -17,7 +16,7 @@ from worker.dtos import JobResult, OptInOutUrlsCountResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> Tuple[OptInOutUrlsCountResponse, float]:
+def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"get config-opt-in-out-urls-count for dataset={dataset} config={config}")
 
     split_names_response = get_previous_step_or_raise(

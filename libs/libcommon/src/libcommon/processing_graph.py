@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional, Tuple, TypedDict, Union, get_args
+from typing import Any, Literal, Optional, TypedDict, Union, get_args
 
 import networkx as nx
 
@@ -584,7 +584,7 @@ class Artifact:
         )
 
     @staticmethod
-    def parse_id(id: str) -> Tuple[str, str, Optional[str], Optional[str], str]:
+    def parse_id(id: str) -> tuple[str, str, Optional[str], Optional[str], str]:
         parts = id.split(",")
         prefix = parts[0]
         parts = parts[1:]

@@ -10,7 +10,7 @@ from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Callable, Generator, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Generator, Optional, Type, TypeVar, Union
 from unittest.mock import patch
 from urllib.parse import unquote
 
@@ -130,7 +130,7 @@ class ParquetFile:
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
 
 
-def parse_repo_filename(filename: str) -> Tuple[str, str]:
+def parse_repo_filename(filename: str) -> tuple[str, str]:
     if not filename_pattern.match(os.path.basename(filename)):
         raise ValueError(f"Cannot parse {filename}")
     parts = filename.split("/")
@@ -619,7 +619,7 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> Tuple[pq.ParquetFile, int]:
+def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> tuple[pq.ParquetFile, int]:
     fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
     f = fs.open(url)
     return pq.ParquetFile(f), f.size
@@ -627,7 +627,7 @@ def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str
 
 def retry_and_validate_get_parquet_file_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
-) -> Tuple[pq.ParquetFile, int]:
+) -> tuple[pq.ParquetFile, int]:
     try:
         sleeps = [1, 1, 1, 10, 10, 10]
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
@@ -695,7 +695,7 @@ def fill_builder_info(
     for split in data_files:
         split = str(split)  # in case it's a NamedSplit
         try:
-            parquet_files_and_sizes: list[Tuple[pq.ParquetFile, int]] = thread_map(
+            parquet_files_and_sizes: list[tuple[pq.ParquetFile, int]] = thread_map(
                 functools.partial(
                     retry_and_validate_get_parquet_file_and_size,
                     hf_endpoint=hf_endpoint,
@@ -850,7 +850,7 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
 
 def stream_convert_to_parquet(
     builder: DatasetBuilder, max_dataset_size: Optional[int], writer_batch_size: Optional[int] = None
-) -> Tuple[list[CommitOperationAdd], bool]:
+) -> tuple[list[CommitOperationAdd], bool]:
     """Stream and prepare the dataset as parquet files and fills the builder info."""
     writer_batch_size = writer_batch_size or get_writer_batch_size_from_info(builder.info)
     if writer_batch_size is not None and (

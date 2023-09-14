@@ -6,7 +6,7 @@ import os
 from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Generator, Tuple, TypedDict
+from typing import Generator, TypedDict
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -21,7 +21,7 @@ SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/m
 
 def create_asset_dir(
     dataset: str, config: str, split: str, row_idx: int, column: str, assets_directory: StrPath
-) -> Tuple[Path, str]:
+) -> tuple[Path, str]:
     dir_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split / str(row_idx) / column
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)

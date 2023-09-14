@@ -4,7 +4,7 @@
 import json
 import os
 from io import BytesIO
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 from zlib import adler32
 
 import numpy as np
@@ -342,7 +342,7 @@ def to_features_list(features: Features) -> list[FeatureItem]:
 def get_supported_unsupported_columns(
     features: Features,
     unsupported_features: list[FeatureType] = [],
-) -> Tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str]]:
     supported_columns, unsupported_columns = [], []
 
     for column, feature in features.items():
