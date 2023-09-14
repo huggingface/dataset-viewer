@@ -30,16 +30,13 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.utils import PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
-
-
-MAX_ROWS = 100
 
 
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
@@ -78,7 +75,7 @@ def create_response(
             unsupported_columns,
         ),
         num_rows_total=num_rows_total,
-        num_rows_per_page=MAX_ROWS,
+        num_rows_per_page=MAX_NUM_ROWS_PER_PAGE,
     )
 
 
@@ -126,11 +123,13 @@ def create_rows_endpoint(
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
                         raise InvalidParameterError(message="Offset must be positive")
-                    length = int(request.query_params.get("length", MAX_ROWS))
+                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Length must be positive")
-                    if length > MAX_ROWS:
-                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+                    if length > MAX_NUM_ROWS_PER_PAGE:
+                        raise InvalidParameterError(
+                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
+                        )
                     logging.info(
                         f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
                     )

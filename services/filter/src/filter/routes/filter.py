@@ -28,15 +28,13 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
 )
 from starlette.requests import Request
 from starlette.responses import Response
-
-MAX_ROWS = 100
 
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
@@ -97,11 +95,13 @@ def create_filter_endpoint(
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
                         raise InvalidParameterError(message="Parameter 'offset' must be positive")
-                    length = int(request.query_params.get("length", MAX_ROWS))
+                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Parameter 'length' must be positive")
-                    elif length > MAX_ROWS:
-                        raise InvalidParameterError(f"Parameter 'length' must not be bigger than {MAX_ROWS}")
+                    elif length > MAX_NUM_ROWS_PER_PAGE:
+                        raise InvalidParameterError(
+                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
+                        )
                     logger.info(
                         f'/filter, dataset={dataset}, config={config}, split={split}, where="{where}",'
                         f" offset={offset}, length={length}"
@@ -236,5 +236,5 @@ def create_response(
             unsupported_columns,
         ),
         "num_rows_total": num_rows_total,
-        "num_rows_per_page": MAX_ROWS,
+        "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
     }

@@ -35,7 +35,7 @@ from libapi.utils import (
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath, init_dir
-from libcommon.utils import PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -47,7 +47,6 @@ logger = logging.getLogger(__name__)
 
 
 ROW_IDX_COLUMN = "__hf_index_id"
-MAX_ROWS = 100
 UNSUPPORTED_FEATURES = [Value("binary")]
 
 FTS_COMMAND_COUNT = (
@@ -145,7 +144,7 @@ def create_response(
             row_idx_column=ROW_IDX_COLUMN,
         ),
         num_rows_total=num_rows_total,
-        num_rows_per_page=MAX_ROWS,
+        num_rows_per_page=MAX_NUM_ROWS_PER_PAGE,
     )
 
 
@@ -194,11 +193,13 @@ def create_search_endpoint(
                     if offset < 0:
                         raise InvalidParameterError(message="Offset must be positive")
 
-                    length = int(request.query_params.get("length", MAX_ROWS))
+                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Length must be positive")
-                    if length > MAX_ROWS:
-                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+                    if length > MAX_NUM_ROWS_PER_PAGE:
+                        raise InvalidParameterError(
+                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
+                        )
 
                 with StepProfiler(method="search_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
