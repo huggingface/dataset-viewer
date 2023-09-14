@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
+from typing import Generic, Literal, Optional, Sequence, Type, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd

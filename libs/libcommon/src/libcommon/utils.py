@@ -6,7 +6,7 @@ import enum
 import mimetypes
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, Mapping, Optional, TypedDict
 
 import orjson
 

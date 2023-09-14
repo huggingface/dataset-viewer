@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 import requests
 from libcommon.prometheus import StepProfiler

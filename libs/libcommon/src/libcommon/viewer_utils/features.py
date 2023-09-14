@@ -4,7 +4,7 @@
 import json
 import os
 from io import BytesIO
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 from zlib import adler32
 
 import numpy as np

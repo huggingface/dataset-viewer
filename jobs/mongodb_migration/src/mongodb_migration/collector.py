@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import List
-
 from libcommon.constants import (
     CACHE_METRICS_COLLECTION,
     METRICS_MONGOENGINE_ALIAS,

@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Dict, Mapping, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge

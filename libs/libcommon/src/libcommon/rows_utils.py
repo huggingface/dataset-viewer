@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from datasets import Features
 from tqdm.contrib.concurrent import thread_map

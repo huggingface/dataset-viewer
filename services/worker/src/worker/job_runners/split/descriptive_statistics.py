@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Dict, Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np

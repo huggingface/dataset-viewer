@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Set, TypedDict
+from typing import Set, TypedDict
 
 from libapi.exceptions import UnexpectedApiError
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response

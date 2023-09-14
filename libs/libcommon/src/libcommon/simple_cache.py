@@ -9,7 +9,6 @@ from typing import (
     Any,
     Dict,
     Generic,
-    List,
     Mapping,
     NamedTuple,
     Optional,

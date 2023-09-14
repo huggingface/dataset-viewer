@@ -2,7 +2,6 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import List
 
 import pytest
 

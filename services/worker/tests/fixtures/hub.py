@@ -12,7 +12,6 @@ from typing import (
     Callable,
     Dict,
     Iterator,
-    List,
     Literal,
     Mapping,
     Optional,

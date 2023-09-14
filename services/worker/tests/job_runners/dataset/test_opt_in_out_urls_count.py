@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph

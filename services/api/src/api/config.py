@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import List, Mapping
+from typing import Mapping
 
 from environs import Env
 from libapi.config import ApiConfig

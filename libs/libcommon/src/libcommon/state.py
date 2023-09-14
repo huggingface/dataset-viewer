@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import pandas as pd
 

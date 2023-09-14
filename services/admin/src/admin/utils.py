@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, List, Literal, Optional
+from typing import Any, Callable, Coroutine, Literal, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps

@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, Optional, Set, Union
 
 import pandas as pd
 

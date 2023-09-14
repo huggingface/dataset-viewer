@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph

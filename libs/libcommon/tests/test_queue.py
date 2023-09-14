@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import pytest

@@ -5,7 +5,7 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import Any, List, Optional, Set
+from typing import Any, Optional, Set
 
 import duckdb
 from datasets.features.features import Features, FeatureType, Value, _visit

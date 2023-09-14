@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import jwt
 import requests

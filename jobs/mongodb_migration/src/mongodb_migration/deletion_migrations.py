@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Mapping, Optional
+from typing import Any, Mapping, Optional
 
 from mongoengine.connection import get_db
 

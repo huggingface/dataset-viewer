@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, TypedDict, Union
+from typing import Any, Dict, Mapping, Optional, TypedDict, Union
 
 from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 

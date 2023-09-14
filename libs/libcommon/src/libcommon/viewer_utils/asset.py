@@ -6,7 +6,7 @@ import os
 from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Generator, List, Tuple, TypedDict
+from typing import Generator, Tuple, TypedDict
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore

@@ -5,7 +5,7 @@ import logging
 import sys
 import traceback
 from http import HTTPStatus
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 
 class ErrorResponseWithoutCause(TypedDict):

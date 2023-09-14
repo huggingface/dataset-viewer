@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List
 
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem

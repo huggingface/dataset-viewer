@@ -9,7 +9,7 @@ import re
 from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import duckdb
 import pyarrow as pa

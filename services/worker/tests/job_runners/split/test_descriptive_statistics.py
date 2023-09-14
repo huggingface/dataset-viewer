@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import Callable, List, Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 import numpy as np
 import pandas as pd

@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Tuple
+from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.exceptions import PreviousStepFormatError

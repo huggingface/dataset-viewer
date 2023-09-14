@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from datetime import datetime
-from typing import List, Optional, Set, Tuple
+from typing import Optional, Set, Tuple
 
 import pytest
 

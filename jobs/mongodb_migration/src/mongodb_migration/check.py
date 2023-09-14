@@ -3,7 +3,7 @@
 # adapted from https://docs.mongoengine.org/guide/migration.html#post-processing-checks
 
 import logging
-from typing import Callable, Iterator, List, Optional, Type, TypeVar
+from typing import Callable, Iterator, Optional, Type, TypeVar
 
 from mongoengine import Document
 from pymongo.collection import Collection

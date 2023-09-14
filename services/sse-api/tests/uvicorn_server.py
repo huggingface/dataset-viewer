@@ -1,6 +1,6 @@
 import asyncio
 import socket
-from typing import List, Optional
+from typing import Optional
 
 import uvicorn
 from starlette.applications import Starlette

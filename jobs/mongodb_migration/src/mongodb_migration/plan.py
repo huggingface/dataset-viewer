@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List
 
 from mongodb_migration.database_migrations import DatabaseMigration
 from mongodb_migration.migration import Migration

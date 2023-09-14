@@ -4,7 +4,7 @@
 import os
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import duckdb
 import pandas as pd

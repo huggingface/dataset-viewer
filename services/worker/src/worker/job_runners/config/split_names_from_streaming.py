@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from datasets import get_dataset_split_names
 from datasets.builder import ManualDownloadError

@@ -3,7 +3,7 @@
 
 import logging
 import random
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pyarrow as pa
 from datasets import Features, Value

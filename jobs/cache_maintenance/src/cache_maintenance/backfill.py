@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from libcommon.dataset import get_supported_dataset_infos
 from libcommon.orchestrator import DatasetOrchestrator

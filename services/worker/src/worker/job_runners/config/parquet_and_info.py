@@ -14,7 +14,6 @@ from typing import (
     Any,
     Callable,
     Generator,
-    List,
     Optional,
     Set,
     Tuple,

@@ -3,7 +3,7 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from unittest.mock import patch
 
 import jwt

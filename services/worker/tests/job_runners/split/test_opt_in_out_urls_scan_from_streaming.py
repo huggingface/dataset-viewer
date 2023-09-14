@@ -4,7 +4,7 @@
 from asyncio import Semaphore
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any, Callable, List, Mapping
+from typing import Any, Callable, Mapping
 from unittest.mock import patch
 
 import pytest

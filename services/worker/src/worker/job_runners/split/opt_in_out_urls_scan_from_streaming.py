@@ -4,7 +4,7 @@
 import logging
 from asyncio import Semaphore, create_task, run, wait
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter

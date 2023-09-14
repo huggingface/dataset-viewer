@@ -3,7 +3,7 @@
 
 import functools
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
