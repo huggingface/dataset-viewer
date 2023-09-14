@@ -3,8 +3,8 @@
 
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from http import HTTPStatus
-from typing import AsyncGenerator
 
 import httpx
 import pytest
