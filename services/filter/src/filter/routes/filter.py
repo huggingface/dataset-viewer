@@ -36,9 +36,6 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-# audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES = [Value("binary")]
-
 FILTER_QUERY = """\
     SELECT {columns}
     FROM read_parquet({parquet_file_urls})
@@ -130,7 +127,6 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
-                        unsupported_features=UNSUPPORTED_FEATURES,
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = execute_filter_query(

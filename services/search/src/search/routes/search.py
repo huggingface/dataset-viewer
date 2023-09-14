@@ -47,7 +47,6 @@ logger = logging.getLogger(__name__)
 
 
 ROW_IDX_COLUMN = "__hf_index_id"
-UNSUPPORTED_FEATURES = [Value("binary")]
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"
@@ -126,7 +125,6 @@ def create_response(
 
     _, unsupported_columns = get_supported_unsupported_columns(
         features,
-        unsupported_features=UNSUPPORTED_FEATURES,
     )
     pa_table = pa_table.drop(unsupported_columns)
     return PaginatedResponse(

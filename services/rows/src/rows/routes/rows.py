@@ -32,7 +32,7 @@ from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundEr
 from libcommon.storage import StrPath
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
-from libcommon.viewer_utils.features import to_features_list
+from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES, to_features_list
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -40,9 +40,6 @@ logger = logging.getLogger(__name__)
 
 
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
-
-# audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES = [Value("binary")]
 
 
 def create_response(

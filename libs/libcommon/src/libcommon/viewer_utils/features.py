@@ -30,6 +30,9 @@ from libcommon.storage import StrPath
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
+# audio still has some errors when librosa is imported
+UNSUPPORTED_FEATURES = [Value("binary")]
+
 
 def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
     """
@@ -341,7 +344,7 @@ def to_features_list(features: Features) -> List[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features: List[FeatureType] = [],
+    unsupported_features: List[FeatureType] = UNSUPPORTED_FEATURES,
 ) -> Tuple[List[str], List[str]]:
     supported_columns, unsupported_columns = [], []
 
