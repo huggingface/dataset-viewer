@@ -2,10 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from asyncio import Semaphore
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any, Callable
+from typing import Any
 from unittest.mock import patch
 
 import pytest

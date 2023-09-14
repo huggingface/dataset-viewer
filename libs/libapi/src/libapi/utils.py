@@ -4,9 +4,10 @@
 import logging
 import os
 import shutil
+from collections.abc import Callable
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any, Coroutine, Optional
 
 import pyarrow as pa
 from datasets import Features

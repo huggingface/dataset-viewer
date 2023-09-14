@@ -3,13 +3,14 @@
 
 import io
 import os
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, TypedDict
+from typing import Any, Iterator, Optional, TypedDict
 from unittest.mock import patch
 
 import datasets.builder

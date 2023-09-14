@@ -2,8 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Callable
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, Literal, Optional
+from typing import Any, Coroutine, Literal, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps

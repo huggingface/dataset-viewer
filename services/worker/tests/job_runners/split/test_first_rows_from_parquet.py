@@ -2,9 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, Generator
+from typing import Generator
 from unittest.mock import patch
 
 import pyarrow.parquet as pq

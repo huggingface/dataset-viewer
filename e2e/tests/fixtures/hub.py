@@ -4,9 +4,9 @@
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager, suppress
-from typing import Any, Callable, Iterator, Literal, Optional, TypedDict, Union
+from typing import Any, Iterator, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests

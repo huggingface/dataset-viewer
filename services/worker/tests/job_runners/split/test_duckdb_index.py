@@ -2,9 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, Optional
+from typing import Optional
 
 import duckdb
 import pandas as pd
