@@ -46,3 +46,10 @@ class JobRunner(ABC):
     def post_compute(self) -> None:
         """Hook method called after the compute method."""
         pass
+
+    def validate(self) -> None:
+        """
+        Validate that this job should be run.
+        It should raise an error if e.g. the config/split of the dataset to process doesn't exist.
+        """
+        pass

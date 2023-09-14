@@ -29,6 +29,8 @@ class SplitJobRunner(ConfigJobRunner):
         if job_info["params"]["split"] is None:
             raise ParameterMissingError("'split' parameter is required")
         self.split = job_info["params"]["split"]
+
+    def validate(self) -> None:
         check_split_exists(dataset=self.dataset, config=self.config, split=self.split)
 
 
