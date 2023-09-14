@@ -6,7 +6,7 @@ import enum
 import mimetypes
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, Mapping, Optional, TypedDict
+from typing import Any, Mapping, Optional, TypedDict
 
 import orjson
 
@@ -76,7 +76,7 @@ class SplitHubFile(TypedDict):
     size: int
 
 
-Row = Dict[str, Any]
+Row = dict[str, Any]
 
 
 class RowItem(TypedDict):
@@ -88,7 +88,7 @@ class RowItem(TypedDict):
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Dict[str, Any]
+    type: dict[str, Any]
 
 
 class PaginatedResponse(TypedDict):

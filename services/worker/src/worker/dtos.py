@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Mapping, Optional, TypedDict, Union
+from typing import Any, Mapping, Optional, TypedDict, Union
 
 from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 
@@ -105,13 +105,13 @@ class RowsContent(TypedDict):
 
 
 class ConfigInfoResponse(TypedDict):
-    dataset_info: Dict[str, Any]
+    dataset_info: dict[str, Any]
     partial: bool
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
     parquet_files: list[SplitHubFile]
-    dataset_info: Dict[str, Any]
+    dataset_info: dict[str, Any]
     partial: bool
 
 
@@ -125,13 +125,13 @@ class ParquetFileMetadataItem(SplitItem):
 
 class ConfigParquetMetadataResponse(TypedDict):
     parquet_files_metadata: list[ParquetFileMetadataItem]
-    features: Optional[Dict[str, Any]]
+    features: Optional[dict[str, Any]]
     partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
     parquet_files: list[SplitHubFile]
-    features: Optional[Dict[str, Any]]
+    features: Optional[dict[str, Any]]
     partial: bool
 
 
@@ -177,7 +177,7 @@ class DatasetConfigNamesResponse(TypedDict):
 
 
 class DatasetInfoResponse(TypedDict):
-    dataset_info: Dict[str, Any]
+    dataset_info: dict[str, Any]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
     partial: bool

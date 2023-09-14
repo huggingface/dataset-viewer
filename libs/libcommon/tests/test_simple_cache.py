@@ -4,7 +4,7 @@
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Any, Dict, Mapping, Optional, TypedDict
+from typing import Any, Mapping, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -757,7 +757,7 @@ def test_get_best_response(
     selected_entries: list[str], kinds: list[str], dataset: str, config: Optional[str], best_entry: str
 ) -> None:
     # arrange
-    entries: Dict[str, EntrySpec] = {
+    entries: dict[str, EntrySpec] = {
         "ok1": {
             "kind": "kind1",
             "dataset": "dataset",

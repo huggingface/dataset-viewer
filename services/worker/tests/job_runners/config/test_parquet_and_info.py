@@ -9,7 +9,7 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Optional, Set, TypedDict
+from typing import Any, Callable, Iterator, Optional, Set, TypedDict
 from unittest.mock import patch
 
 import datasets.builder
@@ -818,7 +818,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
 ) -> None:
     num_rows = 1000
 
-    def long_generator() -> Iterator[Dict[str, int]]:
+    def long_generator() -> Iterator[dict[str, int]]:
         for i in range(num_rows):
             yield {"foo": i}
 
@@ -846,7 +846,7 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
 def test_limit_parquet_writes(tmp_path: Path) -> None:
     num_examples = 0
 
-    def long_generator() -> Iterator[Dict[str, int]]:
+    def long_generator() -> Iterator[dict[str, int]]:
         nonlocal num_examples
         for i in range(10_000_000):
             yield {"foo": i}

@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional, Tuple, TypedDict, Union
+from typing import Optional, Tuple, TypedDict, Union
 
 import duckdb
 import numpy as np
@@ -83,7 +83,7 @@ class CategoricalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
     n_unique: int
-    frequencies: Dict[str, int]
+    frequencies: dict[str, int]
 
 
 class StatisticsPerColumnItem(TypedDict):

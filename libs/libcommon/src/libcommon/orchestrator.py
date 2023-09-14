@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set, Union
+from typing import Optional, Set, Union
 
 import pandas as pd
 
@@ -30,15 +30,15 @@ from libcommon.utils import JobInfo, JobResult, Priority
 
 @dataclass
 class CacheStatus:
-    cache_has_different_git_revision: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_old: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_error_to_retry: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_job_runner_obsolete: Dict[str, ArtifactState] = field(default_factory=dict)
-    up_to_date: Dict[str, ArtifactState] = field(default_factory=dict)
+    cache_has_different_git_revision: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_old: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_outdated_by_parent: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_empty: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_error_to_retry: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_job_runner_obsolete: dict[str, ArtifactState] = field(default_factory=dict)
+    up_to_date: dict[str, ArtifactState] = field(default_factory=dict)
 
-    def as_response(self) -> Dict[str, list[str]]:
+    def as_response(self) -> dict[str, list[str]]:
         return {
             "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
             "cache_is_old": sorted(self.cache_is_old.keys()),
@@ -54,7 +54,7 @@ class CacheStatus:
 class QueueStatus:
     in_process: Set[str] = field(default_factory=set)
 
-    def as_response(self) -> Dict[str, list[str]]:
+    def as_response(self) -> dict[str, list[str]]:
         return {"in_process": sorted(self.in_process)}
 
 

@@ -3,7 +3,7 @@
 
 import logging
 from http import HTTPStatus
-from typing import Any, Dict, Tuple
+from typing import Any, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -43,7 +43,7 @@ def compute_dataset_info_response(dataset: str) -> Tuple[DatasetInfoResponse, fl
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 
     try:
-        config_infos: Dict[str, Any] = {}
+        config_infos: dict[str, Any] = {}
         total = 0
         pending, failed = [], []
         partial = False

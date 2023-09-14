@@ -3,7 +3,7 @@
 
 import datetime
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import jwt
@@ -214,7 +214,7 @@ algorithm_ok = algorithm_name_eddsa
 algorithm_wrong = algorithm_name_rs256
 
 
-def encode_jwt(payload: Dict[str, Any]) -> str:
+def encode_jwt(payload: dict[str, Any]) -> str:
     return jwt.encode(payload, private_key_pem_ok, algorithm=algorithm_ok)
 
 
@@ -264,7 +264,7 @@ def test_validate_jwt_algorithm(algorithm: str, expectation: Any) -> None:
         ({"sub": sub_ok, "read": read_ok, "exp": exp_ok}, does_not_raise()),
     ],
 )
-def test_validate_jwt_content_format(payload: Dict[str, str], expectation: Any) -> None:
+def test_validate_jwt_content_format(payload: dict[str, str], expectation: Any) -> None:
     assert_jwt(encode_jwt(payload), expectation)
 
 

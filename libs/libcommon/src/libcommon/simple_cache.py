@@ -7,7 +7,6 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
-    Dict,
     Generic,
     Mapping,
     NamedTuple,
@@ -262,7 +261,7 @@ T = TypeVar("T")
 
 
 @overload
-def _clean_nested_mongo_object(obj: Dict[str, T]) -> Dict[str, T]:
+def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]:
     ...
 
 
@@ -383,7 +382,7 @@ class CachedArtifactError(Exception):
     config: Optional[str]
     split: Optional[str]
     cache_entry_with_details: CacheEntryWithDetails
-    enhanced_details: Dict[str, Any]
+    enhanced_details: dict[str, Any]
 
     def __init__(
         self,
@@ -400,7 +399,7 @@ class CachedArtifactError(Exception):
         self.config = config
         self.split = split
         self.cache_entry_with_details = cache_entry_with_details
-        self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
+        self.enhanced_details: dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
         self.enhanced_details["copied_from_artifact"] = {
             "kind": self.kind,
             "dataset": self.dataset,
@@ -574,7 +573,7 @@ def has_any_successful_response(
 
 
 class ContentsPage(TypedDict):
-    contents: list[Dict[str, Any]]
+    contents: list[dict[str, Any]]
     cursor: Optional[str]
 
 
@@ -626,7 +625,7 @@ class CountEntry(TypedDict):
     count: int
 
 
-def format_group(group: Dict[str, Any]) -> CountEntry:
+def format_group(group: dict[str, Any]) -> CountEntry:
     kind = group["kind"]
     if not isinstance(kind, str):
         raise TypeError("kind must be a str")

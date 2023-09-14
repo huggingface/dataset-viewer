@@ -6,7 +6,7 @@ import os
 import shutil
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Callable, Coroutine, Dict, Optional
+from typing import Any, Callable, Coroutine, Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -49,7 +49,7 @@ def get_json_response(
     max_age: int = 0,
     error_code: Optional[str] = None,
     revision: Optional[str] = None,
-    headers: Optional[Dict[str, str]] = None,
+    headers: Optional[dict[str, str]] = None,
 ) -> Response:
     if not headers:
         headers = {}
@@ -69,7 +69,7 @@ EXPOSED_HEADERS = [
 
 
 def get_json_ok_response(
-    content: Any, max_age: int = 0, revision: Optional[str] = None, headers: Optional[Dict[str, str]] = None
+    content: Any, max_age: int = 0, revision: Optional[str] = None, headers: Optional[dict[str, str]] = None
 ) -> Response:
     return get_json_response(content=content, max_age=max_age, revision=revision, headers=headers)
 

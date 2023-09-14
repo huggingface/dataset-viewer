@@ -5,7 +5,7 @@ import asyncio
 import contextlib
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Mapping, Optional, Sequence, Tuple
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -50,7 +50,7 @@ class HubCacheChangedEvent(asyncio.Event):
 
 @dataclass
 class HubCachePublisher:
-    _watchers: Dict[str, HubCacheChangedEvent]
+    _watchers: dict[str, HubCacheChangedEvent]
 
     def _notify_change(
         self,

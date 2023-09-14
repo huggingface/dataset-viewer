@@ -6,7 +6,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import (
     Any,
-    Dict,
     Literal,
     Mapping,
     Optional,
@@ -154,8 +153,8 @@ class ProcessingGraph:
 
     def __post_init__(self) -> None:
         _nx_graph = nx.DiGraph()
-        _processing_steps: Dict[str, ProcessingStep] = {}
-        _processing_step_names_by_input_type: Dict[InputType, list[str]] = {
+        _processing_steps: dict[str, ProcessingStep] = {}
+        _processing_step_names_by_input_type: dict[InputType, list[str]] = {
             "dataset": [],
             "config": [],
             "split": [],

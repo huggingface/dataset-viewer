@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -158,7 +158,7 @@ class SplitState:
     cache_entries_df: pd.DataFrame
     error_codes_to_retry: Optional[list[str]] = None
 
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
@@ -190,7 +190,7 @@ class ConfigState:
 
     split_names: list[str] = field(init=False)
     split_states: list[SplitState] = field(init=False)
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         with StepProfiler(
@@ -266,7 +266,7 @@ class DatasetState:
 
     config_names: list[str] = field(init=False)
     config_states: list[ConfigState] = field(init=False)
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         with StepProfiler(
