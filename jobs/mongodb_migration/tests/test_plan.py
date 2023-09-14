@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Iterator, Optional, Type
+from typing import Iterator, Optional
 
 import pytest
 
@@ -132,7 +132,7 @@ def test_collected_migrations_order_dont_matter(collected_migrations: list[Migra
     ],
 )
 def test_errors_in_migration_steps(
-    collected_migrations: list[Migration], executed_migrations: list[Migration], exception: Optional[Type[Exception]]
+    collected_migrations: list[Migration], executed_migrations: list[Migration], exception: Optional[type[Exception]]
 ) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
@@ -165,7 +165,7 @@ def test_get_planned_migrations(
     previous_migrations: list[Migration],
     collected_migrations: list[Migration],
     executed_migrations: list[Migration],
-    exception: Optional[Type[Exception]],
+    exception: Optional[type[Exception]],
 ) -> None:
     for migration in previous_migrations:
         DatabaseMigration(version=migration.version, description=migration.description).save()

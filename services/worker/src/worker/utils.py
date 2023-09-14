@@ -7,7 +7,7 @@ import logging
 import time
 import warnings
 from collections.abc import Callable
-from typing import Any, Optional, Sequence, Type, TypeVar, Union, cast
+from typing import Any, Optional, Sequence, TypeVar, Union, cast
 from urllib.parse import quote
 
 import PIL
@@ -171,13 +171,13 @@ def create_truncated_row_items(
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
-RETRY_ON: tuple[Type[Exception]] = (Exception,)
+RETRY_ON: tuple[type[Exception]] = (Exception,)
 
 
 class retry:
     """retries with an increasing sleep before every attempt"""
 
-    def __init__(self, sleeps: Sequence[int] = RETRY_SLEEPS, on: Sequence[Type[Exception]] = RETRY_ON) -> None:
+    def __init__(self, sleeps: Sequence[int] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
         self.sleeps = sleeps
         self.on = on
 

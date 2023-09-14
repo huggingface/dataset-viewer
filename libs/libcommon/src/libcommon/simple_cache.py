@@ -6,16 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
-from typing import (
-    Any,
-    Generic,
-    NamedTuple,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    overload,
-)
+from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
 from bson import ObjectId
@@ -53,7 +44,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 

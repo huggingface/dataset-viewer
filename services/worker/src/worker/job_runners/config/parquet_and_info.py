@@ -11,7 +11,7 @@ from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generator, Optional, Type, TypeVar, Union
+from typing import Any, Generator, Optional, TypeVar, Union
 from unittest.mock import patch
 from urllib.parse import unquote
 
@@ -810,7 +810,7 @@ class limit_parquet_writes:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:

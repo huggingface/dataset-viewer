@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, Literal, Optional, Sequence, Type, TypedDict, TypeVar
+from typing import Generic, Literal, Optional, Sequence, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
@@ -60,7 +60,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 
@@ -391,7 +391,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return self
 
     def __exit__(
-        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+        self, exctype: Optional[type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
     ) -> Literal[False]:
         self.release()
         return False

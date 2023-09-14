@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 from mongoengine import Document
 from mongoengine.fields import StringField
@@ -26,7 +26,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 

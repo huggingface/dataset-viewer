@@ -4,14 +4,14 @@
 
 import logging
 from collections.abc import Callable
-from typing import Iterator, Optional, Type, TypeVar
+from typing import Iterator, Optional, TypeVar
 
 from mongoengine import Document
 from pymongo.collection import Collection
 
 # --- some typing subtleties, see https://github.com/sbdchd/mongo-types
 U = TypeVar("U", bound=Document)
-DocumentClass = Type[U]
+DocumentClass = type[U]
 CustomValidation = Callable[[U], None]
 # --- end
 
