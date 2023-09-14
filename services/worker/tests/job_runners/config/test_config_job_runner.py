@@ -78,25 +78,22 @@ def test_creation(
     )
 
     if exception_name is None:
-        assert (
-            DummyConfigJobRunner(
-                job_info={
-                    "job_id": "job_id",
-                    "type": test_processing_step.job_type,
-                    "params": {
-                        "dataset": dataset,
-                        "revision": "revision",
-                        "config": config,
-                        "split": None,
-                    },
-                    "priority": Priority.NORMAL,
-                    "difficulty": 50,
+        DummyConfigJobRunner(
+            job_info={
+                "job_id": "job_id",
+                "type": test_processing_step.job_type,
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": None,
                 },
-                processing_step=test_processing_step,
-                app_config=app_config,
-            )
-            is not None
-        )
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            processing_step=test_processing_step,
+            app_config=app_config,
+        ).validate()
     else:
         with pytest.raises(CustomError) as exc_info:
             DummyConfigJobRunner(
@@ -114,5 +111,5 @@ def test_creation(
                 },
                 processing_step=test_processing_step,
                 app_config=app_config,
-            )
+            ).validate()
         assert exc_info.value.code == exception_name
