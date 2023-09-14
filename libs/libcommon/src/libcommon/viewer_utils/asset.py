@@ -3,10 +3,11 @@
 
 import contextlib
 import os
+from collections.abc import Generator
 from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Generator, TypedDict
+from typing import TypedDict
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore

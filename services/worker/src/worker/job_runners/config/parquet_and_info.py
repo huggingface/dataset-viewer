@@ -5,13 +5,13 @@ import functools
 import logging
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import ExitStack
 from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Generator, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 from unittest.mock import patch
 from urllib.parse import unquote
 
