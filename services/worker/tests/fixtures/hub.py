@@ -5,19 +5,10 @@
 
 import csv
 import time
+from collections.abc import Mapping
 from contextlib import suppress
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Iterator,
-    Literal,
-    Mapping,
-    Optional,
-    Tuple,
-    TypedDict,
-    Union,
-)
+from typing import Any, Callable, Iterator, Literal, Optional, Tuple, TypedDict, Union
 
 import pytest
 import requests

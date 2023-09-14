@@ -3,17 +3,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Literal,
-    Mapping,
-    Optional,
-    Tuple,
-    TypedDict,
-    Union,
-    get_args,
-)
+from typing import Any, Literal, Optional, Tuple, TypedDict, Union, get_args
 
 import networkx as nx
 

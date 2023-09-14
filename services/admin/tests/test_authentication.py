@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Mapping, Optional, Type
+from collections.abc import Mapping
+from typing import Optional, Type
 
 import pytest
 import responses

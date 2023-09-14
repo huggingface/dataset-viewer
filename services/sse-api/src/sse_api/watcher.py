@@ -3,9 +3,10 @@
 
 import asyncio
 import contextlib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, Sequence, Tuple
+from typing import Any, Optional, Sequence, Tuple
 from uuid import uuid4
 
 from motor.motor_asyncio import AsyncIOMotorClient

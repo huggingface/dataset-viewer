@@ -4,9 +4,10 @@
 import base64
 import enum
 import mimetypes
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import orjson
 

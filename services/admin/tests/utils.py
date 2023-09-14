@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from io import BufferedReader
-from typing import Mapping, Tuple, Union
+from typing import Tuple, Union
 
 from requests import PreparedRequest
 from responses import Response

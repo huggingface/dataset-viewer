@@ -4,8 +4,9 @@
 import json
 import os
 import time
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import requests
 from requests import Response

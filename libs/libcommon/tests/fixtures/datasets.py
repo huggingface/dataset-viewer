@@ -2,8 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import datetime
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd

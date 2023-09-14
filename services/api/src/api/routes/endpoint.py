@@ -3,8 +3,9 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Mapping, Optional, Tuple, TypedDict
+from typing import Optional, Tuple, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (

@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional, TypedDict, Union
+from typing import Any, Optional, TypedDict, Union
 
 from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
 

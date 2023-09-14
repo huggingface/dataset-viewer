@@ -2,13 +2,13 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
     Generic,
-    Mapping,
     NamedTuple,
     Optional,
     Type,

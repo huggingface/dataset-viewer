@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 
 class _UpstreamResponse(TypedDict):

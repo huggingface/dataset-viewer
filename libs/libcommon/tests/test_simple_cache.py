@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Any, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
