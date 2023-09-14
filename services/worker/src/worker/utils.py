@@ -6,17 +6,7 @@ import itertools
 import logging
 import time
 import warnings
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Optional, Sequence, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import quote
 
 import PIL

@@ -10,17 +10,7 @@ from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    Generator,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generator, Optional, Set, Tuple, Type, TypeVar, Union
 from unittest.mock import patch
 from urllib.parse import unquote
 
