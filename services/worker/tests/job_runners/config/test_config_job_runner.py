@@ -51,7 +51,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
             },
             processing_step=test_processing_step,
             app_config=app_config,
-        )
+        ).validate()
     assert exc_info.value.code == "ParameterMissingError"
 
 

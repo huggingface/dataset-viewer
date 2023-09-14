@@ -168,10 +168,12 @@ def test_number_rows(
     )
 
     if exception_name is None:
+        job_runner.validate()
         result = job_runner.compute().content
         assert result == expected_first_rows_response
     else:
         with pytest.raises(Exception) as exc_info:
+            job_runner.validate()
             job_runner.compute()
         assert exc_info.typename == exception_name
 
