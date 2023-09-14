@@ -1,11 +1,10 @@
 import os
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
-from typing import Iterator
 from unittest.mock import patch
 
 import orjson
