@@ -8,7 +8,7 @@ from typing import Optional
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import Features, Value
+from datasets import Features
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,

@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 
 import duckdb
 import pyarrow as pa
-from datasets import Features, Value
+from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
