@@ -222,7 +222,7 @@ def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     dataset: str,
-    upstream_responses: List[UpstreamResponse],
+    upstream_responses: list[UpstreamResponse],
     expected_error_code: str,
     expected: Any,
     should_raise: bool,

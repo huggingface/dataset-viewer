@@ -100,12 +100,12 @@ def is_non_empty_string(string: Any) -> bool:
     return isinstance(string, str) and bool(string and string.strip())
 
 
-def are_valid_parameters(parameters: List[Any]) -> bool:
+def are_valid_parameters(parameters: list[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
 
 
 def try_backfill_dataset_then_raise(
-    processing_steps: List[ProcessingStep],
+    processing_steps: list[ProcessingStep],
     dataset: str,
     processing_graph: ProcessingGraph,
     cache_max_days: int,
@@ -148,7 +148,7 @@ def try_backfill_dataset_then_raise(
 
 
 def get_cache_entry_from_steps(
-    processing_steps: List[ProcessingStep],
+    processing_steps: list[ProcessingStep],
     dataset: str,
     config: Optional[str],
     split: Optional[str],
@@ -196,9 +196,9 @@ def to_rows_list(
     cached_assets_directory: StrPath,
     offset: int,
     features: Features,
-    unsupported_columns: List[str],
+    unsupported_columns: list[str],
     row_idx_column: Optional[str] = None,
-) -> List[RowItem]:
+) -> list[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
         if column in unsupported_columns:

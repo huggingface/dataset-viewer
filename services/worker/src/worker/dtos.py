@@ -49,7 +49,7 @@ class FullSplitItem(FullConfigItem):
 
 
 class SplitsList(TypedDict):
-    splits: List[FullSplitItem]
+    splits: list[FullSplitItem]
 
 
 class FailedConfigItem(FullConfigItem):
@@ -57,9 +57,9 @@ class FailedConfigItem(FullConfigItem):
 
 
 class DatasetSplitNamesResponse(TypedDict):
-    splits: List[FullSplitItem]
-    pending: List[FullConfigItem]
-    failed: List[FailedConfigItem]
+    splits: list[FullSplitItem]
+    pending: list[FullConfigItem]
+    failed: list[FailedConfigItem]
 
 
 class PreviousJob(TypedDict):
@@ -70,8 +70,8 @@ class PreviousJob(TypedDict):
 
 
 class SplitFirstRowsResponse(FullSplitItem):
-    features: List[FeatureItem]
-    rows: List[RowItem]
+    features: list[FeatureItem]
+    rows: list[RowItem]
 
 
 class OptUrl(TypedDict):
@@ -81,7 +81,7 @@ class OptUrl(TypedDict):
 
 
 class OptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
+    urls_columns: list[str]
     num_opt_in_urls: int
     num_opt_out_urls: int
     num_urls: int
@@ -91,16 +91,16 @@ class OptInOutUrlsCountResponse(TypedDict):
 
 
 class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
-    opt_in_urls: List[OptUrl]
-    opt_out_urls: List[OptUrl]
+    opt_in_urls: list[OptUrl]
+    opt_out_urls: list[OptUrl]
 
 
 class ImageUrlColumnsResponse(TypedDict):
-    columns: List[str]
+    columns: list[str]
 
 
 class RowsContent(TypedDict):
-    rows: List[Row]
+    rows: list[Row]
     all_fetched: bool
 
 
@@ -110,7 +110,7 @@ class ConfigInfoResponse(TypedDict):
 
 
 class ConfigParquetAndInfoResponse(TypedDict):
-    parquet_files: List[SplitHubFile]
+    parquet_files: list[SplitHubFile]
     dataset_info: Dict[str, Any]
     partial: bool
 
@@ -124,13 +124,13 @@ class ParquetFileMetadataItem(SplitItem):
 
 
 class ConfigParquetMetadataResponse(TypedDict):
-    parquet_files_metadata: List[ParquetFileMetadataItem]
+    parquet_files_metadata: list[ParquetFileMetadataItem]
     features: Optional[Dict[str, Any]]
     partial: bool
 
 
 class ConfigParquetResponse(TypedDict):
-    parquet_files: List[SplitHubFile]
+    parquet_files: list[SplitHubFile]
     features: Optional[Dict[str, Any]]
     partial: bool
 
@@ -173,13 +173,13 @@ class ConfigNameItem(TypedDict):
 
 
 class DatasetConfigNamesResponse(TypedDict):
-    config_names: List[ConfigNameItem]
+    config_names: list[ConfigNameItem]
 
 
 class DatasetInfoResponse(TypedDict):
     dataset_info: Dict[str, Any]
-    pending: List[PreviousJob]
-    failed: List[PreviousJob]
+    pending: list[PreviousJob]
+    failed: list[PreviousJob]
     partial: bool
 
 
@@ -197,7 +197,7 @@ class DatasetHubCacheResponse(TypedDict):
 
 
 class DatasetParquetResponse(TypedDict):
-    parquet_files: List[SplitHubFile]
+    parquet_files: list[SplitHubFile]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
     partial: bool

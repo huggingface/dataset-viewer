@@ -82,7 +82,7 @@ Row = Dict[str, Any]
 class RowItem(TypedDict):
     row_idx: int
     row: Row
-    truncated_cells: List[str]
+    truncated_cells: list[str]
 
 
 class FeatureItem(TypedDict):
@@ -92,8 +92,8 @@ class FeatureItem(TypedDict):
 
 
 class PaginatedResponse(TypedDict):
-    features: List[FeatureItem]
-    rows: List[RowItem]
+    features: list[FeatureItem]
+    rows: list[RowItem]
     num_rows_total: int
     num_rows_per_page: int
 

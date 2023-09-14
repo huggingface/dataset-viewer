@@ -59,7 +59,7 @@ def compute_split_names_from_streaming_response(
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:
-        split_name_items: List[FullSplitItem] = [
+        split_name_items: list[FullSplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}
             for split in get_dataset_split_names(path=dataset, config_name=config, token=hf_token)
         ]

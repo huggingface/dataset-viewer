@@ -123,7 +123,7 @@ other_public_key_pem = other_private_key.get_verifying_key().to_pem().decode("ut
         ),
     ],
 )
-def test_get_jwt_public_keys_from_env(keys_env_var: str, expected_keys: List[str]) -> None:
+def test_get_jwt_public_keys_from_env(keys_env_var: str, expected_keys: list[str]) -> None:
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setenv("API_HF_JWT_ADDITIONAL_PUBLIC_KEYS", keys_env_var)
     api_config = ApiConfig.from_env(hf_endpoint="")
@@ -159,7 +159,7 @@ def test_get_jwt_public_keys_from_env(keys_env_var: str, expected_keys: List[str
     ],
 )
 def test_get_jwt_public_keys(
-    remote_payload: Any, keys_payload: List[str], expected_keys: List[str], expectation: Any
+    remote_payload: Any, keys_payload: list[str], expected_keys: list[str], expectation: Any
 ) -> None:
     def fake_fetch(
         url: str,
@@ -219,7 +219,7 @@ def encode_jwt(payload: Dict[str, Any]) -> str:
 
 
 def assert_jwt(
-    token: str, expectation: Any, public_keys: Optional[List[str]] = None, algorithm: str = algorithm_ok
+    token: str, expectation: Any, public_keys: Optional[list[str]] = None, algorithm: str = algorithm_ok
 ) -> None:
     if public_keys is None:
         public_keys = [public_key_pem_ok]
@@ -236,7 +236,7 @@ def assert_jwt(
         ([other_public_key_pem, public_key_pem_ok], does_not_raise()),
     ],
 )
-def test_validate_jwt_public_keys(public_keys: List[str], expectation: Any) -> None:
+def test_validate_jwt_public_keys(public_keys: list[str], expectation: Any) -> None:
     assert_jwt(encode_jwt(payload_ok), expectation, public_keys=public_keys)
 
 

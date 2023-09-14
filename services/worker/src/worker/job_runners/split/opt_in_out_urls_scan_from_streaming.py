@@ -28,7 +28,7 @@ from worker.utils import get_rows_or_raise
 
 
 async def check_spawning(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
+    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
 ) -> Any:
     if not image_urls:
         return {"urls": []}
@@ -42,8 +42,8 @@ async def check_spawning(
 
 
 async def opt_in_out_task(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
-) -> Tuple[List[Any], List[Any]]:
+    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, spawning_url: str
+) -> Tuple[list[Any], list[Any]]:
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
     except Exception:
@@ -56,13 +56,13 @@ async def opt_in_out_task(
 
 
 async def opt_in_out_scan_urls(
-    urls: List[str],
+    urls: list[str],
     urls_number_per_batch: int,
     spawning_token: str,
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
-) -> Tuple[List[int], List[int]]:
+) -> Tuple[list[int], list[int]]:
     offsets = []
     tasks = []
     semaphore = Semaphore(value=max_concurrent_requests_number)

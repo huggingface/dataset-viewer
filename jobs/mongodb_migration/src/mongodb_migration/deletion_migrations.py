@@ -92,7 +92,7 @@ class QueueDeletionMigration(QueueMigration):
             raise ValueError(f"Found documents with type {self.job_type}")
 
 
-def get_index_names(index_information: Mapping[str, Any], field_name: str) -> List[str]:
+def get_index_names(index_information: Mapping[str, Any], field_name: str) -> list[str]:
     return [
         name
         for name, value in index_information.items()

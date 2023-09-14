@@ -159,7 +159,7 @@ def create_search_endpoint(
     hf_endpoint: str,
     external_auth_url: Optional[str] = None,
     hf_token: Optional[str] = None,
-    hf_jwt_public_keys: Optional[List[str]] = None,
+    hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,

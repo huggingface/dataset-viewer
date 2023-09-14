@@ -48,9 +48,9 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
 
     split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:
-        splits: List[FullSplitItem] = []
-        pending: List[FullConfigItem] = []
-        failed: List[FailedConfigItem] = []
+        splits: list[FullSplitItem] = []
+        pending: list[FullConfigItem] = []
+        failed: list[FailedConfigItem] = []
         total = 0
         for config in config_names:
             total += 1

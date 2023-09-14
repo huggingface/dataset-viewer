@@ -25,7 +25,7 @@ def assert_unchanged(dataset: str, kind: str) -> None:
     assert "features" not in entry["content"]
 
 
-cache: List[Dict[str, Any]] = [
+cache: list[Dict[str, Any]] = [
     {
         "config": "lhoestq--demo1",
         "dataset": "lhoestq/demo1",

@@ -167,7 +167,7 @@ def get_job_runner(
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    upstream_responses: List[UpstreamResponse],
+    upstream_responses: list[UpstreamResponse],
     expected: Any,
 ) -> None:
     dataset = DATASET

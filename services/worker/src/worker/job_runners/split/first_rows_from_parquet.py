@@ -31,11 +31,11 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[RowItem],
+    rows: list[RowItem],
     features: Features,
     assets_base_url: str,
     assets_directory: StrPath,
-) -> List[Row]:
+) -> list[Row]:
     return [
         {
             featureName: get_cell_value(

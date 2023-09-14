@@ -64,8 +64,8 @@ class DuckdbIndexWithFeatures(SplitHubFile):
     features: Optional[dict[str, Any]]
 
 
-def get_indexable_columns(features: Features) -> List[str]:
-    indexable_columns: List[str] = []
+def get_indexable_columns(features: Features) -> list[str]:
+    indexable_columns: list[str] = []
     for column, feature in features.items():
         indexable = False
 
@@ -206,13 +206,13 @@ def compute_index_rows(
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
-            delete_operations: List[CommitOperation] = []
+            delete_operations: list[CommitOperation] = []
             if index_file_location in all_repo_files:
                 delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
             logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision
-            add_operations: List[CommitOperation] = [
+            add_operations: list[CommitOperation] = [
                 CommitOperationAdd(path_in_repo=index_file_location, path_or_fileobj=db_path.resolve())
             ]
             logging.debug(f"add operations for {dataset=} {add_operations=}")

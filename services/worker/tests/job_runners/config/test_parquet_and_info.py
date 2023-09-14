@@ -226,7 +226,7 @@ def test_compute_legacy_configs(
         ("public", [], False),
     ],
 )
-def test_raise_if_blocked(dataset: str, blocked: List[str], raises: bool) -> None:
+def test_raise_if_blocked(dataset: str, blocked: list[str], raises: bool) -> None:
     if raises:
         with pytest.raises(DatasetInBlockListError):
             raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
@@ -572,7 +572,7 @@ def test_create_commits(
     else:
         parent_commit = None
     directory = f".test_create_commits_{max_operations_per_commit}_{use_parent_commit}"
-    operations: List[CommitOperationAdd] = [
+    operations: list[CommitOperationAdd] = [
         CommitOperationAdd(path_in_repo=f"{directory}/file{i}.txt", path_or_fileobj=f"content{i}".encode("UTF-8"))
         for i in range(NUM_FILES)
     ]

@@ -124,7 +124,7 @@ def is_non_empty_string(string: Any) -> bool:
     return isinstance(string, str) and bool(string and string.strip())
 
 
-def are_valid_parameters(parameters: List[Any]) -> bool:
+def are_valid_parameters(parameters: list[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
 
 

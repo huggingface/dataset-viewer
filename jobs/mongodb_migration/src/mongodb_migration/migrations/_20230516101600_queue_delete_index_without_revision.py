@@ -12,7 +12,7 @@ from mongodb_migration.migration import IrreversibleMigrationError, Migration
 INDEX_DEFINITION = [("type", 1), ("dataset", 1), ("config", 1), ("split", 1), ("status", 1), ("priority", 1)]
 
 
-def get_index_names(index_information: Mapping[str, Any]) -> List[str]:
+def get_index_names(index_information: Mapping[str, Any]) -> list[str]:
     return [
         name
         for name, value in index_information.items()

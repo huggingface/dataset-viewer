@@ -61,7 +61,7 @@ class AppConfig:
         )
 
 
-ProcessingStepNamesByInputType = Mapping[InputType, List[str]]
+ProcessingStepNamesByInputType = Mapping[InputType, list[str]]
 
 ProcessingStepNamesByInputTypeAndEndpoint = Mapping[str, ProcessingStepNamesByInputType]
 

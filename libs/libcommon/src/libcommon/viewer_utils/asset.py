@@ -115,7 +115,7 @@ def create_audio_file(
     filename: str,
     assets_directory: StrPath,
     overwrite: bool = True,
-) -> List[AudioSource]:
+) -> list[AudioSource]:
     dir_path, url_dir_path = create_asset_dir(
         dataset=dataset,
         config=config,

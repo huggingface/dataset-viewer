@@ -15,7 +15,7 @@ CustomValidation = Callable[[U], None]
 # --- end
 
 
-def get_random_oids(collection: Collection, sample_size: int) -> List[int]:
+def get_random_oids(collection: Collection, sample_size: int) -> list[int]:
     pipeline = [{"$project": {"_id": 1}}, {"$sample": {"size": sample_size}}]
     return [s["_id"] for s in collection.aggregate(pipeline)]
 

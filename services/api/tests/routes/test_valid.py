@@ -51,8 +51,8 @@ def test_empty(processing_graph_specification: ProcessingGraphSpecification) -> 
 )
 def test_one_dataset(
     processing_graph_specification: ProcessingGraphSpecification,
-    expected_preview: List[str],
-    expected_viewer: List[str],
+    expected_preview: list[str],
+    expected_viewer: list[str],
 ) -> None:
     dataset = "dataset"
     processing_graph = ProcessingGraph(processing_graph_specification)
@@ -85,8 +85,8 @@ def test_one_dataset(
 )
 def test_two_datasets(
     processing_graph_specification: ProcessingGraphSpecification,
-    expected_preview: List[str],
-    expected_viewer: List[str],
+    expected_preview: list[str],
+    expected_viewer: list[str],
 ) -> None:
     processing_graph = ProcessingGraph(processing_graph_specification)
     upsert_response(
@@ -181,8 +181,8 @@ def test_two_datasets(
 )
 def test_three_steps(
     processing_graph_specification: ProcessingGraphSpecification,
-    expected_preview: List[str],
-    expected_viewer: List[str],
+    expected_preview: list[str],
+    expected_viewer: list[str],
 ) -> None:
     dataset = "dataset"
     config = "config"

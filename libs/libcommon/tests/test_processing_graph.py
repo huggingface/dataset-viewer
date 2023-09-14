@@ -13,16 +13,16 @@ from libcommon.processing_graph import (
 )
 
 
-def assert_lists_are_equal(a: List[ProcessingStep], b: List[str]) -> None:
+def assert_lists_are_equal(a: list[ProcessingStep], b: list[str]) -> None:
     assert sorted(processing_step.name for processing_step in a) == sorted(b)
 
 
 def assert_step(
     graph: ProcessingGraph,
     processing_step_name: str,
-    children: List[str],
-    parents: List[str],
-    ancestors: List[str],
+    children: list[str],
+    parents: list[str],
+    ancestors: list[str],
 ) -> None:
     assert_lists_are_equal(graph.get_children(processing_step_name), children)
     assert_lists_are_equal(graph.get_parents(processing_step_name), parents)
@@ -356,7 +356,7 @@ def graph() -> ProcessingGraph:
     ],
 )
 def test_default_graph_steps(
-    graph: ProcessingGraph, processing_step_name: str, children: List[str], parents: List[str], ancestors: List[str]
+    graph: ProcessingGraph, processing_step_name: str, children: list[str], parents: list[str], ancestors: list[str]
 ) -> None:
     assert_step(graph, processing_step_name, children=children, parents=parents, ancestors=ancestors)
 

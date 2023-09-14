@@ -50,7 +50,7 @@ def compute_config_names_response(
     logging.info(f"get config names for dataset={dataset}")
     # get the list of splits in streaming mode
     try:
-        config_name_items: List[ConfigNameItem] = [
+        config_name_items: list[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
             for config in sorted(get_dataset_config_names(path=dataset, token=hf_token))
         ]

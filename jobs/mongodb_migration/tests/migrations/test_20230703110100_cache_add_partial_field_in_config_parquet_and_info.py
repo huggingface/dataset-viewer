@@ -25,7 +25,7 @@ def assert_unchanged(dataset: str, kind: str) -> None:
     assert "partial" not in entry["content"]
 
 
-cache: List[Dict[str, Any]] = [
+cache: list[Dict[str, Any]] = [
     {
         "config": "lhoestq--demo1",
         "dataset": "lhoestq/demo1",
@@ -122,7 +122,7 @@ cache: List[Dict[str, Any]] = [
         "progress": None,
     },
 ]
-cache2: List[Dict[str, Any]] = [
+cache2: list[Dict[str, Any]] = [
     {
         "config": "lhoestq--demo2",
         "dataset": "lhoestq/demo2",

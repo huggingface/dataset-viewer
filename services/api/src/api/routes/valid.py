@@ -15,8 +15,8 @@ from starlette.responses import Response
 
 
 class ValidContent(TypedDict):
-    viewer: List[str]
-    preview: List[str]
+    viewer: list[str]
+    preview: list[str]
 
 
 @dataclass
@@ -36,17 +36,17 @@ class ValidDatasets:
             preview=sorted(_preview_set),
         )
 
-    def _get_valid_set(self, processing_steps: List[ProcessingStep]) -> Set[str]:
+    def _get_valid_set(self, processing_steps: list[ProcessingStep]) -> Set[str]:
         """Returns the list of the valid datasets for the list of steps
 
         A dataset is considered valid if at least one response of any of the artifacts for any of the
         steps is valid.
 
         Args:
-            processing_steps (List[ProcessingStep]): The list of processing steps
+            processing_steps (list[ProcessingStep]): The list of processing steps
 
         Returns:
-            List[str]: The list of valid datasets for the steps
+            list[str]: The list of valid datasets for the steps
         """
         if not processing_steps:
             return set()

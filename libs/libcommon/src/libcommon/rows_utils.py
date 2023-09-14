@@ -44,13 +44,13 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[Row],
+    rows: list[Row],
     features: Features,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     offset: int,
     row_idx_column: Optional[str],
-) -> List[Row]:
+) -> list[Row]:
     fn = partial(
         _transform_row,
         dataset=dataset,

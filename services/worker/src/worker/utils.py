@@ -76,7 +76,7 @@ def utf8_byte_truncate(text: str, max_bytes: int) -> str:
 
 
 # Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: List[str]) -> RowItem:
+def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: list[str]) -> RowItem:
     row = {}
     for column_name, cell in row_item["row"].items():
         # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
@@ -100,8 +100,8 @@ COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
 
 # Mutates row_items, and returns them anyway
 def truncate_row_items(
-    row_items: List[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: List[str]
-) -> List[RowItem]:
+    row_items: list[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: list[str]
+) -> list[RowItem]:
     # compute the current size
     rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
 
@@ -127,12 +127,12 @@ def to_row_item(row_idx: int, row: Row) -> RowItem:
 
 
 def create_truncated_row_items(
-    rows: List[Row],
+    rows: list[Row],
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_min_number: int,
-    columns_to_keep_untruncated: List[str],
-) -> List[RowItem]:
+    columns_to_keep_untruncated: list[str],
+) -> list[RowItem]:
     row_items = []
     rows_bytes = 0
 
@@ -220,7 +220,7 @@ def get_rows(
     streaming: bool,
     rows_max_number: int,
     token: Union[bool, str, None] = False,
-    column_names: Optional[List[str]] = None,
+    column_names: Optional[list[str]] = None,
 ) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
     PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
@@ -258,7 +258,7 @@ def get_rows_or_raise(
     token: Union[bool, str, None],
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
-    column_names: Optional[List[str]] = [],
+    column_names: Optional[list[str]] = [],
 ) -> RowsContent:
     try:
         return get_rows(

@@ -112,7 +112,7 @@ def update_repo_settings(
 def create_hub_dataset_repo(
     *,
     prefix: str,
-    file_paths: Optional[List[str]] = None,
+    file_paths: Optional[list[str]] = None,
     dataset: Optional[Dataset] = None,
     private: bool = False,
     gated: Optional[str] = None,
@@ -147,7 +147,7 @@ def delete_hub_dataset_repo(repo_id: str) -> None:
 
 @pytest.fixture
 def tmp_dataset_repo_factory() -> Iterator[Callable[[str], str]]:
-    repo_ids: List[str] = []
+    repo_ids: list[str] = []
 
     def _tmp_dataset_repo(repo_id: str) -> str:
         nonlocal repo_ids
@@ -349,7 +349,7 @@ def create_splits_response(dataset: str) -> Any:
     }
 
 
-def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: List[Any]) -> Any:
+def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: list[Any]) -> Any:
     config, split = get_default_config_split()
     return {
         "dataset": dataset,

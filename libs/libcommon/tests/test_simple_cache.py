@@ -754,7 +754,7 @@ class EntrySpec(TypedDict):
     ],
 )
 def test_get_best_response(
-    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: str
+    selected_entries: list[str], kinds: list[str], dataset: str, config: Optional[str], best_entry: str
 ) -> None:
     # arrange
     entries: Dict[str, EntrySpec] = {
@@ -928,9 +928,9 @@ RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTE
     ],
 )
 def test_fetch_names(
-    cache_kinds: List[str],
+    cache_kinds: list[str],
     response_spec_by_kind: Mapping[str, Mapping[str, Any]],
-    expected_names: List[str],
+    expected_names: list[str],
 ) -> None:
     for kind, response_spec in response_spec_by_kind.items():
         upsert_response(

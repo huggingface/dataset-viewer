@@ -39,7 +39,7 @@ def test_clean_cached_assets(
     def deterministic_glob_rows_in_assets_dir(
         dataset: str,
         assets_directory: StrPath,
-    ) -> List[Path]:
+    ) -> list[Path]:
         return sorted(
             list(Path(assets_directory).resolve().glob(os.path.join(dataset, "--", "*", "*", "*"))),
             key=lambda p: int(p.name),
