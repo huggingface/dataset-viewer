@@ -11,7 +11,6 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
-    Set,
     Type,
     TypedDict,
     TypeVar,
@@ -557,7 +556,7 @@ def get_previous_step_or_raise(
     return best_response
 
 
-def get_valid_datasets(kind: str) -> Set[str]:
+def get_valid_datasets(kind: str) -> set[str]:
     return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 

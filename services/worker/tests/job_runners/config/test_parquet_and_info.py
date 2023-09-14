@@ -9,7 +9,7 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, Set, TypedDict
+from typing import Any, Callable, Iterator, Optional, TypedDict
 from unittest.mock import patch
 
 import datasets.builder
@@ -754,7 +754,7 @@ def test_concurrency(
     ],
 )
 def test_get_delete_operations(
-    parquet_files: Set[str], all_repo_files: Set[str], config_names: Set[str], config: str, deleted_files: Set[str]
+    parquet_files: set[str], all_repo_files: set[str], config_names: set[str], config: str, deleted_files: set[str]
 ) -> None:
     parquet_operations = [
         CommitOperationAdd(path_in_repo=path_in_repo, path_or_fileobj=b"") for path_in_repo in parquet_files

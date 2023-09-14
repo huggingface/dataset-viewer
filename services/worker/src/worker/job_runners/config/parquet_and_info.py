@@ -10,7 +10,7 @@ from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Callable, Generator, Optional, Set, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Generator, Optional, Tuple, Type, TypeVar, Union
 from unittest.mock import patch
 from urllib.parse import unquote
 
@@ -1011,7 +1011,7 @@ def create_commits(
 
 
 def get_delete_operations(
-    parquet_operations: list[CommitOperationAdd], all_repo_files: Set[str], config_names: Set[str], config: str
+    parquet_operations: list[CommitOperationAdd], all_repo_files: set[str], config_names: set[str], config: str
 ) -> list[CommitOperationDelete]:
     # - get files that will be preserved in repo:
     #   1. parquet files belonging to any other config (otherwise outdated files might be preserved)
@@ -1021,7 +1021,7 @@ def get_delete_operations(
     pattern_in_any_other_config_dir = re.compile(
         f"^({'|'.join(re.escape(conf) for conf in config_names.difference({config}))})/"
     )
-    files_to_ignore: Set[str] = {
+    files_to_ignore: set[str] = {
         file
         for file in all_repo_files
         if (pattern_in_any_other_config_dir.match(file) and file.endswith(".parquet"))
@@ -1042,7 +1042,7 @@ def commit_parquet_conversion(
     committer_hf_api: HfApi,
     dataset: str,
     config: str,
-    config_names: Set[str],
+    config_names: set[str],
     parquet_operations: list[CommitOperation],
     commit_message: str,
     target_revision: Optional[str],
@@ -1088,7 +1088,7 @@ def commit_parquet_conversion(
             If one of the commits could not be created on the Hub.
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-    all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+    all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
     delete_operations = get_delete_operations(
         parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
     )

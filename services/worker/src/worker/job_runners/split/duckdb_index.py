@@ -5,7 +5,7 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional, Set
+from typing import Any, Optional
 
 import duckdb
 from datasets.features.features import Features, FeatureType, Value, _visit
@@ -205,7 +205,7 @@ def compute_index_rows(
 
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-            all_repo_files: Set[str] = {f.rfilename for f in target_dataset_info.siblings}
+            all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
             delete_operations: list[CommitOperation] = []
             if index_file_location in all_repo_files:
                 delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))

@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from datetime import datetime
-from typing import Optional, Set, Tuple
+from typing import Optional, Tuple
 
 import pytest
 
@@ -273,8 +273,8 @@ def test_plan_one_job_creation_and_termination(
         (PROCESSING_GRAPH_PARALLEL, [{ARTIFACT_DA, ARTIFACT_DG, ARTIFACT_DH, ARTIFACT_DI}, set()]),
     ],
 )
-def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph, to_backfill: list[Set[str]]) -> None:
-    previous_artifacts: Set[str] = set()
+def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph, to_backfill: list[set[str]]) -> None:
+    previous_artifacts: set[str] = set()
     for artifacts_to_backfill in to_backfill:
         is_empty = sorted(artifacts_to_backfill - previous_artifacts)
         is_outdated_by_parent = sorted(artifacts_to_backfill.intersection(previous_artifacts))

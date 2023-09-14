@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Set, Union
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -52,7 +52,7 @@ class CacheStatus:
 
 @dataclass
 class QueueStatus:
-    in_process: Set[str] = field(default_factory=set)
+    in_process: set[str] = field(default_factory=set)
 
     def as_response(self) -> dict[str, list[str]]:
         return {"in_process": sorted(self.in_process)}
@@ -721,7 +721,7 @@ class DatasetOrchestrator:
         Raises:
             ValueError: If any of the processing step does not exist.
         """
-        job_types: Set[str] = set()
+        job_types: set[str] = set()
         for processing_step_name in processing_step_names:
             try:
                 processing_step = self.processing_graph.get_processing_step(processing_step_name)
