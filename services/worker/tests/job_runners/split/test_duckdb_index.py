@@ -67,6 +67,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitDuckDbIndexJobRunner(
             job_info={
                 "type": SplitDuckDbIndexJobRunner.get_job_type(),
@@ -110,6 +126,14 @@ def get_parquet_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigParquetAndInfoJobRunner(
             job_info={
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
@@ -159,26 +183,9 @@ def test_compute(
         "gated": hub_responses_gated_duckdb_index,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
-    config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
-    splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     split = "train"
     partial = hub_dataset_name.startswith("partial_")
-
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=config_names,
-    )
-
-    upsert_response(
-        "config-split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        http_status=HTTPStatus.OK,
-        content=splits_response,
-    )
 
     app_config = (
         app_config

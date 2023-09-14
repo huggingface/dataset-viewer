@@ -1,6 +1,13 @@
-version: "3.9"
 services:
   mongodb-test:
-    image: mongo:latest
+    image: 'mongo:6.0.9'
     ports:
-      - ${MONGO_PORT-27017}:27017
+      - ${MONGO_PORT:-27017}:${MONGO_PORT:-27017}
+    command: mongod --port ${MONGO_PORT:-27017} --replSet ${MONGO_REPLICASET:-rs0} --bind_ip_all
+    healthcheck:
+      test: test $$(mongosh --port ${MONGO_PORT:-27017} --quiet --eval "try{rs.initiate({_id:'${MONGO_REPLICASET:-rs0}',version:1,members:[{_id:0,host:'localhost:${MONGO_PORT:-27017}'}]})} catch(e) {rs.status().ok}") -eq 1
+      interval: 2s
+      timeout: 20s
+      retries: 10
+      start_period: 20s
+      start_interval: 2s

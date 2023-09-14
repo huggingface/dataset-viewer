@@ -101,6 +101,14 @@ class MongoResource(Resource):
         except ServerSelectionTimeoutError:
             return False
 
+    def create_collection(self, document: Any) -> None:
+        document.ensure_indexes()
+
+    def enable_pre_and_post_images(self, collection_name: str) -> None:
+        self._client[self.database].command(
+            "collMod", collection_name, changeStreamPreAndPostImages={"enabled": True}
+        )  # type: ignore
+
     def release(self) -> None:
         disconnect(alias=self.mongoengine_alias)
 

@@ -32,12 +32,7 @@ from libcommon.viewer_utils.features import get_cell_value, to_features_list
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import (
-    check_split_exists,
-    create_truncated_row_items,
-    get_json_size,
-    get_rows_or_raise,
-)
+from worker.utils import create_truncated_row_items, get_json_size, get_rows_or_raise
 
 
 def transform_rows(
@@ -140,8 +135,6 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
-    # first ensure the tuple (dataset, config, split) exists on the Hub
-    check_split_exists(dataset=dataset, config=config, split=split)
     # get the features
     try:
         info = get_dataset_config_info(

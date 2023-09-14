@@ -56,6 +56,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitFirstRowsFromParquetJobRunner(
             job_info={
                 "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),

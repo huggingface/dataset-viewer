@@ -34,7 +34,7 @@ from libcommon.exceptions import (
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
+from libcommon.simple_cache import upsert_response
 from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
@@ -98,6 +98,14 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigParquetAndInfoJobRunner(
             job_info={
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
@@ -140,12 +148,6 @@ def test_compute(
 ) -> None:
     dataset = hub_responses_public["name"]
     config = hub_responses_public["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_responses_public["config_names_response"],
-    )
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     assert response
@@ -164,20 +166,22 @@ def test_compute_legacy_configs(
 
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
-    upsert_response(
-        kind="dataset-config-names",
-        dataset=hub_public_legacy_configs,
-        http_status=HTTPStatus.OK,
-        content={
-            "config_names": [
-                {"dataset": hub_public_legacy_configs, "config": "first"},
-                {"dataset": hub_public_legacy_configs, "config": "second"},
-            ],
-        },
-    )
+
     # first compute and push parquet files for each config for dataset with script with two configs
     for config in original_configs:
         job_runner = get_job_runner(dataset_name, config, app_config)
+        # needed to overwrite default record when creating job runner
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=hub_public_legacy_configs,
+            http_status=HTTPStatus.OK,
+            content={
+                "config_names": [
+                    {"dataset": hub_public_legacy_configs, "config": "first"},
+                    {"dataset": hub_public_legacy_configs, "config": "second"},
+                ],
+            },
+        )
         assert job_runner.compute()
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     dataset_info = hf_api.dataset_info(
@@ -196,16 +200,6 @@ def test_compute_legacy_configs(
     assert len(orig_repo_configs) == 2
     assert orig_repo_configs == original_configs
     # then change the set of dataset configs (remove "second")
-    upsert_response(
-        kind="dataset-config-names",
-        dataset=hub_public_legacy_configs,
-        http_status=HTTPStatus.OK,
-        content={
-            "config_names": [
-                {"dataset": hub_public_legacy_configs, "config": "first"},
-            ],
-        },
-    )
     job_runner = get_job_runner(dataset_name, "first", app_config)
     assert job_runner.compute()
     dataset_info = hf_api.dataset_info(
@@ -361,12 +355,6 @@ def test_supported_if_big_parquet(
     # dataset = hub_public_big
     dataset = hub_responses_big["name"]
     config = hub_responses_big["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        kind="dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_responses_big["config_names_response"],
-    )
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     assert response
@@ -385,12 +373,6 @@ def test_partially_converted_if_big_non_parquet(
     # dataset = hub_public_big_csv
     dataset = hub_responses_big_csv["name"]
     config = hub_responses_big_csv["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        kind="dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_responses_big_csv["config_names_response"],
-    )
     job_runner = get_job_runner(dataset, config, app_config)
     from datasets.packaged_modules.csv.csv import CsvConfig
 
@@ -416,12 +398,6 @@ def test_supported_if_gated(
     # Access must be granted
     dataset = hub_responses_gated["name"]
     config = hub_responses_gated["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_responses_gated["config_names_response"],
-    )
     job_runner = get_job_runner(dataset, config, app_config)
     response = job_runner.compute()
     assert response
@@ -437,12 +413,6 @@ def test_blocked(
     with blocked(app_config, repo_id=hub_reponses_jsonl["name"]):
         dataset = hub_reponses_jsonl["name"]
         config = hub_reponses_jsonl["config_names_response"]["config_names"][0]["config"]
-        upsert_response(
-            kind="dataset-config-names",
-            dataset=dataset,
-            http_status=HTTPStatus.OK,
-            content=hub_reponses_jsonl["config_names_response"],
-        )
         job_runner = get_job_runner(dataset, config, app_config)
         with pytest.raises(CustomError) as e:
             job_runner.compute()
@@ -465,12 +435,6 @@ def test_compute_splits_response_simple_csv_ok(
     hub_datasets = {"public": hub_responses_public, "audio": hub_responses_audio, "gated": hub_responses_gated}
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_datasets[name]["config_names_response"],
-    )
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
     job_runner = get_job_runner(dataset, config, app_config)
     result = job_runner.compute().content
@@ -511,12 +475,6 @@ def test_compute_splits_response_simple_csv_error(
     dataset = hub_responses_private["name"]
     config_names_response = hub_responses_private["config_names_response"]
     config = config_names_response["config_names"][0]["config"] if config_names_response else None
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=hub_responses_private["config_names_response"],
-    )
     job_runner = get_job_runner(dataset, config, app_config)
     with pytest.raises(CustomError) as exc_info:
         job_runner.compute()
@@ -530,19 +488,6 @@ def test_compute_splits_response_simple_csv_error(
         assert response_dict["cause_exception"] == cause
         assert isinstance(response_dict["cause_traceback"], list)
         assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
-
-
-def test_compute_splits_response_simple_csv_error_2(
-    hub_responses_public: HubDatasetTest,
-    get_job_runner: GetJobRunner,
-    app_config: AppConfig,
-) -> None:
-    dataset = hub_responses_public["name"]
-    config_names_response = hub_responses_public["config_names_response"]
-    config = config_names_response["config_names"][0]["config"] if config_names_response else None
-    job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CachedArtifactNotFoundError):
-        job_runner.compute()
 
 
 @pytest.mark.parametrize(

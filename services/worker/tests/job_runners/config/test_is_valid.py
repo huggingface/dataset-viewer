@@ -123,6 +123,14 @@ def get_job_runner(
     ) -> ConfigIsValidJobRunner:
         processing_step_name = ConfigIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigIsValidJobRunner(
             job_info={
                 "type": ConfigIsValidJobRunner.get_job_type(),

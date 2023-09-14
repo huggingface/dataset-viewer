@@ -34,6 +34,8 @@ jobs:
           - directory: services
             project: search
           - directory: services
+            project: sse-api
+          - directory: services
             project: storage-admin
           - directory: services
             project: worker
@@ -117,6 +119,8 @@ jobs:
                 rows:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 search:
+                  tag: sha-${{ steps.vars.outputs.sha_short }}
+                sseApi:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
                 storageAdmin:
                   tag: sha-${{ steps.vars.outputs.sha_short }}
