@@ -55,8 +55,8 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                     for x in content["parquet_files"]
                     if x["config"] == config and x["split"] == split_info["name"]
                 ),
-                "num_bytes_memory": split_info["num_bytes"],
-                "num_rows": split_info["num_examples"],
+                "num_bytes_memory": split_info["num_bytes"] if "num_bytes" in split_info else 0,
+                "num_rows": split_info["num_examples"] if "num_examples" in split_info else 0,
                 "num_columns": num_columns,
             }
             for split_info in config_info["splits"].values()
@@ -67,9 +67,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
                 "config": config,
                 "num_bytes_original_files": config_info.get("download_size"),
                 "num_bytes_parquet_files": sum(split_size["num_bytes_parquet_files"] for split_size in split_sizes),
-                "num_bytes_memory": sum(
-                    split_size["num_bytes_memory"] for split_size in split_sizes
-                ),  # or "num_bytes_memory": config_dataset_info["dataset_size"],
+                "num_bytes_memory": sum(split_size["num_bytes_memory"] for split_size in split_sizes),
                 "num_rows": sum(split_size["num_rows"] for split_size in split_sizes),
                 "num_columns": num_columns,
             }
