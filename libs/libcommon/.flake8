@@ -3,3 +3,5 @@
 # rather than using the flake8 default of 79:
 max-line-length = 119
 extend-ignore = "E203"
+unused-arguments-ignore-abstract-functions = true
+unused-arguments-ignore-dunder = true
