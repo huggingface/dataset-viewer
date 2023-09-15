@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Optional, TypedDict
-from typing_extensions import override
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -26,6 +25,7 @@ from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingSte
 from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 from starlette.responses import Response
+from typing_extensions import override
 
 from api.config import EndpointConfig
 
