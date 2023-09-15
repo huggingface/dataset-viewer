@@ -329,7 +329,7 @@ def compute_descriptive_statistics_response(
     if not split_parquet_files:
         raise ParquetResponseEmptyError("No parquet files found.")
     features = dataset_info.get("features")
-    if not features:
+    if features is None:
         raise PreviousStepFormatError(
             f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
             "no features found in 'dataset_info'. "
