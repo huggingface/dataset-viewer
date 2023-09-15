@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 import duckdb
 import numpy as np
@@ -64,8 +64,8 @@ class ColumnType(str, enum.Enum):
 
 
 class Histogram(TypedDict):
-    hist: List[int]
-    bin_edges: List[float]
+    hist: list[int]
+    bin_edges: list[float]
 
 
 class NumericalStatisticsItem(TypedDict):
@@ -83,7 +83,7 @@ class CategoricalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
     n_unique: int
-    frequencies: Dict[str, int]
+    frequencies: dict[str, int]
 
 
 class StatisticsPerColumnItem(TypedDict):
@@ -94,7 +94,7 @@ class StatisticsPerColumnItem(TypedDict):
 
 class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
-    statistics: List[StatisticsPerColumnItem]
+    statistics: list[StatisticsPerColumnItem]
 
 
 def generate_bins(
@@ -222,13 +222,13 @@ def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
-    class_label_names: List[str],
+    class_label_names: list[str],
     n_samples: int,
 ) -> CategoricalStatisticsItem:
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, parquet_filename=parquet_filename
     )
-    categories: List[Tuple[int, int]] = con.sql(
+    categories: list[tuple[int, int]] = con.sql(
         categorical_counts_query
     ).fetchall()  # list of tuples (idx, num_samples)
 
@@ -362,7 +362,7 @@ def compute_descriptive_statistics_response(
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split}/*.parquet"
 
-    stats: List[StatisticsPerColumnItem] = []
+    stats: list[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
         feature_name: feature

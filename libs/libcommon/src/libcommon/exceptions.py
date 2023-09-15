@@ -5,7 +5,7 @@ import logging
 import sys
 import traceback
 from http import HTTPStatus
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 
 class ErrorResponseWithoutCause(TypedDict):
@@ -15,7 +15,7 @@ class ErrorResponseWithoutCause(TypedDict):
 class ErrorResponseWithCause(ErrorResponseWithoutCause, total=False):
     cause_exception: str
     cause_message: str
-    cause_traceback: List[str]
+    cause_traceback: list[str]
 
 
 ErrorResponse = Union[ErrorResponseWithoutCause, ErrorResponseWithCause]
@@ -49,7 +49,7 @@ class CustomError(LoggedError):
             self.cause_exception: Optional[str] = type(cause).__name__
             self.cause_message: Optional[str] = str(cause)
             (t, v, tb) = sys.exc_info()
-            self.cause_traceback: Optional[List[str]] = traceback.format_exception(t, v, tb)
+            self.cause_traceback: Optional[list[str]] = traceback.format_exception(t, v, tb)
         else:
             self.cause_exception = None
             self.cause_message = None

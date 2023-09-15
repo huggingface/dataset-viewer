@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Callable
 from http import HTTPStatus
-from typing import Any, Callable, List
+from typing import Any
 
 import pytest
 from libcommon.exceptions import PreviousStepFormatError
@@ -222,7 +223,7 @@ def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     dataset: str,
-    upstream_responses: List[UpstreamResponse],
+    upstream_responses: list[UpstreamResponse],
     expected_error_code: str,
     expected: Any,
     should_raise: bool,

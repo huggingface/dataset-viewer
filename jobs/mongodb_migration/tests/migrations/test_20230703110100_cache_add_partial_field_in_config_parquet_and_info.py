@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
-from typing import Any, Dict, List
+from typing import Any
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
 from libcommon.resources import MongoResource
@@ -25,7 +25,7 @@ def assert_unchanged(dataset: str, kind: str) -> None:
     assert "partial" not in entry["content"]
 
 
-cache: List[Dict[str, Any]] = [
+cache: list[dict[str, Any]] = [
     {
         "config": "lhoestq--demo1",
         "dataset": "lhoestq/demo1",
@@ -122,7 +122,7 @@ cache: List[Dict[str, Any]] = [
         "progress": None,
     },
 ]
-cache2: List[Dict[str, Any]] = [
+cache2: list[dict[str, Any]] = [
     {
         "config": "lhoestq--demo2",
         "dataset": "lhoestq/demo2",

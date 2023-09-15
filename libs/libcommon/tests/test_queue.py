@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -124,7 +124,7 @@ def test_add_job() -> None:
     ],
 )
 def test_cancel_jobs_by_job_id(
-    jobs_ids: List[str], job_ids_to_cancel: List[str], expected_canceled_number: int
+    jobs_ids: list[str], job_ids_to_cancel: list[str], expected_canceled_number: int
 ) -> None:
     test_type = "test_type"
     test_difficulty = 50

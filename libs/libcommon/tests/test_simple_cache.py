@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from datetime import datetime
 from http import HTTPStatus
 from time import process_time
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import pytest
 from pymongo.errors import DocumentTooLarge
@@ -754,10 +755,10 @@ class EntrySpec(TypedDict):
     ],
 )
 def test_get_best_response(
-    selected_entries: List[str], kinds: List[str], dataset: str, config: Optional[str], best_entry: str
+    selected_entries: list[str], kinds: list[str], dataset: str, config: Optional[str], best_entry: str
 ) -> None:
     # arrange
-    entries: Dict[str, EntrySpec] = {
+    entries: dict[str, EntrySpec] = {
         "ok1": {
             "kind": "kind1",
             "dataset": "dataset",
@@ -928,9 +929,9 @@ RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTE
     ],
 )
 def test_fetch_names(
-    cache_kinds: List[str],
+    cache_kinds: list[str],
     response_spec_by_kind: Mapping[str, Mapping[str, Any]],
-    expected_names: List[str],
+    expected_names: list[str],
 ) -> None:
     for kind, response_spec in response_spec_by_kind.items():
         upsert_response(

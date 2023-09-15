@@ -2,23 +2,11 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import types
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Set,
-    Type,
-    TypedDict,
-    TypeVar,
-    overload,
-)
+from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
 from bson import ObjectId
@@ -56,7 +44,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 
@@ -263,12 +251,12 @@ T = TypeVar("T")
 
 
 @overload
-def _clean_nested_mongo_object(obj: Dict[str, T]) -> Dict[str, T]:
+def _clean_nested_mongo_object(obj: dict[str, T]) -> dict[str, T]:
     ...
 
 
 @overload
-def _clean_nested_mongo_object(obj: List[T]) -> List[T]:
+def _clean_nested_mongo_object(obj: list[T]) -> list[T]:
     ...
 
 
@@ -384,7 +372,7 @@ class CachedArtifactError(Exception):
     config: Optional[str]
     split: Optional[str]
     cache_entry_with_details: CacheEntryWithDetails
-    enhanced_details: Dict[str, Any]
+    enhanced_details: dict[str, Any]
 
     def __init__(
         self,
@@ -401,7 +389,7 @@ class CachedArtifactError(Exception):
         self.config = config
         self.split = split
         self.cache_entry_with_details = cache_entry_with_details
-        self.enhanced_details: Dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
+        self.enhanced_details: dict[str, Any] = dict(self.cache_entry_with_details["details"].items())
         self.enhanced_details["copied_from_artifact"] = {
             "kind": self.kind,
             "dataset": self.dataset,
@@ -493,7 +481,7 @@ class BestResponse:
 
 
 def get_best_response(
-    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> BestResponse:
     """
     Get the best response from a list of cache kinds.
@@ -503,7 +491,7 @@ def get_best_response(
     - else: the first error response (including cache miss)
 
     Args:
-        kinds (`List[str]`):
+        kinds (`list[str]`):
             A non-empty list of cache kinds to look responses for.
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
@@ -541,7 +529,7 @@ def get_best_response(
 
 
 def get_previous_step_or_raise(
-    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> BestResponse:
     """Get the previous step from the cache, or raise an exception if it failed."""
     best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
@@ -559,12 +547,12 @@ def get_previous_step_or_raise(
     return best_response
 
 
-def get_valid_datasets(kind: str) -> Set[str]:
+def get_valid_datasets(kind: str) -> set[str]:
     return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
 def has_any_successful_response(
-    kinds: List[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> bool:
     return (
         CachedResponseDocument.objects(
@@ -575,7 +563,7 @@ def has_any_successful_response(
 
 
 class ContentsPage(TypedDict):
-    contents: List[Dict[str, Any]]
+    contents: list[dict[str, Any]]
     cursor: Optional[str]
 
 
@@ -627,7 +615,7 @@ class CountEntry(TypedDict):
     count: int
 
 
-def format_group(group: Dict[str, Any]) -> CountEntry:
+def format_group(group: dict[str, Any]) -> CountEntry:
     kind = group["kind"]
     if not isinstance(kind, str):
         raise TypeError("kind must be a str")
@@ -643,7 +631,7 @@ def format_group(group: Dict[str, Any]) -> CountEntry:
     return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
 
 
-def get_responses_count_by_kind_status_and_error_code() -> List[CountEntry]:
+def get_responses_count_by_kind_status_and_error_code() -> list[CountEntry]:
     groups = CachedResponseDocument.objects().aggregate(
         [
             {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
@@ -684,7 +672,7 @@ class CacheReport(TypedDict):
 
 
 class CacheReportsPage(TypedDict):
-    cache_reports: List[CacheReport]
+    cache_reports: list[CacheReport]
     next_cursor: str
 
 
@@ -751,7 +739,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     }
 
 
-def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> List[SplitFullName]:
+def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> list[SplitFullName]:
     responses = CachedResponseDocument.objects(kind=kind, job_runner_version__lt=current_version).only(
         "dataset", "config", "split"
     )
@@ -760,7 +748,7 @@ def get_outdated_split_full_names_for_step(kind: str, current_version: int) -> L
     ]
 
 
-def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> List[CacheReport]:
+def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> list[CacheReport]:
     responses = CachedResponseDocument.objects(kind=kind, dataset=dataset).exclude("content")
     return [
         {
@@ -785,7 +773,7 @@ class CacheReportWithContent(CacheReport):
 
 
 class CacheReportsWithContentPage(TypedDict):
-    cache_reports_with_content: List[CacheReportWithContent]
+    cache_reports_with_content: list[CacheReportWithContent]
     next_cursor: str
 
 
@@ -852,7 +840,7 @@ class CacheEntryFullMetadata(CacheEntryMetadata):
     split: Optional[str]
 
 
-def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
+def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "kind": pd.Series([entry["kind"] for entry in entries], dtype="category"),
@@ -874,7 +862,7 @@ def _get_df(entries: List[CacheEntryFullMetadata]) -> pd.DataFrame:
     # ^ does not seem optimal at all, but I get the types right
 
 
-def get_cache_entries_df(dataset: str, cache_kinds: Optional[List[str]] = None) -> pd.DataFrame:
+def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) -> pd.DataFrame:
     filters = {}
     if cache_kinds:
         filters["kind__in"] = cache_kinds
@@ -913,8 +901,8 @@ def has_some_cache(dataset: str) -> bool:
 
 
 def fetch_names(
-    dataset: str, config: Optional[str], cache_kinds: List[str], names_field: str, name_field: str
-) -> List[str]:
+    dataset: str, config: Optional[str], cache_kinds: list[str], names_field: str, name_field: str
+) -> list[str]:
     """
     Fetch a list of names from the cache database.
 
@@ -923,13 +911,13 @@ def fetch_names(
     Args:
         dataset (str): The dataset name.
         config (Optional[str]): The config name. Only needed for split names.
-        cache_kinds (List[str]): The cache kinds to fetch, eg ["dataset-config-names"],
+        cache_kinds (list[str]): The cache kinds to fetch, eg ["dataset-config-names"],
           or ["config-split-names-from-streaming", "config-split-names-from-info"].
         names_field (str): The name of the field containing the list of names, eg: "config_names", or "splits".
         name_field (str): The name of the field containing the name, eg: "config", or "split".
 
     Returns:
-        List[str]: The list of names.
+        list[str]: The list of names.
     """
     try:
         names = []

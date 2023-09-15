@@ -3,7 +3,7 @@
 
 import logging
 import random
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pyarrow as pa
 from datasets import Features, Value
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 MAX_ROWS = 100
 
 
-ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], List[str]] = ["arabic_speech_corpus"]  # for testing
+ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["arabic_speech_corpus"]  # for testing
 
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
@@ -57,7 +57,7 @@ def create_response(
     pa_table: pa.Table,
     offset: int,
     features: Features,
-    unsupported_columns: List[str],
+    unsupported_columns: list[str],
     num_rows_total: int,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
@@ -91,7 +91,7 @@ def create_rows_endpoint(
     max_arrow_data_in_memory: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-    hf_jwt_public_keys: Optional[List[str]] = None,
+    hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,

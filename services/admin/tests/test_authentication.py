@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Mapping, Optional, Type
+from collections.abc import Mapping
+from typing import Optional
 
 import pytest
 import responses
@@ -35,7 +36,7 @@ def test_unreachable_external_auth_check_service() -> None:
         (429, ValueError),
     ],
 )
-def test_external_auth_responses_without_request(status: int, error: Optional[Type[Exception]]) -> None:
+def test_external_auth_responses_without_request(status: int, error: Optional[type[Exception]]) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
     responses.add(responses.GET, url, status=status, body=body)
@@ -51,7 +52,7 @@ def test_external_auth_responses_without_request(status: int, error: Optional[Ty
     "org,status,error",
     [("org1", 200, None), ("org2", 403, ExternalAuthenticatedError)],
 )
-def test_org(org: str, status: int, error: Optional[Type[Exception]]) -> None:
+def test_org(org: str, status: int, error: Optional[type[Exception]]) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
     responses.add(responses.GET, url, status=status, body=body)

@@ -3,7 +3,7 @@
 
 import functools
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
@@ -90,7 +90,7 @@ def compute_parquet_metadata_response(
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
-        parquet_file_items: List[SplitHubFile] = [
+        parquet_file_items: list[SplitHubFile] = [
             parquet_file_item for parquet_file_item in parquet_files_content if parquet_file_item["config"] == config
         ]
         if not parquet_file_items:
@@ -107,7 +107,7 @@ def compute_parquet_metadata_response(
 
     fs = HTTPFileSystem()
     desc = f"{dataset}/{config}"
-    parquet_files_metadata: List[ParquetFileMetadataItem] = thread_map(
+    parquet_files_metadata: list[ParquetFileMetadataItem] = thread_map(
         functools.partial(
             create_parquet_metadata_file_from_remote_parquet,
             fs=fs,

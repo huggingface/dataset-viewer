@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List
 
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem
@@ -31,11 +30,11 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[RowItem],
+    rows: list[RowItem],
     features: Features,
     assets_base_url: str,
     assets_directory: StrPath,
-) -> List[Row]:
+) -> list[Row]:
     return [
         {
             featureName: get_cell_value(

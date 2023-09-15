@@ -2,8 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from collections.abc import Callable, Coroutine
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
@@ -124,7 +125,7 @@ def is_non_empty_string(string: Any) -> bool:
     return isinstance(string, str) and bool(string and string.strip())
 
 
-def are_valid_parameters(parameters: List[Any]) -> bool:
+def are_valid_parameters(parameters: list[Any]) -> bool:
     return all(is_non_empty_string(s) for s in parameters)
 
 

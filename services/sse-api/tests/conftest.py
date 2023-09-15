@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import asyncio
-from typing import Iterator
+from collections.abc import Iterator
 
 import pytest
 from environs import Env

@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import jwt
 import requests
@@ -184,9 +184,9 @@ def fetch_jwt_public_key_json(
 def get_jwt_public_keys(
     algorithm_name: Optional[str] = None,
     public_key_url: Optional[str] = None,
-    additional_public_keys: Optional[List[str]] = None,
+    additional_public_keys: Optional[list[str]] = None,
     timeout_seconds: Optional[float] = None,
-) -> List[str]:
+) -> list[str]:
     """
     Get the public keys to use to decode the JWT token.
 
@@ -200,11 +200,11 @@ def get_jwt_public_keys(
         algorithm_name (str|None): the algorithm to use to decode the JWT token. If not provided, no keys will be
           returned
         public_key_url (str|None): the URL to fetch the public key from
-        additional_public_keys (List[str]|None): additional public keys to use to decode the JWT token
+        additional_public_keys (list[str]|None): additional public keys to use to decode the JWT token
         timeout_seconds (float|None): the timeout in seconds for fetching the remote key
 
     Returns:
-        List[str]: the list of public keys in PEM format
+        list[str]: the list of public keys in PEM format
 
     Raises:
         JWTKeysError: if some exception occurred while creating the public keys. Some reasons: if the algorithm
@@ -212,7 +212,7 @@ def get_jwt_public_keys(
             if a key is not public, if th remote key could not be fetch or parsed
     """
     try:
-        keys: List[str] = []
+        keys: list[str] = []
         if not algorithm_name:
             return keys
         algorithm = create_algorithm(algorithm_name)
@@ -233,7 +233,7 @@ def get_jwt_public_keys(
 
 
 def validate_jwt(
-    dataset: str, token: Any, public_keys: List[str], algorithm: str, verify_exp: Optional[bool] = True
+    dataset: str, token: Any, public_keys: list[str], algorithm: str, verify_exp: Optional[bool] = True
 ) -> None:
     """
     Check if the JWT is valid for the dataset.
@@ -246,7 +246,7 @@ def validate_jwt(
     Args:
         dataset (str): the dataset identifier
         token (Any): the JWT token to decode
-        public_keys (List[str]): the public keys to use to decode the JWT token. They are tried in order.
+        public_keys (list[str]): the public keys to use to decode the JWT token. They are tried in order.
         algorithm (str): the algorithm to use to decode the JWT token
         verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
 

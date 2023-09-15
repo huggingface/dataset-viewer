@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_CONFIG_IS_VALID_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -17,7 +16,7 @@ from worker.dtos import IsValidResponse, JobResult
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
-def compute_is_valid_response(dataset: str, config: str) -> Tuple[IsValidResponse, float]:
+def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidResponse, float]:
     """
     Get the response of /is-valid for one specific dataset config on huggingface.co.
 
@@ -30,7 +29,7 @@ def compute_is_valid_response(dataset: str, config: str) -> Tuple[IsValidRespons
         config (`str`):
             A configuration name.
     Returns:
-        `Tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
+        `tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
     """
     logging.info(f"get is-valid response for {dataset=} {config=}")
 

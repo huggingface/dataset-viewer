@@ -3,7 +3,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from datasets import (
     Audio,
@@ -39,11 +39,11 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[Row],
+    rows: list[Row],
     features: Features,
     assets_base_url: str,
     assets_directory: StrPath,
-) -> List[Row]:
+) -> list[Row]:
     return [
         {
             featureName: get_cell_value(

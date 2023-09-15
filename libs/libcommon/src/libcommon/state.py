@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
 import pandas as pd
 
@@ -49,7 +49,7 @@ class CacheState:
     cache_kind: str
     cache_entries_df: pd.DataFrame
     job_runner_version: int
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
 
     cache_entry_metadata: Optional[CacheEntryMetadata] = field(init=False)
     exists: bool = field(init=False)
@@ -119,7 +119,7 @@ class ArtifactState(Artifact):
 
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
 
     job_state: JobState = field(init=False)
     cache_state: CacheState = field(init=False)
@@ -156,9 +156,9 @@ class SplitState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
 
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         self.artifact_state_by_step = {
@@ -186,11 +186,11 @@ class ConfigState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
 
-    split_names: List[str] = field(init=False)
-    split_states: List[SplitState] = field(init=False)
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    split_names: list[str] = field(init=False)
+    split_states: list[SplitState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         with StepProfiler(
@@ -262,11 +262,11 @@ class DatasetState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
 
-    config_names: List[str] = field(init=False)
-    config_states: List[ConfigState] = field(init=False)
-    artifact_state_by_step: Dict[str, ArtifactState] = field(init=False)
+    config_names: list[str] = field(init=False)
+    config_states: list[ConfigState] = field(init=False)
+    artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
     def __post_init__(self) -> None:
         with StepProfiler(

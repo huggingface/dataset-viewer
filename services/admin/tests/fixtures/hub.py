@@ -4,8 +4,9 @@
 # Adapted from https://github.com/huggingface/datasets/blob/main/tests/fixtures/hub.py
 
 import time
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
-from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 import pytest
 import requests
@@ -75,7 +76,7 @@ def update_repo_settings(
 
     path = f"{path_prefix}{namespace}/{name}/settings"
 
-    json: Dict[str, Union[bool, str]] = {}
+    json: dict[str, Union[bool, str]] = {}
     if private is not None:
         json["private"] = private
     if gated is not None:

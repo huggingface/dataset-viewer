@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 from environs import Env
 from libcommon.config import (
@@ -16,7 +16,7 @@ from libcommon.config import (
     RowsIndexConfig,
 )
 
-WORKER_BLOCKED_DATASETS: List[str] = []
+WORKER_BLOCKED_DATASETS: list[str] = []
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_DIFFICULTY_MAX = None
 WORKER_DIFFICULTY_MIN = None
@@ -32,13 +32,13 @@ WORKER_SLEEP_SECONDS = 15
 WORKER_STATE_FILE_PATH = None
 
 
-def get_empty_str_list() -> List[str]:
+def get_empty_str_list() -> list[str]:
     return []
 
 
 @dataclass(frozen=True)
 class WorkerConfig:
-    blocked_datasets: List[str] = field(default_factory=WORKER_BLOCKED_DATASETS.copy)
+    blocked_datasets: list[str] = field(default_factory=WORKER_BLOCKED_DATASETS.copy)
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
     difficulty_max: Optional[int] = WORKER_DIFFICULTY_MAX
     difficulty_min: Optional[int] = WORKER_DIFFICULTY_MIN
@@ -54,7 +54,7 @@ class WorkerConfig:
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
-    storage_paths: List[str] = field(default_factory=get_empty_str_list)
+    storage_paths: list[str] = field(default_factory=get_empty_str_list)
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -180,7 +180,7 @@ PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE = 100_000_000
 PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES = 10_000
 PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY = 100_000_000
-PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS: List[str] = []
+PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS: list[str] = []
 PARQUET_AND_INFO_SOURCE_REVISION = "main"
 PARQUET_AND_INFO_TARGET_REVISION = "refs/convert/parquet"
 PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
@@ -188,15 +188,15 @@ PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 @dataclass(frozen=True)
 class ParquetAndInfoConfig:
-    blocked_datasets: List[str] = field(default_factory=get_empty_str_list)
+    blocked_datasets: list[str] = field(default_factory=get_empty_str_list)
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
     max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
     max_external_data_files: int = PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
     max_row_group_byte_size_for_copy: int = PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
-    no_max_size_limit_datasets: List[str] = field(default_factory=PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS.copy)
+    no_max_size_limit_datasets: list[str] = field(default_factory=PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS.copy)
     source_revision: str = PARQUET_AND_INFO_SOURCE_REVISION
-    supported_datasets: List[str] = field(default_factory=get_empty_str_list)
+    supported_datasets: list[str] = field(default_factory=get_empty_str_list)
     target_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     url_template: str = PARQUET_AND_INFO_URL_TEMPLATE
 

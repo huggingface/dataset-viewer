@@ -3,8 +3,9 @@
 
 import datetime
 import time
+from collections.abc import Mapping
 from contextlib import nullcontext as does_not_raise
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 import jwt
 import pytest
