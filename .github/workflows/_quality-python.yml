@@ -45,7 +45,7 @@ jobs:
       - name: Run flake8 on src
         run: poetry run flake8 src
       - name: Run flake8 on tests
-        run: poetry run flake8 tests --ignore=U100,U101
+        run: poetry run flake8 tests --ignore=U100
       - name: Run mypy
         run: poetry run mypy tests src
       - name: Run bandit
