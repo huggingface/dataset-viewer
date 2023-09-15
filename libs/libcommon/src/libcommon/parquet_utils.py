@@ -3,7 +3,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -53,7 +53,7 @@ class RowGroupReader:
     parquet_file: pq.ParquetFile
     group_id: int
 
-    def read(self, columns: List[str]) -> pa.Table:
+    def read(self, columns: list[str]) -> pa.Table:
         return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
 
     def read_size(self) -> int:
@@ -63,12 +63,12 @@ class RowGroupReader:
 @dataclass
 class ParquetIndexWithMetadata:
     features: Features
-    supported_columns: List[str]
-    unsupported_columns: List[str]
-    parquet_files_urls: List[str]
-    metadata_paths: List[str]
-    num_bytes: List[int]
-    num_rows: List[int]
+    supported_columns: list[str]
+    unsupported_columns: list[str]
+    parquet_files_urls: list[str]
+    metadata_paths: list[str]
+    num_bytes: list[int]
+    num_rows: list[int]
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
     max_arrow_data_in_memory: int
@@ -184,13 +184,13 @@ class ParquetIndexWithMetadata:
 
     @staticmethod
     def from_parquet_metadata_items(
-        parquet_file_metadata_items: List[ParquetFileMetadataItem],
+        parquet_file_metadata_items: list[ParquetFileMetadataItem],
         features: Optional[Features],
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         hf_token: Optional[str],
         max_arrow_data_in_memory: int,
-        unsupported_features: List[FeatureType] = [],
+        unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
             raise ParquetResponseEmptyError("No parquet files found.")
@@ -247,7 +247,7 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: List[FeatureType] = [],
+        unsupported_features: list[FeatureType] = [],
     ):
         self.dataset = dataset
         self.revision: Optional[str] = None
@@ -267,7 +267,7 @@ class RowsIndex:
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
         max_arrow_data_in_memory: int,
-        unsupported_features: List[FeatureType] = [],
+        unsupported_features: list[FeatureType] = [],
     ) -> ParquetIndexWithMetadata:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
@@ -334,8 +334,8 @@ class Indexer:
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
-        unsupported_features: List[FeatureType] = [],
-        all_columns_supported_datasets_allow_list: Union[Literal["all"], List[str]] = "all",
+        unsupported_features: list[FeatureType] = [],
+        all_columns_supported_datasets_allow_list: Union[Literal["all"], list[str]] = "all",
         hf_token: Optional[str] = None,
     ):
         self.processing_graph = processing_graph

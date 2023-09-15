@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from typing import List, Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -19,7 +18,7 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitNamesResponse, float]:
+def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitNamesResponse, float]:
     """
     Get the response of /splits for one specific dataset on huggingface.co
     computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
@@ -48,9 +47,9 @@ def compute_dataset_split_names_response(dataset: str) -> Tuple[DatasetSplitName
 
     split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:
-        splits: List[FullSplitItem] = []
-        pending: List[FullConfigItem] = []
-        failed: List[FailedConfigItem] = []
+        splits: list[FullSplitItem] = []
+        pending: list[FullConfigItem] = []
+        failed: list[FailedConfigItem] = []
         total = 0
         for config in config_names:
             total += 1

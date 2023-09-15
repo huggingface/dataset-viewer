@@ -59,7 +59,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
             },
             processing_step=test_processing_step,
             app_config=app_config,
-        )
+        ).validate()
     assert exc_info.value.code == "ParameterMissingError"
 
 
@@ -96,25 +96,22 @@ def test_creation(
     )
 
     if exception_name is None:
-        assert (
-            DummySplitJobRunner(
-                job_info={
-                    "job_id": "job_id",
-                    "type": test_processing_step.job_type,
-                    "params": {
-                        "dataset": dataset,
-                        "revision": "revision",
-                        "config": config,
-                        "split": split,
-                    },
-                    "priority": Priority.NORMAL,
-                    "difficulty": 50,
+        DummySplitJobRunner(
+            job_info={
+                "job_id": "job_id",
+                "type": test_processing_step.job_type,
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": split,
                 },
-                processing_step=test_processing_step,
-                app_config=app_config,
-            )
-            is not None
-        )
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            processing_step=test_processing_step,
+            app_config=app_config,
+        ).validate()
     else:
         with pytest.raises(CustomError) as exc_info:
             DummySplitJobRunner(
@@ -132,5 +129,5 @@ def test_creation(
                 },
                 processing_step=test_processing_step,
                 app_config=app_config,
-            )
+            ).validate()
         assert exc_info.value.code == exception_name

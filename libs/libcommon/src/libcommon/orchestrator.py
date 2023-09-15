@@ -4,7 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Union
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -30,15 +30,15 @@ from libcommon.utils import JobInfo, JobResult, Priority
 
 @dataclass
 class CacheStatus:
-    cache_has_different_git_revision: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_old: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_outdated_by_parent: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_empty: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_error_to_retry: Dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_job_runner_obsolete: Dict[str, ArtifactState] = field(default_factory=dict)
-    up_to_date: Dict[str, ArtifactState] = field(default_factory=dict)
+    cache_has_different_git_revision: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_old: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_outdated_by_parent: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_empty: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_error_to_retry: dict[str, ArtifactState] = field(default_factory=dict)
+    cache_is_job_runner_obsolete: dict[str, ArtifactState] = field(default_factory=dict)
+    up_to_date: dict[str, ArtifactState] = field(default_factory=dict)
 
-    def as_response(self) -> Dict[str, List[str]]:
+    def as_response(self) -> dict[str, list[str]]:
         return {
             "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
             "cache_is_old": sorted(self.cache_is_old.keys()),
@@ -52,9 +52,9 @@ class CacheStatus:
 
 @dataclass
 class QueueStatus:
-    in_process: Set[str] = field(default_factory=set)
+    in_process: set[str] = field(default_factory=set)
 
-    def as_response(self) -> Dict[str, List[str]]:
+    def as_response(self) -> dict[str, list[str]]:
         return {"in_process": sorted(self.in_process)}
 
 
@@ -70,7 +70,7 @@ class Task(ABC):
 
 @dataclass
 class CreateJobsTask(Task):
-    job_infos: List[JobInfo] = field(default_factory=list)
+    job_infos: list[JobInfo] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         # for debug and testing
@@ -121,7 +121,7 @@ SupportedTask = Union[CreateJobsTask, DeleteJobsTask]
 
 @dataclass
 class Plan:
-    tasks: List[SupportedTask] = field(init=False)
+    tasks: list[SupportedTask] = field(init=False)
 
     def __post_init__(self) -> None:
         self.tasks = []
@@ -140,7 +140,7 @@ class Plan:
             task.run()
         return len(self.tasks)
 
-    def as_response(self) -> List[str]:
+    def as_response(self) -> list[str]:
         return sorted(task.id for task in self.tasks)
 
 
@@ -189,9 +189,9 @@ class AfterJobPlan(Plan):
             job_types=[next_processing_step.job_type for next_processing_step in next_processing_steps],
         )
 
-        self.job_infos_to_create: List[JobInfo] = []
-        config_names: Optional[List[str]] = None
-        split_names: Optional[List[str]] = None
+        self.job_infos_to_create: list[JobInfo] = []
+        config_names: Optional[list[str]] = None
+        split_names: Optional[list[str]] = None
 
         # filter to only get the jobs that are not already in the queue
         for next_processing_step in next_processing_steps:
@@ -320,7 +320,7 @@ class DatasetBackfillPlan(Plan):
     processing_graph: ProcessingGraph
     revision: str
     cache_max_days: int
-    error_codes_to_retry: Optional[List[str]] = None
+    error_codes_to_retry: Optional[list[str]] = None
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
 
@@ -412,7 +412,7 @@ class DatasetBackfillPlan(Plan):
 
     def _get_artifact_states_for_step(
         self, processing_step: ProcessingStep, config: Optional[str] = None, split: Optional[str] = None
-    ) -> List[ArtifactState]:
+    ) -> list[ArtifactState]:
         """Get the artifact states for a step.
 
         Args:
@@ -541,7 +541,7 @@ class DatasetBackfillPlan(Plan):
 
     def _create_plan(self) -> None:
         pending_jobs_to_delete_df = self.pending_jobs_df.copy()
-        job_infos_to_create: List[JobInfo] = []
+        job_infos_to_create: list[JobInfo] = []
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
@@ -583,7 +583,7 @@ class DatasetOrchestrator:
     processing_graph: ProcessingGraph
 
     def set_revision(
-        self, revision: str, priority: Priority, error_codes_to_retry: List[str], cache_max_days: int
+        self, revision: str, priority: Priority, error_codes_to_retry: list[str], cache_max_days: int
     ) -> None:
         """
         Set the current revision of the dataset.
@@ -594,7 +594,7 @@ class DatasetOrchestrator:
         Args:
             revision (str): The new revision of the dataset.
             priority (Priority): The priority of the jobs to create.
-            error_codes_to_retry (List[str]): The error codes for which the jobs should be retried.
+            error_codes_to_retry (list[str]): The error codes for which the jobs should be retried.
             cache_max_days (int): The maximum number of days for which the cache is considered valid.
 
         Returns:
@@ -699,7 +699,7 @@ class DatasetOrchestrator:
         """
         return has_some_cache(dataset=self.dataset)
 
-    def has_pending_ancestor_jobs(self, processing_step_names: List[str]) -> bool:
+    def has_pending_ancestor_jobs(self, processing_step_names: list[str]) -> bool:
         """
         Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
           in the cache in the future. This method is used when a cache entry is missing in the API,
@@ -713,7 +713,7 @@ class DatasetOrchestrator:
             consider that the artifact could exist.
 
         Args:
-            processing_step_names (List[str]): The processing step names (artifacts) to check.
+            processing_step_names (list[str]): The processing step names (artifacts) to check.
 
         Returns:
             bool: True if any of the artifact could exist, False otherwise.
@@ -721,7 +721,7 @@ class DatasetOrchestrator:
         Raises:
             ValueError: If any of the processing step does not exist.
         """
-        job_types: Set[str] = set()
+        job_types: set[str] = set()
         for processing_step_name in processing_step_names:
             try:
                 processing_step = self.processing_graph.get_processing_step(processing_step_name)
@@ -737,7 +737,7 @@ class DatasetOrchestrator:
         return Queue().has_pending_jobs(dataset=self.dataset, job_types=list(job_types))
 
     def backfill(
-        self, revision: str, priority: Priority, cache_max_days: int, error_codes_to_retry: Optional[List[str]] = None
+        self, revision: str, priority: Priority, cache_max_days: int, error_codes_to_retry: Optional[list[str]] = None
     ) -> int:
         """
         Backfill the cache for a given revision.
@@ -746,7 +746,7 @@ class DatasetOrchestrator:
             revision (str): The revision.
             priority (Priority): The priority of the jobs.
             cache_max_days (int): The maximum number of days to keep the cache.
-            error_codes_to_retry (Optional[List[str]]): The error codes for which the jobs should be retried.
+            error_codes_to_retry (Optional[list[str]]): The error codes for which the jobs should be retried.
 
         Returns:
             int: The number of jobs created.

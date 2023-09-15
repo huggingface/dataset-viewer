@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, Callable, Mapping
+from typing import Any
 
 import pytest
 from libcommon.constants import (

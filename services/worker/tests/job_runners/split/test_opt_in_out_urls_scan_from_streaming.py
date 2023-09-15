@@ -2,9 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from asyncio import Semaphore
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any, Callable, List, Mapping
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -35,7 +36,7 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunn
 
 
 async def mock_check_spawning(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
+    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
 ) -> Any:
     return {"urls": [{"url": url, "optIn": "optIn" in url, "optOut": "optOut" in url} for url in image_urls]}
 

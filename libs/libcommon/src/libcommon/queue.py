@@ -7,11 +7,12 @@ import logging
 import time
 import types
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
+from typing import Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
@@ -60,7 +61,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 
@@ -97,8 +98,8 @@ class CountByStatus(TypedDict):
 
 
 class DumpByPendingStatus(TypedDict):
-    waiting: List[JobDict]
-    started: List[JobDict]
+    waiting: list[JobDict]
+    started: list[JobDict]
 
 
 class EmptyQueueError(Exception):
@@ -122,8 +123,8 @@ class NoWaitingJobError(Exception):
 
 
 class JobQueryFilters(TypedDict, total=False):
-    type__nin: List[str]
-    type__in: List[str]
+    type__nin: list[str]
+    type__in: list[str]
     difficulty__gte: int
     difficulty__lte: int
 
@@ -391,7 +392,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return self
 
     def __exit__(
-        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+        self, exctype: Optional[type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
     ) -> Literal[False]:
         self.release()
         return False
@@ -484,13 +485,13 @@ class Queue:
             difficulty=difficulty,
         ).save()
 
-    def create_jobs(self, job_infos: List[JobInfo]) -> int:
+    def create_jobs(self, job_infos: list[JobInfo]) -> int:
         """Creates jobs in the queue.
 
         They are created in the waiting state.
 
         Args:
-            job_infos (`List[JobInfo]`): The jobs to be created.
+            job_infos (`list[JobInfo]`): The jobs to be created.
 
         Returns:
             `int`: The number of created jobs. 0 if we had an exception.
@@ -524,7 +525,7 @@ class Queue:
         except Exception:
             return 0
 
-    def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
+    def cancel_jobs_by_job_id(self, job_ids: list[str]) -> int:
         """Cancel jobs from the queue.
 
         If the job ids are not valid, they are ignored.
@@ -911,7 +912,7 @@ class Queue:
             > 0
         )
 
-    def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
+    def _get_df(self, jobs: list[FlatJobInfo]) -> pd.DataFrame:
         return pd.DataFrame(
             {
                 "job_id": pd.Series([job["job_id"] for job in jobs], dtype="str"),
@@ -941,7 +942,7 @@ class Queue:
         )
         # ^ does not seem optimal at all, but I get the types right
 
-    def get_pending_jobs_df(self, dataset: str, job_types: Optional[List[str]] = None) -> pd.DataFrame:
+    def get_pending_jobs_df(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
@@ -952,7 +953,7 @@ class Queue:
             ]
         )
 
-    def has_pending_jobs(self, dataset: str, job_types: Optional[List[str]] = None) -> bool:
+    def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
@@ -988,7 +989,7 @@ class Queue:
             "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
         }
 
-    def get_dump_with_status(self, status: Status, job_type: str) -> List[JobDict]:
+    def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
         """Get the dump of the jobs with a given status and a given type.
 
         Args:
@@ -1009,7 +1010,7 @@ class Queue:
             "started": self.get_dump_with_status(job_type=job_type, status=Status.STARTED),
         }
 
-    def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> List[JobDict]:
+    def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> list[JobDict]:
         """Get the pending jobs of a dataset for a given job type.
 
         Returns: an array of the pending jobs for the dataset and the given job type
@@ -1034,7 +1035,7 @@ class Queue:
         # no need to update metrics since it is just the last_heartbeat
         job.update(last_heartbeat=get_datetime())
 
-    def get_zombies(self, max_seconds_without_heartbeat: float) -> List[JobInfo]:
+    def get_zombies(self, max_seconds_without_heartbeat: float) -> list[JobInfo]:
         """Get the zombie jobs.
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.

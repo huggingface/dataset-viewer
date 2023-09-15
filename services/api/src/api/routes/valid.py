@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Set, TypedDict
+from typing import TypedDict
 
 from libapi.exceptions import UnexpectedApiError
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
@@ -15,8 +15,8 @@ from starlette.responses import Response
 
 
 class ValidContent(TypedDict):
-    viewer: List[str]
-    preview: List[str]
+    viewer: list[str]
+    preview: list[str]
 
 
 @dataclass
@@ -25,10 +25,10 @@ class ValidDatasets:
     content: ValidContent = field(init=False)
 
     def __post_init__(self) -> None:
-        _viewer_set: Set[str] = self._get_valid_set(
+        _viewer_set: set[str] = self._get_valid_set(
             processing_steps=self.processing_graph.get_processing_steps_enables_viewer()
         )
-        _preview_set: Set[str] = self._get_valid_set(
+        _preview_set: set[str] = self._get_valid_set(
             processing_steps=self.processing_graph.get_processing_steps_enables_preview()
         ).difference(_viewer_set)
         self.content = ValidContent(
@@ -36,17 +36,17 @@ class ValidDatasets:
             preview=sorted(_preview_set),
         )
 
-    def _get_valid_set(self, processing_steps: List[ProcessingStep]) -> Set[str]:
+    def _get_valid_set(self, processing_steps: list[ProcessingStep]) -> set[str]:
         """Returns the list of the valid datasets for the list of steps
 
         A dataset is considered valid if at least one response of any of the artifacts for any of the
         steps is valid.
 
         Args:
-            processing_steps (List[ProcessingStep]): The list of processing steps
+            processing_steps (list[ProcessingStep]): The list of processing steps
 
         Returns:
-            List[str]: The list of valid datasets for the steps
+            list[str]: The list of valid datasets for the steps
         """
         if not processing_steps:
             return set()

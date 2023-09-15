@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Iterator, List, Optional, Type
+from collections.abc import Iterator
+from typing import Optional
 
 import pytest
 
@@ -106,7 +107,7 @@ migration_error_irreversible = MigrationErrorIrreversible(
         [migration_ok_b, migration_ok_a],
     ),
 )
-def test_collected_migrations_order_dont_matter(collected_migrations: List[Migration]) -> None:
+def test_collected_migrations_order_dont_matter(collected_migrations: list[Migration]) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
     assert plan.executed_migrations == []
@@ -132,7 +133,7 @@ def test_collected_migrations_order_dont_matter(collected_migrations: List[Migra
     ],
 )
 def test_errors_in_migration_steps(
-    collected_migrations: List[Migration], executed_migrations: List[Migration], exception: Optional[Type[Exception]]
+    collected_migrations: list[Migration], executed_migrations: list[Migration], exception: Optional[type[Exception]]
 ) -> None:
     assert DatabaseMigration.objects.distinct("version") == []
     plan = Plan(collected_migrations=collected_migrations)
@@ -162,10 +163,10 @@ def test_errors_in_migration_steps(
     ],
 )
 def test_get_planned_migrations(
-    previous_migrations: List[Migration],
-    collected_migrations: List[Migration],
-    executed_migrations: List[Migration],
-    exception: Optional[Type[Exception]],
+    previous_migrations: list[Migration],
+    collected_migrations: list[Migration],
+    executed_migrations: list[Migration],
+    exception: Optional[type[Exception]],
 ) -> None:
     for migration in previous_migrations:
         DatabaseMigration(version=migration.version, description=migration.description).save()

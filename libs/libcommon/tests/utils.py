@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
@@ -211,7 +211,7 @@ def get_dataset_backfill_plan(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[List[str]] = None,
+    error_codes_to_retry: Optional[list[str]] = None,
     cache_max_days: Optional[int] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
@@ -232,11 +232,11 @@ def assert_equality(value: Any, expected: Any, context: Optional[str] = None) ->
 
 def assert_dataset_backfill_plan(
     dataset_backfill_plan: DatasetBackfillPlan,
-    cache_status: Dict[str, List[str]],
-    queue_status: Dict[str, List[str]],
-    tasks: List[str],
-    config_names: Optional[List[str]] = None,
-    split_names_in_first_config: Optional[List[str]] = None,
+    cache_status: dict[str, list[str]],
+    queue_status: dict[str, list[str]],
+    tasks: list[str],
+    config_names: Optional[list[str]] = None,
+    split_names_in_first_config: Optional[list[str]] = None,
 ) -> None:
     if config_names is not None:
         assert_equality(dataset_backfill_plan.dataset_state.config_names, config_names, context="config_names")
@@ -332,7 +332,7 @@ def compute_all(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[List[str]] = None,
+    error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
     max_runs = 100

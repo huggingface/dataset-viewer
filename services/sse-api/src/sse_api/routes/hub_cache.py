@@ -5,7 +5,7 @@ import dataclasses
 import json
 import logging
 from asyncio import CancelledError
-from typing import AsyncGenerator, AsyncIterable
+from collections.abc import AsyncGenerator, AsyncIterable
 
 from libapi.utils import Endpoint
 from sse_starlette import EventSourceResponse, ServerSentEvent

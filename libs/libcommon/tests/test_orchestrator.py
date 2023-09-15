@@ -2,7 +2,6 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
-from typing import List
 
 import pytest
 
@@ -63,7 +62,7 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 )
 def test_after_job_plan(
     processing_graph: ProcessingGraph,
-    artifacts_to_create: List[str],
+    artifacts_to_create: list[str],
 ) -> None:
     job_info = artifact_id_to_job_info(ARTIFACT_DA)
     # put the cache (to be able to get the config names - case PROCESSING_GRAPH_FAN_IN_OUT)
@@ -143,7 +142,7 @@ def test_after_job_plan_delete() -> None:
 )
 def test_finish_job(
     processing_graph: ProcessingGraph,
-    artifacts_to_create: List[str],
+    artifacts_to_create: list[str],
 ) -> None:
     Queue().add_job(
         dataset=DATASET_NAME,
@@ -202,7 +201,7 @@ def test_finish_job(
 )
 def test_set_revision(
     processing_graph: ProcessingGraph,
-    first_artifacts: List[str],
+    first_artifacts: list[str],
 ) -> None:
     dataset_orchestrator = DatasetOrchestrator(dataset=DATASET_NAME, processing_graph=processing_graph)
 
@@ -236,7 +235,7 @@ def test_set_revision(
 )
 def test_set_revision_handle_existing_jobs(
     processing_graph: ProcessingGraph,
-    first_artifacts: List[str],
+    first_artifacts: list[str],
 ) -> None:
     # create two pending jobs for DA
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
@@ -273,8 +272,8 @@ def test_set_revision_handle_existing_jobs(
 )
 def test_has_pending_ancestor_jobs(
     processing_graph: ProcessingGraph,
-    pending_artifacts: List[str],
-    processing_step_names: List[str],
+    pending_artifacts: list[str],
+    processing_step_names: list[str],
     expected_has_pending_ancestor_jobs: bool,
 ) -> None:
     Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])

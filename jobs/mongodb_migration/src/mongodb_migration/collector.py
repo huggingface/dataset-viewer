@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import List
-
 from libcommon.constants import (
     CACHE_METRICS_COLLECTION,
     METRICS_MONGOENGINE_ALIAS,
@@ -68,7 +66,7 @@ from mongodb_migration.renaming_migrations import (
 
 # TODO: add a way to automatically collect migrations from the migrations/ folder
 class MigrationsCollector:
-    def get_migrations(self) -> List[Migration]:
+    def get_migrations(self) -> list[Migration]:
         return [
             MigrationExample(version="20221110230400", description="example"),
             MigrationAddForceToJob(

@@ -2,7 +2,8 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Any, List, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from libcommon.constants import QUEUE_COLLECTION_JOBS, QUEUE_MONGOENGINE_ALIAS
 from mongoengine.connection import get_db
@@ -12,7 +13,7 @@ from mongodb_migration.migration import IrreversibleMigrationError, Migration
 field_name = "force"
 
 
-def get_index_names(index_information: Mapping[str, Any], field_name: str) -> List[str]:
+def get_index_names(index_information: Mapping[str, Any], field_name: str) -> list[str]:
     return [
         name
         for name, value in index_information.items()

@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from datetime import datetime
-from typing import List, Optional, Set, Tuple
+from typing import Optional
 
 import pytest
 
@@ -76,7 +76,7 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 )
 def test_initial_state(
     processing_graph: ProcessingGraph,
-    cache_is_empty: List[str],
+    cache_is_empty: list[str],
 ) -> None:
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
@@ -110,7 +110,7 @@ def test_initial_state(
 )
 def test_da_is_computed(
     processing_graph: ProcessingGraph,
-    cache_is_empty: List[str],
+    cache_is_empty: list[str],
 ) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
 
@@ -144,7 +144,7 @@ def test_da_is_computed(
 )
 def test_ca_1_is_computed(
     processing_graph: ProcessingGraph,
-    cache_is_empty: List[str],
+    cache_is_empty: list[str],
 ) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
     put_cache(step=STEP_CA, dataset=DATASET_NAME, revision=REVISION_NAME, config=CONFIG_NAME_1)
@@ -192,7 +192,7 @@ def test_ca_1_is_computed(
     ],
 )
 def test_plan_one_job_creation_and_termination(
-    processing_graph: ProcessingGraph, new_1: List[str], in_process_2: List[str], new_2: List[str]
+    processing_graph: ProcessingGraph, new_1: list[str], in_process_2: list[str], new_2: list[str]
 ) -> None:
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
@@ -273,8 +273,8 @@ def test_plan_one_job_creation_and_termination(
         (PROCESSING_GRAPH_PARALLEL, [{ARTIFACT_DA, ARTIFACT_DG, ARTIFACT_DH, ARTIFACT_DI}, set()]),
     ],
 )
-def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph, to_backfill: List[Set[str]]) -> None:
-    previous_artifacts: Set[str] = set()
+def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph, to_backfill: list[set[str]]) -> None:
+    previous_artifacts: set[str] = set()
     for artifacts_to_backfill in to_backfill:
         is_empty = sorted(artifacts_to_backfill - previous_artifacts)
         is_outdated_by_parent = sorted(artifacts_to_backfill.intersection(previous_artifacts))
@@ -342,7 +342,7 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
         (PROCESSING_GRAPH_PARALLEL, [ARTIFACT_DA, ARTIFACT_DG, ARTIFACT_DH, ARTIFACT_DI]),
     ],
 )
-def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: List[str]) -> None:
+def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[str]) -> None:
     compute_all(processing_graph=processing_graph)
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
@@ -371,7 +371,7 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: List[st
     ],
 )
 def test_plan_retry_error_and_outdated_by_parent(
-    processing_graph: ProcessingGraph, up_to_date: List[str], is_outdated_by_parent: List[str]
+    processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     error_code = "ERROR_CODE_TO_RETRY"
     error_codes_to_retry = [error_code]
@@ -455,7 +455,7 @@ def test_plan_old(days_ago: int, is_old: bool) -> None:
     ],
 )
 def test_plan_outdated_by_parent(
-    processing_graph: ProcessingGraph, up_to_date: List[str], is_outdated_by_parent: List[str]
+    processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
@@ -500,7 +500,7 @@ def test_plan_outdated_by_parent(
     ],
 )
 def test_plan_job_runner_version_and_outdated_by_parent(
-    processing_graph: ProcessingGraph, up_to_date: List[str], is_outdated_by_parent: List[str]
+    processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
@@ -545,7 +545,7 @@ def test_plan_job_runner_version_and_outdated_by_parent(
     ],
 )
 def test_plan_git_revision_and_outdated_by_parent(
-    processing_graph: ProcessingGraph, up_to_date: List[str], is_outdated_by_parent: List[str]
+    processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
@@ -592,7 +592,7 @@ def test_plan_git_revision_and_outdated_by_parent(
     ],
 )
 def test_plan_fan_in_updated(
-    processing_graph: ProcessingGraph, up_to_date: List[str], is_outdated_by_parent: List[str]
+    processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     compute_all(processing_graph=processing_graph)
 
@@ -668,10 +668,10 @@ def test_plan_fan_in_updated(
 )
 def test_plan_incoherent_state(
     processing_graph: ProcessingGraph,
-    initial: List[str],
-    up_to_date: List[str],
-    is_empty: List[str],
-    unknown: List[str],
+    initial: list[str],
+    up_to_date: list[str],
+    is_empty: list[str],
+    unknown: list[str],
 ) -> None:
     for artifact in initial:
         if artifact == ARTIFACT_SA_1_1:
@@ -724,7 +724,7 @@ def test_plan_incoherent_state(
     )
 
 
-JobSpec = Tuple[Priority, Status, Optional[datetime]]
+JobSpec = tuple[Priority, Status, Optional[datetime]]
 
 OLD = datetime.strptime("20000101", "%Y%m%d")
 NEW = datetime.strptime("20000102", "%Y%m%d")
@@ -803,10 +803,10 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
     ],
 )
 def test_delete_jobs(
-    existing_jobs: List[JobSpec],
+    existing_jobs: list[JobSpec],
     expected_create_job: bool,
     expected_delete_jobs: bool,
-    expected_jobs_after_backfill: List[JobSpec],
+    expected_jobs_after_backfill: list[JobSpec],
 ) -> None:
     processing_graph = PROCESSING_GRAPH_ONE_STEP
 

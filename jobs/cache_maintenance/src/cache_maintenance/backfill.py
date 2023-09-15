@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from libcommon.dataset import get_supported_dataset_infos
 from libcommon.orchestrator import DatasetOrchestrator
@@ -15,7 +15,7 @@ def backfill_cache(
     hf_endpoint: str,
     cache_max_days: int,
     hf_token: Optional[str] = None,
-    error_codes_to_retry: Optional[List[str]] = None,
+    error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
     logging.info("backfill supported datasets")
     supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)

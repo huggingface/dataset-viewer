@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Callable
 from http import HTTPStatus
-from typing import Any, Callable, List
+from typing import Any
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
@@ -184,8 +185,8 @@ def test_compute(
     dataset: str,
     config_names_status: HTTPStatus,
     config_names_content: Any,
-    config_upstream_status: List[HTTPStatus],
-    config_upstream_content: List[Any],
+    config_upstream_status: list[HTTPStatus],
+    config_upstream_content: list[Any],
     expected_error_code: str,
     expected_content: Any,
     should_raise: bool,

@@ -4,9 +4,10 @@
 import base64
 import enum
 import mimetypes
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
-from typing import Any, Dict, List, Mapping, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 import orjson
 
@@ -76,24 +77,24 @@ class SplitHubFile(TypedDict):
     size: int
 
 
-Row = Dict[str, Any]
+Row = dict[str, Any]
 
 
 class RowItem(TypedDict):
     row_idx: int
     row: Row
-    truncated_cells: List[str]
+    truncated_cells: list[str]
 
 
 class FeatureItem(TypedDict):
     feature_idx: int
     name: str
-    type: Dict[str, Any]
+    type: dict[str, Any]
 
 
 class PaginatedResponse(TypedDict):
-    features: List[FeatureItem]
-    rows: List[RowItem]
+    features: list[FeatureItem]
+    rows: list[RowItem]
     num_rows_total: int
     num_rows_per_page: int
 

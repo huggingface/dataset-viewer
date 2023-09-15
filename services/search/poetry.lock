@@ -853,6 +853,18 @@ pycodestyle = ">=2.7.0,<2.8.0"
 pyflakes = ">=2.3.0,<2.4.0"
 
 [[package]]
+name = "flake8-pep585"
+version = "0.1.7"
+description = "flake8 plugin to enforce new-style type hints (PEP 585)"
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "flake8-pep585-0.1.7.tar.gz", hash = "sha256:363f9413aa12849ee9bfdc437c4e79cc4e0fb3af4abbb61cfed79860e349e0e0"},
+    {file = "flake8_pep585-0.1.7-py3-none-any.whl", hash = "sha256:d5c7a5858382d6ca8c56554bd8bed090e12c378b98f6d7c6502abed9a40a658e"},
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.4.0"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -3503,4 +3515,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "176e011dee76ab4f4f3ce19177629b29290e9bc29744799c1c1925af67246142"
+content-hash = "8730dc2a5a6c79c7c3cd71ae1d89c3651bc9d8c0902461c9e1671e30bf484f1d"

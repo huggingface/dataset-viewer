@@ -3,19 +3,20 @@
 # adapted from https://docs.mongoengine.org/guide/migration.html#post-processing-checks
 
 import logging
-from typing import Callable, Iterator, List, Optional, Type, TypeVar
+from collections.abc import Callable, Iterator
+from typing import Optional, TypeVar
 
 from mongoengine import Document
 from pymongo.collection import Collection
 
 # --- some typing subtleties, see https://github.com/sbdchd/mongo-types
 U = TypeVar("U", bound=Document)
-DocumentClass = Type[U]
+DocumentClass = type[U]
 CustomValidation = Callable[[U], None]
 # --- end
 
 
-def get_random_oids(collection: Collection, sample_size: int) -> List[int]:
+def get_random_oids(collection: Collection, sample_size: int) -> list[int]:
     pipeline = [{"$project": {"_id": 1}}, {"$sample": {"size": sample_size}}]
     return [s["_id"] for s in collection.aggregate(pipeline)]
 

@@ -1,6 +1,6 @@
 import asyncio
 import socket
-from typing import List, Optional
+from typing import Optional
 
 import uvicorn
 from starlette.applications import Starlette
@@ -22,12 +22,12 @@ class UvicornServer(uvicorn.Server):
         self.did_start = asyncio.Event()
         self.did_close = asyncio.Event()
 
-    async def start(self, sockets: Optional[List[socket.socket]] = None) -> None:
+    async def start(self, sockets: Optional[list[socket.socket]] = None) -> None:
         self.serve_task = asyncio.create_task(self.serve(sockets=sockets))  # type: ignore
         self.serve_task.add_done_callback(lambda _: self.did_close.set())
         await self.did_start.wait()
 
-    async def startup(self, sockets: Optional[List[socket.socket]] = None) -> None:
+    async def startup(self, sockets: Optional[list[socket.socket]] = None) -> None:
         await super().startup(sockets=sockets)  # type: ignore
         self.did_start.set()
 

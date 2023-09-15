@@ -28,6 +28,8 @@ class ConfigJobRunner(DatasetJobRunner):
         if job_info["params"]["config"] is None:
             raise ParameterMissingError("'config' parameter is required")
         self.config = job_info["params"]["config"]
+
+    def validate(self) -> None:
         check_config_exists(dataset=self.dataset, config=self.config)
 
 

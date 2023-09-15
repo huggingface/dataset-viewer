@@ -3,8 +3,9 @@
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from http import HTTPStatus
-from typing import List, Mapping, Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -27,7 +28,7 @@ from starlette.responses import Response
 
 from api.config import EndpointConfig
 
-StepsByInputType = Mapping[InputType, List[ProcessingStep]]
+StepsByInputType = Mapping[InputType, list[ProcessingStep]]
 
 StepsByInputTypeAndEndpoint = Mapping[str, StepsByInputType]
 
@@ -54,7 +55,7 @@ class EndpointsDefinition:
 
 # TODO: remove once full scan is implemented for spawning urls scan
 class OptInOutUrlsCountResponse(TypedDict):
-    urls_columns: List[str]
+    urls_columns: list[str]
     num_opt_in_urls: int
     num_opt_out_urls: int
     num_urls: int
@@ -100,7 +101,7 @@ class InputTypeValidator(ABC):
     @abstractmethod
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         pass
 
     @staticmethod
@@ -125,7 +126,7 @@ class DatasetInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, None, None)
 
 
@@ -140,7 +141,7 @@ class ConfigInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, config, None)
 
 
@@ -155,12 +156,12 @@ class SplitInputTypeValidator(InputTypeValidator):
 
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
         return (dataset, config, split)
 
 
-def get_input_type_validators_by_priority(steps_by_input_type: StepsByInputType) -> List[InputTypeValidator]:
-    input_type_order: List[InputType] = ["split", "config", "dataset"]
+def get_input_type_validators_by_priority(steps_by_input_type: StepsByInputType) -> list[InputTypeValidator]:
+    input_type_order: list[InputType] = ["split", "config", "dataset"]
     return [
         InputTypeValidator.from_input_type(input_type)
         for input_type in input_type_order
@@ -169,7 +170,7 @@ def get_input_type_validators_by_priority(steps_by_input_type: StepsByInputType)
 
 
 def get_input_type_validator_by_parameters(
-    validators: List[InputTypeValidator], dataset: Optional[str], config: Optional[str], split: Optional[str]
+    validators: list[InputTypeValidator], dataset: Optional[str], config: Optional[str], split: Optional[str]
 ) -> InputTypeValidator:
     error_message = "No processing steps supported for parameters"
     for validator in validators:
@@ -186,7 +187,7 @@ def create_endpoint(
     cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
-    hf_jwt_public_keys: Optional[List[str]] = None,
+    hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,

@@ -2,9 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import io
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import pyarrow as pa

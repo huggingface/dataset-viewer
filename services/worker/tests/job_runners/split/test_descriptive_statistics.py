@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Callable, List, Mapping, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -191,7 +192,7 @@ def count_expected_statistics_for_numerical_column(
 
 
 def count_expected_statistics_for_categorical_column(
-    column: pd.Series, class_labels: List[str]  # type: ignore
+    column: pd.Series, class_labels: list[str]  # type: ignore
 ) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()

@@ -365,6 +365,18 @@ pycodestyle = ">=2.7.0,<2.8.0"
 pyflakes = ">=2.3.0,<2.4.0"
 
 [[package]]
+name = "flake8-pep585"
+version = "0.1.7"
+description = "flake8 plugin to enforce new-style type hints (PEP 585)"
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "flake8-pep585-0.1.7.tar.gz", hash = "sha256:363f9413aa12849ee9bfdc437c4e79cc4e0fb3af4abbb61cfed79860e349e0e0"},
+    {file = "flake8_pep585-0.1.7-py3-none-any.whl", hash = "sha256:d5c7a5858382d6ca8c56554bd8bed090e12c378b98f6d7c6502abed9a40a658e"},
+]
+
+[[package]]
 name = "fsspec"
 version = "2023.5.0"
 description = "File-system specification"
@@ -1434,4 +1446,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "9ccb8e307b8c4e4f028c150462e0dcaa3261ed886f2ee3255373ccb9fb516c97"
+content-hash = "f6b2b3a57a7606e58ce182afdbad88660992f52c78a7f71d65ae1fd67f9562b6"
