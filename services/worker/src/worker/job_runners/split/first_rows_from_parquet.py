@@ -152,7 +152,7 @@ def compute_first_rows_response(
 class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     assets_directory: StrPath
     first_rows_config: FirstRowsConfig
-    indexed: Indexer
+    indexer: Indexer
 
     @staticmethod
     def get_job_type() -> str:
