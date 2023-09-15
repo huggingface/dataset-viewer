@@ -65,8 +65,6 @@
   value: {{ .Values.parquetAndInfo.noMaxSizeLimitDatasets | quote }}
 - name: PARQUET_AND_INFO_SOURCE_REVISION
   value: {{ .Values.parquetAndInfo.sourceRevision | quote }}
-- name: PARQUET_AND_INFO_SUPPORTED_DATASETS
-  value: {{ .Values.parquetAndInfo.supportedDatasets | quote }}
 - name: PARQUET_AND_INFO_TARGET_REVISION
   value: {{ .Values.parquetAndInfo.targetRevision | quote }}
 - name: PARQUET_AND_INFO_URL_TEMPLATE
