@@ -216,8 +216,6 @@ parquetAndInfo:
   noMaxSizeLimitDatasets: ""
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
-  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
-  supportedDatasets: ""
   # the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
   targetRevision: "refs/convert/parquet"
   # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.

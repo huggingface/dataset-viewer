@@ -138,7 +138,6 @@ parquetAndInfo:
   maxRowGroupByteSizeForCopy: "500_000_000"
   # See https://observablehq.com/@huggingface/blocked-datasets
   blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*,CyberHarem/*"
-  supportedDatasets: ""
   noMaxSizeLimitDatasets: "Open-Orca/OpenOrca"
 
 optInOutUrlsScan:
