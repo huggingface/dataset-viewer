@@ -7,7 +7,7 @@ from functools import partial
 from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Callable, Generator, List, Optional, TypedDict, Union, cast
+from typing import Callable, Generator, Optional, TypedDict, Union, cast
 from uuid import uuid4
 from collections.abc import Generator
 from os import makedirs
@@ -222,7 +222,7 @@ def create_audio_file(
     audio_file_extension: str,
     filename: str,
     storage_options: DirectoryStorageOptions,
-) -> List[AudioSource]:
+) -> list[AudioSource]:
     fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
     return [
         cast(
