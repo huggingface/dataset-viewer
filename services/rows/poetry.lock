@@ -803,6 +803,21 @@ files = [
 ]
 
 [[package]]
+name = "flake8-unused-arguments"
+version = "0.0.13"
+description = "flake8 extension to warn on unused function arguments"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flake8-unused-arguments-0.0.13.tar.gz", hash = "sha256:c5894d294424bf7915e44dff0917222c454151016f96edc55b9f847bf307f3f7"},
+    {file = "flake8_unused_arguments-0.0.13-py3-none-any.whl", hash = "sha256:df6a76b73a6ce67720332182a80f2f0a80783cab1ccae8175f39787cd3a74b31"},
+]
+
+[package.dependencies]
+flake8 = ">3.0.0"
+
+[[package]]
 name = "frozenlist"
 version = "1.3.3"
 description = "A list-like structure which implements collections.abc.MutableSequence"
@@ -3345,4 +3360,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "416fe2d4cf06da98a4fcdd81b5def1f0186c00a70113df538f0dba0c20964076"
+content-hash = "daa80bc29d22237b117a86a20ee8f45ebb656ed8bb9cabeba3a1f9896ec1886d"

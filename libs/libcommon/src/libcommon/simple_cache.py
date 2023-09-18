@@ -36,7 +36,7 @@ from libcommon.utils import JobParams, get_datetime
 U = TypeVar("U", bound=Document)
 
 
-def no_op(self, x):  # type: ignore
+def no_op(self, _):  # type: ignore
     return self
 
 

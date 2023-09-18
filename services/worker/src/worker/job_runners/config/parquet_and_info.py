@@ -1115,7 +1115,6 @@ def compute_config_parquet_and_info_response(
     target_revision: str,
     commit_message: str,
     url_template: str,
-    supported_datasets: list[str],
     blocked_datasets: list[str],
     max_dataset_size: int,
     max_external_data_files: int,
@@ -1148,9 +1147,6 @@ def compute_config_parquet_and_info_response(
             The commit message to use when storing the parquet files
         url_template (`str`):
             The template to use to build the parquet file url
-        supported_datasets (`list[str]`):
-            The list of supported datasets, saving the blocked datasets. If empty, all datasets are supported
-            (saving the blocked datasets).
         blocked_datasets (`list[str]`):
             The list of blocked datasets. If empty, no dataset is blocked.
         max_dataset_size (`int`):
@@ -1388,7 +1384,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 target_revision=self.parquet_and_info_config.target_revision,
                 commit_message=self.parquet_and_info_config.commit_message,
                 url_template=self.parquet_and_info_config.url_template,
-                supported_datasets=self.parquet_and_info_config.supported_datasets,
                 blocked_datasets=self.parquet_and_info_config.blocked_datasets,
                 max_dataset_size=self.parquet_and_info_config.max_dataset_size,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
