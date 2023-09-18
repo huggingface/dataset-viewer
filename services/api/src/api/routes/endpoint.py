@@ -25,6 +25,7 @@ from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingSte
 from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 from starlette.responses import Response
+from typing_extensions import override
 
 from api.config import EndpointConfig
 
@@ -118,12 +119,15 @@ class InputTypeValidator(ABC):
 class DatasetInputTypeValidator(InputTypeValidator):
     input_type: InputType = "dataset"
 
+    @override
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset])
 
+    @override
     def get_error_message(self) -> str:
         return "Parameter 'dataset' is required"
 
+    @override
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
     ) -> tuple[Optional[str], Optional[str], Optional[str]]:
@@ -133,12 +137,15 @@ class DatasetInputTypeValidator(InputTypeValidator):
 class ConfigInputTypeValidator(InputTypeValidator):
     input_type: InputType = "config"
 
+    @override
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset, config])
 
+    @override
     def get_error_message(self) -> str:
         return "Parameters 'config' and 'dataset' are required"
 
+    @override
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
     ) -> tuple[Optional[str], Optional[str], Optional[str]]:
@@ -148,12 +155,15 @@ class ConfigInputTypeValidator(InputTypeValidator):
 class SplitInputTypeValidator(InputTypeValidator):
     input_type: InputType = "split"
 
+    @override
     def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
         return are_valid_parameters([dataset, config, split])
 
+    @override
     def get_error_message(self) -> str:
         return "Parameters 'split', 'config' and 'dataset' are required"
 
+    @override
     def get_useful_parameters(
         self, dataset: Optional[str], config: Optional[str], split: Optional[str]
     ) -> tuple[Optional[str], Optional[str], Optional[str]]:

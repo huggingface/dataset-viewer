@@ -377,6 +377,21 @@ files = [
 ]
 
 [[package]]
+name = "flake8-unused-arguments"
+version = "0.0.13"
+description = "flake8 extension to warn on unused function arguments"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flake8-unused-arguments-0.0.13.tar.gz", hash = "sha256:c5894d294424bf7915e44dff0917222c454151016f96edc55b9f847bf307f3f7"},
+    {file = "flake8_unused_arguments-0.0.13-py3-none-any.whl", hash = "sha256:df6a76b73a6ce67720332182a80f2f0a80783cab1ccae8175f39787cd3a74b31"},
+]
+
+[package.dependencies]
+flake8 = ">3.0.0"
+
+[[package]]
 name = "fsspec"
 version = "2023.5.0"
 description = "File-system specification"
@@ -1446,4 +1461,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "f6b2b3a57a7606e58ce182afdbad88660992f52c78a7f71d65ae1fd67f9562b6"
+content-hash = "eedc4a3a6771cb94f9a8eb133ad96cfd4fd12f9190993492d5eeab485ef616cf"

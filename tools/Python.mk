@@ -15,7 +15,8 @@ lock:
 quality:
 	poetry run black --check tests src
 	poetry run isort --check-only tests src
-	poetry run flake8 tests src
+	poetry run flake8 src
+	poetry run flake8 tests --ignore=U100
 	poetry run mypy tests src
 	poetry run bandit -r src
 	$(MAKE) pip-audit

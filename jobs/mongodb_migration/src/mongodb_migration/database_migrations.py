@@ -18,7 +18,7 @@ from mongodb_migration.constants import (
 U = TypeVar("U", bound=Document)
 
 
-def no_op(self, x):  # type: ignore
+def no_op(self, _):  # type: ignore
     return self
 
 
