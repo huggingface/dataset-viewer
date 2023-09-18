@@ -1270,11 +1270,7 @@ def compute_config_parquet_and_info_response(
             hf_token=hf_token,
         )
         dataset_info = get_dataset_info_for_supported_datasets(
-            dataset=dataset,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            revision=source_revision,
-            files_metadata=True,
+            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
         )
         if is_dataset_too_big(
             dataset_info=dataset_info,
@@ -1289,6 +1285,7 @@ def compute_config_parquet_and_info_response(
             )
         else:
             parquet_operations = convert_to_parquet(builder)
+
     try:
         # ^ timeouts after ~7 minutes
         with lock.git_branch(
