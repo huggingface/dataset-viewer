@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 from environs import Env
 from libcommon.config import (
@@ -18,7 +18,7 @@ CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY = None
 
 @dataclass(frozen=True)
 class BackfillConfig:
-    error_codes_to_retry: Optional[List[str]] = CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY
+    error_codes_to_retry: Optional[list[str]] = CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY
 
     @classmethod
     def from_env(cls) -> "BackfillConfig":

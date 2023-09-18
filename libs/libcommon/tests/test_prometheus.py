@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from http import HTTPStatus
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 import pytest
 
@@ -51,7 +51,7 @@ def test_prometheus() -> None:
         assert name not in metrics, metrics
 
 
-def create_key(suffix: str, labels: Dict[str, str], le: Optional[str] = None) -> str:
+def create_key(suffix: str, labels: dict[str, str], le: Optional[str] = None) -> str:
     items = list(labels.items())
     if le:
         items.append(("le", le))
@@ -60,7 +60,7 @@ def create_key(suffix: str, labels: Dict[str, str], le: Optional[str] = None) ->
 
 
 def check_histogram_metric(
-    metrics: Dict[str, float], method: str, step: str, context: str, events: int, duration: float
+    metrics: dict[str, float], method: str, step: str, context: str, events: int, duration: float
 ) -> None:
     labels = {"context": context, "method": method, "step": step}
     assert metrics[create_key("count", labels)] == events, metrics
@@ -119,10 +119,10 @@ def test_nested_step_profiler() -> None:
 
 @dataclass
 class Metrics:
-    metrics: Dict[str, float]
+    metrics: dict[str, float]
 
-    def forge_metric_key(self, name: str, content: Dict[str, str]) -> str:
-        local_content: Dict[str, str] = dict(content)
+    def forge_metric_key(self, name: str, content: dict[str, str]) -> str:
+        local_content: dict[str, str] = dict(content)
         if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
             local_content["pid"] = str(os.getpid())
         inner = ",".join([f'{key}="{value}"' for key, value in sorted(local_content.items())])

@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List
 
 from mongodb_migration.database_migrations import DatabaseMigration
 from mongodb_migration.migration import Migration
@@ -13,17 +12,17 @@ class SavedMigrationsError(Exception):
 
 
 class Plan:
-    collected_migrations: List[Migration]
-    executed_migrations: List[Migration]
+    collected_migrations: list[Migration]
+    executed_migrations: list[Migration]
 
-    def __init__(self, collected_migrations: List[Migration]):
+    def __init__(self, collected_migrations: list[Migration]):
         self.collected_migrations = collected_migrations
         self.executed_migrations = []
 
-    def get_saved_migrations_versions(self) -> List[str]:
+    def get_saved_migrations_versions(self) -> list[str]:
         return DatabaseMigration.objects().distinct("version")
 
-    def get_planned_migrations(self) -> List[Migration]:
+    def get_planned_migrations(self) -> list[Migration]:
         saved_migrations_versions = sorted(self.get_saved_migrations_versions())
         collected_migrations = sorted(self.collected_migrations, key=lambda m: m.version)
         first_collected_migrations_versions = [

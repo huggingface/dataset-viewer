@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Mapping
 from io import BufferedReader
-from typing import Mapping, Tuple, Union
+from typing import Union
 
 from requests import PreparedRequest
 from responses import Response
@@ -10,7 +11,7 @@ from responses import Response
 _Body = Union[str, BaseException, Response, BufferedReader, bytes]
 
 
-def request_callback(request: PreparedRequest) -> Union[Exception, Tuple[int, Mapping[str, str], _Body]]:
+def request_callback(request: PreparedRequest) -> Union[Exception, tuple[int, Mapping[str, str], _Body]]:
     # return 404 if a token has been provided,
     # and 200 if none has been provided
     # there is no logic behind this behavior, it's just to test if th

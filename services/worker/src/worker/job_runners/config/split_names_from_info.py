@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from typing import List
 
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
@@ -45,7 +44,7 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
     except Exception as e:
         raise PreviousStepFormatError("Previous step 'config-info' did not return the expected content.") from e
 
-    split_name_items: List[FullSplitItem] = [
+    split_name_items: list[FullSplitItem] = [
         {"dataset": dataset, "config": config, "split": str(split)} for split in splits_content
     ]
 

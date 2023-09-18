@@ -2,7 +2,6 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_HUB_CACHE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -12,7 +11,7 @@ from worker.dtos import DatasetHubCacheResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_hub_cache_response(dataset: str) -> Tuple[DatasetHubCacheResponse, float]:
+def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, float]:
     """
     Get the response of /hub-cache for one specific dataset on huggingface.co.
 
@@ -27,7 +26,7 @@ def compute_hub_cache_response(dataset: str) -> Tuple[DatasetHubCacheResponse, f
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `Tuple[DatasetHubCacheResponse, float]`: The response and the progress.
+        `tuple[DatasetHubCacheResponse, float]`: The response and the progress.
     """
     logging.info(f"get hub_cache response for {dataset=}")
 

@@ -4,7 +4,7 @@
 import json
 import os
 from io import BytesIO
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 from zlib import adler32
 
 import numpy as np
@@ -31,7 +31,7 @@ from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 
-def append_hash_suffix(string: str, json_path: Optional[List[Union[str, int]]] = None) -> str:
+def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
     """
     Hash the json path to a string.
     Args:
@@ -56,7 +56,7 @@ def image(
     value: Any,
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
-    json_path: Optional[List[Union[str, int]]] = None,
+    json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -103,7 +103,7 @@ def audio(
     value: Any,
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
-    json_path: Optional[List[Union[str, int]]] = None,
+    json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
         return None
@@ -173,7 +173,7 @@ def get_cell_value(
     featureName: str,
     fieldType: Any,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
-    json_path: Optional[List[Union[str, int]]] = None,
+    json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
@@ -305,7 +305,7 @@ def get_cell_value(
 # > An array is an *ordered* sequence of zero or more values.
 # > The terms "object" and "array" come from the conventions of JavaScript.
 # from https://stackoverflow.com/a/7214312/7351594 / https://www.rfc-editor.org/rfc/rfc7159.html
-def to_features_list(features: Features) -> List[FeatureItem]:
+def to_features_list(features: Features) -> list[FeatureItem]:
     features_dict = features.to_dict()
     return [
         {
@@ -319,8 +319,8 @@ def to_features_list(features: Features) -> List[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features: List[FeatureType] = [],
-) -> Tuple[List[str], List[str]]:
+    unsupported_features: list[FeatureType] = [],
+) -> tuple[list[str], list[str]]:
     supported_columns, unsupported_columns = [], []
 
     for column, feature in features.items():

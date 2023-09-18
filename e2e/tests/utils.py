@@ -4,8 +4,9 @@
 import json
 import os
 import time
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 from requests import Response
@@ -116,7 +117,7 @@ def get_openapi_body_example(path: str, status: int, example_name: str) -> Any:
     return result
 
 
-def get_default_config_split() -> Tuple[str, str]:
+def get_default_config_split() -> tuple[str, str]:
     config = "default"
     split = "train"
     return config, split

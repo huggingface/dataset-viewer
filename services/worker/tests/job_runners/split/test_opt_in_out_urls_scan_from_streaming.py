@@ -2,9 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from asyncio import Semaphore
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Any, Callable, List, Mapping
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -35,7 +36,7 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunn
 
 
 async def mock_check_spawning(
-    image_urls: List[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
+    image_urls: list[str], session: ClientSession, semaphore: Semaphore, limiter: AsyncLimiter, url: str
 ) -> Any:
     return {"urls": [{"url": url, "optIn": "optIn" in url, "optOut": "optOut" in url} for url in image_urls]}
 
@@ -64,6 +65,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitOptInOutUrlsScanJobRunner(
             job_info={
                 "type": SplitOptInOutUrlsScanJobRunner.get_job_type(),

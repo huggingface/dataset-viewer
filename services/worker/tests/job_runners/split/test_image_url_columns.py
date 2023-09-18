@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable, Mapping
 from http import HTTPStatus
-from typing import Any, Callable, Mapping
+from typing import Any
 
 import pytest
 from libcommon.constants import (
@@ -46,6 +47,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitImageUrlColumnsJobRunner(
             job_info={
                 "type": SplitImageUrlColumnsJobRunner.get_job_type(),

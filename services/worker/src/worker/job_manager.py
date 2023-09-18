@@ -105,6 +105,7 @@ class JobManager:
 
     def run_job(self) -> JobResult:
         try:
+            self.job_runner.validate()
             job_result: JobResult = self.process()
         except Exception:
             job_result = {

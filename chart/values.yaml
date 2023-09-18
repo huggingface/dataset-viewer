@@ -19,6 +19,7 @@ global:
           api: 30022
           rows: 30023
           search: 30024
+          sseApi: 30025
 
 images:
   pullPolicy: IfNotPresent
@@ -59,6 +60,11 @@ images:
       registry: huggingface
       useGlobalRegistry: false
       repository: datasets-server-services-search
+      tag: sha-fb3399a
+    sseApi:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-sse-api
       tag: sha-fb3399a
     storageAdmin:
       registry: huggingface
@@ -217,8 +223,6 @@ parquetAndInfo:
   noMaxSizeLimitDatasets: ""
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
-  # comma-separated list of the supported datasets. If empty, all the datasets are processed. Defaults to empty.
-  supportedDatasets: ""
   # the git revision of the dataset where to store the parquet files. Make sure the hf_token (see the "Common" section) allows to write there. Defaults to `refs/convert/parquet`.
   targetRevision: "refs/convert/parquet"
   # the URL template to build the parquet file URLs. Defaults to `/datasets/%s/resolve/%s/%s`.
@@ -542,6 +546,29 @@ search:
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints
   maxAgeShort: "10"
+  # Directory where the uvicorn workers will write the prometheus metrics
+  # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+  prometheusMultiprocDirectory: "/tmp"
+  # Hostname - it must not be set to localhost to work in Kube!
+  uvicornHostname: "0.0.0.0"
+  # Number of uvicorn workers for running the application
+  uvicornNumWorkers: "1"
+  # Application endpoint port
+  uvicornPort: 8080
+
+  nodeSelector: {}
+  replicas: 1
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  service:
+    type: ""
+    annotations: {}
+  tolerations: []
+
+sseApi:
   # Directory where the uvicorn workers will write the prometheus metrics
   # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
   prometheusMultiprocDirectory: "/tmp"

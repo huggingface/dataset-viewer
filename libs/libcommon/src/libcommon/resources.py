@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar
 
 from mongoengine.connection import ConnectionFailure, connect, disconnect
 from pymongo import MongoClient
@@ -43,7 +43,7 @@ class Resource:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
@@ -100,6 +100,14 @@ class MongoResource(Resource):
             return True
         except ServerSelectionTimeoutError:
             return False
+
+    def create_collection(self, document: Any) -> None:
+        document.ensure_indexes()
+
+    def enable_pre_and_post_images(self, collection_name: str) -> None:
+        self._client[self.database].command(
+            "collMod", collection_name, changeStreamPreAndPostImages={"enabled": True}
+        )  # type: ignore
 
     def release(self) -> None:
         disconnect(alias=self.mongoengine_alias)

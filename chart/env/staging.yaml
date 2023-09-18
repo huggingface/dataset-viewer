@@ -50,6 +50,11 @@ images:
       useGlobalRegistry: false
       repository: datasets-server-services-search
       tag: sha-fb3399a
+    sseApi:
+      registry: huggingface
+      useGlobalRegistry: false
+      repository: datasets-server-services-sse-api
+      tag: sha-fb3399a
     storageAdmin:
       registry: huggingface
       useGlobalRegistry: false
@@ -127,7 +132,6 @@ firstRows:
 
 parquetAndInfo:
   maxDatasetSize: "500_000_000"
-  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*,CyberHarem/*"
 
 # --- jobs (pre-install/upgrade hooks) ---
 

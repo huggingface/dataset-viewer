@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Callable
+from http import HTTPStatus
 
 import pytest
 from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -44,6 +46,14 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigSplitNamesFromStreamingJobRunner(
             job_info={
                 "type": ConfigSplitNamesFromStreamingJobRunner.get_job_type(),

@@ -2,9 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Callable, List, Optional
+from typing import Optional
 
 import duckdb
 import pandas as pd
@@ -67,6 +68,22 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitDuckDbIndexJobRunner(
             job_info={
                 "type": SplitDuckDbIndexJobRunner.get_job_type(),
@@ -110,6 +127,14 @@ def get_parquet_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigParquetAndInfoJobRunner(
             job_info={
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
@@ -159,26 +184,9 @@ def test_compute(
         "gated": hub_responses_gated_duckdb_index,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
-    config_names = hub_datasets[hub_dataset_name]["config_names_response"]
     config = hub_datasets[hub_dataset_name]["config_names_response"]["config_names"][0]["config"]
-    splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     split = "train"
     partial = hub_dataset_name.startswith("partial_")
-
-    upsert_response(
-        "dataset-config-names",
-        dataset=dataset,
-        http_status=HTTPStatus.OK,
-        content=config_names,
-    )
-
-    upsert_response(
-        "config-split-names-from-streaming",
-        dataset=dataset,
-        config=config,
-        http_status=HTTPStatus.OK,
-        content=splits_response,
-    )
 
     app_config = (
         app_config
@@ -296,7 +304,7 @@ def test_compute(
         (Features({"col_1": Image()}), []),
     ],
 )
-def test_get_indexable_columns(features: Features, expected: List[str]) -> None:
+def test_get_indexable_columns(features: Features, expected: list[str]) -> None:
     indexable_columns = get_indexable_columns(features)
     assert indexable_columns == expected
 
@@ -325,7 +333,7 @@ FTS_COMMAND = (
         (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
     ],
 )
-def test_index_command(df: pd.DataFrame, query: str, expected_ids: List[int]) -> None:
+def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
     duckdb.sql(CREATE_SEQUENCE_COMMAND)
     duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns) + " df;")

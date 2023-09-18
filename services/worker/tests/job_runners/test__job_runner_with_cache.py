@@ -2,8 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import random
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Optional
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph

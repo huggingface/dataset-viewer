@@ -10,6 +10,8 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
+  replicaset: "rs0"
+  mongo-port: 27017
 jobs:
   e2e-tests:
     defaults:
@@ -36,6 +38,8 @@ jobs:
           ROWS_UVICORN_PORT: "8082"
           SEARCH_UVICORN_NUM_WORKERS: "2"
           SEARCH_UVICORN_PORT: "8083"
+          SSE_API_UVICORN_NUM_WORKERS: "2"
+          SSE_API_UVICORN_PORT: "8085"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
@@ -48,7 +52,9 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           # hub-cache
           HUB_CACHE_NUM_RESULTS_PER_PAGE: "2"
-        run: docker compose -f docker-compose-datasets-server.yml up -d
+          MONGO_PORT: ${{ env.mongo-port }}
+          MONGO_REPLICASET: ${{ env.replicaset }}
+        run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
@@ -79,6 +85,8 @@ jobs:
           ROWS_UVICORN_PORT: "8082"
           SEARCH_UVICORN_NUM_WORKERS: "2"
           SEARCH_UVICORN_PORT: "8083"
+          SSE_API_UVICORN_NUM_WORKERS: "2"
+          SSE_API_UVICORN_PORT: "8085"
           COMMON_HF_ENDPOINT: "https://hub-ci.huggingface.co"
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py

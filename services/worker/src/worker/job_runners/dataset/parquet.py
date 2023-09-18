@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_PARQUET_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -23,7 +22,7 @@ from worker.dtos import (
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_parquet_response(dataset: str) -> Tuple[DatasetParquetResponse, float]:
+def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, float]:
     """
     Get the response of dataset-parquet for one specific dataset on huggingface.co.
     Args:

@@ -2,7 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import datetime
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import numpy as np

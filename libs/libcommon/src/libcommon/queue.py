@@ -7,11 +7,12 @@ import logging
 import time
 import types
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
-from typing import Generic, List, Literal, Optional, Sequence, Type, TypedDict, TypeVar
+from typing import Generic, Literal, Optional, TypedDict, TypeVar
 from uuid import uuid4
 
 import pandas as pd
@@ -52,7 +53,7 @@ from libcommon.utils import (
 U = TypeVar("U", bound=Document)
 
 
-def no_op(self, x):  # type: ignore
+def no_op(self, _):  # type: ignore
     return self
 
 
@@ -60,7 +61,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
-    def __get__(self, instance: object, cls: Type[U]) -> QuerySet[U]:
+    def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         return QuerySet(cls, cls._get_collection())
 
 
@@ -97,8 +98,8 @@ class CountByStatus(TypedDict):
 
 
 class DumpByPendingStatus(TypedDict):
-    waiting: List[JobDict]
-    started: List[JobDict]
+    waiting: list[JobDict]
+    started: list[JobDict]
 
 
 class EmptyQueueError(Exception):
@@ -122,8 +123,8 @@ class NoWaitingJobError(Exception):
 
 
 class JobQueryFilters(TypedDict, total=False):
-    type__nin: List[str]
-    type__in: List[str]
+    type__nin: list[str]
+    type__in: list[str]
     difficulty__gte: int
     difficulty__lte: int
 
@@ -275,6 +276,29 @@ class JobTotalMetricDocument(Document):
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
+def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
+    JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
+        upsert=True,
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        inc__total=increase_by,
+    )
+
+
+def increase_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+
+
+def decrease_metric(job_type: str, status: str) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+
+
+def update_metrics_for_type(job_type: str, previous_status: str, new_status: str) -> None:
+    if job_type is not None:
+        decrease_metric(job_type=job_type, status=previous_status)
+        increase_metric(job_type=job_type, status=new_status)
+
+
 class Lock(Document):
     meta = {
         "collection": QUEUE_COLLECTION_LOCKS,
@@ -368,7 +392,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return self
 
     def __exit__(
-        self, exctype: Optional[Type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
+        self, exctype: Optional[type[BaseException]], excinst: Optional[BaseException], exctb: Optional[TracebackType]
     ) -> Literal[False]:
         self.release()
         return False
@@ -446,6 +470,7 @@ class Queue:
 
         Returns: the job
         """
+        increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -460,13 +485,13 @@ class Queue:
             difficulty=difficulty,
         ).save()
 
-    def create_jobs(self, job_infos: List[JobInfo]) -> int:
+    def create_jobs(self, job_infos: list[JobInfo]) -> int:
         """Creates jobs in the queue.
 
         They are created in the waiting state.
 
         Args:
-            job_infos (`List[JobInfo]`): The jobs to be created.
+            job_infos (`list[JobInfo]`): The jobs to be created.
 
         Returns:
             `int`: The number of created jobs. 0 if we had an exception.
@@ -493,12 +518,14 @@ class Queue:
                 )
                 for job_info in job_infos
             ]
+            for job in jobs:
+                increase_metric(job_type=job.type, status=Status.WAITING)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
             return 0
 
-    def cancel_jobs_by_job_id(self, job_ids: List[str]) -> int:
+    def cancel_jobs_by_job_id(self, job_ids: list[str]) -> int:
         """Cancel jobs from the queue.
 
         If the job ids are not valid, they are ignored.
@@ -511,7 +538,10 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
+            previous_status = [(job.type, job.status) for job in existing.all()]
             existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            for job_type, status in previous_status:
+                update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
             return existing.count()
         except Exception:
             return 0
@@ -694,6 +724,9 @@ class Queue:
                     read_concern={"level": "majority"},
                 ):
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
+                update_metrics_for_type(
+                    job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
+                )
                 # and cancel the other ones, if any
                 waiting_jobs(status=Status.WAITING).update(
                     finished_at=datetime,
@@ -701,6 +734,10 @@ class Queue:
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
                 )
+                for waiting_job in waiting_jobs(status=Status.WAITING):
+                    update_metrics_for_type(
+                        job_type=waiting_job.type, previous_status=Status.WAITING, new_status=Status.CANCELLED
+                    )
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
@@ -842,7 +879,9 @@ class Queue:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
+        previous_status = job.status
         job.update(finished_at=get_datetime(), status=finished_status)
+        update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
         return True
 
@@ -873,7 +912,7 @@ class Queue:
             > 0
         )
 
-    def _get_df(self, jobs: List[FlatJobInfo]) -> pd.DataFrame:
+    def _get_df(self, jobs: list[FlatJobInfo]) -> pd.DataFrame:
         return pd.DataFrame(
             {
                 "job_id": pd.Series([job["job_id"] for job in jobs], dtype="str"),
@@ -903,7 +942,7 @@ class Queue:
         )
         # ^ does not seem optimal at all, but I get the types right
 
-    def get_pending_jobs_df(self, dataset: str, job_types: Optional[List[str]] = None) -> pd.DataFrame:
+    def get_pending_jobs_df(self, dataset: str, job_types: Optional[list[str]] = None) -> pd.DataFrame:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
@@ -914,7 +953,7 @@ class Queue:
             ]
         )
 
-    def has_pending_jobs(self, dataset: str, job_types: Optional[List[str]] = None) -> bool:
+    def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
@@ -950,7 +989,7 @@ class Queue:
             "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
         }
 
-    def get_dump_with_status(self, status: Status, job_type: str) -> List[JobDict]:
+    def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
         """Get the dump of the jobs with a given status and a given type.
 
         Args:
@@ -971,7 +1010,7 @@ class Queue:
             "started": self.get_dump_with_status(job_type=job_type, status=Status.STARTED),
         }
 
-    def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> List[JobDict]:
+    def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> list[JobDict]:
         """Get the pending jobs of a dataset for a given job type.
 
         Returns: an array of the pending jobs for the dataset and the given job type
@@ -996,7 +1035,7 @@ class Queue:
         # no need to update metrics since it is just the last_heartbeat
         job.update(last_heartbeat=get_datetime())
 
-    def get_zombies(self, max_seconds_without_heartbeat: float) -> List[JobInfo]:
+    def get_zombies(self, max_seconds_without_heartbeat: float) -> list[JobInfo]:
         """Get the zombie jobs.
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.

@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from typing import Tuple
 
 from libcommon.constants import PROCESSING_STEP_DATASET_IS_VALID_VERSION
 from libcommon.exceptions import PreviousStepFormatError
@@ -17,7 +16,7 @@ from worker.dtos import IsValidResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_is_valid_response(dataset: str) -> Tuple[IsValidResponse, float]:
+def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     """
     Get the response of /is-valid for one specific dataset on huggingface.co.
 
@@ -31,7 +30,7 @@ def compute_is_valid_response(dataset: str) -> Tuple[IsValidResponse, float]:
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `Tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
+        `tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
     """
     logging.info(f"get is-valid response for {dataset=}")
 

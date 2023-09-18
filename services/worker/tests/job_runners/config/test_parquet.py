@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Callable
 from http import HTTPStatus
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 from datasets import Features, Value
@@ -51,6 +52,14 @@ def get_job_runner(
                 },
             }
         )
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return ConfigParquetJobRunner(
             job_info={
                 "type": ConfigParquetJobRunner.get_job_type(),

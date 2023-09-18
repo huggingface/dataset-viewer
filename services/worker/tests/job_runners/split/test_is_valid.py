@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable
 from http import HTTPStatus
-from typing import Any, Callable, List
+from typing import Any
 
 import pytest
 from libcommon.processing_graph import ProcessingGraph
@@ -117,6 +118,22 @@ def get_job_runner(
     ) -> SplitIsValidJobRunner:
         processing_step_name = SplitIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        upsert_response(
+            kind="config-split-names-from-streaming",
+            dataset=dataset,
+            config=config,
+            content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
+            http_status=HTTPStatus.OK,
+        )
+
         return SplitIsValidJobRunner(
             job_info={
                 "type": SplitIsValidJobRunner.get_job_type(),
@@ -212,7 +229,7 @@ def get_job_runner(
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
-    upstream_responses: List[UpstreamResponse],
+    upstream_responses: list[UpstreamResponse],
     expected: Any,
 ) -> None:
     dataset, config, split = DATASET, CONFIG, SPLIT

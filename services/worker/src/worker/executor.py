@@ -4,9 +4,10 @@ import asyncio
 import logging
 import os
 import sys
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from random import random
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import orjson
 from filelock import FileLock
@@ -27,7 +28,7 @@ START_WORKER_LOOP_PATH = start_worker_loop.__file__
 async def every(
     func: Callable[..., Optional[Any]],
     *args: Any,
-    seconds: Union[float, Tuple[float, float]],
+    seconds: Union[float, tuple[float, float]],
     stop_on: Optional[Any] = None,
     **kwargs: Any,
 ) -> None:

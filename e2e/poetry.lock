@@ -365,6 +365,33 @@ pycodestyle = ">=2.7.0,<2.8.0"
 pyflakes = ">=2.3.0,<2.4.0"
 
 [[package]]
+name = "flake8-pep585"
+version = "0.1.7"
+description = "flake8 plugin to enforce new-style type hints (PEP 585)"
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "flake8-pep585-0.1.7.tar.gz", hash = "sha256:363f9413aa12849ee9bfdc437c4e79cc4e0fb3af4abbb61cfed79860e349e0e0"},
+    {file = "flake8_pep585-0.1.7-py3-none-any.whl", hash = "sha256:d5c7a5858382d6ca8c56554bd8bed090e12c378b98f6d7c6502abed9a40a658e"},
+]
+
+[[package]]
+name = "flake8-unused-arguments"
+version = "0.0.13"
+description = "flake8 extension to warn on unused function arguments"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flake8-unused-arguments-0.0.13.tar.gz", hash = "sha256:c5894d294424bf7915e44dff0917222c454151016f96edc55b9f847bf307f3f7"},
+    {file = "flake8_unused_arguments-0.0.13-py3-none-any.whl", hash = "sha256:df6a76b73a6ce67720332182a80f2f0a80783cab1ccae8175f39787cd3a74b31"},
+]
+
+[package.dependencies]
+flake8 = ">3.0.0"
+
+[[package]]
 name = "fsspec"
 version = "2023.5.0"
 description = "File-system specification"
@@ -417,18 +444,21 @@ smmap = ">=3.0.1,<6"
 
 [[package]]
 name = "gitpython"
-version = "3.1.34"
+version = "3.1.36"
 description = "GitPython is a Python library used to interact with Git repositories"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "GitPython-3.1.34-py3-none-any.whl", hash = "sha256:5d3802b98a3bae1c2b8ae0e1ff2e4aa16bcdf02c145da34d092324f599f01395"},
-    {file = "GitPython-3.1.34.tar.gz", hash = "sha256:85f7d365d1f6bf677ae51039c1ef67ca59091c7ebd5a3509aa399d4eda02d6dd"},
+    {file = "GitPython-3.1.36-py3-none-any.whl", hash = "sha256:8d22b5cfefd17c79914226982bb7851d6ade47545b1735a9d010a2a4c26d8388"},
+    {file = "GitPython-3.1.36.tar.gz", hash = "sha256:4bb0c2a6995e85064140d31a33289aa5dce80133a23d36fcd372d716c54d3ebf"},
 ]
 
 [package.dependencies]
 gitdb = ">=4.0.1,<5"
+
+[package.extras]
+test = ["black", "coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-sugar", "virtualenv"]
 
 [[package]]
 name = "html5lib"
@@ -1431,4 +1461,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "9ccb8e307b8c4e4f028c150462e0dcaa3261ed886f2ee3255373ccb9fb516c97"
+content-hash = "eedc4a3a6771cb94f9a8eb133ad96cfd4fd12f9190993492d5eeab485ef616cf"

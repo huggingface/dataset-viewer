@@ -2,7 +2,8 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
+from typing import Optional
 
 from datasets import Features
 from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
@@ -12,7 +13,7 @@ from tqdm.contrib.concurrent import thread_map
 
 
 def _transform_row(
-    row_idx_and_row: Tuple[int, Row],
+    row_idx_and_row: tuple[int, Row],
     dataset: str,
     config: str,
     split: str,
@@ -41,12 +42,12 @@ def transform_rows(
     dataset: str,
     config: str,
     split: str,
-    rows: List[Row],
+    rows: list[Row],
     features: Features,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
-) -> List[Row]:
+) -> list[Row]:
     fn = partial(
         _transform_row,
         dataset=dataset,

@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 import duckdb
 import numpy as np
@@ -29,7 +29,6 @@ from tqdm import tqdm
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import check_split_exists
 
 REPO_TYPE = "dataset"
 
@@ -65,8 +64,8 @@ class ColumnType(str, enum.Enum):
 
 
 class Histogram(TypedDict):
-    hist: List[int]
-    bin_edges: List[float]
+    hist: list[int]
+    bin_edges: list[float]
 
 
 class NumericalStatisticsItem(TypedDict):
@@ -84,7 +83,7 @@ class CategoricalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
     n_unique: int
-    frequencies: Dict[str, int]
+    frequencies: dict[str, int]
 
 
 class StatisticsPerColumnItem(TypedDict):
@@ -95,7 +94,7 @@ class StatisticsPerColumnItem(TypedDict):
 
 class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
-    statistics: List[StatisticsPerColumnItem]
+    statistics: list[StatisticsPerColumnItem]
 
 
 def generate_bins(
@@ -223,13 +222,13 @@ def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     parquet_filename: Path,
-    class_label_names: List[str],
+    class_label_names: list[str],
     n_samples: int,
 ) -> CategoricalStatisticsItem:
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, parquet_filename=parquet_filename
     )
-    categories: List[Tuple[int, int]] = con.sql(
+    categories: list[tuple[int, int]] = con.sql(
         categorical_counts_query
     ).fetchall()  # list of tuples (idx, num_samples)
 
@@ -303,7 +302,6 @@ def compute_descriptive_statistics_response(
     """
 
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
-    check_split_exists(dataset=dataset, config=config, split=split)
 
     config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(
@@ -331,7 +329,7 @@ def compute_descriptive_statistics_response(
     if not split_parquet_files:
         raise ParquetResponseEmptyError("No parquet files found.")
     features = dataset_info.get("features")
-    if not features:
+    if features is None:
         raise PreviousStepFormatError(
             f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
             "no features found in 'dataset_info'. "
@@ -364,15 +362,17 @@ def compute_descriptive_statistics_response(
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split}/*.parquet"
 
-    stats: List[StatisticsPerColumnItem] = []
+    stats: list[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
-        feature_name: feature for feature_name, feature in features.items() if feature.get("_type") == "ClassLabel"
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if isinstance(feature, dict) and feature.get("_type") == "ClassLabel"
     }
     numerical_features = {
         feature_name: feature
         for feature_name, feature in features.items()
-        if feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
+        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
     }
     if not categorical_features and not numerical_features:
         raise NoSupportedFeaturesError(

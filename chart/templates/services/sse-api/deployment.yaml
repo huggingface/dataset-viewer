@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels: {{ include "labels.sseApi" . | nindent 4 }}
+  name: "{{ include "name" . }}-sse-api"
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.sseApi.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels: {{ include "labels.sseApi" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels: {{ include "labels.sseApi" . | nindent 8 }}
+    spec:
+      {{- include "dnsConfig" . | nindent 6 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
+      containers: {{ include "containerSseApi" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.sseApi.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.sseApi.tolerations | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
