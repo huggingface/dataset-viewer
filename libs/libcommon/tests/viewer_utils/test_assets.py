@@ -1,6 +1,6 @@
 import io
+from collections.abc import Mapping
 from io import BytesIO
-from typing import Mapping
 
 import boto3
 import soundfile  # type: ignore
