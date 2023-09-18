@@ -9,20 +9,24 @@
       "path": "../e2e"
     },
     {
-      "name": "jobs/mongodb_migration",
-      "path": "../jobs/mongodb_migration"
+      "name": "front/admin_ui",
+      "path": "../front/admin_ui"
     },
     {
       "name": "jobs/cache_maintenance",
       "path": "../jobs/cache_maintenance"
     },
     {
-      "name": "libs/libcommon",
-      "path": "../libs/libcommon"
+      "name": "jobs/mongodb_migration",
+      "path": "../jobs/mongodb_migration"
     },
     {
       "name": "libs/libapi",
       "path": "../libs/libapi"
+    },
+    {
+      "name": "libs/libcommon",
+      "path": "../libs/libcommon"
     },
     {
       "name": "services/admin",
@@ -45,20 +49,16 @@
       "path": "../services/search"
     },
     {
-      "name": "services/storage-admin",
-      "path": "../services/storage-admin"
-    },
-    {
       "name": "services/sse-api",
       "path": "../services/sse-api"
     },
     {
-      "name": "services/worker",
-      "path": "../services/worker"
+      "name": "services/storage-admin",
+      "path": "../services/storage-admin"
     },
     {
-      "name": "front/admin_ui",
-      "path": "../front/admin_ui"
+      "name": "services/worker",
+      "path": "../services/worker"
     }
   ],
   "settings": {
