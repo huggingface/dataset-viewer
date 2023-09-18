@@ -24,7 +24,7 @@ import pyarrow.parquet as pq
 import requests
 from datasets import DownloadConfig, Features, load_dataset_builder
 from datasets.arrow_writer import ParquetWriter
-from datasets.builder import DatasetBuilder, DatasetGenerationError, ManualDownloadError
+from datasets.builder import DatasetBuilder, ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from datasets.download import StreamingDownloadManager
 from datasets.packaged_modules.parquet.parquet import Parquet as ParquetBuilder
@@ -58,7 +58,6 @@ from libcommon.exceptions import (
     DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
-    DatasetScriptError,
     DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
@@ -1246,53 +1245,50 @@ def compute_config_parquet_and_info_response(
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
     partial = False
-    try:
-        if is_parquet_builder_with_hub_files(builder):
-            try:
-                parquet_operations = copy_parquet_files(builder)
-                validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-                fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
-            except TooBigRowGroupsError as err:
-                # aim for a writer_batch_size that is factor of 100
-                # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
-                writer_batch_size = get_writer_batch_size_from_row_group_size(
-                    num_rows=err.num_rows,
-                    row_group_byte_size=err.row_group_byte_size,
-                    max_row_group_byte_size=max_row_group_byte_size_for_copy,
-                )
-                parquet_operations, partial = stream_convert_to_parquet(
-                    builder,
-                    max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size,
-                    writer_batch_size=writer_batch_size,
-                )
+    if is_parquet_builder_with_hub_files(builder):
+        try:
+            parquet_operations = copy_parquet_files(builder)
+            validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
+            fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
+        except TooBigRowGroupsError as err:
+            # aim for a writer_batch_size that is factor of 100
+            # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
+            writer_batch_size = get_writer_batch_size_from_row_group_size(
+                num_rows=err.num_rows,
+                row_group_byte_size=err.row_group_byte_size,
+                max_row_group_byte_size=max_row_group_byte_size_for_copy,
+            )
+            parquet_operations, partial = stream_convert_to_parquet(
+                builder,
+                max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size,
+                writer_batch_size=writer_batch_size,
+            )
+    else:
+        raise_if_requires_manual_download(
+            builder=builder,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+        )
+        dataset_info = get_dataset_info_for_supported_datasets(
+            dataset=dataset,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            revision=source_revision,
+            files_metadata=True,
+        )
+        if is_dataset_too_big(
+            dataset_info=dataset_info,
+            builder=builder,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            max_dataset_size=max_dataset_size,
+            max_external_data_files=max_external_data_files,
+        ):
+            parquet_operations, partial = stream_convert_to_parquet(
+                builder, max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size
+            )
         else:
-            raise_if_requires_manual_download(
-                builder=builder,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-            )
-            dataset_info = get_dataset_info_for_supported_datasets(
-                dataset=dataset,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                revision=source_revision,
-                files_metadata=True,
-            )
-            if is_dataset_too_big(
-                dataset_info=dataset_info,
-                builder=builder,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                max_dataset_size=max_dataset_size,
-                max_external_data_files=max_external_data_files,
-            ):
-                parquet_operations, partial = stream_convert_to_parquet(
-                    builder, max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size
-                )
-            else:
-                parquet_operations = convert_to_parquet(builder)
-    except DatasetGenerationError as err:
-        raise DatasetScriptError("The dataset script generated an error.") from err
+            parquet_operations = convert_to_parquet(builder)
     try:
         # ^ timeouts after ~7 minutes
         with lock.git_branch(
