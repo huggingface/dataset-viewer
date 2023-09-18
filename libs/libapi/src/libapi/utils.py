@@ -7,8 +7,7 @@ import shutil
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Callable, Coroutine, List, Optional, Union
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pyarrow as pa
 from datasets import Features

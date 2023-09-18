@@ -49,7 +49,7 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
 
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: List[str] = ["asoria/image"]
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 def create_response(

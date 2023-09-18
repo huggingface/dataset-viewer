@@ -64,7 +64,7 @@ FTS_COMMAND = (
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: List[str] = ["asoria/image"]
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 def get_download_folder(
