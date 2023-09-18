@@ -37,23 +37,31 @@ DECIMALS = 5
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
+STRING_DTYPES = ["string"]  # , "large_string"] ?
 
+DATA_TABLE_NAME = "data"
 BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
+STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
 
 COMPUTE_NAN_COUNTS_COMMAND = """
-    SELECT COUNT(*) FROM read_parquet('{parquet_filename}') WHERE {column_name} IS NULL;
+    SELECT COUNT(*) FROM {data_table_name} WHERE {column_name} IS NULL;
 """
 COMPUTE_CATEGORIES_COUNTS_COMMAND = """
-    SELECT {column_name}, COUNT(*) FROM read_parquet('{parquet_filename}') GROUP BY {column_name};
+    SELECT {column_name}, COUNT(*) FROM {data_table_name} GROUP BY {column_name};
 """
 COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
     SELECT min({column_name}), max({column_name}), mean({column_name}),
-    median({column_name}), stddev_samp({column_name}) FROM read_parquet('{parquet_filename}');
+    median({column_name}), stddev_samp({column_name}) FROM {data_table_name};
 """
 COMPUTE_HIST_COMMAND = """
-    SELECT bin_id, COUNT(*) as count FROM read_parquet('{parquet_filename}')
+    SELECT bin_id, COUNT(*) as count FROM {data_table_name}
         JOIN {bins_table_name} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
+"""
+COMPUTE_LENGTH_HIST_COMMAND = """
+    SELECT bin_id, COUNT(*) as count FROM {data_table_name}
+        JOIN {bins_table_name} ON (length({column_name}) >= bin_min AND length({column_name}) < bin_max)
+        GROUP BY bin_id;
 """
 
 
@@ -61,6 +69,7 @@ class ColumnType(str, enum.Enum):
     FLOAT = "float"
     INT = "int"
     CLASS_LABEL = "class_label"
+    STRING = "string"
 
 
 class Histogram(TypedDict):
@@ -133,7 +142,7 @@ def generate_bins(
 def compute_histogram(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    parquet_filename: Path,
+    table_name: str,
     column_type: ColumnType,
     min_value: Union[int, float],
     max_value: Union[int, float],
@@ -147,7 +156,7 @@ def compute_histogram(
     # create auxiliary table with bin edges
     con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")  # nosec
     compute_hist_command = COMPUTE_HIST_COMMAND.format(
-        parquet_filename=parquet_filename, bins_table_name=BINS_TABLE_NAME, column_name=column_name
+        data_table_name=table_name, bins_table_name=BINS_TABLE_NAME, column_name=column_name
     )
     logging.debug(f"Compute histogram for {column_name=}")
     # query returns list of tuples (bin_id, bin_max, n_count):
@@ -174,26 +183,26 @@ def compute_histogram(
 def compute_numerical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    parquet_filename: Path,
+    table_name: str,
     n_bins: int,
     n_samples: int,
     column_type: ColumnType,
 ) -> NumericalStatisticsItem:
     logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name=}")
     min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
-        column_name=column_name, parquet_filename=parquet_filename
+        column_name=column_name, data_table_name=table_name
     )
     minimum, maximum, mean, median, std = con.sql(min_max_mean_median_std_command).fetchall()[0]
     logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}")
 
-    nan_count_command = COMPUTE_NAN_COUNTS_COMMAND.format(column_name=column_name, parquet_filename=parquet_filename)
+    nan_count_command = COMPUTE_NAN_COUNTS_COMMAND.format(column_name=column_name, data_table_name=table_name)
     nan_count = con.sql(nan_count_command).fetchall()[0][0]
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
     logging.debug(f"{nan_count=} {nan_proportion=}")
     histogram = compute_histogram(
         con,
         column_name,
-        parquet_filename,
+        table_name,
         min_value=minimum,
         max_value=maximum,
         column_type=column_type,
@@ -221,12 +230,12 @@ def compute_numerical_statistics(
 def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
-    parquet_filename: Path,
+    table_name: str,
     class_label_names: list[str],
     n_samples: int,
 ) -> CategoricalStatisticsItem:
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
-        column_name=column_name, parquet_filename=parquet_filename
+        column_name=column_name, data_table_name=table_name
     )
     categories: list[tuple[int, int]] = con.sql(
         categorical_counts_query
@@ -244,9 +253,50 @@ def compute_categorical_statistics(
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
-        n_unique=len(categories) - 1 if nan_count else len(categories),
+        n_unique=len(frequencies),
         frequencies=frequencies,
     )
+
+
+def compute_string_statistics(
+    con: duckdb.DuckDBPyConnection,
+    column_name: str,
+    n_bins: int,
+    n_samples: int,
+    table_name: str,
+) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
+    n_unique, _ = con.sql(f"SELECT COUNT(DISTINCT {column_name}) FROM FROM {table_name};").fetchall()[0]  # nosec
+    if n_unique <= 40:
+        # count as categories
+        categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
+            column_name=column_name, data_table_name=table_name
+        )
+        frequencies: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
+        nan_count = frequencies.pop(None)  # type: ignore
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        return CategoricalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            n_unique=len(frequencies),
+            frequencies=frequencies,
+        )
+    else:
+        # compute numerical stats over string lengths (min, max, ..., hist)
+        string_lengths_column_name = f"{column_name}_lengths"
+        con.sql(
+            f"""
+        CREATE OR REPLACE TEMPORARY TABLE {STRING_LENGTHS_TABLE_NAME} AS
+            SELECT length({column_name}) as {string_lengths_column_name} FROM {table_name};
+            """  # nosec
+        )
+        return compute_numerical_statistics(
+            con=con,
+            column_name=string_lengths_column_name,
+            table_name=STRING_LENGTHS_TABLE_NAME,
+            n_bins=n_bins,
+            n_samples=n_samples,
+            column_type=ColumnType.INT,
+        )
 
 
 def compute_descriptive_statistics_response(
@@ -374,10 +424,15 @@ def compute_descriptive_statistics_response(
         for feature_name, feature in features.items()
         if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
     }
-    if not categorical_features and not numerical_features:
+    string_features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES
+    }
+    if not categorical_features and not numerical_features and not string_features:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
-            f"{NUMERICAL_DTYPES} and ClassLabel. "
+            f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
     con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
@@ -386,7 +441,25 @@ def compute_descriptive_statistics_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
+    con.sql(f"CREATE TABLE {DATA_TABLE_NAME} as SELECT * FROM read_parquet('{local_parquet_glob_path}'")  # nosec
 
+    if string_features:
+        logging.info(f"Compute statistics for categorical columns {categorical_features}")
+    for feature_name, feature in tqdm(string_features.items()):
+        string_column_stats = compute_string_statistics(
+            con,
+            feature_name,
+            n_bins=histogram_num_bins,
+            n_samples=num_examples,
+            table_name=DATA_TABLE_NAME,
+        )
+        stats.append(
+            StatisticsPerColumnItem(
+                column_name=feature_name,
+                column_type=ColumnType.STRING,
+                column_statistics=string_column_stats,
+            )
+        )
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
@@ -398,7 +471,7 @@ def compute_descriptive_statistics_response(
             feature_name,
             class_label_names=class_label_names,
             n_samples=num_examples,
-            parquet_filename=local_parquet_glob_path,
+            table_name=DATA_TABLE_NAME,
         )
         stats.append(
             StatisticsPerColumnItem(
@@ -415,7 +488,7 @@ def compute_descriptive_statistics_response(
         num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
             con,
             feature_name,
-            parquet_filename=local_parquet_glob_path,
+            table_name=DATA_TABLE_NAME,
             n_bins=histogram_num_bins,
             n_samples=num_examples,
             column_type=column_type,
