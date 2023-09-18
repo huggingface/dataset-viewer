@@ -240,7 +240,7 @@ class DatasetScriptError(CacheableError):
     """The dataset script generated an error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetScriptError", cause, False)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetScriptError", cause, False)
 
 
 class DatasetWithTooManyConfigsError(CacheableError):
