@@ -4,7 +4,9 @@
 import functools
 import itertools
 import logging
+import sys
 import time
+import traceback
 import warnings
 from collections.abc import Callable, Sequence
 from typing import Any, Optional, TypeVar, Union, cast
@@ -17,6 +19,7 @@ from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
+from libcommon.constants import EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -362,3 +365,9 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"Split '{split}' does not exist for the config '{config}' of the dataset.")
+
+
+def is_dataset_script_error() -> bool:
+    (t, v, tb) = sys.exc_info()
+    cause_traceback: list[str] = traceback.format_exception(t, v, tb)
+    return any(EXTERNAL_DATASET_SCRIPT_PATTERN in cause for cause in cause_traceback)
