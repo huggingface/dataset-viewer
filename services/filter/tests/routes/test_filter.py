@@ -2,9 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import shutil
+from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import pyarrow as pa
 import pyarrow.parquet as pq
