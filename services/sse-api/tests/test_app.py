@@ -1,12 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from typing import Any
-
 import asyncio
 import json
 from collections.abc import AsyncGenerator
 from http import HTTPStatus
+from typing import Any
 
 import httpx
 import pytest
