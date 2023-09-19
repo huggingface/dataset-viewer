@@ -24,7 +24,6 @@ class ChangeStreamInitError(Exception):
 @dataclass
 class HubCacheChangedEventValue:
     dataset: str
-    operation: str
     hub_cache: Optional[DatasetHubCacheResponse]
     # ^ None if the dataset has been deleted, or the value is an error response
 
@@ -57,11 +56,10 @@ class HubCachePublisher:
         self,
         *,
         dataset: str,
-        operation: str,
         hub_cache: Optional[DatasetHubCacheResponse],
         suscriber: Optional[str] = None,
     ) -> None:
-        hub_cache_value = HubCacheChangedEventValue(dataset=dataset, operation=operation, hub_cache=hub_cache)
+        hub_cache_value = HubCacheChangedEventValue(dataset=dataset, hub_cache=hub_cache)
         for watcher, event in self._watchers.items():
             if suscriber is None or suscriber == watcher:
                 event.set_value(hub_cache_value=hub_cache_value)
@@ -137,7 +135,6 @@ class HubCacheWatcher:
             self._publisher._notify_change(
                 suscriber=suscriber,
                 dataset=dataset,
-                operation="init",
                 hub_cache=(document["content"] if document["http_status"] == HTTPStatus.OK else None),
             )
 
@@ -182,7 +179,7 @@ class HubCacheWatcher:
                             and change["fullDocumentBeforeChange"]["kind"] == HUB_CACHE_KIND
                         ):
                             dataset = change["fullDocumentBeforeChange"]["dataset"]
-                            self._publisher._notify_change(dataset=dataset, operation=operation, hub_cache=None)
+                            self._publisher._notify_change(dataset=dataset, hub_cache=None)
                             continue
 
                         if change["fullDocument"]["kind"] != HUB_CACHE_KIND:
@@ -197,7 +194,6 @@ class HubCacheWatcher:
 
                         self._publisher._notify_change(
                             dataset=change["fullDocument"]["dataset"],
-                            operation=operation,
                             hub_cache=(
                                 change["fullDocument"]["content"]
                                 if change["fullDocument"]["http_status"] == HTTPStatus.OK

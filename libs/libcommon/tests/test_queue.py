@@ -298,6 +298,17 @@ def test_priority_logic_priority_order() -> None:
         priority=Priority.NORMAL,
         difficulty=test_difficulty,
     )
+    queue.add_job(
+        job_type=test_type,
+        dataset="dataset3",
+        revision=test_revision,
+        config="config",
+        split="split1",
+        priority=Priority.HIGH,
+        difficulty=test_difficulty,
+    )
+    check_job(queue=queue, expected_dataset="dataset3", expected_split="split1", expected_priority=Priority.HIGH)
+    # ^ before, even if the creation date is after, because the priority is higher
     check_job(queue=queue, expected_dataset="dataset2", expected_split="split1", expected_priority=Priority.NORMAL)
     # ^ before, even if the creation date is after, because the priority is higher
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
