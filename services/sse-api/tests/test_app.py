@@ -197,7 +197,6 @@ async def test_hub_cache_only_updates(
             for expected_data in [
                 {
                     "dataset": "dataset1",
-                    "operation": "insert",
                     "hub_cache": {
                         "preview": True,
                         "viewer": True,
@@ -207,7 +206,6 @@ async def test_hub_cache_only_updates(
                 },
                 {
                     "dataset": "dataset2",
-                    "operation": "insert",
                     "hub_cache": {
                         "preview": True,
                         "viewer": True,
@@ -217,7 +215,6 @@ async def test_hub_cache_only_updates(
                 },
                 {
                     "dataset": "dataset1",
-                    "operation": "update",
                     "hub_cache": {
                         "preview": False,
                         "viewer": True,
@@ -225,12 +222,11 @@ async def test_hub_cache_only_updates(
                         "num_rows": 100,
                     },
                 },
-                {"dataset": "dataset1", "operation": "update", "hub_cache": None},
-                {"dataset": "dataset1", "operation": "delete", "hub_cache": None},
-                {"dataset": "dataset1", "operation": "insert", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
                 {
                     "dataset": "dataset1",
-                    "operation": "update",
                     "hub_cache": {
                         "preview": False,
                         "viewer": True,
@@ -308,7 +304,6 @@ async def test_hub_cache_only_initialization(
         for expected_data in [
             {
                 "dataset": "dataset1",
-                "operation": "init",
                 "hub_cache": {
                     "preview": True,
                     "viewer": True,
@@ -318,7 +313,6 @@ async def test_hub_cache_only_initialization(
             },
             {
                 "dataset": "dataset2",
-                "operation": "init",
                 "hub_cache": {
                     "preview": True,
                     "viewer": True,
@@ -326,7 +320,7 @@ async def test_hub_cache_only_initialization(
                     "num_rows": 100,
                 },
             },
-            {"dataset": "dataset3", "operation": "init", "hub_cache": None},
+            {"dataset": "dataset3", "hub_cache": None},
         ]:
             event = await event_iter.__anext__()
             # event = await anext(event_iter)
@@ -502,7 +496,6 @@ async def test_hub_cache_initialization_and_updates(
             for expected_data in [
                 {
                     "dataset": "dataset1",
-                    "operation": "init",
                     "hub_cache": {
                         "preview": True,
                         "viewer": True,
@@ -512,7 +505,6 @@ async def test_hub_cache_initialization_and_updates(
                 },
                 {
                     "dataset": "dataset2",
-                    "operation": "init",
                     "hub_cache": {
                         "preview": True,
                         "viewer": True,
@@ -520,10 +512,9 @@ async def test_hub_cache_initialization_and_updates(
                         "num_rows": 100,
                     },
                 },
-                {"dataset": "dataset3", "operation": "init", "hub_cache": None},
+                {"dataset": "dataset3", "hub_cache": None},
                 {
                     "dataset": "dataset1",
-                    "operation": "update",
                     "hub_cache": {
                         "preview": False,
                         "viewer": True,
@@ -531,12 +522,11 @@ async def test_hub_cache_initialization_and_updates(
                         "num_rows": 100,
                     },
                 },
-                {"dataset": "dataset1", "operation": "update", "hub_cache": None},
-                {"dataset": "dataset1", "operation": "delete", "hub_cache": None},
-                {"dataset": "dataset1", "operation": "insert", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
+                {"dataset": "dataset1", "hub_cache": None},
                 {
                     "dataset": "dataset1",
-                    "operation": "update",
                     "hub_cache": {
                         "preview": False,
                         "viewer": True,
