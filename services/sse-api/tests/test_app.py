@@ -136,29 +136,6 @@ def init_hub_cache() -> None:
     )
 
 
-INIT_ONLY_EVENTS: list[dict[str, Any]] = [
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": True,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {
-        "dataset": "dataset2",
-        "hub_cache": {
-            "preview": True,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {"dataset": "dataset3", "hub_cache": None},
-]
-
-
 async def update_hub_cache() -> None:
     await sleep()
     upsert_response(
@@ -263,73 +240,8 @@ async def update_hub_cache() -> None:
     )
 
 
-UPDATE_ONLY_EVENTS: list[dict[str, Any]] = [
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": True,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {
-        "dataset": "dataset2",
-        "hub_cache": {
-            "preview": True,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": False,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {"dataset": "dataset1", "hub_cache": None},
-    {"dataset": "dataset1", "hub_cache": None},
-    {"dataset": "dataset1", "hub_cache": None},
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": False,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-]
-
-
-UPDATE_ONLY_AFTER_INIT_EVENTS = [
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": False,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-    {"dataset": "dataset1", "hub_cache": None},
-    {"dataset": "dataset1", "hub_cache": None},
-    {"dataset": "dataset1", "hub_cache": None},
-    {
-        "dataset": "dataset1",
-        "hub_cache": {
-            "preview": False,
-            "viewer": True,
-            "partial": False,
-            "num_rows": 100,
-        },
-    },
-]
-INIT_AND_UPDATE_EVENTS: list[dict[str, Any]] = [
+EventsList = list[dict[str, Any]]
+INIT_ONLY_EVENTS: EventsList = [
     {
         "dataset": "dataset1",
         "hub_cache": {
@@ -349,10 +261,75 @@ INIT_AND_UPDATE_EVENTS: list[dict[str, Any]] = [
         },
     },
     {"dataset": "dataset3", "hub_cache": None},
-] + UPDATE_ONLY_AFTER_INIT_EVENTS
+]
+UPDATE_ONLY_EVENTS: EventsList = [
+    {
+        "dataset": "dataset1",
+        "hub_cache": {
+            "preview": True,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+    {
+        "dataset": "dataset2",
+        "hub_cache": {
+            "preview": True,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+    {
+        "dataset": "dataset1",
+        "hub_cache": {
+            "preview": False,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+    {"dataset": "dataset1", "hub_cache": None},
+    {"dataset": "dataset1", "hub_cache": None},
+    {"dataset": "dataset1", "hub_cache": None},
+    {
+        "dataset": "dataset1",
+        "hub_cache": {
+            "preview": False,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+]
+UPDATE_ONLY_AFTER_INIT_EVENTS: EventsList = [
+    {
+        "dataset": "dataset1",
+        "hub_cache": {
+            "preview": False,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+    {"dataset": "dataset1", "hub_cache": None},
+    {"dataset": "dataset1", "hub_cache": None},
+    {"dataset": "dataset1", "hub_cache": None},
+    {
+        "dataset": "dataset1",
+        "hub_cache": {
+            "preview": False,
+            "viewer": True,
+            "partial": False,
+            "num_rows": 100,
+        },
+    },
+]
+INIT_AND_UPDATE_EVENTS: EventsList = INIT_ONLY_EVENTS + UPDATE_ONLY_AFTER_INIT_EVENTS
 
 
-async def check(client: httpx.AsyncClient, url: str, expected_events: list[dict[str, str]]) -> None:
+async def check(client: httpx.AsyncClient, url: str, expected_events: EventsList) -> None:
     async with aconnect_sse(client, url) as event_source:
         event_iter = event_source.aiter_sse()
         i = 0
@@ -400,7 +377,7 @@ async def test_hub_cache_only_initialization(
     cache_mongo_resource: CacheMongoResource,
     event_loop: asyncio.AbstractEventLoop,
     all: str,
-    expected_events: list[dict[str, str]],
+    expected_events: EventsList,
 ) -> None:
     init_hub_cache()
     await check(client, f"{APP_HOST}/hub-cache{all}", expected_events)
@@ -420,7 +397,7 @@ async def test_hub_cache_initialization_and_updates(
     cache_mongo_resource: CacheMongoResource,
     event_loop: asyncio.AbstractEventLoop,
     all: str,
-    expected_events: list[dict[str, str]],
+    expected_events: EventsList,
 ) -> None:
     init_hub_cache()
     update_task = event_loop.create_task(update_hub_cache())
