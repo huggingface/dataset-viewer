@@ -438,7 +438,7 @@ class Queue:
     - a job can be in one of the following states: waiting, started, success, error, cancelled
     - a job can be in the queue only once (unicity_id) in the "started" state
     - a job can be in the queue multiple times in the other states
-    - a job has a priority (two levels: NORMAL and LOW)
+    - a job has a priority (three levels: HIGH, NORMAL and LOW)
     - a job has a difficulty (from 0: easy to 100: hard, as a convention)
     - the queue is ordered by priority then by the creation date of the jobs
     - datasets and users that already have started jobs are de-prioritized (using namespace)
@@ -667,7 +667,7 @@ class Queue:
 
         Returns: the job
         """
-        for priority in [Priority.NORMAL, Priority.LOW]:
+        for priority in [Priority.HIGH, Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
                 return self._get_next_waiting_job_for_priority(
                     priority=priority,
@@ -924,7 +924,7 @@ class Queue:
                 "priority": pd.Categorical(
                     [job["priority"] for job in jobs],
                     ordered=True,
-                    categories=[Priority.LOW.value, Priority.NORMAL.value],
+                    categories=[Priority.LOW.value, Priority.NORMAL.value, Priority.HIGH.value],
                 ),
                 "status": pd.Categorical(
                     [job["status"] for job in jobs],
