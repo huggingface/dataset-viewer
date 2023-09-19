@@ -23,11 +23,15 @@ from sse_api.watcher import HubCacheWatcher
 
 
 def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
-    async def hub_cache_endpoint(_: Request) -> Response:
+    async def hub_cache_endpoint(request: Request) -> Response:
         logging.info("/hub-cache")
 
+        all = request.query_params.get("all", "false").lower() == "true"
+        # ^ the values that trigger the initialization are "true", "True" and any other case-insensitive variant
+
         uuid, event = hub_cache_watcher.subscribe()
-        init_task = hub_cache_watcher.run_initialization(uuid)
+        if all:
+            init_task = hub_cache_watcher.run_initialization(uuid)
 
         async def event_generator() -> AsyncGenerator[ServerSentEvent, None]:
             try:
@@ -38,7 +42,8 @@ def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
                         yield ServerSentEvent(data=json.dumps(dataclasses.asdict(new_value)), event="message")
             finally:
                 hub_cache_watcher.unsubscribe(uuid)
-                await init_task
+                if all:
+                    await init_task
 
         return EventSourceResponse(error_handling(event_generator()), media_type="text/event-stream")
 
