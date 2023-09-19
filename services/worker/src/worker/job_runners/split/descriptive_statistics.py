@@ -441,7 +441,7 @@ def compute_descriptive_statistics_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
-    con.sql(f"CREATE TABLE {DATA_TABLE_NAME} as SELECT * FROM read_parquet('{local_parquet_glob_path}'")  # nosec
+    con.sql(f"CREATE TABLE {DATA_TABLE_NAME} as SELECT * FROM read_parquet('{local_parquet_glob_path}');")  # nosec
 
     if string_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
