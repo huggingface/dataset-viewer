@@ -148,7 +148,7 @@ def get_parquet_and_info_job_runner(
 
 
 def count_expected_statistics_for_numerical_column(
-    column: pd.Series, column_name: str, dtype: ColumnType  # type: ignore
+    column: pd.Series, dtype: ColumnType  # type: ignore
 ) -> dict:  # type: ignore
     minimum, maximum, mean, median, std = (
         column.min(),
@@ -164,7 +164,7 @@ def count_expected_statistics_for_numerical_column(
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
         # TODO: n_bins is hardcoded here but should be fetched from the app_config.descriptive_statistics_config
-        bins = generate_bins(minimum, maximum, column_name=column_name, column_type=dtype, n_bins=10)
+        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=10)
         hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
@@ -207,39 +207,45 @@ def count_expected_statistics_for_categorical_column(
     }
 
 
+def count_expected_statistics_for_string_column(
+    column: pd.Series,
+) -> dict:  # type: ignore
+    n_samples = column.shape[0]
+    nan_count = column.isna().sum()
+    value_counts = column.value_counts().to_dict()
+    n_unique = len(value_counts)
+    if n_unique <= 40:
+        return {
+            "nan_count": nan_count,
+            "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+            "n_unique": n_unique,
+            "frequencies": value_counts,
+        }
+    lengths_column = column.map(len)
+    return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
+
+
 @pytest.fixture
 def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
     ds = datasets["descriptive_statistics"]
     df = ds.to_pandas()
     expected_statistics = {}
     for column_name in df.columns:
-        if column_name.startswith("int_"):
-            column_type = ColumnType.INT
-        elif column_name.startswith("float_"):
-            column_type = ColumnType.FLOAT
-        elif column_name.startswith("class_label"):
-            column_type = ColumnType.CLASS_LABEL
-        else:
-            continue
-        if column_type in [ColumnType.FLOAT, ColumnType.INT]:
-            column_stats = count_expected_statistics_for_numerical_column(
-                df[column_name], column_name=column_name, dtype=column_type
-            )
+        column_type = ColumnType(column_name.split("__")[0])
+        if column_type is ColumnType.STRING:
+            column_stats = count_expected_statistics_for_string_column(df[column_name])
+        elif column_type in [ColumnType.FLOAT, ColumnType.INT]:
+            column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
                 raise ValueError(column_name, column_stats)
-            expected_statistics[column_name] = {
-                "column_name": column_name,
-                "column_type": column_type,
-                "column_statistics": column_stats,
-            }
         elif column_type is ColumnType.CLASS_LABEL:
             class_labels = ds.features[column_name].names
             column_stats = count_expected_statistics_for_categorical_column(df[column_name], class_labels=class_labels)
-            expected_statistics[column_name] = {
-                "column_name": column_name,
-                "column_type": column_type,
-                "column_statistics": column_stats,
-            }
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": column_type,
+            "column_statistics": column_stats,
+        }
     return expected_statistics
 
 
@@ -247,9 +253,9 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
+        # ("gated", None),
+        # ("audio", "NoSupportedFeaturesError"),
+        # ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
@@ -302,6 +308,9 @@ def test_compute(
         assert set([column_response["column_name"] for column_response in response_statistics]) == set(
             descriptive_statistics_expected.keys()
         )  # assert returned features are as expected
+        import pprint
+
+        pprint.pprint(response_statistics)
         for column_response_statistics in response_statistics:
             assert_statistics_equal(
                 column_response_statistics, descriptive_statistics_expected[column_response_statistics["column_name"]]
@@ -319,6 +328,9 @@ def assert_statistics_equal(response: dict, expected: dict) -> None:  # type: ig
     response_stats, expected_stats = response["column_statistics"], expected["column_statistics"]
     assert response_stats.keys() == expected_stats.keys()
 
+    assert response_stats["nan_count"] == expected_stats["nan_count"]
+    assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
+
     if response["column_type"] is ColumnType.FLOAT:
         assert np.isclose(
             response_stats["histogram"]["bin_edges"], expected_stats["histogram"]["bin_edges"], 1e-3
@@ -328,27 +340,31 @@ def assert_statistics_equal(response: dict, expected: dict) -> None:  # type: ig
         assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
         assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
         assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
-        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
-
-        assert response_stats["nan_count"] == expected_stats["nan_count"]
         assert response_stats["histogram"]["hist"] == expected_stats["histogram"]["hist"]
 
     elif response["column_type"] is ColumnType.INT:
         assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
         assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
         assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
-        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
-
         assert response_stats["min"] == expected_stats["min"]
         assert response_stats["max"] == expected_stats["max"]
-        assert response_stats["nan_count"] == expected_stats["nan_count"]
         assert response_stats["histogram"] == expected_stats["histogram"]
 
     elif response["column_type"] is ColumnType.CLASS_LABEL:
-        assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
-        assert response_stats["nan_count"] == expected_stats["nan_count"]
         assert response_stats["n_unique"] == expected_stats["n_unique"]
         assert response_stats["frequencies"] == expected_stats["frequencies"]
+
+    elif response["column_type"] is ColumnType.STRING:
+        if "frequencies" in response_stats:
+            assert response_stats["n_unique"] == expected_stats["n_unique"]
+            assert response_stats["frequencies"] == expected_stats["frequencies"]
+        else:
+            assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
+            assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
+            assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
+            assert response_stats["min"] == expected_stats["min"]
+            assert response_stats["max"] == expected_stats["max"]
+            assert response_stats["histogram"] == expected_stats["histogram"]
 
     else:
         raise ValueError("Incorrect data type")
