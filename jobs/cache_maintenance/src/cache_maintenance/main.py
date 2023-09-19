@@ -8,7 +8,11 @@ from datetime import datetime
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import init_duckdb_index_cache_dir
+from libcommon.storage import (
+    init_assets_dir,
+    init_cached_assets_dir,
+    init_duckdb_index_cache_dir,
+)
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
@@ -30,6 +34,9 @@ def run_job() -> None:
         return
 
     init_logging(level=job_config.log.level)
+    assets_directory = init_assets_dir(directory=job_config.assets.storage_directory)
+    cached_assets_directory = init_cached_assets_dir(directory=job_config.cached_assets.storage_directory)
+
     with (
         CacheMongoResource(
             database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
@@ -52,6 +59,8 @@ def run_job() -> None:
                 processing_graph=processing_graph,
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
             )

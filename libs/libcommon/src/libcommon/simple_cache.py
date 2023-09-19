@@ -551,6 +551,10 @@ def get_valid_datasets(kind: str) -> set[str]:
     return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
 
 
+def get_all_datasets(kind: str) -> set[str]:
+    return set(CachedResponseDocument.objects(kind=kind).distinct("dataset"))
+
+
 def has_any_successful_response(
     kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> bool:

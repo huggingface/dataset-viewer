@@ -12,7 +12,7 @@ from typing import TypedDict
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, remove_dir
 
 DATASET_SEPARATOR = "--"
 ASSET_DIR_MODE = 0o755
@@ -27,6 +27,11 @@ def create_asset_dir(
     url_dir_path = f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{row_idx}/{column}"
     makedirs(dir_path, ASSET_DIR_MODE, exist_ok=True)
     return dir_path, url_dir_path
+
+
+def delete_asset_dir(dataset: str, directory: StrPath) -> None:
+    dir_path = Path(directory).resolve() / dataset
+    remove_dir(dir_path)
 
 
 def glob_rows_in_assets_dir(

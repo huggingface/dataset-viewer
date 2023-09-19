@@ -6,7 +6,9 @@ from typing import Optional
 
 from environs import Env
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
+    CachedAssetsConfig,
     CommonConfig,
     LogConfig,
     ProcessingGraphConfig,
@@ -61,8 +63,10 @@ CACHE_MAINTENANCE_ACTION = None
 
 @dataclass(frozen=True)
 class JobConfig:
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
     log: LogConfig = field(default_factory=LogConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
+    cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
@@ -75,8 +79,10 @@ class JobConfig:
         env = Env(expand_vars=True)
 
         return cls(
+            assets=AssetsConfig.from_env(),
             log=LogConfig.from_env(),
             cache=CacheConfig.from_env(),
+            cached_assets=CachedAssetsConfig.from_env(),
             queue=QueueConfig.from_env(),
             common=CommonConfig.from_env(),
             graph=ProcessingGraphConfig.from_env(),
