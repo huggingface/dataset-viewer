@@ -265,14 +265,14 @@ def compute_string_statistics(
     n_samples: int,
     table_name: str,
 ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-    n_unique, _ = con.sql(f"SELECT COUNT(DISTINCT {column_name}) FROM FROM {table_name};").fetchall()[0]  # nosec
+    (n_unique,) = con.sql(f"SELECT COUNT(DISTINCT {column_name}) FROM {table_name};").fetchall()[0]  # nosec
     if n_unique <= 40:
         # count as categories
         categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
             column_name=column_name, data_table_name=table_name
         )
         frequencies: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-        nan_count = frequencies.pop(None)  # type: ignore
+        nan_count = frequencies.pop(None, 0)  # type: ignore
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         return CategoricalStatisticsItem(
             nan_count=nan_count,
