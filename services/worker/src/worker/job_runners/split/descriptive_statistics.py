@@ -280,23 +280,22 @@ def compute_string_statistics(
             n_unique=len(frequencies),
             frequencies=frequencies,
         )
-    else:
-        # compute numerical stats over string lengths (min, max, ..., hist)
-        string_lengths_column_name = f"{column_name}_lengths"
-        con.sql(
-            f"""
-        CREATE OR REPLACE TEMPORARY TABLE {STRING_LENGTHS_TABLE_NAME} AS
-            SELECT length({column_name}) as {string_lengths_column_name} FROM {table_name};
-            """  # nosec
-        )
-        return compute_numerical_statistics(
-            con=con,
-            column_name=string_lengths_column_name,
-            table_name=STRING_LENGTHS_TABLE_NAME,
-            n_bins=n_bins,
-            n_samples=n_samples,
-            column_type=ColumnType.INT,
-        )
+    # compute numerical stats over string lengths (min, max, ..., hist)
+    string_lengths_column_name = f"{column_name}_lengths"
+    con.sql(
+        f"""
+    CREATE OR REPLACE TEMPORARY TABLE {STRING_LENGTHS_TABLE_NAME} AS
+        SELECT length({column_name}) as {string_lengths_column_name} FROM {table_name};
+        """  # nosec
+    )
+    return compute_numerical_statistics(
+        con=con,
+        column_name=string_lengths_column_name,
+        table_name=STRING_LENGTHS_TABLE_NAME,
+        n_bins=n_bins,
+        n_samples=n_samples,
+        column_type=ColumnType.INT,
+    )
 
 
 def compute_descriptive_statistics_response(
