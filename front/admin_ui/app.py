@@ -85,7 +85,7 @@ with gr.Blocks() as demo:
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
                 refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
                 gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
-                refresh_priority = gr.Dropdown(["low", "normal"], multiselect=False, label="priority", value="low")
+                refresh_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
                 refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
             with gr.Tab("Dataset status"):
