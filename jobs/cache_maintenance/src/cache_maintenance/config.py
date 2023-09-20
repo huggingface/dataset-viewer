@@ -56,6 +56,25 @@ class DuckDbConfig:
             )
 
 
+DISCUSSIONS_BOT_TOKEN = None
+DISCUSSIONS_PARQUET_REVISION = "refs/convert/parquet"
+
+
+@dataclass(frozen=True)
+class DiscussionsConfig:
+    bot_token: Optional[str] = DISCUSSIONS_BOT_TOKEN
+    parquet_revision: str = DISCUSSIONS_PARQUET_REVISION
+
+    @classmethod
+    def from_env(cls) -> "DiscussionsConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DISCUSSIONS_"):
+            return cls(
+                bot_token=env.str(name="BOT_TOKEN", default=DISCUSSIONS_BOT_TOKEN),
+                parquet_revision=env.str(name="PARQUET_REVISION", default=DISCUSSIONS_PARQUET_REVISION),
+            )
+
+
 CACHE_MAINTENANCE_ACTION = None
 
 
@@ -68,6 +87,7 @@ class JobConfig:
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     backfill: BackfillConfig = field(default_factory=BackfillConfig)
     duckdb: DuckDbConfig = field(default_factory=DuckDbConfig)
+    discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
 
     @classmethod
@@ -82,5 +102,6 @@ class JobConfig:
             graph=ProcessingGraphConfig.from_env(),
             backfill=BackfillConfig.from_env(),
             duckdb=DuckDbConfig.from_env(),
+            discussions=DiscussionsConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),
         )

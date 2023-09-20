@@ -8,11 +8,15 @@ Available actions:
 - `collect-cache-metrics`: compute and store the cache metrics
 - `collect-queue-metrics`: compute and store the queue metrics
 - `delete-indexes`: delete temporary DuckDB index files downloaded to handle /search requests
+- `post-messages`: post messages in Hub discussions
 - `skip`: do nothing
 
 ## Configuration
 
 The script can be configured using environment variables. They are grouped by scope.
+
+- `DISCUSSIONS_BOT_TOKEN`: token of the Datasets Server bot used to post messages in Hub discussions.
+- `DISCUSSIONS_PARQUET_REVISION`: revision (branch) where the converted Parquet files are stored.
 
 ### Actions
 
