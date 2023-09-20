@@ -141,6 +141,17 @@ def create_app() -> Starlette:
         ),
         Route(
             "/obsolete-cache",
+            endpoint=create_get_obsolete_cache_endpoint(
+                hf_endpoint=app_config.common.hf_endpoint,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+                hf_token=app_config.common.hf_token,
+            ),
+        ),
+        Route(
+            "/obsolete-cache",
             endpoint=create_delete_obsolete_cache_endpoint(
                 hf_endpoint=app_config.common.hf_endpoint,
                 max_age=app_config.admin.max_age,
@@ -152,17 +163,6 @@ def create_app() -> Starlette:
                 hf_token=app_config.common.hf_token,
             ),
             methods=["DELETE"],
-        ),
-        Route(
-            "/obsolete-cache",
-            endpoint=create_get_obsolete_cache_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                hf_token=app_config.common.hf_token,
-            ),
         ),
     ]
     for processing_step in processing_graph.get_processing_steps():

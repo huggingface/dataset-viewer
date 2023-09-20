@@ -8,11 +8,7 @@ from datetime import datetime
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import (
-    init_assets_dir,
-    init_cached_assets_dir,
-    init_duckdb_index_cache_dir,
-)
+from libcommon.storage import init_duckdb_index_cache_dir
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
@@ -24,13 +20,7 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = [
-        "backfill",
-        "collect-cache-metrics",
-        "collect-queue-metrics",
-        "delete-indexes",
-        "skip",
-    ]
+    supported_actions = ["backfill", "collect-cache-metrics", "collect-queue-metrics", "delete-indexes", "skip"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
