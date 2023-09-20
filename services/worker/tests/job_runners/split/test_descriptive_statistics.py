@@ -207,7 +207,7 @@ def count_expected_statistics_for_categorical_column(
     }
 
 
-def count_expected_statistics_for_string_label_column(column: pd.Series) -> dict:  # type: ignore
+def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts().to_dict()
@@ -219,7 +219,8 @@ def count_expected_statistics_for_string_label_column(column: pd.Series) -> dict
             "n_unique": n_unique,
             "frequencies": value_counts,
         }
-    lengths_column = column.map(len)
+
+    lengths_column = column.map(lambda x: len(x) if x is not None else None)
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
@@ -231,7 +232,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     for column_name in df.columns:
         column_type = ColumnType(column_name.split("__")[0])
         if column_type is ColumnType.STRING_LABEL:
-            column_stats = count_expected_statistics_for_string_label_column(df[column_name])
+            column_stats = count_expected_statistics_for_string_column(df[column_name])
         elif column_type in [ColumnType.FLOAT, ColumnType.INT]:
             column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
@@ -244,13 +245,31 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             "column_type": column_type,
             "column_statistics": column_stats,
         }
-    return expected_statistics
+    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+
+
+@pytest.fixture
+def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+    ds = datasets["descriptive_statistics_string_text"]
+    df = ds.to_pandas()
+    expected_statistics = {}
+    for column_name in df.columns:
+        column_stats = count_expected_statistics_for_string_column(df[column_name])
+        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+            raise ValueError(column_name, column_stats)
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": ColumnType.STRING_TEXT,
+            "column_statistics": column_stats,
+        }
+    return {"num_examples": df.shape[0], "statistics": expected_statistics}
 
 
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
+        ("descriptive_statistics_string_text", None),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
         ("big", "SplitWithTooBigParquetError"),
@@ -261,22 +280,31 @@ def test_compute(
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
+    hub_responses_descriptive_statistics_string_text: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
+    descriptive_statistics_string_text_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
+        "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
         "big": hub_responses_big,
     }
+    expected = {
+        "descriptive_statistics": descriptive_statistics_expected,
+        "gated": descriptive_statistics_expected,
+        "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
+    }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
     config, split = splits_response["splits"][0]["config"], splits_response["splits"][0]["split"]
+    expected_response = expected.get(hub_dataset_name)
 
     # computing and pushing real parquet files because we need them for stats computation
     parquet_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
@@ -300,15 +328,16 @@ def test_compute(
     else:
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "statistics"]
-        assert response.content["num_examples"] == 20
+        assert response.content["num_examples"] == expected_response["num_examples"]
         response_statistics = response.content["statistics"]
-        assert len(response_statistics) == len(descriptive_statistics_expected)
+        expected_statistics = expected_response["statistics"]
+        assert len(response_statistics) == len(expected_statistics)
         assert set([column_response["column_name"] for column_response in response_statistics]) == set(
-            descriptive_statistics_expected.keys()
+            expected_statistics
         )  # assert returned features are as expected
         for column_response_statistics in response_statistics:
             assert_statistics_equal(
-                column_response_statistics, descriptive_statistics_expected[column_response_statistics["column_name"]]
+                column_response_statistics, expected_statistics[column_response_statistics["column_name"]]
             )
 
 
