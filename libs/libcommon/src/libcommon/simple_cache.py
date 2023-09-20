@@ -562,7 +562,6 @@ def has_any_successful_response(
     )
 
 
-
 # admin /metrics endpoint
 
 
