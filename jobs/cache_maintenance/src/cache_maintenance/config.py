@@ -56,12 +56,14 @@ class DuckDbConfig:
             )
 
 
+DISCUSSIONS_BOT_ASSOCIATED_USER_NAME = None
 DISCUSSIONS_BOT_TOKEN = None
 DISCUSSIONS_PARQUET_REVISION = "refs/convert/parquet"
 
 
 @dataclass(frozen=True)
 class DiscussionsConfig:
+    bot_associated_user_name: Optional[str] = DISCUSSIONS_BOT_ASSOCIATED_USER_NAME
     bot_token: Optional[str] = DISCUSSIONS_BOT_TOKEN
     parquet_revision: str = DISCUSSIONS_PARQUET_REVISION
 
@@ -70,6 +72,9 @@ class DiscussionsConfig:
         env = Env(expand_vars=True)
         with env.prefixed("DISCUSSIONS_"):
             return cls(
+                bot_associated_user_name=env.str(
+                    name="BOT_ASSOCIATED_USER_NAME", default=DISCUSSIONS_BOT_ASSOCIATED_USER_NAME
+                ),
                 bot_token=env.str(name="BOT_TOKEN", default=DISCUSSIONS_BOT_TOKEN),
                 parquet_revision=env.str(name="PARQUET_REVISION", default=DISCUSSIONS_PARQUET_REVISION),
             )

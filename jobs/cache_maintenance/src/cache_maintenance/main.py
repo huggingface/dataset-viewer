@@ -71,6 +71,7 @@ def run_job() -> None:
         elif action == "post-messages":
             post_messages(
                 hf_endpoint=job_config.common.hf_endpoint,
+                bot_associated_user_name=job_config.discussions.bot_associated_user_name,
                 bot_token=job_config.discussions.bot_token,
                 parquet_revision=job_config.discussions.parquet_revision,
             )

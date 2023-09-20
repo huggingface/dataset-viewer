@@ -295,6 +295,10 @@ hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
 
+discussions:
+  # name of the Hub user associated with the Datasets Server bot app
+  botAssociatedUserName: "parquet-converter"
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:

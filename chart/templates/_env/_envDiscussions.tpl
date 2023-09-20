@@ -2,6 +2,8 @@
 # Copyright 2023 The HuggingFace Authors.
 
 {{- define "envDiscussions" -}}
+- name: DISCUSSIONS_BOT_ASSOCIATED_USER_NAME
+  value: {{ .Values.discussions.botAssociatedUserName | quote }}
 - name: DISCUSSIONS_BOT_TOKEN
   {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
   valueFrom:
