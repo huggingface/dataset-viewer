@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import requests
-from datasets import Dataset
 from huggingface_hub.community import DiscussionComment, DiscussionWithDetails
 from huggingface_hub.constants import (
     REPO_TYPE_DATASET,
@@ -105,20 +104,16 @@ def update_repo_settings(
     return r.json()
 
 
-def create_hub_dataset_repo(
+def create_empty_hub_dataset_repo(
     *,
     prefix: str,
     file_paths: Optional[list[str]] = None,
-    dataset: Optional[Dataset] = None,
     private: bool = False,
     gated: Optional[str] = None,
 ) -> str:
     dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
     repo_id = f"{CI_USER}/{dataset_name}"
-    if dataset is not None:
-        dataset.push_to_hub(repo_id=repo_id, private=private, token=CI_USER_TOKEN, embed_external_files=True)
-    else:
-        hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET, private=private)
+    hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET, private=private)
     if gated:
         update_repo_settings(repo_id=repo_id, token=CI_USER_TOKEN, gated=gated, repo_type=DATASET)
     if file_paths is not None:
@@ -149,7 +144,7 @@ class TemporaryDataset(Resource):
     repo_id: str = field(init=False)
 
     def allocate(self) -> None:
-        self.repo_id = create_hub_dataset_repo(
+        self.repo_id = create_empty_hub_dataset_repo(
             prefix=self.prefix, gated="auto" if self.gated else None, private=self.private
         )
 
