@@ -932,6 +932,25 @@ def fetch_names(
         return []
 
 
+def get_datasets_with_last_updated_kind(kind: str, days: int) -> set[str]:
+    """
+    Get the set of datasets for which an artifact of some kind has been updated in the last days.
+
+    Args:
+        kind (str): The kind of the cache entries.
+        days (int): The number of days to look back.
+
+    Returns:
+        set[str]: The set of datasets.
+    """
+
+    return set(
+        CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK, updated_at__gt=get_datetime(days=days))
+        .only("dataset")
+        .distinct("dataset")
+    )
+
+
 # only for the tests
 def _clean_cache_database() -> None:
     CachedResponseDocument.drop_collection()  # type: ignore
