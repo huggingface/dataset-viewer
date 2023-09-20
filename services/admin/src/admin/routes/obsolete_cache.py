@@ -132,7 +132,7 @@ def create_delete_obsolete_cache_endpoint(
                 cached_assets_directory=cached_assets_directory,
             )
             return get_json_ok_response(
-                {"dataset": delete_datasets, "cache_records": deleted_cache_records}, max_age=max_age
+                {"delete_datasets": delete_datasets, "deleted_cache_records": deleted_cache_records}, max_age=max_age
             )
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
