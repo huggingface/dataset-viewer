@@ -9,6 +9,8 @@ from libcommon.simple_cache import delete_dataset_responses, get_all_datasets
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import delete_asset_dir
 
+MINIMUM_SUPPORTED_DATASETS = 20000
+
 
 def clean_cache(
     hf_endpoint: str,
@@ -21,6 +23,9 @@ def clean_cache(
     """
     logging.info("clean unsupported datasets")
     supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
+    if len(supported_dataset_infos) < MINIMUM_SUPPORTED_DATASETS:
+        logging.warning(f"only {len(supported_dataset_infos)} datasets were found, the clean up will be cancelled")
+        return
     deleted_datasets = 0
     deleted_cache_records = 0
     log_batch = 100

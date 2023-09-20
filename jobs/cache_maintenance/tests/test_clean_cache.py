@@ -2,17 +2,27 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import os
+import shutil
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from huggingface_hub.hf_api import DatasetInfo
 from libcommon.simple_cache import has_some_cache, upsert_response
 
 from cache_maintenance.cache_cleaner import clean_cache
 
 
-def test_clean_cache() -> None:
+@pytest.mark.parametrize(
+    "dataset_infos,minimun_supported_datasets,should_keep",
+    [
+        ([DatasetInfo(id="dataset")], 1, True),  # do not delete, dataset it is still supported
+        ([], 1000, True),  # do not delete, number of supported datasets is less than threshold
+        ([], 0, False),  # delete dataset
+    ],
+)
+def test_clean_cache(dataset_infos: list[DatasetInfo], minimun_supported_datasets: int, should_keep: bool) -> None:
     assets_directory = "/tmp/assets"
     cached_assets_directory = "/tmp/cached-assets"
     dataset = "dataset"
@@ -43,29 +53,18 @@ def test_clean_cache() -> None:
     )
     assert has_some_cache(dataset=dataset)
 
-    dataset_info = DatasetInfo(id=dataset)
-    with patch("cache_maintenance.cache_cleaner.get_supported_dataset_infos", return_value=[dataset_info]):
-        clean_cache(
-            hf_endpoint="hf_endpoint",
-            hf_token="hf_token",
-            assets_directory=assets_directory,
-            cached_assets_directory=cached_assets_directory,
-        )
+    with patch("cache_maintenance.cache_cleaner.get_supported_dataset_infos", return_value=dataset_infos):
+        with patch("cache_maintenance.cache_cleaner.MINIMUM_SUPPORTED_DATASETS", minimun_supported_datasets):
+            clean_cache(
+                hf_endpoint="hf_endpoint",
+                hf_token="hf_token",
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
+            )
 
-    assert asset_file.is_file()
-    assert cached_asset_file.is_file()
-    assert has_some_cache(dataset=dataset)
+    assert asset_file.is_file() == should_keep
+    assert cached_asset_file.is_file() == should_keep
+    assert has_some_cache(dataset=dataset) == should_keep
 
-    with patch("cache_maintenance.cache_cleaner.get_supported_dataset_infos", return_value=[]):
-        clean_cache(
-            hf_endpoint="hf_endpoint",
-            hf_token="hf_token",
-            assets_directory=assets_directory,
-            cached_assets_directory=cached_assets_directory,
-        )
-
-    assert not asset_file.is_file()
-    assert not cached_asset_file.is_file()
-    assert not has_some_cache(dataset=dataset)
-    os.rmdir(assets_directory)
-    os.rmdir(cached_assets_directory)
+    shutil.rmtree(assets_directory, ignore_errors=True)
+    shutil.rmtree(cached_assets_directory, ignore_errors=True)

@@ -25,5 +25,7 @@ spec:
           initContainers: 
             {{ include "initContainerAssets" . | nindent 12 }}
             {{ include "initContainerCachedAssets" . | nindent 12 }}
-          volumes: {{ include "volumeDuckDBIndex" . | nindent 12 }}
+          volumes: 
+            {{ include "volumeNfs" . | nindent 12 }}
+            {{ include "volumeCachedAssets" . | nindent 12 }}
 {{- end}}
