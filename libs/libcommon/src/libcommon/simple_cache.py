@@ -900,8 +900,12 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) 
     )
 
 
+def get_cache_count_for_dataset(dataset: str) -> int:
+    return CachedResponseDocument.objects(dataset=dataset).count()
+
+
 def has_some_cache(dataset: str) -> bool:
-    return CachedResponseDocument.objects(dataset=dataset).count() > 0
+    return get_cache_count_for_dataset(dataset) > 0
 
 
 def fetch_names(

@@ -8,6 +8,7 @@ from environs import Env
 from libcommon.config import (
     AssetsConfig,
     CacheConfig,
+    CachedAssetsConfig,
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
@@ -130,6 +131,7 @@ class AppConfig:
     admin: AdminConfig = field(default_factory=AdminConfig)
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
+    cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
     descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
@@ -146,6 +148,7 @@ class AppConfig:
             common=common_config,
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
+            cached_assets=CachedAssetsConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
             duckdb_index=DuckDBIndexConfig.from_env(),

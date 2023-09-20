@@ -114,11 +114,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 app.kubernetes.io/component: "{{ include "name" . }}-delete-indexes"
 {{- end -}}
 
-{{- define "labels.cacheCleaner" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-cache-cleaner"
-{{- end -}}
-
 {{- define "labels.admin" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-admin"

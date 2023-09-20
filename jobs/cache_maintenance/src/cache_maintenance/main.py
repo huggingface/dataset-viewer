@@ -15,7 +15,6 @@ from libcommon.storage import (
 )
 
 from cache_maintenance.backfill import backfill_cache
-from cache_maintenance.cache_cleaner import clean_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.config import JobConfig
 from cache_maintenance.delete_indexes import delete_indexes
@@ -27,7 +26,6 @@ def run_job() -> None:
     action = job_config.action
     supported_actions = [
         "backfill",
-        "clean-cache",
         "collect-cache-metrics",
         "collect-queue-metrics",
         "delete-indexes",
@@ -66,15 +64,6 @@ def run_job() -> None:
                 hf_token=job_config.common.hf_token,
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
-            )
-        elif action == "clean-cache":
-            assets_directory = init_assets_dir(directory=job_config.assets.storage_directory)
-            cached_assets_directory = init_cached_assets_dir(directory=job_config.cached_assets.storage_directory)
-            clean_cache(
-                hf_endpoint=job_config.common.hf_endpoint,
-                hf_token=job_config.common.hf_token,
-                assets_directory=assets_directory,
-                cached_assets_directory=cached_assets_directory,
             )
         elif action == "collect-queue-metrics":
             collect_queue_metrics(processing_graph=processing_graph)
