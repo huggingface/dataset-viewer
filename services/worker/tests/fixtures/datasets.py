@@ -130,15 +130,15 @@ The villain is the character who tends to have a negative impact on other charac
 """  # noqa: E501
 
 
-def long_text_column() -> Sequence[str]:
+def long_text_column() -> list[str]:
     return LONG_TEXTS.split("\n")
 
 
-def long_text_nan_column() -> Sequence[Optional[str]]:
+def long_text_nan_column() -> list[Optional[str]]:
     texts = long_text_column()
     for i in range(0, len(texts), 7):
-        texts[i] = None
-    return texts
+        texts[i] = None  # type: ignore
+    return texts  # type: ignore
 
 
 def value(content: Any, dtype: Any) -> Dataset:
