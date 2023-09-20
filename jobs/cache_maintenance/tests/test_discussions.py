@@ -2,7 +2,11 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import pytest
-from cache_maintenance.discussions import limit_to_one_dataset_per_namespace, create_link
+
+from cache_maintenance.discussions import (
+    create_link,
+    limit_to_one_dataset_per_namespace,
+)
 
 
 @pytest.mark.parametrize(
