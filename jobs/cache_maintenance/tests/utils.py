@@ -3,19 +3,28 @@
 
 import time
 from contextlib import suppress
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Union
-from dataclasses import dataclass, field
 
 import requests
 from datasets import Dataset
-from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES, REPO_TYPE_DATASET
-from huggingface_hub.community import DiscussionWithDetails, DiscussionComment
+from huggingface_hub.community import DiscussionComment, DiscussionWithDetails
+from huggingface_hub.constants import (
+    REPO_TYPE_DATASET,
+    REPO_TYPES,
+    REPO_TYPES_URL_PREFIXES,
+)
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 from libcommon.resources import Resource
 
-from .constants import CI_HUB_ENDPOINT, CI_USER, CI_USER_TOKEN, CI_PARQUET_CONVERTER_USER
+from .constants import (
+    CI_HUB_ENDPOINT,
+    CI_PARQUET_CONVERTER_USER,
+    CI_USER,
+    CI_USER_TOKEN,
+)
 
 DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)

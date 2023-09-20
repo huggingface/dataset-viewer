@@ -10,7 +10,12 @@ from pytest import MonkeyPatch, fixture
 
 from cache_maintenance.config import JobConfig
 
-from .constants import CI_APP_TOKEN, CI_HUB_ENDPOINT, CI_PARQUET_CONVERTER_APP_TOKEN, CI_PARQUET_CONVERTER_USER
+from .constants import (
+    CI_APP_TOKEN,
+    CI_HUB_ENDPOINT,
+    CI_PARQUET_CONVERTER_APP_TOKEN,
+    CI_PARQUET_CONVERTER_USER,
+)
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
