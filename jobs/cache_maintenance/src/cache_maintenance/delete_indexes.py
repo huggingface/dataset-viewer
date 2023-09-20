@@ -12,6 +12,9 @@ from libcommon.storage import StrPath
 def delete_indexes(
     duckdb_index_cache_directory: StrPath, subdirectory: str, file_extension: str, expired_time_interval_seconds: int
 ) -> None:
+    """
+    Delete temporary DuckDB index files downloaded to handle /search requests
+    """
     logging.info("delete indexes")
     indexes_folder = f"{duckdb_index_cache_directory}/{subdirectory}/**/*{file_extension}"
     logging.info(f"looking for all files with pattern {indexes_folder}")
