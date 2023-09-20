@@ -69,7 +69,8 @@ class ColumnType(str, enum.Enum):
     FLOAT = "float"
     INT = "int"
     CLASS_LABEL = "class_label"
-    STRING = "string"
+    STRING_LABEL = "string_label"
+    STRING_TEXT = "string_text"
 
 
 class Histogram(TypedDict):
@@ -455,7 +456,9 @@ def compute_descriptive_statistics_response(
         stats.append(
             StatisticsPerColumnItem(
                 column_name=feature_name,
-                column_type=ColumnType.STRING,
+                column_type=ColumnType.STRING_LABEL
+                if "frequencies" in string_column_stats
+                else ColumnType.STRING_TEXT,
                 column_statistics=string_column_stats,
             )
         )

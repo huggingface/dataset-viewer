@@ -130,12 +130,12 @@ The villain is the character who tends to have a negative impact on other charac
 """  # noqa: E501
 
 
-def long_text_column() -> list[str]:
+def long_text_column() -> Sequence[str]:
     return LONG_TEXTS.split("\n")
 
 
-def long_text_nan_column() -> list[Optional[str]]:
-    texts: list[Optional[str]] = long_text_column()
+def long_text_nan_column() -> Sequence[Optional[str]]:
+    texts = long_text_column()
     for i in range(0, len(texts), 7):
         texts[i] = None
     return texts
@@ -284,7 +284,7 @@ def datasets() -> Mapping[str, Dataset]:
         ),
         "descriptive_statistics": Dataset.from_dict(
             {
-                "string__label_column": [
+                "string_label__column": [
                     "cat",
                     "dog",
                     "cat",
@@ -306,7 +306,7 @@ def datasets() -> Mapping[str, Dataset]:
                     "dog",
                     "cat",
                 ],
-                "string__label_nan_column": [
+                "string_label__nan_column": [
                     "cat",
                     None,
                     "cat",
@@ -553,8 +553,8 @@ def datasets() -> Mapping[str, Dataset]:
             },
             features=Features(
                 {
-                    "string__label_column": Value("string"),
-                    "string__label_nan_column": Value("string"),
+                    "string_label__column": Value("string"),
+                    "string_label__nan_column": Value("string"),
                     "int__column": Value("int32"),
                     "int__nan_column": Value("int32"),
                     "int__negative_column": Value("int32"),
@@ -572,9 +572,9 @@ def datasets() -> Mapping[str, Dataset]:
         ),
         "descriptive_statistics_string_text": Dataset.from_dict(
             {
-                "string_text_column": long_text_column(),
-                "string_text_nan_column": long_text_nan_column(),
+                "string_text__column": long_text_column(),
+                "string_text__nan_column": long_text_nan_column(),
             },
-            features=Features({"string_text_column": Value("string"), "string_text_nan_column": Value("string")}),
+            features=Features({"string_text__column": Value("string"), "string_text__nan_column": Value("string")}),
         ),
     }
