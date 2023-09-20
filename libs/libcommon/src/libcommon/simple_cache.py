@@ -562,49 +562,6 @@ def has_any_successful_response(
     )
 
 
-class ContentsPage(TypedDict):
-    contents: list[dict[str, Any]]
-    cursor: Optional[str]
-
-
-def get_contents_page(kind: str, limit: int, cursor: Optional[str] = None) -> ContentsPage:
-    """
-    Get a list of contents of the cache entries for a specific kind, along with the next cursor.
-    Only the successful responses are returned.
-
-    The server returns results after the given cursor (the last object id).
-
-    Args:
-        kind (str): the kind of the cache entries
-        limit (strictly positive `int`):
-            The maximum number of results.
-        cursor (`str`):
-            A string representing the last object (id). An empty string means to start from the beginning.
-    Returns:
-        [`PageByUpdatedAt`]: A dict with the list of contents and the next cursor. The next cursor is
-        an empty string if there are no more items to be fetched. Note that the contents always contain the
-        dataset field.
-    Raises the following errors:
-        - [`~simple_cache.InvalidCursor`]
-          If the cursor is invalid.
-        - [`~simple_cache.InvalidLimit`]
-          If the limit is an invalid number.
-    """
-    if not cursor:
-        queryset = CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK)
-    else:
-        try:
-            queryset = CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK, id__gt=ObjectId(cursor))
-        except InvalidId as err:
-            raise InvalidCursor("Invalid cursor.") from err
-    if limit <= 0:
-        raise InvalidLimit("Invalid limit.")
-    objects = queryset.order_by("+id").only("content", "dataset").limit(limit)
-    length = objects.count(with_limit_and_skip=True)
-    new_cursor = str(objects[length - 1].id) if length >= limit else None
-    return ContentsPage(contents=[{**o.content, "dataset": o.dataset} for o in objects], cursor=new_cursor)
-
-
 # admin /metrics endpoint
 
 
