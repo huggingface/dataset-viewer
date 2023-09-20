@@ -14,6 +14,7 @@ from libcommon.storage import (
     exists,
     init_cached_assets_dir,
     init_duckdb_index_cache_dir,
+    init_parquet_metadata_dir,
 )
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -23,6 +24,7 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from search.config import AppConfig
+from search.routes.filter import create_filter_endpoint
 from search.routes.search import create_search_endpoint
 
 
@@ -37,6 +39,11 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
     if not exists(cached_assets_directory):
         raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
+
+    # TODO: delete
+    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
+    if not exists(parquet_metadata_directory):
+        raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
@@ -92,6 +99,24 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
+            ),
+        ),
+        Route(
+            "/filter",
+            endpoint=create_filter_endpoint(
+                processing_graph=processing_graph,
+                cached_assets_base_url=app_config.cached_assets.base_url,
+                cached_assets_directory=cached_assets_directory,
+                parquet_metadata_directory=parquet_metadata_directory,
+                # hf_endpoint=app_config.common.hf_endpoint,
+                # hf_token=app_config.common.hf_token,
+                hf_jwt_public_keys=hf_jwt_public_keys,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                external_auth_url=app_config.api.external_auth_url,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+                # cache_max_days=app_config.cache.max_days,
             ),
         ),
     ]

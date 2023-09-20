@@ -16,8 +16,8 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
-from filter.config import AppConfig
-from filter.routes.filter import (
+from search.config import AppConfig
+from search.routes.filter import (
     create_response,
     execute_filter_query,
     get_config_parquet_metadata_from_cache,
