@@ -16,6 +16,9 @@ def clean_cache(
     cached_assets_directory: StrPath,
     hf_token: Optional[str] = None,
 ) -> None:
+    """
+    Delete cache records and assets from datasets that no longer exist on the hub
+    """
     logging.info("clean unsupported datasets")
     supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
     deleted_datasets = 0

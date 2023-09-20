@@ -6,6 +6,7 @@ Available actions:
 
 - `backfill`: backfill the cache (i.e. create jobs to add the missing entries or update the outdated entries)
 - `metrics`: compute and store the cache and queue metrics
+- `clean-cache`: delete all cache records and assets for datasets that no longer exist on the hub
 - `skip`: do nothing
 
 ## Configuration
@@ -16,7 +17,7 @@ The script can be configured using environment variables. They are grouped by sc
 
 Set environment variables to configure the job (`CACHE_MAINTENANCE_` prefix):
 
-- `CACHE_MAINTENANCE_ACTION`: the action to launch, among `backfill`, `metrics`, `skip`. Defaults to `skip`.
+- `CACHE_MAINTENANCE_ACTION`: the action to launch, see Available actions. Defaults to `skip`.
 
 Specific to the backfill action:
 

@@ -27,7 +27,7 @@ def run_job() -> None:
     action = job_config.action
     supported_actions = [
         "backfill",
-        "clean",
+        "clean-cache",
         "collect-cache-metrics",
         "collect-queue-metrics",
         "delete-indexes",
@@ -42,7 +42,6 @@ def run_job() -> None:
         return
 
     init_logging(level=job_config.log.level)
-
     with (
         CacheMongoResource(
             database=job_config.cache.mongo_database, host=job_config.cache.mongo_url
