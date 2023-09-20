@@ -9,7 +9,7 @@ from libcommon.simple_cache import delete_dataset_responses, get_all_datasets
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import delete_asset_dir
 
-MINIMUM_SUPPORTED_DATASETS = 20000
+MINIMUM_SUPPORTED_DATASETS = 20_000
 
 
 def clean_cache(

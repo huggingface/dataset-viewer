@@ -17,7 +17,7 @@ from cache_maintenance.cache_cleaner import clean_cache
 @pytest.mark.parametrize(
     "dataset_infos,minimun_supported_datasets,should_keep",
     [
-        ([DatasetInfo(id="dataset")], 1, True),  # do not delete, dataset it is still supported
+        ([DatasetInfo(id="dataset")], 1, True),  # do not delete, dataset is still supported
         ([], 1000, True),  # do not delete, number of supported datasets is less than threshold
         ([], 0, False),  # delete dataset
     ],
