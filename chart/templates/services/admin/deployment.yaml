@@ -26,6 +26,7 @@ spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers: 
         {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCachedAssets" . | nindent 8 }}
         {{ include "initContainerDescriptiveStatistics" . | nindent 8 }}
         {{ include "initContainerDuckDBIndex" . | nindent 8 }}
         {{ include "initContainerHfDatasetsCache" . | nindent 8 }}
@@ -39,4 +40,5 @@ spec:
         {{ include "volumeHfDatasetsCache" . | nindent 8 }}
         {{ include "volumeNfs" . | nindent 8 }}
         {{ include "volumeParquetMetadata" . | nindent 8 }}
+        {{ include "volumeCachedAssets" . | nindent 8 }}
       securityContext: {{ include "securityContext" . | nindent 8 }}
