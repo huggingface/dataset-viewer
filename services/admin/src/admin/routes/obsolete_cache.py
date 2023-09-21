@@ -127,14 +127,14 @@ def create_delete_obsolete_cache_endpoint(
                 hf_timeout_seconds=hf_timeout_seconds,
             )
 
-            delete_datasets, deleted_cache_records = delete_obsolete_cache(
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                assets_directory=assets_directory,
-                cached_assets_directory=cached_assets_directory,
-            )
             return get_json_ok_response(
-                {"delete_datasets": delete_datasets, "deleted_cache_records": deleted_cache_records}, max_age=max_age
+                delete_obsolete_cache(
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    assets_directory=assets_directory,
+                    cached_assets_directory=cached_assets_directory,
+                ),
+                max_age=max_age,
             )
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
