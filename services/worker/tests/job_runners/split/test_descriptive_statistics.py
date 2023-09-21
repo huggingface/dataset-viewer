@@ -328,9 +328,9 @@ def test_compute(
     else:
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "statistics"]
-        assert response.content["num_examples"] == expected_response["num_examples"]
+        assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignor
         response_statistics = response.content["statistics"]
-        expected_statistics = expected_response["statistics"]
+        expected_statistics = expected_response["statistics"]  # type: ignor
         assert len(response_statistics) == len(expected_statistics)
         assert set([column_response["column_name"] for column_response in response_statistics]) == set(
             expected_statistics
