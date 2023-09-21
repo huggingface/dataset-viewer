@@ -104,10 +104,8 @@ def compute_first_rows_response(
 
     # get the rows
     try:
-        pa_table_plus_one = rows_index.query(offset=0, length=rows_max_number + 1)
-        # ^^ to be able to detect if a split has exactly rows_max_number rows
-        all_fetched = len(pa_table_plus_one) <= rows_max_number
-        pa_table = pa_table_plus_one.slice(offset=0, length=rows_max_number)
+        pa_table = rows_index.query(offset=0, length=rows_max_number)
+        all_fetched = rows_index.parquet_index.num_rows_total <= rows_max_number
     except TooBigRows as err:
         raise TooBigContentError(str(err))
     rows = [
