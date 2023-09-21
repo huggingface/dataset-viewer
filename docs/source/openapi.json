@@ -53,17 +53,6 @@
         },
         "required": true
       },
-      "Link": {
-        "description": "A link for the next page of results. See https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api#using-link-headers. Only 'rel=\"next\"' is used. If not present, there is no next page.",
-        "schema": {
-          "type": "string"
-        },
-        "example": {
-          "summary": "Link to the next page.",
-          "value": "<https://datasets-server.huggingface.co/hub-cache?cursor=64f7278d81223b123ba9d68b>; rel=\"next\""
-        },
-        "required": false
-      },
       "X-Error-Code-401": {
         "description": "A string that identifies the underlying error for 401.",
         "schema": {
@@ -143,15 +132,6 @@
             {
               "$ref": "#/components/schemas/X-Error-Code-ExternalFilesSizeRequestHTTPError"
             }
-          ]
-        },
-        "required": false
-      },
-      "X-Error-Code-500-hub-cache": {
-        "description": "A string that identifies the underlying error for 500 on /hub-cache. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
         "required": false
@@ -1226,30 +1206,6 @@
           },
           "num_examples": {
             "type": "integer"
-          }
-        }
-      },
-      "HubCacheResponse": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["dataset", "preview", "viewer", "partial", "num_rows"],
-          "properties": {
-            "dataset": {
-              "type": "string"
-            },
-            "preview": {
-              "type": "boolean"
-            },
-            "viewer": {
-              "type": "boolean"
-            },
-            "partial": {
-              "type": "boolean"
-            },
-            "num_rows": {
-              "type": "integer"
-            }
           }
         }
       },
@@ -5352,95 +5308,6 @@
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hub-cache": {
-      "get": {
-        "summary": "[Internal] Datasets info for the Hub",
-        "description": "A list of dataset infos. It's an internal endpoint meant to be cached by the Hub's backend. The response is paginated, use the Link header to get the next page.",
-        "operationId": "listDatasetsInfoForHubCache",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The datasets info.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "Link": {
-                "$ref": "#/components/headers/Link"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HubCacheResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first two values for brevity)": {
-                    "summary": "list of datasets info",
-                    "description": "Try with https://datasets-server.huggingface.co/hub-cache",
-                    "value": [
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190414468"
-                      },
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190442968"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-hub-cache"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
               }
