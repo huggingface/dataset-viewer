@@ -297,6 +297,9 @@
             "items": {
               "$ref": "#/components/schemas/RowItem"
             }
+          },
+          "truncated": {
+            "type": "boolean"
           }
         }
       },
@@ -2046,11 +2049,12 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Truncated cells": {
-                    "summary": "Truncated cells due to the response size (has a timestamp column). Only 3 rows are shown for brevity.",
+                    "summary": "Truncated cells due to the response size (has a timestamp column).",
                     "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
                     "value": {
                       "dataset": "ett",
@@ -2143,8 +2147,86 @@
                             "item_id": "OT"
                           },
                           "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 4,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 5,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 6,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 7,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 8,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 9,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         }
-                      ]
+                      ],
+                      "truncated": true
                     }
                   },
                   "Image column": {
@@ -2219,7 +2301,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Audio column": {
@@ -2354,7 +2437,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   }
                 }

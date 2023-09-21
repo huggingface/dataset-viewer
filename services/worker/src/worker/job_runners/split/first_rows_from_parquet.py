@@ -92,6 +92,7 @@ def compute_first_rows_response(
         "split": split,
         "features": features_list,
         "rows": [],
+        "truncated": False,
     }
 
     surrounding_json_size = get_json_size(response_features_only)
@@ -104,6 +105,7 @@ def compute_first_rows_response(
     # get the rows
     try:
         pa_table = rows_index.query(offset=0, length=rows_max_number)
+        all_fetched = rows_index.parquet_index.num_rows_total <= rows_max_number
     except TooBigRows as err:
         raise TooBigContentError(str(err))
     rows = [
@@ -136,7 +138,7 @@ def compute_first_rows_response(
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
-    row_items = create_truncated_row_items(
+    row_items, truncated = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
@@ -146,6 +148,8 @@ def compute_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
+    response["truncated"] = (not all_fetched) or truncated
+
     return response
 
 
