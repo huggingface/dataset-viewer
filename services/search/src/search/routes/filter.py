@@ -60,6 +60,18 @@ FILTER_COUNT_QUERY = """\
     WHERE {where}"""
 
 
+FILTER_QUERY_ON_INDEX = """\
+    SELECT {columns}
+    FROM data
+    WHERE {where}
+    LIMIT {limit}
+    OFFSET {offset}"""
+
+FILTER_COUNT_QUERY_ON_INDEX = """\
+    SELECT COUNT(*)
+    FROM data
+    WHERE {where}"""
+
 logger = logging.getLogger(__name__)
 
 # DuckDB connection
@@ -302,6 +314,18 @@ def execute_filter_query(
     )
     pa_table = con.sql(filter_query).arrow()
     filter_count_query = FILTER_COUNT_QUERY.format(parquet_file_urls=parquet_file_urls, where=where)
+    num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
+    return num_rows_total, pa_table
+
+
+def execute_filter_query_on_index(
+    index_file_location: str, columns: list[str], where: str, limit: int, offset: int
+) -> tuple[int, pa.Table]:
+    con = duckdb.connect(database=index_file_location, read_only=True)
+    # TODO: Address possible SQL injection CWE-89
+    filter_query = FILTER_QUERY_ON_INDEX.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
+    pa_table = con.sql(filter_query).arrow()
+    filter_count_query = FILTER_COUNT_QUERY_ON_INDEX.format(where=where)
     num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
 

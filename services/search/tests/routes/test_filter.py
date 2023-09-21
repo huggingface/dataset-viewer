@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import os
 import shutil
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any
 
+import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -20,6 +22,7 @@ from search.config import AppConfig
 from search.routes.filter import (
     create_response,
     execute_filter_query,
+    execute_filter_query_on_index,
     get_config_parquet_metadata_from_cache,
     get_features_from_parquet_file_metadata,
 )
@@ -87,6 +90,25 @@ def ds_config_parquet_metadata(ds_fs: AbstractFileSystem, ds_parquet_metadata_di
     return config_parquet_content
 
 
+@pytest.fixture  # TODO: session scope
+def index_file_location(ds: Dataset) -> Generator[str, None, None]:
+    index_file_location = "index.duckdb"
+    con = duckdb.connect(index_file_location)
+    con.execute("INSTALL 'httpfs';")
+    con.execute("LOAD 'httpfs';")
+    con.execute("INSTALL 'fts';")
+    con.execute("LOAD 'fts';")
+    con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")
+    sample_df = ds.to_pandas()  # noqa: F841
+    create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
+    con.sql(create_command_sql)
+    # assert sample_df.shape[0] == con.execute(query="SELECT COUNT(*) FROM data;").fetchall()[0][0]
+    con.sql("PRAGMA create_fts_index('data', '__hf_index_id', 'name', 'gender', overwrite=1);")
+    con.close()
+    yield index_file_location
+    os.remove(index_file_location)
+
+
 def test_get_config_parquet_metadata_from_cache(
     ds_config_parquet_metadata: dict[str, Any], processing_graph: ProcessingGraph
 ) -> None:
@@ -116,6 +138,15 @@ def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
     columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
         columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
+    )
+    assert num_rows_total == 2
+    assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
+
+
+def test_execute_filter_query_on_index(index_file_location: str) -> None:
+    columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
+    num_rows_total, pa_table = execute_filter_query_on_index(
+        index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2
     assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
