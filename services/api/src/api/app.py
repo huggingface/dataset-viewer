@@ -19,7 +19,6 @@ from starlette_prometheus import PrometheusMiddleware
 
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition, create_endpoint
-from api.routes.valid import create_valid_endpoint
 from api.routes.webhook import create_webhook_endpoint
 
 
@@ -83,15 +82,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
     ] + [
-        Route(
-            "/valid",
-            endpoint=create_valid_endpoint(
-                processing_graph=processing_graph,
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-            ),
-        ),
-        # ^ called by https://github.com/huggingface/model-evaluator
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus

@@ -19,7 +19,7 @@ There are three jobs:
 - `/first-rows` corresponds to the `/first-rows` endpoint. It gets the first 100 rows and columns of a dataset split.
 - `/parquet` corresponds to the `/parquet` endpoint. It downloads the whole dataset, converts it to [parquet](https://parquet.apache.org/) and publishes the parquet files to the Hub.
 
-You might've noticed the `/valid` and `/is-valid` endpoints don't have a job in the queue. The responses from these endpoints are generated on demand.
+You might've noticed the `/rows` and `/search` endpoints don't have a job in the queue. The responses from these endpoints are generated on demand.
 
 ## Workers
 
