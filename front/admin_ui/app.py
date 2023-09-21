@@ -401,6 +401,8 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
     dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
     backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
 
+    fetch_obsolete_cache_button.click(get_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
+    delete_obsolete_cache_button.click(delete_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
 
 if __name__ == "__main__":
     demo.launch()
