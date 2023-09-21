@@ -82,23 +82,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
     ] + [
-        Route(
-<<<<<<< HEAD
-            "/valid",
-            endpoint=create_valid_endpoint(
-                processing_graph=processing_graph,
-=======
-            HUB_CACHE_ENDPOINT,
-            endpoint=create_hub_cache_endpoint(
-                endpoint_url=f"{app_config.hub_cache.base_url}{HUB_CACHE_ENDPOINT}",
-                cache_kind=app_config.hub_cache.cache_kind,
-                num_results_per_page=app_config.hub_cache.num_results_per_page,
->>>>>>> 754ac49e (feat: 🎸 remove /valid endpoint)
-                max_age_long=app_config.api.max_age_long,
-                max_age_short=app_config.api.max_age_short,
-            ),
-        ),
-        # ^ called by https://github.com/huggingface/model-evaluator
         Route("/healthcheck", endpoint=healthcheck_endpoint),
         Route("/metrics", endpoint=create_metrics_endpoint()),
         # ^ called by Prometheus
