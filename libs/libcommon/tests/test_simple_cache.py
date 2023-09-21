@@ -32,7 +32,6 @@ from libcommon.simple_cache import (
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
-    get_valid_datasets,
     has_any_successful_response,
     upsert_response,
 )
@@ -244,56 +243,6 @@ def test_big_row() -> None:
         upsert_response(
             kind=kind, dataset=dataset, config=config, split=split, content=big_content, http_status=HTTPStatus.OK
         )
-
-
-def test_get_valid_dataset_names_empty() -> None:
-    assert not get_valid_datasets(kind="test_kind")
-
-
-def test_get_valid_dataset_names_two_valid_datasets() -> None:
-    kind = "test_kind"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_valid_datasets(kind=kind) == {dataset_a, dataset_b}
-
-
-def test_get_valid_dataset_names_filtered_by_kind() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind_b, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_valid_datasets(kind=kind_a) == {dataset_a}
-    assert get_valid_datasets(kind=kind_b) == {dataset_b}
-
-
-def test_get_valid_dataset_names_at_least_one_valid_response() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    assert get_valid_datasets(kind=kind) == {dataset}
-
-
-def test_get_valid_dataset_names_only_invalid_responses() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    assert not get_valid_datasets(kind=kind)
 
 
 def test_has_any_successful_response_empty() -> None:

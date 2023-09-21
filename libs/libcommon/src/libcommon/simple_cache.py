@@ -547,10 +547,6 @@ def get_previous_step_or_raise(
     return best_response
 
 
-def get_valid_datasets(kind: str) -> set[str]:
-    return set(CachedResponseDocument.objects(kind=kind, http_status=HTTPStatus.OK).distinct("dataset"))
-
-
 def get_all_datasets() -> set[str]:
     return set(CachedResponseDocument.objects().distinct("dataset"))
 
