@@ -134,13 +134,14 @@ For example, here are the `features` and the first 100 `rows` of the `duorc`/`Se
       "truncated_cells": []
     }
     ...
-  ]
+  ],
+  "truncated": false
 }
 ```
 
 ## Truncated responses
 
-For some datasets, the response size from `/first-rows` may exceed 1MB, in which case the response is truncated until the size is under 1MB. This means you may not get 100 rows in your response because the rows are truncated.
+For some datasets, the response size from `/first-rows` may exceed 1MB, in which case the response is truncated until the size is under 1MB. This means you may not get 100 rows in your response because the rows are truncated, in which case the `truncated` field would be `true`.
 
 In some cases, if even the first few rows generate a response that exceeds 1MB, some of the columns are truncated and converted to a string. You'll see these listed in the `truncated_cells` field.
 
@@ -172,4 +173,6 @@ For example, the [`ett`](https://datasets-server.huggingface.co/first-rows?datas
       "truncated_cells": ["target", "feat_dynamic_real"]
     },
   ...
+  ],
+  truncated: true
 ```

@@ -73,6 +73,7 @@ class PreviousJob(TypedDict):
 class SplitFirstRowsResponse(FullSplitItem):
     features: list[FeatureItem]
     rows: list[RowItem]
+    truncated: Optional[bool]
 
 
 class OptUrl(TypedDict):

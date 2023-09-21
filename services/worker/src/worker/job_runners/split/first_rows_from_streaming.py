@@ -189,6 +189,7 @@ def compute_first_rows_response(
         "split": split,
         "features": features_list,
         "rows": [],
+        "truncated": False,
     }
 
     surrounding_json_size = get_json_size(response_features_only)
@@ -209,6 +210,7 @@ def compute_first_rows_response(
         token=hf_token,
     )
     rows = rows_content["rows"]
+    all_fetched = rows_content["all_fetched"]
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
@@ -229,7 +231,7 @@ def compute_first_rows_response(
 
     # truncate the rows to fit within the restrictions, and prepare them as RowItems
     columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
-    row_items = create_truncated_row_items(
+    row_items, truncated = create_truncated_row_items(
         rows=transformed_rows,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
@@ -239,6 +241,7 @@ def compute_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
+    response["truncated"] = (not all_fetched) or truncated
 
     # return the response
     return response
