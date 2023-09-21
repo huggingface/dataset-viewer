@@ -22,7 +22,6 @@ from search.config import AppConfig
 from search.routes.filter import (
     create_response,
     execute_filter_query,
-    execute_filter_query_on_index,
     get_config_parquet_metadata_from_cache,
     get_features_from_parquet_file_metadata,
 )
@@ -133,19 +132,9 @@ def test_get_features_from_parquet_file_metadata(
     }
 
 
-def test_execute_filter_query(ds_fs: AbstractFileSystem) -> None:
-    parquet_file_paths = [str(ds_fs.tmp_dir.joinpath(path)) for path in ds_fs.ls("default", detail=False)]
+def test_execute_filter_query(index_file_location: str) -> None:
     columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
-        columns=columns, parquet_file_urls=parquet_file_paths, where=where, limit=limit, offset=offset
-    )
-    assert num_rows_total == 2
-    assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
-
-
-def test_execute_filter_query_on_index(index_file_location: str) -> None:
-    columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
-    num_rows_total, pa_table = execute_filter_query_on_index(
         index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2

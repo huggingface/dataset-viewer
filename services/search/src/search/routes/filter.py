@@ -49,35 +49,17 @@ HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 FILTER_QUERY = """\
     SELECT {columns}
-    FROM read_parquet({parquet_file_urls})
+    FROM data
     WHERE {where}
     LIMIT {limit}
     OFFSET {offset}"""
 
 FILTER_COUNT_QUERY = """\
     SELECT COUNT(*)
-    FROM read_parquet({parquet_file_urls})
-    WHERE {where}"""
-
-
-FILTER_QUERY_ON_INDEX = """\
-    SELECT {columns}
-    FROM data
-    WHERE {where}
-    LIMIT {limit}
-    OFFSET {offset}"""
-
-FILTER_COUNT_QUERY_ON_INDEX = """\
-    SELECT COUNT(*)
     FROM data
     WHERE {where}"""
 
 logger = logging.getLogger(__name__)
-
-# DuckDB connection
-con = duckdb.connect()
-con.execute("INSTALL httpfs;")
-con.execute("LOAD httpfs;")
 
 
 def create_filter_endpoint(
@@ -194,8 +176,6 @@ def create_filter_endpoint(
                     parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
                         dataset=dataset, config=config, split=split, processing_graph=processing_graph
                     )
-                with StepProfiler(method="filter_endpoint", step="get parquet file urls"):
-                    parquet_file_urls = [item["url"] for item in parquet_file_metadata_items]
                 with StepProfiler(method="filter_endpoint", step="get features"):
                     features = get_features_from_parquet_file_metadata(
                         parquet_file_metadata_item=parquet_file_metadata_items[0],
@@ -207,8 +187,8 @@ def create_filter_endpoint(
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = execute_filter_query(
+                        index_file_location=index_file_location,
                         columns=supported_columns,
-                        parquet_file_urls=parquet_file_urls,
                         where=where,
                         limit=length,
                         offset=offset,
@@ -306,26 +286,13 @@ def get_features_from_parquet_file_metadata(
 
 
 def execute_filter_query(
-    columns: list[str], parquet_file_urls: list[str], where: str, limit: int, offset: int
-) -> tuple[int, pa.Table]:
-    # TODO: Address possible SQL injection CWE-89
-    filter_query = FILTER_QUERY.format(
-        columns=",".join(columns), parquet_file_urls=parquet_file_urls, where=where, limit=limit, offset=offset
-    )
-    pa_table = con.sql(filter_query).arrow()
-    filter_count_query = FILTER_COUNT_QUERY.format(parquet_file_urls=parquet_file_urls, where=where)
-    num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
-    return num_rows_total, pa_table
-
-
-def execute_filter_query_on_index(
     index_file_location: str, columns: list[str], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
     con = duckdb.connect(database=index_file_location, read_only=True)
     # TODO: Address possible SQL injection CWE-89
-    filter_query = FILTER_QUERY_ON_INDEX.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
+    filter_query = FILTER_QUERY.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
     pa_table = con.sql(filter_query).arrow()
-    filter_count_query = FILTER_COUNT_QUERY_ON_INDEX.format(where=where)
+    filter_count_query = FILTER_COUNT_QUERY.format(where=where)
     num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
 
