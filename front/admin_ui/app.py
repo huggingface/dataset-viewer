@@ -149,7 +149,7 @@ with gr.Blocks() as demo:
             obsolete_cache = response.json()
             obsolete_cache_df = pd.DataFrame(obsolete_cache)
             datasets_to_delete_count = len(obsolete_cache_df)
-            cache_records_to_delete_count = obsolete_cache_df["cache_records"].sum()
+            cache_records_to_delete_count = 0 if datasets_to_delete_count == 0 else obsolete_cache_df["cache_records"].sum()
             return {
                 obsolete_cache_table: gr.update(visible=True, value=obsolete_cache_df),
                 datasets_to_delete: gr.update(
