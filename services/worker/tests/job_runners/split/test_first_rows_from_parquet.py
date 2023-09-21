@@ -217,3 +217,84 @@ def test_compute(
             assert mock_read_schema.call_args_list[0][0][0] == os.path.join(
                 parquet_metadata_directory, fake_metadata_subpath
             )
+
+
+@pytest.mark.parametrize(
+    "rows_max_bytes,rows_min_number,rows_max_number,truncated",
+    [
+        (1_000, 10, 100, False),  # no truncation
+        (1_000, 1, 2, True),  # returns 2 rows at max, while the split has 3 rows
+        (250, 1, 100, True),  # does not return the 3 rows, because it would be more than the max bytes
+    ],
+)
+def test_from_parquet_truncation(
+    ds: Dataset,
+    ds_fs: AbstractFileSystem,
+    get_job_runner: GetJobRunner,
+    app_config: AppConfig,
+    rows_max_bytes: int,
+    rows_min_number: int,
+    rows_max_number: int,
+    truncated: bool,
+) -> None:
+    dataset, config, split = "dataset", "config", "split"
+    parquet_file = ds_fs.open("config/train/0000.parquet")
+    fake_url = (
+        "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/train/0000.parquet"
+    )
+    fake_metadata_subpath = "fake-parquet-metadata/dataset/config/train/0000.parquet"
+
+    config_parquet_metadata_content = {
+        "parquet_files_metadata": [
+            {
+                "dataset": dataset,
+                "config": config,
+                "split": split,
+                "url": fake_url,  # noqa: E501
+                "filename": "0000.parquet",
+                "size": parquet_file.size,
+                "num_rows": len(ds),
+                "parquet_metadata_subpath": fake_metadata_subpath,
+            }
+        ]
+    }
+
+    upsert_response(
+        kind="config-level",
+        dataset=dataset,
+        config=config,
+        content=config_parquet_metadata_content,
+        http_status=HTTPStatus.OK,
+    )
+
+    parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
+    with patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file), patch(
+        "pyarrow.parquet.read_metadata", return_value=parquet_metadata
+    ), patch("pyarrow.parquet.read_schema", return_value=ds.data.schema):
+        job_runner = get_job_runner(
+            dataset,
+            config,
+            split,
+            replace(
+                app_config,
+                common=replace(app_config.common, hf_token=None),
+                first_rows=replace(
+                    app_config.first_rows,
+                    max_number=rows_max_number,
+                    min_number=rows_min_number,
+                    max_bytes=rows_max_bytes,
+                    min_cell_bytes=10,
+                    columns_max_number=1_000,
+                ),
+            ),
+        )
+
+        response = job_runner.compute().content
+        assert response
+        assert response["truncated"] == truncated
+        assert response["rows"]
+        # testing file has 3 rows see config/train/0000.parquet file
+        if truncated:
+            assert len(response["rows"]) < 3
+        else:
+            assert len(response["rows"]) == 3

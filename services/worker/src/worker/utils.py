@@ -125,7 +125,7 @@ def create_truncated_row_items(
     rows_max_bytes: int,
     rows_min_number: int,
     columns_to_keep_untruncated: list[str],
-) -> list[RowItem]:
+) -> tuple[list[RowItem], bool]:
     row_items = []
     rows_bytes = 0
 
@@ -150,12 +150,13 @@ def create_truncated_row_items(
         #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
         #     f" ({rows_max_bytes}), they will be truncated"
         # )
-        return truncate_row_items(
+        truncated_row_items = truncate_row_items(
             row_items=row_items,
             min_cell_bytes=min_cell_bytes,
             rows_max_bytes=rows_max_bytes,
             columns_to_keep_untruncated=columns_to_keep_untruncated,
         )
+        return truncated_row_items, len(truncated_row_items) < len(rows)
 
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
@@ -169,7 +170,7 @@ def create_truncated_row_items(
             # )
             break
         row_items.append(row_item)
-    return row_items
+    return row_items, len(row_items) < len(rows)
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])

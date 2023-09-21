@@ -179,19 +179,19 @@ def test_number_rows(
 
 
 @pytest.mark.parametrize(
-    "name,rows_max_bytes,columns_max_number,error_code",
+    "name,rows_max_bytes,columns_max_number,error_code,truncated",
     [
         # not-truncated public response is 687 bytes
-        ("public", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
-        ("public", 1_000, 1_000, None),  # not truncated
-        ("public", 1_000, 1, "TooManyColumnsError"),  # too small columns limit
+        ("public", 10, 1_000, "TooBigContentError", False),  # too small limit, even with truncation
+        ("public", 1_000, 1_000, None, False),  # not truncated
+        ("public", 1_000, 1, "TooManyColumnsError", False),  # too small columns limit
         # not-truncated big response is 5_885_989 bytes
-        ("big", 10, 1_000, "TooBigContentError"),  # too small limit, even with truncation
-        ("big", 1_000, 1_000, None),  # truncated successfully
-        ("big", 10_000_000, 1_000, None),  # not truncated
+        ("big", 10, 1_000, "TooBigContentError", False),  # too small limit, even with truncation
+        ("big", 1_000, 1_000, None, True),  # truncated successfully
+        ("big", 10_000_000, 1_000, None, False),  # not truncated
     ],
 )
-def test_truncation(
+def test_from_streaming_truncation(
     hub_public_csv: str,
     hub_public_big: str,
     get_job_runner: GetJobRunner,
@@ -200,6 +200,7 @@ def test_truncation(
     rows_max_bytes: int,
     columns_max_number: int,
     error_code: str,
+    truncated: bool,
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
     config, split = get_default_config_split()
@@ -228,3 +229,4 @@ def test_truncation(
     else:
         response = job_runner.compute().content
         assert get_json_size(response) <= rows_max_bytes
+        assert response["truncated"] == truncated
