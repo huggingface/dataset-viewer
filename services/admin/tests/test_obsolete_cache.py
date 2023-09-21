@@ -72,14 +72,14 @@ def test_delete_obsolete_cache(
     assert cached_asset_file.is_file()
 
     upsert_response(
-        kind="dataset-config-names",
+        kind="kind_1",
         dataset=dataset,
         content={"config_names": [{"dataset": dataset, "config": "config"}]},
         http_status=HTTPStatus.OK,
     )
 
     upsert_response(
-        kind="config-split-names-from-streaming",
+        kind="kind_2",
         dataset=dataset,
         config="config",
         content={"splits": [{"dataset": dataset, "config": "config", "split": "split"}]},
@@ -98,14 +98,16 @@ def test_delete_obsolete_cache(
                         cached_assets_directory=cached_assets_directory,
                     )
             else:
-                deleted_dataset, deleted_cached_records = delete_obsolete_cache(
+                deletion_report = delete_obsolete_cache(
                     hf_endpoint="hf_endpoint",
                     hf_token="hf_token",
                     assets_directory=assets_directory,
                     cached_assets_directory=cached_assets_directory,
                 )
-                assert deleted_dataset == 0 if should_keep else 1
-                assert deleted_cached_records == 0 if should_keep else 2
+                assert len(deletion_report) == 0 if should_keep else 1
+                if len(deletion_report) > 0:
+                    assert deletion_report[0]["dataset"] == "dataset"
+                    assert deletion_report[0]["cache_records"] == 2  # for kind_1 and kind_2
     assert asset_file.is_file() == should_keep
     assert cached_asset_file.is_file() == should_keep
     assert has_some_cache(dataset=dataset) == should_keep

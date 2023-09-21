@@ -23,13 +23,12 @@ from admin.utils import (
     get_json_ok_response,
 )
 
-DATASET_CONFIG_NAMES_KIND = "dataset-config-names"
 MINIMUM_SUPPORTED_DATASETS = 20_000
 
 
 class DatasetCacheReport(TypedDict):
     dataset: str
-    cache_records: int
+    cache_records: Optional[int]
 
 
 def get_supported_dataset_names(
@@ -45,7 +44,7 @@ def get_obsolete_cache(
     hf_token: Optional[str] = None,
 ) -> list[DatasetCacheReport]:
     supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    existing_datasets = get_all_datasets(DATASET_CONFIG_NAMES_KIND)
+    existing_datasets = get_all_datasets()
     datasets_to_delete = existing_datasets.difference(supported_dataset_names)
     return [
         DatasetCacheReport(dataset=dataset, cache_records=get_cache_count_for_dataset(dataset=dataset))
@@ -84,25 +83,28 @@ def delete_obsolete_cache(
     assets_directory: StrPath,
     cached_assets_directory: StrPath,
     hf_token: Optional[str] = None,
-) -> tuple[int, int]:
+) -> list[DatasetCacheReport]:
     supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
     if len(supported_dataset_names) < MINIMUM_SUPPORTED_DATASETS:
         raise UnexpectedError(f"only {len(supported_dataset_names)} datasets were found")
 
-    existing_datasets = get_all_datasets(DATASET_CONFIG_NAMES_KIND)
+    existing_datasets = get_all_datasets()
     datasets_to_delete = existing_datasets.difference(supported_dataset_names)
-    deleted_cache_records = 0
 
+    deletion_report = []
     for dataset in datasets_to_delete:
-        # delete assets
-        delete_asset_dir(dataset=dataset, directory=assets_directory)
-        delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
-
         # delete cache records
         datasets_cache_records = delete_dataset_responses(dataset=dataset)
-        deleted_cache_records += datasets_cache_records if datasets_cache_records is not None else 0
+        if datasets_cache_records is not None and datasets_cache_records > 0:
+            # delete assets
+            delete_asset_dir(dataset=dataset, directory=assets_directory)
+            delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
+            logging.debug(f"{dataset} has been delete with {datasets_cache_records} cache records")
+        else:
+            logging.debug(f"unable to delete {dataset}")
+        deletion_report.append(DatasetCacheReport(dataset=dataset, cache_records=datasets_cache_records))
 
-    return len(datasets_to_delete), deleted_cache_records
+    return deletion_report
 
 
 def create_delete_obsolete_cache_endpoint(
