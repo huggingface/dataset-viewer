@@ -360,6 +360,7 @@ def create_first_rows_response(dataset: str, cols: Mapping[str, Any], rows: list
             }
             for row_idx, row in enumerate(rows)
         ],
+        "truncated": False,
     }
 
 
