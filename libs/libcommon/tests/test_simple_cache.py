@@ -18,6 +18,7 @@ from libcommon.simple_cache import (
     CacheReportsPage,
     CacheReportsWithContentPage,
     CacheTotalMetricDocument,
+    DatasetWithRevision,
     InvalidCursor,
     InvalidLimit,
     delete_dataset_responses,
@@ -962,24 +963,30 @@ class Entry(TypedDict):
     config: str
     http_status: HTTPStatus
     updated_at: datetime
+    dataset_git_revision: Optional[str]
 
 
 DAYS = 2
 BEFORE = get_datetime(days=DAYS + 1)
-AFTER = get_datetime(days=DAYS - 1)
+AFTER_1 = get_datetime(days=DAYS - 1)
+AFTER_2 = get_datetime(days=DAYS - 1.5)
+REVISION_A = "revision_A"
+REVISION_B = "revision_B"
 ENTRY_1: Entry = {
     "kind": CACHE_KIND_A,
     "dataset": DATASET_NAME,
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
-    "updated_at": AFTER,
+    "updated_at": AFTER_1,
+    "dataset_git_revision": REVISION_A,
 }
 ENTRY_2: Entry = {
     "kind": CACHE_KIND_B,
     "dataset": DATASET_NAME,
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
-    "updated_at": AFTER,
+    "updated_at": AFTER_1,
+    "dataset_git_revision": None,
 }
 DATASET_2 = f"{DATASET_NAME}_2"
 ENTRY_3: Entry = {
@@ -987,21 +994,24 @@ ENTRY_3: Entry = {
     "dataset": DATASET_2,
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
-    "updated_at": AFTER,
+    "updated_at": AFTER_1,
+    "dataset_git_revision": None,
 }
 ENTRY_4: Entry = {
     "kind": CACHE_KIND_A,
     "dataset": DATASET_NAME,
     "config": CONFIG_NAME_2,
     "http_status": HTTPStatus.OK,
-    "updated_at": AFTER,
+    "updated_at": AFTER_2,
+    "dataset_git_revision": REVISION_B,
 }
 ENTRY_5: Entry = {
     "kind": CACHE_KIND_A,
     "dataset": DATASET_NAME,
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
-    "updated_at": AFTER,
+    "updated_at": AFTER_1,
+    "dataset_git_revision": None,
 }
 ENTRY_6: Entry = {
     "kind": CACHE_KIND_A,
@@ -1009,25 +1019,40 @@ ENTRY_6: Entry = {
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
     "updated_at": BEFORE,
+    "dataset_git_revision": None,
 }
+
+DATASET_REV_A = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_A)
+DATASET_2_REV_NONE = DatasetWithRevision(dataset=DATASET_2, revision=None)
+DATASET_REV_B = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_B)
+
+
+def get_dataset(dataset_with_revision: DatasetWithRevision) -> str:
+    return dataset_with_revision.dataset
+
+
+def assert_lists_are_equal(a: list[DatasetWithRevision], b: list[DatasetWithRevision]) -> None:
+    assert sorted(a, key=get_dataset) == sorted(b, key=get_dataset)
 
 
 @pytest.mark.parametrize(
     "entries,expected_datasets",
     [
-        ([], set()),
-        ([ENTRY_1], {DATASET_NAME}),
-        ([ENTRY_2], set()),
-        ([ENTRY_3], {DATASET_2}),
-        ([ENTRY_4], {DATASET_NAME}),
-        ([ENTRY_5], set()),
-        ([ENTRY_6], set()),
-        ([ENTRY_1, ENTRY_3], {DATASET_NAME, DATASET_2}),
-        ([ENTRY_1, ENTRY_4], {DATASET_NAME}),
-        ([ENTRY_1, ENTRY_2, ENTRY_3, ENTRY_4, ENTRY_5, ENTRY_6], {DATASET_NAME, DATASET_2}),
+        ([], []),
+        ([ENTRY_1], [DATASET_REV_A]),
+        ([ENTRY_2], []),
+        ([ENTRY_3], [DATASET_2_REV_NONE]),
+        ([ENTRY_4], [DATASET_REV_B]),
+        ([ENTRY_5], []),
+        ([ENTRY_6], []),
+        ([ENTRY_1, ENTRY_3], [DATASET_REV_A, DATASET_2_REV_NONE]),
+        ([ENTRY_1, ENTRY_4], [DATASET_REV_B]),
+        ([ENTRY_1, ENTRY_2, ENTRY_3, ENTRY_4, ENTRY_5, ENTRY_6], [DATASET_REV_B, DATASET_2_REV_NONE]),
     ],
 )
-def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_datasets: set[str]) -> None:
+def test_get_datasets_with_last_updated_kind(
+    entries: list[Entry], expected_datasets: list[DatasetWithRevision]
+) -> None:
     for entry in entries:
         upsert_response(
             kind=entry["kind"],
@@ -1037,7 +1062,9 @@ def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_data
             content={},
             http_status=entry["http_status"],
             updated_at=entry["updated_at"],
+            dataset_git_revision=entry["dataset_git_revision"],
         )
     kind = CACHE_KIND_A
     days = DAYS
-    assert get_datasets_with_last_updated_kind(kind=kind, days=days) == expected_datasets
+    assert_lists_are_equal(get_datasets_with_last_updated_kind(kind=kind, days=days), expected_datasets)
+    # ^ the order is not meaningful, so we sort to make the test deterministic

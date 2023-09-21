@@ -2,12 +2,15 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Optional, TypedDict
+from typing import Literal, Optional, TypedDict
 from urllib import parse
 
 from huggingface_hub import HfApi
 from huggingface_hub.constants import REPO_TYPE_DATASET
-from libcommon.simple_cache import get_datasets_with_last_updated_kind
+from libcommon.simple_cache import (
+    DatasetWithRevision,
+    get_datasets_with_last_updated_kind,
+)
 
 PARQUET_CACHE_KIND = "config-parquet"
 DAYS = 1
@@ -52,11 +55,11 @@ def post_messages_on_parquet_conversion(
     parquet_revision: str,
 ) -> ParquetCounters:
     logging.info("Post messages in Hub discussion to notify about parquet conversion")
-    datasets = limit_to_one_dataset_per_namespace(
+    datasets_with_revision = limit_to_one_dataset_per_namespace(
         get_datasets_with_last_updated_kind(kind=PARQUET_CACHE_KIND, days=DAYS)
     )
 
-    logging.info(f"Posting messages for {len(datasets)} datasets")
+    logging.info(f"Posting messages for {len(datasets_with_revision)} datasets")
     log_batch = 100
     counters: ParquetCounters = {
         "datasets": 0,
@@ -69,14 +72,17 @@ def post_messages_on_parquet_conversion(
     def get_log() -> str:
         return (
             f"{counters['messages'] } messages posted (total:"
-            f" {len(datasets)} datasets): {counters['new_discussions']} discussions have been opened."
+            f" {len(datasets_with_revision)} datasets): {counters['new_discussions']} discussions have been opened."
             f" {counters['dismissed_messages']} messages have been dismissed because the discussion had been closed."
             f" {counters['errors']} errors."
         )
 
     hf_api = HfApi(endpoint=hf_endpoint, token=bot_token)
 
-    for dataset in datasets:
+    for dataset_with_revision in datasets_with_revision:
+        dataset = dataset_with_revision.dataset
+        revision = dataset_with_revision.revision
+
         counters["datasets"] += 1
         try:
             bot_discussions = [
@@ -94,29 +100,30 @@ def post_messages_on_parquet_conversion(
                         " only the first one will be used."
                     )
                 discussion = bot_discussions[0]
-                if discussion.status == CLOSED_STATUS:
-                    counters["dismissed_messages"] += 1
-                    continue
-                hf_api.comment_discussion(
-                    repo_id=dataset,
-                    repo_type=REPO_TYPE_DATASET,
-                    discussion_num=discussion.num,
-                    comment=create_following_comment(
-                        dataset=dataset, hf_endpoint=hf_endpoint, parquet_revision=parquet_revision
-                    ),
-                    token=bot_token,
-                )
             else:
                 discussion = hf_api.create_discussion(
                     repo_id=dataset,
                     repo_type=REPO_TYPE_DATASET,
                     title="Notifications from Datasets Server",
-                    description=create_first_comment(
-                        dataset=dataset, hf_endpoint=hf_endpoint, parquet_revision=parquet_revision
-                    ),
+                    description=create_discussion_description(),
                     token=bot_token,
                 )
                 counters["new_discussions"] += 1
+            if discussion.status == CLOSED_STATUS:
+                counters["dismissed_messages"] += 1
+                continue
+            hf_api.comment_discussion(
+                repo_id=dataset,
+                repo_type=REPO_TYPE_DATASET,
+                discussion_num=discussion.num,
+                comment=create_parquet_comment(
+                    dataset=dataset,
+                    hf_endpoint=hf_endpoint,
+                    parquet_revision=parquet_revision,
+                    dataset_revision=revision,
+                ),
+                token=bot_token,
+            )
 
             counters["messages"] += 1
 
@@ -134,58 +141,73 @@ def post_messages_on_parquet_conversion(
     return counters
 
 
-def create_first_comment(dataset: str, hf_endpoint: str, parquet_revision: str) -> str:
-    following_comment = create_following_comment(
-        dataset=dataset, hf_endpoint=hf_endpoint, parquet_revision=parquet_revision
-    )
+def create_discussion_description() -> str:
     return (
-        "Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they "
-        "are easily accessed with the 🤗 Datasets library. For a more performant experience (especially when it "
-        f"""comes to large datasets), {following_comment}
+        "The Datasets Server bot will post messages here about operations such as conversion to"
+        " Parquet. There are some advantages associated with having a version of your dataset available in the "
+        "[Parquet format](https://parquet.apache.org/). You can learn more about these in the"
+        """ [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
-_The Datasets Server bot will provide updates in the comments. Close the discussion if you want to stop receiving"""
-        " notifications._"
+_Close the discussion if you want to stop receiving notifications._"""
     )
 
 
-def create_following_comment(dataset: str, hf_endpoint: str, parquet_revision: str) -> str:
-    link = create_link(dataset=dataset, hf_endpoint=hf_endpoint, parquet_revision=parquet_revision)
-    return (
-        f"""Datasets Server has automatically converted this dataset to the [Parquet format](https://parquet.apache.org/).
-
-The Parquet files are published to the Hub in the {link} branch.
-
-You can find more details about the Parquet conversion in the"""
-        " [documentation](https://huggingface.co/docs/datasets-server/parquet)."
+def create_parquet_comment(
+    dataset: str, hf_endpoint: str, parquet_revision: str, dataset_revision: Optional[str]
+) -> str:
+    link_dataset = (
+        create_link(
+            text=dataset_revision[:7],
+            dataset=dataset,
+            hf_endpoint=hf_endpoint,
+            revision_type="commit",
+            revision=dataset_revision,
+        )
+        if dataset_revision
+        else None
     )
+    link_dataset = f" revision {link_dataset}" if link_dataset else ""
+
+    link_parquet = create_link(
+        text=parquet_revision,
+        dataset=dataset,
+        hf_endpoint=hf_endpoint,
+        revision_type="tree",
+        revision=parquet_revision,
+    )
+    return f"""Datasets Server has converted the dataset{link_dataset} to Parquet.
+
+The Parquet files are published to the Hub in the {link_parquet} branch."""
 
 
-def create_link(dataset: str, hf_endpoint: str, parquet_revision: str) -> str:
-    return f"[`{parquet_revision}`]({hf_endpoint}/datasets/{dataset}/tree/{parse.quote(parquet_revision, safe='')})"
+def create_link(
+    text: str, dataset: str, hf_endpoint: str, revision_type: Literal["commit", "tree"], revision: str
+) -> str:
+    return f"[`{text}`]({hf_endpoint}/datasets/{dataset}/{revision_type}/{parse.quote(revision, safe='')})"
 
 
-def limit_to_one_dataset_per_namespace(datasets: set[str]) -> set[str]:
+def limit_to_one_dataset_per_namespace(datasets_with_revision: list[DatasetWithRevision]) -> list[DatasetWithRevision]:
     """
     Limit the number of datasets to one per namespace.
 
     For instance, if we have `a/b` and `a/c`, we will only keep one of them.
-    The choice is arbitrary.
+    The choice is arbitrary. The filtered list has no particular order.
 
     Args:
-        datasets: The set of datasets to filter.
+        datasets (list[DatasetWithRevision]): The list of datasets (with revision) to filter.
 
     Returns:
-        The filtered set of datasets.
+        list[DatasetWithRevision]: The filtered list of datasets (with revision).
     """
     namespaces: set[str] = set()
-    selected_datasets: set[str] = set()
-    for dataset in datasets:
-        namespace = get_namespace(dataset)
+    selected_datasets_with_revision: list[DatasetWithRevision] = []
+    for dataset_with_revision in datasets_with_revision:
+        namespace = get_namespace(dataset_with_revision.dataset)
         if (namespace is None) or (namespace in namespaces):
             continue
         namespaces.add(namespace)
-        selected_datasets.add(dataset)
-    return selected_datasets
+        selected_datasets_with_revision.append(dataset_with_revision)
+    return selected_datasets_with_revision
 
 
 def get_namespace(dataset: str) -> Optional[str]:

@@ -5,16 +5,16 @@ from http import HTTPStatus
 
 import pytest
 from huggingface_hub.community import DiscussionComment
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import DatasetWithRevision, upsert_response
 from libcommon.utils import get_datetime
 
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import (
     DAYS,
     PARQUET_CACHE_KIND,
-    create_first_comment,
-    create_following_comment,
+    create_discussion_description,
     create_link,
+    create_parquet_comment,
     limit_to_one_dataset_per_namespace,
     post_messages,
 )
@@ -42,15 +42,27 @@ from .utils import (
 )
 def test_limit_to_one_dataset_per_namespace(datasets: set[str], valid_expected_datasets: list[set[str]]) -> None:
     assert any(
-        limit_to_one_dataset_per_namespace(datasets=datasets) == expected_datasets
+        {
+            d.dataset
+            for d in limit_to_one_dataset_per_namespace(
+                datasets_with_revision=[DatasetWithRevision(dataset=dataset, revision=None) for dataset in datasets]
+            )
+        }
+        == expected_datasets
         for expected_datasets in valid_expected_datasets
     )
 
 
 def test_create_link() -> None:
     assert (
-        create_link(dataset="a/b", hf_endpoint="https://huggingface.co", parquet_revision="c/d")
-        == "[`c/d`](https://huggingface.co/datasets/a/b/tree/c%2Fd)"
+        create_link(
+            text="sometext",
+            dataset="a/b",
+            hf_endpoint="https://huggingface.co",
+            revision_type="commit",
+            revision="c/d",
+        )
+        == "[`sometext`](https://huggingface.co/datasets/a/b/commit/c%2Fd)"
     )
 
 
@@ -58,11 +70,13 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
     with TemporaryDataset(prefix="dataset") as dataset:
         assert fetch_bot_discussion(dataset=dataset.repo_id) is None
         # set "config-parquet" entry for the dataset
+        first_revision = "3bb24dcad2b45b45e20fc0accc93058dcbe8087d"
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset.repo_id,
             content={},
             http_status=HTTPStatus.OK,
+            dataset_git_revision=first_revision,
         )
         # call post_messages
         counters = post_messages(
@@ -81,13 +95,26 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
         }
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
-        assert count_comments(first_discussion) == 1
+        assert count_comments(first_discussion) == 2
         first_comment = first_discussion.events[0]
         assert isinstance(first_comment, DiscussionComment)
-        assert first_comment.content == create_first_comment(
+        assert first_comment.content == create_discussion_description()
+        second_comment = first_discussion.events[1]
+        assert isinstance(second_comment, DiscussionComment)
+        assert second_comment.content == create_parquet_comment(
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
+            dataset_revision=first_revision,
+        )
+        # set a new "config-parquet" entry for the dataset
+        second_revision = "9a0bd9fe2a87bbb82702ed170a53cf4e86535070"
+        upsert_response(
+            kind=PARQUET_CACHE_KIND,
+            dataset=dataset.repo_id,
+            content={},
+            http_status=HTTPStatus.OK,
+            dataset_git_revision=second_revision,
         )
         # call post_messages again
         counters = post_messages(
@@ -107,13 +134,14 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
         second_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert second_discussion is not None
         assert first_discussion.num == second_discussion.num
-        assert count_comments(second_discussion) == 2
-        second_comment = second_discussion.events[1]
-        assert isinstance(second_comment, DiscussionComment)
-        assert second_comment.content == create_following_comment(
+        assert count_comments(second_discussion) == 3
+        third_comment = second_discussion.events[2]
+        assert isinstance(third_comment, DiscussionComment)
+        assert third_comment.content == create_parquet_comment(
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
+            dataset_revision=second_revision,
         )
         # close the discussion
         close_discussion(dataset=dataset.repo_id, discussion_num=first_discussion.num)
@@ -135,8 +163,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
         third_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert third_discussion is not None
         assert first_discussion.num == third_discussion.num
-        assert count_comments(third_discussion) == 2
-        # ^ 3 because the status change is an event
+        assert count_comments(third_discussion) == 3
 
 
 def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig) -> None:
@@ -176,17 +203,19 @@ def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig)
         discussion = discussion1 or discussion2
         assert discussion is not None
         assert discussion1 is None or discussion2 is None
-        assert count_comments(discussion) == 1
-        first_comment = discussion.events[0]
-        assert isinstance(first_comment, DiscussionComment)
-        assert first_comment.content == create_first_comment(
+        assert count_comments(discussion) == 2
+        comment = discussion.events[1]
+        assert isinstance(comment, DiscussionComment)
+        assert comment.content == create_parquet_comment(
             dataset=dataset1.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-        ) or create_first_comment(
+            dataset_revision=None,
+        ) or create_parquet_comment(
             dataset=dataset2.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
+            dataset_revision=None,
         )
 
 
@@ -229,13 +258,14 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
         }
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
-        assert count_comments(first_discussion) == 1
-        first_comment = first_discussion.events[0]
-        assert isinstance(first_comment, DiscussionComment)
-        assert first_comment.content == create_first_comment(
+        assert count_comments(first_discussion) == 2
+        comment = first_discussion.events[1]
+        assert isinstance(comment, DiscussionComment)
+        assert comment.content == create_parquet_comment(
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
+            dataset_revision=None,
         )
 
 
@@ -290,11 +320,12 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
         }
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
-        assert count_comments(first_discussion) == 1
-        first_comment = first_discussion.events[0]
-        assert isinstance(first_comment, DiscussionComment)
-        assert first_comment.content == create_first_comment(
+        assert count_comments(first_discussion) == 2
+        comment = first_discussion.events[1]
+        assert isinstance(comment, DiscussionComment)
+        assert comment.content == create_parquet_comment(
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
+            dataset_revision=None,
         )
