@@ -444,7 +444,7 @@ def compute_descriptive_statistics_response(
     con.sql(f"CREATE TABLE {DATA_TABLE_NAME} as SELECT * FROM read_parquet('{local_parquet_glob_path}');")  # nosec
 
     if string_features:
-        logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        logging.info(f"Compute statistics for string columns {string_features}")
     for feature_name, feature in tqdm(string_features.items()):
         string_column_stats = compute_string_statistics(
             con,
