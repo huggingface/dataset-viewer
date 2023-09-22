@@ -3032,8 +3032,8 @@
         "summary": "Full-text search in the text columns of a split",
         "description": "Returns the rows matching the query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
         "externalDocs": {
-          "description": "See search (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1663.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See search (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/search"
         },
         "operationId": "searchRows",
         "security": [
