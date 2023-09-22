@@ -136,3 +136,15 @@ def test_cache_reports_with_content(
     else:
         assert response.json() == {"cache_reports_with_content": [], "next_cursor": ""}
         assert "X-Error-Code" not in response.headers
+
+
+def test_get_obsolete_cache(client: TestClient) -> None:
+    response = client.request("get", "/obsolete-cache")
+    assert response.status_code == 200
+    json = response.json()
+    assert json == []
+
+
+def test_delete_obsolete_cache(client: TestClient) -> None:
+    response = client.request("delete", "/obsolete-cache")
+    assert response.status_code == 500

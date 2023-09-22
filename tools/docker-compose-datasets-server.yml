@@ -76,9 +76,6 @@ services:
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
-      # hub-cache
-      HUB_CACHE_BASE_URL: http://localhost:${PORT_REVERSE_PROXY-8000}
-      HUB_CACHE_NUM_RESULTS_PER_PAGE: ${HUB_CACHE_NUM_RESULTS_PER_PAGE-1000}
       # uvicorn
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}

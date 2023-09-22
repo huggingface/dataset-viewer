@@ -21,6 +21,7 @@ class Status(str, enum.Enum):
 
 
 class Priority(str, enum.Enum):
+    HIGH = "high"
     NORMAL = "normal"
     LOW = "low"
 

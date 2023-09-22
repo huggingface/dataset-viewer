@@ -53,17 +53,6 @@
         },
         "required": true
       },
-      "Link": {
-        "description": "A link for the next page of results. See https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api#using-link-headers. Only 'rel=\"next\"' is used. If not present, there is no next page.",
-        "schema": {
-          "type": "string"
-        },
-        "example": {
-          "summary": "Link to the next page.",
-          "value": "<https://datasets-server.huggingface.co/hub-cache?cursor=64f7278d81223b123ba9d68b>; rel=\"next\""
-        },
-        "required": false
-      },
       "X-Error-Code-401": {
         "description": "A string that identifies the underlying error for 401.",
         "schema": {
@@ -147,15 +136,6 @@
         },
         "required": false
       },
-      "X-Error-Code-500-hub-cache": {
-        "description": "A string that identifies the underlying error for 500 on /hub-cache. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
-          ]
-        },
-        "required": false
-      },
       "X-Error-Code-500-rows": {
         "description": "A string that identifies the underlying error for 500 on /rows. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
@@ -176,15 +156,6 @@
             {
               "$ref": "#/components/schemas/X-Error-Code-RowsPostProcessingError"
             }
-          ]
-        },
-        "required": false
-      },
-      "X-Error-Code-500-valid": {
-        "description": "A string that identifies the underlying error for 500 on /valid. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
         "required": false
@@ -326,6 +297,9 @@
             "items": {
               "$ref": "#/components/schemas/RowItem"
             }
+          },
+          "truncated": {
+            "type": "boolean"
           }
         }
       },
@@ -783,24 +757,6 @@
           ]
         }
       },
-      "ValidResponse": {
-        "type": "object",
-        "required": ["preview", "viewer"],
-        "properties": {
-          "viewer": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preview": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "IsValidResponse": {
         "type": "object",
         "required": ["preview", "viewer", "search"],
@@ -1226,30 +1182,6 @@
           },
           "num_examples": {
             "type": "integer"
-          }
-        }
-      },
-      "HubCacheResponse": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["dataset", "preview", "viewer", "partial", "num_rows"],
-          "properties": {
-            "dataset": {
-              "type": "string"
-            },
-            "preview": {
-              "type": "boolean"
-            },
-            "viewer": {
-              "type": "boolean"
-            },
-            "partial": {
-              "type": "boolean"
-            },
-            "num_rows": {
-              "type": "integer"
-            }
           }
         }
       },
@@ -2117,11 +2049,12 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Truncated cells": {
-                    "summary": "Truncated cells due to the response size (has a timestamp column). Only 3 rows are shown for brevity.",
+                    "summary": "Truncated cells due to the response size (has a timestamp column).",
                     "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
                     "value": {
                       "dataset": "ett",
@@ -2214,8 +2147,86 @@
                             "item_id": "OT"
                           },
                           "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 4,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 5,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 6,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 7,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 8,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 9,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         }
-                      ]
+                      ],
+                      "truncated": true
                     }
                   },
                   "Image column": {
@@ -2290,7 +2301,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Audio column": {
@@ -2425,7 +2437,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   }
                 }
@@ -3942,91 +3955,6 @@
         }
       }
     },
-    "/valid": {
-      "get": {
-        "summary": "Valid datasets",
-        "description": "The lists of the Hub datasets that work without an error, by type. It lists the datasets that have a Dataset Viewer (i.e. have been converted to Parquet format, and can be paginated) and the datasets that only have the Dataset Preview (the first 100 rows).",
-        "externalDocs": {
-          "description": "See Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
-        },
-        "operationId": "listValidDatasets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The valid datasets.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first values in each array for brevity)": {
-                    "summary": "list of datasets",
-                    "description": "Try with https://datasets-server.huggingface.co/valid",
-                    "value": {
-                      "preview": [
-                        "0n1xus/codexglue",
-                        "0x7194633/rupile",
-                        "AHussain0418/day2_data"
-                      ],
-                      "viewer": [
-                        "0n1xus/pytorrent-standalone",
-                        "51la5/keyword-extraction"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-valid"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/is-valid": {
       "get": {
         "summary": "Check if a dataset is valid",
@@ -5352,95 +5280,6 @@
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hub-cache": {
-      "get": {
-        "summary": "[Internal] Datasets info for the Hub",
-        "description": "A list of dataset infos. It's an internal endpoint meant to be cached by the Hub's backend. The response is paginated, use the Link header to get the next page.",
-        "operationId": "listDatasetsInfoForHubCache",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The datasets info.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "Link": {
-                "$ref": "#/components/headers/Link"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HubCacheResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first two values for brevity)": {
-                    "summary": "list of datasets info",
-                    "description": "Try with https://datasets-server.huggingface.co/hub-cache",
-                    "value": [
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190414468"
-                      },
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190442968"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-hub-cache"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
               }

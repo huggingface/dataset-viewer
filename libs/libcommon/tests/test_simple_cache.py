@@ -26,14 +26,12 @@ from libcommon.simple_cache import (
     get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
-    get_contents_page,
     get_dataset_responses_without_content_for_kind,
     get_outdated_split_full_names_for_step,
     get_response,
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
-    get_valid_datasets,
     has_any_successful_response,
     upsert_response,
 )
@@ -247,56 +245,6 @@ def test_big_row() -> None:
         )
 
 
-def test_get_valid_dataset_names_empty() -> None:
-    assert not get_valid_datasets(kind="test_kind")
-
-
-def test_get_valid_dataset_names_two_valid_datasets() -> None:
-    kind = "test_kind"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_valid_datasets(kind=kind) == {dataset_a, dataset_b}
-
-
-def test_get_valid_dataset_names_filtered_by_kind() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind_b, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
-    assert get_valid_datasets(kind=kind_a) == {dataset_a}
-    assert get_valid_datasets(kind=kind_b) == {dataset_b}
-
-
-def test_get_valid_dataset_names_at_least_one_valid_response() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    assert get_valid_datasets(kind=kind) == {dataset}
-
-
-def test_get_valid_dataset_names_only_invalid_responses() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
-    )
-    assert not get_valid_datasets(kind=kind)
-
-
 def test_has_any_successful_response_empty() -> None:
     assert not has_any_successful_response(dataset="dataset", kinds=[])
 
@@ -347,74 +295,6 @@ def test_has_any_successful_response_only_invalid_responses() -> None:
         kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
     )
     assert not has_any_successful_response(dataset=dataset, kinds=[kind])
-
-
-def test_get_contents_page() -> None:
-    kind = "test_kind"
-
-    assert get_contents_page(kind=kind, limit=2) == {"contents": [], "cursor": None}
-
-    dataset_a = "test_dataset_a"
-    content_a = {"key": "a"}
-    expected_content_a = {"key": "a", "dataset": dataset_a}
-    upsert_response(
-        kind=kind,
-        dataset=dataset_a,
-        content=content_a,
-        http_status=HTTPStatus.OK,
-    )
-
-    content_b = {"key": "b"}
-    upsert_response(
-        kind=kind,
-        dataset="test_dataset_b",
-        content=content_b,
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-
-    dataset_c = "test_dataset_c"
-    content_c = {"key": "c"}
-    expected_content_c = {"key": "c", "dataset": dataset_c}
-    upsert_response(
-        kind=kind,
-        dataset=dataset_c,
-        content=content_c,
-        http_status=HTTPStatus.OK,
-    )
-
-    content_d = {"key": "d"}
-    upsert_response(
-        kind="another_kind",
-        dataset="test_dataset_d",
-        content=content_d,
-        http_status=HTTPStatus.OK,
-    )
-
-    dataset_e = "test_dataset_e"
-    content_e = {"key": "e"}
-    expected_content_e = {"key": "e", "dataset": dataset_e}
-    upsert_response(
-        kind=kind,
-        dataset=dataset_e,
-        content=content_e,
-        http_status=HTTPStatus.OK,
-    )
-
-    response = get_contents_page(kind=kind, limit=2)
-    assert response["contents"] == [expected_content_a, expected_content_c]
-    assert response["cursor"] is not None
-    next_cursor = response["cursor"]
-
-    response = get_contents_page(kind=kind, limit=2, cursor=next_cursor)
-    assert response["contents"] == [expected_content_e]
-    assert response["cursor"] is None
-
-    with pytest.raises(InvalidCursor):
-        get_cache_reports(kind=kind, cursor="not an objectid", limit=2)
-    with pytest.raises(InvalidLimit):
-        get_cache_reports(kind=kind, cursor=next_cursor, limit=-1)
-    with pytest.raises(InvalidLimit):
-        get_cache_reports(kind=kind, cursor=next_cursor, limit=0)
 
 
 def test_count_by_status_and_error_code() -> None:

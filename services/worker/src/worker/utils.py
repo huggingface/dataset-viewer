@@ -4,7 +4,9 @@
 import functools
 import itertools
 import logging
+import sys
 import time
+import traceback
 import warnings
 from collections.abc import Callable, Sequence
 from typing import Any, Optional, TypeVar, Union, cast
@@ -17,6 +19,7 @@ from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
+from libcommon.constants import EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -122,7 +125,7 @@ def create_truncated_row_items(
     rows_max_bytes: int,
     rows_min_number: int,
     columns_to_keep_untruncated: list[str],
-) -> list[RowItem]:
+) -> tuple[list[RowItem], bool]:
     row_items = []
     rows_bytes = 0
 
@@ -147,12 +150,13 @@ def create_truncated_row_items(
         #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
         #     f" ({rows_max_bytes}), they will be truncated"
         # )
-        return truncate_row_items(
+        truncated_row_items = truncate_row_items(
             row_items=row_items,
             min_cell_bytes=min_cell_bytes,
             rows_max_bytes=rows_max_bytes,
             columns_to_keep_untruncated=columns_to_keep_untruncated,
         )
+        return truncated_row_items, len(truncated_row_items) < len(rows)
 
     # 3. else: add the remaining rows until the end, or until the bytes threshold
     for idx, row in enumerate(rows[rows_min_number:]):
@@ -166,7 +170,7 @@ def create_truncated_row_items(
             # )
             break
         row_items.append(row_item)
-    return row_items
+    return row_items, len(row_items) < len(rows)
 
 
 FuncT = TypeVar("FuncT", bound=Callable[..., Any])
@@ -362,3 +366,9 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"Split '{split}' does not exist for the config '{config}' of the dataset.")
+
+
+def is_dataset_script_error() -> bool:
+    (t, v, tb) = sys.exc_info()
+    cause_traceback: list[str] = traceback.format_exception(t, v, tb)
+    return any(EXTERNAL_DATASET_SCRIPT_PATTERN in cause for cause in cause_traceback)
