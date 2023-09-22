@@ -17,7 +17,9 @@ def test_filter_endpoint(
     length = 2
     where = "col_4 = 'B'"
     search_response = poll_until_ready_and_assert(
-        relative_url=f"/filter?{dataset=}&{config=}&{split=}&{offset=}&{length=}&{where=}",
+        relative_url=(
+            f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
+        ),
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
