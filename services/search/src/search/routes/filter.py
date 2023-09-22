@@ -180,7 +180,9 @@ def create_filter_endpoint(
                             )
                 with StepProfiler(method="filter_endpoint", step="get features"):
                     if "features" in content and isinstance(content["features"], dict):
-                        features = Features.from_dict(content["features"])
+                        features = Features.from_dict(
+                            {name: feature for name, feature in content["features"].items() if name != "__hf_index_id"}
+                        )
                     else:
                         features = get_features_from_cache_parquet_file_metadata(
                             dataset=dataset,

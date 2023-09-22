@@ -40,16 +40,22 @@ def test_filter_endpoint(
         assert num_rows_total == 3
         assert num_rows_per_page == 100
         assert rows[0] == {
-            "row_idx": 2,
-            "row": {"col_1": "We count thirty Rebel ships, Lord Vader.", "col_2": 2, "col_3": 2.0},
+            "row_idx": 1,
+            "row": {
+                "col_1": "Vader turns round and round in circles as his ship spins into space.",
+                "col_2": 1,
+                "col_3": 1.0,
+                "col_4": "B",
+            },
             "truncated_cells": [],
         }, rows[0]
         assert rows[1] == {
-            "row_idx": 3,
+            "row_idx": 2,
             "row": {
                 "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
                 "col_2": 3,
                 "col_3": 3.0,
+                "col_4": "B",
             },
             "truncated_cells": [],
         }, rows[1]
