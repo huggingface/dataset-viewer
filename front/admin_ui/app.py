@@ -315,51 +315,6 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
             return {pending_jobs_query_result_df: gr.update(value=pd.DataFrame({"Error": [f"❌ {str(error)}"]}))}
         return {pending_jobs_query_result_df: gr.update(value=result)}
 
-    def refresh_dataset(
-        token,
-        refresh_type,
-        refresh_dataset_names,
-        refresh_config_names,
-        refresh_split_names,
-        refresh_priority,
-    ):
-        headers = {"Authorization": f"Bearer {token}"}
-        all_results = ""
-        for refresh_dataset_name, refresh_config_name, refresh_split_name in product(
-            refresh_dataset_names.split(","),
-            refresh_config_names.split(","),
-            refresh_split_names.split(","),
-        ):
-            refresh_dataset_name = refresh_dataset_name.strip()
-            params = {"dataset": refresh_dataset_name, "priority": refresh_priority}
-            if refresh_config_name:
-                refresh_config_name = refresh_config_name.strip()
-                params["config"] = refresh_config_name
-            if refresh_split_name:
-                refresh_split_name = refresh_split_name.strip()
-                params["split"] = refresh_split_name
-            params = urllib.parse.urlencode(params)
-            response = requests.post(
-                f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}",
-                headers=headers,
-                timeout=60,
-            )
-            if response.status_code == 200:
-                result = f"[{refresh_dataset_name}] ✅ Added processing step to the queue: '{refresh_type}'"
-                if refresh_config_name:
-                    result += f", for config '{refresh_config_name}'"
-                if refresh_split_name:
-                    result += f", for split '{refresh_split_name}'"
-            else:
-                result = f"[{refresh_dataset_name}] ❌ Failed to add processing step to the queue. Error {response.status_code}"
-                try:
-                    if response.json().get("error"):
-                        result += f": {response.json()['error']}"
-                except requests.JSONDecodeError:
-                    result += f": {response.content}"
-            all_results += result.strip("\n") + "\n"
-        return "```\n" + all_results + "\n```"
-
     def refresh_dataset(token, refresh_type, refresh_dataset_names, refresh_config_names, refresh_split_names, refresh_priority):
         headers = {"Authorization": f"Bearer {token}"}
         all_results = ""
