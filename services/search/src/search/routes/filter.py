@@ -3,7 +3,8 @@
 
 import json
 import logging
-import os.path
+import os
+import random
 import re
 from hashlib import sha1
 from http import HTTPStatus
@@ -24,6 +25,7 @@ from libapi.exceptions import (
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
+    clean_cached_assets,
     get_cache_entry_from_steps,
     get_json_api_error_response,
     get_json_error_response,
@@ -78,6 +80,10 @@ def create_filter_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    clean_cache_proba: float = 0.0,
+    keep_first_rows_number: int = -1,
+    keep_most_recent_rows_number: int = -1,
+    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -195,6 +201,27 @@ def create_filter_endpoint(
                         limit=length,
                         offset=offset,
                     )
+                # TODO: duplicated in /search
+                with StepProfiler(method="search_endpoint", step="clean cache"):
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
+                        if (
+                            keep_first_rows_number < 0
+                            and keep_most_recent_rows_number < 0
+                            and max_cleaned_rows_number < 0
+                        ):
+                            logger.debug(
+                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+                            )
+                        else:
+                            clean_cached_assets(
+                                dataset=dataset,
+                                cached_assets_directory=cached_assets_directory,
+                                keep_first_rows_number=keep_first_rows_number,
+                                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                                max_cleaned_rows_number=max_cleaned_rows_number,
+                            )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
