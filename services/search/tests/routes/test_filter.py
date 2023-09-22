@@ -23,7 +23,7 @@ from search.routes.filter import (
     create_response,
     execute_filter_query,
     get_config_parquet_metadata_from_cache,
-    get_features_from_parquet_file_metadata,
+    get_features_from_cache_parquet_file_metadata,
 )
 
 
@@ -118,12 +118,16 @@ def test_get_config_parquet_metadata_from_cache(
     assert parquet_file_metadata_items == ds_config_parquet_metadata["parquet_files_metadata"]
 
 
-def test_get_features_from_parquet_file_metadata(
-    ds: Dataset, ds_config_parquet_metadata: dict[str, Any], ds_parquet_metadata_dir: StrPath
+def test_get_features_from_cache_parquet_file_metadata(
+    ds_config_parquet_metadata: dict[str, Any], processing_graph: ProcessingGraph, ds_parquet_metadata_dir: StrPath
 ) -> None:
-    parquet_file_metadata_item = ds_config_parquet_metadata["parquet_files_metadata"][0]
-    features = get_features_from_parquet_file_metadata(
-        parquet_file_metadata_item=parquet_file_metadata_item, parquet_metadata_directory=ds_parquet_metadata_dir
+    dataset, config, split = "ds", "default", "train"
+    features = get_features_from_cache_parquet_file_metadata(
+        dataset=dataset,
+        config=config,
+        split=split,
+        processing_graph=processing_graph,
+        parquet_metadata_directory=ds_parquet_metadata_dir,
     )
     assert features.to_dict() == {
         "name": {"dtype": "string", "_type": "Value"},

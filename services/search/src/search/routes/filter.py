@@ -172,15 +172,17 @@ def create_filter_endpoint(
                                 repo_file_location=repo_file_location,
                                 hf_token=hf_token,
                             )
-                with StepProfiler(method="filter_endpoint", step="get parquet file metadata items from cache"):
-                    parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
-                        dataset=dataset, config=config, split=split, processing_graph=processing_graph
-                    )
                 with StepProfiler(method="filter_endpoint", step="get features"):
-                    features = get_features_from_parquet_file_metadata(
-                        parquet_file_metadata_item=parquet_file_metadata_items[0],
-                        parquet_metadata_directory=parquet_metadata_directory,
-                    )
+                    if "features" in content and isinstance(content["features"], dict):
+                        features = Features.from_dict(content["features"])
+                    else:
+                        features = get_features_from_cache_parquet_file_metadata(
+                            dataset=dataset,
+                            config=config,
+                            split=split,
+                            processing_graph=processing_graph,
+                            parquet_metadata_directory=parquet_metadata_directory,
+                        )
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
@@ -276,9 +278,13 @@ def get_config_parquet_metadata_from_cache(
     return parquet_file_metadata_items, revision
 
 
-def get_features_from_parquet_file_metadata(
-    parquet_file_metadata_item: ParquetFileMetadataItem, parquet_metadata_directory: StrPath
+def get_features_from_cache_parquet_file_metadata(
+    dataset: str, config: str, split: str, processing_graph: ProcessingGraph, parquet_metadata_directory: StrPath
 ) -> Features:
+    parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
+        dataset=dataset, config=config, split=split, processing_graph=processing_graph
+    )
+    parquet_file_metadata_item = parquet_file_metadata_items[0]
     parquet_file_metadata_path = os.path.join(
         parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
     )
