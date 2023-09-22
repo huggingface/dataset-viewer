@@ -6,7 +6,6 @@ import shutil
 import time
 from collections.abc import Generator
 from http import HTTPStatus
-from io import BytesIO
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
