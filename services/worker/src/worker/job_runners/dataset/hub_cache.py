@@ -13,8 +13,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, float]:
     """
-    Get the response of /hub-cache for one specific dataset on huggingface.co.
-
+    Get the content of a /sse/hub-cache SSE for one specific dataset on huggingface.co.
 
     Its purpose is specific to the Hub, and we won't ensure backward compatibility for this step.
     It provides information about:

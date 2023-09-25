@@ -16,7 +16,7 @@ from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
 from libcommon.s3_client import S3Client
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 
 ASSET_DIR_MODE = 0o755
@@ -36,6 +36,11 @@ def get_url_dir_path(dataset: str, config: str, split: str, row_idx: int, column
 
 def get_unique_path_for_filename(assets_directory: StrPath, filename: str) -> Path:
     return Path(assets_directory).resolve() / f"{str(uuid4())}-{filename}"
+
+
+def delete_asset_dir(dataset: str, directory: StrPath) -> None:
+    dir_path = Path(directory).resolve() / dataset
+    remove_dir(dir_path)
 
 
 def glob_rows_in_assets_dir(

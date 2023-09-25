@@ -218,7 +218,7 @@ parquetAndInfo:
   # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
   maxExternalDataFiles: "10_000"
   # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
-  maxRowGroupByteSizeForCopy: "100_000_000"
+  maxRowGroupByteSizeForCopy: "300_000_000"
   # comma-separated list of datasets that are fully converted to parquet (no partial conversion).
   noMaxSizeLimitDatasets: ""
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
@@ -307,6 +307,10 @@ hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
 
+discussions:
+  # name of the Hub user associated with the Datasets Server bot app
+  botAssociatedUserName: "parquet-converter"
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
@@ -323,7 +327,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade,collect-queue-metrics,collect-cache-metrics}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
   log:
     level: "info"
   backfill:
@@ -361,6 +365,22 @@ deleteIndexes:
   error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+postMessages:
+  enabled: true
+  log:
+    level: "info"
+  action: "post-messages"
+  error_codes_to_retry: ""
+  schedule: "10 0 * * *"
+  # at 00:10
   nodeSelector: {}
   resources:
     requests:
@@ -486,8 +506,6 @@ hf:
   timeoutSeconds: "0.2"
 
 api:
-  # the number of results per page. Defaults to `1_000`.
-  hubCacheNumResultsPerPage: "1_000"
   # Number of seconds to set in the `max-age` header on data endpoints
   maxAgeLong: "120"
   # Number of seconds to set in the `max-age` header on technical endpoints

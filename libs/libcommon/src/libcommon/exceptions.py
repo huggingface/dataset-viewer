@@ -85,6 +85,7 @@ CacheableErrorCode = Literal[
     "DatasetNotFoundError",
     "DatasetRevisionEmptyError",
     "DatasetRevisionNotFoundError",
+    "DatasetScriptError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
@@ -233,6 +234,13 @@ class DatasetRevisionNotFoundError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
+
+
+class DatasetScriptError(CacheableError):
+    """The dataset script generated an error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetScriptError", cause, False)
 
 
 class DatasetWithTooManyConfigsError(CacheableError):

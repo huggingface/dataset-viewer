@@ -9,6 +9,7 @@ from libcommon.config import CommonConfig
 from libcommon.exceptions import (
     CustomError,
     DatasetNotFoundError,
+    DatasetScriptError,
     JobManagerCrashedError,
     JobManagerExceededMaximumDurationError,
     ResponseAlreadyComputedError,
@@ -26,6 +27,7 @@ from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dump
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner
+from worker.utils import is_dataset_script_error
 
 
 class JobManager:
@@ -222,7 +224,13 @@ class JobManager:
                 },
             }
         except Exception as err:
-            e = err if isinstance(err, CustomError) else UnexpectedError(str(err), err)
+            e = (
+                err
+                if isinstance(err, CustomError)
+                else DatasetScriptError(str(err), err)
+                if is_dataset_script_error()
+                else UnexpectedError(str(err), err)
+            )
             self.debug(f"response for job_info={self.job_info} had an error")
             return {
                 "job_info": self.job_info,
