@@ -141,14 +141,18 @@ def post_messages_on_parquet_conversion(
     return counters
 
 
+def temporary_call_to_action_for_feedback() -> str:
+    return "Please comment below if you have any questions or feedback about this new notifications channel. "
+
+
 def create_discussion_description() -> str:
     return (
         "The Datasets Server bot will post messages here about operations such as conversion to"
         " Parquet. There are some advantages associated with having a version of your dataset available in the "
         "[Parquet format](https://parquet.apache.org/). You can learn more about these in the"
-        """ [documentation](https://huggingface.co/docs/datasets-server/parquet).
+        f""" [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
-_Close the discussion if you want to stop receiving notifications._"""
+_{temporary_call_to_action_for_feedback()}Close the discussion if you want to stop receiving notifications._"""
     )
 
 
