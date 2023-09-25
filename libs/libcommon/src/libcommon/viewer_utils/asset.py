@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TypedDict
 
-from PIL import Image
+from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.storage import StrPath, remove_dir
