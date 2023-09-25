@@ -14,6 +14,7 @@ from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.config import JobConfig
 from cache_maintenance.delete_indexes import delete_indexes
+from cache_maintenance.discussions import post_messages
 from cache_maintenance.queue_metrics import collect_queue_metrics
 
 
@@ -66,6 +67,13 @@ def run_job() -> None:
                 subdirectory=job_config.duckdb.subdirectory,
                 expired_time_interval_seconds=job_config.duckdb.expired_time_interval_seconds,
                 file_extension=job_config.duckdb.file_extension,
+            )
+        elif action == "post-messages":
+            post_messages(
+                hf_endpoint=job_config.common.hf_endpoint,
+                bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+                bot_token=job_config.discussions.bot_token,
+                parquet_revision=job_config.discussions.parquet_revision,
             )
 
         end_time = datetime.now()

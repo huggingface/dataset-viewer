@@ -1138,11 +1138,11 @@ def compute_config_parquet_and_info_response(
             An app authentication token with read access to all the datasets.
         committer_hf_token (`str`, `optional`):
             An app authentication token with write access. It must be part of the `datasets-maintainers`
-              organization (to create the ref/convert/parquet "branch" and push to it)
+              organization (to create the refs/convert/parquet "branch" and push to it)
         source_revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset used to prepare the parquet files
         target_revision (`str`):
-            The target git revision (e.g. "ref/convert/parquet") of the dataset where to store the parquet files
+            The target git revision (e.g. "refs/convert/parquet") of the dataset where to store the parquet files
         commit_message (`str`):
             The commit message to use when storing the parquet files
         url_template (`str`):
