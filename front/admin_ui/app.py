@@ -88,6 +88,14 @@ with gr.Blocks() as demo:
                 refresh_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
                 refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
+            with gr.Tab("Obsolete cache"):
+                fetch_obsolete_cache_button = gr.Button("Fetch obsolete cache")
+                delete_obsolete_cache_button = gr.Button("Delete obsolete cache")
+                datasets_to_delete = gr.Markdown("", visible=False)
+                cache_records_to_delete = gr.Markdown("", visible=False)
+                obsolete_cache_table = gr.DataFrame(
+                    pd.DataFrame({"Dataset": [], "Cache records": []})
+                )
             with gr.Tab("Dataset status"):
                 dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 dataset_status_button = gr.Button("Get dataset status")
@@ -127,6 +135,52 @@ with gr.Blocks() as demo:
             return {
                 auth_error: gr.update(value=f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')")
             }
+
+    def call_obsolete_cache(token, delete):
+        headers = {"Authorization": f"Bearer {token}"}
+        obsolete_cache_endpoint = f"{DSS_ENDPOINT}/admin/obsolete-cache"
+        response = (
+            requests.delete(obsolete_cache_endpoint, headers=headers, timeout=240)
+            if delete
+            else requests.get(obsolete_cache_endpoint, headers=headers, timeout=120)
+        )        
+        action = "delete" if delete else "get"
+        if response.status_code == 200:
+            obsolete_cache = response.json()
+            obsolete_cache_df = pd.DataFrame(obsolete_cache)
+            datasets_to_delete_count = len(obsolete_cache_df)
+            cache_records_to_delete_count = 0 if datasets_to_delete_count == 0 else obsolete_cache_df["cache_records"].sum()
+            return {
+                obsolete_cache_table: gr.update(visible=True, value=obsolete_cache_df),
+                datasets_to_delete: gr.update(
+                    visible=True, value=f"### Datasets: {datasets_to_delete_count}"
+                ),
+                cache_records_to_delete: gr.update(
+                    visible=True,
+                    value=f"### Cached records: {cache_records_to_delete_count}",
+                ),
+            }
+        else:
+            return {
+                obsolete_cache_table: gr.update(
+                    visible=True,
+                    value=pd.DataFrame(
+                        {
+                            "Error": [
+                                f"❌ Failed to {action} obsolete cache (error {response.status_code})"
+                            ]
+                        }
+                    ),
+                ),
+                datasets_to_delete: gr.update(visible=False),
+                cache_records_to_delete: gr.update(visible=False),
+            }   
+     
+    def delete_obsolete_cache(token):
+        return call_obsolete_cache(token, True)
+
+    def get_obsolete_cache(token):
+        return call_obsolete_cache(token, False)
 
     def view_jobs(token):
         global pending_jobs_df
@@ -212,7 +266,7 @@ with gr.Blocks() as demo:
                 cached_responses_table: gr.update(value=pd.DataFrame([{"error": f"❌ Failed to get status for {dataset} (error {response.status_code})"}])),
                 jobs_table: gr.update(value=pd.DataFrame([{"content": str(response.content)}]))
             }
-    
+
     def get_backfill_plan(token, dataset):
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-backfill-plan?dataset={dataset}", headers=headers, timeout=60)
@@ -302,6 +356,8 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
     dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
     backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
 
+    fetch_obsolete_cache_button.click(get_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
+    delete_obsolete_cache_button.click(delete_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
 
 if __name__ == "__main__":
     demo.launch()

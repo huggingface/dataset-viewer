@@ -152,6 +152,11 @@ class ParquetIndexWithMetadata:
                 for group_id in range(parquet_file.metadata.num_row_groups)
             ]
 
+            if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
+                if offset < 0:
+                    raise IndexError("Offset must be non-negative")
+                return parquet_files[0].read()
+
             last_row_in_parquet = row_group_offsets[-1] - 1
             first_row = min(parquet_offset, last_row_in_parquet)
             last_row = min(parquet_offset + length - 1, last_row_in_parquet)

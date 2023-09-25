@@ -275,7 +275,7 @@ def compute_descriptive_statistics_response(
         hf_token (`str`, `optional`):
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
-            The git revision (e.g. "ref/convert/parquet") from where to download the dataset's parquet files.
+            The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
         histogram_num_bins (`int`):
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.

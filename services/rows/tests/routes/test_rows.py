@@ -48,9 +48,21 @@ def ds() -> Dataset:
 
 
 @pytest.fixture
+def ds_empty() -> Dataset:
+    return Dataset.from_dict({"text": ["Hello there", "General Kenobi"]}).select([])
+
+
+@pytest.fixture
 def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
     with tmpfs.open("default/train/0000.parquet", "wb") as f:
         ds.to_parquet(f)
+    yield tmpfs
+
+
+@pytest.fixture
+def ds_empty_fs(ds_empty: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
+    with tmpfs.open("default/train/0000.parquet", "wb") as f:
+        ds_empty.to_parquet(f)
     yield tmpfs
 
 
@@ -142,6 +154,75 @@ def dataset_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds",
+        config="default",
+        content=config_parquet_content,
+        http_status=HTTPStatus.OK,
+        progress=1.0,
+    )
+    return config_parquet_content
+
+
+@pytest.fixture
+def ds_empty_parquet_metadata_dir(
+    ds_empty_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
+) -> Generator[StrPath, None, None]:
+    parquet_shard_paths = ds_empty_fs.glob("**.parquet")
+    for parquet_shard_path in parquet_shard_paths:
+        parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds_empty" / "--" / parquet_shard_path
+        parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        with ds_empty_fs.open(parquet_shard_path) as parquet_shard_f:
+            with open(parquet_file_metadata_path, "wb") as parquet_file_metadata_f:
+                pq.read_metadata(parquet_shard_f).write_metadata_file(parquet_file_metadata_f)
+    yield parquet_metadata_directory
+    shutil.rmtree(Path(parquet_metadata_directory) / "ds_empty")
+
+
+@pytest.fixture
+def dataset_empty_with_config_parquet() -> dict[str, Any]:
+    config_parquet_content = {
+        "parquet_files": [
+            {
+                "dataset": "ds_empty",
+                "config": "default",
+                "split": "train",
+                "url": "https://fake.huggingface.co/datasets/ds_empty/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+                "filename": "0000.parquet",
+                "size": 128,
+            }
+        ]
+    }
+    upsert_response(
+        kind="config-parquet",
+        dataset="ds_empty",
+        config="default",
+        content=config_parquet_content,
+        http_status=HTTPStatus.OK,
+        progress=1.0,
+    )
+    return config_parquet_content
+
+
+@pytest.fixture
+def dataset_empty_with_config_parquet_metadata(
+    ds_empty_fs: AbstractFileSystem, ds_empty_parquet_metadata_dir: StrPath
+) -> dict[str, Any]:
+    config_parquet_content = {
+        "parquet_files_metadata": [
+            {
+                "dataset": "ds_empty",
+                "config": "default",
+                "split": "train",
+                "url": "https://fake.huggingface.co/datasets/ds/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",  # noqa: E501
+                "filename": "0000.parquet",
+                "size": ds_empty_fs.info("default/train/0000.parquet")["size"],
+                "num_rows": pq.read_metadata(ds_empty_fs.open("default/train/0000.parquet")).num_rows,
+                "parquet_metadata_subpath": "ds_empty/--/default/train/0000.parquet",
+            }
+        ]
+    }
+    upsert_response(
+        kind="config-parquet-metadata",
+        dataset="ds_empty",
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -275,6 +356,18 @@ def rows_index_with_parquet_metadata(
 
 
 @pytest.fixture
+def rows_index_with_empty_dataset(
+    indexer: Indexer,
+    ds_empty: Dataset,
+    ds_empty_fs: AbstractFileSystem,
+    dataset_empty_with_config_parquet_metadata: dict[str, Any],
+) -> Generator[RowsIndex, None, None]:
+    with ds_empty_fs.open("default/train/0000.parquet") as f:
+        with patch("libcommon.parquet_utils.HTTPFile", return_value=f):
+            yield indexer.get_rows_index("ds_empty", "default", "train")
+
+
+@pytest.fixture
 def rows_index_with_too_big_rows(
     app_config: AppConfig,
     processing_graph: ProcessingGraph,
@@ -351,6 +444,13 @@ def test_rows_index_query_with_parquet_metadata(
 def test_rows_index_query_with_too_big_rows(rows_index_with_too_big_rows: RowsIndex, ds_sharded: Dataset) -> None:
     with pytest.raises(TooBigRows):
         rows_index_with_too_big_rows.query(offset=0, length=3)
+
+
+def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: RowsIndex, ds_sharded: Dataset) -> None:
+    assert isinstance(rows_index_with_empty_dataset.parquet_index, ParquetIndexWithMetadata)
+    assert rows_index_with_empty_dataset.query(offset=0, length=1).to_pydict() == ds_sharded[:0]
+    with pytest.raises(IndexError):
+        rows_index_with_empty_dataset.query(offset=-1, length=2)
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:

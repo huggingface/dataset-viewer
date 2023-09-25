@@ -9,6 +9,7 @@
   {{ include "envCache" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}
   {{ include "envCommon" . | nindent 2 }}
+  {{ include "envDiscussions" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.cacheMaintenance.action | quote }}
   - name: CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY
