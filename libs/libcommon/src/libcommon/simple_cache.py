@@ -893,6 +893,38 @@ def fetch_names(
         return []
 
 
+@dataclass
+class DatasetWithRevision:
+    dataset: str
+    revision: Optional[str]
+
+
+def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[DatasetWithRevision]:
+    """
+    Get the list of datasets for which an artifact of some kind has been updated in the last days.
+
+    Args:
+        kind (str): The kind of the cache entries.
+        days (int): The number of days to look back.
+
+    Returns:
+        list[DatasetWithRevision]: The list of datasets, with the git revision of the last artifact.
+    """
+
+    pipeline = [
+        {"$match": {"kind": kind, "http_status": HTTPStatus.OK, "updated_at": {"$gt": get_datetime(days=days)}}},
+        {"$sort": {"updated_at": 1}},
+        {"$group": {"_id": "$dataset", "revision": {"$last": "$dataset_git_revision"}}},
+        {"$project": {"dataset": "$_id", "_id": 0, "revision": 1}},
+    ]
+    return list(
+        DatasetWithRevision(dataset=response["dataset"], revision=response["revision"])
+        for response in CachedResponseDocument.objects(
+            kind=kind, http_status=HTTPStatus.OK, updated_at__gt=get_datetime(days=days)
+        ).aggregate(pipeline)
+    )
+
+
 # only for the tests
 def _clean_cache_database() -> None:
     CachedResponseDocument.drop_collection()  # type: ignore

@@ -10,6 +10,13 @@ from pytest import MonkeyPatch, fixture
 
 from cache_maintenance.config import JobConfig
 
+from .constants import (
+    CI_APP_TOKEN,
+    CI_HUB_ENDPOINT,
+    CI_PARQUET_CONVERTER_APP_TOKEN,
+    CI_PARQUET_CONVERTER_USER,
+)
+
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")
@@ -17,6 +24,10 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("COMMON_HF_ENDPOINT", CI_HUB_ENDPOINT)
+    monkeypatch_session.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
+    monkeypatch_session.setenv("DISCUSSIONS_BOT_ASSOCIATED_USER_NAME", CI_PARQUET_CONVERTER_USER)
+    monkeypatch_session.setenv("DISCUSSIONS_BOT_TOKEN", CI_PARQUET_CONVERTER_APP_TOKEN)
     yield monkeypatch_session
     monkeypatch_session.undo()
 
