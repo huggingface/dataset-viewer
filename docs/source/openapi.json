@@ -2377,10 +2377,6 @@
                             "id": "id10059_229vKIGbxrI_00001",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/0/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/0/audio/audio.wav",
                                 "type": "audio/wav"
                               }
@@ -2399,10 +2395,6 @@
                             "id": "id10059_229vKIGbxrI_00002",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/1/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/1/audio/audio.wav",
                                 "type": "audio/wav"
                               }
@@ -2420,10 +2412,6 @@
                           "row": {
                             "id": "id10059_229vKIGbxrI_00003",
                             "audio": [
-                              {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/2/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
                               {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/2/audio/audio.wav",
                                 "type": "audio/wav"
@@ -2625,7 +2613,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows of the requested slice. Audio and bytes columns are not supported at the moment, and their content will be 'null'.",
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows of the requested slice. Bytes columns are not supported at the moment, and their content will be 'null'.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2756,92 +2744,6 @@
                         }
                       ],
                       "num_rows_total": 1334,
-                      "num_rows_per_page": 100
-                    }
-                  },
-                  "Audio is not supported at the moment (example: asapp/slue)": {
-                    "summary": "Get a slice of length 3 from row 234 (offset=234&length=3). The audio column is 'null'",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=asapp/slue&config=voxceleb&split=train&offset=234&length=3.",
-                    "value": {
-                      "features": [
-                        {
-                          "feature_idx": 0,
-                          "name": "id",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 1,
-                          "name": "audio",
-                          "type": { "sampling_rate": 16000, "_type": "Audio" }
-                        },
-                        {
-                          "feature_idx": 2,
-                          "name": "speaker_id",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 3,
-                          "name": "normalized_text",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 4,
-                          "name": "sentiment",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 5,
-                          "name": "start_second",
-                          "type": { "dtype": "float64", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 6,
-                          "name": "end_second",
-                          "type": { "dtype": "float64", "_type": "Value" }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "row_idx": 234,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00006",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "well i i wasn't boasting to what happened is that i it was it was a few years ago now i hit thirty i thought it's so mad that i don't want to reach into",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 8.46
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "row_idx": 235,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00007",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "there's none of there's none of the kind i've had to survive in the world i've done that as a book and and a lot of people",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 5.12
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "row_idx": 236,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00008",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "but what are the things you've learned and and and nobody told me at school stuff like you know how to achieve goals how to thrive when it's difficult how to what sort of",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 8.85
-                          },
-                          "truncated_cells": []
-                        }
-                      ],
-                      "num_rows_total": 5777,
                       "num_rows_per_page": 100
                     }
                   }
@@ -3113,7 +3015,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows that match the search query. The query will only be searched among the string columns. Audio and bytes columns are not supported at the moment, and their content will be 'null'.",
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows that match the search query. The query will only be searched among the string columns. Bytes columns are not supported at the moment, and their content will be 'null'.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
