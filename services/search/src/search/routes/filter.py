@@ -179,18 +179,12 @@ def create_filter_endpoint(
                                 hf_token=hf_token,
                             )
                 with StepProfiler(method="filter_endpoint", step="get features"):
-                    if "features" in content and isinstance(content["features"], dict):
+                    try:
                         features = Features.from_dict(
                             {name: feature for name, feature in content["features"].items() if name != "__hf_index_id"}
                         )
-                    else:
-                        features = get_features_from_cache_parquet_file_metadata(
-                            dataset=dataset,
-                            config=config,
-                            split=split,
-                            processing_graph=processing_graph,
-                            parquet_metadata_directory=parquet_metadata_directory,
-                        )
+                    except (KeyError, AttributeError):
+                        raise RuntimeError("The indexing process did not store the features.")
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(
                         features,
