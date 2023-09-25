@@ -24,7 +24,6 @@ from libcommon.exceptions import (
     DatasetNotFoundError,
     DuckDBIndexFileNotFoundError,
     LockedDatasetTimeoutError,
-    NoIndexableColumnsError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     SplitWithTooBigParquetError,
@@ -62,6 +61,7 @@ HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 class DuckdbIndexWithFeatures(SplitHubFile):
     features: Optional[dict[str, Any]]
+    has_fts: bool
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -137,8 +137,6 @@ def compute_index_rows(
         indexable_columns = ",".join(
             '"' + column + '"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
         )
-        if not indexable_columns:
-            raise NoIndexableColumnsError("No string columns available to index.")
 
     except KeyError as e:
         raise PreviousStepFormatError(
@@ -180,11 +178,13 @@ def compute_index_rows(
     logging.debug(create_command_sql)
     con.sql(create_command_sql)
 
-    # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
-    # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-    create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
-    logging.debug(create_index_sql)
-    con.sql(create_index_sql)
+    is_indexable = len(indexable_columns) > 0
+    if is_indexable:
+        # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
+        # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
+        create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
+        logging.debug(create_index_sql)
+        con.sql(create_index_sql)
     con.close()
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
@@ -279,6 +279,7 @@ def compute_index_rows(
         filename=Path(repo_file.rfilename).name,
         size=repo_file.size,
         features=features,
+        has_fts=is_indexable,
     )
 
 

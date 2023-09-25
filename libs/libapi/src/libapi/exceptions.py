@@ -23,6 +23,7 @@ ApiErrorCode = Literal[
     "MissingRequiredParameter",
     "ResponseNotFound",
     "ResponseNotReady",
+    "SearchFeatureNotAvailableError",
     "TransformRowsProcessingError",
     "UnexpectedApiError",
 ]
@@ -106,6 +107,13 @@ class ResponseNotReadyError(ApiError):
 
     def __init__(self, message: str):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ResponseNotReady")
+
+
+class SearchFeatureNotAvailableError(ApiError):
+    """The split does not have search feature enabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.BAD_REQUEST, "SearchFeatureNotAvailableError", cause, True)
 
 
 class TransformRowsProcessingError(ApiError):
