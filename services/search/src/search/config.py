@@ -11,7 +11,6 @@ from libcommon.config import (
     CachedAssetsConfig,
     CommonConfig,
     LogConfig,
-    ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
 )
@@ -45,7 +44,6 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
-    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)  # TODO: delete
 
     @classmethod
     def from_env(cls) -> "AppConfig":

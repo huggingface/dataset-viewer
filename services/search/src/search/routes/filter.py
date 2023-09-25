@@ -13,7 +13,6 @@ from typing import Optional
 
 import duckdb
 import pyarrow as pa
-import pyarrow.parquet as pq
 from datasets import Features
 from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
@@ -33,10 +32,8 @@ from libapi.utils import (
     to_rows_list,
 )
 from libcommon.exceptions import UnexpectedError
-from libcommon.parquet_utils import ParquetFileMetadataItem
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath, init_dir
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
@@ -70,7 +67,6 @@ def create_filter_endpoint(
     target_revision: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    parquet_metadata_directory: StrPath,
     cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -275,43 +271,6 @@ def download_index_file(
         token=hf_token,
         cache_dir=cache_folder,
     )
-
-
-def get_config_parquet_metadata_from_cache(
-    dataset: str, config: str, split: str, processing_graph: ProcessingGraph
-) -> tuple[list[ParquetFileMetadataItem], Optional[str]]:
-    config_parquet_metadata_processing_steps = processing_graph.get_config_parquet_metadata_processing_steps()
-    if not config_parquet_metadata_processing_steps:
-        raise RuntimeError("No processing steps are configured to provide config-parquet-metadata response.")
-    cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
-    try:
-        result = get_previous_step_or_raise(
-            kinds=cache_kinds,
-            dataset=dataset,
-            config=config,
-        )
-    except Exception as e:
-        raise UnexpectedError("Could not get the list of parquet files metadata.") from e
-    response = result.response
-    revision = response["dataset_git_revision"]
-    parquet_file_metadata_items = response["content"]["parquet_files_metadata"]
-    parquet_file_metadata_items = [
-        item for item in parquet_file_metadata_items if item["split"] == split and item["config"] == config
-    ]
-    return parquet_file_metadata_items, revision
-
-
-def get_features_from_cache_parquet_file_metadata(
-    dataset: str, config: str, split: str, processing_graph: ProcessingGraph, parquet_metadata_directory: StrPath
-) -> Features:
-    parquet_file_metadata_items, revision = get_config_parquet_metadata_from_cache(
-        dataset=dataset, config=config, split=split, processing_graph=processing_graph
-    )
-    parquet_file_metadata_item = parquet_file_metadata_items[0]
-    parquet_file_metadata_path = os.path.join(
-        parquet_metadata_directory, parquet_file_metadata_item["parquet_metadata_subpath"]
-    )
-    return Features.from_arrow_schema(pq.read_schema(parquet_file_metadata_path))
 
 
 def execute_filter_query(

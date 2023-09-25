@@ -14,7 +14,6 @@ from libcommon.storage import (
     exists,
     init_cached_assets_dir,
     init_duckdb_index_cache_dir,
-    init_parquet_metadata_dir,
 )
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -39,11 +38,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
     if not exists(cached_assets_directory):
         raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
-
-    # TODO: delete
-    parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
-    if not exists(parquet_metadata_directory):
-        raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
@@ -109,7 +103,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
-                parquet_metadata_directory=parquet_metadata_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 hf_jwt_public_keys=hf_jwt_public_keys,

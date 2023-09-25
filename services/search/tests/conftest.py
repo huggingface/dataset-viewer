@@ -12,14 +12,10 @@ from libcommon.storage import (
     StrPath,
     init_cached_assets_dir,
     init_duckdb_index_cache_dir,
-    init_parquet_metadata_dir,
 )
 from pytest import MonkeyPatch, fixture
 
 from search.config import AppConfig
-
-# Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.fsspec"]
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -83,7 +79,7 @@ def uvicorn_config(monkeypatch_session: MonkeyPatch) -> UvicornConfig:
 
 @fixture(scope="session")
 def httpserver_listen_address(uvicorn_config: UvicornConfig) -> tuple[str, int]:
-    return (uvicorn_config.hostname, uvicorn_config.port)
+    return uvicorn_config.hostname, uvicorn_config.port
 
 
 @fixture(scope="session")
@@ -104,9 +100,3 @@ def cached_assets_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
     return init_duckdb_index_cache_dir(app_config.duckdb_index.cache_directory)
-
-
-# TODO: delete
-@fixture
-def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
-    return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
