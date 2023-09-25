@@ -723,7 +723,7 @@
             },
             "type": {
               "type": "string",
-              "enum": ["audio/wav"]
+              "enum": ["audio/wav", "audio/mpeg"]
             }
           }
         }
