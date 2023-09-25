@@ -170,7 +170,7 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "skip"
+  action: "backfill"
   # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics,skip}
   log:
     level: "debug"
@@ -179,7 +179,7 @@ cacheMaintenance:
   resources:
     requests:
       cpu: 1
-      memory: "2Gi"
+      memory: "4Gi"
     limits:
       cpu: 2
       memory: "8Gi"
