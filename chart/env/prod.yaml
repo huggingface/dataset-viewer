@@ -170,8 +170,8 @@ mongodbMigration:
 # --- jobs (post-upgrade hooks) ---
 
 cacheMaintenance:
-  action: "backfill"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics,skip}
+  action: "skip"
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
   log:
     level: "debug"
   backfill:
