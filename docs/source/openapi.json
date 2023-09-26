@@ -2798,7 +2798,7 @@
             }
           },
           "422": {
-            "description": "Some of the `dataset`, `config`, `split`, `offset` or `length` parameters have not been provided or are invalid.",
+            "description": "Some of the 'dataset', 'config', 'split', 'offset' or 'length' parameters have not been provided or are invalid.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3145,7 +3145,7 @@
             "$ref": "#/components/responses/DatasetConfigSplit404"
           },
           "422": {
-            "description": "Some of the `dataset`, `config`, `split`, `offset` or `length` parameters have not been provided or are invalid.",
+            "description": "Some of the 'dataset', 'config', 'split', 'query', 'offset' or 'length' parameters have not been provided or are invalid.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
