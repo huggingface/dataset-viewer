@@ -193,27 +193,15 @@ def create_filter_endpoint(
                         limit=length,
                         offset=offset,
                     )
-                # TODO: duplicated in /search
-                with StepProfiler(method="search_endpoint", step="clean cache"):
-                    # no need to do it every time
-                    if random.random() < clean_cache_proba:  # nosec
-                        if (
-                            keep_first_rows_number < 0
-                            and keep_most_recent_rows_number < 0
-                            and max_cleaned_rows_number < 0
-                        ):
-                            logger.debug(
-                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
-                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
-                            )
-                        else:
-                            clean_cached_assets(
-                                dataset=dataset,
-                                cached_assets_directory=cached_assets_directory,
-                                keep_first_rows_number=keep_first_rows_number,
-                                keep_most_recent_rows_number=keep_most_recent_rows_number,
-                                max_cleaned_rows_number=max_cleaned_rows_number,
-                            )
+                with StepProfiler(method="search_endpoint", step="clean cache randomly"):
+                    clean_cached_assets_randomly(
+                        clean_cache_proba=clean_cache_proba,
+                        dataset=dataset,
+                        cached_assets_directory=cached_assets_directory,
+                        keep_first_rows_number=keep_first_rows_number,
+                        keep_most_recent_rows_number=keep_most_recent_rows_number,
+                        max_cleaned_rows_number=max_cleaned_rows_number,
+                    )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
@@ -283,6 +271,36 @@ def execute_filter_query(
     filter_count_query = FILTER_COUNT_QUERY.format(where=where)
     num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
+
+
+# TODO: duplicated in /search
+def clean_cached_assets_randomly(
+    clean_cache_proba: float,
+    dataset: str,
+    cached_assets_directory: StrPath,
+    keep_first_rows_number: int,
+    keep_most_recent_rows_number: int,
+    max_cleaned_rows_number: int,
+) -> None:
+    # no need to do it every time
+    if random.random() < clean_cache_proba:  # nosec
+        if (
+                keep_first_rows_number < 0
+                and keep_most_recent_rows_number < 0
+                and max_cleaned_rows_number < 0
+        ):
+            logger.debug(
+                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+            )
+        else:
+            clean_cached_assets(
+                dataset=dataset,
+                cached_assets_directory=cached_assets_directory,
+                keep_first_rows_number=keep_first_rows_number,
+                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                max_cleaned_rows_number=max_cleaned_rows_number,
+            )
 
 
 # TODO: duplicated in /rows

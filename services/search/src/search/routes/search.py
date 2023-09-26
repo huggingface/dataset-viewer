@@ -267,26 +267,15 @@ def create_search_endpoint(
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
                     index_path.touch()
 
-                with StepProfiler(method="search_endpoint", step="clean cache"):
-                    # no need to do it every time
-                    if random.random() < clean_cache_proba:  # nosec
-                        if (
-                            keep_first_rows_number < 0
-                            and keep_most_recent_rows_number < 0
-                            and max_cleaned_rows_number < 0
-                        ):
-                            logger.debug(
-                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
-                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
-                            )
-                        else:
-                            clean_cached_assets(
-                                dataset=dataset,
-                                cached_assets_directory=cached_assets_directory,
-                                keep_first_rows_number=keep_first_rows_number,
-                                keep_most_recent_rows_number=keep_most_recent_rows_number,
-                                max_cleaned_rows_number=max_cleaned_rows_number,
-                            )
+                with StepProfiler(method="search_endpoint", step="clean cache randomly"):
+                    clean_cached_assets_randomly(
+                        clean_cache_proba=clean_cache_proba,
+                        dataset=dataset,
+                        cached_assets_directory=cached_assets_directory,
+                        keep_first_rows_number=keep_first_rows_number,
+                        keep_most_recent_rows_number=keep_most_recent_rows_number,
+                        max_cleaned_rows_number=max_cleaned_rows_number,
+                    )
 
                 with StepProfiler(method="search_endpoint", step="create response"):
                     if "features" in content and isinstance(content["features"], dict):
@@ -312,3 +301,32 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def clean_cached_assets_randomly(
+    clean_cache_proba: float,
+    dataset: str,
+    cached_assets_directory: StrPath,
+    keep_first_rows_number: int,
+    keep_most_recent_rows_number: int,
+    max_cleaned_rows_number: int,
+) -> None:
+    # no need to do it every time
+    if random.random() < clean_cache_proba:  # nosec
+        if (
+                keep_first_rows_number < 0
+                and keep_most_recent_rows_number < 0
+                and max_cleaned_rows_number < 0
+        ):
+            logger.debug(
+                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+            )
+        else:
+            clean_cached_assets(
+                dataset=dataset,
+                cached_assets_directory=cached_assets_directory,
+                keep_first_rows_number=keep_first_rows_number,
+                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                max_cleaned_rows_number=max_cleaned_rows_number,
+            )
