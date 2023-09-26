@@ -16,7 +16,7 @@ HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
 def get_index_file_location_and_download_if_missing(
-    duckdb_index_file_directory,
+    duckdb_index_file_directory: StrPath,
     dataset: str,
     config: str,
     split: str,
