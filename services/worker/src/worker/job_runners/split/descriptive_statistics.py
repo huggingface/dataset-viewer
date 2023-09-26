@@ -247,16 +247,11 @@ def compute_categorical_statistics(
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
-    categories: list[tuple[int, int]] = con.sql(
-        categorical_counts_query
-    ).fetchall()  # list of tuples (idx, num_samples)
-
-    frequencies, nan_count = {}, 0
-    for cat_id, freq in categories:
-        if cat_id is not None:
-            frequencies[class_label_names[cat_id]] = freq
-        else:
-            nan_count = freq
+    frequencies: dict[Optional[int], int] = dict(
+        con.sql(categorical_counts_query).fetchall()
+    )  # dict {idx: num_samples}; idx might be also None for null values
+    nan_count = frequencies.pop(None, 0)  # type: ignore
+    frequencies: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in frequencies.items()}
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     logging.debug(f"Statistics for {column_name=} computed")
 
@@ -275,14 +270,13 @@ def compute_string_statistics(
     n_samples: int,
     table_name: str,
 ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-    (n_unique,) = con.sql(f"SELECT COUNT(DISTINCT {column_name}) FROM {table_name};").fetchall()[0]  # nosec
-    if n_unique <= MAX_NUM_STRING_LABELS:
+    categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
+        column_name=column_name, data_table_name=table_name
+    )
+    frequencies: dict[Optional[str], int] = dict(con.sql(categorical_counts_query).fetchall())
+    if len(frequencies) <= MAX_NUM_STRING_LABELS:
         # count as categories
-        categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
-            column_name=column_name, data_table_name=table_name
-        )
-        frequencies: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-        nan_count = frequencies.pop(None, 0)  # type: ignore
+        nan_count = frequencies.pop(None, 0)
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         return CategoricalStatisticsItem(
             nan_count=nan_count,
