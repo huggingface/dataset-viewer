@@ -1,11 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import json
 import logging
-import os
-import re
-from hashlib import sha1
 from http import HTTPStatus
 from pathlib import Path
 from typing import Optional
@@ -13,7 +9,6 @@ from typing import Optional
 import duckdb
 import pyarrow as pa
 from datasets import Features
-from huggingface_hub import hf_hub_download
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
@@ -31,9 +26,10 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
+from libcommon.duckdb import get_index_file_location_and_download_if_missing
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.storage import StrPath, init_dir
+from libcommon.storage import StrPath
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -41,9 +37,6 @@ from libcommon.viewer_utils.features import (
 )
 from starlette.requests import Request
 from starlette.responses import Response
-
-logger = logging.getLogger(__name__)
-
 
 ROW_IDX_COLUMN = "__hf_index_id"
 
@@ -60,38 +53,7 @@ REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
-def get_download_folder(
-    root_directory: StrPath, dataset: str, config: str, split: str, revision: Optional[str]
-) -> str:
-    payload = (dataset, config, split, revision)
-    hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
-    subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-    return f"{root_directory}/downloads/{subdirectory}"
-
-
-def download_index_file(
-    cache_folder: str,
-    index_folder: str,
-    target_revision: str,
-    dataset: str,
-    repo_file_location: str,
-    hf_token: Optional[str] = None,
-) -> None:
-    logging.info(f"init_dir {index_folder}")
-    init_dir(index_folder)
-
-    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-    hf_hub_download(
-        repo_type=REPO_TYPE,
-        revision=target_revision,
-        repo_id=dataset,
-        filename=repo_file_location,
-        local_dir=index_folder,
-        local_dir_use_symlinks=False,
-        token=hf_token,
-        cache_dir=cache_folder,
-    )
+logger = logging.getLogger(__name__)
 
 
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
@@ -105,7 +67,7 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
     )
     pa_table = query_result.arrow()
     con.close()
-    return (num_rows_total, pa_table)
+    return num_rows_total, pa_table
 
 
 def create_response(
@@ -292,36 +254,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def get_index_file_location_and_download_if_missing(
-    duckdb_index_file_directory,
-    dataset: str,
-    config: str,
-    split: str,
-    revision: Optional[str],
-    filename: str,
-    url: str,
-    target_revision: str,
-    hf_token: Optional[str],
-) -> str:
-    with StepProfiler(method="get_index_file_location_and_download_if_missing", step="all"):
-        index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
-        # For directories like "partial-train" for the file
-        # at "en/partial-train/0000.parquet" in the C4 dataset.
-        # Note that "-" is forbidden for split names, so it doesn't create directory names collisions.
-        split_directory = url.rsplit("/", 2)[1]
-        repo_file_location = f"{config}/{split_directory}/{filename}"
-        index_file_location = f"{index_folder}/{repo_file_location}"
-        index_path = Path(index_file_location)
-        if not index_path.is_file():
-            with StepProfiler(method="get_index_file_location_and_download_if_missing", step="download index file"):
-                download_index_file(
-                    cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
-                    index_folder=index_folder,
-                    target_revision=target_revision,
-                    dataset=dataset,
-                    repo_file_location=repo_file_location,
-                    hf_token=hf_token,
-                )
-        return index_file_location
