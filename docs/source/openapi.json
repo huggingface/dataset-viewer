@@ -3418,7 +3418,7 @@
                   "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
-                  "Search on a text dataset (julien-c/titanic-survival)": {
+                  "Filter on a text dataset (julien-c/titanic-survival)": {
                     "summary": "The first 2 rows where the 'Age' column equals to 30 (where=Age=30&length=2).",
                     "description": "Try with: https://datasets-server.huggingface.co/filter?dataset=julien-c/titanic-survival&config=default&split=train&where=Age=30&length=2",
                     "value": {
