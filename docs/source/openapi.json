@@ -3439,59 +3439,59 @@
                           "type": { "dtype": "string", "_type": "Value" }
                         },
                         {
-                          "feature_idx":3,
-                          "name":"Sex",
-                          "type":{"dtype":"string","_type":"Value"}
+                          "feature_idx": 3,
+                          "name": "Sex",
+                          "type": { "dtype": "string", "_type": "Value" }
                         },
                         {
-                          "feature_idx":4,
-                          "name":"Age",
-                          "type":{"dtype":"float64","_type":"Value"}
+                          "feature_idx": 4,
+                          "name": "Age",
+                          "type":{ "dtype": "float64", "_type": "Value" }
                         },
                         {
-                          "feature_idx":5,
-                          "name":"Siblings/Spouses Aboard",
-                          "type":{"dtype":"int64","_type":"Value"}
+                          "feature_idx": 5,
+                          "name": "Siblings/Spouses Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
                         },
                         {
-                          "feature_idx":6,
-                          "name":"Parents/Children Aboard",
-                          "type":{"dtype":"int64","_type":"Value"}
+                          "feature_idx": 6,
+                          "name": "Parents/Children Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
                         },
                         {
-                          "feature_idx":7,
-                          "name":"Fare",
-                          "type":{"dtype":"float64","_type":"Value"}
+                          "feature_idx": 7,
+                          "name": "Fare",
+                          "type": { "dtype": "float64", "_type": "Value" }
                         }
                       ],
                       "rows": [
                         {
-                          "row_idx":44,
+                          "row_idx": 44,
                           "row": {
-                            "Survived":0,
-                            "Pclass":3,
-                            "Name":"Mr. William John Rogers",
-                            "Sex":"male",
-                            "Age":30.0,
-                            "Siblings/Spouses Aboard":0,
-                            "Parents/Children Aboard":0,
-                            "Fare":8.05
+                            "Survived": 0,
+                            "Pclass": 3,
+                            "Name": "Mr. William John Rogers",
+                            "Sex": "male",
+                            "Age": 30.0,
+                            "Siblings/Spouses Aboard": 0,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 8.05
                           },
-                          "truncated_cells":[]
+                          "truncated_cells": []
                         },
                         {
-                          "row_idx":78,
+                          "row_idx": 78,
                           "row": {
-                            "Survived":1,
-                            "Pclass":3,
-                            "Name":"Miss. Elizabeth Dowdell",
-                            "Sex":"female",
-                            "Age":30.0,
-                            "Siblings/Spouses Aboard":0,
-                            "Parents/Children Aboard":0,
-                            "Fare":12.475
+                            "Survived": 1,
+                            "Pclass": 3,
+                            "Name": "Miss. Elizabeth Dowdell",
+                            "Sex": "female",
+                            "Age": 30.0,
+                            "Siblings/Spouses Aboard": 0,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 12.475
                           },
-                          "truncated_cells":[]
+                          "truncated_cells": []
                         }
                       ],
                       "num_rows_total": 33,
