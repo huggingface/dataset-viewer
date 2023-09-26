@@ -249,7 +249,7 @@ def compute_categorical_statistics(
     labels_to_counts: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in ids_to_counts.items()}
     n_unique = len(labels_to_counts)
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    logging.debug(f"Statistics for {column_name=} computed")
+    logging.debug(f"{nan_count=}, {nan_proportion=}, {n_unique}, frequencies={labels_to_counts}.")
 
     return CategoricalStatisticsItem(
         nan_count=nan_count,
@@ -270,10 +270,13 @@ def compute_string_statistics(
         column_name=column_name, data_table_name=table_name
     )
     labels_to_counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-    if len(labels_to_counts) <= MAX_NUM_STRING_LABELS:
+    n_unique = len(labels_to_counts)
+    if n_unique <= MAX_NUM_STRING_LABELS:
         # consider string as categories
         nan_count = labels_to_counts.pop(None, 0)  # type: ignore
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        logging.debug(f"Treat column as category. "
+                      f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels_to_counts}. ")
         return CategoricalStatisticsItem(
             nan_count=nan_count,
             nan_proportion=nan_proportion,
@@ -289,6 +292,7 @@ def compute_string_statistics(
             select_from=table_name,
         )
     )
+    logging.debug(f"Treat column as string and compute numerical stats over its lengths.")
     return compute_numerical_statistics(
         con=con,
         column_name=string_lengths_column_name,
@@ -438,7 +442,7 @@ def compute_descriptive_statistics_response(
         f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
     )
 
-    con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
+    con = duckdb.connect(":memory:")  # we don't load data in local db file, we load it in an in-memory table
     # configure duckdb extensions
     con.sql(f"SET extension_directory='{local_parquet_directory}';")
     con.sql("INSTALL httpfs")
