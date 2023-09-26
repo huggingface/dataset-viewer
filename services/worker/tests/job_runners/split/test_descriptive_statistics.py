@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-
+import os
 from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from typing import Optional
@@ -164,8 +164,8 @@ def count_expected_statistics_for_numerical_column(
         hist, bin_edges = np.histogram(column[~column.isna()])
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
-        # TODO: n_bins is hardcoded here but should be fetched from the app_config.descriptive_statistics_config
-        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=10)
+        n_bins = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
+        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=n_bins)
         hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
