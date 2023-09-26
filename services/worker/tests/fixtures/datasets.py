@@ -574,7 +574,16 @@ def datasets() -> Mapping[str, Dataset]:
             {
                 "string_text__column": long_text_column(),
                 "string_text__nan_column": long_text_nan_column(),
+                "string_text__large_string_column": long_text_column(),
+                "string_text__large_string_nan_column": long_text_nan_column(),
             },
-            features=Features({"string_text__column": Value("string"), "string_text__nan_column": Value("string")}),
+            features=Features(
+                {
+                    "string_text__column": Value("string"),
+                    "string_text__nan_column": Value("string"),
+                    "string_text__large_string_column": Value("large_string"),
+                    "string_text__large_string_nan_column": Value("large_string"),
+                }
+            ),
         ),
     }
