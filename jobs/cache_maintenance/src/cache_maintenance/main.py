@@ -21,13 +21,9 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 def run_job() -> None:
     job_config = JobConfig.from_env()
     action = job_config.action
-    supported_actions = ["backfill", "collect-cache-metrics", "collect-queue-metrics", "delete-indexes", "skip"]
     #  In the future we will support other kind of actions
     if not action:
         logging.warning("No action mode was selected, skipping tasks.")
-        return
-    if action not in supported_actions:
-        logging.warning(f"Wrong action mode selected, supported actions are {supported_actions}.")
         return
 
     init_logging(level=job_config.log.level)
@@ -75,6 +71,10 @@ def run_job() -> None:
                 bot_token=job_config.discussions.bot_token,
                 parquet_revision=job_config.discussions.parquet_revision,
             )
+        elif action == "skip":
+            pass
+        else:
+            logging.warning(f"Action '{action}' is not supported.")
 
         end_time = datetime.now()
         logging.info(f"Duration: {end_time - start_time}")
