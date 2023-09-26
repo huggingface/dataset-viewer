@@ -58,6 +58,9 @@ from mongodb_migration.migrations._20230703110100_cache_add_partial_field_in_con
 from mongodb_migration.migrations._20230705160600_queue_job_add_difficulty import (
     MigrationQueueAddDifficultyToJob,
 )
+from mongodb_migration.migrations._20230926095900_cache_add_has_fts_field_in_split_duckdb_index import (
+    MigrationAddHasFTSToSplitDuckdbIndexCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -261,5 +264,9 @@ class MigrationsCollector:
                 description="drop queue metrics collection",
                 alias=METRICS_MONGOENGINE_ALIAS,
                 collection_name=QUEUE_METRICS_COLLECTION,
+            ),
+            MigrationAddHasFTSToSplitDuckdbIndexCacheResponse(
+                version="20230926095900",
+                description="add 'has_fts' field for 'split-duckdb-index' cache records",
             ),
         ]

@@ -104,7 +104,6 @@ CacheableErrorCode = Literal[
     "JobManagerExceededMaximumDurationError",
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
-    "NoIndexableColumnsError",
     "NoSupportedFeaturesError",
     "NormalRowsError",
     "ParameterMissingError",
@@ -398,13 +397,6 @@ class NormalRowsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "NormalRowsError", cause, True)
-
-
-class NoIndexableColumnsError(CacheableError):
-    """The split does not have string columns to index."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NoIndexableColumnsError", cause, True)
 
 
 class NoSupportedFeaturesError(CacheableError):

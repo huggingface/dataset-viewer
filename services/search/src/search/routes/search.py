@@ -20,6 +20,7 @@ from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
     MissingRequiredParameterError,
+    SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
 from libapi.utils import (
@@ -241,6 +242,8 @@ def create_search_endpoint(
                             error_code=error_code,
                             revision=revision,
                         )
+                    if content["has_fts"] is not True:
+                        raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
