@@ -66,6 +66,12 @@ COMPUTE_LENGTH_HIST_COMMAND = """
         JOIN {bins_table_name} ON (length({column_name}) >= bin_min AND length({column_name}) < bin_max)
         GROUP BY bin_id;
 """
+CREATE_TABLE_COMMAND = """CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM {select_from}"""
+CREATE_TEMPORARY_TABLE_COMMAND = """CREATE OR REPLACE TEMPORARY TABLE {table_name} AS SELECT * FROM {select_from}"""
+CREATE_STRING_LENGTHS_COLUMN_COMMAND = """
+    CREATE OR REPLACE TEMPORARY TABLE {string_lengths_table_name} AS
+        SELECT length({column_name}) AS {string_lengths_column_name} FROM {select_from};
+"""
 
 
 class ColumnType(str, enum.Enum):
@@ -158,7 +164,7 @@ def compute_histogram(
     )
     n_bins = bins_df.shape[0]
     # create auxiliary table with bin edges
-    con.sql(f"CREATE OR REPLACE TEMPORARY TABLE {BINS_TABLE_NAME} AS SELECT * from bins_df")  # nosec
+    con.sql(CREATE_TEMPORARY_TABLE_COMMAND.format(table_name=BINS_TABLE_NAME, select_from="bins_df"))
     compute_hist_command = COMPUTE_HIST_COMMAND.format(
         data_table_name=table_name, bins_table_name=BINS_TABLE_NAME, column_name=column_name
     )
@@ -287,10 +293,12 @@ def compute_string_statistics(
     # compute numerical stats over string lengths (min, max, ..., hist)
     string_lengths_column_name = f"{column_name}_lengths"
     con.sql(
-        f"""
-    CREATE OR REPLACE TEMPORARY TABLE {STRING_LENGTHS_TABLE_NAME} AS
-        SELECT length({column_name}) as {string_lengths_column_name} FROM {table_name};
-        """  # nosec
+        CREATE_STRING_LENGTHS_COLUMN_COMMAND.format(
+            string_lengths_table_name=STRING_LENGTHS_TABLE_NAME,
+            column_name=column_name,
+            string_lengths_column_name=string_lengths_column_name,
+            select_from=table_name,
+        )
     )
     return compute_numerical_statistics(
         con=con,
@@ -444,7 +452,11 @@ def compute_descriptive_statistics_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
-    con.sql(f"CREATE TABLE {DATA_TABLE_NAME} as SELECT * FROM read_parquet('{local_parquet_glob_path}');")  # nosec
+    con.sql(
+        CREATE_TABLE_COMMAND.format(
+            table_name=DATA_TABLE_NAME, select_from=f"read_parquet('{local_parquet_glob_path}')"
+        )
+    )
 
     if string_features:
         logging.info(f"Compute statistics for string columns {string_features}")
