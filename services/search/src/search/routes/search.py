@@ -29,6 +29,7 @@ from libapi.utils import (
 from libcommon.duckdb import get_index_file_location_and_download_if_missing
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
@@ -59,7 +60,7 @@ logger = logging.getLogger(__name__)
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
     con = duckdb.connect(index_file_location, read_only=True)
     count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
-    num_rows_total = count_result[0][0]  # it will always return a non empty list with one element in a tuple
+    num_rows_total = count_result[0][0]  # it will always return a non-empty list with one element in a tuple
     logging.debug(f"got {num_rows_total=} results for {query=}")
     query_result = con.execute(
         query=FTS_COMMAND.format(offset=offset, length=length),
@@ -176,29 +177,22 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="validate indexing was done"):
                     # no cache data is needed to download the index file
                     # but will help to validate if indexing was done
-                    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
-                    result = get_cache_entry_from_steps(
-                        processing_steps=[processing_steps],
+                    duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
+                        processing_graph=processing_graph,
                         dataset=dataset,
                         config=config,
                         split=split,
-                        processing_graph=processing_graph,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
                     )
-
-                    content = result["content"]
-                    http_status = result["http_status"]
-                    error_code = result["error_code"]
-                    revision = result["dataset_git_revision"]
-                    if http_status != HTTPStatus.OK:
+                    if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
                         return get_json_error_response(
-                            content=content,
-                            status_code=http_status,
+                            content=duckdb_index_cache_entry["content"],
+                            status_code=duckdb_index_cache_entry["http_status"],
                             max_age=max_age_short,
-                            error_code=error_code,
+                            error_code=duckdb_index_cache_entry["error_code"],
                             revision=revision,
                         )
 
@@ -209,8 +203,8 @@ def create_search_endpoint(
                         config=config,
                         split=split,
                         revision=revision,
-                        filename=content["filename"],
-                        url=content["url"],
+                        filename=duckdb_index_cache_entry["content"]["filename"],
+                        url=duckdb_index_cache_entry["content"]["url"],
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
@@ -231,8 +225,10 @@ def create_search_endpoint(
                     )
 
                 with StepProfiler(method="search_endpoint", step="create response"):
-                    if "features" in content and isinstance(content["features"], dict):
-                        features = Features.from_dict(content["features"])
+                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
+                        duckdb_index_cache_entry["content"]["features"], dict
+                    ):
+                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                     else:
                         features = Features.from_arrow_schema(pa_table.schema)
                     response = create_response(
@@ -254,3 +250,27 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def get_cache_entry_from_duckdb_index_job(
+    processing_graph: ProcessingGraph,
+    dataset: str,
+    config: str,
+    split: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    hf_timeout_seconds: Optional[float],
+    cache_max_days: int,
+) -> CacheEntry:
+    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
+    return get_cache_entry_from_steps(
+        processing_steps=[processing_steps],
+        dataset=dataset,
+        config=config,
+        split=split,
+        processing_graph=processing_graph,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        cache_max_days=cache_max_days,
+    )
