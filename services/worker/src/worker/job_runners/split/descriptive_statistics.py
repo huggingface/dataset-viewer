@@ -40,7 +40,7 @@ MAX_NUM_STRING_LABELS = 30
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
-STRING_DTYPES = ["string"]  # , "large_string"] ?
+STRING_DTYPES = ["string", "large_string"]
 
 DATA_TABLE_NAME = "data"
 BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
@@ -163,7 +163,7 @@ def compute_histogram(
     compute_hist_command = COMPUTE_HIST_COMMAND.format(
         data_table_name=table_name, bins_table_name=BINS_TABLE_NAME, column_name=column_name
     )
-    logging.debug(f"Compute histogram for {column_name=}")
+    logging.debug(f"Compute histogram for {column_name=}.\n{compute_hist_command}")
     # query returns list of tuples (bin_id, bin_max, n_count):
     hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
     if len(hist_query_result) > n_bins + 1:
@@ -193,9 +193,12 @@ def compute_numerical_statistics(
     n_samples: int,
     column_type: ColumnType,
 ) -> NumericalStatisticsItem:
-    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name=}")
     min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
         column_name=column_name, data_table_name=table_name
+    )
+    logging.debug(
+        f"Compute min, max, mean, median, std and proportion of null values for {column_name=}. "
+        f"{min_max_mean_median_std_command}"
     )
     minimum, maximum, mean, median, std = con.sql(min_max_mean_median_std_command).fetchall()[0]
     logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}")
@@ -242,6 +245,7 @@ def compute_categorical_statistics(
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
+    logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
     ids_to_counts: dict[int, int] = dict(
         con.sql(categorical_counts_query).fetchall()
     )  # dict {idx: num_samples}; idx might be also None for null values
@@ -265,26 +269,32 @@ def compute_string_statistics(
     n_bins: int,
     n_samples: int,
     table_name: str,
+    dtype: Optional[str],
 ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-    categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
-        column_name=column_name, data_table_name=table_name
-    )
-    labels_to_counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-    n_unique = len(labels_to_counts)
-    if n_unique <= MAX_NUM_STRING_LABELS:
-        # consider string as categories
-        nan_count = labels_to_counts.pop(None, 0)  # type: ignore
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-        logging.debug(f"Treat column as category. "
-                      f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels_to_counts}. ")
-        return CategoricalStatisticsItem(
-            nan_count=nan_count,
-            nan_proportion=nan_proportion,
-            n_unique=len(labels_to_counts),
-            frequencies=labels_to_counts,
+    if dtype != "large_string":
+        categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
+            column_name=column_name, data_table_name=table_name
         )
+        logging.debug(f"Compute categories counts for {column_name=}.\n{categorical_counts_query}")
+        labels_to_counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
+        n_unique = len(labels_to_counts)
+        if n_unique <= MAX_NUM_STRING_LABELS:
+            # consider string as categories
+            nan_count = labels_to_counts.pop(None, 0)  # type: ignore
+            nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+            logging.debug(
+                "Treat column as category. "
+                f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels_to_counts}. "
+            )
+            return CategoricalStatisticsItem(
+                nan_count=nan_count,
+                nan_proportion=nan_proportion,
+                n_unique=len(labels_to_counts),
+                frequencies=labels_to_counts,
+            )
     # compute numerical stats over string lengths (min, max, ..., hist)
     string_lengths_column_name = f"{column_name}__lengths"
+    logging.debug(f"Treat {column_name=} as string and compute numerical stats over its lengths.")
     con.sql(
         CREATE_TEMPORARY_TABLE_COMMAND.format(
             table_name=STRING_LENGTHS_TABLE_NAME,
@@ -292,7 +302,6 @@ def compute_string_statistics(
             select_from=table_name,
         )
     )
-    logging.debug(f"Treat column as string and compute numerical stats over its lengths.")
     return compute_numerical_statistics(
         con=con,
         column_name=string_lengths_column_name,
@@ -448,6 +457,7 @@ def compute_descriptive_statistics_response(
     con.sql("INSTALL httpfs")
     con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
+    logging.info("Loading data into in-memory table. ")
     con.sql(
         CREATE_TABLE_COMMAND.format(
             table_name=DATA_TABLE_NAME,
@@ -459,12 +469,14 @@ def compute_descriptive_statistics_response(
     if string_features:
         logging.info(f"Compute statistics for string columns {string_features}")
     for feature_name, feature in tqdm(string_features.items()):
+        logging.debug(f"Compute for string column {feature_name}")
         string_column_stats = compute_string_statistics(
             con,
             feature_name,
             n_bins=histogram_num_bins,
             n_samples=num_examples,
             table_name=DATA_TABLE_NAME,
+            dtype=feature.get("dtype"),
         )
         stats.append(
             StatisticsPerColumnItem(
