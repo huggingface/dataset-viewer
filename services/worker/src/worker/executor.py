@@ -14,7 +14,7 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.utils import get_datetime
-from mirakuru import OutputExecutor
+from mirakuru import OutputExecutor, ProcessExitedWithError
 
 from worker import start_worker_loop
 from worker.config import AppConfig
@@ -181,5 +181,16 @@ class WorkerExecutor:
     def is_worker_alive(self, worker_loop_executor: OutputExecutor) -> bool:
         if worker_loop_executor.running():
             return True
-        worker_loop_executor.stop()  # raises an error if the worker returned exit code 1
+        try:
+            worker_loop_executor.stop()  # raises an error if the worker returned unexpected exit code
+        except ProcessExitedWithError as err:
+            explanation = f"exit code f{err.exit_code}"
+            if err.exit_code == -9:
+                explanation += " SIGKILL - surely an OOM"
+            error_msg = f"Worker crashed ({explanation})"
+            state = self.get_state()
+            if state and state["current_job_info"]:
+                error_msg += f"when running job_id={state['current_job_info']['job_id']}"
+            logging.error(error_msg)
+            raise
         return False
