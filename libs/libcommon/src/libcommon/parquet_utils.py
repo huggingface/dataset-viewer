@@ -311,7 +311,7 @@ class RowsIndex:
             )
 
     # note that this cache size is global for the class, not per instance
-    @lru_cache(maxsize=8)
+    @lru_cache(maxsize=1)
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
 
@@ -351,7 +351,7 @@ class Indexer:
         self.unsupported_features = unsupported_features
         self.all_columns_supported_datasets_allow_list = all_columns_supported_datasets_allow_list
 
-    @lru_cache(maxsize=8)
+    @lru_cache(maxsize=1)
     def get_rows_index(
         self,
         dataset: str,
