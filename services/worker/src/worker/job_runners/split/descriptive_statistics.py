@@ -159,7 +159,7 @@ def compute_histogram(
     )
     n_bins = bins_df.shape[0]
     # create auxiliary table with bin edges
-    con.sql(CREATE_TEMPORARY_TABLE_COMMAND.format(table_name=BINS_TABLE_NAME, select_from="bins_df"))
+    con.sql(CREATE_TEMPORARY_TABLE_COMMAND.format(table_name=BINS_TABLE_NAME, column_names="*", select_from="bins_df"))
     compute_hist_command = COMPUTE_HIST_COMMAND.format(
         data_table_name=table_name, bins_table_name=BINS_TABLE_NAME, column_name=column_name
     )
