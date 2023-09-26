@@ -132,6 +132,7 @@ def create_filter_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
                     )
+                    revision = duckdb_index_cache_entry["dataset_git_revision"]
                     if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
                         return get_json_error_response(
                             content=duckdb_index_cache_entry["content"],
