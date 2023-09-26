@@ -61,16 +61,11 @@ COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM {data_table_name}
         JOIN {bins_table_name} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
 """
-COMPUTE_LENGTH_HIST_COMMAND = """
-    SELECT bin_id, COUNT(*) as count FROM {data_table_name}
-        JOIN {bins_table_name} ON (length({column_name}) >= bin_min AND length({column_name}) < bin_max)
-        GROUP BY bin_id;
+CREATE_TABLE_COMMAND = """
+CREATE OR REPLACE TABLE {table_name} AS SELECT {column_names} FROM {select_from};
 """
-CREATE_TABLE_COMMAND = """CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM {select_from}"""
-CREATE_TEMPORARY_TABLE_COMMAND = """CREATE OR REPLACE TEMPORARY TABLE {table_name} AS SELECT * FROM {select_from}"""
-CREATE_STRING_LENGTHS_COLUMN_COMMAND = """
-    CREATE OR REPLACE TEMPORARY TABLE {string_lengths_table_name} AS
-        SELECT length({column_name}) AS {string_lengths_column_name} FROM {select_from};
+CREATE_TEMPORARY_TABLE_COMMAND = """
+CREATE OR REPLACE TEMPORARY TABLE {table_name} AS SELECT {column_names} FROM {select_from};
 """
 
 
@@ -247,19 +242,20 @@ def compute_categorical_statistics(
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
-    frequencies: dict[Optional[int], int] = dict(
+    ids_to_counts: dict[int, int] = dict(
         con.sql(categorical_counts_query).fetchall()
     )  # dict {idx: num_samples}; idx might be also None for null values
-    nan_count = frequencies.pop(None, 0)  # type: ignore
-    frequencies: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in frequencies.items()}
+    nan_count = ids_to_counts.pop(None, 0)  # type: ignore
+    labels_to_counts: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in ids_to_counts.items()}
+    n_unique = len(labels_to_counts)
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     logging.debug(f"Statistics for {column_name=} computed")
 
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
-        n_unique=len(frequencies),
-        frequencies=frequencies,
+        n_unique=n_unique,
+        frequencies=labels_to_counts,
     )
 
 
@@ -273,24 +269,23 @@ def compute_string_statistics(
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
-    frequencies: dict[Optional[str], int] = dict(con.sql(categorical_counts_query).fetchall())
-    if len(frequencies) <= MAX_NUM_STRING_LABELS:
-        # count as categories
-        nan_count = frequencies.pop(None, 0)
+    labels_to_counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
+    if len(labels_to_counts) <= MAX_NUM_STRING_LABELS:
+        # consider string as categories
+        nan_count = labels_to_counts.pop(None, 0)  # type: ignore
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         return CategoricalStatisticsItem(
             nan_count=nan_count,
             nan_proportion=nan_proportion,
-            n_unique=len(frequencies),
-            frequencies=frequencies,
+            n_unique=len(labels_to_counts),
+            frequencies=labels_to_counts,
         )
     # compute numerical stats over string lengths (min, max, ..., hist)
-    string_lengths_column_name = f"{column_name}_lengths"
+    string_lengths_column_name = f"{column_name}__lengths"
     con.sql(
-        CREATE_STRING_LENGTHS_COLUMN_COMMAND.format(
-            string_lengths_table_name=STRING_LENGTHS_TABLE_NAME,
-            column_name=column_name,
-            string_lengths_column_name=string_lengths_column_name,
+        CREATE_TEMPORARY_TABLE_COMMAND.format(
+            table_name=STRING_LENGTHS_TABLE_NAME,
+            column_names=f"length({column_name}) AS {string_lengths_column_name}",
             select_from=table_name,
         )
     )
@@ -439,6 +434,9 @@ def compute_descriptive_statistics_response(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
+    all_feature_names = ",".join(
+        f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
+    )
 
     con = duckdb.connect(":memory:")  # we don't load data in local db file, use local parquet file instead
     # configure duckdb extensions
@@ -448,7 +446,9 @@ def compute_descriptive_statistics_response(
     con.sql("SET enable_progress_bar=true;")
     con.sql(
         CREATE_TABLE_COMMAND.format(
-            table_name=DATA_TABLE_NAME, select_from=f"read_parquet('{local_parquet_glob_path}')"
+            table_name=DATA_TABLE_NAME,
+            column_names=all_feature_names,
+            select_from=f"read_parquet('{local_parquet_glob_path}')",
         )
     )
 
