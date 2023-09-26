@@ -241,30 +241,22 @@ def create_search_endpoint(
                         )
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
-                    file_name = content["filename"]
-                    index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
-                    # For directories like "partial-train" for the file
-                    # at "en/partial-train/0000.parquet" in the C4 dataset.
-                    # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-                    split_directory = content["url"].rsplit("/", 2)[1]
-                    repo_file_location = f"{config}/{split_directory}/{file_name}"
-                    index_file_location = f"{index_folder}/{repo_file_location}"
-                    index_path = Path(index_file_location)
-                    if not index_path.is_file():
-                        with StepProfiler(method="search_endpoint", step="download index file"):
-                            download_index_file(
-                                cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
-                                index_folder=index_folder,
-                                target_revision=target_revision,
-                                dataset=dataset,
-                                repo_file_location=repo_file_location,
-                                hf_token=hf_token,
-                            )
+                    index_file_location = get_index_file_location_and_download_if_missing(
+                        duckdb_index_file_directory=duckdb_index_file_directory,
+                        dataset=dataset,
+                        config=config,
+                        split=split,
+                        revision=revision,
+                        filename=content["filename"],
+                        url=content["url"],
+                        target_revision=target_revision,
+                        hf_token=hf_token,
+                    )
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
-                    index_path.touch()
+                    Path(index_file_location).touch()
 
                 with StepProfiler(method="search_endpoint", step="clean cache randomly"):
                     clean_cached_assets_randomly(
@@ -300,3 +292,36 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def get_index_file_location_and_download_if_missing(
+    duckdb_index_file_directory,
+    dataset: str,
+    config: str,
+    split: str,
+    revision: Optional[str],
+    filename: str,
+    url: str,
+    target_revision: str,
+    hf_token: Optional[str],
+) -> str:
+    with StepProfiler(method="get_index_file_location_and_download_if_missing", step="all"):
+        index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
+        # For directories like "partial-train" for the file
+        # at "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names, so it doesn't create directory names collisions.
+        split_directory = url.rsplit("/", 2)[1]
+        repo_file_location = f"{config}/{split_directory}/{filename}"
+        index_file_location = f"{index_folder}/{repo_file_location}"
+        index_path = Path(index_file_location)
+        if not index_path.is_file():
+            with StepProfiler(method="get_index_file_location_and_download_if_missing", step="download index file"):
+                download_index_file(
+                    cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
+                    index_folder=index_folder,
+                    target_revision=target_revision,
+                    dataset=dataset,
+                    repo_file_location=repo_file_location,
+                    hf_token=hf_token,
+                )
+        return index_file_location
