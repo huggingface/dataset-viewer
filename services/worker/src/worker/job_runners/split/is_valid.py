@@ -63,7 +63,7 @@ def compute_is_valid_response(
         )
         search_content = duckdb_response.response["content"]
         search = search_content["has_fts"]
-    except:
+    except Exception:
         search = False
 
     return IsValidResponse(viewer=viewer, preview=preview, search=search)
