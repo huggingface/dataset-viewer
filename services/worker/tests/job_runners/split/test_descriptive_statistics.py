@@ -19,6 +19,7 @@ from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
+    MAX_NUM_STRING_LABELS,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
     generate_bins,
@@ -212,7 +213,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # t
     nan_count = column.isna().sum()
     value_counts = column.value_counts().to_dict()
     n_unique = len(value_counts)
-    if n_unique <= 40:
+    if n_unique <= MAX_NUM_STRING_LABELS:
         return {
             "nan_count": nan_count,
             "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,

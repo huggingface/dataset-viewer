@@ -33,6 +33,9 @@ from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 REPO_TYPE = "dataset"
 
 DECIMALS = 5
+# the maximum number of unique values in a string column so that it is considered to be a category,
+# otherwise it's treated as a string
+MAX_NUM_STRING_LABELS = 30
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -267,7 +270,7 @@ def compute_string_statistics(
     table_name: str,
 ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
     (n_unique,) = con.sql(f"SELECT COUNT(DISTINCT {column_name}) FROM {table_name};").fetchall()[0]  # nosec
-    if n_unique <= 40:
+    if n_unique <= MAX_NUM_STRING_LABELS:
         # count as categories
         categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
             column_name=column_name, data_table_name=table_name
