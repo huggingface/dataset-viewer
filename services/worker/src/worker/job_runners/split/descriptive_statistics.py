@@ -48,18 +48,18 @@ STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
 
 COMPUTE_NAN_COUNTS_COMMAND = """
-    SELECT COUNT(*) FROM {data_table_name} WHERE {column_name} IS NULL;
+    SELECT COUNT(*) FROM {data_table_name} WHERE "{column_name}" IS NULL;
 """
 COMPUTE_CATEGORIES_COUNTS_COMMAND = """
-    SELECT {column_name}, COUNT(*) FROM {data_table_name} GROUP BY {column_name};
+    SELECT "{column_name}", COUNT(*) FROM {data_table_name} GROUP BY "{column_name}";
 """
 COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
-    SELECT min({column_name}), max({column_name}), mean({column_name}),
-    median({column_name}), stddev_samp({column_name}) FROM {data_table_name};
+    SELECT min("{column_name}"), max("{column_name}"), mean("{column_name}"),
+    median("{column_name}"), stddev_samp("{column_name}") FROM {data_table_name};
 """
 COMPUTE_HIST_COMMAND = """
     SELECT bin_id, COUNT(*) as count FROM {data_table_name}
-        JOIN {bins_table_name} ON ({column_name} >= bin_min AND {column_name} < bin_max) GROUP BY bin_id;
+        JOIN {bins_table_name} ON ("{column_name}" >= bin_min AND "{column_name}" < bin_max) GROUP BY bin_id;
 """
 CREATE_TABLE_COMMAND = """
 CREATE OR REPLACE TABLE {table_name} AS SELECT {column_names} FROM {select_from};
@@ -288,7 +288,7 @@ def compute_string_statistics(
     con.sql(
         CREATE_TEMPORARY_TABLE_COMMAND.format(
             table_name=STRING_LENGTHS_TABLE_NAME,
-            column_names=f"length({column_name}) AS {string_lengths_column_name}",
+            column_names=f'length("{column_name}") AS "{string_lengths_column_name}"',
             select_from=table_name,
         )
     )
