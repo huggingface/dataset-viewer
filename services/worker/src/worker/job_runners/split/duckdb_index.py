@@ -130,12 +130,12 @@ def compute_index_rows(
 
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
-        column_names = ",".join('"' + column + '"' for column in list(features.keys()))
+        column_names = ",".join(f'"{column}"' for column in features)
 
         # look for indexable columns (= possibly nested columns containing string data)
         # copy the features is needed but will be fixed with https://github.com/huggingface/datasets/pull/6189
         indexable_columns = ",".join(
-            '"' + column + '"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
+            f'"{column}"' for column in get_indexable_columns(Features.from_dict(copy.deepcopy(features)))
         )
 
     except KeyError as e:
