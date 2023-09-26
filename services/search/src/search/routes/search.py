@@ -4,7 +4,6 @@
 import json
 import logging
 import os
-import random
 import re
 from hashlib import sha1
 from http import HTTPStatus
@@ -25,7 +24,7 @@ from libapi.exceptions import (
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
-    clean_cached_assets,
+    clean_cached_assets_randomly,
     get_cache_entry_from_steps,
     get_json_api_error_response,
     get_json_error_response,
@@ -301,32 +300,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def clean_cached_assets_randomly(
-    clean_cache_proba: float,
-    dataset: str,
-    cached_assets_directory: StrPath,
-    keep_first_rows_number: int,
-    keep_most_recent_rows_number: int,
-    max_cleaned_rows_number: int,
-) -> None:
-    # no need to do it every time
-    if random.random() < clean_cache_proba:  # nosec
-        if (
-                keep_first_rows_number < 0
-                and keep_most_recent_rows_number < 0
-                and max_cleaned_rows_number < 0
-        ):
-            logger.debug(
-                "Params keep_first_rows_number, keep_most_recent_rows_number and"
-                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
-            )
-        else:
-            clean_cached_assets(
-                dataset=dataset,
-                cached_assets_directory=cached_assets_directory,
-                keep_first_rows_number=keep_first_rows_number,
-                keep_most_recent_rows_number=keep_most_recent_rows_number,
-                max_cleaned_rows_number=max_cleaned_rows_number,
-            )
