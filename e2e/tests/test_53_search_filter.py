@@ -16,7 +16,7 @@ def test_filter_endpoint(
     offset = 1
     length = 2
     where = "col_4 = 'B'"
-    search_response = poll_until_ready_and_assert(
+    filter_response = poll_until_ready_and_assert(
         relative_url=(
             f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
         ),
@@ -26,11 +26,11 @@ def test_filter_endpoint(
         check_x_revision=True,
     )
     if not expected_error_code:
-        content = search_response.json()
-        assert "rows" in content, search_response
-        assert "features" in content, search_response
-        assert "num_rows_total" in content, search_response
-        assert "num_rows_per_page" in content, search_response
+        content = filter_response.json()
+        assert "rows" in content, filter_response
+        assert "features" in content, filter_response
+        assert "num_rows_total" in content, filter_response
+        assert "num_rows_per_page" in content, filter_response
         rows = content["rows"]
         features = content["features"]
         num_rows_total = content["num_rows_total"]
