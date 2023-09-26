@@ -54,6 +54,7 @@ strict = true
 module = [
     "datasets.*",
     "ecdsa.*",
+    "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*"
 ]

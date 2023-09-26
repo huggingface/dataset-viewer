@@ -7,9 +7,12 @@ from pathlib import Path
 from typing import Optional
 
 from huggingface_hub import hf_hub_download
-
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
+
+from libapi.utils import get_cache_entry_from_steps
 
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
@@ -79,4 +82,28 @@ def download_index_file(
         local_dir_use_symlinks=False,
         token=hf_token,
         cache_dir=cache_folder,
+    )
+
+
+def get_cache_entry_from_duckdb_index_job(
+    processing_graph: ProcessingGraph,
+    dataset: str,
+    config: str,
+    split: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    hf_timeout_seconds: Optional[float],
+    cache_max_days: int,
+) -> CacheEntry:
+    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
+    return get_cache_entry_from_steps(
+        processing_steps=[processing_steps],
+        dataset=dataset,
+        config=config,
+        split=split,
+        processing_graph=processing_graph,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        cache_max_days=cache_max_days,
     )

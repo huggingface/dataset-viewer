@@ -8,7 +8,7 @@ import duckdb
 import pandas as pd
 import pyarrow as pa
 import pytest
-from libcommon.duckdb import get_download_folder
+from libapi.duckdb import get_download_folder
 from libcommon.storage import StrPath
 
 from search.routes.search import full_text_search

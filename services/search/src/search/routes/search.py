@@ -10,6 +10,10 @@ import duckdb
 import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
+from libapi.duckdb import (
+    get_cache_entry_from_duckdb_index_job,
+    get_index_file_location_and_download_if_missing,
+)
 from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
@@ -20,16 +24,13 @@ from libapi.utils import (
     Endpoint,
     are_valid_parameters,
     clean_cached_assets_randomly,
-    get_cache_entry_from_steps,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
     to_rows_list,
 )
-from libcommon.duckdb import get_index_file_location_and_download_if_missing
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
@@ -250,27 +251,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def get_cache_entry_from_duckdb_index_job(
-    processing_graph: ProcessingGraph,
-    dataset: str,
-    config: str,
-    split: str,
-    hf_endpoint: str,
-    hf_token: Optional[str],
-    hf_timeout_seconds: Optional[float],
-    cache_max_days: int,
-) -> CacheEntry:
-    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
-    return get_cache_entry_from_steps(
-        processing_steps=[processing_steps],
-        dataset=dataset,
-        config=config,
-        split=split,
-        processing_graph=processing_graph,
-        hf_endpoint=hf_endpoint,
-        hf_token=hf_token,
-        hf_timeout_seconds=hf_timeout_seconds,
-        cache_max_days=cache_max_days,
-    )
