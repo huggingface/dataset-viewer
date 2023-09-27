@@ -28,6 +28,10 @@ class S3Client:
         self, region_name: str, aws_access_key_id: Optional[str] = None, aws_secret_access_key: Optional[str] = None
     ) -> None:
         try:
+            logging.debug(
+                f"init s3 client with {region_name=} aws_access_key_id exists: {aws_access_key_id is not None} -"
+                f" aws_secret_access_key exists: {aws_secret_access_key is not None} "
+            )
             self._client = boto3.client(
                 S3_RESOURCE,
                 region_name=region_name,
@@ -35,10 +39,11 @@ class S3Client:
                 aws_secret_access_key=aws_secret_access_key,
             )
             # no needed, just helps verify client has been configured correctly
+            logging.debug("trying to list buckets to verify configuration")
             self._client.list_buckets()
             logging.info("client was configured/initialized correctly")
-        except Exception:
-            logging.error("client was not configured/initialized correctly")
+        except Exception as e:
+            logging.error(f"client was not configured/initialized correctly {e}")
             self._client = None
 
     def is_available(self) -> bool:
