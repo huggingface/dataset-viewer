@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
+import logging
 from typing import Optional
 
 import boto3
@@ -35,13 +36,16 @@ class S3Client:
             )
             # no needed, just helps verify client has been configured correctly
             self._client.list_buckets()
+            logging.info("client was configured/initialized correctly")
         except Exception:
+            logging.error("client was not configured/initialized correctly")
             self._client = None
 
     def is_available(self) -> bool:
         return self._client is not None
 
     def exists_in_bucket(self, bucket: str, object_key: str) -> bool:
+        logging.debug(f"validate object {object_key=} exists on {bucket=}")
         if not self.is_available():
             raise S3ClientInitializeError()
         try:
@@ -51,6 +55,7 @@ class S3Client:
             return False
 
     def upload_to_bucket(self, file_path: str, bucket: str, object_key: str) -> None:
+        logging.debug(f"upload object {object_key=} to {bucket=}")
         if not self.is_available():
             raise S3ClientInitializeError()
         self._client.upload_file(file_path, bucket, object_key)

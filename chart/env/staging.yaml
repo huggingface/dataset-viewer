@@ -78,8 +78,8 @@ secrets:
       WEBHOOK_SECRET: "hub-ephemeral-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-ephemeral-datasets-server-spawning-token"
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
-      AWS_ACCESS_KEY_ID: "hub-ephemeral-dataset-server-s3-access-key-id"
-      AWS_SECRET_ACCESS_KEY: "hub-ephemeral-dataset-server-s3-secret-access-key"
+      AWS_ACCESS_KEY_ID: "hub-ephemeral-datasets-server-s3-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "hub-ephemeral-datasets-server-s3-secret-access-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
