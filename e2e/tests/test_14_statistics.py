@@ -31,17 +31,36 @@ def test_statistics_endpoint(
     num_examples = content["num_examples"]
 
     assert isinstance(statistics, list), statistics
-    assert len(statistics) == 2
+    assert len(statistics) == 3
     assert num_examples == 4
 
     first_column = statistics[0]
     assert "column_name" in first_column
     assert "column_statistics" in first_column
     assert "column_type" in first_column
-    assert first_column["column_name"] == "col_2"
-    assert first_column["column_type"] == "int"
+    assert first_column["column_name"] == "col_1"
+    assert first_column["column_type"] == "string_label"
     assert isinstance(first_column["column_statistics"], dict)
     assert first_column["column_statistics"] == {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "n_unique": 4,
+        "frequencies": {
+            "There goes another one.": 1,
+            "Vader turns round and round in circles as his ship spins into space.": 1,
+            "We count thirty Rebel ships, Lord Vader.": 1,
+            "The wingman spots the pirateship coming at him and warns the Dark Lord": 1,
+        },
+    }
+
+    second_column = statistics[1]
+    assert "column_name" in second_column
+    assert "column_statistics" in second_column
+    assert "column_type" in second_column
+    assert second_column["column_name"] == "col_2"
+    assert second_column["column_type"] == "int"
+    assert isinstance(second_column["column_statistics"], dict)
+    assert second_column["column_statistics"] == {
         "histogram": {"bin_edges": [0, 1, 2, 3, 3], "hist": [1, 1, 1, 1]},
         "max": 3,
         "mean": 1.5,
@@ -52,14 +71,14 @@ def test_statistics_endpoint(
         "std": 1.29099,
     }
 
-    second_column = statistics[1]
-    assert "column_name" in second_column
-    assert "column_statistics" in second_column
-    assert "column_type" in second_column
-    assert second_column["column_name"] == "col_3"
-    assert second_column["column_type"] == "float"
-    assert isinstance(second_column["column_statistics"], dict)
-    assert second_column["column_statistics"] == {
+    third_column = statistics[2]
+    assert "column_name" in third_column
+    assert "column_statistics" in third_column
+    assert "column_type" in third_column
+    assert third_column["column_name"] == "col_3"
+    assert third_column["column_type"] == "float"
+    assert isinstance(third_column["column_statistics"], dict)
+    assert third_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
         "min": 0.0,

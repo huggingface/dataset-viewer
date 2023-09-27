@@ -26,7 +26,7 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
@@ -58,10 +58,8 @@ def image(
     row_idx: int,
     value: Any,
     featureName: str,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
@@ -90,9 +88,7 @@ def image(
                 column=featureName,
                 filename=f"{append_hash_suffix('image', json_path)}{ext}",
                 image=value,
-                assets_base_url=assets_base_url,
-                assets_directory=assets_directory,
-                overwrite=overwrite,
+                storage_options=storage_options,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
@@ -109,10 +105,8 @@ def audio(
     row_idx: int,
     value: Any,
     featureName: str,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    overwrite: bool = True,
 ) -> Any:
     if value is None:
         return None
@@ -168,10 +162,8 @@ def audio(
         column=featureName,
         audio_file_bytes=audio_file_bytes,
         audio_file_extension=audio_file_extension,
-        assets_base_url=assets_base_url,
+        storage_options=storage_options,
         filename=f"{append_hash_suffix('audio', json_path)}{ext}",
-        assets_directory=assets_directory,
-        overwrite=overwrite,
     )
 
 
@@ -183,10 +175,8 @@ def get_cell_value(
     cell: Any,
     featureName: str,
     fieldType: Any,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    overwrite: bool = True,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
@@ -199,10 +189,8 @@ def get_cell_value(
             row_idx=row_idx,
             value=cell,
             featureName=featureName,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            storage_options=storage_options,
             json_path=json_path,
-            overwrite=overwrite,
         )
     elif isinstance(fieldType, Audio):
         return audio(
@@ -212,10 +200,8 @@ def get_cell_value(
             row_idx=row_idx,
             value=cell,
             featureName=featureName,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            storage_options=storage_options,
             json_path=json_path,
-            overwrite=overwrite,
         )
     elif isinstance(fieldType, list):
         if type(cell) != list:
@@ -232,10 +218,8 @@ def get_cell_value(
                 cell=subCell,
                 featureName=featureName,
                 fieldType=subFieldType,
-                assets_base_url=assets_base_url,
-                assets_directory=assets_directory,
+                storage_options=storage_options,
                 json_path=json_path + [idx] if json_path else [idx],
-                overwrite=overwrite,
             )
             for (idx, subCell) in enumerate(cell)
         ]
@@ -252,10 +236,8 @@ def get_cell_value(
                     cell=subCell,
                     featureName=featureName,
                     fieldType=fieldType.feature,
-                    assets_base_url=assets_base_url,
-                    assets_directory=assets_directory,
+                    storage_options=storage_options,
                     json_path=json_path + [idx] if json_path else [idx],
-                    overwrite=overwrite,
                 )
                 for (idx, subCell) in enumerate(cell)
             ]
@@ -275,10 +257,8 @@ def get_cell_value(
                         cell=subCellItem,
                         featureName=featureName,
                         fieldType=fieldType.feature[key],
-                        assets_base_url=assets_base_url,
-                        assets_directory=assets_directory,
+                        storage_options=storage_options,
                         json_path=json_path + [key, idx] if json_path else [key, idx],
-                        overwrite=overwrite,
                     )
                     for (idx, subCellItem) in enumerate(subCell)
                 ]
@@ -298,10 +278,8 @@ def get_cell_value(
                 cell=subCell,
                 featureName=featureName,
                 fieldType=fieldType[key],
-                assets_base_url=assets_base_url,
-                assets_directory=assets_directory,
+                storage_options=storage_options,
                 json_path=json_path + [key] if json_path else [key],
-                overwrite=overwrite,
             )
             for (key, subCell) in cell.items()
         }

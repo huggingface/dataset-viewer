@@ -11,10 +11,19 @@ import pytest
 from datasets import Audio, Dataset, Features, Image, Value
 
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
 )
+
+
+@pytest.fixture
+def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions:
+    return DirectoryStorageOptions(
+        assets_base_url="http://localhost/assets", assets_directory=cached_assets_directory, overwrite=True
+    )
+
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
 # - document the API
@@ -56,11 +65,11 @@ from libcommon.viewer_utils.features import (
     ],
 )
 def test_value(
+    storage_options: DirectoryStorageOptions,
     dataset_type: str,
     output_value: Any,
     output_dtype: str,
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -74,8 +83,7 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url="http://localhost/assets",
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
     )
     assert value == output_value
 
@@ -283,7 +291,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    cached_assets_directory: StrPath,
+    storage_options: DirectoryStorageOptions,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -299,8 +307,7 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        assets_base_url="http://localhost/assets",
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
     )
     assert value == output_value
 

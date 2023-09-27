@@ -302,6 +302,15 @@ def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterat
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def hub_public_descriptive_statistics_string_text(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="descriptive_statistics_string_text", dataset=datasets["descriptive_statistics_string_text"]
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -888,6 +897,19 @@ def hub_responses_gated_descriptive_statistics(hub_gated_descriptive_statistics:
         "name": hub_gated_descriptive_statistics,
         "config_names_response": create_config_names_response(hub_gated_descriptive_statistics),
         "splits_response": create_splits_response(hub_gated_descriptive_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_descriptive_statistics_string_text(
+    hub_public_descriptive_statistics_string_text: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_descriptive_statistics_string_text,
+        "config_names_response": create_config_names_response(hub_public_descriptive_statistics_string_text),
+        "splits_response": create_splits_response(hub_public_descriptive_statistics_string_text),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

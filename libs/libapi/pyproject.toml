@@ -56,6 +56,7 @@ module = [
     "ecdsa.*",
     "huggingface_hub.*",
     "prometheus_client.*",
-    "pyarrow.*"
+    "pyarrow.*",
+    "tqdm.*"
 ]
 ignore_missing_imports = true
