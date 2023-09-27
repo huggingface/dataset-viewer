@@ -252,7 +252,8 @@ def compute_categorical_statistics(
     )  # dict {idx: num_samples}; idx might be also None for null values
     nan_count = ids2counts.pop(None, 0)  # type: ignore
     labels2counts: dict[str, int] = {
-        class_label_feature.int2str(cat_id) if cat_id >= 0 else cat_id: freq for cat_id, freq in ids2counts.items()
+        class_label_feature.int2str(cat_id) if cat_id >= 0 else str(cat_id): freq
+        for cat_id, freq in ids2counts.items()
     }
     n_unique = len(labels2counts)
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0

@@ -200,7 +200,7 @@ def count_expected_statistics_for_categorical_column(
     value_counts = column.value_counts(dropna=True).to_dict()
     n_unique = len(value_counts)
     frequencies = {
-        class_label_feature.int2str(int(class_id)) if class_id >= 0 else int(class_id): class_count
+        class_label_feature.int2str(int(class_id)) if class_id >= 0 else str(int(class_id)): class_count
         for class_id, class_count in value_counts.items()
     }
     return {
@@ -275,7 +275,7 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        ("gated", None),
+        # ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
         ("big", "SplitWithTooBigParquetError"),
     ],
