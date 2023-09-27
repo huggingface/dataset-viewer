@@ -8,7 +8,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import pytest
-from datasets import Dataset
+from datasets import ClassLabel, Dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -193,13 +193,16 @@ def count_expected_statistics_for_numerical_column(
 
 
 def count_expected_statistics_for_categorical_column(
-    column: pd.Series, class_labels: list[str]  # type: ignore
+    column: pd.Series, class_label_feature: ClassLabel  # type: ignore
 ) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
-    value_counts = column.value_counts().to_dict()
+    value_counts = column.value_counts(dropna=True).to_dict()
     n_unique = len(value_counts)
-    frequencies = {class_labels[int(class_id)]: class_count for class_id, class_count in value_counts.items()}
+    frequencies = {
+        class_label_feature.int2str(int(class_id)) if class_id >= 0 else int(class_id): class_count
+        for class_id, class_count in value_counts.items()
+    }
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
@@ -239,8 +242,9 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
                 raise ValueError(column_name, column_stats)
         elif column_type is ColumnType.CLASS_LABEL:
-            class_labels = ds.features[column_name].names
-            column_stats = count_expected_statistics_for_categorical_column(df[column_name], class_labels=class_labels)
+            column_stats = count_expected_statistics_for_categorical_column(
+                df[column_name], class_label_feature=ds.features[column_name]
+            )
         expected_statistics[column_name] = {
             "column_name": column_name,
             "column_type": column_type,

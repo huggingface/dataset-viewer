@@ -10,6 +10,7 @@ from typing import Optional, TypedDict, Union
 import duckdb
 import numpy as np
 import pandas as pd
+from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
@@ -239,27 +240,29 @@ def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     table_name: str,
-    class_label_names: list[str],
+    class_label_feature: ClassLabel,
     n_samples: int,
 ) -> CategoricalStatisticsItem:
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
     logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
-    ids_to_counts: dict[int, int] = dict(
+    ids2counts: dict[int, int] = dict(
         con.sql(categorical_counts_query).fetchall()
     )  # dict {idx: num_samples}; idx might be also None for null values
-    nan_count = ids_to_counts.pop(None, 0)  # type: ignore
-    labels_to_counts: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in ids_to_counts.items()}
-    n_unique = len(labels_to_counts)
+    nan_count = ids2counts.pop(None, 0)  # type: ignore
+    labels2counts: dict[str, int] = {
+        class_label_feature.int2str(cat_id) if cat_id >= 0 else cat_id: freq for cat_id, freq in ids2counts.items()
+    }
+    n_unique = len(labels2counts)
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    logging.debug(f"{nan_count=}, {nan_proportion=}, {n_unique}, frequencies={labels_to_counts}.")
+    logging.debug(f"{nan_count=}, {nan_proportion=}, {n_unique}, frequencies={labels2counts}.")
 
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
         n_unique=n_unique,
-        frequencies=labels_to_counts,
+        frequencies=labels2counts,
     )
 
 
@@ -490,13 +493,15 @@ def compute_descriptive_statistics_response(
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        categorical_features = Features.from_dict(categorical_features)
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
-        class_label_names = feature["names"]
+        # class_label_feature = feature["names"]
+        # class_label_feature = Features.from_dict({feature_name: feature})
         cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
             con,
             feature_name,
-            class_label_names=class_label_names,
+            class_label_feature=feature,
             n_samples=num_examples,
             table_name=DATA_TABLE_NAME,
         )
