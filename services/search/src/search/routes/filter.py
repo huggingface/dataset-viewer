@@ -30,7 +30,9 @@ from libapi.utils import (
 from libcommon.exceptions import UnexpectedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -51,6 +53,8 @@ FILTER_COUNT_QUERY = """\
     FROM data
     WHERE {where}"""
 
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,6 +64,9 @@ def create_filter_endpoint(
     target_revision: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     cache_max_days: int,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -192,6 +199,9 @@ def create_filter_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
+                        s3_client=s3_client,
+                        cached_assets_s3_bucket=cached_assets_s3_bucket,
+                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,
                         features=features,
@@ -227,12 +237,30 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
     unsupported_columns: list[str],
     num_rows_total: int,
 ) -> PaginatedResponse:
+    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
+    storage_options = (
+        S3StorageOptions(
+            assets_base_url=cached_assets_base_url,
+            assets_directory=cached_assets_directory,
+            overwrite=False,
+            s3_client=s3_client,
+            s3_bucket=cached_assets_s3_bucket,
+            s3_folder_name=cached_assets_s3_folder_name,
+        )
+        if use_s3_storage
+        else DirectoryStorageOptions(
+            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
+        )
+    )
     return {
         "features": to_features_list(features),
         "rows": to_rows_list(
@@ -240,11 +268,10 @@ def create_response(
             dataset,
             config,
             split,
-            cached_assets_base_url,
-            cached_assets_directory,
-            offset,
-            features,
-            unsupported_columns,
+            storage_options=storage_options,
+            offset=offset,
+            features=features,
+            unsupported_columns=unsupported_columns,
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
