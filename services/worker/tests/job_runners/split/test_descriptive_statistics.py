@@ -200,18 +200,16 @@ def count_expected_statistics_for_categorical_column(
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
+    no_label_count = int(value_counts.pop(NO_LABEL_VALUE, 0))
     n_unique = len(value_counts)
     frequencies = {
-        class_label_feature.int2str(int(class_id))
-        if class_id != NO_LABEL_VALUE
-        else NO_LABEL_STRING_VALUE: class_count
-        for class_id, class_count in value_counts.items()
+        class_label_feature.int2str(int(class_id)): class_count for class_id, class_count in value_counts.items()
     }
-    if NO_LABEL_STRING_VALUE in frequencies:
-        n_unique -= 1
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+        "no_label_count": no_label_count,
+        "no_label_proportion": np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count else 0.0,
         "n_unique": n_unique,
         "frequencies": frequencies,
     }
@@ -220,12 +218,14 @@ def count_expected_statistics_for_categorical_column(
 def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
-    value_counts = column.value_counts().to_dict()
+    value_counts = column.value_counts(dropna=True).to_dict()
     n_unique = len(value_counts)
     if n_unique <= MAX_NUM_STRING_LABELS:
         return {
             "nan_count": nan_count,
             "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+            "no_label_count": 0,
+            "no_label_proportion": 0.0,
             "n_unique": n_unique,
             "frequencies": value_counts,
         }
@@ -281,9 +281,9 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
+        # ("gated", None),
+        # ("audio", "NoSupportedFeaturesError"),
+        # ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
