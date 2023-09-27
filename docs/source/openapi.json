@@ -1068,7 +1068,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text"]
       },
       "Histogram": {
         "type": "object",
@@ -5081,6 +5081,272 @@
                               "7": 6265,
                               "8": 5851,
                               "9": 5949
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "A split (glue) with a string (text) column": {
+                    "summary": "Statistics on a string column. The column 'hypothesis' contains more than 30 different strings, so the statistics are a histogram of the string lengths.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=glue&config=ax&split=test.",
+                    "value": {
+                      "num_examples": 1104,
+                      "statistics": [
+                        {
+                          "column_name": "hypothesis",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 11,
+                            "max": 296,
+                            "mean": 97.46649,
+                            "median": 88.0,
+                            "std": 55.82714,
+                            "histogram": {
+                              "hist": [
+                                171, 224, 235, 180, 102, 99, 53, 28, 10, 2
+                              ],
+                              "bin_edges": [
+                                11, 40, 69, 98, 127, 156, 185, 214, 243, 272,
+                                296
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "idx",
+                          "column_type": "int",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 0,
+                            "max": 1103,
+                            "mean": 551.5,
+                            "median": 551.5,
+                            "std": 318.84165,
+                            "histogram": {
+                              "hist": [
+                                111, 111, 111, 111, 111, 111, 111, 111, 111, 105
+                              ],
+                              "bin_edges": [
+                                0, 111, 222, 333, 444, 555, 666, 777, 888, 999,
+                                1103
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "label",
+                          "column_type": "class_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "contradiction": 1104
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "premise",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 11,
+                            "max": 296,
+                            "mean": 97.46649,
+                            "median": 88.0,
+                            "std": 55.82714,
+                            "histogram": {
+                              "hist": [
+                                171, 224, 235, 180, 102, 99, 53, 28, 10, 2
+                              ],
+                              "bin_edges": [
+                                11, 40, 69, 98, 127, 156, 185, 214, 243, 272,
+                                296
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "A split (hellaswag) with a string (label) column": {
+                    "summary": "Statistics on a string column. The column 'label' contains less than 30 different strings, so each string is considered as a label, and the statistics are a count per label.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=hellaswag&config=default&split=train.",
+                    "value": {
+                      "num_examples": 39905,
+                      "statistics": [
+                        {
+                          "column_name": "activity_label",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 3,
+                            "max": 31,
+                            "mean": 15.7912,
+                            "median": 16.0,
+                            "std": 6.50536,
+                            "histogram": {
+                              "hist": [
+                                1564, 5973, 2467, 5844, 8075, 4732, 5382, 3965,
+                                1825, 78
+                              ],
+                              "bin_edges": [
+                                3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 31
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 29,
+                            "max": 524,
+                            "mean": 217.86533,
+                            "median": 231.0,
+                            "std": 95.94445,
+                            "histogram": {
+                              "hist": [
+                                3221, 6658, 4573, 5085, 8060, 7375, 3652, 1092,
+                                169, 20
+                              ],
+                              "bin_edges": [
+                                29, 79, 129, 179, 229, 279, 329, 379, 429, 479,
+                                524
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx_a",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 1,
+                            "max": 524,
+                            "mean": 214.18228,
+                            "median": 231.0,
+                            "std": 99.93323,
+                            "histogram": {
+                              "hist": [
+                                1987, 6198, 5422, 4068, 7695, 8395, 4549, 1356,
+                                215, 20
+                              ],
+                              "bin_edges": [
+                                1, 54, 107, 160, 213, 266, 319, 372, 425, 478,
+                                524
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx_b",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 0,
+                            "max": 140,
+                            "mean": 3.31367,
+                            "median": 0.0,
+                            "std": 6.83284,
+                            "histogram": {
+                              "hist": [
+                                37877, 1518, 347, 107, 36, 15, 4, 0, 0, 1
+                              ],
+                              "bin_edges": [
+                                0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 140
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ind",
+                          "column_type": "int",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 2,
+                            "max": 50674,
+                            "mean": 25408.91299,
+                            "median": 25533.0,
+                            "std": 14670.02268,
+                            "histogram": {
+                              "hist": [
+                                4034, 4023, 3891, 3887, 3975, 3845, 4131, 4062,
+                                4089, 3968
+                              ],
+                              "bin_edges": [
+                                2, 5070, 10138, 15206, 20274, 25342, 30410,
+                                35478, 40546, 45614, 50674
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "label",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 4,
+                            "frequencies": {
+                              "3": 10021,
+                              "2": 9867,
+                              "0": 9986,
+                              "1": 10031
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "source_id",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 9,
+                            "max": 25,
+                            "mean": 17.35021,
+                            "median": 13.0,
+                            "std": 5.86238,
+                            "histogram": {
+                              "hist": [31, 2927, 22207, 0, 0, 0, 0, 0, 14740],
+                              "bin_edges": [
+                                9, 11, 13, 15, 17, 19, 21, 23, 25, 25
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "split",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "train": 39905
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "split_type",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "indomain": 39905
                             }
                           }
                         }

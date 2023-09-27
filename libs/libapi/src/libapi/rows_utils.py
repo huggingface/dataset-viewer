@@ -2,14 +2,13 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import Optional
+from typing import Optional, Union
 
 from datasets import Features
-from tqdm.contrib.concurrent import thread_map
-
-from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
+from tqdm.contrib.concurrent import thread_map
 
 
 def _transform_row(
@@ -18,8 +17,7 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -33,8 +31,7 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            storage_options=storage_options,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -46,8 +43,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:
@@ -57,15 +53,15 @@ def transform_rows(
         config=config,
         split=split,
         features=features,
-        assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
+        storage_options=storage_options,
         offset=offset,
         row_idx_column=row_idx_column,
     )
-    if "Audio(" in str(features):
-        # use multithreading to parallelize audio files processing
+    if "Audio(" in str(features) or "Image(" in str(features):
+        # Use multithreading to parallelize image/audio files uploads.
+        # Also multithreading is ok to convert audio data
         # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
-        desc = f"transform_rows(audio) for {dataset}"
+        desc = f"_transform_row for {dataset}"
         return thread_map(fn, enumerate(rows), desc=desc, total=len(rows))  # type: ignore
     else:
         return [fn((row_idx, row)) for row_idx, row in enumerate(rows)]

@@ -159,18 +159,7 @@ _{temporary_call_to_action_for_feedback()}Close the discussion if you want to st
 def create_parquet_comment(
     dataset: str, hf_endpoint: str, parquet_revision: str, dataset_revision: Optional[str]
 ) -> str:
-    link_dataset = (
-        create_link(
-            text=dataset_revision[:7],
-            dataset=dataset,
-            hf_endpoint=hf_endpoint,
-            revision_type="commit",
-            revision=dataset_revision,
-        )
-        if dataset_revision
-        else None
-    )
-    link_dataset = f" revision {link_dataset}" if link_dataset else ""
+    link_dataset = f" revision {dataset_revision[:7]}" if dataset_revision else ""
 
     link_parquet = create_link(
         text=parquet_revision,
