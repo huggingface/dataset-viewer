@@ -20,8 +20,8 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
-    NO_LABEL_VALUE,
     NO_LABEL_STRING_VALUE,
+    NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
     generate_bins,
@@ -202,7 +202,9 @@ def count_expected_statistics_for_categorical_column(
     value_counts = column.value_counts(dropna=True).to_dict()
     n_unique = len(value_counts)
     frequencies = {
-        class_label_feature.int2str(int(class_id)) if class_id != NO_LABEL_VALUE else NO_LABEL_STRING_VALUE: class_count
+        class_label_feature.int2str(int(class_id))
+        if class_id != NO_LABEL_VALUE
+        else NO_LABEL_STRING_VALUE: class_count
         for class_id, class_count in value_counts.items()
     }
     if NO_LABEL_STRING_VALUE in frequencies:
