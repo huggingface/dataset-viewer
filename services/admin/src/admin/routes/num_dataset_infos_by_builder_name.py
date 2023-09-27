@@ -26,7 +26,7 @@ def create_num_dataset_infos_by_builder_name_endpoint(
 ) -> Endpoint:
     async def usage_endpoint(request: Request) -> Response:
         try:
-            logging.info(f"/num-dataset-infos-by-builder-name")
+            logging.info("/num-dataset-infos-by-builder-name")
 
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(
