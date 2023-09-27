@@ -28,10 +28,14 @@ from admin.routes.cache_reports_with_content import (
 )
 from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
 from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
+from admin.routes.dataset_responses import create_dataset_responses_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.metrics import create_metrics_endpoint
+from admin.routes.num_dataset_infos_by_builder_name import (
+    create_num_dataset_infos_by_builder_name_endpoint,
+)
 from admin.routes.obsolete_cache import (
     create_delete_obsolete_cache_endpoint,
     create_get_obsolete_cache_endpoint,
@@ -140,6 +144,16 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
+            "/dataset-responses",
+            endpoint=create_dataset_responses_endpoint(
+                processing_graph=processing_graph,
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+            ),
+        ),
+        Route(
             "/obsolete-cache",
             endpoint=create_get_obsolete_cache_endpoint(
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -163,6 +177,15 @@ def create_app() -> Starlette:
                 hf_token=app_config.common.hf_token,
             ),
             methods=["DELETE"],
+        ),
+        Route(
+            "/num-dataset-infos-by-builder-name",
+            endpoint=create_num_dataset_infos_by_builder_name_endpoint(
+                max_age=app_config.admin.max_age,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+            ),
         ),
     ]
     for processing_step in processing_graph.get_processing_steps():
