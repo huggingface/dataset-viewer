@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import contextlib
+import logging
 import os
 from collections.abc import Callable, Generator
 from functools import partial
@@ -103,6 +104,7 @@ def upload_asset_file(
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
         if overwrite or not s3_client.exists_in_bucket(s3_bucket, object_key):
             s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
+            logging.debug(f"{object_key=} has been uploaded to {s3_bucket=}")
             os.remove(file_path)
 
 
@@ -121,6 +123,7 @@ def create_asset_file(
     assets_directory = storage_options.assets_directory
     overwrite = storage_options.overwrite
     use_s3_storage = isinstance(storage_options, S3StorageOptions)
+    logging.debug(f"storage options with {use_s3_storage=}")
     url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
@@ -144,6 +147,7 @@ def create_asset_file(
         s3_folder_name = s3_storage_options.s3_folder_name
         s3_client = s3_storage_options.s3_client
         s3_bucket = s3_storage_options.s3_bucket
+
         upload_asset_file(
             url_dir_path=url_dir_path,
             filename=filename,
