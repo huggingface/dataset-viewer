@@ -67,15 +67,14 @@ def create_num_dataset_infos_by_builder_name_endpoint(
             )
             return get_json_ok_response(
                 {
-                    "num_parquet_datasets_infos": num_parquet_datasets_infos,
-                    "num_csv_datasets_infos": num_csv_datasets_infos,
-                    "num_text_datasets_infos": num_text_datasets_infos,
-                    "num_imagefolder_datasets_infos": num_imagefolder_datasets_infos,
-                    "num_audiofolder_datasets_infos": num_audiofolder_datasets_infos,
-                    "num_json_datasets_infos": num_json_datasets_infos,
-                    "num_arrow_datasets_infos": num_arrow_datasets_infos,
-                    "num_other_datasets_infos": num_other_dataset_infos,
-                    "total": num_datasets_infos,
+                    "parquet": num_parquet_datasets_infos,
+                    "csv": num_csv_datasets_infos,
+                    "text": num_text_datasets_infos,
+                    "imagefolder": num_imagefolder_datasets_infos,
+                    "audiofolder": num_audiofolder_datasets_infos,
+                    "json": num_json_datasets_infos,
+                    "arrow": num_arrow_datasets_infos,
+                    "other": num_other_dataset_infos,
                 },
                 max_age=max_age,
             )
