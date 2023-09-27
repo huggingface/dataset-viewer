@@ -138,6 +138,7 @@ def create_response(
         unsupported_features=UNSUPPORTED_FEATURES,
     )
     pa_table = pa_table.drop(unsupported_columns)
+    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage}")
     use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
     storage_options = (
         S3StorageOptions(
