@@ -103,6 +103,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
 
 persistence:
   cachedAssets:
