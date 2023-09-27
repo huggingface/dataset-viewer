@@ -92,7 +92,7 @@ def test_statistics_endpoint(
         },
     }
 
-    fourth_column = statistics[0]
+    fourth_column = statistics[3]
     assert "column_name" in fourth_column
     assert "column_statistics" in fourth_column
     assert "column_type" in fourth_column
