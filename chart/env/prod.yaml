@@ -83,8 +83,8 @@ secrets:
       WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
-      AWS_ACCESS_KEY_ID: "hub-prod-dataset-server-s3-access-key-id"
-      AWS_SECRET_ACCESS_KEY: "hub-prod-dataset-server-s3-secret-access-key"
+      AWS_ACCESS_KEY_ID: "hub-prod-datasets-server-s3-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "hub-prod-datasets-server-s3-secret-access-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
