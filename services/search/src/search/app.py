@@ -70,7 +70,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         aws_access_key_id=app_config.cached_assets_s3.access_key_id,
         aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
         region_name=app_config.cached_assets_s3.region,
-        bucket_name=app_config.cached_assets_s3.bucket, 
+        bucket_name=app_config.cached_assets_s3.bucket,
     )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():

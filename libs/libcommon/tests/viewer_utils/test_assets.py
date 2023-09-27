@@ -22,6 +22,9 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
         folder_name = "assets"
+        conn = boto3.resource("s3", region_name=region)
+        conn.create_bucket(Bucket=bucket_name)
+
         s3_client = S3Client(
             region_name=region,
             aws_access_key_id=access_key_id,
@@ -36,8 +39,6 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
             s3_folder_name=folder_name,
         )
 
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
         value = create_image_file(
             dataset="dataset",
             config="config",
@@ -72,6 +73,9 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
         folder_name = "assets"
+        conn = boto3.resource("s3", region_name=region)
+        conn.create_bucket(Bucket=bucket_name)
+
         s3_client = S3Client(
             region_name=region,
             aws_access_key_id=access_key_id,
@@ -86,8 +90,6 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
             s3_folder_name=folder_name,
         )
 
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
         value = create_audio_file(
             dataset="dataset",
             config="config",
