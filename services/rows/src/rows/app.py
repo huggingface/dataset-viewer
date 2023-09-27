@@ -65,6 +65,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         aws_access_key_id=app_config.cached_assets_s3.access_key_id,
         aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
         region_name=app_config.cached_assets_s3.region,
+        bucket_name=app_config.cached_assets_s3.bucket,
     )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
@@ -83,7 +84,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
                 s3_client=s3_client,
-                cached_assets_s3_bucket=app_config.cached_assets_s3.bucket,
                 cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
                 parquet_metadata_directory=parquet_metadata_directory,
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,

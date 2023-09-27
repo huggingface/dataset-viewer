@@ -23,13 +23,15 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         secret_access_key = "secret_access_key"
         folder_name = "assets"
         s3_client = S3Client(
-            region_name=region, aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+            region_name=region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            bucket_name=bucket_name,
         )
         storage_options = S3StorageOptions(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
             overwrite=True,
-            s3_bucket=bucket_name,
             s3_client=s3_client,
             s3_folder_name=folder_name,
         )
@@ -71,13 +73,15 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         secret_access_key = "secret_access_key"
         folder_name = "assets"
         s3_client = S3Client(
-            region_name=region, aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+            region_name=region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            bucket_name=bucket_name,
         )
         storage_options = S3StorageOptions(
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
             overwrite=True,
-            s3_bucket=bucket_name,
             s3_client=s3_client,
             s3_folder_name=folder_name,
         )
