@@ -83,6 +83,8 @@ secrets:
       WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
+      AWS_ACCESS_KEY_ID: "hub-prod-datasets-server-s3-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "hub-prod-datasets-server-s3-secret-access-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
@@ -101,6 +103,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
 
 persistence:
   cachedAssets:
@@ -381,10 +390,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "14Gi"
+        memory: "20Gi"
       limits:
         cpu: 2
-        memory: "24Gi"
+        memory: "20Gi"
     tolerations: []
   - deployName: "light"
     workerDifficultyMax: 40

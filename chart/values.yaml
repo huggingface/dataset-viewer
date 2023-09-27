@@ -119,6 +119,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "spawning-token"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "aws-access-key-id"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "aws-secret-access-key"
 
 uid: 1000
 gid: 3000
@@ -258,6 +265,11 @@ cachedAssets:
   keepMostRecentRowsNumber: 200
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
+
+cachedAssetsS3:
+  bucket: "hf-datasets-server-statics"
+  region: "us-east-1"
+  folderName: "cached-assets"
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)

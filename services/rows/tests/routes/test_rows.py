@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import io
 import os
 import shutil
 import time
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import boto3
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset, Image, concatenate_datasets
@@ -23,9 +25,12 @@ from libcommon.parquet_utils import (
     TooBigRows,
 )
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
+from moto import mock_s3
+from PIL import Image as PILImage  # type: ignore
 
 from rows.config import AppConfig
 from rows.routes.rows import create_response
@@ -454,12 +459,20 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+    s3_client = S3Client(
+        region_name=app_config.cached_assets_s3.region,
+        aws_access_key_id=app_config.cached_assets_s3.access_key_id,
+        aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
+    )
     response = create_response(
         dataset="ds",
         config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
+        s3_client=s3_client,
+        cached_assets_s3_bucket=app_config.cached_assets_s3.bucket,
+        cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
         pa_table=ds.data,
         offset=0,
         features=ds.features,
@@ -478,34 +491,57 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
 def test_create_response_with_image(
     ds_image: Dataset, app_config: AppConfig, cached_assets_directory: StrPath
 ) -> None:
-    response = create_response(
-        dataset="ds_image",
-        config="default",
-        split="train",
-        cached_assets_base_url=app_config.cached_assets.base_url,
-        cached_assets_directory=cached_assets_directory,
-        pa_table=ds_image.data,
-        offset=0,
-        features=ds_image.features,
-        unsupported_columns=[],
-        num_rows_total=10,
-    )
-    assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
-    assert response["rows"] == [
-        {
-            "row_idx": 0,
-            "row": {
-                "image": {
-                    "src": "http://localhost/cached-assets/ds_image/--/default/train/0/image/image.jpg",
-                    "height": 480,
-                    "width": 640,
-                }
-            },
-            "truncated_cells": [],
-        }
-    ]
-    cached_image_path = Path(cached_assets_directory) / "ds_image/--/default/train/0/image/image.jpg"
-    assert cached_image_path.is_file()
+    dataset, config, split = "ds_image", "default", "train"
+    with mock_s3():
+        bucket_name = "bucket"
+        access_key_id = "access_key_id"
+        secret_access_key = "secret_access_key"
+        region = "us-east-1"
+        s3_client = S3Client(
+            region_name=region, aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
+        )
+        folder_name = "cached-assets"
+        conn = boto3.resource("s3", region_name=region)
+        conn.create_bucket(Bucket=bucket_name)
+
+        with patch("rows.routes.rows.CACHED_ASSETS_S3_SUPPORTED_DATASETS", [dataset]):
+            response = create_response(
+                dataset=dataset,
+                config=config,
+                split=split,
+                cached_assets_base_url=app_config.cached_assets.base_url,
+                s3_client=s3_client,
+                cached_assets_directory=cached_assets_directory,
+                cached_assets_s3_bucket=bucket_name,
+                cached_assets_s3_folder_name=folder_name,
+                pa_table=ds_image.data,
+                offset=0,
+                features=ds_image.features,
+                unsupported_columns=[],
+                num_rows_total=10,
+            )
+        assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
+        assert response["rows"] == [
+            {
+                "row_idx": 0,
+                "row": {
+                    "image": {
+                        "src": "http://localhost/cached-assets/ds_image/--/default/train/0/image/image.jpg",
+                        "height": 480,
+                        "width": 640,
+                    }
+                },
+                "truncated_cells": [],
+            }
+        ]
+
+        body = (
+            conn.Object(bucket_name, "cached-assets/ds_image/--/default/train/0/image/image.jpg").get()["Body"].read()
+        )
+        assert body is not None
+
+        image = PILImage.open(io.BytesIO(body))
+        assert image is not None
 
 
 def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None:
