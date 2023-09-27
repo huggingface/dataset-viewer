@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from environs import Env
-from libapi.config import ApiConfig
+from libapi.config import ApiConfig, CachedAssetsS3Config
 from libcommon.config import (
     CacheConfig,
     CachedAssetsConfig,
@@ -39,6 +39,7 @@ class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
+    cached_assets_s3: CachedAssetsS3Config = field(default_factory=CachedAssetsS3Config)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -51,6 +52,7 @@ class AppConfig:
         return cls(
             common=common_config,
             cached_assets=CachedAssetsConfig.from_env(),
+            cached_assets_s3=CachedAssetsS3Config.from_env(),
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),

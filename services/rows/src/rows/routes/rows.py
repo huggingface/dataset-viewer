@@ -28,8 +28,10 @@ from libapi.utils import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
@@ -47,6 +49,8 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
 
+CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
+
 
 def create_response(
     dataset: str,
@@ -54,6 +58,9 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -64,18 +71,32 @@ def create_response(
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
+    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
+    storage_options = (
+        S3StorageOptions(
+            assets_base_url=cached_assets_base_url,
+            assets_directory=cached_assets_directory,
+            overwrite=False,
+            s3_client=s3_client,
+            s3_bucket=cached_assets_s3_bucket,
+            s3_folder_name=cached_assets_s3_folder_name,
+        )
+        if use_s3_storage
+        else DirectoryStorageOptions(
+            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
+        )
+    )
     return PaginatedResponse(
         features=to_features_list(features),
         rows=to_rows_list(
-            pa_table,
-            dataset,
-            config,
-            split,
-            cached_assets_base_url,
-            cached_assets_directory,
-            offset,
-            features,
-            unsupported_columns,
+            pa_table=pa_table,
+            dataset=dataset,
+            config=config,
+            split=split,
+            storage_options=storage_options,
+            offset=offset,
+            features=features,
+            unsupported_columns=unsupported_columns,
         ),
         num_rows_total=num_rows_total,
         num_rows_per_page=MAX_ROWS,
@@ -86,6 +107,9 @@ def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_bucket: str,
+    cached_assets_s3_folder_name: str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     max_arrow_data_in_memory: int,
@@ -197,6 +221,9 @@ def create_rows_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
+                        cached_assets_s3_bucket=cached_assets_s3_bucket,
+                        s3_client=s3_client,
+                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,
                         features=rows_index.parquet_index.features,
