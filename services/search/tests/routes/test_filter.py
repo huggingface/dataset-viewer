@@ -8,10 +8,8 @@ import duckdb
 import pyarrow as pa
 import pytest
 from datasets import Dataset
-from libcommon.storage import StrPath
 
-from search.config import AppConfig
-from search.routes.filter import create_response, execute_filter_query
+from search.routes.filter import execute_filter_query
 
 
 @pytest.fixture
