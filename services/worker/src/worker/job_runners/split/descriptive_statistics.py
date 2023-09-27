@@ -37,6 +37,8 @@ DECIMALS = 5
 # the maximum number of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
 MAX_NUM_STRING_LABELS = 30
+# datasets.ClassLabel feature uses -1 to encode `no label` value
+NO_LABEL_VALUE, NO_LABEL_STRING_VALUE = -1, "-1"
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -249,13 +251,20 @@ def compute_categorical_statistics(
     logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
     ids2counts: dict[int, int] = dict(
         con.sql(categorical_counts_query).fetchall()
-    )  # dict {idx: num_samples}; idx might be also None for null values
+    )  # dict {idx: num_samples}; idx might be also None for null values and -1 for `no label`
     nan_count = ids2counts.pop(None, 0)  # type: ignore
     labels2counts: dict[str, int] = {
-        class_label_feature.int2str(cat_id) if cat_id >= 0 else str(cat_id): freq
+        class_label_feature.int2str(cat_id) if cat_id != NO_LABEL_VALUE else NO_LABEL_STRING_VALUE: freq
         for cat_id, freq in ids2counts.items()
     }
     n_unique = len(labels2counts)
+    if NO_LABEL_STRING_VALUE in labels2counts:
+        n_unique -= 1
+    if n_unique != len(class_label_feature.names):
+        raise StatisticsComputationError(
+            f"Got unexpected result during classes distribution computation for {column_name=}: computed number of"
+            f" classes don't match with feature's num_classes. {n_unique=} {len(class_label_feature.names)=}. "
+        )
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     logging.debug(f"{nan_count=}, {nan_proportion=}, {n_unique}, frequencies={labels2counts}.")
 
