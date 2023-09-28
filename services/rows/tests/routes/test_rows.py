@@ -507,21 +507,20 @@ def test_create_response_with_image(
         )
         folder_name = "cached-assets"
 
-        with patch("rows.routes.rows.CACHED_ASSETS_S3_SUPPORTED_DATASETS", [dataset]):
-            response = create_response(
-                dataset=dataset,
-                config=config,
-                split=split,
-                cached_assets_base_url=app_config.cached_assets.base_url,
-                s3_client=s3_client,
-                cached_assets_directory=cached_assets_directory,
-                cached_assets_s3_folder_name=folder_name,
-                pa_table=ds_image.data,
-                offset=0,
-                features=ds_image.features,
-                unsupported_columns=[],
-                num_rows_total=10,
-            )
+        response = create_response(
+            dataset=dataset,
+            config=config,
+            split=split,
+            cached_assets_base_url=app_config.cached_assets.base_url,
+            s3_client=s3_client,
+            cached_assets_directory=cached_assets_directory,
+            cached_assets_s3_folder_name=folder_name,
+            pa_table=ds_image.data,
+            offset=0,
+            features=ds_image.features,
+            unsupported_columns=[],
+            num_rows_total=10,
+        )
         assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
         assert response["rows"] == [
             {
