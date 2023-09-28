@@ -885,6 +885,24 @@ class Queue:
         release_locks(owner=job_id)
         return True
 
+    def cancel_dataset_jobs(self, dataset: str) -> int:
+        """
+        Cancel all the jobs for a given dataset.
+
+        Args:
+            dataset (`str`, required): dataset name
+
+        Returns:
+            `int`: the number of canceled jobs
+        """
+        jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
+        previous_status = [(job.pk, job.type, job.status) for job in jobs.all()]
+        jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        for pk, job_type, status in previous_status:
+            update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
+            release_locks(owner=str(pk))
+        return jobs.count()
+
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
     ) -> bool:

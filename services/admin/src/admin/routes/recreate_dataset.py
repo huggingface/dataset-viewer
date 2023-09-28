@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+import logging
+from typing import Optional
+
+from libcommon.dataset import get_dataset_git_revision
+from libcommon.exceptions import CustomError
+from libcommon.processing_graph import ProcessingGraph
+from libcommon.queue import Queue
+from libcommon.simple_cache import delete_dataset_responses
+from libcommon.utils import Priority
+from starlette.requests import Request
+from starlette.responses import Response
+
+from admin.authentication import auth_check
+from admin.utils import (
+    Endpoint,
+    InvalidParameterError,
+    MissingRequiredParameterError,
+    UnexpectedError,
+    are_valid_parameters,
+    get_json_admin_error_response,
+    get_json_ok_response,
+)
+
+
+def create_recreate_dataset_endpoint(
+    processing_graph: ProcessingGraph,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    external_auth_url: Optional[str] = None,
+    organization: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+) -> Endpoint:
+    async def force_refresh_endpoint(request: Request) -> Response:
+        try:
+            dataset = request.query_params.get("dataset")
+            if not are_valid_parameters([dataset]) or not dataset:
+                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            try:
+                priority = Priority(request.query_params.get("priority", "low"))
+            except ValueError:
+                raise InvalidParameterError(
+                    f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
+                )
+            logging.info(f"/recreate-dataset, dataset={dataset}, priority={priority}")
+
+            # if auth_check fails, it will raise an exception that will be caught below
+            auth_check(
+                external_auth_url=external_auth_url,
+                request=request,
+                organization=organization,
+                hf_timeout_seconds=hf_timeout_seconds,
+            )
+            # try to get the revision of the dataset (before deleting the jobs and the cache, in case it fails)
+            revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+            # delete all the jobs and all the cache entries for the dataset (for all the revisions)
+            cancelled_jobs = Queue().cancel_dataset_jobs(dataset=dataset)
+            deleted_cached_responses = delete_dataset_responses(dataset=dataset)
+            # add the first processing steps to the queue
+            for processing_step in processing_graph.get_first_processing_steps():
+                Queue().add_job(
+                    job_type=processing_step.job_type,
+                    difficulty=processing_step.difficulty,
+                    dataset=dataset,
+                    revision=revision,
+                    priority=priority,
+                )
+            return get_json_ok_response(
+                {
+                    "status": "ok",
+                    "dataset": dataset,
+                    "cancelled_jobs": cancelled_jobs,
+                    "deleted_cached_responses": deleted_cached_responses or 0,
+                },
+                max_age=0,
+            )
+        except CustomError as e:
+            return get_json_admin_error_response(e, max_age=0)
+        except Exception as e:
+            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
+
+    return force_refresh_endpoint
