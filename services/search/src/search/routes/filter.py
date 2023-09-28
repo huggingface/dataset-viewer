@@ -18,6 +18,7 @@ from libapi.exceptions import (
     InvalidParameterError,
     MissingRequiredParameterError,
 )
+from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -25,19 +26,14 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    to_rows_list,
 )
 from libcommon.exceptions import UnexpectedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
-from libcommon.viewer_utils.features import (
-    get_supported_unsupported_columns,
-    to_features_list,
-)
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
+from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -52,8 +48,6 @@ FILTER_COUNT_QUERY = """\
     SELECT COUNT(*)
     FROM data
     WHERE {where}"""
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 logger = logging.getLogger(__name__)
 
@@ -227,51 +221,3 @@ def execute_filter_query(
     filter_count_query = FILTER_COUNT_QUERY.format(where=where)
     num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
-
-
-# TODO: duplicated in /rows
-def create_response(
-    dataset: str,
-    config: str,
-    split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_bucket: str,
-    cached_assets_s3_folder_name: str,
-    pa_table: pa.Table,
-    offset: int,
-    features: Features,
-    unsupported_columns: list[str],
-    num_rows_total: int,
-) -> PaginatedResponse:
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_bucket=cached_assets_s3_bucket,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
-    )
-    return {
-        "features": to_features_list(features),
-        "rows": to_rows_list(
-            pa_table,
-            dataset,
-            config,
-            split,
-            storage_options=storage_options,
-            offset=offset,
-            features=features,
-            unsupported_columns=unsupported_columns,
-        ),
-        "num_rows_total": num_rows_total,
-        "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
-    }

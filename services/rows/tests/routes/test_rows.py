@@ -18,6 +18,7 @@ from datasets import Dataset, Image, concatenate_datasets
 from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
+from libapi.response import create_response
 from libcommon.parquet_utils import (
     Indexer,
     ParquetIndexWithMetadata,
@@ -33,7 +34,6 @@ from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
 from rows.config import AppConfig
-from rows.routes.rows import create_response
 
 
 @pytest.fixture(autouse=True)

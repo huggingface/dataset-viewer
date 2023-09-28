@@ -5,8 +5,6 @@ import logging
 import random
 from typing import Literal, Optional, Union
 
-import pyarrow as pa
-from datasets import Features
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -15,6 +13,7 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
+from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -22,7 +21,6 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    to_rows_list,
     try_backfill_dataset_then_raise,
 )
 from libcommon.parquet_utils import Indexer
@@ -31,10 +29,9 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
-from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES, to_features_list
+from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -42,59 +39,6 @@ logger = logging.getLogger(__name__)
 
 
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["arabic_speech_corpus"]  # for testing
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
-
-
-def create_response(
-    dataset: str,
-    config: str,
-    split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_bucket: str,
-    cached_assets_s3_folder_name: str,
-    pa_table: pa.Table,
-    offset: int,
-    features: Features,
-    unsupported_columns: list[str],
-    num_rows_total: int,
-) -> PaginatedResponse:
-    if set(pa_table.column_names).intersection(set(unsupported_columns)):
-        raise RuntimeError(
-            "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
-        )
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_bucket=cached_assets_s3_bucket,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
-    )
-    return PaginatedResponse(
-        features=to_features_list(features),
-        rows=to_rows_list(
-            pa_table=pa_table,
-            dataset=dataset,
-            config=config,
-            split=split,
-            storage_options=storage_options,
-            offset=offset,
-            features=features,
-            unsupported_columns=unsupported_columns,
-        ),
-        num_rows_total=num_rows_total,
-        num_rows_per_page=MAX_NUM_ROWS_PER_PAGE,
-    )
 
 
 def create_rows_endpoint(
