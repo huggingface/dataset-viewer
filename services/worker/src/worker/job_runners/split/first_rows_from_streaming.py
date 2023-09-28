@@ -26,6 +26,7 @@ from libcommon.exceptions import (
 )
 from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions
 from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
@@ -41,8 +42,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    assets_base_url: str,
-    assets_directory: StrPath,
+    storage_options: DirectoryStorageOptions,
 ) -> list[Row]:
     return [
         {
@@ -54,8 +54,7 @@ def transform_rows(
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                assets_base_url=assets_base_url,
-                assets_directory=assets_directory,
+                storage_options=storage_options,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -67,14 +66,13 @@ def compute_first_rows_response(
     dataset: str,
     config: str,
     split: str,
-    assets_base_url: str,
+    storage_options: DirectoryStorageOptions,
     hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
-    assets_directory: StrPath,
     max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
     """
@@ -91,8 +89,8 @@ def compute_first_rows_response(
             A configuration name.
         split (`str`):
             A split name.
-        assets_base_url (`str`):
-            The base url of the assets.
+        storage_options (`DirectoryStorageOptions`):
+            The storage options that contains the assets_base_url and assets_directory.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
@@ -108,8 +106,6 @@ def compute_first_rows_response(
             The minimum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of columns supported.
-        assets_directory (`str` or `pathlib.Path`):
-            The directory where the assets are stored.
     Returns:
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
     Raises the following errors:
@@ -220,8 +216,7 @@ def compute_first_rows_response(
             split=split,
             rows=rows,
             features=features,
-            assets_base_url=assets_base_url,
-            assets_directory=assets_directory,
+            storage_options=storage_options,
         )
     except Exception as err:
         raise RowsPostProcessingError(
@@ -290,8 +285,11 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                assets_base_url=self.assets_base_url,
-                assets_directory=self.assets_directory,
+                storage_options=DirectoryStorageOptions(
+                    assets_base_url=self.assets_base_url,
+                    assets_directory=self.assets_directory,
+                    overwrite=True,
+                ),
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,

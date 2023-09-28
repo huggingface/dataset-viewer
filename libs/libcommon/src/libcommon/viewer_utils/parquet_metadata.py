@@ -3,9 +3,8 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
+from libcommon.constants import DATASET_SEPARATOR
 from libcommon.storage import StrPath
-
-DATASET_SEPARATOR = "--"
 
 PARQUET_METADATA_DIR_MODE = 0o755
 

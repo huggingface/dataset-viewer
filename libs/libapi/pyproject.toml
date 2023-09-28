@@ -55,6 +55,7 @@ module = [
     "datasets.*",
     "ecdsa.*",
     "prometheus_client.*",
-    "pyarrow.*"
+    "pyarrow.*",
+    "tqdm.*"
 ]
 ignore_missing_imports = true

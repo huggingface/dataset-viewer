@@ -28,14 +28,14 @@
       sections:
         - local: parquet_process
           title: Overview
-        - local: duckdb
-          title: DuckDB
         - local: clickhouse
           title: ClickHouse
-        - local: polars
-          title: Polars
+        - local: duckdb
+          title: DuckDB
         - local: pandas
           title: Pandas
+        - local: polars
+          title: Polars
 - title: Conceptual Guides
   sections:
     - local: configs_and_splits
