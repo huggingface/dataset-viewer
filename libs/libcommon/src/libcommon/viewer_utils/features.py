@@ -30,7 +30,6 @@ from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
-# audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
 
 
