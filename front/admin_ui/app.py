@@ -218,13 +218,13 @@ with gr.Blocks() as demo:
             trending_datasets = [repo_info["repoData"]["id"] for repo_info in response.json()["recentlyTrending"]]
 
             def get_is_valid_response(dataset: str):
-                return requests.get(f"{DSS_ENDPOINT}/admin/dataset-responses?kind=dataset-is-valid&dataset={dataset}", headers=headers, timeout=60)
+                return requests.get(f"{DSS_ENDPOINT}/is-valid?dataset={dataset}", headers=headers, timeout=60)
     
             is_valid_responses = thread_map(get_is_valid_response, trending_datasets, desc="get_is_valid_response")
             trending_datasets_coverage = {"All trending dataset": []}
             for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
                 if is_valid_response.status_code == 200:
-                    response_json = response.json()[0]
+                    response_json = response.json()
                     trending_datasets_coverage["All trending dataset"].append(dataset)
                     for is_valid_field in response_json["content"]:
                         pretty_field = is_valid_field.replace("_", " ").capitalize()
