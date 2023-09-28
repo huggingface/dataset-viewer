@@ -28,7 +28,6 @@ from admin.routes.cache_reports_with_content import (
 )
 from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
 from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
-from admin.routes.dataset_responses import create_dataset_responses_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
@@ -136,16 +135,6 @@ def create_app() -> Starlette:
         Route(
             "/dataset-status",
             endpoint=create_dataset_status_endpoint(
-                processing_graph=processing_graph,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-            ),
-        ),
-        Route(
-            "/dataset-responses",
-            endpoint=create_dataset_responses_endpoint(
                 processing_graph=processing_graph,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,

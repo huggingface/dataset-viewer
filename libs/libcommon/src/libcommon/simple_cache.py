@@ -729,34 +729,6 @@ class CacheReportWithContent(CacheReport):
     content: Mapping[str, Any]
 
 
-def get_dataset_responses_with_content_for_kind(
-    kind: str, dataset: str, config: Optional[str], split: Optional[str]
-) -> list[CacheReportWithContent]:
-    if split:
-        responses = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-    elif config:
-        responses = CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config)
-    else:
-        responses = CachedResponseDocument.objects(kind=kind, dataset=dataset)
-    return [
-        {
-            "kind": response.kind,
-            "dataset": response.dataset,
-            "config": response.config,
-            "split": response.split,
-            "http_status": response.http_status,
-            "error_code": response.error_code,
-            "details": _clean_nested_mongo_object(response.details),
-            "updated_at": response.updated_at,
-            "job_runner_version": response.job_runner_version,
-            "dataset_git_revision": response.dataset_git_revision,
-            "progress": response.progress,
-            "content": _clean_nested_mongo_object(response.content),
-        }
-        for response in responses
-    ]
-
-
 class CacheReportsWithContentPage(TypedDict):
     cache_reports_with_content: list[CacheReportWithContent]
     next_cursor: str
