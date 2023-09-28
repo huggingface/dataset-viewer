@@ -3322,7 +3322,7 @@
         "summary": "Filter rows of a split",
         "description": "Returns the rows matching the filter query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
         "externalDocs": {
-          "description": "See search (Hub docs).",
+          "description": "See filter (Hub docs).",
           "url": "https://huggingface.co/docs/datasets-server/filter"
         },
         "operationId": "filterRows",
