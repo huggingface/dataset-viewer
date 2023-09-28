@@ -507,7 +507,7 @@ def test_create_response_with_image(
         )
         folder_name = "cached-assets"
 
-        with patch("rows.routes.rows.CACHED_ASSETS_S3_SUPPORTED_DATASETS", [dataset]):
+        with patch("libapi.response.CACHED_ASSETS_S3_SUPPORTED_DATASETS", [dataset]):
             response = create_response(
                 dataset=dataset,
                 config=config,
