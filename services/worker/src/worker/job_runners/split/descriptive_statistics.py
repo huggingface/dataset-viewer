@@ -251,10 +251,10 @@ def compute_categorical_statistics(
         column_name=column_name, data_table_name=table_name
     )
     logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
-    ids2counts: dict[int, int] = dict(
+    ids2counts: dict[Optional[int], int] = dict(
         con.sql(categorical_counts_query).fetchall()
     )  # dict {idx: num_samples}; idx might be also None for null values and -1 for `no label`
-    nan_count = ids2counts.pop(None, 0)  # type: ignore
+    nan_count = ids2counts.pop(None, 0)
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
     labels2counts: dict[str, int] = {class_label_feature.int2str(cat_id): freq for cat_id, freq in ids2counts.items()}
     n_unique = len(labels2counts)
