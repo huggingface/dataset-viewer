@@ -13,6 +13,7 @@ import networkx as nx
 import huggingface_hub as hfh
 import duckdb
 import json
+from tqdm.contrib.concurrent import thread_map
 
 matplotlib.use('SVG')
 
@@ -63,6 +64,13 @@ with gr.Blocks() as demo:
     with gr.Row(visible=HF_TOKEN is not None) as main_page:
         with gr.Column():
             welcome_title = gr.Markdown("### Welcome")
+            with gr.Tab("Home dashboard"):
+                home_dashboard_fetch_button = gr.Button("Fetch")
+                gr.Markdown("### Dataset infos")
+                home_dashboard_trending_datasets_infos_by_builder_name_table = gr.DataFrame(pd.DataFrame({"Builder name": [], "Count": [], r"% of all datasets with infos": [], r"% of all public datasets": []}))
+                gr.Markdown("### Trending datasets coverage (is-valid)")
+                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
+                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
             with gr.Tab("View pending jobs"):
                 fetch_pending_jobs_button = gr.Button("Fetch pending jobs")
                 gr.Markdown("### Pending jobs summary")
@@ -181,6 +189,67 @@ with gr.Blocks() as demo:
 
     def get_obsolete_cache(token):
         return call_obsolete_cache(token, False)
+
+    
+    def fetch_home_dashboard(token):
+        out = {
+            home_dashboard_trending_datasets_infos_by_builder_name_table: gr.update(value=None),
+            home_dashboard_trending_datasets_coverage_stats_table: gr.update(value=None),
+            home_dashboard_trending_datasets_coverage_table: gr.update(value=None),
+        }
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(f"{DSS_ENDPOINT}/admin/num-dataset-infos-by-builder-name", headers=headers, timeout=60)
+        if response.status_code == 200:
+            num_infos_by_builder_name = response.json()
+            total_num_infos = sum(num_infos_by_builder_name.values())
+            num_public_datasets = sum(1 for _ in hfh.HfApi(endpoint=HF_ENDPOINT).list_datasets())
+            out[home_dashboard_trending_datasets_infos_by_builder_name_table] = gr.update(visible=True, value=pd.DataFrame({
+                "Builder name": list(num_infos_by_builder_name.keys()),
+                "Count": list(num_infos_by_builder_name.values()),
+                r"% of all datasets with infos": [f"{round(100 * num_infos / total_num_infos, 2)}%"  for num_infos in num_infos_by_builder_name.values()],
+                r"% of all public datasets": [f"{round(100 * num_infos / num_public_datasets, 2)}%"  for num_infos in num_infos_by_builder_name.values()],
+            }))
+        else:
+            out[home_dashboard_trending_datasets_infos_by_builder_name_table] = gr.update(visible=True, value=pd.DataFrame({
+                "Error": [f"❌ Failed to fetch dataset infos from {DSS_ENDPOINT} (error {response.status_code})"]
+            }))
+        response = requests.get(f"{HF_ENDPOINT}/api/trending?type=dataset&limit=20", timeout=60)
+        if response.status_code == 200:
+            trending_datasets = [repo_info["repoData"]["id"] for repo_info in response.json()["recentlyTrending"]]
+
+            def get_is_valid_response(dataset: str):
+                return requests.get(f"{DSS_ENDPOINT}/is-valid?dataset={dataset}", headers=headers, timeout=60)
+    
+            is_valid_responses = thread_map(get_is_valid_response, trending_datasets, desc="get_is_valid_response")
+            trending_datasets_coverage = {"All trending dataset": []}
+            for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
+                if is_valid_response.status_code == 200:
+                    response_json = response.json()
+                    trending_datasets_coverage["All trending dataset"].append(dataset)
+                    for is_valid_field in response_json["content"]:
+                        pretty_field = is_valid_field.replace("_", " ").capitalize()
+                        if pretty_field not in trending_datasets_coverage:
+                            trending_datasets_coverage[pretty_field] = []
+                        trending_datasets_coverage[pretty_field].append("✅" if response_json["content"][is_valid_field] is True else "❌")
+                else:
+                    out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
+                        "Error": [f"❌ Failed to fetch coverage for {dataset} from {DSS_ENDPOINT} (error {is_valid_response.status_code})"]
+                    }))
+                    break
+            else:
+                out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
+                trending_datasets_coverage_stats = {"Num trending datasets": len(trending_datasets), **{
+                    is_valid_field: f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"
+                    for is_valid_field in trending_datasets_coverage
+                    if is_valid_field != "All trending dataset"
+                }}
+                out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
+        else:
+            out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
+                "Error": [f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"]
+            }))
+        return out
+
 
     def view_jobs(token):
         global pending_jobs_df
@@ -348,6 +417,8 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
         return "```\n" + all_results + "\n```"
 
     token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
+
+    home_dashboard_fetch_button.click(fetch_home_dashboard, inputs=[token_box], outputs=[home_dashboard_trending_datasets_infos_by_builder_name_table, home_dashboard_trending_datasets_coverage_stats_table, home_dashboard_trending_datasets_coverage_table])
 
     fetch_pending_jobs_button.click(view_jobs, inputs=token_box, outputs=[recent_pending_jobs_table, pending_jobs_summary_table])
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
