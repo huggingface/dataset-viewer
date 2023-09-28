@@ -463,6 +463,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         region_name=app_config.cached_assets_s3.region,
         aws_access_key_id=app_config.cached_assets_s3.access_key_id,
         aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
+        bucket_name=app_config.cached_assets_s3.bucket,
     )
     response = create_response(
         dataset="ds",
@@ -471,7 +472,6 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
         s3_client=s3_client,
-        cached_assets_s3_bucket=app_config.cached_assets_s3.bucket,
         cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
         pa_table=ds.data,
         offset=0,
@@ -497,12 +497,15 @@ def test_create_response_with_image(
         access_key_id = "access_key_id"
         secret_access_key = "secret_access_key"
         region = "us-east-1"
-        s3_client = S3Client(
-            region_name=region, aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key
-        )
-        folder_name = "cached-assets"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
+        s3_client = S3Client(
+            region_name=region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+            bucket_name=bucket_name,
+        )
+        folder_name = "cached-assets"
 
         with patch("rows.routes.rows.CACHED_ASSETS_S3_SUPPORTED_DATASETS", [dataset]):
             response = create_response(
@@ -512,7 +515,6 @@ def test_create_response_with_image(
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 s3_client=s3_client,
                 cached_assets_directory=cached_assets_directory,
-                cached_assets_s3_bucket=bucket_name,
                 cached_assets_s3_folder_name=folder_name,
                 pa_table=ds_image.data,
                 offset=0,

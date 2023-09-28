@@ -18,7 +18,6 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     s3_client: S3Client,
-    cached_assets_s3_bucket: str,
     cached_assets_s3_folder_name: str,
     pa_table: pa.Table,
     offset: int,
@@ -37,7 +36,6 @@ def create_response(
             assets_directory=cached_assets_directory,
             overwrite=False,
             s3_client=s3_client,
-            s3_bucket=cached_assets_s3_bucket,
             s3_folder_name=cached_assets_s3_folder_name,
         )
         if use_s3_storage
