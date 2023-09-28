@@ -390,10 +390,10 @@ workers:
     resources:
       requests:
         cpu: 1
-        memory: "20Gi"
+        memory: "24Gi"
       limits:
         cpu: 2
-        memory: "20Gi"
+        memory: "24Gi"
     tolerations: []
   - deployName: "light"
     workerDifficultyMax: 40
