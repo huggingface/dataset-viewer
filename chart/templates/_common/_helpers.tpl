@@ -114,6 +114,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 app.kubernetes.io/component: "{{ include "name" . }}-delete-indexes"
 {{- end -}}
 
+{{- define "labels.cleanHfDatasetsCache" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-clean-hf-datasets-cache"
+{{- end -}}
+
 {{- define "labels.postMessages" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-post-messages"
