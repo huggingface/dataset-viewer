@@ -140,6 +140,11 @@ firstRows:
 parquetAndInfo:
   maxDatasetSize: "500_000_000"
 
+cachedAssetsS3:
+  bucket: "hf-datasets-server-statics-staging"
+  region: "us-east-1"
+  folderName: "cached-assets"
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
