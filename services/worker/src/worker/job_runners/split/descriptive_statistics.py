@@ -38,7 +38,7 @@ DECIMALS = 5
 # otherwise it's treated as a string
 MAX_NUM_STRING_LABELS = 30
 # datasets.ClassLabel feature uses -1 to encode `no label` value
-NO_LABEL_VALUE, NO_LABEL_STRING_VALUE = -1, "-1"
+NO_LABEL_VALUE = -1
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]

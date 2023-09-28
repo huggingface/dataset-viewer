@@ -20,7 +20,6 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
-    NO_LABEL_STRING_VALUE,
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
