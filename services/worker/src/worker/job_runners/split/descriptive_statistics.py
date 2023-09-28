@@ -101,7 +101,7 @@ class CategoricalStatisticsItem(TypedDict):
     nan_proportion: float
     no_label_count: int
     no_label_proportion: float
-    n_unique: int
+    num_unique: int
     frequencies: dict[str, int]
 
 
@@ -275,7 +275,7 @@ def compute_categorical_statistics(
         nan_proportion=nan_proportion,
         no_label_count=no_label_count,
         no_label_proportion=no_label_proportion,
-        n_unique=n_unique,
+        num_unique=n_unique,
         frequencies=labels2counts,
     )
 
@@ -301,14 +301,14 @@ def compute_string_statistics(
             nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
             logging.debug(
                 "Treat column as category. "
-                f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels2counts}. "
+                f"{nan_count=}, {nan_proportion=}, n_unique={len(labels2counts)}, frequencies={labels2counts}. "
             )
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,
                 no_label_count=0,
                 no_label_proportion=0.0,
-                n_unique=len(labels2counts),
+                num_unique=len(labels2counts),
                 frequencies=labels2counts,
             )
     # compute numerical stats over string lengths (min, max, ..., hist)

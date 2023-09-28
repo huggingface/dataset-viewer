@@ -46,7 +46,7 @@ def test_statistics_endpoint(
         "nan_proportion": 0.0,
         "no_label_count": 0,
         "no_label_proportion": 0.0,
-        "n_unique": 4,
+        "num_unique": 4,
         "frequencies": {
             "There goes another one.": 1,
             "Vader turns round and round in circles as his ship spins into space.": 1,

@@ -209,7 +209,7 @@ def count_expected_statistics_for_categorical_column(
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
         "no_label_count": no_label_count,
         "no_label_proportion": np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count else 0.0,
-        "n_unique": n_unique,
+        "num_unique": n_unique,
         "frequencies": frequencies,
     }
 
@@ -225,7 +225,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # t
             "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
             "no_label_count": 0,
             "no_label_proportion": 0.0,
-            "n_unique": n_unique,
+            "num_unique": n_unique,
             "frequencies": value_counts,
         }
 
@@ -280,9 +280,9 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        # ("gated", None),
-        # ("audio", "NoSupportedFeaturesError"),
-        # ("big", "SplitWithTooBigParquetError"),
+        ("gated", None),
+        ("audio", "NoSupportedFeaturesError"),
+        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
@@ -385,11 +385,11 @@ def assert_statistics_equal(response: dict, expected: dict) -> None:  # type: ig
         assert response_stats["histogram"] == expected_stats["histogram"]
 
     elif response["column_type"] is ColumnType.CLASS_LABEL:
-        assert response_stats["n_unique"] == expected_stats["n_unique"]
+        assert response_stats["num_unique"] == expected_stats["num_unique"]
         assert response_stats["frequencies"] == expected_stats["frequencies"]
 
     elif response["column_type"] is ColumnType.STRING_LABEL:
-        assert response_stats["n_unique"] == expected_stats["n_unique"]
+        assert response_stats["num_unique"] == expected_stats["num_unique"]
         assert response_stats["frequencies"] == expected_stats["frequencies"]
 
     elif response["column_type"] is ColumnType.STRING_TEXT:
