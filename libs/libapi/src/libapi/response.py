@@ -29,7 +29,6 @@ def create_response(
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
     storage_options = (
         S3StorageOptions(
             assets_base_url=cached_assets_base_url,
@@ -38,7 +37,7 @@ def create_response(
             s3_client=s3_client,
             s3_folder_name=cached_assets_s3_folder_name,
         )
-        if use_s3_storage
+        if use_s3_storage(dataset)
         else DirectoryStorageOptions(
             assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
         )
@@ -58,3 +57,7 @@ def create_response(
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
     }
+
+
+def use_s3_storage(dataset: str) -> bool:
+    return dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS

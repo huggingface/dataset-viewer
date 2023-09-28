@@ -21,6 +21,7 @@ from libapi.exceptions import (
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
+from libapi.response import use_s3_storage
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -54,8 +55,6 @@ FTS_COMMAND = (
     "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
     " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_fts_score DESC OFFSET {offset} LIMIT {length};"
 )
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 logger = logging.getLogger(__name__)
@@ -95,8 +94,7 @@ def create_response(
         features,
     )
     pa_table = pa_table.drop(unsupported_columns)
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
-    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage}")
+    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage(dataset)}")
     storage_options = (
         S3StorageOptions(
             assets_base_url=cached_assets_base_url,
@@ -105,7 +103,7 @@ def create_response(
             s3_client=s3_client,
             s3_folder_name=cached_assets_s3_folder_name,
         )
-        if use_s3_storage
+        if use_s3_storage(dataset)
         else DirectoryStorageOptions(
             assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
         )
