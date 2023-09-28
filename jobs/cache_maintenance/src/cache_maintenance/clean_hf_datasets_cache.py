@@ -23,9 +23,7 @@ def clean_hf_datasets_cache(hf_datasets_cache: StrPath, expired_time_interval_se
     total_dirs = 0
     total_files = 0
 
-    def rmtree_on_error(
-        function: Any, path: str, excinfo: Any
-    ) -> None:  # noqa: U100, this is the expected signature to pass to onerror=
+    def rmtree_on_error(function: Any, path: str, excinfo: Any) -> None:  # noqa: U100, args needed for onerror=
         nonlocal errors_dirs
         logging.error(f"failed to delete directory {path=}")
         errors_dirs += 1
