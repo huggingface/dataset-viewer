@@ -97,14 +97,13 @@ def upload_asset_file(
     file_path: Path,
     overwrite: bool = True,
     s3_client: Optional[S3Client] = None,
-    s3_bucket: Optional[str] = None,
     s3_folder_name: Optional[str] = None,
 ) -> None:
-    if s3_client is not None and s3_bucket is not None:
+    if s3_client is not None:
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        if overwrite or not s3_client.exists_in_bucket(s3_bucket, object_key):
-            s3_client.upload_to_bucket(str(file_path), s3_bucket, object_key)
-            logging.debug(f"{object_key=} has been uploaded to {s3_bucket=}")
+        if overwrite or not s3_client.exists(object_key):
+            s3_client.upload(str(file_path), object_key)
+            logging.debug(f"{object_key=} has been uploaded")
             os.remove(file_path)
 
 
@@ -146,7 +145,6 @@ def create_asset_file(
         s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
         s3_folder_name = s3_storage_options.s3_folder_name
         s3_client = s3_storage_options.s3_client
-        s3_bucket = s3_storage_options.s3_bucket
 
         upload_asset_file(
             url_dir_path=url_dir_path,
@@ -154,7 +152,6 @@ def create_asset_file(
             file_path=file_path,
             overwrite=overwrite,
             s3_client=s3_client,
-            s3_bucket=s3_bucket,
             s3_folder_name=s3_folder_name,
         )
 
