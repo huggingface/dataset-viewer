@@ -125,8 +125,7 @@ def create_filter_endpoint(
                         hf_jwt_algorithm=hf_jwt_algorithm,
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
-                # TODO: duplicated in /search
-                with StepProfiler(method="search_endpoint", step="validate indexing was done"):
+                with StepProfiler(method="filter_endpoint", step="validate indexing was done"):
                     # no cache data is needed to download the index file
                     # but will help to validate if indexing was done
                     duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
@@ -148,7 +147,7 @@ def create_filter_endpoint(
                             error_code=duckdb_index_cache_entry["error_code"],
                             revision=revision,
                         )
-                with StepProfiler(method="search_endpoint", step="download index file if missing"):
+                with StepProfiler(method="filter_endpoint", step="download index file if missing"):
                     index_file_location = get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
@@ -183,7 +182,7 @@ def create_filter_endpoint(
                         limit=length,
                         offset=offset,
                     )
-                with StepProfiler(method="search_endpoint", step="clean cache randomly"):
+                with StepProfiler(method="filter_endpoint", step="clean cache randomly"):
                     clean_cached_assets_randomly(
                         clean_cache_proba=clean_cache_proba,
                         dataset=dataset,
