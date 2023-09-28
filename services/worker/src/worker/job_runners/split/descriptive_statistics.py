@@ -512,8 +512,6 @@ def compute_descriptive_statistics_response(
         categorical_features = Features.from_dict(categorical_features)
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
-        # class_label_feature = feature["names"]
-        # class_label_feature = Features.from_dict({feature_name: feature})
         cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
             con,
             feature_name,

@@ -280,9 +280,9 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
-        # ("gated", None),
-        # ("audio", "NoSupportedFeaturesError"),
-        # ("big", "SplitWithTooBigParquetError"),
+        ("gated", None),
+        ("audio", "NoSupportedFeaturesError"),
+        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
