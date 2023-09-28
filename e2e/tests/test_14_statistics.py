@@ -44,6 +44,8 @@ def test_statistics_endpoint(
     assert first_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
+        "no_label_count": 0,
+        "no_label_proportion": 0.0,
         "n_unique": 4,
         "frequencies": {
             "There goes another one.": 1,
