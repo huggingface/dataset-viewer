@@ -15,6 +15,5 @@ class DirectoryStorageOptions:
 
 @dataclass
 class S3StorageOptions(DirectoryStorageOptions):
-    s3_bucket: str
     s3_folder_name: str
     s3_client: S3Client
