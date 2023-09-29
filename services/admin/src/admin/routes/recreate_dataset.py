@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
 import logging
 from typing import Optional
@@ -23,10 +23,14 @@ from admin.utils import (
     get_json_admin_error_response,
     get_json_ok_response,
 )
+from libcommon.viewer_utils.asset import delete_asset_dir
+from libcommon.storage import StrPath
 
 
 def create_recreate_dataset_endpoint(
     processing_graph: ProcessingGraph,
+    assets_directory: StrPath,
+    cached_assets_directory: StrPath,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -58,6 +62,10 @@ def create_recreate_dataset_endpoint(
             # delete all the jobs and all the cache entries for the dataset (for all the revisions)
             cancelled_jobs = Queue().cancel_dataset_jobs(dataset=dataset)
             deleted_cached_responses = delete_dataset_responses(dataset=dataset)
+            if deleted_cached_responses is not None and deleted_cached_responses > 0:
+                # delete assets
+                delete_asset_dir(dataset=dataset, directory=assets_directory)
+                delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
             # add the first processing steps to the queue
             for processing_step in processing_graph.get_first_processing_steps():
                 Queue().add_job(

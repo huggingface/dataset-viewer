@@ -181,6 +181,8 @@ def create_app() -> Starlette:
             "/recreate-dataset",
             endpoint=create_recreate_dataset_endpoint(
                 processing_graph=processing_graph,
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.admin.external_auth_url,
