@@ -1,14 +1,14 @@
+import logging
+
 import pyarrow as pa
 from datasets import Features
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import to_features_list
 
 from libapi.utils import to_rows_list
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 def create_response(
@@ -29,18 +29,13 @@ def create_response(
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage(dataset)
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
+    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    storage_options = S3StorageOptions(
+        assets_base_url=cached_assets_base_url,
+        assets_directory=cached_assets_directory,
+        overwrite=False,
+        s3_client=s3_client,
+        s3_folder_name=cached_assets_s3_folder_name,
     )
     return {
         "features": to_features_list(features),
@@ -57,7 +52,3 @@ def create_response(
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
     }
-
-
-def use_s3_storage(dataset: str) -> bool:
-    return dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
