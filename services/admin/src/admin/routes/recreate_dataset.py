@@ -6,6 +6,7 @@ from typing import Optional
 
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
+from libcommon.operations import backfill_dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
@@ -66,15 +67,14 @@ def create_recreate_dataset_endpoint(
                 # delete assets
                 delete_asset_dir(dataset=dataset, directory=assets_directory)
                 delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
-            # add the first processing steps to the queue
-            for processing_step in processing_graph.get_first_processing_steps():
-                Queue().add_job(
-                    job_type=processing_step.job_type,
-                    difficulty=processing_step.difficulty,
-                    dataset=dataset,
-                    revision=revision,
-                    priority=priority,
-                )
+            # create the jobs to backfill the dataset
+            backfill_dataset(
+                dataset=dataset,
+                revision=revision,
+                processing_graph=processing_graph,
+                priority=priority,
+                cache_max_days=1,
+            )
             return get_json_ok_response(
                 {
                     "status": "ok",
