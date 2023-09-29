@@ -8,12 +8,13 @@ import duckdb
 import pyarrow as pa
 import pytest
 from datasets import Dataset
+from libapi.exceptions import InvalidParameterError
 from libapi.response import create_response
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
 
 from search.config import AppConfig
-from search.routes.filter import execute_filter_query
+from search.routes.filter import execute_filter_query, validate_where_parameter
 
 
 @pytest.fixture
@@ -44,6 +45,12 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     con.close()
     yield index_file_location
     os.remove(index_file_location)
+
+
+@pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
+def test_validate_where_parameter(where: str):
+    with pytest.raises(InvalidParameterError):
+        validate_where_parameter(where)
 
 
 def test_execute_filter_query(index_file_location: str) -> None:

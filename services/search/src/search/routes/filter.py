@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import re
 from http import HTTPStatus
 from typing import Optional
 
@@ -49,6 +50,9 @@ FILTER_COUNT_QUERY = """\
     FROM data
     WHERE {where}"""
 
+SQL_INVALID_SYMBOLS = "|".join([";", "--", r"/\*", r"\*/"])
+SQL_INVALID_SYMBOLS_PATTERN = re.compile(rf"(?:{SQL_INVALID_SYMBOLS})", flags=re.IGNORECASE)
+
 logger = logging.getLogger(__name__)
 
 
@@ -93,7 +97,7 @@ def create_filter_endpoint(
                         raise MissingRequiredParameterError(
                             "Parameters 'dataset', 'config', 'split' and 'where' are required"
                         )
-                    # TODO: validate where
+                    validate_where_parameter(where)
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
                         raise InvalidParameterError(message="Parameter 'offset' must be positive")
@@ -219,3 +223,8 @@ def execute_filter_query(
     filter_count_query = FILTER_COUNT_QUERY.format(where=where)
     num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
+
+
+def validate_where_parameter(where: str) -> None:
+    if SQL_INVALID_SYMBOLS_PATTERN.search(where):
+        raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
