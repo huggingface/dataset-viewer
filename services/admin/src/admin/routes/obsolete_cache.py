@@ -99,7 +99,7 @@ def delete_obsolete_cache(
             # delete assets
             delete_asset_dir(dataset=dataset, directory=assets_directory)
             delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
-            logging.debug(f"{dataset} has been delete with {datasets_cache_records} cache records")
+            logging.debug(f"{dataset} has been deleted with {datasets_cache_records} cache records")
         else:
             logging.debug(f"unable to delete {dataset}")
         deletion_report.append(DatasetCacheReport(dataset=dataset, cache_records=datasets_cache_records))

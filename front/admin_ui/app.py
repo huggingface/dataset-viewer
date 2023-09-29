@@ -96,6 +96,12 @@ with gr.Blocks() as demo:
                 refresh_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
                 refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
+            with gr.Tab("Recreate dataset"):
+                delete_and_recreate_dataset_name = gr.Textbox(label="dataset", placeholder="imdb")
+                delete_and_recreate_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
+                gr.Markdown("Beware: this will delete all the jobs, cache entries and assets for the dataset (for all the revisions). The dataset viewer will be unavailable until the cache is rebuilt.")
+                delete_and_recreate_dataset_button = gr.Button("Delete and recreate")
+                delete_and_recreate_dataset_output = gr.Markdown("")
             with gr.Tab("Obsolete cache"):
                 fetch_obsolete_cache_button = gr.Button("Fetch obsolete cache")
                 delete_obsolete_cache_button = gr.Button("Delete obsolete cache")
@@ -416,6 +422,24 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
             all_results += result.strip("\n") + "\n"
         return "```\n" + all_results + "\n```"
 
+    def delete_and_recreate_dataset(token, delete_and_recreate_dataset_name, delete_and_recreate_priority):
+        headers = {"Authorization": f"Bearer {token}"}
+        delete_and_recreate_dataset_name = delete_and_recreate_dataset_name.strip()
+        params = {"dataset": delete_and_recreate_dataset_name, "priority": delete_and_recreate_priority}
+        params = urllib.parse.urlencode(params)
+        response = requests.post(f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}", headers=headers, timeout=60)
+        if response.status_code == 200:
+            counts = response.json()
+            result = f"[{delete_and_recreate_dataset_name}] ✅ {counts['deleted_cached_responses']} cached responses, {counts['cancelled_jobs']} pending jobs, and all the assets have been deleted. A new job has been created to generate the cache again."
+        else:
+            result = f"[{refresh_dataset_name}] ❌ Failed to delete and recreate the dataset. Error {response.status_code}"
+            try:
+                if response.json().get("error"):
+                    result += f": {response.json()['error']}"
+            except requests.JSONDecodeError:
+                result += f": {response.content}"
+        return result.strip("\n") + "\n"
+
     token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
 
     home_dashboard_fetch_button.click(fetch_home_dashboard, inputs=[token_box], outputs=[home_dashboard_trending_datasets_infos_by_builder_name_table, home_dashboard_trending_datasets_coverage_stats_table, home_dashboard_trending_datasets_coverage_table])
@@ -424,6 +448,8 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
     query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
     
     refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name, refresh_priority], outputs=refresh_dataset_output)
+    delete_and_recreate_dataset_button.click(delete_and_recreate_dataset, inputs=[token_box, delete_and_recreate_dataset_name, delete_and_recreate_priority], outputs=delete_and_recreate_dataset_output)
+
     dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
     backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
 

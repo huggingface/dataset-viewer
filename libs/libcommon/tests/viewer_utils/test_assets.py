@@ -1,4 +1,5 @@
 import io
+import os
 from collections.abc import Mapping
 from io import BytesIO
 
@@ -15,6 +16,8 @@ from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 
 def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cached_assets_directory: StrPath) -> None:
+    # ensure directory is emtpy
+    assert len(os.listdir(cached_assets_directory)) == 0
     dataset = datasets["image"]
     with mock_s3():
         bucket_name = "bucket"
@@ -59,6 +62,8 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
 
         image = PILImage.open(io.BytesIO(body))
         assert image is not None
+    # ensure directory remains emtpy after file uploading
+    assert len(os.listdir(cached_assets_directory)) == 0
 
 
 def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cached_assets_directory: StrPath) -> None:

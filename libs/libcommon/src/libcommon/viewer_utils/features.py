@@ -114,7 +114,8 @@ def audio(
         )
 
     if "path" in value and isinstance(value["path"], str):
-        audio_file_extension = os.path.splitext(value["path"])[1]
+        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
         if not audio_file_extension:
             raise ValueError(
                 f"An audio sample should have a 'path' with a valid extension but got '{audio_file_extension}'."
