@@ -31,7 +31,7 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import to_features_list
@@ -48,8 +48,6 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 
 # audio still has some errors when librosa is imported
 UNSUPPORTED_FEATURES = [Value("binary")]
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 def create_response(
@@ -70,20 +68,13 @@ def create_response(
         raise RuntimeError(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
-    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage}")
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
+    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    storage_options = S3StorageOptions(
+        assets_base_url=cached_assets_base_url,
+        assets_directory=cached_assets_directory,
+        overwrite=False,
+        s3_client=s3_client,
+        s3_folder_name=cached_assets_s3_folder_name,
     )
     return PaginatedResponse(
         features=to_features_list(features),

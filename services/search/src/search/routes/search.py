@@ -37,7 +37,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath, init_dir
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -64,8 +64,6 @@ FTS_COMMAND = (
 )
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
-
-CACHED_ASSETS_S3_SUPPORTED_DATASETS: list[str] = ["asoria/image"]  # for testing
 
 
 def get_download_folder(
@@ -137,20 +135,13 @@ def create_response(
         unsupported_features=UNSUPPORTED_FEATURES,
     )
     pa_table = pa_table.drop(unsupported_columns)
-    use_s3_storage = dataset in CACHED_ASSETS_S3_SUPPORTED_DATASETS
-    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage}")
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
+    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    storage_options = S3StorageOptions(
+        assets_base_url=cached_assets_base_url,
+        assets_directory=cached_assets_directory,
+        overwrite=False,
+        s3_client=s3_client,
+        s3_folder_name=cached_assets_s3_folder_name,
     )
 
     return PaginatedResponse(
