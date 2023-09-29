@@ -9,7 +9,9 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
+from libcommon.storage import StrPath
 from libcommon.utils import Priority
+from libcommon.viewer_utils.asset import delete_asset_dir
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -23,8 +25,6 @@ from admin.utils import (
     get_json_admin_error_response,
     get_json_ok_response,
 )
-from libcommon.viewer_utils.asset import delete_asset_dir
-from libcommon.storage import StrPath
 
 
 def create_recreate_dataset_endpoint(
