@@ -37,7 +37,7 @@ def create_recreate_dataset_endpoint(
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> Endpoint:
-    async def force_refresh_endpoint(request: Request) -> Response:
+    async def recreate_dataset_endpoint(request: Request) -> Response:
         try:
             dataset = request.query_params.get("dataset")
             if not are_valid_parameters([dataset]) or not dataset:
@@ -89,4 +89,4 @@ def create_recreate_dataset_endpoint(
         except Exception as e:
             return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=0)
 
-    return force_refresh_endpoint
+    return recreate_dataset_endpoint
