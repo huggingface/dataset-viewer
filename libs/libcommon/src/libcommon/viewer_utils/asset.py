@@ -103,8 +103,6 @@ def upload_asset_file(
         object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
         if overwrite or not s3_client.exists(object_key):
             s3_client.upload(str(file_path), object_key)
-            logging.debug(f"{object_key=} has been uploaded")
-            os.remove(file_path)
 
 
 def create_asset_file(
@@ -154,6 +152,7 @@ def create_asset_file(
             s3_client=s3_client,
             s3_folder_name=s3_folder_name,
         )
+        os.remove(file_path)
 
     return asset_file
 
