@@ -10,6 +10,7 @@ from typing import Optional, TypedDict, Union
 import duckdb
 import numpy as np
 import pandas as pd
+from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
 from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
@@ -36,6 +37,8 @@ DECIMALS = 5
 # the maximum number of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
 MAX_NUM_STRING_LABELS = 30
+# datasets.ClassLabel feature uses -1 to encode `no label` value
+NO_LABEL_VALUE = -1
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -96,6 +99,8 @@ class NumericalStatisticsItem(TypedDict):
 class CategoricalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
+    no_label_count: int
+    no_label_proportion: float
     n_unique: int
     frequencies: dict[str, int]
 
@@ -239,27 +244,39 @@ def compute_categorical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
     table_name: str,
-    class_label_names: list[str],
+    class_label_feature: ClassLabel,
     n_samples: int,
 ) -> CategoricalStatisticsItem:
     categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
         column_name=column_name, data_table_name=table_name
     )
     logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
-    ids_to_counts: dict[int, int] = dict(
+    ids2counts: dict[Optional[int], int] = dict(
         con.sql(categorical_counts_query).fetchall()
-    )  # dict {idx: num_samples}; idx might be also None for null values
-    nan_count = ids_to_counts.pop(None, 0)  # type: ignore
-    labels_to_counts: dict[str, int] = {class_label_names[cat_id]: freq for cat_id, freq in ids_to_counts.items()}
-    n_unique = len(labels_to_counts)
+    )  # dict {idx: num_samples}; idx might be also None for null values and -1 for `no label`
+    nan_count = ids2counts.pop(None, 0)
+    no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
+    labels2counts: dict[str, int] = {class_label_feature.int2str(cat_id): freq for cat_id, freq in ids2counts.items()}
+    n_unique = len(labels2counts)
+    if n_unique != len(class_label_feature.names):
+        raise StatisticsComputationError(
+            f"Got unexpected result during classes distribution computation for {column_name=}: computed number of"
+            f" classes don't match with feature's num_classes. {n_unique=} {len(class_label_feature.names)=}. "
+        )
+    no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    logging.debug(f"{nan_count=}, {nan_proportion=}, {n_unique}, frequencies={labels_to_counts}.")
+    logging.debug(
+        f"{nan_count=}, {nan_proportion=}, {n_unique}, {no_label_count=}, {no_label_proportion=},"
+        f" frequencies={labels2counts}."
+    )
 
     return CategoricalStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
+        no_label_count=no_label_count,
+        no_label_proportion=no_label_proportion,
         n_unique=n_unique,
-        frequencies=labels_to_counts,
+        frequencies=labels2counts,
     )
 
 
@@ -276,21 +293,23 @@ def compute_string_statistics(
             column_name=column_name, data_table_name=table_name
         )
         logging.debug(f"Compute categories counts for {column_name=}.\n{categorical_counts_query}")
-        labels_to_counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-        n_unique = len(labels_to_counts)
+        labels2counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
+        n_unique = len(labels2counts)
         if n_unique <= MAX_NUM_STRING_LABELS:
             # consider string as categories
-            nan_count = labels_to_counts.pop(None, 0)  # type: ignore
+            nan_count = labels2counts.pop(None, 0)  # type: ignore
             nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
             logging.debug(
                 "Treat column as category. "
-                f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels_to_counts}. "
+                f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels2counts}. "
             )
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,
-                n_unique=len(labels_to_counts),
-                frequencies=labels_to_counts,
+                no_label_count=0,
+                no_label_proportion=0.0,
+                n_unique=len(labels2counts),
+                frequencies=labels2counts,
             )
     # compute numerical stats over string lengths (min, max, ..., hist)
     string_lengths_column_name = f"{column_name}__lengths"
@@ -490,13 +509,13 @@ def compute_descriptive_statistics_response(
     # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
         logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        categorical_features = Features.from_dict(categorical_features)
     for feature_name, feature in tqdm(categorical_features.items()):
         logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
-        class_label_names = feature["names"]
         cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
             con,
             feature_name,
-            class_label_names=class_label_names,
+            class_label_feature=feature,
             n_samples=num_examples,
             table_name=DATA_TABLE_NAME,
         )
