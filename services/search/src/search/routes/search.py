@@ -21,7 +21,6 @@ from libapi.exceptions import (
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
-from libapi.response import use_s3_storage
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -35,7 +34,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -94,19 +93,13 @@ def create_response(
         features,
     )
     pa_table = pa_table.drop(unsupported_columns)
-    logging.debug(f"create response for {dataset=} {config=} {split=}- {use_s3_storage(dataset)}")
-    storage_options = (
-        S3StorageOptions(
-            assets_base_url=cached_assets_base_url,
-            assets_directory=cached_assets_directory,
-            overwrite=False,
-            s3_client=s3_client,
-            s3_folder_name=cached_assets_s3_folder_name,
-        )
-        if use_s3_storage(dataset)
-        else DirectoryStorageOptions(
-            assets_base_url=cached_assets_base_url, assets_directory=cached_assets_directory, overwrite=True
-        )
+    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    storage_options = S3StorageOptions(
+        assets_base_url=cached_assets_base_url,
+        assets_directory=cached_assets_directory,
+        overwrite=False,
+        s3_client=s3_client,
+        s3_folder_name=cached_assets_s3_folder_name,
     )
 
     return PaginatedResponse(
