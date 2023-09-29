@@ -48,7 +48,7 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
 
 
 @pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
-def test_validate_where_parameter(where: str):
+def test_validate_where_parameter(where: str) -> None:
     with pytest.raises(InvalidParameterError):
         validate_where_parameter(where)
 
