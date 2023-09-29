@@ -218,7 +218,10 @@ def execute_filter_query(
 ) -> tuple[int, pa.Table]:
     with duckdb.connect(database=index_file_location, read_only=True) as con:
         filter_query = FILTER_QUERY.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
-        pa_table = con.sql(filter_query).arrow()
+        try:
+            pa_table = con.sql(filter_query).arrow()
+        except duckdb.Error:
+            raise InvalidParameterError(message="Parameter 'where' is invalid")
         filter_count_query = FILTER_COUNT_QUERY.format(where=where)
         num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table

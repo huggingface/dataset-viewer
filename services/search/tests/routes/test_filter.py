@@ -62,6 +62,15 @@ def test_execute_filter_query(index_file_location: str) -> None:
     assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
 
 
+@pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
+def test_execute_filter_query_raises(where, index_file_location: str) -> None:
+    columns, limit, offset = ["name", "gender", "age"], 100, 0
+    with pytest.raises(InvalidParameterError):
+        _ = execute_filter_query(
+            index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
+        )
+
+
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     offset = 2
