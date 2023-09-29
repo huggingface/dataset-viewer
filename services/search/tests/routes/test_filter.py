@@ -49,7 +49,7 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
 
 @pytest.mark.parametrize("where", ["col='A'"])
 def test_validate_where_parameter(where: str) -> None:
-    assert validate_where_parameter(where) is None
+    validate_where_parameter(where)
 
 
 @pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
@@ -68,7 +68,7 @@ def test_execute_filter_query(index_file_location: str) -> None:
 
 
 @pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
-def test_execute_filter_query_raises(where, index_file_location: str) -> None:
+def test_execute_filter_query_raises(where: str, index_file_location: str) -> None:
     columns, limit, offset = ["name", "gender", "age"], 100, 0
     with pytest.raises(InvalidParameterError):
         _ = execute_filter_query(
