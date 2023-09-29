@@ -47,14 +47,19 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     os.remove(index_file_location)
 
 
-@pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
+@pytest.mark.parametrize("where", ["col='A'"])
 def test_validate_where_parameter(where: str) -> None:
+    assert validate_where_parameter(where) is None
+
+
+@pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
+def test_validate_where_parameter_raises(where: str) -> None:
     with pytest.raises(InvalidParameterError):
         validate_where_parameter(where)
 
 
 def test_execute_filter_query(index_file_location: str) -> None:
-    columns, where, limit, offset = ["name", "age"], "gender = 'female'", 1, 1
+    columns, where, limit, offset = ["name", "age"], "gender='female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
         index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
