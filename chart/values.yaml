@@ -306,6 +306,8 @@ descriptiveStatistics:
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
 
 discussions:
   # name of the Hub user associated with the Datasets Server bot app

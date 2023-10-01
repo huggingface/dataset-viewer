@@ -17,7 +17,7 @@
   - name: LOG_LEVEL
     value: {{ .Values.cleanHfDatasetsCache.log.level | quote }}
   - name: DATASETS_BASED_HF_DATASETS_CACHE
-    value: {{ .Values.cleanHfDatasetsCache.cacheDirectory | quote }}
+    value: {{ .Values.hfDatasetsCache.cacheDirectory | quote }}
   - name: DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
-    value: {{ .Values.cleanHfDatasetsCache.expiredTimeIntervalSeconds | quote }}
+    value: {{ .Values.hfDatasetsCache.expiredTimeIntervalSeconds | quote }}
 {{- end -}}
