@@ -68,8 +68,6 @@ def test_endpoint(
     input_type: Literal["all", "dataset", "config", "split"],
 ) -> None:
     auth: AuthType = "none"
-    expected_status_code: int = 200
-    expected_error_code = None
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
@@ -86,8 +84,8 @@ def test_endpoint(
 
     poll_until_ready_and_assert(
         relative_url=relative_url,
-        expected_status_code=expected_status_code,
-        expected_error_code=expected_error_code,
+        expected_status_code=200,
+        expected_error_code=None,
         headers=headers,
         check_x_revision=input_type != "all",
     )
