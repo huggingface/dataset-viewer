@@ -26,7 +26,7 @@ HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
-PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig().specification)
+PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig())
 
 pending_jobs_df = None
 

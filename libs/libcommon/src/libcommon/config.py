@@ -9,6 +9,7 @@ from typing import Optional
 from environs import Env
 
 from libcommon.constants import (
+    MIN_BYTES_FOR_BONUS_DIFFICULTY,
     PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_IS_VALID_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -268,6 +269,7 @@ class ProcessingGraphConfig:
                 "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
                 "difficulty": 20,
+                "provides_config_info": True,
             },
             "dataset-info": {
                 "input_type": "dataset",
@@ -389,6 +391,7 @@ class ProcessingGraphConfig:
                 "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
+                "bonus_difficulty_if_dataset_is_big": 20,
             },
             "dataset-hub-cache": {
                 "input_type": "dataset",
@@ -398,6 +401,7 @@ class ProcessingGraphConfig:
             },
         }
     )
+    min_bytes_for_bonus_difficulty: int = MIN_BYTES_FOR_BONUS_DIFFICULTY
 
     @classmethod
     def from_env(cls) -> "ProcessingGraphConfig":

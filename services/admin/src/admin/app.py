@@ -62,7 +62,7 @@ def create_app() -> Starlette:
     if not exists(cached_assets_directory):
         raise RuntimeError("The cached-assets storage directory could not be accessed. Exiting.")
 
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(app_config.processing_graph)
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)

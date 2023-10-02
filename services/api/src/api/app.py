@@ -32,7 +32,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
 
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(app_config.processing_graph)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,

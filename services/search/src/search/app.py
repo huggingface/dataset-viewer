@@ -43,7 +43,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     if not exists(duckdb_index_cache_directory):
         raise RuntimeError("The duckdb_index cache directory could not be accessed. Exiting.")
 
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(app_config.processing_graph)
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,
         public_key_url=app_config.api.hf_jwt_public_key_url,
