@@ -6,6 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -114,7 +115,7 @@ def get_job_runner(
         app_config: AppConfig,
     ) -> DatasetIsValidJobRunner:
         processing_step_name = DatasetIsValidJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+        processing_graph = ProcessingGraph(app_config.processing_graph)
         return DatasetIsValidJobRunner(
             job_info={
                 "type": DatasetIsValidJobRunner.get_job_type(),

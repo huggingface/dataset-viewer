@@ -54,7 +54,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
 
 @fixture(scope="session")
 def processing_graph(app_config: AppConfig) -> ProcessingGraph:
-    return ProcessingGraph(app_config.processing_graph.specification)
+    return ProcessingGraph(app_config.processing_graph)
 
 
 @fixture(scope="session")

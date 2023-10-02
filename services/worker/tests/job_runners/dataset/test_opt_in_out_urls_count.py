@@ -6,6 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
@@ -37,12 +38,12 @@ def get_job_runner(
     ) -> DatasetOptInOutUrlsCountJobRunner:
         processing_step_name = DatasetOptInOutUrlsCountJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": DatasetOptInOutUrlsCountJobRunner.get_job_runner_version(),
                 }
-            }
+            })
         )
         return DatasetOptInOutUrlsCountJobRunner(
             job_info={

@@ -23,7 +23,7 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 
 @pytest.fixture()
 def processing_graph(app_config: AppConfig) -> ProcessingGraph:
-    return ProcessingGraph(app_config.processing_graph.specification)
+    return ProcessingGraph(app_config.processing_graph)
 
 
 @pytest.mark.parametrize(

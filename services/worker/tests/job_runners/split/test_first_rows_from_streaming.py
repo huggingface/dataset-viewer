@@ -7,6 +7,7 @@ from http import HTTPStatus
 
 import pytest
 from datasets.packaged_modules import csv
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -41,7 +42,7 @@ def get_job_runner(
     ) -> SplitFirstRowsFromStreamingJobRunner:
         processing_step_name = SplitFirstRowsFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 "dataset-level": {"input_type": "dataset"},
                 "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
                 processing_step_name: {
@@ -49,7 +50,7 @@ def get_job_runner(
                     "job_runner_version": SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
                     "triggered_by": "config-level",
                 },
-            }
+            })
         )
 
         upsert_response(

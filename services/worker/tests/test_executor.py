@@ -208,7 +208,7 @@ def job_runner_factory(
     duckdb_index_cache_directory: StrPath,
     statistics_cache_directory: StrPath,
 ) -> JobRunnerFactory:
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(app_config.processing_graph)
     return JobRunnerFactory(
         app_config=app_config,
         processing_graph=processing_graph,

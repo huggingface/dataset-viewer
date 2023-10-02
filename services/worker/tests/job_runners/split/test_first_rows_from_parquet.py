@@ -11,6 +11,7 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from fsspec import AbstractFileSystem
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -42,7 +43,7 @@ def get_job_runner(
     ) -> SplitFirstRowsFromParquetJobRunner:
         processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 "dataset-level": {"input_type": "dataset"},
                 "config-level": {
                     "input_type": "config",
@@ -54,7 +55,7 @@ def get_job_runner(
                     "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
                     "triggered_by": "config-level",
                 },
-            }
+            })
         )
 
         upsert_response(

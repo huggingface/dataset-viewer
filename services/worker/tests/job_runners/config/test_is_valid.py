@@ -123,7 +123,7 @@ def get_job_runner(
         app_config: AppConfig,
     ) -> ConfigIsValidJobRunner:
         processing_step_name = ConfigIsValidJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+        processing_graph = ProcessingGraph(app_config.processing_graph)
 
         upsert_response(
             kind="dataset-config-names",

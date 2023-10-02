@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
+from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -50,7 +51,7 @@ def get_job_runner(
     ) -> SplitDuckDbIndexJobRunner:
         processing_step_name = SplitDuckDbIndexJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 "dataset-step": {"input_type": "dataset"},
                 "config-parquet": {
                     "input_type": "config",
@@ -66,7 +67,7 @@ def get_job_runner(
                     "job_runner_version": SplitDuckDbIndexJobRunner.get_job_runner_version(),
                     "triggered_by": ["config-parquet", "config-split-names-from-streaming"],
                 },
-            }
+            })
         )
 
         upsert_response(
@@ -118,7 +119,7 @@ def get_parquet_job_runner(
     ) -> ConfigParquetAndInfoJobRunner:
         processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "config",
@@ -126,7 +127,7 @@ def get_parquet_job_runner(
                     "triggered_by": "dataset-level",
                 },
             }
-        )
+        ))
 
         upsert_response(
             kind="dataset-config-names",

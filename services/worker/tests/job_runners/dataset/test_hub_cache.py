@@ -75,7 +75,7 @@ def get_job_runner(
         app_config: AppConfig,
     ) -> DatasetHubCacheJobRunner:
         processing_step_name = DatasetHubCacheJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+        processing_graph = ProcessingGraph(app_config.processing_graph)
         return DatasetHubCacheJobRunner(
             job_info={
                 "type": DatasetHubCacheJobRunner.get_job_type(),

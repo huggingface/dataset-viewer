@@ -6,6 +6,7 @@ from dataclasses import replace
 from http import HTTPStatus
 
 import pytest
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -37,14 +38,14 @@ def get_job_runner(
     ) -> ConfigSplitNamesFromStreamingJobRunner:
         processing_step_name = ConfigSplitNamesFromStreamingJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
+            ProcessingGraphConfig({
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
                     "job_runner_version": ConfigSplitNamesFromStreamingJobRunner.get_job_runner_version(),
                     "triggered_by": "dataset-level",
                 },
-            }
+            })
         )
 
         upsert_response(
