@@ -171,6 +171,8 @@ def raise_if_blocked(
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:
+        if blocked_dataset in ["*", "*/*", "*/**"]:
+            continue
         if fnmatch(dataset, blocked_dataset):
             raise DatasetInBlockListError(
                 "This dataset has been disabled for now. Please open an issue in"

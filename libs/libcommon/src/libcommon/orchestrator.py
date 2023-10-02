@@ -642,7 +642,7 @@ class DatasetOrchestrator:
     Args:
         dataset (str): The name of the dataset.
         processing_graph (ProcessingGraph): The processing graph.
-        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards.
+        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards. `*` is ignored.
 
     Raises:
         libcommon.exceptions.DatasetInBlockListError: If the dataset is in the block list. As a side-effect, the

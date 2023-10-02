@@ -43,8 +43,14 @@ def test_is_image_url(text: str, expected: bool) -> None:
     [
         ("public", ["public"], True),
         ("public", ["public", "audio"], True),
+        ("public", ["pub*"], True),
+        ("public/test", ["public/*"], True),
+        ("public/test", ["*/test"], True),
         ("public", ["audio"], False),
         ("public", [], False),
+        ("public", ["*"], False),
+        ("public", ["*/*"], False),
+        ("public", ["**/*"], False),
     ],
 )
 def test_raise_if_blocked(dataset: str, blocked: list[str], raises: bool) -> None:
