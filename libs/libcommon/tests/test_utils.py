@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import pytest
 from contextlib import nullcontext as does_not_raise
 from typing import Any
+
+import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.utils import inputs_to_string, is_image_url, raise_if_blocked
