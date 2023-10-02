@@ -275,7 +275,7 @@
       },
       "FirstRowsResponse": {
         "type": "object",
-        "required": ["dataset", "config", "split", "features", "rows"],
+        "required": ["dataset", "config", "split", "features", "rows", "truncated"],
         "properties": {
           "dataset": {
             "type": "string"

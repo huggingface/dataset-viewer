@@ -427,6 +427,21 @@ def release_locks(owner: str) -> None:
     )
 
 
+def release_lock(key: str) -> None:
+    """
+    Release the lock for a specific key
+
+    Args:
+        key (`str`): the lock key
+    """
+    Lock.objects(key=key).update(
+        write_concern={"w": "majority", "fsync": True},
+        read_concern={"level": "majority"},
+        owner=None,
+        updated_at=get_datetime(),
+    )
+
+
 class Queue:
     """A queue manages jobs.
 
@@ -883,7 +898,26 @@ class Queue:
         job.update(finished_at=get_datetime(), status=finished_status)
         update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
+        # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
         return True
+
+    def cancel_dataset_jobs(self, dataset: str) -> int:
+        """
+        Cancel all the jobs for a given dataset.
+
+        Args:
+            dataset (`str`, required): dataset name
+
+        Returns:
+            `int`: the number of canceled jobs
+        """
+        jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
+        previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
+        jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        for job_type, status, unicity_id in previous_status:
+            update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
+            release_lock(key=unicity_id)
+        return jobs.count()
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None

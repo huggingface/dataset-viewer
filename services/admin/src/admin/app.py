@@ -40,6 +40,7 @@ from admin.routes.obsolete_cache import (
     create_get_obsolete_cache_endpoint,
 )
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
+from admin.routes.recreate_dataset import create_recreate_dataset_endpoint
 from admin.utils import EXPOSED_HEADERS
 
 
@@ -175,6 +176,20 @@ def create_app() -> Starlette:
                 organization=app_config.admin.hf_organization,
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
+        ),
+        Route(
+            "/recreate-dataset",
+            endpoint=create_recreate_dataset_endpoint(
+                processing_graph=processing_graph,
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                external_auth_url=app_config.admin.external_auth_url,
+                organization=app_config.admin.hf_organization,
+                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
+            ),
+            methods=["POST"],
         ),
     ]
     for processing_step in processing_graph.get_processing_steps():

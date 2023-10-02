@@ -46,3 +46,6 @@ The admin service provides endpoints:
   - `dataset`: `?dataset={dataset}`
   - `config`: `?dataset={dataset}&config={config}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
+- `/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
+  - `dataset`: the dataset name
+  - `priority`: `low` (default), `normal` or `high`
