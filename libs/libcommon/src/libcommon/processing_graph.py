@@ -633,8 +633,8 @@ class Artifact:
         parts = parts[2:]
         config = None
         split = None
-        if len(parts) > 1:
-            config = parts[1]
-            if len(parts) > 2:
-                split = parts[2]
+        if len(parts) > 0:
+            config = parts[0]
+            if len(parts) > 1:
+                split = parts[1]
         return dataset, revision, config, split, prefix
