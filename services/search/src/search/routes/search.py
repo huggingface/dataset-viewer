@@ -20,6 +20,7 @@ from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
     MissingRequiredParameterError,
+    SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
 from libapi.utils import (
@@ -34,7 +35,9 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath, init_dir
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -118,6 +121,8 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_folder_name: str,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -130,6 +135,15 @@ def create_response(
         unsupported_features=UNSUPPORTED_FEATURES,
     )
     pa_table = pa_table.drop(unsupported_columns)
+    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    storage_options = S3StorageOptions(
+        assets_base_url=cached_assets_base_url,
+        assets_directory=cached_assets_directory,
+        overwrite=False,
+        s3_client=s3_client,
+        s3_folder_name=cached_assets_s3_folder_name,
+    )
+
     return PaginatedResponse(
         features=to_features_list(features_without_key),
         rows=to_rows_list(
@@ -137,8 +151,7 @@ def create_response(
             dataset,
             config,
             split,
-            cached_assets_base_url,
-            cached_assets_directory,
+            storage_options=storage_options,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -154,6 +167,8 @@ def create_search_endpoint(
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
+    s3_client: S3Client,
+    cached_assets_s3_folder_name: str,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -241,6 +256,8 @@ def create_search_endpoint(
                             error_code=error_code,
                             revision=revision,
                         )
+                    if content["has_fts"] is not True:
+                        raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     file_name = content["filename"]
@@ -301,6 +318,8 @@ def create_search_endpoint(
                         split,
                         cached_assets_base_url,
                         cached_assets_directory,
+                        s3_client,
+                        cached_assets_s3_folder_name,
                         offset,
                         features,
                         num_rows_total,

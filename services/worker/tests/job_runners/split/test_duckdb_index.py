@@ -157,13 +157,13 @@ def get_parquet_job_runner(
 
 
 @pytest.mark.parametrize(
-    "hub_dataset_name,max_parquet_size_bytes,expected_error_code",
+    "hub_dataset_name,max_parquet_size_bytes,expected_rows_count,expected_has_fts,expected_error_code",
     [
-        ("duckdb_index", None, None),
-        ("partial_duckdb_index", None, None),
-        ("gated", None, None),
-        ("duckdb_index", 1_000, "SplitWithTooBigParquetError"),  # parquet size is 2812
-        ("public", None, "NoIndexableColumnsError"),  # dataset does not have string columns to index
+        ("duckdb_index", None, 5, True, None),
+        ("partial_duckdb_index", None, 5, True, None),
+        ("gated", None, 5, True, None),
+        ("duckdb_index", 1_000, 5, False, "SplitWithTooBigParquetError"),  # parquet size is 2812
+        ("public", None, 4, False, None),  # dataset does not have string columns to index
     ],
 )
 def test_compute(
@@ -175,6 +175,8 @@ def test_compute(
     hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     max_parquet_size_bytes: Optional[int],
+    expected_has_fts: bool,
+    expected_rows_count: int,
     expected_error_code: str,
 ) -> None:
     hub_datasets = {
@@ -237,6 +239,9 @@ def test_compute(
         url = content["url"]
         file_name = content["filename"]
         features = content["features"]
+        has_fts = content["has_fts"]
+        assert isinstance(has_fts, bool)
+        assert has_fts == expected_has_fts
         assert isinstance(url, str)
         if partial:
             assert url.rsplit("/", 2)[1] == "partial-" + split
@@ -259,26 +264,27 @@ def test_compute(
         record_count = con.sql("SELECT COUNT(*) FROM data;").fetchall()
         assert record_count is not None
         assert isinstance(record_count, list)
-        assert record_count[0] == (5,)
+        assert record_count[0] == (expected_rows_count,)
 
-        # perform a search to validate fts feature
-        query = "Lord Vader"
-        result = con.execute(
-            "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
-            [query],
-        )
-        rows = result.df()
-        assert rows is not None
-        assert (rows["text"].eq("Vader turns round and round in circles as his ship spins into space.")).any()
-        assert (rows["text"].eq("The wingman spots the pirateship coming at him and warns the Dark Lord")).any()
-        assert (rows["text"].eq("We count thirty Rebel ships, Lord Vader.")).any()
-        assert (
-            rows["text"].eq(
-                "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink"
+        if has_fts:
+            # perform a search to validate fts feature
+            query = "Lord Vader"
+            result = con.execute(
+                "SELECT __hf_index_id, text FROM data WHERE fts_main_data.match_bm25(__hf_index_id, ?) IS NOT NULL;",
+                [query],
             )
-        ).any()
-        assert not (rows["text"].eq("There goes another one.")).any()
-        assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
+            rows = result.df()
+            assert rows is not None
+            assert (rows["text"].eq("Vader turns round and round in circles as his ship spins into space.")).any()
+            assert (rows["text"].eq("The wingman spots the pirateship coming at him and warns the Dark Lord")).any()
+            assert (rows["text"].eq("We count thirty Rebel ships, Lord Vader.")).any()
+            assert (
+                rows["text"].eq(
+                    "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the comlink"
+                )
+            ).any()
+            assert not (rows["text"].eq("There goes another one.")).any()
+            assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
 
         con.close()
         os.remove(file_name)

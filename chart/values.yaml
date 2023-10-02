@@ -119,6 +119,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "spawning-token"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "aws-access-key-id"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "aws-secret-access-key"
 
 uid: 1000
 gid: 3000
@@ -259,6 +266,11 @@ cachedAssets:
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
 
+cachedAssetsS3:
+  bucket: "hf-datasets-server-statics"
+  region: "us-east-1"
+  folderName: "cached-assets"
+
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/storage/parquet-metadata"
@@ -294,6 +306,12 @@ descriptiveStatistics:
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+
+discussions:
+  # name of the Hub user associated with the Datasets Server bot app
+  botAssociatedUserName: "parquet-converter"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -311,7 +329,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade,collect-queue-metrics,collect-cache-metrics}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
   log:
     level: "info"
   backfill:
@@ -341,6 +359,21 @@ backfill:
       cpu: 0
   tolerations: []
 
+cleanHfDatasetsCache:
+  enabled: true
+  log:
+    level: "info"
+  action: "clean-hf-datasets-cache"
+  schedule: "0 */3 * * *"
+  # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 deleteIndexes:
   enabled: true
   log:
@@ -349,6 +382,22 @@ deleteIndexes:
   error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+postMessages:
+  enabled: true
+  log:
+    level: "info"
+  action: "post-messages"
+  error_codes_to_retry: ""
+  schedule: "10 0 * * *"
+  # at 00:10
   nodeSelector: {}
   resources:
     requests:

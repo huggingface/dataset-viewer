@@ -53,17 +53,6 @@
         },
         "required": true
       },
-      "Link": {
-        "description": "A link for the next page of results. See https://docs.github.com/en/rest/guides/using-pagination-in-the-rest-api#using-link-headers. Only 'rel=\"next\"' is used. If not present, there is no next page.",
-        "schema": {
-          "type": "string"
-        },
-        "example": {
-          "summary": "Link to the next page.",
-          "value": "<https://datasets-server.huggingface.co/hub-cache?cursor=64f7278d81223b123ba9d68b>; rel=\"next\""
-        },
-        "required": false
-      },
       "X-Error-Code-401": {
         "description": "A string that identifies the underlying error for 401.",
         "schema": {
@@ -147,15 +136,6 @@
         },
         "required": false
       },
-      "X-Error-Code-500-hub-cache": {
-        "description": "A string that identifies the underlying error for 500 on /hub-cache. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
-          ]
-        },
-        "required": false
-      },
       "X-Error-Code-500-rows": {
         "description": "A string that identifies the underlying error for 500 on /rows. It's marked as required: false because the header can be missing on text-plain response.",
         "schema": {
@@ -176,15 +156,6 @@
             {
               "$ref": "#/components/schemas/X-Error-Code-RowsPostProcessingError"
             }
-          ]
-        },
-        "required": false
-      },
-      "X-Error-Code-500-valid": {
-        "description": "A string that identifies the underlying error for 500 on /valid. It's marked as required: false because the header can be missing on text-plain response.",
-        "schema": {
-          "oneOf": [
-            { "$ref": "#/components/schemas/X-Error-Code-UnexpectedError" }
           ]
         },
         "required": false
@@ -304,7 +275,7 @@
       },
       "FirstRowsResponse": {
         "type": "object",
-        "required": ["dataset", "config", "split", "features", "rows"],
+        "required": ["dataset", "config", "split", "features", "rows", "truncated"],
         "properties": {
           "dataset": {
             "type": "string"
@@ -326,6 +297,9 @@
             "items": {
               "$ref": "#/components/schemas/RowItem"
             }
+          },
+          "truncated": {
+            "type": "boolean"
           }
         }
       },
@@ -783,24 +757,6 @@
           ]
         }
       },
-      "ValidResponse": {
-        "type": "object",
-        "required": ["preview", "viewer"],
-        "properties": {
-          "viewer": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "preview": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
       "IsValidResponse": {
         "type": "object",
         "required": ["preview", "viewer", "search"],
@@ -1112,7 +1068,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text"]
       },
       "Histogram": {
         "type": "object",
@@ -1226,30 +1182,6 @@
           },
           "num_examples": {
             "type": "integer"
-          }
-        }
-      },
-      "HubCacheResponse": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["dataset", "preview", "viewer", "partial", "num_rows"],
-          "properties": {
-            "dataset": {
-              "type": "string"
-            },
-            "preview": {
-              "type": "boolean"
-            },
-            "viewer": {
-              "type": "boolean"
-            },
-            "partial": {
-              "type": "boolean"
-            },
-            "num_rows": {
-              "type": "integer"
-            }
           }
         }
       },
@@ -2117,11 +2049,12 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Truncated cells": {
-                    "summary": "Truncated cells due to the response size (has a timestamp column). Only 3 rows are shown for brevity.",
+                    "summary": "Truncated cells due to the response size (has a timestamp column).",
                     "description": "Try with https://datasets-server.huggingface.co/first-rows?dataset=ett&config=m2&split=test.",
                     "value": {
                       "dataset": "ett",
@@ -2214,8 +2147,86 @@
                             "item_id": "OT"
                           },
                           "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 4,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 5,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 6,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 7,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 8,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
+                        },
+                        {
+                          "row_idx": 9,
+                          "row": {
+                            "start": "2016-07-01T00:00:00",
+                            "target": "[38.6619987487793,38.222999572753906,37.34400177001953,37.124000549316406,37.124000549316406,36.9039",
+                            "feat_static_cat": [0],
+                            "feat_dynamic_real": "[[41.130001068115234,39.62200164794922,38.86800003051758,35.518001556396484,37.52799987792969,37.611",
+                            "item_id": "OT"
+                          },
+                          "truncated_cells": ["target", "feat_dynamic_real"]
                         }
-                      ]
+                      ],
+                      "truncated": true
                     }
                   },
                   "Image column": {
@@ -2290,7 +2301,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   },
                   "Audio column": {
@@ -2365,10 +2377,6 @@
                             "id": "id10059_229vKIGbxrI_00001",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/0/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/0/audio/audio.wav",
                                 "type": "audio/wav"
                               }
@@ -2386,10 +2394,6 @@
                           "row": {
                             "id": "id10059_229vKIGbxrI_00002",
                             "audio": [
-                              {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/1/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
                               {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/1/audio/audio.wav",
                                 "type": "audio/wav"
@@ -2409,10 +2413,6 @@
                             "id": "id10059_229vKIGbxrI_00003",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/2/audio/audio.mp3",
-                                "type": "audio/mpeg"
-                              },
-                              {
                                 "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/2/audio/audio.wav",
                                 "type": "audio/wav"
                               }
@@ -2425,7 +2425,8 @@
                           },
                           "truncated_cells": []
                         }
-                      ]
+                      ],
+                      "truncated": false
                     }
                   }
                 }
@@ -2612,7 +2613,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows of the requested slice. Audio and bytes columns are not supported at the moment, and their content will be 'null'.",
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows of the requested slice. Bytes columns are not supported at the moment, and their content will be 'null'.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -2745,92 +2746,6 @@
                       "num_rows_total": 1334,
                       "num_rows_per_page": 100
                     }
-                  },
-                  "Audio is not supported at the moment (example: asapp/slue)": {
-                    "summary": "Get a slice of length 3 from row 234 (offset=234&length=3). The audio column is 'null'",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=asapp/slue&config=voxceleb&split=train&offset=234&length=3.",
-                    "value": {
-                      "features": [
-                        {
-                          "feature_idx": 0,
-                          "name": "id",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 1,
-                          "name": "audio",
-                          "type": { "sampling_rate": 16000, "_type": "Audio" }
-                        },
-                        {
-                          "feature_idx": 2,
-                          "name": "speaker_id",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 3,
-                          "name": "normalized_text",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 4,
-                          "name": "sentiment",
-                          "type": { "dtype": "string", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 5,
-                          "name": "start_second",
-                          "type": { "dtype": "float64", "_type": "Value" }
-                        },
-                        {
-                          "feature_idx": 6,
-                          "name": "end_second",
-                          "type": { "dtype": "float64", "_type": "Value" }
-                        }
-                      ],
-                      "rows": [
-                        {
-                          "row_idx": 234,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00006",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "well i i wasn't boasting to what happened is that i it was it was a few years ago now i hit thirty i thought it's so mad that i don't want to reach into",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 8.46
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "row_idx": 235,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00007",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "there's none of there's none of the kind i've had to survive in the world i've done that as a book and and a lot of people",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 5.12
-                          },
-                          "truncated_cells": []
-                        },
-                        {
-                          "row_idx": 236,
-                          "row": {
-                            "id": "id10080_Xp1eLGN_fHI_00008",
-                            "audio": null,
-                            "speaker_id": "id10080",
-                            "normalized_text": "but what are the things you've learned and and and nobody told me at school stuff like you know how to achieve goals how to thrive when it's difficult how to what sort of",
-                            "sentiment": "Neutral",
-                            "start_second": 0.0,
-                            "end_second": 8.85
-                          },
-                          "truncated_cells": []
-                        }
-                      ],
-                      "num_rows_total": 5777,
-                      "num_rows_per_page": 100
-                    }
                   }
                 }
               }
@@ -2883,7 +2798,7 @@
             }
           },
           "422": {
-            "description": "Some of the `dataset`, `config`, `split`, `offset` or `length` parameters have not been provided or are invalid.",
+            "description": "Some of the 'dataset', 'config', 'split', 'offset' or 'length' parameters have not been provided or are invalid.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3019,8 +2934,8 @@
         "summary": "Full-text search in the text columns of a split",
         "description": "Returns the rows matching the query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
         "externalDocs": {
-          "description": "See search (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1663.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See search (Hub docs)",
+          "url": "https://huggingface.co/docs/datasets-server/search"
         },
         "operationId": "searchRows",
         "security": [
@@ -3100,7 +3015,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows that match the search query. The query will only be searched among the string columns. Audio and bytes columns are not supported at the moment, and their content will be 'null'.",
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows that match the search query. The query will only be searched among the string columns. Bytes columns are not supported at the moment, and their content will be 'null'.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3230,7 +3145,7 @@
             "$ref": "#/components/responses/DatasetConfigSplit404"
           },
           "422": {
-            "description": "Some of the `dataset`, `config`, `split`, `offset` or `length` parameters have not been provided or are invalid.",
+            "description": "Some of the 'dataset', 'config', 'split', 'query', 'offset' or 'length' parameters have not been provided or are invalid.",
             "headers": {
               "Cache-Control": {
                 "$ref": "#/components/headers/Cache-Control"
@@ -3934,91 +3849,6 @@
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/valid": {
-      "get": {
-        "summary": "Valid datasets",
-        "description": "The lists of the Hub datasets that work without an error, by type. It lists the datasets that have a Dataset Viewer (i.e. have been converted to Parquet format, and can be paginated) and the datasets that only have the Dataset Preview (the first 100 rows).",
-        "externalDocs": {
-          "description": "See Valid datasets (Hub docs)",
-          "url": "https://huggingface.co/docs/datasets-server/valid"
-        },
-        "operationId": "listValidDatasets",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The valid datasets.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first values in each array for brevity)": {
-                    "summary": "list of datasets",
-                    "description": "Try with https://datasets-server.huggingface.co/valid",
-                    "value": {
-                      "preview": [
-                        "0n1xus/codexglue",
-                        "0x7194633/rupile",
-                        "AHussain0418/day2_data"
-                      ],
-                      "viewer": [
-                        "0n1xus/pytorrent-standalone",
-                        "51la5/keyword-extraction"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-valid"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
               }
@@ -5256,6 +5086,272 @@
                         }
                       ]
                     }
+                  },
+                  "A split (glue) with a string (text) column": {
+                    "summary": "Statistics on a string column. The column 'hypothesis' contains more than 30 different strings, so the statistics are a histogram of the string lengths.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=glue&config=ax&split=test.",
+                    "value": {
+                      "num_examples": 1104,
+                      "statistics": [
+                        {
+                          "column_name": "hypothesis",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 11,
+                            "max": 296,
+                            "mean": 97.46649,
+                            "median": 88.0,
+                            "std": 55.82714,
+                            "histogram": {
+                              "hist": [
+                                171, 224, 235, 180, 102, 99, 53, 28, 10, 2
+                              ],
+                              "bin_edges": [
+                                11, 40, 69, 98, 127, 156, 185, 214, 243, 272,
+                                296
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "idx",
+                          "column_type": "int",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 0,
+                            "max": 1103,
+                            "mean": 551.5,
+                            "median": 551.5,
+                            "std": 318.84165,
+                            "histogram": {
+                              "hist": [
+                                111, 111, 111, 111, 111, 111, 111, 111, 111, 105
+                              ],
+                              "bin_edges": [
+                                0, 111, 222, 333, 444, 555, 666, 777, 888, 999,
+                                1103
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "label",
+                          "column_type": "class_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "contradiction": 1104
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "premise",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 11,
+                            "max": 296,
+                            "mean": 97.46649,
+                            "median": 88.0,
+                            "std": 55.82714,
+                            "histogram": {
+                              "hist": [
+                                171, 224, 235, 180, 102, 99, 53, 28, 10, 2
+                              ],
+                              "bin_edges": [
+                                11, 40, 69, 98, 127, 156, 185, 214, 243, 272,
+                                296
+                              ]
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "A split (hellaswag) with a string (label) column": {
+                    "summary": "Statistics on a string column. The column 'label' contains less than 30 different strings, so each string is considered as a label, and the statistics are a count per label.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=hellaswag&config=default&split=train.",
+                    "value": {
+                      "num_examples": 39905,
+                      "statistics": [
+                        {
+                          "column_name": "activity_label",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 3,
+                            "max": 31,
+                            "mean": 15.7912,
+                            "median": 16.0,
+                            "std": 6.50536,
+                            "histogram": {
+                              "hist": [
+                                1564, 5973, 2467, 5844, 8075, 4732, 5382, 3965,
+                                1825, 78
+                              ],
+                              "bin_edges": [
+                                3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 31
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 29,
+                            "max": 524,
+                            "mean": 217.86533,
+                            "median": 231.0,
+                            "std": 95.94445,
+                            "histogram": {
+                              "hist": [
+                                3221, 6658, 4573, 5085, 8060, 7375, 3652, 1092,
+                                169, 20
+                              ],
+                              "bin_edges": [
+                                29, 79, 129, 179, 229, 279, 329, 379, 429, 479,
+                                524
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx_a",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 1,
+                            "max": 524,
+                            "mean": 214.18228,
+                            "median": 231.0,
+                            "std": 99.93323,
+                            "histogram": {
+                              "hist": [
+                                1987, 6198, 5422, 4068, 7695, 8395, 4549, 1356,
+                                215, 20
+                              ],
+                              "bin_edges": [
+                                1, 54, 107, 160, 213, 266, 319, 372, 425, 478,
+                                524
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ctx_b",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 0,
+                            "max": 140,
+                            "mean": 3.31367,
+                            "median": 0.0,
+                            "std": 6.83284,
+                            "histogram": {
+                              "hist": [
+                                37877, 1518, 347, 107, 36, 15, 4, 0, 0, 1
+                              ],
+                              "bin_edges": [
+                                0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 140
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "ind",
+                          "column_type": "int",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 2,
+                            "max": 50674,
+                            "mean": 25408.91299,
+                            "median": 25533.0,
+                            "std": 14670.02268,
+                            "histogram": {
+                              "hist": [
+                                4034, 4023, 3891, 3887, 3975, 3845, 4131, 4062,
+                                4089, 3968
+                              ],
+                              "bin_edges": [
+                                2, 5070, 10138, 15206, 20274, 25342, 30410,
+                                35478, 40546, 45614, 50674
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "label",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 4,
+                            "frequencies": {
+                              "3": 10021,
+                              "2": 9867,
+                              "0": 9986,
+                              "1": 10031
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "source_id",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 9,
+                            "max": 25,
+                            "mean": 17.35021,
+                            "median": 13.0,
+                            "std": 5.86238,
+                            "histogram": {
+                              "hist": [31, 2927, 22207, 0, 0, 0, 0, 0, 14740],
+                              "bin_edges": [
+                                9, 11, 13, 15, 17, 19, 21, 23, 25, 25
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "split",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "train": 39905
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "split_type",
+                          "column_type": "string_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "n_unique": 1,
+                            "frequencies": {
+                              "indomain": 39905
+                            }
+                          }
+                        }
+                      ]
+                    }
                   }
                 }
               }
@@ -5352,95 +5448,6 @@
                     "value": {
                       "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hub-cache": {
-      "get": {
-        "summary": "[Internal] Datasets info for the Hub",
-        "description": "A list of dataset infos. It's an internal endpoint meant to be cached by the Hub's backend. The response is paginated, use the Link header to get the next page.",
-        "operationId": "listDatasetsInfoForHubCache",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "The datasets info.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "Link": {
-                "$ref": "#/components/headers/Link"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HubCacheResponse"
-                },
-                "examples": {
-                  "an example of the response format (only kept the first two values for brevity)": {
-                    "summary": "list of datasets info",
-                    "description": "Try with https://datasets-server.huggingface.co/hub-cache",
-                    "value": [
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190414468"
-                      },
-                      {
-                        "preview": true,
-                        "viewer": true,
-                        "partial": false,
-                        "num_rows": 4,
-                        "dataset": "__DUMMY_DATASETS_SERVER_USER__/repo_csv_data-16939190442968"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server crashed.",
-            "headers": {
-              "Cache-Control": {
-                "$ref": "#/components/headers/Cache-Control"
-              },
-              "Access-Control-Allow-Origin": {
-                "$ref": "#/components/headers/Access-Control-Allow-Origin"
-              },
-              "X-Error-Code": {
-                "$ref": "#/components/headers/X-Error-Code-500-hub-cache"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomError"
-                },
-                "examples": {
-                  "unexpected error": {
-                    "$ref": "#/components/examples/UnexpectedJsonError"
-                  }
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerErrorResponse"
-                },
-                "examples": {
-                  "internal server error": {
-                    "$ref": "#/components/examples/UnexpectedTextError"
                   }
                 }
               }

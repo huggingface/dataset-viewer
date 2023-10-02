@@ -7,7 +7,7 @@ import shutil
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pyarrow as pa
 from datasets import Features
@@ -15,13 +15,13 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.rows_utils import transform_rows
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
     get_best_response,
 )
 from libcommon.storage import StrPath
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
 from starlette.requests import Request
@@ -32,6 +32,7 @@ from libapi.exceptions import (
     ResponseNotReadyError,
     TransformRowsProcessingError,
 )
+from libapi.rows_utils import transform_rows
 
 
 class OrjsonResponse(JSONResponse):
@@ -193,11 +194,10 @@ def to_rows_list(
     dataset: str,
     config: str,
     split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
     offset: int,
     features: Features,
     unsupported_columns: list[str],
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     row_idx_column: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
@@ -212,8 +212,7 @@ def to_rows_list(
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            cached_assets_base_url=cached_assets_base_url,
-            cached_assets_directory=cached_assets_directory,
+            storage_options=storage_options,
             offset=offset,
             row_idx_column=row_idx_column,
         )

@@ -12,6 +12,7 @@
   {{ include "envLog" . | nindent 2 }}
   # storage
   {{ include "envAssets" . | nindent 2 }}
+  {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   - name: DUCKDB_INDEX_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
@@ -43,7 +44,8 @@
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountAssetsRW" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRO" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRO" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRO" . | nindent 2 }}

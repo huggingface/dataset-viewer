@@ -78,6 +78,8 @@ secrets:
       WEBHOOK_SECRET: "hub-ephemeral-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-ephemeral-datasets-server-spawning-token"
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
+      AWS_ACCESS_KEY_ID: "hub-ephemeral-datasets-server-s3-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "hub-ephemeral-datasets-server-s3-secret-access-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
@@ -96,6 +98,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
 
 persistence:
   cachedAssets:
@@ -131,6 +140,11 @@ firstRows:
 parquetAndInfo:
   maxDatasetSize: "500_000_000"
 
+cachedAssetsS3:
+  bucket: "hf-datasets-server-statics-staging"
+  region: "us-east-1"
+  folderName: "cached-assets"
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
@@ -144,7 +158,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {skip,backfill,upgrade}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
   log:
     level: "debug"
   backfill:
@@ -207,7 +221,6 @@ ingress:
         - "datasets-server.us.dev.moon.huggingface.tech"
   annotations:
     # Link to Route53 - we could set any subdomain to us.dev.moon.huggingface.tech (common zone to the k8s cluster)
-    external-dns.alpha.kubernetes.io/hostname: "datasets-server.us.dev.moon.huggingface.tech"
     alb.ingress.kubernetes.io/load-balancer-name: "hub-datasets-server-staging"
     alb.ingress.kubernetes.io/tags: "Env=staging,Project=datasets-server,Terraform=true"
     alb.ingress.kubernetes.io/healthcheck-path: "/healthcheck"

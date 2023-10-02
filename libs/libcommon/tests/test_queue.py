@@ -601,3 +601,91 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
     assert Lock.objects().get().key == json.dumps({"dataset": "dataset", "branch": "refs/convert/parquet"})
     assert Lock.objects().get().owner is None
     Lock.objects().delete()
+
+
+def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+    """
+    Test that cancel_dataset_jobs cancels all jobs for a dataset
+
+    -> cancels at several levels (dataset, config, split)
+    -> cancels started and waiting jobs
+    -> remove locks
+    -> does not cancel, and does not remove locks, for other datasets
+    """
+    dataset = "dataset"
+    other_dataset = "other_dataset"
+    job_type_1 = "job_type_1"
+    job_type_2 = "job_type_2"
+    job_type_3 = "job_type_3"
+    job_type_4 = "job_type_4"
+    revision = "not important"
+    difficulty = 50
+    queue = Queue()
+    queue.add_job(
+        job_type=job_type_1,
+        dataset=dataset,
+        revision=revision,
+        config=None,
+        split=None,
+        difficulty=difficulty,
+    )
+    queue.add_job(
+        job_type=job_type_1,
+        dataset=other_dataset,
+        revision=revision,
+        config=None,
+        split=None,
+        difficulty=difficulty,
+    )
+    queue.add_job(
+        job_type=job_type_2,
+        dataset=dataset,
+        revision=revision,
+        config=None,
+        split=None,
+        difficulty=difficulty,
+    )
+    queue.add_job(
+        job_type=job_type_3,
+        dataset=dataset,
+        revision=revision,
+        config="config",
+        split=None,
+        difficulty=difficulty,
+    )
+    queue.add_job(
+        job_type=job_type_4,
+        dataset=dataset,
+        revision=revision,
+        config="config",
+        split="split",
+        difficulty=difficulty,
+    )
+    queue.add_job(
+        job_type=job_type_2,
+        dataset=other_dataset,
+        revision=revision,
+        config=None,
+        split=None,
+        difficulty=difficulty,
+    )
+    started_job_info_1 = queue.start_job()
+    assert started_job_info_1["params"]["dataset"] == dataset
+    assert started_job_info_1["type"] == job_type_1
+    started_job_info_2 = queue.start_job()
+    assert started_job_info_2["params"]["dataset"] == other_dataset
+    assert started_job_info_2["type"] == job_type_1
+
+    queue.cancel_dataset_jobs(dataset=dataset)
+
+    assert JobDocument.objects().count() == 6
+    assert JobDocument.objects(dataset=dataset).count() == 4
+    assert JobDocument.objects(dataset=dataset, status=Status.CANCELLED).count() == 4
+    assert JobDocument.objects(dataset=other_dataset).count() == 2
+    assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 1
+    assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
+
+    assert len(Lock.objects()) == 2
+    assert len(Lock.objects(key=f"{job_type_1},{dataset}", owner=None)) == 1
+    assert len(Lock.objects(key=f"{job_type_1},{dataset}", owner__ne=None)) == 0
+    # ^ does not test much, because at that time, the lock should already have been released

@@ -5,7 +5,10 @@ import logging
 
 from libcommon.constants import PROCESSING_STEP_SPLIT_IS_VALID_VERSION
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.simple_cache import has_any_successful_response
+from libcommon.simple_cache import (
+    get_previous_step_or_raise,
+    has_any_successful_response,
+)
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -50,12 +53,19 @@ def compute_is_valid_response(
         split=split,
         kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()],
     )
-    search = has_any_successful_response(
-        dataset=dataset,
-        config=config,
-        split=split,
-        kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_search()],
-    )
+
+    try:
+        duckdb_response = get_previous_step_or_raise(
+            kinds=["split-duckdb-index"],
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+        search_content = duckdb_response.response["content"]
+        search = search_content["has_fts"]
+    except Exception:
+        search = False
+
     return IsValidResponse(viewer=viewer, preview=preview, search=search)
 
 

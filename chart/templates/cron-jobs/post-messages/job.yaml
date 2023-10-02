@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.postMessages.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.postMessages" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-post-messages"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.postMessages.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 180
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.postMessages.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.postMessages.tolerations | nindent 12 }}
+          containers: {{ include "containerPostMessages" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+{{- end}}

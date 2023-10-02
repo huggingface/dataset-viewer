@@ -114,7 +114,7 @@ def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
 
 
-def get_datetime(days: Optional[int] = None) -> datetime:
+def get_datetime(days: Optional[float] = None) -> datetime:
     date = datetime.now(timezone.utc)
     if days is not None:
         date = date - timedelta(days=days)

@@ -54,7 +54,15 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX: UpstreamResponse = UpstreamResponse(
     config=CONFIG,
     split=SPLIT,
     http_status=HTTPStatus.OK,
-    content={},
+    content={"has_fts": True},
+)
+UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamResponse(
+    kind="split-duckdb-index",
+    dataset=DATASET,
+    config=CONFIG,
+    split=SPLIT,
+    http_status=HTTPStatus.OK,
+    content={"has_fts": False},
 )
 UPSTREAM_RESPONSE_CONFIG_SIZE_ERROR: UpstreamResponse = UpstreamResponse(
     kind="config-size", dataset=DATASET, config=CONFIG, http_status=HTTPStatus.INTERNAL_SERVER_ERROR, content={}
@@ -210,6 +218,12 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX,
             ],
             EXPECTED_SEARCH_OK,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA,
+            ],
+            EXPECTED_ERROR,
         ),
         (
             [

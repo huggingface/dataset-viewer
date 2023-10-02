@@ -83,6 +83,8 @@ secrets:
       WEBHOOK_SECRET: "hub-prod-datasets-server-webhook-secret"
       SPAWNING_TOKEN: "hub-prod-datasets-server-spawning-token"
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
+      AWS_ACCESS_KEY_ID: "hub-prod-datasets-server-s3-access-key-id"
+      AWS_SECRET_ACCESS_KEY: "hub-prod-datasets-server-s3-secret-access-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
@@ -101,6 +103,13 @@ secrets:
   spawningToken:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
+  s3:
+    accessKeyId:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
+    secretAccessKey:
+      fromSecret: true
+      secretName: "datasets-server-prod-secrets"
 
 persistence:
   cachedAssets:
@@ -137,7 +146,7 @@ parquetAndInfo:
   maxDatasetSize: "5_000_000_000"
   maxRowGroupByteSizeForCopy: "300_000_000"
   # See https://observablehq.com/@huggingface/blocked-datasets
-  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*,CyberHarem/*"
+  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*"
   noMaxSizeLimitDatasets: "Open-Orca/OpenOrca"
 
 optInOutUrlsScan:
@@ -156,6 +165,9 @@ rowsIndex:
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
 
+hfDatasetsCache:
+  expiredTimeIntervalSeconds: 10800  # 3 hours
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
@@ -171,7 +183,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics,skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
   log:
     level: "debug"
   backfill:
@@ -179,7 +191,7 @@ cacheMaintenance:
   resources:
     requests:
       cpu: 1
-      memory: "2Gi"
+      memory: "4Gi"
     limits:
       cpu: 2
       memory: "8Gi"
@@ -190,7 +202,7 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError"
+  error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError,NoIndexableColumnsError"
   schedule: "20 21 * * *"
   # every four hours
   nodeSelector: {}
@@ -377,14 +389,14 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 60
+    replicas: 100
     resources:
       requests:
         cpu: 1
-        memory: "14Gi"
+        memory: "29Gi"
       limits:
         cpu: 2
-        memory: "14Gi"
+        memory: "29Gi"
     tolerations: []
   - deployName: "light"
     workerDifficultyMax: 40
@@ -393,7 +405,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 20
+    replicas: 40
     resources:
       requests:
         cpu: 200m
