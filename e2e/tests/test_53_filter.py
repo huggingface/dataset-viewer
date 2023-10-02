@@ -1,3 +1,5 @@
+import pytest
+
 from .fixtures.hub import AuthHeaders, AuthType
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
@@ -65,3 +67,32 @@ def test_filter_endpoint(
             {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
             {"feature_idx": 3, "name": "col_4", "type": {"dtype": "string", "_type": "Value"}},
         ], features
+
+
+@pytest.mark.parametrize(
+    "where, expected_num_rows",
+    [
+        ("col_2=3", 1),
+        ("col_2<3", 3),
+        ("col_2>3", 0),
+        ("col_4='B'", 3),
+        ("col_4<'B'", 1),
+        ("col_4>='A'", 4),
+        ("col_2<3 AND col_4='B'", 2),
+        ("col_2<3 OR col_4='B'", 4),
+    ],
+)
+def test_where_parameter_in_filter_endpoint(
+    where: str, expected_num_rows: int, hf_public_dataset_repo_csv_data: str
+) -> None:
+    dataset = hf_public_dataset_repo_csv_data
+    config, split = get_default_config_split()
+    response = poll_until_ready_and_assert(
+        relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
+        expected_status_code=200,
+        expected_error_code=None,
+        check_x_revision=True,
+    )
+    content = response.json()
+    assert "rows" in content, response
+    assert len(content["rows"]) == expected_num_rows
