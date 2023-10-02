@@ -211,7 +211,7 @@ class QueueConfig:
 
 @dataclass(frozen=True)
 class ProcessingGraphConfig:
-    specification: ProcessingGraphSpecification = field(
+    specification: "ProcessingGraphSpecification" = field(
         default_factory=lambda: {
             "dataset-config-names": {
                 "input_type": "dataset",

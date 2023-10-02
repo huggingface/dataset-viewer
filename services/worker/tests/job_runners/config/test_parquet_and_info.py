@@ -622,6 +622,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
             input_type="config",
             job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
             difficulty=50,
+            bonus_difficulty_if_dataset_is_big=0,
         ),
         hf_datasets_cache=tmp_path,
     )
