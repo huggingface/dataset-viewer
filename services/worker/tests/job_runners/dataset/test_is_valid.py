@@ -6,7 +6,6 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
