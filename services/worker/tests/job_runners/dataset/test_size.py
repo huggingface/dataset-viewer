@@ -43,12 +43,14 @@ def get_job_runner(
     ) -> DatasetSizeJobRunner:
         processing_step_name = DatasetSizeJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": DatasetSizeJobRunner.get_job_runner_version(),
+            ProcessingGraphConfig(
+                {
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": DatasetSizeJobRunner.get_job_runner_version(),
+                    }
                 }
-            })
+            )
         )
         return DatasetSizeJobRunner(
             job_info={

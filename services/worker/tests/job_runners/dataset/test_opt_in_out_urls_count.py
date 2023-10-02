@@ -38,12 +38,14 @@ def get_job_runner(
     ) -> DatasetOptInOutUrlsCountJobRunner:
         processing_step_name = DatasetOptInOutUrlsCountJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": DatasetOptInOutUrlsCountJobRunner.get_job_runner_version(),
+            ProcessingGraphConfig(
+                {
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": DatasetOptInOutUrlsCountJobRunner.get_job_runner_version(),
+                    }
                 }
-            })
+            )
         )
         return DatasetOptInOutUrlsCountJobRunner(
             job_info={

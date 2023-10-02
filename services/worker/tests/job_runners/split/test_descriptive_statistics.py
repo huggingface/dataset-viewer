@@ -49,18 +49,20 @@ def get_job_runner(
     ) -> SplitDescriptiveStatisticsJobRunner:
         processing_step_name = SplitDescriptiveStatisticsJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-config-names": {"input_type": "dataset"},
-                "config-split-names-from-info": {
-                    "input_type": "config",
-                    "triggered_by": "dataset-config-names",
-                },
-                processing_step_name: {
-                    "input_type": "split",
-                    "job_runner_version": SplitDescriptiveStatisticsJobRunner.get_job_runner_version(),
-                    "triggered_by": ["config-split-names-from-info"],
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-config-names": {"input_type": "dataset"},
+                    "config-split-names-from-info": {
+                        "input_type": "config",
+                        "triggered_by": "dataset-config-names",
+                    },
+                    processing_step_name: {
+                        "input_type": "split",
+                        "job_runner_version": SplitDescriptiveStatisticsJobRunner.get_job_runner_version(),
+                        "triggered_by": ["config-split-names-from-info"],
+                    },
+                }
+            )
         )
 
         upsert_response(
@@ -112,14 +114,16 @@ def get_parquet_and_info_job_runner(
     ) -> ConfigParquetAndInfoJobRunner:
         processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-config-names": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "config",
-                    "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
-                    "triggered_by": "dataset-config-names",
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-config-names": {"input_type": "dataset"},
+                    processing_step_name: {
+                        "input_type": "config",
+                        "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                        "triggered_by": "dataset-config-names",
+                    },
+                }
+            )
         )
 
         upsert_response(

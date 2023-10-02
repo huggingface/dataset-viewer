@@ -38,15 +38,17 @@ def get_job_runner(
     ) -> SplitImageUrlColumnsJobRunner:
         processing_step_name = SplitImageUrlColumnsJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-level": {"input_type": "dataset"},
-                "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": SplitImageUrlColumnsJobRunner.get_job_runner_version(),
-                    "triggered_by": "config-level",
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": SplitImageUrlColumnsJobRunner.get_job_runner_version(),
+                        "triggered_by": "config-level",
+                    },
+                }
+            )
         )
 
         upsert_response(

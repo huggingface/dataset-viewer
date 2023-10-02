@@ -39,14 +39,16 @@ def get_job_runner(
     ) -> ConfigOptInOutUrlsCountJobRunner:
         processing_step_name = ConfigOptInOutUrlsCountJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-level": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "config",
-                    "job_runner_version": ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
-                    "triggered_by": "dataset-level",
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    processing_step_name: {
+                        "input_type": "config",
+                        "job_runner_version": ConfigOptInOutUrlsCountJobRunner.get_job_runner_version(),
+                        "triggered_by": "dataset-level",
+                    },
+                }
+            )
         )
 
         upsert_response(

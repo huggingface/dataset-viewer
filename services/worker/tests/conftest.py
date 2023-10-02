@@ -142,10 +142,12 @@ def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def test_processing_graph() -> ProcessingGraph:
     return ProcessingGraph(
-        ProcessingGraphConfig({
-            "dummy": {"input_type": "dataset"},
-            "dummy2": {"input_type": "dataset"},
-        })
+        ProcessingGraphConfig(
+            {
+                "dummy": {"input_type": "dataset"},
+                "dummy2": {"input_type": "dataset"},
+            }
+        )
     )
 
 

@@ -44,14 +44,16 @@ def get_job_runner(
     ) -> ConfigParquetJobRunner:
         processing_step_name = ConfigParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-level": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": ConfigParquetJobRunner.get_job_runner_version(),
-                    "triggered_by": "dataset-level",
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": ConfigParquetJobRunner.get_job_runner_version(),
+                        "triggered_by": "dataset-level",
+                    },
+                }
+            )
         )
 
         upsert_response(

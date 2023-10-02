@@ -43,19 +43,21 @@ def get_job_runner(
     ) -> SplitFirstRowsFromParquetJobRunner:
         processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            ProcessingGraphConfig({
-                "dataset-level": {"input_type": "dataset"},
-                "config-level": {
-                    "input_type": "config",
-                    "triggered_by": "dataset-level",
-                    "provides_config_parquet_metadata": True,
-                },
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
-                    "triggered_by": "config-level",
-                },
-            })
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    "config-level": {
+                        "input_type": "config",
+                        "triggered_by": "dataset-level",
+                        "provides_config_parquet_metadata": True,
+                    },
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": SplitFirstRowsFromParquetJobRunner.get_job_runner_version(),
+                        "triggered_by": "config-level",
+                    },
+                }
+            )
         )
 
         upsert_response(
