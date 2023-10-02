@@ -4,7 +4,7 @@
 import logging
 import re
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Optional
 
 import duckdb
 import pyarrow as pa
@@ -216,7 +216,7 @@ def create_filter_endpoint(
 def execute_filter_query(
     index_file_location: str, columns: list[str], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
-    with duckdb.connect(database=index_file_location, read_only=True) as con:
+    with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
         try:
             pa_table = con.sql(filter_query).arrow()
@@ -230,3 +230,10 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
+
+
+def duckdb_connect(**kwargs: Any) -> duckdb.DuckDBPyConnection:
+    con = duckdb.connect(read_only=True, **kwargs)
+    con.sql("SET enable_external_access=false;")
+    con.sql("SET lock_configuration=true;")
+    return con
