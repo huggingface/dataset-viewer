@@ -4,13 +4,14 @@
 import logging
 import re
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Optional
 
 import duckdb
 import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
+    duckdb_connect,
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
@@ -230,10 +231,3 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
-
-
-def duckdb_connect(**kwargs: Any) -> duckdb.DuckDBPyConnection:
-    con = duckdb.connect(read_only=True, **kwargs)
-    con.sql("SET enable_external_access=false;")
-    con.sql("SET lock_configuration=true;")
-    return con

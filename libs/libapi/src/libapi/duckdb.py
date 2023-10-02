@@ -4,8 +4,9 @@ import os
 import re
 from hashlib import sha1
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
+import duckdb
 from huggingface_hub import hf_hub_download
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -107,3 +108,10 @@ def get_cache_entry_from_duckdb_index_job(
         hf_timeout_seconds=hf_timeout_seconds,
         cache_max_days=cache_max_days,
     )
+
+
+def duckdb_connect(**kwargs: Any) -> duckdb.DuckDBPyConnection:
+    con = duckdb.connect(read_only=True, **kwargs)
+    con.sql("SET enable_external_access=false;")
+    con.sql("SET lock_configuration=true;")
+    return con

@@ -11,6 +11,7 @@ import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
+    duckdb_connect,
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
@@ -60,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
-    with duckdb.connect(index_file_location, read_only=True) as con:
+    with duckdb_connect(index_file_location) as con:
         count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
         num_rows_total = count_result[0][0]  # it will always return a non-empty list with one element in a tuple
         logging.debug(f"got {num_rows_total=} results for {query=}")
