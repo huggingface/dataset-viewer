@@ -4,7 +4,6 @@
 import io
 import os
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
 from dataclasses import replace
 from fnmatch import fnmatch
 from http import HTTPStatus
