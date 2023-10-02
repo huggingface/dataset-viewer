@@ -185,7 +185,6 @@ PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 @dataclass(frozen=True)
 class ParquetAndInfoConfig:
-    blocked_datasets: list[str] = field(default_factory=get_empty_str_list)
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
     max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
@@ -201,7 +200,6 @@ class ParquetAndInfoConfig:
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_AND_INFO_"):
             return cls(
-                blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN),
                 max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_INFO_MAX_DATASET_SIZE),

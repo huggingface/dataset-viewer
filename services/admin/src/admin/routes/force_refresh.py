@@ -70,6 +70,7 @@ def create_force_refresh_endpoint(
                 hf_timeout_seconds=hf_timeout_seconds,
             )
             revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
+            # we directly create a job, without even checking if the dataset is blocked.
             Queue().add_job(
                 job_type=job_type,
                 difficulty=difficulty,

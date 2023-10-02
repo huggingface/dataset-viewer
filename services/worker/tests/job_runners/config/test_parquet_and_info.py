@@ -27,11 +27,7 @@ from datasets.packaged_modules.generator.generator import (
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.dataset import get_dataset_info_for_supported_datasets
-from libcommon.exceptions import (
-    CustomError,
-    DatasetInBlockListError,
-    DatasetManualDownloadError,
-)
+from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -64,13 +60,6 @@ from worker.resources import LibrariesResource
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
-
-
-@contextmanager
-def blocked(app_config: AppConfig, repo_id: str) -> Iterator[None]:
-    app_config.parquet_and_info.blocked_datasets.append(repo_id)
-    yield
-    app_config.parquet_and_info.blocked_datasets.remove(repo_id)
 
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
@@ -385,21 +374,6 @@ def test_supported_if_gated(
     response = job_runner.compute()
     assert response
     assert response.content
-
-
-def test_blocked(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
-    hub_reponses_jsonl: HubDatasetTest,
-) -> None:
-    # In the list of blocked datasets
-    with blocked(app_config, repo_id=hub_reponses_jsonl["name"]):
-        dataset = hub_reponses_jsonl["name"]
-        config = hub_reponses_jsonl["config_names_response"]["config_names"][0]["config"]
-        job_runner = get_job_runner(dataset, config, app_config)
-        with pytest.raises(CustomError) as e:
-            job_runner.compute()
-        assert e.typename == "DatasetInBlockListError"
 
 
 @pytest.mark.parametrize(

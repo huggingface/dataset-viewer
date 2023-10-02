@@ -210,8 +210,6 @@ firstRows:
   columnsMaxNumber: 1_000
 
 parquetAndInfo:
-  # comma-separated list of the blocked datasets. Defaults to empty.
-  blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
   # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.

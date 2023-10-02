@@ -215,7 +215,6 @@ services:
       OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN-}
       OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH: ${OPT_IN_OUT_URLS_SCAN_URLS_NUMBER_PER_BATCH-1000}
       OPT_IN_OUT_URLS_SCAN_SPAWNING_URL: ${OPT_IN_OUT_URLS_SCAN_SPAWNING_URL-https://opts-api.spawningaiapi.com/api/v2/query/urls}
-      PARQUET_AND_INFO_BLOCKED_DATASETS: ${PARQUET_AND_INFO_BLOCKED_DATASETS-}
       PARQUET_AND_INFO_COMMIT_MESSAGE: ${PARQUET_AND_INFO_COMMIT_MESSAGE-Update parquet files}
       PARQUET_AND_INFO_COMMITTER_HF_TOKEN: ${PARQUET_AND_INFO_COMMITTER_HF_TOKEN-hf_app_datasets-server-parquet-converter_token}
       PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS: ${PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS-}
@@ -235,7 +234,7 @@ services:
         condition: service_healthy
     restart: always
   mongodb:
-    image: 'mongo:6.0.9'
+    image: "mongo:6.0.9"
     ports:
       - ${MONGO_PORT:-27017}:${MONGO_PORT:-27017}
     command: mongod --port ${MONGO_PORT:-27017} --replSet ${MONGO_REPLICASET:-rs0} --bind_ip_all

@@ -10,7 +10,11 @@ from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponseDocument, has_some_cache, upsert_response_params
+from libcommon.simple_cache import (
+    CachedResponseDocument,
+    has_some_cache,
+    upsert_response_params,
+)
 from libcommon.utils import JobOutput, JobResult, Priority, Status
 
 from .utils import (
