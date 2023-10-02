@@ -6,7 +6,6 @@ from http import HTTPStatus
 from pathlib import Path
 from typing import Optional
 
-import duckdb
 import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
