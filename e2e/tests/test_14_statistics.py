@@ -16,8 +16,6 @@ def test_statistics_endpoint(
     headers = auth_headers[auth]
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
-        expected_status_code=200,
-        expected_error_code=None,
         headers=headers,
         check_x_revision=True,
     )

@@ -84,8 +84,6 @@ def test_endpoint(
 
     poll_until_ready_and_assert(
         relative_url=relative_url,
-        expected_status_code=200,
-        expected_error_code=None,
         headers=headers,
         check_x_revision=input_type != "all",
     )
@@ -105,8 +103,6 @@ def test_rows_endpoint(
     length = 10
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
-        expected_status_code=200,
-        expected_error_code=None,
         headers=headers,
         check_x_revision=True,
     )

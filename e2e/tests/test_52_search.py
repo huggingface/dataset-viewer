@@ -22,8 +22,6 @@ def test_search_endpoint(
         relative_url=(
             f"/search?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&query={query}"
         ),
-        expected_status_code=200,
-        expected_error_code=None,
         headers=headers,
         check_x_revision=True,
     )
