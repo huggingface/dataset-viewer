@@ -10,16 +10,12 @@ def test_statistics_endpoint(
     hf_public_dataset_repo_csv_data: str,
 ) -> None:
     auth: AuthType = "none"
-    expected_status_code: int = 200
-    expected_error_code = None
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
     headers = auth_headers[auth]
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
-        expected_status_code=expected_status_code,
-        expected_error_code=expected_error_code,
         headers=headers,
         check_x_revision=True,
     )

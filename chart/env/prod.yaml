@@ -165,6 +165,9 @@ rowsIndex:
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
 
+hfDatasetsCache:
+  expiredTimeIntervalSeconds: 10800  # 3 hours
+
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:

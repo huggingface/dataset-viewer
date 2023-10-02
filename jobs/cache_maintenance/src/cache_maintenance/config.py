@@ -56,6 +56,27 @@ class DuckDbConfig:
             )
 
 
+DATASETS_BASED_HF_DATASETS_CACHE = None
+DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS = 3 * 60 * 60  # 3 hours
+
+
+@dataclass(frozen=True)
+class DatasetsBasedConfig:
+    hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
+    expired_time_interval_seconds: int = DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
+
+    @classmethod
+    def from_env(cls) -> "DatasetsBasedConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("DATASETS_BASED_"):
+            return cls(
+                hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
+                expired_time_interval_seconds=env.int(
+                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
+                ),
+            )
+
+
 DISCUSSIONS_BOT_ASSOCIATED_USER_NAME = None
 DISCUSSIONS_BOT_TOKEN = None
 DISCUSSIONS_PARQUET_REVISION = "refs/convert/parquet"
@@ -91,6 +112,7 @@ class JobConfig:
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     backfill: BackfillConfig = field(default_factory=BackfillConfig)
+    datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
     duckdb: DuckDbConfig = field(default_factory=DuckDbConfig)
     discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
@@ -106,6 +128,7 @@ class JobConfig:
             common=CommonConfig.from_env(),
             graph=ProcessingGraphConfig.from_env(),
             backfill=BackfillConfig.from_env(),
+            datasets_based=DatasetsBasedConfig.from_env(),
             duckdb=DuckDbConfig.from_env(),
             discussions=DiscussionsConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),

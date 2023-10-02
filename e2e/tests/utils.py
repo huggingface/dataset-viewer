@@ -155,8 +155,8 @@ def log(response: Response, url: str = URL, relative_url: Optional[str] = None, 
 
 def poll_until_ready_and_assert(
     relative_url: str,
-    expected_status_code: int,
-    expected_error_code: Optional[str],
+    expected_status_code: int = 200,
+    expected_error_code: Optional[str] = None,
     headers: Optional[Headers] = None,
     url: str = URL,
     check_x_revision: bool = False,
