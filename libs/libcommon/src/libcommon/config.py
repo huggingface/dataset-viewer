@@ -4,7 +4,7 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from environs import Env
 
@@ -36,7 +36,9 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
-from libcommon.processing_graph import ProcessingGraphSpecification
+
+if TYPE_CHECKING:
+    from libcommon.processing_graph import ProcessingGraphSpecification
 
 ASSETS_BASE_URL = "assets"
 ASSETS_STORAGE_DIRECTORY = None
