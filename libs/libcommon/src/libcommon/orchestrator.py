@@ -243,9 +243,9 @@ class AfterJobPlan(Plan):
             return
 
         # get the dataset infos to estimate difficulty
-        if self.config is not None:
+        if config is not None:
             self.num_bytes = get_num_bytes_from_config_infos(
-                processing_graph=self.processing_graph, dataset=self.dataset, config=self.config, split=self.split
+                processing_graph=self.processing_graph, dataset=self.dataset, config=config, split=split
             )
         else:
             self.num_bytes = None
