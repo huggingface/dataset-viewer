@@ -8,6 +8,7 @@ from typing import Optional
 from libcommon.config import CommonConfig
 from libcommon.exceptions import (
     CustomError,
+    DatasetInBlockListError,
     DatasetNotFoundError,
     DatasetScriptError,
     JobManagerCrashedError,
@@ -121,10 +122,14 @@ class JobManager:
         return job_result
 
     def finish(self, job_result: JobResult) -> None:
-        DatasetOrchestrator(
-            dataset=self.job_params["dataset"],
-            processing_graph=self.processing_graph,
-        ).finish_job(job_result=job_result)
+        try:
+            DatasetOrchestrator(
+                dataset=self.job_params["dataset"],
+                processing_graph=self.processing_graph,
+                blocked_datasets=self.common_config.blocked_datasets,
+            ).finish_job(job_result=job_result)
+        except DatasetInBlockListError:
+            self.debug("The dataset is blocked and has been deleted from the Datasets Server.")
 
     def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
         try:
@@ -150,14 +155,6 @@ class JobManager:
         self,
     ) -> JobResult:
         self.info(f"compute {self}")
-        if self.job_info["params"]["dataset"] in self.worker_config.blocked_datasets:
-            self.debug(f"the dataset={self.job_params['dataset']} is blocked, don't update the cache")
-            return {
-                "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
-                "is_success": False,
-                "output": None,
-            }
         try:
             try:
                 self.job_runner.pre_compute()

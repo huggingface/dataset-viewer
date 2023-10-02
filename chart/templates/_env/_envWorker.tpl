@@ -2,8 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envWorker" -}}
-- name: WORKER_BLOCKED_DATASETS
-  value: {{ .Values.worker.blockedDatasets | quote}}
 - name: WORKER_CONTENT_MAX_BYTES
   value: {{ .Values.worker.contentMaxBytes | quote}}
 - name: WORKER_HEARTBEAT_INTERVAL_SECONDS
@@ -41,8 +39,6 @@
 - name: FIRST_ROWS_COLUMNS_MAX_NUMBER
   value: {{ .Values.firstRows.columnsMaxNumber| quote }}
 # specific to 'config-parquet-and-info' job runner
-- name: PARQUET_AND_INFO_BLOCKED_DATASETS
-  value: {{ .Values.parquetAndInfo.blockedDatasets | quote }}
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE
   value: {{ .Values.parquetAndInfo.commitMessage | quote }}
 - name: PARQUET_AND_INFO_COMMITTER_HF_TOKEN

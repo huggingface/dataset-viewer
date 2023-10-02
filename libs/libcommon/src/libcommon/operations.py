@@ -14,6 +14,7 @@ def backfill_dataset(
     revision: str,
     processing_graph: ProcessingGraph,
     cache_max_days: int,
+    blocked_datasets: list[str],
     priority: Priority = Priority.LOW,
 ) -> None:
     """
@@ -27,11 +28,15 @@ def backfill_dataset(
         priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
 
     Returns: None.
+
+    Raises the following errors:
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
     """
     logging.debug(f"backfill {dataset=} {revision=} {priority=}")
-    DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph).set_revision(
-        revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days
-    )
+    DatasetOrchestrator(
+        dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
+    ).set_revision(revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days)
 
 
 def delete_dataset(dataset: str) -> None:

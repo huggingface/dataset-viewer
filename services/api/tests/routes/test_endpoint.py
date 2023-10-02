@@ -136,6 +136,7 @@ def test_get_cache_entry_from_steps() -> None:
         processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
+        blocked_datasets=[],
     )
     assert result
     assert result["http_status"] == HTTPStatus.OK
@@ -149,6 +150,7 @@ def test_get_cache_entry_from_steps() -> None:
         processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
+        blocked_datasets=[],
     )
     assert result
     assert result["http_status"] == HTTPStatus.OK
@@ -162,6 +164,7 @@ def test_get_cache_entry_from_steps() -> None:
         processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
+        blocked_datasets=[],
     )
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
@@ -181,4 +184,5 @@ def test_get_cache_entry_from_steps() -> None:
                 processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[],
             )

@@ -6,10 +6,13 @@ import enum
 import mimetypes
 from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
+from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Optional, TypedDict
 
 import orjson
+
+from libcommon.exceptions import DatasetInBlockListError
 
 
 class Status(str, enum.Enum):
@@ -144,3 +147,34 @@ def is_image_url(text: str) -> bool:
     is_url = text.startswith("https://") or text.startswith("http://")
     (mime_type, _) = mimetypes.guess_type(text.split("/")[-1].split("?")[0])
     return is_url and mime_type is not None and mime_type.startswith("image/")
+
+
+def raise_if_blocked(
+    dataset: str,
+    blocked_datasets: list[str],
+) -> None:
+    """
+    Raise an error if the dataset is in the list of blocked datasets
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated
+            by a `/`.
+        blocked_datasets (`list[str]`):
+            The list of blocked datasets. If empty, no dataset is blocked.
+            Unix shell-style wildcards are supported, e.g. "open-llm-leaderboard/*"
+
+    Returns:
+        `None`
+    Raises the following errors:
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
+    """
+    for blocked_dataset in blocked_datasets:
+        if blocked_dataset in ["*", "*/*", "*/**"]:
+            continue
+        if fnmatch(dataset, blocked_dataset):
+            raise DatasetInBlockListError(
+                "This dataset has been disabled for now. Please open an issue in"
+                " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+            )

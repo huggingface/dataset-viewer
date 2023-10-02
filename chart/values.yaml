@@ -78,6 +78,9 @@ images:
       tag: sha-fb3399a
 
 common:
+  # comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
+  # See https://observablehq.com/@huggingface/blocked-datasets
+  blockedDatasets: "alexandrainst/nota,Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
@@ -173,8 +176,6 @@ metrics:
   mongoDatabase: "datasets_server_metrics"
 
 worker:
-  # comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
-  blockedDatasets: "alexandrainst/nota"
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
   # the time interval between two heartbeats. Each heartbeat updates the job "last_heartbeat" field in the queue.
@@ -209,8 +210,6 @@ firstRows:
   columnsMaxNumber: 1_000
 
 parquetAndInfo:
-  # comma-separated list of the blocked datasets. Defaults to empty.
-  blockedDatasets: ""
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
   # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.

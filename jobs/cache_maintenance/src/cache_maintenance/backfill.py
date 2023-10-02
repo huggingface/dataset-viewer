@@ -14,6 +14,7 @@ def backfill_cache(
     processing_graph: ProcessingGraph,
     hf_endpoint: str,
     cache_max_days: int,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
@@ -45,7 +46,9 @@ def backfill_cache(
             # should not occur
             continue
         try:
-            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+            dataset_orchestrator = DatasetOrchestrator(
+                dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
+            )
         except Exception as e:
             logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
             continue

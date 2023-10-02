@@ -9,6 +9,7 @@ from typing import Optional, Union
 import pandas as pd
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
+from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import (
     ProcessingGraph,
     ProcessingStep,
@@ -17,13 +18,14 @@ from libcommon.processing_graph import (
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
+    delete_dataset_responses,
     fetch_names,
     get_cache_entries_df,
     has_some_cache,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
-from libcommon.utils import JobInfo, JobResult, Priority
+from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
 
 # TODO: clean dangling cache entries
 
@@ -116,7 +118,43 @@ class DeleteJobsTask(Task):
                 )
 
 
-SupportedTask = Union[CreateJobsTask, DeleteJobsTask]
+@dataclass
+class DeleteDatasetJobsTask(Task):
+    dataset: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
+        self.long_id = self.id
+
+    def run(self) -> None:
+        with StepProfiler(
+            method="DeleteDatasetJobsTask.run",
+            step="all",
+            context=f"dataset={self.dataset}",
+        ):
+            Queue().cancel_dataset_jobs(dataset=self.dataset)
+
+
+@dataclass
+class DeleteDatasetCacheEntriesTask(Task):
+    dataset: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetCacheEntries,{len(self.dataset)}"
+        self.long_id = self.id
+
+    def run(self) -> None:
+        with StepProfiler(
+            method="DeleteDatasetCacheEntriesTask.run",
+            step="all",
+            context=f"dataset={self.dataset}",
+        ):
+            delete_dataset_responses(dataset=self.dataset)
+
+
+SupportedTask = Union[CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask]
 
 
 @dataclass
@@ -578,9 +616,58 @@ class DatasetBackfillPlan(Plan):
 
 
 @dataclass
+class DatasetRemovalPlan(Plan):
+    """
+    Plan to remove a dataset.
+
+    The plan is composed of tasks to delete jobs and cache entries.
+
+    Args:
+        dataset: dataset name
+    """
+
+    dataset: str
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.add_task(DeleteDatasetJobsTask(dataset=self.dataset))
+        self.add_task(DeleteDatasetCacheEntriesTask(dataset=self.dataset))
+
+
+@dataclass
 class DatasetOrchestrator:
+    """
+    Orchestrator for a dataset.
+
+    Args:
+        dataset (str): The name of the dataset.
+        processing_graph (ProcessingGraph): The processing graph.
+        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards, but `*`,
+          `*/*` and `**/*` are ignored to avoid deleting the whole cache.
+
+    Raises:
+        libcommon.exceptions.DatasetInBlockListError: If the dataset is in the block list. As a side-effect, the
+          dataset is deleted from the Datasets Server.
+    """
+
     dataset: str
     processing_graph: ProcessingGraph
+    blocked_datasets: list[str]
+
+    def _raise_and_remove_if_blocked(self) -> None:
+        try:
+            raise_if_blocked(dataset=self.dataset, blocked_datasets=self.blocked_datasets)
+        except DatasetInBlockListError:
+            logging.warning(f"The dataset {self.dataset} is in the block list, we delete it from the Datasets Server.")
+            self.remove_dataset()
+            raise
+
+    def remove_dataset(self) -> None:
+        """
+        Remove the dataset from the Datasets Server
+        """
+        plan = DatasetRemovalPlan(dataset=self.dataset)
+        plan.run()
 
     def set_revision(
         self, revision: str, priority: Priority, error_codes_to_retry: list[str], cache_max_days: int
@@ -604,6 +691,7 @@ class DatasetOrchestrator:
             ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
               step.
         """
+        self._raise_and_remove_if_blocked()
         first_processing_steps = self.processing_graph.get_first_processing_steps()
         if len(first_processing_steps) < 1:
             raise ValueError("Processing graph has no first step")
@@ -652,6 +740,7 @@ class DatasetOrchestrator:
         Raises:
             ValueError: If the job is not found, or if the processing step is not found.
         """
+        self._raise_and_remove_if_blocked()
         # check if the job is still in started status
         job_info = job_result["job_info"]
         if not Queue().is_job_started(job_id=job_info["job_id"]):
@@ -757,6 +846,12 @@ class DatasetOrchestrator:
             context=f"dataset={self.dataset}",
         ):
             logging.info(f"Analyzing {self.dataset}")
+            with StepProfiler(
+                method="DatasetOrchestrator.raise_and_remove_if_blocked",
+                step="plan",
+                context=f"dataset={self.dataset}",
+            ):
+                self._raise_and_remove_if_blocked()
             with StepProfiler(
                 method="DatasetOrchestrator.backfill",
                 step="plan",

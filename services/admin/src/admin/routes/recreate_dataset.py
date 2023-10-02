@@ -33,6 +33,7 @@ def create_recreate_dataset_endpoint(
     assets_directory: StrPath,
     cached_assets_directory: StrPath,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
@@ -74,6 +75,7 @@ def create_recreate_dataset_endpoint(
                 processing_graph=processing_graph,
                 priority=priority,
                 cache_max_days=1,
+                blocked_datasets=blocked_datasets,
             )
             return get_json_ok_response(
                 {

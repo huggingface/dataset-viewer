@@ -3,7 +3,8 @@
 
 import pytest
 
-from libcommon.utils import inputs_to_string, is_image_url
+from libcommon.exceptions import DatasetInBlockListError
+from libcommon.utils import inputs_to_string, is_image_url, raise_if_blocked
 
 
 @pytest.mark.parametrize(
@@ -35,3 +36,26 @@ def test_inputs_to_string(dataset: str, revision: str, config: str, split: str, 
 )
 def test_is_image_url(text: str, expected: bool) -> None:
     assert is_image_url(text=text) == expected
+
+
+@pytest.mark.parametrize(
+    "dataset,blocked,raises",
+    [
+        ("public", ["public"], True),
+        ("public", ["public", "audio"], True),
+        ("public", ["pub*"], True),
+        ("public/test", ["public/*"], True),
+        ("public/test", ["*/test"], True),
+        ("public", ["audio"], False),
+        ("public", [], False),
+        ("public", ["*"], False),
+        ("public", ["*/*"], False),
+        ("public", ["**/*"], False),
+    ],
+)
+def test_raise_if_blocked(dataset: str, blocked: list[str], raises: bool) -> None:
+    if raises:
+        with pytest.raises(DatasetInBlockListError):
+            raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
+    else:
+        raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
