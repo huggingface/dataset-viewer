@@ -642,8 +642,9 @@ class DatasetOrchestrator:
     Args:
         dataset (str): The name of the dataset.
         processing_graph (ProcessingGraph): The processing graph.
-        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards, but `*`,
-          `*/*` and `**/*` are ignored to avoid deleting the whole cache.
+        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
+          name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
+          are not allowed in the namespace name.
 
     Raises:
         libcommon.exceptions.DatasetInBlockListError: If the dataset is in the block list. As a side-effect, the

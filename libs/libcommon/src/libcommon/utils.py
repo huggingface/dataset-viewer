@@ -162,7 +162,9 @@ def raise_if_blocked(
             by a `/`.
         blocked_datasets (`list[str]`):
             The list of blocked datasets. If empty, no dataset is blocked.
-            Unix shell-style wildcards are supported, e.g. "open-llm-leaderboard/*"
+            Unix shell-style wildcards are supported in the dataset name, e.g. "open-llm-leaderboard/*"
+            to block all the datasets in the `open-llm-leaderboard` namespace. They are not allowed in
+            the namespace name.
 
     Returns:
         `None`
@@ -171,8 +173,14 @@ def raise_if_blocked(
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:
-        if blocked_dataset in ["*", "*/*", "*/**"]:
-            continue
+        parts = blocked_dataset.split("/")
+        if len(parts) > 2 or not blocked_dataset:
+            raise ValueError(
+                "The dataset name is not valid. It should be a namespace (user or an organization) and a repo name"
+                " separated by a `/`, or a simple repo name for canonical datasets."
+            )
+        if "*" in parts[0]:
+            raise ValueError("The namespace name, or the canonical dataset name, cannot contain a wildcard.")
         if fnmatch(dataset, blocked_dataset):
             raise DatasetInBlockListError(
                 "This dataset has been disabled for now. Please open an issue in"

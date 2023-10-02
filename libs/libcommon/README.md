@@ -13,7 +13,7 @@ Set the assets (images and audio files stored locally) environment variables to 
 
 Set the common environment variables to configure the following aspects:
 
-- `COMMON_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. Unix shell-style wildcards also work, for example `some_namespace/*` to block all the dataset in the `some_namespace` namespace. `*`, `*/*` and `**/*` are ignored to avoid deleting the whole cache. If empty, no dataset is blocked. Defaults to empty.
+- `COMMON_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to block all the datasets in the `some_namespace` namespace. If empty, no dataset is blocked. Defaults to empty.
 - `COMMON_HF_ENDPOINT`: URL of the HuggingFace Hub. Defaults to `https://huggingface.co`.
 - `COMMON_HF_TOKEN`: App Access Token (ask moonlanding administrators to get one, only the `read` role is required) to access the gated datasets. Defaults to empty.
 
