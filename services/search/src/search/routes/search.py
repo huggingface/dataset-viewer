@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 
 
 def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
-    with duckdb_connect(index_file_location) as con:
+    with duckdb_connect(database=index_file_location) as con:
         count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
         num_rows_total = count_result[0][0]  # it will always return a non-empty list with one element in a tuple
         logging.debug(f"got {num_rows_total=} results for {query=}")
