@@ -103,6 +103,7 @@ def create_rows_endpoint(
     cache_max_days: int,
     max_arrow_data_in_memory: int,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -180,6 +181,7 @@ def create_rows_endpoint(
                             hf_timeout_seconds=hf_timeout_seconds,
                             hf_token=hf_token,
                             cache_max_days=cache_max_days,
+                            blocked_datasets=blocked_datasets,
                         )
                 with StepProfiler(method="rows_endpoint", step="query the rows"):
                     pa_table = rows_index.query(offset=offset, length=length)

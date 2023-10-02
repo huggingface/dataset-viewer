@@ -89,6 +89,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                blocked_datasets=app_config.common.blocked_datasets,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,

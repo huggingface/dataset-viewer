@@ -112,10 +112,20 @@ def try_backfill_dataset_then_raise(
     processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> None:
-    dataset_orchestrator = DatasetOrchestrator(dataset=dataset, processing_graph=processing_graph)
+    """
+    Tries to backfill the dataset, and then raises an error.
+
+    Raises the following errors:
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
+    """
+    dataset_orchestrator = DatasetOrchestrator(
+        dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
+    )
     if not dataset_orchestrator.has_some_cache():
         # We have to check if the dataset exists and is supported
         try:
@@ -157,6 +167,7 @@ def get_cache_entry_from_steps(
     processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
 ) -> CacheEntry:
@@ -168,6 +179,8 @@ def get_cache_entry_from_steps(
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
           if the response is not ready yet.
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
 
     Returns: the cached record
     """
@@ -179,6 +192,7 @@ def get_cache_entry_from_steps(
             processing_graph=processing_graph,
             dataset=dataset,
             hf_endpoint=hf_endpoint,
+            blocked_datasets=blocked_datasets,
             hf_timeout_seconds=hf_timeout_seconds,
             hf_token=hf_token,
             cache_max_days=cache_max_days,

@@ -2,6 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 {{- define "envCommon" -}}
+- name: COMMON_BLOCKED_DATASETS
+  value: {{ .Values.common.blockedDatasets | quote}}
 - name: COMMON_HF_ENDPOINT
   value: {{ include "datasetsServer.hub.url" . }}
 - name: HF_ENDPOINT # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411

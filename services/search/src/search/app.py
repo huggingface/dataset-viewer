@@ -94,6 +94,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
+                blocked_datasets=app_config.common.blocked_datasets,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,

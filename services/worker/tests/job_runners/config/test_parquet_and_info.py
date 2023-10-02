@@ -56,7 +56,6 @@ from worker.job_runners.config.parquet_and_info import (
     limit_parquet_writes,
     list_generated_parquet_files,
     parse_repo_filename,
-    raise_if_blocked,
     raise_if_requires_manual_download,
     stream_convert_to_parquet,
 )
@@ -216,23 +215,6 @@ def test_compute_legacy_configs(
     }
     assert len(updated_repo_configs) == 1
     assert updated_repo_configs == {"first"}
-
-
-@pytest.mark.parametrize(
-    "dataset,blocked,raises",
-    [
-        ("public", ["public"], True),
-        ("public", ["public", "audio"], True),
-        ("public", ["audio"], False),
-        ("public", [], False),
-    ],
-)
-def test_raise_if_blocked(dataset: str, blocked: list[str], raises: bool) -> None:
-    if raises:
-        with pytest.raises(DatasetInBlockListError):
-            raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
-    else:
-        raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
 
 
 def test_raise_if_requires_manual_download(hub_public_manual_download: str, app_config: AppConfig) -> None:
