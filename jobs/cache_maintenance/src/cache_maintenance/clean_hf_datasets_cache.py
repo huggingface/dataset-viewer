@@ -15,6 +15,9 @@ def clean_hf_datasets_cache(hf_datasets_cache: StrPath, expired_time_interval_se
     """
     Delete temporary cache directories from job runners with datasets cache.
     """
+    # sanity check
+    if len(hf_datasets_cache) < 10:
+        raise RuntimeError(f"Sanity check on hf_datasets_cache failed: len('{hf_datasets_cache}') < 10.")
     logging.info("delete hf datasets cache")
     pattern = f"{hf_datasets_cache}/*"
     logging.info(f"looking for all files and directories with pattern {pattern}")
