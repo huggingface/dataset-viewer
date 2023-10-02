@@ -167,6 +167,9 @@ class ProcessingGraph:
         for name, specification in self.processing_graph_specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
+            provides_config_info = specification.get("provides_config_info", False)
+            if provides_config_info and input_type != "config":
+                raise ValueError(f"Processing step {name} provides config info but its input type is {input_type}.")
             provides_dataset_config_names = specification.get("provides_dataset_config_names", False)
             if provides_dataset_config_names and input_type != "dataset":
                 raise ValueError(
@@ -196,6 +199,7 @@ class ProcessingGraph:
                 enables_preview=specification.get("enables_preview", False),
                 enables_viewer=specification.get("enables_viewer", False),
                 enables_search=specification.get("enables_search", False),
+                provides_config_info=provides_config_info,
                 provides_dataset_config_names=provides_dataset_config_names,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
