@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from contextlib import nullcontext as does_not_raise
+from typing import Any
+
 import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
@@ -39,23 +42,23 @@ def test_is_image_url(text: str, expected: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    "dataset,blocked,raises",
+    "dataset,blocked,expectation",
     [
-        ("public", ["public"], True),
-        ("public", ["public", "audio"], True),
-        ("public", ["pub*"], True),
-        ("public/test", ["public/*"], True),
-        ("public/test", ["*/test"], True),
-        ("public", ["audio"], False),
-        ("public", [], False),
-        ("public", ["*"], False),
-        ("public", ["*/*"], False),
-        ("public", ["**/*"], False),
+        ("public", [""], pytest.raises(ValueError)),
+        ("public", ["a/b/c"], pytest.raises(ValueError)),
+        ("public", ["pub*"], pytest.raises(ValueError)),
+        ("public/test", ["*/test"], pytest.raises(ValueError)),
+        ("public", ["*"], pytest.raises(ValueError)),
+        ("public", ["*/*"], pytest.raises(ValueError)),
+        ("public", ["**/*"], pytest.raises(ValueError)),
+        ("public", ["public"], pytest.raises(DatasetInBlockListError)),
+        ("public", ["public", "audio"], pytest.raises(DatasetInBlockListError)),
+        ("public/test", ["public/*"], pytest.raises(DatasetInBlockListError)),
+        ("public/test", ["public/test"], pytest.raises(DatasetInBlockListError)),
+        ("public", ["audio"], does_not_raise()),
+        ("public", [], does_not_raise()),
     ],
 )
-def test_raise_if_blocked(dataset: str, blocked: list[str], raises: bool) -> None:
-    if raises:
-        with pytest.raises(DatasetInBlockListError):
-            raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
-    else:
+def test_raise_if_blocked(dataset: str, blocked: list[str], expectation: Any) -> None:
+    with expectation:
         raise_if_blocked(dataset=dataset, blocked_datasets=blocked)
