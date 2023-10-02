@@ -61,7 +61,6 @@ from worker.resources import LibrariesResource
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 
-
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
 
