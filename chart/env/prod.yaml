@@ -164,7 +164,7 @@ descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
 
 hfDatasetsCache:
-  expiredTimeIntervalSeconds: 10800  # 3 hours
+  expiredTimeIntervalSeconds: 10800 # 3 hours
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -387,7 +387,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 100
+    replicas: 24
     resources:
       requests:
         cpu: 1
@@ -403,7 +403,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 40
+    replicas: 10
     resources:
       requests:
         cpu: 200m
