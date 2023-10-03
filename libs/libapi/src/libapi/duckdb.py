@@ -95,6 +95,7 @@ def get_cache_entry_from_duckdb_index_job(
     hf_token: Optional[str],
     hf_timeout_seconds: Optional[float],
     cache_max_days: int,
+    blocked_datasets: list[str],
 ) -> CacheEntry:
     processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
     return get_cache_entry_from_steps(
@@ -107,6 +108,7 @@ def get_cache_entry_from_duckdb_index_job(
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
         cache_max_days=cache_max_days,
+        blocked_datasets=blocked_datasets,
     )
 
 

@@ -66,6 +66,7 @@ def create_filter_endpoint(
     s3_client: S3Client,
     cached_assets_s3_folder_name: str,
     cache_max_days: int,
+    blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
@@ -135,6 +136,7 @@ def create_filter_endpoint(
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
+                        blocked_datasets=blocked_datasets,
                     )
                     revision = duckdb_index_cache_entry["dataset_git_revision"]
                     if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
