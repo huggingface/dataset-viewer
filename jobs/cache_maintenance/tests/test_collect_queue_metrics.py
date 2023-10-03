@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.utils import Status
@@ -10,9 +11,8 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 
 def test_collect_queue_metrics() -> None:
     processing_step_name = "test_type"
-    processing_graph = ProcessingGraph(
-        processing_graph_specification={processing_step_name: {"input_type": "dataset", "job_runner_version": 1}}
-    )
+    graph_config = ProcessingGraphConfig({processing_step_name: {"input_type": "dataset", "job_runner_version": 1}})
+    processing_graph = ProcessingGraph(graph_config)
     processing_step = processing_graph.get_processing_step(processing_step_name)
     queue = Queue()
     queue.add_job(

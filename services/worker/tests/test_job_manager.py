@@ -3,6 +3,7 @@ from http import HTTPStatus
 from typing import Optional
 
 import pytest
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import JobDocument, Queue
@@ -117,12 +118,14 @@ def test_check_type(
 )
 def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     graph = ProcessingGraph(
-        {
-            "dummy": {"input_type": "dataset"},
-            "dataset-child": {"input_type": "dataset", "triggered_by": "dummy"},
-            "config-child": {"input_type": "config", "triggered_by": "dummy"},
-            "dataset-unrelated": {"input_type": "dataset"},
-        }
+        ProcessingGraphConfig(
+            {
+                "dummy": {"input_type": "dataset"},
+                "dataset-child": {"input_type": "dataset", "triggered_by": "dummy"},
+                "config-child": {"input_type": "config", "triggered_by": "dummy"},
+                "dataset-unrelated": {"input_type": "dataset"},
+            }
+        )
     )
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
@@ -300,14 +303,16 @@ def test_doesnotexist(app_config: AppConfig) -> None:
     )
     processing_step_name = "dummy"
     processing_graph = ProcessingGraph(
-        {
-            "dataset-level": {"input_type": "dataset"},
-            processing_step_name: {
-                "input_type": "dataset",
-                "job_runner_version": DummyJobRunner.get_job_runner_version(),
-                "triggered_by": "dataset-level",
-            },
-        }
+        ProcessingGraphConfig(
+            {
+                "dataset-level": {"input_type": "dataset"},
+                processing_step_name: {
+                    "input_type": "dataset",
+                    "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                    "triggered_by": "dataset-level",
+                },
+            }
+        )
     )
     processing_step = processing_graph.get_processing_step(processing_step_name)
 

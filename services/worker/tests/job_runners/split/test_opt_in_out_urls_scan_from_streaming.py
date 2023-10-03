@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
+from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
@@ -55,15 +56,17 @@ def get_job_runner(
     ) -> SplitOptInOutUrlsScanJobRunner:
         processing_step_name = SplitOptInOutUrlsScanJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
-                "dataset-level": {"input_type": "dataset"},
-                "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
-                    "triggered_by": "config-level",
-                },
-            }
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": SplitOptInOutUrlsScanJobRunner.get_job_runner_version(),
+                        "triggered_by": "config-level",
+                    },
+                }
+            )
         )
 
         upsert_response(

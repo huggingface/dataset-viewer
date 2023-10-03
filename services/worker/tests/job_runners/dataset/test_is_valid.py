@@ -114,7 +114,7 @@ def get_job_runner(
         app_config: AppConfig,
     ) -> DatasetIsValidJobRunner:
         processing_step_name = DatasetIsValidJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+        processing_graph = ProcessingGraph(app_config.processing_graph)
         return DatasetIsValidJobRunner(
             job_info={
                 "type": DatasetIsValidJobRunner.get_job_type(),

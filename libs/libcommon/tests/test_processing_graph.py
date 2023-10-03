@@ -42,7 +42,7 @@ def test_graph() -> None:
         e: {"input_type": "dataset", "triggered_by": [c], "job_runner_version": 1},
         f: {"input_type": "dataset", "triggered_by": [a, b], "job_runner_version": 1},
     }
-    graph = ProcessingGraph(ProcessingGraphConfig(specification).specification)
+    graph = ProcessingGraph(ProcessingGraphConfig(specification))
 
     assert_step(graph, a, children=[c, d, f], parents=[], ancestors=[])
     assert_step(graph, b, children=[f], parents=[], ancestors=[])
@@ -55,7 +55,7 @@ def test_graph() -> None:
 @pytest.fixture(scope="module")
 def graph() -> ProcessingGraph:
     config = ProcessingGraphConfig()
-    return ProcessingGraph(config.specification)
+    return ProcessingGraph(ProcessingGraphConfig(config.specification))
 
 
 @pytest.mark.parametrize(

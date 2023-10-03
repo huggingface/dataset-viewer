@@ -44,7 +44,7 @@ def test_force_refresh(
     real_client: TestClient,
 ) -> None:
     dataset = "glue"
-    processing_graph = ProcessingGraph(real_app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(real_app_config.processing_graph)
     first_step = processing_graph.get_processing_steps(order="topological")[0]
     path = first_step.job_type
     response = real_client.request("post", f"/force-refresh/{path}?dataset={dataset}")

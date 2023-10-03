@@ -25,6 +25,7 @@ from datasets.packaged_modules.generator.generator import (
 )
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
+from libcommon.config import ProcessingGraphConfig
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
@@ -76,14 +77,16 @@ def get_job_runner(
     ) -> ConfigParquetAndInfoJobRunner:
         processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
-                "dataset-level": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
-                    "triggered_by": "dataset-level",
-                },
-            }
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                        "triggered_by": "dataset-level",
+                    },
+                }
+            )
         )
 
         upsert_response(
@@ -561,12 +564,14 @@ def get_dataset_config_names_job_runner(
     ) -> DatasetConfigNamesJobRunner:
         processing_step_name = DatasetConfigNamesJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+            ProcessingGraphConfig(
+                {
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                    }
                 }
-            }
+            )
         )
         return DatasetConfigNamesJobRunner(
             job_info={
@@ -617,6 +622,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
             input_type="config",
             job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
             difficulty=50,
+            bonus_difficulty_if_dataset_is_big=0,
         ),
         hf_datasets_cache=tmp_path,
     )
@@ -659,13 +665,15 @@ def test_concurrency(
         job_info=job_info,
         app_config=app_config,
         processing_graph=ProcessingGraph(
-            {
-                "dataset-config-names": {
-                    "input_type": "dataset",
-                    "provides_dataset_config_names": True,
-                    "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+            ProcessingGraphConfig(
+                {
+                    "dataset-config-names": {
+                        "input_type": "dataset",
+                        "provides_dataset_config_names": True,
+                        "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                    }
                 }
-            }
+            )
         ),
         job_runner=get_dataset_config_names_job_runner(repo_id, app_config),
     )

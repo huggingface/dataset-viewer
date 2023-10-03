@@ -5,6 +5,7 @@ from http import HTTPStatus
 
 import pytest
 
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
@@ -345,3 +346,80 @@ def test_remove_dataset() -> None:
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == 0
     assert has_some_cache(dataset=DATASET_NAME) is False
+
+
+@pytest.mark.parametrize("is_big", [False, True])
+def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
+    bonus_difficulty_if_dataset_is_big = 10
+    processing_graph = ProcessingGraph(
+        ProcessingGraphConfig(
+            {
+                "dataset_step": {"input_type": "dataset"},
+                "config_with_split_names_step": {
+                    "input_type": "config",
+                    "provides_config_split_names": True,
+                    "triggered_by": "dataset_step",
+                },
+                "config_info_step": {
+                    "input_type": "config",
+                    "provides_config_info": True,
+                    "triggered_by": "dataset_step",
+                },
+                "config_step_with_bonus": {
+                    "input_type": "config",
+                    "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
+                    "triggered_by": "config_info_step",
+                },
+                "split_step_with_bonus": {
+                    "input_type": "split",
+                    "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
+                    "triggered_by": "config_info_step",
+                },
+            },
+            min_bytes_for_bonus_difficulty=1000,
+        )
+    )
+    job_info = artifact_id_to_job_info("config_with_split_names_step,dataset_name,revision_hash,config_name")
+    upsert_response_params(
+        # inputs
+        kind=job_info["type"],
+        job_params=job_info["params"],
+        job_runner_version=1,
+        # output
+        content={"splits": [{"dataset_name": "dataset_name", "config": "config_name", "split": "split_name"}]},
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+    job_info = artifact_id_to_job_info("config_info_step,dataset_name,revision_hash,config_name")
+    upsert_response_params(
+        # inputs
+        kind=job_info["type"],
+        job_params=job_info["params"],
+        job_runner_version=1,
+        # output
+        content={"dataset_info": {"dataset_size": 10000 if is_big else 10}},
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+
+    after_job_plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph)
+    assert len(after_job_plan.job_infos_to_create) == 2
+    config_jobs_with_bonus = [
+        job for job in after_job_plan.job_infos_to_create if job["type"] == "config_step_with_bonus"
+    ]
+    assert len(config_jobs_with_bonus) == 1
+    split_jobs_with_bonus = [
+        job for job in after_job_plan.job_infos_to_create if job["type"] == "split_step_with_bonus"
+    ]
+    assert len(split_jobs_with_bonus) == 1
+
+    if is_big:
+        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
+        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
+    else:
+        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
+        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY

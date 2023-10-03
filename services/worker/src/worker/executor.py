@@ -53,7 +53,7 @@ class WorkerExecutor:
         self.app_config = app_config
         self.job_runner_factory = job_runner_factory
         self.state_file_path = state_file_path
-        self.processing_graph = ProcessingGraph(self.app_config.processing_graph.specification)
+        self.processing_graph = ProcessingGraph(self.app_config.processing_graph)
 
         max_missing_heartbeats = self.app_config.worker.max_missing_heartbeats
         heartbeat_interval_seconds = self.app_config.worker.heartbeat_interval_seconds

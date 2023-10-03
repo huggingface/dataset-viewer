@@ -20,7 +20,7 @@ CACHE_MAX_DAYS = 90
 
 def test_endpoints_definition() -> None:
     config = ProcessingGraphConfig()
-    graph = ProcessingGraph(config.specification)
+    graph = ProcessingGraph(config)
     endpoint_config = EndpointConfig.from_env()
 
     endpoints_definition = EndpointsDefinition(graph, endpoint_config)
@@ -103,7 +103,7 @@ def test_get_cache_entry_from_steps() -> None:
 
     app_config = AppConfig.from_env()
     graph_config = ProcessingGraphConfig()
-    processing_graph = ProcessingGraph(graph_config.specification)
+    processing_graph = ProcessingGraph(graph_config)
 
     cache_with_error = "config-split-names-from-streaming"
     cache_without_error = "config-split-names-from-info"

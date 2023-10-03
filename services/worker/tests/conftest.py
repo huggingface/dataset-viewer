@@ -4,6 +4,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
+from libcommon.config import ProcessingGraphConfig
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -141,10 +142,12 @@ def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def test_processing_graph() -> ProcessingGraph:
     return ProcessingGraph(
-        {
-            "dummy": {"input_type": "dataset"},
-            "dummy2": {"input_type": "dataset"},
-        }
+        ProcessingGraphConfig(
+            {
+                "dummy": {"input_type": "dataset"},
+                "dummy2": {"input_type": "dataset"},
+            }
+        )
     )
 
 

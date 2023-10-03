@@ -20,7 +20,7 @@ from .utils import (
     get_dataset_backfill_plan,
 )
 
-PROCESSING_GRAPH = ProcessingGraph(processing_graph_specification=ProcessingGraphConfig().specification)
+PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig())
 
 
 @pytest.fixture(autouse=True)

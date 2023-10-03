@@ -20,6 +20,7 @@ from libcommon.queue import Queue
 from libcommon.simple_cache import (
     delete_dataset_responses,
     fetch_names,
+    get_best_response,
     get_cache_entries_df,
     has_some_cache,
     upsert_response_params,
@@ -182,6 +183,27 @@ class Plan:
         return sorted(task.id for task in self.tasks)
 
 
+def get_num_bytes_from_config_infos(
+    processing_graph: ProcessingGraph, dataset: str, config: str, split: Optional[str] = None
+) -> Optional[int]:
+    kinds = [processing_step.cache_kind for processing_step in processing_graph.get_config_info_processing_steps()]
+    resp = get_best_response(kinds=kinds, dataset=dataset, config=config).response
+    if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
+        dataset_info = resp["content"]["dataset_info"]
+        if split is None:
+            num_bytes = dataset_info.get("dataset_size")
+            if isinstance(num_bytes, int):
+                return num_bytes
+        elif "splits" in dataset_info and isinstance(dataset_info["splits"], dict):
+            split_infos = dataset_info["splits"]
+            if split in split_infos and isinstance(split_infos[split], dict):
+                split_info = split_infos[split]
+                num_bytes = split_info.get("num_bytes")
+                if isinstance(num_bytes, int):
+                    return num_bytes
+    return None
+
+
 @dataclass
 class AfterJobPlan(Plan):
     """
@@ -219,6 +241,14 @@ class AfterJobPlan(Plan):
         if len(next_processing_steps) == 0:
             # no next processing step, nothing to do
             return
+
+        # get the dataset infos to estimate difficulty
+        if config is not None:
+            self.num_bytes = get_num_bytes_from_config_infos(
+                processing_graph=self.processing_graph, dataset=self.dataset, config=config, split=split
+            )
+        else:
+            self.num_bytes = None
 
         # get the list of pending jobs for the children
         # note that it can contain a lot of unrelated jobs, we will clean after
@@ -321,6 +351,9 @@ class AfterJobPlan(Plan):
             self.pending_jobs_df.drop(ok_jobs_mask.idxmax(), inplace=True)
         else:
             # no pending job for the current processing step
+            difficulty = next_processing_step.difficulty
+            if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
+                difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
@@ -332,7 +365,7 @@ class AfterJobPlan(Plan):
                         "revision": self.revision,
                     },
                     "priority": self.priority,
-                    "difficulty": next_processing_step.difficulty,
+                    "difficulty": difficulty,
                 }
             )
 

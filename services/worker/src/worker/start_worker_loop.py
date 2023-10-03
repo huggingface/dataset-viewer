@@ -34,7 +34,7 @@ if __name__ == "__main__":
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
-    processing_graph = ProcessingGraph(app_config.processing_graph.specification)
+    processing_graph = ProcessingGraph(app_config.processing_graph)
 
     with (
         LibrariesResource(

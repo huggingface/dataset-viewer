@@ -14,6 +14,7 @@ import pytest
 from datasets import Dataset, Features, Value
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
+from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.parquet_utils import ParquetIndexWithMetadata
 from libcommon.processing_graph import ProcessingGraph
@@ -59,14 +60,16 @@ def get_job_runner(
     ) -> ConfigParquetMetadataJobRunner:
         processing_step_name = ConfigParquetMetadataJobRunner.get_job_type()
         processing_graph = ProcessingGraph(
-            {
-                "dataset-level": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": ConfigParquetMetadataJobRunner.get_job_runner_version(),
-                    "triggered_by": "dataset-level",
-                },
-            }
+            ProcessingGraphConfig(
+                {
+                    "dataset-level": {"input_type": "dataset"},
+                    processing_step_name: {
+                        "input_type": "dataset",
+                        "job_runner_version": ConfigParquetMetadataJobRunner.get_job_runner_version(),
+                        "triggered_by": "dataset-level",
+                    },
+                }
+            )
         )
 
         upsert_response(

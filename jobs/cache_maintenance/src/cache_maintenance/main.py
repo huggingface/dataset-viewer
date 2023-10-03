@@ -43,7 +43,7 @@ def run_job() -> None:
             logging.warning("The connection to the queue database could not be established. The action is skipped.")
             return
 
-        processing_graph = ProcessingGraph(job_config.graph.specification)
+        processing_graph = ProcessingGraph(job_config.graph)
         start_time = datetime.now()
         if action == "backfill":
             backfill_cache(

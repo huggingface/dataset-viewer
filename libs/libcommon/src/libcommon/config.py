@@ -4,11 +4,12 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from environs import Env
 
 from libcommon.constants import (
+    MIN_BYTES_FOR_BONUS_DIFFICULTY,
     PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_IS_VALID_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -35,7 +36,9 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
-from libcommon.processing_graph import ProcessingGraphSpecification
+
+if TYPE_CHECKING:
+    from libcommon.processing_graph import ProcessingGraphSpecification
 
 ASSETS_BASE_URL = "assets"
 ASSETS_STORAGE_DIRECTORY = None
@@ -208,7 +211,7 @@ class QueueConfig:
 
 @dataclass(frozen=True)
 class ProcessingGraphConfig:
-    specification: ProcessingGraphSpecification = field(
+    specification: "ProcessingGraphSpecification" = field(
         default_factory=lambda: {
             "dataset-config-names": {
                 "input_type": "dataset",
@@ -268,6 +271,7 @@ class ProcessingGraphConfig:
                 "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
                 "difficulty": 20,
+                "provides_config_info": True,
             },
             "dataset-info": {
                 "input_type": "dataset",
@@ -389,6 +393,7 @@ class ProcessingGraphConfig:
                 "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
+                "bonus_difficulty_if_dataset_is_big": 20,
             },
             "dataset-hub-cache": {
                 "input_type": "dataset",
@@ -398,6 +403,7 @@ class ProcessingGraphConfig:
             },
         }
     )
+    min_bytes_for_bonus_difficulty: int = MIN_BYTES_FOR_BONUS_DIFFICULTY
 
     @classmethod
     def from_env(cls) -> "ProcessingGraphConfig":
