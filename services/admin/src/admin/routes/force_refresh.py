@@ -4,9 +4,11 @@
 import logging
 from typing import Optional
 
+from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import InputType
+from libcommon.orchestrator import get_num_bytes_from_config_infos
+from libcommon.processing_graph import InputType, ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.utils import Priority
 from starlette.requests import Request
@@ -28,6 +30,8 @@ def create_force_refresh_endpoint(
     input_type: InputType,
     job_type: str,
     difficulty: int,
+    bonus_difficulty_if_dataset_is_big: int,
+    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -62,6 +66,14 @@ def create_force_refresh_endpoint(
                 f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}, priority={priority}"
             )
 
+            total_difficulty = difficulty
+            if config is not None:
+                num_bytes = get_num_bytes_from_config_infos(
+                    processing_graph=processing_graph, dataset=dataset, config=config, split=split
+                )
+                if num_bytes is not None and num_bytes > MIN_BYTES_FOR_BONUS_DIFFICULTY:
+                    total_difficulty += bonus_difficulty_if_dataset_is_big
+
             # if auth_check fails, it will raise an exception that will be caught below
             auth_check(
                 external_auth_url=external_auth_url,
@@ -73,7 +85,7 @@ def create_force_refresh_endpoint(
             # we directly create a job, without even checking if the dataset is blocked.
             Queue().add_job(
                 job_type=job_type,
-                difficulty=difficulty,
+                difficulty=total_difficulty,
                 dataset=dataset,
                 revision=revision,
                 config=config,

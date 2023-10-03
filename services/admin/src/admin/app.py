@@ -208,6 +208,8 @@ def create_app() -> Starlette:
                         input_type=input_type,
                         job_type=job_type,
                         difficulty=processing_step.difficulty,
+                        bonus_difficulty_if_dataset_is_big=processing_step.bonus_difficulty_if_dataset_is_big,
+                        processing_graph=processing_graph,
                         hf_endpoint=app_config.common.hf_endpoint,
                         hf_token=app_config.common.hf_token,
                         external_auth_url=app_config.admin.external_auth_url,
