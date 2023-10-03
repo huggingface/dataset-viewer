@@ -124,7 +124,8 @@ def audio(
         audio_file_extension = ".wav"
     else:
         raise ValueError(
-            f"An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got {value}."
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {', '.join(value)}."
         )
 
     if "bytes" in value and isinstance(value["bytes"], bytes):
