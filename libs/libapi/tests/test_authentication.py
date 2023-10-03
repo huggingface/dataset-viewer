@@ -175,7 +175,7 @@ def create_request(headers: Mapping[str, str]) -> Request:
 
 def get_jwt(dataset: str) -> str:
     return jwt.encode(
-        {"sub": f"datasets/{dataset}", "read": read_ok, "exp": exp_ok}, private_key, algorithm=algorithm_rs256
+        {"sub": f"/datasets/{dataset}", "read": read_ok, "exp": exp_ok}, private_key, algorithm=algorithm_rs256
     )
 
 
