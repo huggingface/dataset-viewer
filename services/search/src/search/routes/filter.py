@@ -220,7 +220,9 @@ def execute_filter_query(
     index_file_location: str, columns: list[str], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
-        filter_query = FILTER_QUERY.format(columns=",".join(columns), where=where, limit=limit, offset=offset)
+        filter_query = FILTER_QUERY.format(
+            columns=",".join([f'"{column}"' for column in columns]), where=where, limit=limit, offset=offset
+        )
         try:
             pa_table = con.sql(filter_query).arrow()
         except duckdb.Error:
