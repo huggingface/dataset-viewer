@@ -78,7 +78,6 @@ def test_execute_filter_query_raises(where: str, index_file_location: str) -> No
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
-    offset = 2
     pa_table = pa.Table.from_pydict(
         {
             "__hf_index_id": [2, 3, 4, 5],
@@ -102,7 +101,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         s3_client=s3_client,
         cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
         pa_table=pa_table,
-        offset=offset,
+        offset=0,
         features=ds.features,
         unsupported_columns=[],
         num_rows_total=4,
