@@ -81,6 +81,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
     offset = 2
     pa_table = pa.Table.from_pydict(
         {
+            "__hf_index_id": [2, 3, 4, 5],
             "name": ["Marie", "Paul", "Leo", "Simone"],
             "gender": ["female", "male", "male", "female"],
             "age": [35, 30, 25, 30],
@@ -105,6 +106,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         features=ds.features,
         unsupported_columns=[],
         num_rows_total=4,
+        use_row_idx_column=True,
     )
     assert response == {
         "features": [

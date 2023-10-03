@@ -10,6 +10,8 @@ from libcommon.viewer_utils.features import to_features_list
 
 from libapi.utils import to_rows_list
 
+ROW_IDX_COLUMN = "__hf_index_id"
+
 
 def create_response(
     dataset: str,
@@ -24,6 +26,7 @@ def create_response(
     features: Features,
     unsupported_columns: list[str],
     num_rows_total: int,
+    use_row_idx_column: bool = False,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -48,6 +51,7 @@ def create_response(
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
+            row_idx_column=ROW_IDX_COLUMN if use_row_idx_column else None,
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,

@@ -20,7 +20,7 @@ from libapi.exceptions import (
     InvalidParameterError,
     MissingRequiredParameterError,
 )
-from libapi.response import create_response
+from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -165,7 +165,7 @@ def create_filter_endpoint(
                             {
                                 name: feature
                                 for name, feature in duckdb_index_cache_entry["content"]["features"].items()
-                                if name != "__hf_index_id"
+                                if name != ROW_IDX_COLUMN
                             }
                         )
                     except (KeyError, AttributeError):
@@ -205,6 +205,7 @@ def create_filter_endpoint(
                         features=features,
                         unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
+                        use_row_idx_column=True,
                     )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)

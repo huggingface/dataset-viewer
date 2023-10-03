@@ -21,6 +21,7 @@ from libapi.exceptions import (
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
+from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -42,8 +43,6 @@ from libcommon.viewer_utils.features import (
 )
 from starlette.requests import Request
 from starlette.responses import Response
-
-ROW_IDX_COLUMN = "__hf_index_id"
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"
