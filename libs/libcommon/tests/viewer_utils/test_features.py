@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import datetime
+import os
 from collections.abc import Mapping
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -86,6 +87,24 @@ def test_value(
         storage_options=storage_options,
     )
     assert value == output_value
+
+
+def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageOptions) -> None:
+    if isinstance(value, list):
+        for item in value:
+            assert_output_has_valid_files(item, storage_options=storage_options)
+    elif isinstance(value, dict):
+        if (
+            "src" in value
+            and isinstance(value["src"], str)
+            and value["src"].startswith(storage_options.assets_base_url)
+        ):
+            path = os.path.join(
+                storage_options.assets_directory,
+                value["src"][len(storage_options.assets_base_url) + 1 :],  # noqa: E203
+            )
+            assert os.path.exists(path)
+            assert os.path.getsize(path) > 0
 
 
 @pytest.mark.parametrize(
@@ -299,6 +318,7 @@ def test_others(
         assert feature == output_type
     else:
         assert feature._type == output_type
+    # decoded
     value = get_cell_value(
         dataset="dataset",
         config="config",
@@ -310,6 +330,20 @@ def test_others(
         storage_options=storage_options,
     )
     assert value == output_value
+    assert_output_has_valid_files(output_value, storage_options=storage_options)
+    # encoded
+    value = get_cell_value(
+        dataset="dataset",
+        config="config",
+        split="split",
+        row_idx=7,
+        cell=dataset.with_format("arrow")[0].to_pydict()["col"][0],
+        featureName="col",
+        fieldType=feature,
+        storage_options=storage_options,
+    )
+    assert value == output_value
+    assert_output_has_valid_files(output_value, storage_options=storage_options)
 
 
 def test_get_supported_unsupported_columns() -> None:

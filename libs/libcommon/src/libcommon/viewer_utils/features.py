@@ -120,12 +120,12 @@ def audio(
             raise ValueError(
                 f"An audio sample should have a 'path' with a valid extension but got '{audio_file_extension}'."
             )
-    elif "array" in value:
+    elif ("path" in value and value["path"] is None) or "array" in value:
         audio_file_extension = ".wav"
     else:
         raise ValueError(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {','.join(value)}."
+            f" {', '.join(value)}."
         )
 
     if "bytes" in value and isinstance(value["bytes"], bytes):
@@ -141,11 +141,11 @@ def audio(
     ):
         buffer = BytesIO()
         soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
-        audio_file_bytes = buffer.read()
+        audio_file_bytes = buffer.getvalue()
     else:
         raise ValueError(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {','.join(value)}."
+            f" {', '.join(value)}."
         )
 
     # convert to wav if the file is not wav or mp3 already
