@@ -240,6 +240,8 @@ def validate_jwt(
 
     The JWT is decoded with the public key, and the payload must be:
       {"sub": "datasets/<...dataset identifier...>", "read": true, "exp": <...date...>}
+    or
+      {"sub": "/datasets/<...dataset identifier...>", "read": true, "exp": <...date...>}
 
     Raise an exception if any of the condition is not met.
 
@@ -292,10 +294,13 @@ def validate_jwt(
         except Exception as e:
             raise UnexpectedApiError("An error has occurred while decoding the JWT.", e) from e
     sub = decoded.get("sub")
-    if not isinstance(sub, str) or not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset:
+    if not isinstance(sub, str) or (
+        (not sub.startswith("datasets/") or sub.removeprefix("datasets/") != dataset)
+        and (not sub.startswith("/datasets/") or sub.removeprefix("/datasets/") != dataset)
+    ):
         raise JWTInvalidClaimSub(
             "The 'sub' claim in JWT payload is invalid. It should be in the form 'datasets/<...dataset"
-            " identifier...>'."
+            " identifier...>' or '/datasets/<...dataset identifier...>'."
         )
     read = decoded.get("read")
     if read is not True:
