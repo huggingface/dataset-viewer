@@ -100,7 +100,8 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             and value["src"].startswith(storage_options.assets_base_url)
         ):
             path = os.path.join(
-                storage_options.assets_directory, value["src"][len(storage_options.assets_base_url) + 1 :]
+                storage_options.assets_directory,
+                value["src"][len(storage_options.assets_base_url) + 1 :],  # noqa: E203
             )
             assert os.path.exists(path)
             assert os.path.getsize(path) > 0
