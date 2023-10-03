@@ -256,17 +256,20 @@ def compute_categorical_statistics(
     )  # dict {idx: num_samples}; idx might be also None for null values and -1 for `no label`
     nan_count = ids2counts.pop(None, 0)
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
-    labels2counts: dict[str, int] = {class_label_feature.int2str(cat_id): freq for cat_id, freq in ids2counts.items()}
-    n_unique = len(labels2counts)
-    if n_unique != len(class_label_feature.names):
+    num_classes = len(class_label_feature.names)
+    labels2counts: dict[str, int] = {
+        class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
+    }
+    n_unique_computed = len(ids2counts)
+    if n_unique_computed > num_classes:
         raise StatisticsComputationError(
             f"Got unexpected result during classes distribution computation for {column_name=}: computed number of"
-            f" classes don't match with feature's num_classes. {n_unique=} {len(class_label_feature.names)=}. "
+            f" classes don't match with feature's num_classes. {n_unique_computed=} {num_classes=}. "
         )
     no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
     logging.debug(
-        f"{nan_count=}, {nan_proportion=}, {n_unique}, {no_label_count=}, {no_label_proportion=},"
+        f"{nan_count=}, {nan_proportion=}, {n_unique_computed}, {no_label_count=}, {no_label_proportion=},"
         f" frequencies={labels2counts}."
     )
 
@@ -275,7 +278,7 @@ def compute_categorical_statistics(
         nan_proportion=nan_proportion,
         no_label_count=no_label_count,
         no_label_proportion=no_label_proportion,
-        n_unique=n_unique,
+        n_unique=num_classes,
         frequencies=labels2counts,
     )
 

@@ -70,7 +70,6 @@ Also, set the assets-related configuration for the first-rows worker. See [../..
 
 Set environment variables to configure the `parquet-and-info` worker (`PARQUET_AND_INFO_` prefix):
 
-- `PARQUET_AND_INFO_BLOCKED_DATASETS`: comma-separated list of the blocked datasets. If empty, no dataset is blocked. Defaults to empty.
 - `PARQUET_AND_INFO_COMMIT_MESSAGE`: the git commit message when the worker uploads the parquet files to the Hub. Defaults to `Update parquet files`.
 - `PARQUET_AND_INFO_COMMITTER_HF_TOKEN`: the HuggingFace token to commit the parquet files to the Hub. The token must be an app token associated with a user that has the right to 1. create the `refs/convert/parquet` branch (see `PARQUET_AND_INFO_TARGET_REVISION`) and 2. push commits to it on any dataset. [Datasets maintainers](https://huggingface.co/datasets-maintainers) members have these rights. The token must have permission to write. If not set, the worker will fail. Defaults to None.
 - `PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS`: comma-separated list of datasets that are fully converted to parquet (no partial conversion). Defaults to `""`.

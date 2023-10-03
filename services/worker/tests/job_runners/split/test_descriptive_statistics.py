@@ -200,16 +200,16 @@ def count_expected_statistics_for_categorical_column(
     nan_count = column.isna().sum()
     value_counts = column.value_counts(dropna=True).to_dict()
     no_label_count = int(value_counts.pop(NO_LABEL_VALUE, 0))
-    n_unique = len(value_counts)
+    num_classes = len(class_label_feature.names)
     frequencies = {
-        class_label_feature.int2str(int(class_id)): class_count for class_id, class_count in value_counts.items()
+        class_label_feature.int2str(int(class_id)): value_counts.get(class_id, 0) for class_id in range(num_classes)
     }
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
         "no_label_count": no_label_count,
         "no_label_proportion": np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count else 0.0,
-        "n_unique": n_unique,
+        "n_unique": num_classes,
         "frequencies": frequencies,
     }
 

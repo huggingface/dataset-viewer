@@ -63,6 +63,7 @@ def process_payload(
     processing_graph: ProcessingGraph,
     payload: MoonWebhookV2Payload,
     cache_max_days: int,
+    blocked_datasets: list[str],
     trust_sender: bool = False,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
@@ -86,6 +87,7 @@ def process_payload(
             processing_graph=processing_graph,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
+            blocked_datasets=blocked_datasets,
         )
     elif event == "move" and (moved_to := payload["movedTo"]):
         # destructive actions (delete, move) require a trusted sender
@@ -96,12 +98,16 @@ def process_payload(
                 processing_graph=processing_graph,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,
+                blocked_datasets=blocked_datasets,
             )
             delete_dataset(dataset=dataset)
 
 
 def create_webhook_endpoint(
-    processing_graph: ProcessingGraph, cache_max_days: int, hf_webhook_secret: Optional[str] = None
+    processing_graph: ProcessingGraph,
+    cache_max_days: int,
+    blocked_datasets: list[str],
+    hf_webhook_secret: Optional[str] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         with StepProfiler(method="webhook_endpoint", step="all"):
@@ -142,6 +148,7 @@ def create_webhook_endpoint(
                         payload=payload,
                         trust_sender=trust_sender,
                         cache_max_days=cache_max_days,
+                        blocked_datasets=blocked_datasets,
                     )
                 except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}

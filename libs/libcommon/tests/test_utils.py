@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from contextlib import nullcontext as does_not_raise
+from typing import Any
+
 import pytest
 
-from libcommon.utils import inputs_to_string, is_image_url
+from libcommon.exceptions import DatasetInBlockListError
+from libcommon.utils import inputs_to_string, is_image_url, raise_if_blocked
 
 
 @pytest.mark.parametrize(
@@ -35,3 +39,26 @@ def test_inputs_to_string(dataset: str, revision: str, config: str, split: str, 
 )
 def test_is_image_url(text: str, expected: bool) -> None:
     assert is_image_url(text=text) == expected
+
+
+@pytest.mark.parametrize(
+    "dataset,blocked,expectation",
+    [
+        ("public", [""], pytest.raises(ValueError)),
+        ("public", ["a/b/c"], pytest.raises(ValueError)),
+        ("public", ["pub*"], pytest.raises(ValueError)),
+        ("public/test", ["*/test"], pytest.raises(ValueError)),
+        ("public", ["*"], pytest.raises(ValueError)),
+        ("public", ["*/*"], pytest.raises(ValueError)),
+        ("public", ["**/*"], pytest.raises(ValueError)),
+        ("public", ["public"], pytest.raises(DatasetInBlockListError)),
+        ("public", ["public", "audio"], pytest.raises(DatasetInBlockListError)),
+        ("public/test", ["public/*"], pytest.raises(DatasetInBlockListError)),
+        ("public/test", ["public/test"], pytest.raises(DatasetInBlockListError)),
+        ("public", ["audio"], does_not_raise()),
+        ("public", [], does_not_raise()),
+    ],
+)
+def test_raise_if_blocked(dataset: str, blocked: list[str], expectation: Any) -> None:
+    with expectation:
+        raise_if_blocked(dataset=dataset, blocked_datasets=blocked)

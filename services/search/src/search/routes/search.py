@@ -129,6 +129,7 @@ def create_search_endpoint(
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     external_auth_url: Optional[str] = None,
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
@@ -199,6 +200,7 @@ def create_search_endpoint(
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
+                        blocked_datasets=blocked_datasets,
                     )
                     revision = duckdb_index_cache_entry["dataset_git_revision"]
                     if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:

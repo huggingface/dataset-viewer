@@ -196,6 +196,7 @@ def create_endpoint(
     processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
+    blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -267,6 +268,7 @@ def create_endpoint(
                         processing_graph=processing_graph,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
+                        blocked_datasets=blocked_datasets,
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
                     )

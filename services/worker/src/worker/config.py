@@ -16,7 +16,6 @@ from libcommon.config import (
     RowsIndexConfig,
 )
 
-WORKER_BLOCKED_DATASETS: list[str] = []
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_DIFFICULTY_MAX = None
 WORKER_DIFFICULTY_MIN = None
@@ -38,7 +37,6 @@ def get_empty_str_list() -> list[str]:
 
 @dataclass(frozen=True)
 class WorkerConfig:
-    blocked_datasets: list[str] = field(default_factory=WORKER_BLOCKED_DATASETS.copy)
     content_max_bytes: int = WORKER_CONTENT_MAX_BYTES
     difficulty_max: Optional[int] = WORKER_DIFFICULTY_MAX
     difficulty_min: Optional[int] = WORKER_DIFFICULTY_MIN
@@ -61,7 +59,6 @@ class WorkerConfig:
         env = Env(expand_vars=True)
         with env.prefixed("WORKER_"):
             return cls(
-                blocked_datasets=env.list(name="BLOCKED_DATASETS", default=WORKER_BLOCKED_DATASETS.copy()),
                 content_max_bytes=env.int(name="CONTENT_MAX_BYTES", default=WORKER_CONTENT_MAX_BYTES),
                 difficulty_max=env.int(name="DIFFICULTY_MAX", default=WORKER_DIFFICULTY_MAX),
                 difficulty_min=env.int(name="DIFFICULTY_MIN", default=WORKER_DIFFICULTY_MIN),
@@ -188,7 +185,6 @@ PARQUET_AND_INFO_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 
 @dataclass(frozen=True)
 class ParquetAndInfoConfig:
-    blocked_datasets: list[str] = field(default_factory=get_empty_str_list)
     commit_message: str = PARQUET_AND_INFO_COMMIT_MESSAGE
     committer_hf_token: Optional[str] = PARQUET_AND_INFO_COMMITTER_HF_TOKEN
     max_dataset_size: int = PARQUET_AND_INFO_MAX_DATASET_SIZE
@@ -204,7 +200,6 @@ class ParquetAndInfoConfig:
         env = Env(expand_vars=True)
         with env.prefixed("PARQUET_AND_INFO_"):
             return cls(
-                blocked_datasets=env.list(name="BLOCKED_DATASETS", default=get_empty_str_list()),
                 commit_message=env.str(name="COMMIT_MESSAGE", default=PARQUET_AND_INFO_COMMIT_MESSAGE),
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=PARQUET_AND_INFO_COMMITTER_HF_TOKEN),
                 max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=PARQUET_AND_INFO_MAX_DATASET_SIZE),

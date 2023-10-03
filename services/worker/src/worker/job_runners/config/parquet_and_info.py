@@ -7,7 +7,6 @@ import os
 import re
 from collections.abc import Callable, Generator
 from contextlib import ExitStack
-from fnmatch import fnmatch
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from types import TracebackType
@@ -55,7 +54,6 @@ from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
-    DatasetInBlockListError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithTooManyParquetFilesError,
@@ -168,35 +166,6 @@ def create_parquet_file_item(
         "filename": Path(repo_file.rfilename).name,
         "size": repo_file.size,
     }
-
-
-def raise_if_blocked(
-    dataset: str,
-    blocked_datasets: list[str],
-) -> None:
-    """
-    Raise an error if the dataset is in the list of blocked datasets
-
-    Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-        blocked_datasets (`list[str]`):
-            The list of blocked datasets. If empty, no dataset is blocked.
-            Patterns are supported, e.g. "open-llm-leaderboard/*"
-
-    Returns:
-        `None`
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
-    """
-    for blocked_dataset in blocked_datasets:
-        if fnmatch(dataset, blocked_dataset):
-            raise DatasetInBlockListError(
-                "The parquet conversion has been disabled for this dataset for now. Please open an issue in"
-                " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
-            )
 
 
 def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
@@ -1115,7 +1084,6 @@ def compute_config_parquet_and_info_response(
     target_revision: str,
     commit_message: str,
     url_template: str,
-    blocked_datasets: list[str],
     max_dataset_size: int,
     max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
@@ -1147,8 +1115,6 @@ def compute_config_parquet_and_info_response(
             The commit message to use when storing the parquet files
         url_template (`str`):
             The template to use to build the parquet file url
-        blocked_datasets (`list[str]`):
-            The list of blocked datasets. If empty, no dataset is blocked.
         max_dataset_size (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
@@ -1170,8 +1136,6 @@ def compute_config_parquet_and_info_response(
             If the previous step gave an error.
         - [`libcommon.exceptions.CreateCommitError`]:
           If one of the commits could not be created on the Hub.
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
         - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
@@ -1206,8 +1170,6 @@ def compute_config_parquet_and_info_response(
             If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
-
-    raise_if_blocked(dataset=dataset, blocked_datasets=blocked_datasets)
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"
@@ -1384,7 +1346,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 target_revision=self.parquet_and_info_config.target_revision,
                 commit_message=self.parquet_and_info_config.commit_message,
                 url_template=self.parquet_and_info_config.url_template,
-                blocked_datasets=self.parquet_and_info_config.blocked_datasets,
                 max_dataset_size=self.parquet_and_info_config.max_dataset_size,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
