@@ -380,21 +380,37 @@ sseApi:
       memory: "4Gi"
 
 workers:
-  - deployName: "all"
+  - deployName: "heavy"
+    workerDifficultyMax: 100
+    workerDifficultyMin: 0
+    workerJobTypesBlocked: ""
+    workerJobTypesOnly: ""
+    nodeSelector:
+      role-datasets-server-worker: "true"
+    replicas: 4
+    resources:
+      requests:
+        cpu: 2
+        memory: "29Gi"
+      limits:
+        cpu: 2
+        memory: "29Gi"
+    tolerations: []
+  - deployName: "medium"
     workerDifficultyMax: 70
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 24
+    replicas: 20
     resources:
       requests:
         cpu: 1
-        memory: "29Gi"
+        memory: "14Gi"
       limits:
         cpu: 2
-        memory: "29Gi"
+        memory: "14Gi"
     tolerations: []
   - deployName: "light"
     workerDifficultyMax: 40
