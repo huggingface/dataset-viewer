@@ -349,7 +349,7 @@ def test_remove_dataset() -> None:
 
 
 @pytest.mark.parametrize("is_big", [False, True])
-def test_after_joplan_gives_bonus_difficulty(is_big: bool) -> None:
+def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
     bonus_difficulty_if_dataset_is_big = 10
     processing_graph = ProcessingGraph(
         ProcessingGraphConfig(
