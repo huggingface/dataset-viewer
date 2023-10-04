@@ -224,12 +224,12 @@ def execute_filter_query(
         filter_query = FILTER_QUERY.format(
             columns=",".join([f'"{column}"' for column in columns]), where=where, limit=limit, offset=offset
         )
+        filter_count_query = FILTER_COUNT_QUERY.format(where=where)
         try:
             pa_table = con.sql(filter_query).arrow()
+            num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
         except duckdb.Error:
             raise InvalidParameterError(message="Parameter 'where' is invalid")
-        filter_count_query = FILTER_COUNT_QUERY.format(where=where)
-        num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
     return num_rows_total, pa_table
 
 
