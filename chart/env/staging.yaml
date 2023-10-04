@@ -183,6 +183,57 @@ cacheMaintenance:
 # --- cron jobs  ---
 backfill:
   enabled: false
+  nodeSelector:
+    project: "datasets-server"
+  tolerations:
+    - key: huggingface.co/project
+      operator: Equal
+      value: datasets-server
+      effect: NoSchedule
+    - key: karpenter.sh/capacity-type
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
+cleanHfDatasetsCache:
+  nodeSelector:
+    project: "datasets-server"
+  tolerations:
+    - key: huggingface.co/project
+      operator: Equal
+      value: datasets-server
+      effect: NoSchedule
+    - key: karpenter.sh/capacity-type
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
+deleteIndexes:
+  nodeSelector:
+    project: "datasets-server"
+  tolerations:
+    - key: huggingface.co/project
+      operator: Equal
+      value: datasets-server
+      effect: NoSchedule
+    - key: karpenter.sh/capacity-type
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
+postMessages:
+  nodeSelector:
+    project: "datasets-server"
+  tolerations:
+    - key: huggingface.co/project
+      operator: Equal
+      value: datasets-server
+      effect: NoSchedule
+    - key: karpenter.sh/capacity-type
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
@@ -194,6 +245,19 @@ queueMetricsCollector:
     limits:
       cpu: 1
       memory: "512Mi"
+  nodeSelector:
+    project: "datasets-server"
+  tolerations:
+    - key: huggingface.co/project
+      operator: Equal
+      value: datasets-server
+      effect: NoSchedule
+    - key: karpenter.sh/capacity-type
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
+cacheMetricsCollector:
   nodeSelector:
     project: "datasets-server"
   tolerations:
