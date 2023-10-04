@@ -38,10 +38,10 @@ if __name__ == "__main__":
 
         processing_graph = ProcessingGraph(app_config.processing_graph)
         s3_client = S3Client(
-            aws_access_key_id=app_config.assets_s3.access_key_id,
-            aws_secret_access_key=app_config.assets_s3.secret_access_key,
-            region_name=app_config.assets_s3.region,
-            bucket_name=app_config.assets_s3.bucket,
+            aws_access_key_id=app_config.s3.access_key_id,
+            aws_secret_access_key=app_config.s3.secret_access_key,
+            region_name=app_config.s3.region,
+            bucket_name=app_config.s3.bucket,
         )
 
         with (

@@ -42,12 +42,14 @@ if TYPE_CHECKING:
 
 ASSETS_BASE_URL = "assets"
 ASSETS_STORAGE_DIRECTORY = None
+ASSETS_S3_FOLDER_NAME = "assets"
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
     storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
+    s3_folder_name: str = ASSETS_S3_FOLDER_NAME
 
     @classmethod
     def from_env(cls) -> "AssetsConfig":
@@ -56,6 +58,32 @@ class AssetsConfig:
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORAGE_DIRECTORY),
+                s3_folder_name=env.str(name="S3_FOLDER_NAME", default=ASSETS_S3_FOLDER_NAME),
+            )
+
+
+S3_BUCKET = "hf-datasets-server-statics"
+S3_ACCESS_KEY_ID = None
+S3_SECRET_ACCESS_KEY = None
+S3_REGION = "us-east-1"
+
+
+@dataclass(frozen=True)
+class S3Config:
+    bucket: str = S3_BUCKET
+    access_key_id: Optional[str] = S3_ACCESS_KEY_ID
+    secret_access_key: Optional[str] = S3_SECRET_ACCESS_KEY
+    region: str = S3_REGION
+
+    @classmethod
+    def from_env(cls) -> "S3Config":
+        env = Env(expand_vars=True)
+        with env.prefixed("S3_"):
+            return cls(
+                bucket=env.str(name="BUCKET", default=S3_BUCKET),
+                access_key_id=env.str(name="ACCESS_KEY_ID", default=S3_ACCESS_KEY_ID),
+                secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=S3_SECRET_ACCESS_KEY),
+                region=env.str(name="REGION", default=S3_REGION),
             )
 
 
@@ -65,6 +93,7 @@ CACHED_ASSETS_CLEAN_CACHE_PROBA = 0.05
 CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER = 100
 CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER = 200
 CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER = 10_000
+CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
 
 
 @dataclass(frozen=True)
@@ -75,6 +104,7 @@ class CachedAssetsConfig:
     keep_first_rows_number: int = CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
     keep_most_recent_rows_number: int = CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER
     max_cleaned_rows_number: int = CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
+    s3_folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
 
     @classmethod
     def from_env(cls) -> "CachedAssetsConfig":
@@ -93,6 +123,7 @@ class CachedAssetsConfig:
                 max_cleaned_rows_number=env.float(
                     name="MAX_CLEAN_SAMPLE_SIZE", default=CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
                 ),
+                s3_folder_name=env.str(name="S3_FOLDER_NAME", default=CACHED_ASSETS_S3_FOLDER_NAME),
             )
 
 

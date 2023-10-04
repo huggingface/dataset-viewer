@@ -285,7 +285,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
             assets_directory=self.assets_directory,
             overwrite=True,
             s3_client=s3_client,
-            s3_folder_name=app_config.assets_s3.folder_name,
+            s3_folder_name=app_config.assets.s3_folder_name,
         )
 
     def compute(self) -> CompleteJobResult:

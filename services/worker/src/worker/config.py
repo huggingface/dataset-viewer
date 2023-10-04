@@ -14,6 +14,7 @@ from libcommon.config import (
     ProcessingGraphConfig,
     QueueConfig,
     RowsIndexConfig,
+    S3Config,
 )
 
 WORKER_CONTENT_MAX_BYTES = 10_000_000
@@ -314,38 +315,9 @@ class DescriptiveStatisticsConfig:
             )
 
 
-ASSETS_S3_BUCKET = "hf-datasets-server-statics"
-ASSETS_S3_ACCESS_KEY_ID = None
-ASSETS_S3_SECRET_ACCESS_KEY = None
-ASSETS_S3_REGION = "us-east-1"
-ASSETS_S3_FOLDER_NAME = "assets"
-
-
-@dataclass(frozen=True)
-class AssetsS3Config:
-    bucket: str = ASSETS_S3_BUCKET
-    access_key_id: Optional[str] = ASSETS_S3_ACCESS_KEY_ID
-    secret_access_key: Optional[str] = ASSETS_S3_SECRET_ACCESS_KEY
-    region: str = ASSETS_S3_REGION
-    folder_name: str = ASSETS_S3_FOLDER_NAME
-
-    @classmethod
-    def from_env(cls) -> "AssetsS3Config":
-        env = Env(expand_vars=True)
-        with env.prefixed("ASSETS_S3_"):
-            return cls(
-                bucket=env.str(name="BUCKET", default=ASSETS_S3_BUCKET),
-                access_key_id=env.str(name="ACCESS_KEY_ID", default=ASSETS_S3_ACCESS_KEY_ID),
-                secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=ASSETS_S3_SECRET_ACCESS_KEY),
-                region=env.str(name="REGION", default=ASSETS_S3_REGION),
-                folder_name=env.str(name="FOLDER_NAME", default=ASSETS_S3_FOLDER_NAME),
-            )
-
-
 @dataclass(frozen=True)
 class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
-    assets_s3: AssetsS3Config = field(default_factory=AssetsS3Config)
     cache: CacheConfig = field(default_factory=CacheConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     config_names: ConfigNamesConfig = field(default_factory=ConfigNamesConfig)
@@ -357,6 +329,7 @@ class AppConfig:
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
+    s3: S3Config = field(default_factory=S3Config)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -377,6 +350,7 @@ class AppConfig:
             parquet_and_info=ParquetAndInfoConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
+            s3=S3Config.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

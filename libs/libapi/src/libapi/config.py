@@ -39,34 +39,6 @@ API_MAX_AGE_LONG = 120  # 2 minutes
 API_MAX_AGE_SHORT = 10  # 10 seconds
 
 
-CACHED_ASSETS_S3_BUCKET = "hf-datasets-server-statics"
-CACHED_ASSETS_S3_ACCESS_KEY_ID = None
-CACHED_ASSETS_S3_SECRET_ACCESS_KEY = None
-CACHED_ASSETS_S3_REGION = "us-east-1"
-CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
-
-
-@dataclass(frozen=True)
-class CachedAssetsS3Config:
-    bucket: str = CACHED_ASSETS_S3_BUCKET
-    access_key_id: Optional[str] = CACHED_ASSETS_S3_ACCESS_KEY_ID
-    secret_access_key: Optional[str] = CACHED_ASSETS_S3_SECRET_ACCESS_KEY
-    region: str = CACHED_ASSETS_S3_REGION
-    folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
-
-    @classmethod
-    def from_env(cls) -> "CachedAssetsS3Config":
-        env = Env(expand_vars=True)
-        with env.prefixed("CACHED_ASSETS_S3_"):
-            return cls(
-                bucket=env.str(name="BUCKET", default=CACHED_ASSETS_S3_BUCKET),
-                access_key_id=env.str(name="ACCESS_KEY_ID", default=CACHED_ASSETS_S3_ACCESS_KEY_ID),
-                secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=CACHED_ASSETS_S3_SECRET_ACCESS_KEY),
-                region=env.str(name="REGION", default=CACHED_ASSETS_S3_REGION),
-                folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_S3_FOLDER_NAME),
-            )
-
-
 @dataclass(frozen=True)
 class ApiConfig:
     external_auth_url: Optional[str] = API_EXTERNAL_AUTH_URL  # not documented

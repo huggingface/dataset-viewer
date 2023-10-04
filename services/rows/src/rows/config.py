@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass, field
 
-from libapi.config import ApiConfig, CachedAssetsS3Config
+from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
     CachedAssetsConfig,
@@ -13,6 +13,7 @@ from libcommon.config import (
     ProcessingGraphConfig,
     QueueConfig,
     RowsIndexConfig,
+    S3Config,
 )
 
 
@@ -21,13 +22,13 @@ class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
-    cached_assets_s3: CachedAssetsS3Config = field(default_factory=CachedAssetsS3Config)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
+    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
+    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
-    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
-    parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
+    s3: S3Config = field(default_factory=S3Config)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -36,11 +37,11 @@ class AppConfig:
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
-            cached_assets_s3=CachedAssetsS3Config.from_env(),
             common=common_config,
             log=LogConfig.from_env(),
+            parquet_metadata=ParquetMetadataConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
-            parquet_metadata=ParquetMetadataConfig.from_env(),
             rows_index=RowsIndexConfig.from_env(),
+            s3=S3Config.from_env(),
         )

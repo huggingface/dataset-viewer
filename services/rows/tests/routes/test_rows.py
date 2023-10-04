@@ -460,10 +460,10 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     s3_client = S3Client(
-        region_name=app_config.cached_assets_s3.region,
-        aws_access_key_id=app_config.cached_assets_s3.access_key_id,
-        aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
-        bucket_name=app_config.cached_assets_s3.bucket,
+        region_name=app_config.s3.region,
+        aws_access_key_id=app_config.s3.access_key_id,
+        aws_secret_access_key=app_config.s3.secret_access_key,
+        bucket_name=app_config.s3.bucket,
     )
     response = create_response(
         dataset="ds",
@@ -472,7 +472,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
         s3_client=s3_client,
-        cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
+        cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
         pa_table=ds.data,
         offset=0,
         features=ds.features,
