@@ -357,7 +357,7 @@ search:
       cpu: 1
       memory: "6500Mi"
     limits:
-      cpu: 4
+      cpu: 16
       memory: "6500Mi"
 
 sseApi:
