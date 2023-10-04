@@ -391,10 +391,10 @@ workers:
     resources:
       requests:
         cpu: 2
-        memory: "29Gi"
+        memory: "34Gi"
       limits:
         cpu: 2
-        memory: "29Gi"
+        memory: "34Gi"
     tolerations: []
   - deployName: "medium"
     workerDifficultyMax: 70
