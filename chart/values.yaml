@@ -265,6 +265,11 @@ cachedAssets:
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
 
+assetsS3:
+  bucket: "hf-datasets-server-statics"
+  region: "us-east-1"
+  folderName: "assets"
+
 cachedAssetsS3:
   bucket: "hf-datasets-server-statics"
   region: "us-east-1"
