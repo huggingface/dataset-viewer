@@ -275,7 +275,14 @@
       },
       "FirstRowsResponse": {
         "type": "object",
-        "required": ["dataset", "config", "split", "features", "rows", "truncated"],
+        "required": [
+          "dataset",
+          "config",
+          "split",
+          "features",
+          "rows",
+          "truncated"
+        ],
         "properties": {
           "dataset": {
             "type": "string"
@@ -1135,6 +1142,12 @@
             "type": "integer"
           },
           "nan_proportion": {
+            "type": "number"
+          },
+          "no_label_count": {
+            "type": "integer"
+          },
+          "no_label_proportion": {
             "type": "number"
           },
           "n_unique": {
@@ -5143,9 +5156,13 @@
                           "column_statistics": {
                             "nan_count": 0,
                             "nan_proportion": 0.0,
-                            "n_unique": 1,
+                            "no_label_count": 1104,
+                            "no_label_proportion": 1.0,
+                            "n_unique": 3,
                             "frequencies": {
-                              "contradiction": 1104
+                              "entailment": 0,
+                              "neutral": 0,
+                              "contradiction": 0
                             }
                           }
                         },
