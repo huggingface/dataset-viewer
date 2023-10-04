@@ -16,7 +16,7 @@
   {{- else }}
   value: {{ .Values.secrets.s3.accessKeyId.value | quote }}
   {{- end }}
-- name: ASSETS_S3_SECRET_ACCESS_KEY
+- name: S3_SECRET_ACCESS_KEY
   {{- if .Values.secrets.s3.secretAccessKey.fromSecret }}
   valueFrom:
     secretKeyRef:
