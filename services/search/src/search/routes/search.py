@@ -16,12 +16,11 @@ from libapi.duckdb import (
 )
 from libapi.exceptions import (
     ApiError,
-    InvalidParameterError,
     MissingRequiredParameterError,
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_offset
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
@@ -262,12 +261,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def get_request_parameter_length(request: Request) -> int:
-    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-    if length < 0:
-        raise InvalidParameterError("Parameter 'length' must be positive")
-    if length > MAX_NUM_ROWS_PER_PAGE:
-        raise InvalidParameterError(f"Parameter 'length' must not be greater than {MAX_NUM_ROWS_PER_PAGE}")
-    return length

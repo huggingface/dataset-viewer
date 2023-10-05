@@ -20,7 +20,7 @@ from libapi.exceptions import (
     InvalidParameterError,
     MissingRequiredParameterError,
 )
-from libapi.request import get_request_parameter_offset
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
@@ -35,7 +35,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
@@ -229,12 +228,3 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
-
-
-def get_request_parameter_length(request: Request) -> int:
-    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-    if length < 0:
-        raise InvalidParameterError("Parameter 'length' must be positive")
-    elif length > MAX_NUM_ROWS_PER_PAGE:
-        raise InvalidParameterError(f"Parameter 'length' must not be greater than {MAX_NUM_ROWS_PER_PAGE}")
-    return length

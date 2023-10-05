@@ -9,11 +9,10 @@ from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
-    InvalidParameterError,
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_offset
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
@@ -30,7 +29,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
@@ -191,12 +189,3 @@ def create_rows_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return rows_endpoint
-
-
-def get_request_parameter_length(request: Request) -> int:
-    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-    if length < 0:
-        raise InvalidParameterError("Parameter 'length' must be positive")
-    if length > MAX_NUM_ROWS_PER_PAGE:
-        raise InvalidParameterError(f"Parameter 'length' must not be greater than {MAX_NUM_ROWS_PER_PAGE}")
-    return length
