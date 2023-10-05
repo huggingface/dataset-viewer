@@ -8,9 +8,10 @@ import duckdb
 import pandas as pd
 import pyarrow as pa
 import pytest
+from libapi.duckdb import get_download_folder
 from libcommon.storage import StrPath
 
-from search.routes.search import full_text_search, get_download_folder
+from search.routes.search import full_text_search
 
 
 def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:

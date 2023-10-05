@@ -103,6 +103,9 @@ class PaginatedResponse(TypedDict):
     num_rows_per_page: int
 
 
+MAX_NUM_ROWS_PER_PAGE = 100
+
+
 # orjson is used to get rid of errors with datetime (see allenai/c4)
 def orjson_default(obj: Any) -> Any:
     if isinstance(obj, bytes):

@@ -120,6 +120,7 @@ def test_rows_endpoint(
             "col_1": "Vader turns round and round in circles as his ship spins into space.",
             "col_2": 1,
             "col_3": 1.0,
+            "col_4": "B",
         },
         "truncated_cells": [],
     }, rows[0]
@@ -127,4 +128,5 @@ def test_rows_endpoint(
         {"feature_idx": 0, "name": "col_1", "type": {"dtype": "string", "_type": "Value"}},
         {"feature_idx": 1, "name": "col_2", "type": {"dtype": "int64", "_type": "Value"}},
         {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
+        {"feature_idx": 3, "name": "col_4", "type": {"dtype": "string", "_type": "Value"}},
     ], features

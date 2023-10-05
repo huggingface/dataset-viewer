@@ -24,6 +24,7 @@ from starlette.routing import Route
 from starlette_prometheus import PrometheusMiddleware
 
 from search.config import AppConfig
+from search.routes.filter import create_filter_endpoint
 from search.routes.search import create_search_endpoint
 
 
@@ -102,6 +103,28 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
+            ),
+        ),
+        Route(
+            "/filter",
+            endpoint=create_filter_endpoint(
+                processing_graph=processing_graph,
+                duckdb_index_file_directory=duckdb_index_cache_directory,
+                target_revision=app_config.duckdb_index.target_revision,
+                cached_assets_base_url=app_config.cached_assets.base_url,
+                cached_assets_directory=cached_assets_directory,
+                s3_client=s3_client,
+                cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                blocked_datasets=app_config.common.blocked_datasets,
+                hf_jwt_public_keys=hf_jwt_public_keys,
+                hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
+                external_auth_url=app_config.api.external_auth_url,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                max_age_long=app_config.api.max_age_long,
+                max_age_short=app_config.api.max_age_short,
+                cache_max_days=app_config.cache.max_days,
             ),
         ),
     ]

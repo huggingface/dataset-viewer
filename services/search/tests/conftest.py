@@ -53,6 +53,11 @@ def search_endpoint() -> str:
     return "/search"
 
 
+@fixture(scope="session")
+def filter_endpoint() -> str:
+    return "/filter"
+
+
 @fixture(autouse=True)
 def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
     with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
@@ -74,7 +79,7 @@ def uvicorn_config(monkeypatch_session: MonkeyPatch) -> UvicornConfig:
 
 @fixture(scope="session")
 def httpserver_listen_address(uvicorn_config: UvicornConfig) -> tuple[str, int]:
-    return (uvicorn_config.hostname, uvicorn_config.port)
+    return uvicorn_config.hostname, uvicorn_config.port
 
 
 @fixture(scope="session")
