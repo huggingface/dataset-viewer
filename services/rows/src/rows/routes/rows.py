@@ -87,13 +87,7 @@ def create_rows_endpoint(
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
                     offset = get_request_parameter_offset(request)
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Length must be positive")
-                    if length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    length = get_request_parameter_length(request)
                     logging.info(
                         f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
                     )
@@ -197,3 +191,12 @@ def create_rows_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return rows_endpoint
+
+
+def get_request_parameter_length(request: Request) -> int:
+    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
+    if length < 0:
+        raise InvalidParameterError("Length must be positive")
+    if length > MAX_NUM_ROWS_PER_PAGE:
+        raise InvalidParameterError(f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}")
+    return length

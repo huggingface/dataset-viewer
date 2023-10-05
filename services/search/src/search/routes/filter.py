@@ -102,13 +102,7 @@ def create_filter_endpoint(
                         )
                     validate_where_parameter(where)
                     offset = get_request_parameter_offset(request)
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Parameter 'length' must be positive")
-                    elif length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    length = get_request_parameter_length(request)
                     logger.info(
                         f'/filter, dataset={dataset}, config={config}, split={split}, where="{where}",'
                         f" offset={offset}, length={length}"
@@ -235,3 +229,12 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
+
+
+def get_request_parameter_length(request: Request) -> int:
+    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
+    if length < 0:
+        raise InvalidParameterError("Parameter 'length' must be positive")
+    elif length > MAX_NUM_ROWS_PER_PAGE:
+        raise InvalidParameterError(f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}")
+    return length

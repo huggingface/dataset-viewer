@@ -165,13 +165,7 @@ def create_search_endpoint(
 
                     offset = get_request_parameter_offset(request)
 
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Length must be positive")
-                    if length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    length = get_request_parameter_length(request)
 
                 with StepProfiler(method="search_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
@@ -268,3 +262,12 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def get_request_parameter_length(request: Request) -> int:
+    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
+    if length < 0:
+        raise InvalidParameterError("Length must be positive")
+    if length > MAX_NUM_ROWS_PER_PAGE:
+        raise InvalidParameterError(f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}")
+    return length
