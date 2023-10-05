@@ -64,7 +64,7 @@ def test_execute_filter_query(index_file_location: str) -> None:
         index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2
-    assert pa_table == pa.Table.from_pydict({"name": ["Simone"], "age": [30]})
+    assert pa_table == pa.Table.from_pydict({"__hf_index_id": [3], "name": ["Simone"], "age": [30]})
 
 
 @pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
