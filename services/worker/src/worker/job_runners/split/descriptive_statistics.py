@@ -443,6 +443,7 @@ def compute_descriptive_statistics_response(
             local_dir_use_symlinks=False,
             token=hf_token,
             cache_dir=local_parquet_directory,
+            force_download=True,
         )
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split}/*.parquet"

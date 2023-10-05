@@ -83,6 +83,7 @@ def download_index_file(
         local_dir_use_symlinks=False,
         token=hf_token,
         cache_dir=cache_folder,
+        force_download=True,
     )
 
 
