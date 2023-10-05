@@ -272,5 +272,5 @@ def create_search_endpoint(
 def get_request_parameter_offset(request):
     offset = int(request.query_params.get("offset", 0))
     if offset < 0:
-        raise InvalidParameterError(message="Offset must be positive")
+        raise InvalidParameterError(message="Parameter 'offset' must be positive")
     return offset
