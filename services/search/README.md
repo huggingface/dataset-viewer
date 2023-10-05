@@ -1,6 +1,7 @@
-# Datasets server API - search endpoint
+# Datasets server API - search service
 
 > /search endpoint
+> /filter endpoint
 
 ## Configuration
 
@@ -25,3 +26,4 @@ See https://huggingface.co/docs/datasets-server
 - /healthcheck: ensure the app is running
 - /metrics: return a list of metrics in the Prometheus format
 - /search: get a slice of a search result over a dataset split
+- /filter: filter rows of a dataset split

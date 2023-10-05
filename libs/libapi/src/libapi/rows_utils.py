@@ -22,7 +22,7 @@ def _transform_row(
     row_idx_column: Optional[str],
 ) -> Row:
     row_idx, row = row_idx_and_row
-    return {
+    transformed_row = {
         featureName: get_cell_value(
             dataset=dataset,
             config=config,
@@ -35,6 +35,9 @@ def _transform_row(
         )
         for (featureName, fieldType) in features.items()
     }
+    if row_idx_column and row_idx_column not in transformed_row:
+        transformed_row |= {row_idx_column: row[row_idx_column]}
+    return transformed_row
 
 
 def transform_rows(

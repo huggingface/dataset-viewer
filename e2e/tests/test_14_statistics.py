@@ -27,7 +27,7 @@ def test_statistics_endpoint(
     num_examples = content["num_examples"]
 
     assert isinstance(statistics, list), statistics
-    assert len(statistics) == 3
+    assert len(statistics) == 4
     assert num_examples == 4
 
     first_column = statistics[0]
@@ -87,5 +87,22 @@ def test_statistics_endpoint(
         "histogram": {
             "hist": [1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
             "bin_edges": [0.0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0],
+        },
+    }
+
+    fourth_column = statistics[3]
+    assert "column_name" in fourth_column
+    assert "column_statistics" in fourth_column
+    assert "column_type" in fourth_column
+    assert fourth_column["column_name"] == "col_4"
+    assert fourth_column["column_type"] == "string_label"
+    assert isinstance(fourth_column["column_statistics"], dict)
+    assert fourth_column["column_statistics"] == {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "n_unique": 2,
+        "frequencies": {
+            "A": 1,
+            "B": 3,
         },
     }

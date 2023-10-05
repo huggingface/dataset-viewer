@@ -30,6 +30,8 @@ from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
+UNSUPPORTED_FEATURES = [Value("binary")]
+
 
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
     """
@@ -320,7 +322,7 @@ def to_features_list(features: Features) -> list[FeatureItem]:
 
 def get_supported_unsupported_columns(
     features: Features,
-    unsupported_features: list[FeatureType] = [],
+    unsupported_features: list[FeatureType] = UNSUPPORTED_FEATURES,
 ) -> tuple[list[str], list[str]]:
     supported_columns, unsupported_columns = [], []
 

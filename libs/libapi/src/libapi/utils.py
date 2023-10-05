@@ -3,6 +3,7 @@
 
 import logging
 import os
+import random
 import shutil
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
@@ -271,12 +272,12 @@ def clean_cached_assets(
 
     Args:
         dataset (`str`):
-            Dataset name e.g `squad` or `lhoestq/demo1`.
+            Dataset name e.g 'squad' or 'lhoestq/demo1'.
             Rows are cleaned in any dataset configuration or split of this dataset.
-        cached_assets_directory (`str`):
-            Directory containing the cached image and audio files
+        cached_assets_directory (`StrPath`):
+            Directory containing the cached image and audio files.
         keep_first_rows_number (`int`):
-            Keep the rows with an index below a certain number
+            Keep the rows with an index below a certain number.
         keep_most_recent_rows_number (`int`):
             Keep the most recently accessed rows.
         max_cleaned_rows_number (`int`):
@@ -305,3 +306,45 @@ def clean_cached_assets(
         ]
         for row_dir_to_delete in row_dirs_to_delete:
             shutil.rmtree(row_dir_to_delete, ignore_errors=True)
+
+
+def clean_cached_assets_randomly(
+    clean_cache_proba: float,
+    dataset: str,
+    cached_assets_directory: StrPath,
+    keep_first_rows_number: int,
+    keep_most_recent_rows_number: int,
+    max_cleaned_rows_number: int,
+) -> None:
+    """Randomly clean the cached assets' directory.
+
+    Args:
+        clean_cache_proba (`float`):
+            Probability to clean the cached assets' directory.
+        dataset (`str`):
+            Dataset name e.g 'squad' or 'lhoestq/demo1'.
+            Rows are cleaned in any dataset configuration or split of this dataset.
+        cached_assets_directory (`StrPath`):
+            Directory containing the cached image and audio files.
+        keep_first_rows_number (`int`):
+            Keep the rows with an index below a certain number.
+        keep_most_recent_rows_number (`int`):
+            Keep the most recently accessed rows.
+        max_cleaned_rows_number (`int`):
+            Maximum number of rows to discard.
+    """
+    # no need to do it every time
+    if random.random() < clean_cache_proba:  # nosec
+        if keep_first_rows_number < 0 and keep_most_recent_rows_number < 0 and max_cleaned_rows_number < 0:
+            logging.debug(
+                "Params keep_first_rows_number, keep_most_recent_rows_number and"
+                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
+            )
+        else:
+            clean_cached_assets(
+                dataset=dataset,
+                cached_assets_directory=cached_assets_directory,
+                keep_first_rows_number=keep_first_rows_number,
+                keep_most_recent_rows_number=keep_most_recent_rows_number,
+                max_cleaned_rows_number=max_cleaned_rows_number,
+            )

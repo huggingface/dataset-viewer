@@ -1,8 +1,8 @@
 [tool.poetry]
 authors = ["The HuggingFace Authors."]
-description = "REST API app - /search endpoint"
+description = "REST API app - search service"
 name = "search"
-version = "0.1.0"
+version = "0.2.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
@@ -63,11 +63,11 @@ disallow_untyped_calls = false
 [[tool.mypy.overrides]]
 module = [
     "datasets.*",
+    "fsspec.*",
     "huggingface_hub.*",
     "prometheus_client.*",
     "pyarrow.*",
-    "tqdm.*",
-    "fsspec.*"
+    "tqdm.*"
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true
