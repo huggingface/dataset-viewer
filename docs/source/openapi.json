@@ -3330,6 +3330,610 @@
         }
       }
     },
+    "/filter": {
+      "get": {
+        "summary": "Filter rows of a split",
+        "description": "Returns the rows matching the filter query, ordered by row index. Up to 100 rows are returned. The offset and length parameters allow to navigate the results.",
+        "externalDocs": {
+          "description": "See filter (Hub docs).",
+          "url": "https://huggingface.co/docs/datasets-server/filter"
+        },
+        "operationId": "filterRows",
+        "security": [
+          {},
+          {
+            "CookieHuggingFace": []
+          },
+          {
+            "AuthorizationHuggingFaceApiToken": []
+          },
+          {
+            "AuthorizationHuggingFaceJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequiredDataset"
+          },
+          {
+            "$ref": "#/components/parameters/RequiredConfig"
+          },
+          {
+            "$ref": "#/components/parameters/RequiredSplit"
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "description": "The filter query.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "examples": {
+              "Age = 30": {
+                "summary": "filter the rows where the 'Age' column equals to 30",
+                "value": "Age = 30"
+              }
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "The offset of the returned rows.",
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0
+            },
+            "examples": {
+              "0": {
+                "summary": "from the beginning",
+                "value": 0
+              },
+              "100": {
+                "summary": "ignore the first 100 results",
+                "value": 100
+              }
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "description": "The maximum number of returned rows",
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "minimum": 0,
+              "maximum": 100
+            },
+            "examples": {
+              "100": {
+                "summary": "up to 100 rows in the response",
+                "value": 100
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The <a href='https://huggingface.co/docs/datasets/about_dataset_features'>features</a>, and the list of rows that match the filter query. Bytes columns are not supported at the moment, and their content will be 'null'.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                },
+                "examples": {
+                  "Filter on float equality (julien-c/titanic-survival)": {
+                    "summary": "The first 2 rows where the float 'Age' column is equal to 30 (where=Age=30&length=2).",
+                    "description": "Try with: https://datasets-server.huggingface.co/filter?dataset=julien-c/titanic-survival&config=default&split=train&where=Age=30&length=2",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "Survived",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "Pclass",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 2,
+                          "name": "Name",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 3,
+                          "name": "Sex",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 4,
+                          "name": "Age",
+                          "type":{ "dtype": "float64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 5,
+                          "name": "Siblings/Spouses Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 6,
+                          "name": "Parents/Children Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 7,
+                          "name": "Fare",
+                          "type": { "dtype": "float64", "_type": "Value" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 44,
+                          "row": {
+                            "Survived": 0,
+                            "Pclass": 3,
+                            "Name": "Mr. William John Rogers",
+                            "Sex": "male",
+                            "Age": 30.0,
+                            "Siblings/Spouses Aboard": 0,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 8.05
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 78,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 3,
+                            "Name": "Miss. Elizabeth Dowdell",
+                            "Sex": "female",
+                            "Age": 30.0,
+                            "Siblings/Spouses Aboard": 0,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 12.475
+                          },
+                          "truncated_cells": []
+                        }
+                      ],
+                      "num_rows_total": 33,
+                      "num_rows_per_page": 100
+                    }
+                  },
+                  "Filter on string equality (julien-c/titanic-survival)": {
+                    "summary": "The first 2 rows where the string 'Sex' column is equal to 'female' (where=Sex='female'&length=2).",
+                    "description": "Try with: https://datasets-server.huggingface.co/filter?dataset=julien-c/titanic-survival&config=default&split=train&where=Sex='female'&length=2",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "Survived",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "Pclass",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 2,
+                          "name": "Name",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 3,
+                          "name": "Sex",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 4,
+                          "name": "Age",
+                          "type":{ "dtype": "float64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 5,
+                          "name": "Siblings/Spouses Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 6,
+                          "name": "Parents/Children Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 7,
+                          "name": "Fare",
+                          "type": { "dtype": "float64", "_type": "Value" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 1,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 1,
+                            "Name": "Mrs. John Bradley (Florence Briggs Thayer) Cumings",
+                            "Sex": "female",
+                            "Age": 38.0,
+                            "Siblings/Spouses Aboard": 1,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 71.2833
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 2,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 3,
+                            "Name": "Miss. Laina Heikkinen",
+                            "Sex": "female",
+                            "Age": 26.0,
+                            "Siblings/Spouses Aboard": 0,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 7.925
+                          },
+                          "truncated_cells": []
+                        }
+                      ],
+                      "num_rows_total": 314,
+                      "num_rows_per_page": 100
+                    }
+                  },
+                  "Filter on float inequality (julien-c/titanic-survival)": {
+                    "summary": "The first 2 rows where the float 'Fare' column is larger than 50 (where=Fare>50&length=2).",
+                    "description": "Try with: https://datasets-server.huggingface.co/filter?dataset=julien-c/titanic-survival&config=default&split=train&where=Fare>50&length=2",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "Survived",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "Pclass",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 2,
+                          "name": "Name",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 3,
+                          "name": "Sex",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 4,
+                          "name": "Age",
+                          "type":{ "dtype": "float64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 5,
+                          "name": "Siblings/Spouses Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 6,
+                          "name": "Parents/Children Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 7,
+                          "name": "Fare",
+                          "type": { "dtype": "float64", "_type": "Value" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 1,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 1,
+                            "Name": "Mrs. John Bradley (Florence Briggs Thayer) Cumings",
+                            "Sex": "female",
+                            "Age": 38.0,
+                            "Siblings/Spouses Aboard": 1,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 71.2833
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 3,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 1,
+                            "Name": "Mrs. Jacques Heath (Lily May Peel) Futrelle",
+                            "Sex": "female",
+                            "Age": 35.0,
+                            "Siblings/Spouses Aboard": 1,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 53.1
+                          },
+                          "truncated_cells": []
+                        }
+                      ],
+                      "num_rows_total": 160,
+                      "num_rows_per_page": 100
+                    }
+                  },
+                  "Filter on logical AND (julien-c/titanic-survival)": {
+                    "summary": "The first 2 rows where the integer 'Pclass' column is equal to 2 and the integer 'Siblings/Spouses Aboard' column is larger then 0 (where=Pclass=2 AND \"Siblings/Spouses Aboard\">0&length=2).",
+                    "description": "Try with: https://datasets-server.huggingface.co/filter?dataset=julien-c/titanic-survival&config=default&split=train&where=Pclass=2 AND \"Siblings/Spouses Aboard\">0&length=2",
+                    "value": {
+                      "features": [
+                        {
+                          "feature_idx": 0,
+                          "name": "Survived",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "Pclass",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 2,
+                          "name": "Name",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 3,
+                          "name": "Sex",
+                          "type": { "dtype": "string", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 4,
+                          "name": "Age",
+                          "type":{ "dtype": "float64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 5,
+                          "name": "Siblings/Spouses Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 6,
+                          "name": "Parents/Children Aboard",
+                          "type": { "dtype": "int64", "_type": "Value" }
+                        },
+                        {
+                          "feature_idx": 7,
+                          "name": "Fare",
+                          "type": { "dtype": "float64", "_type": "Value" }
+                        }
+                      ],
+                      "rows": [
+                        {
+                          "row_idx": 9,
+                          "row": {
+                            "Survived": 1,
+                            "Pclass": 2,
+                            "Name": "Mrs. Nicholas (Adele Achem) Nasser",
+                            "Sex": "female",
+                            "Age": 14.0,
+                            "Siblings/Spouses Aboard": 1,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 30.0708
+                          },
+                          "truncated_cells": []
+                        },
+                        {
+                          "row_idx": 41,
+                          "row": {
+                            "Survived": 0,
+                            "Pclass": 2,
+                            "Name": "Mrs. William John Robert (Dorothy Ann Wonnacott) Turpin",
+                            "Sex": "female",
+                            "Age": 27.0,
+                            "Siblings/Spouses Aboard": 1,
+                            "Parents/Children Aboard": 0,
+                            "Fare": 21.0
+                          },
+                          "truncated_cells": []
+                        }
+                      ],
+                      "num_rows_total": 64,
+                      "num_rows_per_page": 100
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Common401"
+          },
+          "404": {
+            "$ref": "#/components/responses/DatasetConfigSplit404"
+          },
+          "422": {
+            "description": "Some of the 'dataset', 'config', 'split', 'where', 'offset' or 'length' parameters have not been provided or are invalid.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-422"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "missing-dataset": {
+                    "summary": "The dataset parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "missing-config": {
+                    "summary": "The config parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "missing-split": {
+                    "summary": "The split parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "missing-query": {
+                    "summary": "The where parameter is missing.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "empty-dataset": {
+                    "summary": "The dataset parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "empty-config": {
+                    "summary": "The config parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "empty-split": {
+                    "summary": "The split parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "empty-query": {
+                    "summary": "The where parameter is empty.",
+                    "value": {
+                      "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
+                    }
+                  },
+                  "negative-offset": {
+                    "summary": "The offset must be positive.",
+                    "value": {
+                      "error": "Parameter 'offset' must be positive"
+                    }
+                  },
+                  "negative-length": {
+                    "summary": "The length must be positive.",
+                    "value": {
+                      "error": "Parameter 'length' must be positive"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server crashed, the response still hasn't been generated (the process is asynchronous), or the response couldn't be generated successfully due to an error in the dataset itself. The client can retry after a time, in particular in the case of the response still being processed. If the error does not vanish, it's possibly due to a bug in the API software or in the dataset, and should be reported.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-500-search"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "error in the dataset itself": {
+                    "summary": "An error while processing the dataset prevents the response to be created.",
+                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=atomic&config=atomic&split=train&where=event='a'",
+                    "value": {
+                      "error": "Couldn't get the size of external files in `_split_generators` because a request failed:\n404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\nPlease consider moving your data files in this dataset repository instead (e.g. inside a data/ folder).",
+                      "cause_exception": "HTTPError",
+                      "cause_message": "404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz",
+                      "cause_traceback": [
+                        "Traceback (most recent call last):\n",
+                        "  File \"/src/services/worker/src/worker/job_runners/config/parquet_and_info.py\", line 506, in raise_if_too_big_from_external_data_files\n    for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):\n",
+                        "  File \"/usr/local/lib/python3.9/multiprocessing/pool.py\", line 870, in next\n    raise value\n",
+                        "  File \"/usr/local/lib/python3.9/multiprocessing/pool.py\", line 125, in worker\n    result = (True, func(*args, **kwds))\n",
+                        "  File \"/src/services/worker/src/worker/job_runners/config/parquet_and_info.py\", line 402, in _request_size\n    response.raise_for_status()\n",
+                        "  File \"/src/services/worker/.venv/lib/python3.9/site-packages/requests/models.py\", line 1021, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\n",
+                        "requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://maartensap.com/atomic/data/atomic_data.tgz\n"
+                      ]
+                    }
+                  },
+                  "response not ready": {
+                    "$ref": "#/components/examples/ResponseNotReadyError"
+                  },
+                  "unexpected error": {
+                    "$ref": "#/components/examples/UnexpectedJsonError"
+                  }
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorResponse"
+                },
+                "examples": {
+                  "internal server error": {
+                    "$ref": "#/components/examples/UnexpectedTextError"
+                  }
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "The server does not implement the feature.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "Access-Control-Allow-Origin": {
+                "$ref": "#/components/headers/Access-Control-Allow-Origin"
+              },
+              "X-Error-Code": {
+                "$ref": "#/components/headers/X-Error-Code-501"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomError"
+                },
+                "examples": {
+                  "blocked dataset": {
+                    "summary": "The dataset is blocked manually on the server.",
+                    "description": "Try with https://datasets-server.huggingface.co/filter?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&where=question_id=4",
+                    "value": {
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/parquet": {
       "get": {
         "summary": "List of parquet files",

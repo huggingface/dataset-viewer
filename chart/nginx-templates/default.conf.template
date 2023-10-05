@@ -65,6 +65,15 @@ server {
     proxy_http_version 1.1;
   }
 
+  location /filter {
+    proxy_pass ${URL_SEARCH}/filter;
+    proxy_set_header Host $proxy_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+  }
+
   location /sse/ {
     # note the trailing slash, to remove the /sse/ prefix
     proxy_pass ${URL_SSE_API}/;

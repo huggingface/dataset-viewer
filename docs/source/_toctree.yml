@@ -20,6 +20,8 @@
       title: Download slices of rows
     - local: search
       title: Search text in a dataset
+    - local: filter
+      title: Filter rows in a dataset
     - local: parquet
       title: List Parquet files
     - local: size

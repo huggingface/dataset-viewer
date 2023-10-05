@@ -1,0 +1,33 @@
+# Filter rows in a dataset
+
+Datasets Server provides a `/filter` endpoint for filtering rows in a dataset.
+
+<Tip warning={true}>
+  Currently, only <a href="./parquet">datasets with Parquet exports</a>
+  are supported so Datasets Server can index the contents and run the filter query without
+  downloading the whole dataset.
+</Tip>
+
+This guide shows you how to use Datasets Server's `/filter` endpoint to filter rows based on a query string.
+Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/filterRows).
+
+The `/filter` endpoint accepts the following query parameters:
+- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `config`: the configuration name, for example `cola`
+- `split`: the split name, for example `train`
+- `where`: the filter condition
+- `offset`: the offset of the slice, for example `150`
+- `length`: the length of the slice, for example `10` (maximum: `100`)
+
+The `where` parameter must be expressed as a comparison predicate, which can be:
+- a simple predicate composed of a column name, a comparison operator, and a value
+  - the comparison operators are: `=`, `<>`, `>`, `>=`, `<`, `<=`
+- a composite predicate composed of two or more simple predicates (optionally grouped with parentheses to indicate the order of evaluation), combined with logical operators
+  - the logical operators are: `AND`, `OR`, `NOT`
+
+For example, the following `where` parameter value
+```
+where=age>30 AND (name='Simone' OR children=0)
+```
+will filter the data to select only those rows where the float "age" column is larger than 30 and,
+either the string "name" column is equal to 'Simone' or the integer "children" column is equal to 0.

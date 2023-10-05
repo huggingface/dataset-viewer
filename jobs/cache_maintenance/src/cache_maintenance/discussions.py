@@ -104,7 +104,7 @@ def post_messages_on_parquet_conversion(
                 discussion = hf_api.create_discussion(
                     repo_id=dataset,
                     repo_type=REPO_TYPE_DATASET,
-                    title="Notifications from Datasets Server",
+                    title=f"Notifications from {bot_associated_user_name}",
                     description=create_discussion_description(),
                     token=bot_token,
                 )

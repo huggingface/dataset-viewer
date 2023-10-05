@@ -5,8 +5,6 @@ import logging
 import random
 from typing import Literal, Optional, Union
 
-import pyarrow as pa
-from datasets import Features, Value
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -15,6 +13,7 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
+from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -22,7 +21,6 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
-    to_rows_list,
     try_backfill_dataset_then_raise,
 )
 from libcommon.parquet_utils import Indexer
@@ -31,66 +29,16 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.storage_options import S3StorageOptions
-from libcommon.utils import PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
-from libcommon.viewer_utils.features import to_features_list
+from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
 
-MAX_ROWS = 100
-
-
 ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["arabic_speech_corpus"]  # for testing
-
-# audio still has some errors when librosa is imported
-UNSUPPORTED_FEATURES = [Value("binary")]
-
-
-def create_response(
-    dataset: str,
-    config: str,
-    split: str,
-    cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
-    pa_table: pa.Table,
-    offset: int,
-    features: Features,
-    unsupported_columns: list[str],
-    num_rows_total: int,
-) -> PaginatedResponse:
-    if set(pa_table.column_names).intersection(set(unsupported_columns)):
-        raise RuntimeError(
-            "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
-        )
-    logging.debug(f"create response for {dataset=} {config=} {split=}")
-    storage_options = S3StorageOptions(
-        assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
-        overwrite=False,
-        s3_client=s3_client,
-        s3_folder_name=cached_assets_s3_folder_name,
-    )
-    return PaginatedResponse(
-        features=to_features_list(features),
-        rows=to_rows_list(
-            pa_table=pa_table,
-            dataset=dataset,
-            config=config,
-            split=split,
-            storage_options=storage_options,
-            offset=offset,
-            features=features,
-            unsupported_columns=unsupported_columns,
-        ),
-        num_rows_total=num_rows_total,
-        num_rows_per_page=MAX_ROWS,
-    )
 
 
 def create_rows_endpoint(
@@ -140,11 +88,13 @@ def create_rows_endpoint(
                     offset = int(request.query_params.get("offset", 0))
                     if offset < 0:
                         raise InvalidParameterError(message="Offset must be positive")
-                    length = int(request.query_params.get("length", MAX_ROWS))
+                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Length must be positive")
-                    if length > MAX_ROWS:
-                        raise InvalidParameterError(f"Length must be less than or equal to {MAX_ROWS}")
+                    if length > MAX_NUM_ROWS_PER_PAGE:
+                        raise InvalidParameterError(
+                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
+                        )
                     logging.info(
                         f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
                     )
