@@ -114,7 +114,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
                 s3_client=s3_client,
-                cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
+                cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
