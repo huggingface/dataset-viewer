@@ -2876,6 +2876,12 @@
                     "value": {
                       "error": "Parameter 'length' must be positive"
                     }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
+                    }
                   }
                 }
               }
@@ -3234,6 +3240,12 @@
                     "summary": "The length must be positive.",
                     "value": {
                       "error": "Parameter 'length' must be positive"
+                    }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
                     }
                   }
                 }
@@ -3838,6 +3850,12 @@
                     "summary": "The length must be positive.",
                     "value": {
                       "error": "Parameter 'length' must be positive"
+                    }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
                     }
                   }
                 }
