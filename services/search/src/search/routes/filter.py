@@ -100,9 +100,7 @@ def create_filter_endpoint(
                             "Parameters 'dataset', 'config', 'split' and 'where' are required"
                         )
                     validate_where_parameter(where)
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Parameter 'offset' must be positive")
+                    offset = get_request_parameter_offset(request)
                     length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Parameter 'length' must be positive")
@@ -236,3 +234,10 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
+
+
+def get_request_parameter_offset(request):
+    offset = int(request.query_params.get("offset", 0))
+    if offset < 0:
+        raise InvalidParameterError(message="Parameter 'offset' must be positive")
+    return offset

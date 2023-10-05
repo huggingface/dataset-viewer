@@ -85,9 +85,7 @@ def create_rows_endpoint(
                     split = request.query_params.get("split")
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Offset must be positive")
+                    offset = get_request_parameter_offset(request)
                     length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
                         raise InvalidParameterError("Length must be positive")
@@ -198,3 +196,10 @@ def create_rows_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return rows_endpoint
+
+
+def get_request_parameter_offset(request):
+    offset = int(request.query_params.get("offset", 0))
+    if offset < 0:
+        raise InvalidParameterError(message="Offset must be positive")
+    return offset

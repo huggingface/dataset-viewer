@@ -162,9 +162,7 @@ def create_search_endpoint(
                             "Parameter 'dataset', 'config', 'split' and 'query' are required"
                         )
 
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Offset must be positive")
+                    offset = get_request_parameter_offset(request)
 
                     length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
                     if length < 0:
@@ -269,3 +267,10 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def get_request_parameter_offset(request):
+    offset = int(request.query_params.get("offset", 0))
+    if offset < 0:
+        raise InvalidParameterError(message="Offset must be positive")
+    return offset
