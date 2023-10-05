@@ -444,6 +444,7 @@ def compute_descriptive_statistics_response(
             token=hf_token,
             cache_dir=local_parquet_directory,
             force_download=True,
+            resume_download=False,
         )
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split}/*.parquet"
