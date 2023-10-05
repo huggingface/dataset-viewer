@@ -15,7 +15,7 @@ def test_filter_endpoint(
     headers = auth_headers[auth]
     offset = 1
     length = 2
-    where = "col_4 = 'B'"
+    where = "col_4='B'"
     filter_response = poll_until_ready_and_assert(
         relative_url=(
             f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
@@ -47,7 +47,7 @@ def test_filter_endpoint(
         "truncated_cells": [],
     }, rows[0]
     assert rows[1] == {
-        "row_idx": 2,
+        "row_idx": 3,
         "row": {
             "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
             "col_2": 3,
@@ -77,15 +77,13 @@ def test_filter_endpoint(
         ("col_2<3 OR col_4='B'", 4),
     ],
 )
-def test_where_parameter_in_filter_endpoint(
+def test_filter_endpoint_parameter_where(
     where: str, expected_num_rows: int, hf_public_dataset_repo_csv_data: str
 ) -> None:
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
     response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
-        expected_status_code=200,
-        expected_error_code=None,
         check_x_revision=True,
     )
     content = response.json()

@@ -222,7 +222,10 @@ def execute_filter_query(
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
-            columns=",".join([f'"{column}"' for column in columns]), where=where, limit=limit, offset=offset
+            columns=",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
+            where=where,
+            limit=limit,
+            offset=offset,
         )
         filter_count_query = FILTER_COUNT_QUERY.format(where=where)
         try:
