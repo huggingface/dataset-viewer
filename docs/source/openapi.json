@@ -2874,7 +2874,7 @@
                   "negative-length": {
                     "summary": "The length must be positive.",
                     "value": {
-                      "error": "Length must be positive"
+                      "error": "Parameter 'length' must be positive"
                     }
                   }
                 }
@@ -3233,7 +3233,7 @@
                   "negative-length": {
                     "summary": "The length must be positive.",
                     "value": {
-                      "error": "Length must be positive"
+                      "error": "Parameter 'length' must be positive"
                     }
                   }
                 }
