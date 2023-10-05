@@ -21,6 +21,7 @@ from libapi.exceptions import (
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
+from libapi.request import get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
@@ -267,10 +268,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def get_request_parameter_offset(request):
-    offset = int(request.query_params.get("offset", 0))
-    if offset < 0:
-        raise InvalidParameterError(message="Parameter 'offset' must be positive")
-    return offset

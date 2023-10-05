@@ -20,6 +20,7 @@ from libapi.exceptions import (
     InvalidParameterError,
     MissingRequiredParameterError,
 )
+from libapi.request import get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
@@ -234,10 +235,3 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
-
-
-def get_request_parameter_offset(request):
-    offset = int(request.query_params.get("offset", 0))
-    if offset < 0:
-        raise InvalidParameterError(message="Parameter 'offset' must be positive")
-    return offset
