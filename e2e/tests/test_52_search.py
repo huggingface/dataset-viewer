@@ -1,19 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from .fixtures.hub import AuthHeaders, AuthType
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_search_endpoint(
-    auth_headers: AuthHeaders,
-    hf_public_dataset_repo_csv_data: str,
-) -> None:
-    auth: AuthType = "none"
+def test_search_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
-    headers = auth_headers[auth]
     # ensure the /search endpoint works as well
     offset = 1
     length = 2
@@ -22,7 +16,6 @@ def test_search_endpoint(
         relative_url=(
             f"/search?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&query={query}"
         ),
-        headers=headers,
         check_x_revision=True,
     )
     content = search_response.json()
