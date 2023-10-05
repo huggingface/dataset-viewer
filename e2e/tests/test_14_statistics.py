@@ -100,6 +100,8 @@ def test_statistics_endpoint(
     assert fourth_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
+        "no_label_count": 0,
+        "no_label_proportion": 0.0,
         "n_unique": 2,
         "frequencies": {
             "A": 1,
