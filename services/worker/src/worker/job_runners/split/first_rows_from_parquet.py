@@ -16,8 +16,9 @@ from libcommon.exceptions import (
 )
 from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import JobInfo, Row, RowItem
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
@@ -33,7 +34,7 @@ def transform_rows(
     split: str,
     rows: list[RowItem],
     features: Features,
-    storage_options: DirectoryStorageOptions,
+    storage_options: S3StorageOptions,
 ) -> list[Row]:
     return [
         {
@@ -57,7 +58,7 @@ def compute_first_rows_response(
     dataset: str,
     config: str,
     split: str,
-    storage_options: DirectoryStorageOptions,
+    storage_options: S3StorageOptions,
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
@@ -178,6 +179,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         processing_graph: ProcessingGraph,
         assets_directory: StrPath,
         parquet_metadata_directory: StrPath,
+        s3_client: S3Client,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -198,17 +200,21 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
 
+        self.storage_options = S3StorageOptions(
+            assets_base_url=self.assets_base_url,
+            assets_directory=self.assets_directory,
+            overwrite=True,
+            s3_client=s3_client,
+            s3_folder_name=app_config.assets.s3_folder_name,
+        )
+
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                storage_options=DirectoryStorageOptions(
-                    assets_base_url=self.assets_base_url,
-                    assets_directory=self.assets_directory,
-                    overwrite=True,
-                ),
+                storage_options=self.storage_options,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,
