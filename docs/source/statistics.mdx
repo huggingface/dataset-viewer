@@ -1,0 +1,180 @@
+# Get statistics of a dataset
+
+Datasets Server provides a `/statistics` endpoint for fetching some descriptive statistics precomputed for a requested dataset. This will get you a quick insight on what the data actually is **quantitatively**.
+
+<Tip warning={true}>
+  Currently, only <a href="./parquet">datasets with Parquet exports</a>
+  are supported so Datasets Server can index the contents and run the search without
+  downloading the whole dataset.
+</Tip>
+
+The `/statistics` endpoint accepts three query parameters:
+
+- `dataset`: the dataset name, for example `glue`
+- `config`: the configuration name, for example `cola`
+- `split`: the split name, for example `train`
+
+The following data types are supported:
+
+* string
+* float
+* int
+* `datasets.ClassLabel`
+
+Let's get some stats for `glue` dataset, `cola` config, `train` split.
+
+<inferencesnippet>
+<python>
+```python
+import requests
+headers = {"Authorization": f"Bearer {API_TOKEN}"}
+API_URL = "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train"
+def query():
+    response = requests.get(API_URL, headers=headers)
+    return response.json()
+data = query()
+```
+</python>
+<js>
+```js
+import fetch from "node-fetch";
+async function query(data) {
+    const response = await fetch(
+        "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train",
+        {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+            method: "GET"
+        }
+    );
+    const result = await response.json();
+    return result;
+}
+query().then((response) => {
+    console.log(JSON.stringify(response));
+});
+```
+</js>
+<curl>
+```curl
+curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train \
+        -X GET \
+        -H "Authorization: Bearer ${API_TOKEN}"
+```
+</curl>
+</inferencesnippet>
+
+The response JSON contains two keys:
+* `num_examples` - number of samples in a split
+* `statistics` - list of dictionaries for statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type.
+
+`column_type` is one of the following values:
+
+* `class_label` - for `datasets.ClassLabel` feature
+* `float` - for float dtypes
+* `int` - for integer dtypes
+* `string_label` - for string dtypes - if there are less than or equal to 30 unique values in a string column in a given split
+* `string_text` - for string dtypes - if there are more than 30 unique values in a string column in a given split
+
+
+```json
+{
+  "num_examples": 8551,
+  "statistics": [
+    {
+      "column_name": "idx",
+      "column_type": "int",
+      "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0,
+        "min": 0,
+        "max": 8550,
+        "mean": 4275,
+        "median": 4275,
+        "std": 2468.60541,
+        "histogram": {
+          "hist": [
+            856,
+            856,
+            856,
+            856,
+            856,
+            856,
+            856,
+            856,
+            856,
+            847
+          ],
+          "bin_edges": [
+            0,
+            856,
+            1712,
+            2568,
+            3424,
+            4280,
+            5136,
+            5992,
+            6848,
+            7704,
+            8550
+          ]
+        }
+      }
+    },
+    {
+      "column_name": "label",
+      "column_type": "class_label",
+      "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0,
+        "no_label_count": 0,
+        "no_label_proportion": 0,
+        "n_unique": 2,
+        "frequencies": {
+          "unacceptable": 2528,
+          "acceptable": 6023
+        }
+      }
+    },
+    {
+      "column_name": "sentence",
+      "column_type": "string_text",
+      "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0,
+        "min": 6,
+        "max": 231,
+        "mean": 40.70074,
+        "median": 37,
+        "std": 19.14431,
+        "histogram": {
+          "hist": [
+            2260,
+            4512,
+            1262,
+            380,
+            102,
+            26,
+            6,
+            1,
+            1,
+            1
+          ],
+          "bin_edges": [
+            6,
+            29,
+            52,
+            75,
+            98,
+            121,
+            144,
+            167,
+            190,
+            213,
+            231
+          ]
+        }
+      }
+    }
+  ]
+}
+```
