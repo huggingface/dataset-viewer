@@ -168,72 +168,10 @@ cacheMaintenance:
       cpu: 100m
     limits:
       cpu: 1
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 # --- cron jobs  ---
 backfill:
   enabled: false
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-
-cleanHfDatasetsCache:
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-
-deleteIndexes:
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-
-postMessages:
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
@@ -245,30 +183,6 @@ queueMetricsCollector:
     limits:
       cpu: 1
       memory: "512Mi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-
-cacheMetricsCollector:
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 
@@ -281,17 +195,6 @@ storageAdmin:
     limits:
       cpu: 1
       memory: "256Mi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 # --- reverse proxy ---
 
@@ -306,19 +209,6 @@ reverseProxy:
       memory: "256Mi"
   service:
     type: NodePort
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-    - key: CriticalAddonsOnly
-      operator: Equal
 
 ingress:
   tls:
@@ -348,17 +238,6 @@ admin:
     limits:
       cpu: 1
       memory: "4Gi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 api:
   uvicornNumWorkers: "1"
@@ -372,17 +251,6 @@ api:
     limits:
       cpu: 1
       memory: "4Gi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 rows:
   uvicornNumWorkers: "1"
@@ -396,17 +264,6 @@ rows:
     limits:
       cpu: 1
       memory: "4Gi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 search:
   uvicornNumWorkers: "1"
@@ -420,17 +277,6 @@ search:
     limits:
       cpu: 1
       memory: "4Gi"
-  nodeSelector:
-    project: "datasets-server"
-  tolerations:
-    - key: huggingface.co/project
-      operator: Equal
-      value: datasets-server
-      effect: NoSchedule
-    - key: karpenter.sh/capacity-type
-      operator: Equal
-      value: spot
-      effect: NoSchedule
 
 workers:
   - deployName: "all"
@@ -438,8 +284,6 @@ workers:
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
-    nodeSelector:
-      project: "datasets-server"
     replicas: 1
     resources:
       requests:
@@ -448,22 +292,11 @@ workers:
       limits:
         cpu: 1
         memory: "4Gi"
-    tolerations:
-      - key: huggingface.co/project
-        operator: Equal
-        value: datasets-server
-        effect: NoSchedule
-      - key: karpenter.sh/capacity-type
-        operator: Equal
-        value: spot
-        effect: NoSchedule
   - deployName: "light"
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
-    nodeSelector:
-      project: "datasets-server"
     replicas: 1
     resources:
       requests:
@@ -472,12 +305,3 @@ workers:
       limits:
         cpu: 1
         memory: "4Gi"
-    tolerations:
-      - key: huggingface.co/project
-        operator: Equal
-        value: datasets-server
-        effect: NoSchedule
-      - key: karpenter.sh/capacity-type
-        operator: Equal
-        value: spot
-        effect: NoSchedule
