@@ -19,6 +19,7 @@ from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
     MissingRequiredParameterError,
+    UnexpectedApiError,
 )
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
@@ -29,7 +30,6 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.exceptions import UnexpectedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
@@ -210,7 +210,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedError("Unexpected error.", e)
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="filter_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
