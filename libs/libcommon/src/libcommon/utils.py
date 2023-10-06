@@ -10,7 +10,6 @@ from fnmatch import fnmatch
 from http import HTTPStatus
 from typing import Any, Optional, TypedDict
 
-import numpy as np
 import orjson
 
 from libcommon.exceptions import DatasetInBlockListError
@@ -114,17 +113,13 @@ def orjson_default(obj: Any) -> Any:
         # the bytes are encoded with base64, and then decoded as utf-8
         # (ascii only, by the way) to get a string
         return base64.b64encode(obj).decode("utf-8")
-    if isinstance(obj, np.integer):
-        return int(obj)
-    if isinstance(obj, np.floating):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
     return str(obj)
 
 
 def orjson_dumps(content: Any) -> bytes:
-    return orjson.dumps(content, option=orjson.OPT_UTC_Z, default=orjson_default)
+    return orjson.dumps(
+        content, option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS, default=orjson_default
+    )
 
 
 def get_datetime(days: Optional[float] = None) -> datetime:

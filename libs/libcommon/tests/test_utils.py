@@ -80,6 +80,7 @@ def test_orjson_dumps() -> None:
         "np_int64": np.int64(12),
         "pd_timedelta": pd.Timedelta(1, "d"),
         "object": {"a": 1, "b": 10.2},
+        "non_string_key": {1: 20},
     }
     serialized_obj = orjson_dumps(obj)
     assert serialized_obj is not None
