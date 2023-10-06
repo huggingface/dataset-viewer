@@ -1,4 +1,4 @@
-# Explore statistics over split's data
+# Explore statistics over split data
 
 Datasets Server provides a `/statistics` endpoint for fetching some basic statistics precomputed for a requested dataset. This will get you a quick insight on how the data is distributed.
 
@@ -14,7 +14,7 @@ The `/statistics` endpoint requires three query parameters:
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 
-Let's get some stats for `glue` dataset, `cola` config, `train` split.
+Let's get some stats for `glue` dataset, `cola` config, `train` split:
 
 <inferencesnippet>
 <python>
@@ -58,7 +58,7 @@ curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&
 
 The response JSON contains two keys:
 * `num_examples` - number of samples in a split
-* `statistics` - list of dictionaries for statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type. See section ... for more details
+* `statistics` - list of dictionaries of statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type, see [Response structure by data types](./statistics#response-structure-by-data-type) for more details
 
 ```json
 {
@@ -179,8 +179,8 @@ The following column data types are currently supported:
 * `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
 * `float` - for float dtypes
 * `int` - for integer dtypes
-* `string_label` - for string dtypes - if there are less than or equal to 30 unique values in a string column in a given split
-* `string_text` - for string dtypes - if there are more than 30 unique values in a string column in a given split
+* `string_label` - for string dtypes, if there are less than or equal to 30 unique values in a string column in a given split
+* `string_text` - for string dtypes, if there are more than 30 unique values in a string column in a given split
 
 ### `class_label`
 
@@ -190,6 +190,7 @@ This type represents categorical data encoded as [`ClassLabel`](https://huggingf
 * number and proportion of values with no label
 * number of unique values (excluding `null` and `no label`)
 * value counts for each label (excluding `null` and `no label`)
+
 
 ```json
 {
@@ -209,23 +210,74 @@ This type represents categorical data encoded as [`ClassLabel`](https://huggingf
 }
 ```
 
+
 ### float
 
-The following statistics are returned for float data types:
+The following measures are returned for float data types:
 
 * minimum, maximum, mean, and standard deviation values
 * number and proportion of `null` values
 * histogram with 10 bins
 
+<details><summary>Example </summary>
+<p>
 
+```json
+{
+  "column_name": "clarity",
+  "column_type": "float",
+  "column_statistics": {
+    "nan_count": 0,
+    "nan_proportion": 0,
+    "min": 0,
+    "max": 2,
+    "mean": 1.67206,
+    "median": 1.8,
+    "std": 0.38714,
+    "histogram": {
+      "hist": [
+        17,
+        12,
+        48,
+        52,
+        135,
+        188,
+        814,
+        15,
+        1628,
+        2048
+      ],
+      "bin_edges": [
+        0,
+        0.2,
+        0.4,
+        0.6,
+        0.8,
+        1,
+        1.2,
+        1.4,
+        1.6,
+        1.8,
+        2
+      ]
+    }
+  }
+}
+```
+
+</p>
+</details>
 
 ### int
 
-The following statistics are returned for integer data types:
+The following measures are returned for integer data types:
 
 * minimum, maximum, mean, and standard deviation values
 * number and proportion of `null` values
 * histogram with less than or equal to 10 bins
+
+<details><summary>Example </summary>
+<p>
 
 ```json
 {
@@ -254,16 +306,21 @@ The following statistics are returned for integer data types:
 }
 ```
 
+</p>
+</details>
+
+
 ### string_label
 
-If string column has less than or equal to 30 unique values withing the requested split, it is considered to be a category. The following measures are computed:
+If string column has less than or equal to 30 unique values within the requested split, it is considered to be a category. The following measures are returned:
 
 * number and proportion of `null` values
 * number of unique values (excluding `null`)
 * value counts for each label (excluding `null`)
 
-<details>
+<details><summary>Example </summary>
 <p>
+
 ```json
 {
   "column_name": "answerKey",
@@ -280,17 +337,22 @@ If string column has less than or equal to 30 unique values withing the requeste
     }
   }
 }
+
 ```
+
 </p>
 </details>
 
 ### string_text
 
-If string column has more than 30 unique values withing the requested split, it is considered to be a column containing texts and respons contains statistics over text lengths. The following measures are computed:
+If string column has more than 30 unique values within the requested split, it is considered to be a column containing texts and response contains statistics over text lengths. The following measures are computed:
 
 * minimum, maximum, mean, and standard deviation of text lengths
 * number and proportion of `null` values
 * histogram of text lengths with 10 bins
+
+<details><summary>Example </summary>
+<p>
 
 ```json
 {
@@ -334,3 +396,6 @@ If string column has more than 30 unique values withing the requested split, it 
   }
 }
 ```
+
+</p>
+</details>
