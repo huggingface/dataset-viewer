@@ -1,6 +1,6 @@
-# Get statistics of a dataset
+# Explore statistics over split's data
 
-Datasets Server provides a `/statistics` endpoint for fetching some descriptive statistics precomputed for a requested dataset. This will get you a quick insight on what the data actually is **quantitatively**.
+Datasets Server provides a `/statistics` endpoint for fetching some basic statistics precomputed for a requested dataset. This will get you a quick insight on how the data is distributed.
 
 <Tip warning={true}>
   Currently, only <a href="./parquet">datasets with Parquet exports</a>
@@ -8,18 +8,11 @@ Datasets Server provides a `/statistics` endpoint for fetching some descriptive 
   downloading the whole dataset.
 </Tip>
 
-The `/statistics` endpoint accepts three query parameters:
+The `/statistics` endpoint requires three query parameters:
 
 - `dataset`: the dataset name, for example `glue`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
-
-The following data types are supported:
-
-* string
-* float
-* int
-* [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
 
 Let's get some stats for `glue` dataset, `cola` config, `train` split.
 
@@ -65,17 +58,7 @@ curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&
 
 The response JSON contains two keys:
 * `num_examples` - number of samples in a split
-* `statistics` - list of dictionaries for statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type.
-
-`column_type` is one of the following values:
-
-* `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
- feature
-* `float` - for float dtypes
-* `int` - for integer dtypes
-* `string_label` - for string dtypes - if there are less than or equal to 30 unique values in a string column in a given split
-* `string_text` - for string dtypes - if there are more than 30 unique values in a string column in a given split
-
+* `statistics` - list of dictionaries for statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type. See section ... for more details
 
 ```json
 {
@@ -177,5 +160,177 @@ The response JSON contains two keys:
       }
     }
   ]
+}
+```
+
+## Supported data types
+
+The following column data types are currently supported:
+
+* string
+* float
+* int
+* [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
+
+## Response structure by data type
+
+`column_type` in response can be one of the following values:
+
+* `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
+* `float` - for float dtypes
+* `int` - for integer dtypes
+* `string_label` - for string dtypes - if there are less than or equal to 30 unique values in a string column in a given split
+* `string_text` - for string dtypes - if there are more than 30 unique values in a string column in a given split
+
+### `class_label`
+
+This type represents categorical data encoded as [`ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature. The following measures are computed:
+
+* number and proportion of `null` values
+* number and proportion of values with no label
+* number of unique values (excluding `null` and `no label`)
+* value counts for each label (excluding `null` and `no label`)
+
+```json
+{
+  "column_name": "label",
+  "column_type": "class_label",
+  "column_statistics": {
+    "nan_count": 0,
+    "nan_proportion": 0,
+    "no_label_count": 0,
+    "no_label_proportion": 0,
+    "n_unique": 2,
+    "frequencies": {
+      "unacceptable": 2528,
+      "acceptable": 6023
+    }
+  }
+}
+```
+
+### float
+
+The following statistics are returned for float data types:
+
+* minimum, maximum, mean, and standard deviation values
+* number and proportion of `null` values
+* histogram with 10 bins
+
+
+
+### int
+
+The following statistics are returned for integer data types:
+
+* minimum, maximum, mean, and standard deviation values
+* number and proportion of `null` values
+* histogram with less than or equal to 10 bins
+
+```json
+{
+    "column_name": "direction",
+    "column_type": "int",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 0,
+        "max": 1,
+        "mean": 0.49925,
+        "median": 0.0,
+        "std": 0.5,
+        "histogram": {
+            "hist": [
+                50075,
+                49925
+            ],
+            "bin_edges": [
+                0,
+                1,
+                1
+            ]
+        }
+    }
+}
+```
+
+### string_label
+
+If string column has less than or equal to 30 unique values withing the requested split, it is considered to be a category. The following measures are computed:
+
+* number and proportion of `null` values
+* number of unique values (excluding `null`)
+* value counts for each label (excluding `null`)
+
+<details>
+<p>
+```json
+{
+  "column_name": "answerKey",
+  "column_type": "string_label",
+  "column_statistics": {
+    "nan_count": 0,
+    "nan_proportion": 0,
+    "n_unique": 4,
+    "frequencies": {
+      "D": 1221,
+      "C": 1146,
+      "A": 1378,
+      "B": 1212
+    }
+  }
+}
+```
+</p>
+</details>
+
+### string_text
+
+If string column has more than 30 unique values withing the requested split, it is considered to be a column containing texts and respons contains statistics over text lengths. The following measures are computed:
+
+* minimum, maximum, mean, and standard deviation of text lengths
+* number and proportion of `null` values
+* histogram of text lengths with 10 bins
+
+```json
+{
+  "column_name": "sentence",
+  "column_type": "string_text",
+  "column_statistics": {
+    "nan_count": 0,
+    "nan_proportion": 0,
+    "min": 6,
+    "max": 231,
+    "mean": 40.70074,
+    "median": 37,
+    "std": 19.14431,
+    "histogram": {
+      "hist": [
+        2260,
+        4512,
+        1262,
+        380,
+        102,
+        26,
+        6,
+        1,
+        1,
+        1
+      ],
+      "bin_edges": [
+        6,
+        29,
+        52,
+        75,
+        98,
+        121,
+        144,
+        167,
+        190,
+        213,
+        231
+      ]
+    }
+  }
 }
 ```
