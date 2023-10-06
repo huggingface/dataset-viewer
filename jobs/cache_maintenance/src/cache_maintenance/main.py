@@ -54,7 +54,7 @@ def run_job() -> None:
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
             )
-        elif action == "clean_hf_datasets_cache":
+        elif action == "clean-hf-datasets-cache":
             hf_datasets_cache = init_hf_datasets_cache_dir(directory=job_config.datasets_based.hf_datasets_cache)
             clean_hf_datasets_cache(
                 hf_datasets_cache=hf_datasets_cache,
