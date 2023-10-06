@@ -14,4 +14,6 @@
   value: {{ .Values.cachedAssets.keepMostRecentRowsNumber | quote }}
 - name: CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
   value: {{ .Values.cachedAssets.maxCleanedRowsNumber | quote }}
+- name: CACHED_ASSETS_S3_FOLDER_NAME
+  value: {{ .Values.cachedAssets.s3FolderName | quote }}
 {{- end -}}
