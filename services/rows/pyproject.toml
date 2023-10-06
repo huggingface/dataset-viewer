@@ -67,6 +67,7 @@ module = [
     "pyarrow.*",
     "tqdm.*",
     "fsspec.*",
+    "boto3.*",
     "moto.*",
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
