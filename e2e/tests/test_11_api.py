@@ -62,16 +62,13 @@ def test_auth_e2e(
     ],
 )
 def test_endpoint(
-    auth_headers: AuthHeaders,
     hf_public_dataset_repo_csv_data: str,
     endpoint: str,
     input_type: Literal["all", "dataset", "config", "split"],
 ) -> None:
-    auth: AuthType = "none"
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
-    headers = auth_headers[auth]
 
     # asking for the dataset will launch the jobs, without the need of a webhook
     relative_url = endpoint
@@ -84,26 +81,19 @@ def test_endpoint(
 
     poll_until_ready_and_assert(
         relative_url=relative_url,
-        headers=headers,
         check_x_revision=input_type != "all",
     )
 
 
-def test_rows_endpoint(
-    auth_headers: AuthHeaders,
-    hf_public_dataset_repo_csv_data: str,
-) -> None:
-    auth: AuthType = "none"
+def test_rows_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
-    headers = auth_headers[auth]
     # ensure the /rows endpoint works as well
     offset = 1
     length = 10
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
-        headers=headers,
         check_x_revision=True,
     )
     content = rows_response.json()
