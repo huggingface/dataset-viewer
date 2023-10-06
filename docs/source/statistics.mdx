@@ -19,7 +19,7 @@ The following data types are supported:
 * string
 * float
 * int
-* `datasets.ClassLabel`
+* [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
 
 Let's get some stats for `glue` dataset, `cola` config, `train` split.
 
@@ -69,7 +69,8 @@ The response JSON contains two keys:
 
 `column_type` is one of the following values:
 
-* `class_label` - for `datasets.ClassLabel` feature
+* `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
+ feature
 * `float` - for float dtypes
 * `int` - for integer dtypes
 * `string_label` - for string dtypes - if there are less than or equal to 30 unique values in a string column in a given split
