@@ -6,11 +6,11 @@ from typing import Optional
 
 import pytest
 import responses
+from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
 from starlette.datastructures import Headers
 from starlette.requests import Request
 
 from admin.authentication import auth_check
-from admin.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
 
 from .utils import request_callback
 

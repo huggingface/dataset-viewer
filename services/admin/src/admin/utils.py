@@ -1,84 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import logging
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
-from typing import Any, Literal, Optional
+from typing import Any, Optional
 
 from libcommon.exceptions import CustomError
 from libcommon.utils import orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-
-AdminErrorCode = Literal[
-    "ExternalAuthenticatedError",
-    "ExternalUnauthenticatedError",
-    "InvalidParameter",
-    "MissingRequiredParameter",
-    "UnsupportedDatasetError",
-    "UnexpectedError",  # also in libcommon.exceptions
-]
-
-
-class AdminCustomError(CustomError):
-    """Base class for exceptions in this module."""
-
-    def __init__(
-        self,
-        message: str,
-        status_code: HTTPStatus,
-        code: AdminErrorCode,
-        cause: Optional[BaseException] = None,
-        disclose_cause: bool = False,
-    ):
-        super().__init__(message, status_code, str(code), cause, disclose_cause)
-
-
-class MissingRequiredParameterError(AdminCustomError):
-    """Raised when a required parameter is missing."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "MissingRequiredParameter")
-
-
-class InvalidParameterError(AdminCustomError):
-    """Raised when a parameter is invalid."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "InvalidParameter")
-
-
-class UnsupportedDatasetError(AdminCustomError):
-    """Raised when a dataset is not supported (private dataset, for example)."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedDatasetError")
-
-
-class UnexpectedError(AdminCustomError):
-    """Raised when an unexpected error occurred."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "UnexpectedError", cause)
-        if cause:
-            logging.exception(message, exc_info=cause)
-        else:
-            logging.exception(message)
-
-
-class ExternalUnauthenticatedError(AdminCustomError):
-    """Raised when the external authentication check failed while the user was unauthenticated."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.UNAUTHORIZED, "ExternalUnauthenticatedError")
-
-
-class ExternalAuthenticatedError(AdminCustomError):
-    """Raised when the external authentication check failed while the user was authenticated."""
-
-    def __init__(self, message: str):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "ExternalAuthenticatedError")
 
 
 class OrjsonResponse(JSONResponse):

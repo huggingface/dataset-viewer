@@ -4,6 +4,11 @@
 import logging
 from typing import Optional
 
+from libapi.exceptions import (
+    ApiError,
+    MissingRequiredParameterError,
+    UnexpectedApiError,
+)
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_dataset_responses_without_content_for_kind
@@ -12,10 +17,7 @@ from starlette.responses import Response
 
 from admin.authentication import auth_check
 from admin.utils import (
-    AdminCustomError,
     Endpoint,
-    MissingRequiredParameterError,
-    UnexpectedError,
     are_valid_parameters,
     get_json_admin_error_response,
     get_json_ok_response,
@@ -58,9 +60,9 @@ def create_dataset_status_endpoint(
                 },
                 max_age=max_age,
             )
-        except AdminCustomError as e:
+        except ApiError as e:
             return get_json_admin_error_response(e, max_age=max_age)
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
+            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return dataset_status_endpoint

@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from libapi.exceptions import UnexpectedApiError
 from libcommon.simple_cache import has_some_cache, upsert_response
 from pytest import raises
 
@@ -16,7 +17,6 @@ from admin.routes.obsolete_cache import (
     delete_obsolete_cache,
     get_obsolete_cache,
 )
-from admin.utils import UnexpectedError
 
 
 @pytest.mark.parametrize(
@@ -90,7 +90,7 @@ def test_delete_obsolete_cache(
     with patch("admin.routes.obsolete_cache.get_supported_dataset_names", return_value=dataset_names):
         with patch("admin.routes.obsolete_cache.MINIMUM_SUPPORTED_DATASETS", minimun_supported_datasets):
             if should_raise:
-                with raises(UnexpectedError):
+                with raises(UnexpectedApiError):
                     delete_obsolete_cache(
                         hf_endpoint="hf_endpoint",
                         hf_token="hf_token",
