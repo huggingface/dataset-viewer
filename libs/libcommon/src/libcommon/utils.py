@@ -11,6 +11,7 @@ from http import HTTPStatus
 from typing import Any, Optional, TypedDict
 
 import orjson
+import pandas as pd
 
 from libcommon.exceptions import DatasetInBlockListError
 
@@ -113,6 +114,8 @@ def orjson_default(obj: Any) -> Any:
         # the bytes are encoded with base64, and then decoded as utf-8
         # (ascii only, by the way) to get a string
         return base64.b64encode(obj).decode("utf-8")
+    if isinstance(obj, pd.Timestamp):
+        return obj.to_pydatetime()
     return str(obj)
 
 
