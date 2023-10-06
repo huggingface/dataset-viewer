@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from environs import Env
-from libapi.config import ApiConfig, CachedAssetsS3Config
+from libapi.config import ApiConfig
 from libcommon.config import (
     CacheConfig,
     CachedAssetsConfig,
@@ -13,6 +13,7 @@ from libcommon.config import (
     LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    S3Config,
 )
 
 DUCKDB_INDEX_CACHE_DIRECTORY = None
@@ -39,12 +40,12 @@ class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
-    cached_assets_s3: CachedAssetsS3Config = field(default_factory=CachedAssetsS3Config)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
+    s3: S3Config = field(default_factory=S3Config)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -52,11 +53,11 @@ class AppConfig:
         return cls(
             common=common_config,
             cached_assets=CachedAssetsConfig.from_env(),
-            cached_assets_s3=CachedAssetsS3Config.from_env(),
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
             duckdb_index=DuckDbIndexConfig.from_env(),
+            s3=S3Config.from_env(),
         )

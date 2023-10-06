@@ -14,6 +14,7 @@ from libcommon.config import (
     ProcessingGraphConfig,
     QueueConfig,
     RowsIndexConfig,
+    S3Config,
 )
 
 WORKER_CONTENT_MAX_BYTES = 10_000_000
@@ -328,6 +329,7 @@ class AppConfig:
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
+    s3: S3Config = field(default_factory=S3Config)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -348,6 +350,7 @@ class AppConfig:
             parquet_and_info=ParquetAndInfoConfig.from_env(),
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
+            s3=S3Config.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

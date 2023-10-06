@@ -29,14 +29,10 @@ Headers = Mapping[str, str]
 
 
 def get(relative_url: str, headers: Optional[Headers] = None, url: str = URL) -> Response:
-    if headers is None:
-        headers = {}
     return requests.get(f"{url}{relative_url}", headers=headers)
 
 
 def post(relative_url: str, json: Optional[Any] = None, headers: Optional[Headers] = None, url: str = URL) -> Response:
-    if headers is None:
-        headers = {}
     return requests.post(f"{url}{relative_url}", json=json, headers=headers)
 
 
@@ -47,8 +43,6 @@ def poll(
     headers: Optional[Headers] = None,
     url: str = URL,
 ) -> Response:
-    if headers is None:
-        headers = {}
     interval = INTERVAL
     timeout = MAX_DURATION
     retries = timeout // interval
@@ -161,8 +155,6 @@ def poll_until_ready_and_assert(
     url: str = URL,
     check_x_revision: bool = False,
 ) -> Any:
-    if headers is None:
-        headers = {}
     interval = INTERVAL
     timeout = MAX_DURATION
     retries = timeout // interval

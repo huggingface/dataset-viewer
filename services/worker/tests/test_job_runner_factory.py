@@ -7,6 +7,7 @@ from typing import Optional
 import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority
@@ -53,6 +54,12 @@ def test_create_job_runner(
     job_type: str,
     expected_job_runner: Optional[str],
 ) -> None:
+    s3_client = S3Client(
+        region_name="us-east-1",
+        aws_access_key_id="access_key_id",
+        aws_secret_access_key="secret_access_key",
+        bucket_name="bucket",
+    )
     factory = JobRunnerFactory(
         app_config=app_config,
         processing_graph=processing_graph,
@@ -61,6 +68,7 @@ def test_create_job_runner(
         parquet_metadata_directory=parquet_metadata_directory,
         duckdb_index_cache_directory=duckdb_index_cache_directory,
         statistics_cache_directory=statistics_cache_directory,
+        s3_client=s3_client,
     )
     dataset, config, split = "dataset", "config", "split"
     job_info: JobInfo = {

@@ -62,10 +62,10 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     s3_client = S3Client(
-        aws_access_key_id=app_config.cached_assets_s3.access_key_id,
-        aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
-        region_name=app_config.cached_assets_s3.region,
-        bucket_name=app_config.cached_assets_s3.bucket,
+        aws_access_key_id=app_config.s3.access_key_id,
+        aws_secret_access_key=app_config.s3.secret_access_key,
+        region_name=app_config.s3.region,
+        bucket_name=app_config.s3.bucket,
     )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
@@ -83,8 +83,8 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
+                cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
                 s3_client=s3_client,
-                cached_assets_s3_folder_name=app_config.cached_assets_s3.folder_name,
                 parquet_metadata_directory=parquet_metadata_directory,
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
                 hf_endpoint=app_config.common.hf_endpoint,

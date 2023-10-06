@@ -186,6 +186,8 @@ cacheMaintenance:
     level: "debug"
   backfill:
     error_codes_to_retry: ""
+  nodeSelector:
+    role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
@@ -203,7 +205,8 @@ backfill:
   error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError,NoIndexableColumnsError"
   schedule: "20 21 * * *"
   # every four hours
-  nodeSelector: {}
+  nodeSelector:
+    role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
@@ -211,20 +214,35 @@ backfill:
     limits:
       cpu: 2
       memory: "8Gi"
-  tolerations: []
+
+cleanHfDatasetsCache:
+  nodeSelector:
+    role-datasets-server: "true"
+
+deleteIndexes:
+  nodeSelector:
+    role-datasets-server: "true"
+
+postMessages:
+  nodeSelector:
+    role-datasets-server: "true"
 
 queueMetricsCollector:
   action: "collect-queue-metrics"
   schedule: "*/10 * * * *"
   # every ten minutes, then it will be changed to default
-  nodeSelector: {}
+  nodeSelector:
+    role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
     limits:
       cpu: 1
       memory: "512Mi"
-  tolerations: []
+
+cacheMetricsCollector:
+  nodeSelector:
+    role-datasets-server: "true"
 
 # --- storage admin (to manually inspect the storage, in /data) ---
 
@@ -255,9 +273,6 @@ reverseProxy:
       memory: "256Mi"
   service:
     type: NodePort
-  tolerations:
-    - key: CriticalAddonsOnly
-      operator: Equal
 
 ingress:
   tls:
@@ -287,7 +302,6 @@ admin:
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   uvicornNumWorkers: "9"
-
   nodeSelector:
     role-datasets-server: "true"
   replicas: 2
@@ -309,7 +323,6 @@ api:
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   uvicornNumWorkers: "9"
-
   nodeSelector:
     role-datasets-server: "true"
   replicas: 4
@@ -365,7 +378,6 @@ sseApi:
   # (2 x $num_cores) + 1
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   uvicornNumWorkers: "1"
-
   nodeSelector:
     role-datasets-server: "true"
   replicas: 2

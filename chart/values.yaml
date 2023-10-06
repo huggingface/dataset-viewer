@@ -250,6 +250,7 @@ assets:
   # baseUrl: "not used for now"
   # Directory on the shared storage (audio files and images)
   storageDirectory: "/storage/assets"
+  s3FolderName: "assets"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
@@ -264,11 +265,11 @@ cachedAssets:
   keepMostRecentRowsNumber: 200
   # When cleaning the cached assets directory: maximum number of rows to discard.
   maxCleanedRowsNumber: 10000
+  s3FolderName: "cached-assets"
 
-cachedAssetsS3:
+s3:
   bucket: "hf-datasets-server-statics"
   region: "us-east-1"
-  folderName: "cached-assets"
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
