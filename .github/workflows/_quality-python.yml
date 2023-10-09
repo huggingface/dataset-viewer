@@ -33,6 +33,8 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config poppler-utils
+      - name: Verify consistency of poetry.lock with pyproject.toml
+        run: poetry lock --no-update --check
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
