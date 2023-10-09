@@ -171,6 +171,8 @@ def compute_index_rows(
             local_dir_use_symlinks=False,
             token=hf_token,
             cache_dir=duckdb_index_file_directory,
+            force_download=True,
+            resume_download=False,
         )
 
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
