@@ -16,11 +16,11 @@ from libapi.duckdb import (
 )
 from libapi.exceptions import (
     ApiError,
-    InvalidParameterError,
     MissingRequiredParameterError,
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
@@ -162,17 +162,9 @@ def create_search_endpoint(
                             "Parameter 'dataset', 'config', 'split' and 'query' are required"
                         )
 
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Offset must be positive")
+                    offset = get_request_parameter_offset(request)
 
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Length must be positive")
-                    if length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    length = get_request_parameter_length(request)
 
                 with StepProfiler(method="search_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below

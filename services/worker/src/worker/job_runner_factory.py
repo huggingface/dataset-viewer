@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
 
@@ -82,6 +83,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     parquet_metadata_directory: StrPath
     duckdb_index_cache_directory: StrPath
     statistics_cache_directory: StrPath
+    s3_client: S3Client
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
@@ -113,6 +115,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
                 assets_directory=self.assets_directory,
+                s3_client=self.s3_client,
             )
         if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
             return ConfigParquetAndInfoJobRunner(
@@ -184,6 +187,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 processing_graph=self.processing_graph,
                 assets_directory=self.assets_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
+                s3_client=self.s3_client,
             )
         if job_type == SplitIsValidJobRunner.get_job_type():
             return SplitIsValidJobRunner(

@@ -1,22 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from .fixtures.hub import AuthHeaders, AuthType
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_statistics_endpoint(
-    auth_headers: AuthHeaders,
-    hf_public_dataset_repo_csv_data: str,
-) -> None:
-    auth: AuthType = "none"
+def test_statistics_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
     # TODO: add dataset with various splits, or various configs
     dataset = hf_public_dataset_repo_csv_data
     config, split = get_default_config_split()
-    headers = auth_headers[auth]
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
-        headers=headers,
         check_x_revision=True,
     )
 

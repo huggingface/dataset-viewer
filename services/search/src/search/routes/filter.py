@@ -19,7 +19,9 @@ from libapi.exceptions import (
     ApiError,
     InvalidParameterError,
     MissingRequiredParameterError,
+    UnexpectedApiError,
 )
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
@@ -29,12 +31,10 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.exceptions import UnexpectedError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
@@ -100,16 +100,8 @@ def create_filter_endpoint(
                             "Parameters 'dataset', 'config', 'split' and 'where' are required"
                         )
                     validate_where_parameter(where)
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Parameter 'offset' must be positive")
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Parameter 'length' must be positive")
-                    elif length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    offset = get_request_parameter_offset(request)
+                    length = get_request_parameter_length(request)
                     logger.info(
                         f'/filter, dataset={dataset}, config={config}, split={split}, where="{where}",'
                         f" offset={offset}, length={length}"
@@ -210,7 +202,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedError("Unexpected error.", e)
+                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
                 with StepProfiler(method="filter_endpoint", step="generate API error response"):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 

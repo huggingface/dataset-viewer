@@ -25,8 +25,9 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
@@ -42,7 +43,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    storage_options: DirectoryStorageOptions,
+    storage_options: S3StorageOptions,
 ) -> list[Row]:
     return [
         {
@@ -66,7 +67,7 @@ def compute_first_rows_response(
     dataset: str,
     config: str,
     split: str,
-    storage_options: DirectoryStorageOptions,
+    storage_options: S3StorageOptions,
     hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
@@ -89,7 +90,7 @@ def compute_first_rows_response(
             A configuration name.
         split (`str`):
             A split name.
-        storage_options (`DirectoryStorageOptions`):
+        storage_options (`S3StorageOptions`):
             The storage options that contains the assets_base_url and assets_directory.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
@@ -268,6 +269,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
         assets_directory: StrPath,
+        s3_client: S3Client,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -278,6 +280,13 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         self.first_rows_config = app_config.first_rows
         self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
+        self.storage_options = S3StorageOptions(
+            assets_base_url=self.assets_base_url,
+            assets_directory=self.assets_directory,
+            overwrite=True,
+            s3_client=s3_client,
+            s3_folder_name=app_config.assets.s3_folder_name,
+        )
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -285,11 +294,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 dataset=self.dataset,
                 config=self.config,
                 split=self.split,
-                storage_options=DirectoryStorageOptions(
-                    assets_base_url=self.assets_base_url,
-                    assets_directory=self.assets_directory,
-                    overwrite=True,
-                ),
+                storage_options=self.storage_options,
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,

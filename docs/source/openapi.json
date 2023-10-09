@@ -2868,13 +2868,19 @@
                   "negative-offset": {
                     "summary": "The offset must be positive.",
                     "value": {
-                      "error": "Offset must be positive"
+                      "error": "Parameter 'offset' must be positive"
                     }
                   },
                   "negative-length": {
                     "summary": "The length must be positive.",
                     "value": {
-                      "error": "Length must be positive"
+                      "error": "Parameter 'length' must be positive"
+                    }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
                     }
                   }
                 }
@@ -3227,13 +3233,19 @@
                   "negative-offset": {
                     "summary": "The offset must be positive.",
                     "value": {
-                      "error": "Offset must be positive"
+                      "error": "Parameter 'offset' must be positive"
                     }
                   },
                   "negative-length": {
                     "summary": "The length must be positive.",
                     "value": {
-                      "error": "Length must be positive"
+                      "error": "Parameter 'length' must be positive"
+                    }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
                     }
                   }
                 }
@@ -3838,6 +3850,12 @@
                     "summary": "The length must be positive.",
                     "value": {
                       "error": "Parameter 'length' must be positive"
+                    }
+                  },
+                  "too-large-length": {
+                    "summary": "The length must not be too large.",
+                    "value": {
+                      "error": "Parameter 'length' must not be greater than 100"
                     }
                   }
                 }

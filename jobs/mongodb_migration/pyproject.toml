@@ -6,21 +6,21 @@ version = "0.0.1"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
+python = "3.9.15"
 environs = "^9.5.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
-python = "3.9.15"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
 black = "^22.12.0"
 flake8 = "^3.9.2"
 flake8-pep585 = "^0.1.7"
+flake8-unused-arguments = "^0.0.13"
 isort = "^5.12.0"
 mypy = "^1.0.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-cov = "^2.12.1"
-flake8-unused-arguments = "^0.0.13"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
