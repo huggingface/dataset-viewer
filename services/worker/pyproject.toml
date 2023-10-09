@@ -6,7 +6,7 @@ version = "1.0.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-PyICU = "^2.10.2"
+python = "3.9.15"
 aiohttp = "^3.8.4"
 aiolimiter = "^1.0.0"
 bs4 = "^0.0.1"
@@ -30,14 +30,14 @@ pillow = "^10.0.1"
 py7zr = "^0.20.4"
 pyarrow = "^11.0.0"
 pydub = "^0.25.1"
-python = "3.9.15"
+PyICU = "^2.10.2"
 rarfile = "^4.0"
 scikit-learn = "^1.2.1"
+tensorflow-aarch64 = {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-cpu = [
     {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
     {version = "^2.11.1", markers = "sys_platform == 'darwin' and platform_machine != 'arm64'"}
 ]
-tensorflow-aarch64 = {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-macos = {version = "^2.11.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'"}
 tfrecord = "^1.14.1"
 torch = [
