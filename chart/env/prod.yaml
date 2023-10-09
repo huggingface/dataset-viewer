@@ -202,7 +202,7 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError,NoIndexableColumnsError"
+  error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError,ExternalServerError"
   schedule: "20 21 * * *"
   # every four hours
   nodeSelector:
