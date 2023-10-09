@@ -36,16 +36,19 @@ def run_job() -> None:
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
     ):
-        if not cache_resource.is_available():
-            logging.warning("The connection to the cache database could not be established. The action is skipped.")
-            return
-        if not queue_resource.is_available():
-            logging.warning("The connection to the queue database could not be established. The action is skipped.")
-            return
-
         processing_graph = ProcessingGraph(job_config.graph)
         start_time = datetime.now()
         if action == "backfill":
+            if not cache_resource.is_available():
+                logging.warning(
+                    "The connection to the cache database could not be established. The action is skipped."
+                )
+                return
+            if not queue_resource.is_available():
+                logging.warning(
+                    "The connection to the queue database could not be established. The action is skipped."
+                )
+                return
             backfill_cache(
                 processing_graph=processing_graph,
                 hf_endpoint=job_config.common.hf_endpoint,
@@ -61,8 +64,18 @@ def run_job() -> None:
                 expired_time_interval_seconds=job_config.datasets_based.expired_time_interval_seconds,
             )
         elif action == "collect-queue-metrics":
+            if not queue_resource.is_available():
+                logging.warning(
+                    "The connection to the queue database could not be established. The action is skipped."
+                )
+                return
             collect_queue_metrics(processing_graph=processing_graph)
         elif action == "collect-cache-metrics":
+            if not cache_resource.is_available():
+                logging.warning(
+                    "The connection to the cache database could not be established. The action is skipped."
+                )
+                return
             collect_cache_metrics()
         elif action == "delete-indexes":
             duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
@@ -73,6 +86,11 @@ def run_job() -> None:
                 file_extension=job_config.duckdb.file_extension,
             )
         elif action == "post-messages":
+            if not cache_resource.is_available():
+                logging.warning(
+                    "The connection to the cache database could not be established. The action is skipped."
+                )
+                return
             post_messages(
                 hf_endpoint=job_config.common.hf_endpoint,
                 bot_associated_user_name=job_config.discussions.bot_associated_user_name,
