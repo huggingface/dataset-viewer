@@ -3,9 +3,7 @@
 Datasets Server provides a `/statistics` endpoint for fetching some basic statistics precomputed for a requested dataset. This will get you a quick insight on how the data is distributed.
 
 <Tip warning={true}>
-  Currently, only <a href="./parquet">datasets with Parquet exports</a>
-  are supported so Datasets Server can index the contents and run the search without
-  downloading the whole dataset.
+  Currently, statistics are computed only for <a href="./parquet">datasets with Parquet exports</a>.
 </Tip>
 
 The `/statistics` endpoint requires three query parameters:
@@ -173,6 +171,8 @@ The following column data types are currently supported:
 * [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
 
 ## Response structure by data type
+
+Currently, statistics are supported for strings, float and integer numbers, and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
 
 `column_type` in response can be one of the following values:
 
