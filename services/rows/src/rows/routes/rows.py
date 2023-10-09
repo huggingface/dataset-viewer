@@ -9,10 +9,10 @@ from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
-    InvalidParameterError,
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
+from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
@@ -29,7 +29,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
@@ -85,16 +84,8 @@ def create_rows_endpoint(
                     split = request.query_params.get("split")
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
-                    offset = int(request.query_params.get("offset", 0))
-                    if offset < 0:
-                        raise InvalidParameterError(message="Offset must be positive")
-                    length = int(request.query_params.get("length", MAX_NUM_ROWS_PER_PAGE))
-                    if length < 0:
-                        raise InvalidParameterError("Length must be positive")
-                    if length > MAX_NUM_ROWS_PER_PAGE:
-                        raise InvalidParameterError(
-                            f"Parameter 'length' must not be bigger than {MAX_NUM_ROWS_PER_PAGE}"
-                        )
+                    offset = get_request_parameter_offset(request)
+                    length = get_request_parameter_length(request)
                     logging.info(
                         f"/rows, dataset={dataset}, config={config}, split={split}, offset={offset}, length={length}"
                     )
