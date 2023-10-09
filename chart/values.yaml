@@ -80,7 +80,7 @@ images:
 common:
   # comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
   # See https://observablehq.com/@huggingface/blocked-datasets
-  blockedDatasets: "alexandrainst/nota,Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*"
+  blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
