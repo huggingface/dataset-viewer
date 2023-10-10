@@ -4,11 +4,10 @@
 from typing import Literal, Optional
 
 import requests
+from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
 from requests import PreparedRequest
 from requests.auth import AuthBase
 from starlette.requests import Request
-
-from admin.utils import ExternalAuthenticatedError, ExternalUnauthenticatedError
 
 
 class RequestAuth(AuthBase):

@@ -4,19 +4,14 @@
 import logging
 from typing import Optional
 
+from libapi.exceptions import ApiError, UnexpectedApiError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    AdminCustomError,
-    Endpoint,
-    UnexpectedError,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
+from admin.utils import Endpoint, get_json_admin_error_response, get_json_ok_response
 
 
 def create_pending_jobs_endpoint(
@@ -44,9 +39,9 @@ def create_pending_jobs_endpoint(
                 },
                 max_age=max_age,
             )
-        except AdminCustomError as e:
+        except ApiError as e:
             return get_json_admin_error_response(e, max_age=max_age)
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
+            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return pending_jobs_endpoint

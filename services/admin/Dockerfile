@@ -25,6 +25,7 @@ WORKDIR /src
 COPY services/admin/poetry.lock ./services/admin/poetry.lock
 COPY services/admin/pyproject.toml ./services/admin/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+COPY libs/libapi ./libs/libapi
 WORKDIR /src/services/admin/
 RUN poetry install --no-cache
 COPY services/admin/src ./src

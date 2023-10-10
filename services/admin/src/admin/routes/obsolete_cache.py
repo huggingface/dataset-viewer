@@ -4,6 +4,7 @@
 import logging
 from typing import Optional, TypedDict
 
+from libapi.exceptions import UnexpectedApiError
 from libcommon.dataset import get_supported_dataset_infos
 from libcommon.simple_cache import (
     delete_dataset_responses,
@@ -16,12 +17,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    Endpoint,
-    UnexpectedError,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
+from admin.utils import Endpoint, get_json_admin_error_response, get_json_ok_response
 
 MINIMUM_SUPPORTED_DATASETS = 20_000
 
@@ -73,7 +69,7 @@ def create_get_obsolete_cache_endpoint(
                 get_obsolete_cache(hf_endpoint=hf_endpoint, hf_token=hf_token), max_age=max_age
             )
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
+            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return get_obsolete_cache_endpoint
 
@@ -86,7 +82,7 @@ def delete_obsolete_cache(
 ) -> list[DatasetCacheReport]:
     supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
     if len(supported_dataset_names) < MINIMUM_SUPPORTED_DATASETS:
-        raise UnexpectedError(f"only {len(supported_dataset_names)} datasets were found")
+        raise UnexpectedApiError(f"only {len(supported_dataset_names)} datasets were found")
 
     existing_datasets = get_all_datasets()
     datasets_to_delete = existing_datasets.difference(supported_dataset_names)
@@ -137,6 +133,6 @@ def create_delete_obsolete_cache_endpoint(
                 max_age=max_age,
             )
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedError("Unexpected error.", e), max_age=max_age)
+            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return delete_obsolete_cache_endpoint
