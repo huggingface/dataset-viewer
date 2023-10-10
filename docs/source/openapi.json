@@ -2865,10 +2865,22 @@
                       "error": "Parameters 'split', 'config' and 'dataset' are required"
                     }
                   },
+                  "non-integer-offset": {
+                    "summary": "The offset must be integer.",
+                    "value": {
+                      "error": "Parameter 'offset' must be integer"
+                    }
+                  },
                   "negative-offset": {
                     "summary": "The offset must be positive.",
                     "value": {
                       "error": "Parameter 'offset' must be positive"
+                    }
+                  },
+                  "non-integer-length": {
+                    "summary": "The length must be integer.",
+                    "value": {
+                      "error": "Parameter 'length' must be integer"
                     }
                   },
                   "negative-length": {
@@ -3230,10 +3242,22 @@
                       "error": "Parameter 'dataset', 'config', 'split' and 'query' are required"
                     }
                   },
+                  "non-integer-offset": {
+                    "summary": "The offset must be integer.",
+                    "value": {
+                      "error": "Parameter 'offset' must be integer"
+                    }
+                  },
                   "negative-offset": {
                     "summary": "The offset must be positive.",
                     "value": {
                       "error": "Parameter 'offset' must be positive"
+                    }
+                  },
+                  "non-integer-length": {
+                    "summary": "The length must be integer.",
+                    "value": {
+                      "error": "Parameter 'length' must be integer"
                     }
                   },
                   "negative-length": {
@@ -3840,10 +3864,22 @@
                       "error": "Parameters 'dataset', 'config', 'split' and 'where' are required"
                     }
                   },
+                  "non-integer-offset": {
+                    "summary": "The offset must be integer.",
+                    "value": {
+                      "error": "Parameter 'offset' must be integer"
+                    }
+                  },
                   "negative-offset": {
                     "summary": "The offset must be positive.",
                     "value": {
                       "error": "Parameter 'offset' must be positive"
+                    }
+                  },
+                  "non-integer-length": {
+                    "summary": "The length must be integer.",
+                    "value": {
+                      "error": "Parameter 'length' must be integer"
                     }
                   },
                   "negative-length": {
