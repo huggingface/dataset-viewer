@@ -29,22 +29,8 @@ def get_request_parameter_offset(request: Request) -> int:
     return offset
 
 
-def get_request_parameter_dataset(request: Request) -> str:
-    dataset = request.query_params.get("dataset")
-    if not dataset or not are_valid_parameters([dataset]):
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-    return dataset
-
-
-def get_request_parameter_config(request: Request) -> str:
-    config = request.query_params.get("config")
-    if not config or not are_valid_parameters([config]):
-        raise MissingRequiredParameterError("Parameter 'config' is required")
-    return config
-
-
-def get_request_parameter_split(request: Request) -> str:
-    split = request.query_params.get("split")
-    if not split or not are_valid_parameters([split]):
-        raise MissingRequiredParameterError("Parameter 'split' is required")
-    return split
+def get_required_request_parameter(request: Request, parameter_name: str) -> str:
+    parameter = request.query_params.get(parameter_name)
+    if not parameter or not are_valid_parameters([parameter]):
+        raise MissingRequiredParameterError(f"Parameter '{parameter_name}' is required")
+    return parameter

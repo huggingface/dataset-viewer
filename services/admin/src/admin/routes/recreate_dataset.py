@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import InvalidParameterError, UnexpectedApiError
-from libapi.request import get_request_parameter_dataset
+from libapi.request import get_required_request_parameter
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.operations import backfill_dataset
@@ -35,7 +35,7 @@ def create_recreate_dataset_endpoint(
 ) -> Endpoint:
     async def recreate_dataset_endpoint(request: Request) -> Response:
         try:
-            dataset = get_request_parameter_dataset(request)
+            dataset = get_required_request_parameter(request, "dataset")
             try:
                 priority = Priority(request.query_params.get("priority", "low"))
             except ValueError:

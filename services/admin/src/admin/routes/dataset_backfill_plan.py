@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, UnexpectedApiError
-from libapi.request import get_request_parameter_dataset
+from libapi.request import get_required_request_parameter
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import ProcessingGraph
@@ -28,7 +28,7 @@ def create_dataset_backfill_plan_endpoint(
 ) -> Endpoint:
     async def dataset_state_endpoint(request: Request) -> Response:
         try:
-            dataset = get_request_parameter_dataset(request)
+            dataset = get_required_request_parameter(request, "dataset")
             logging.info(f"/dataset-state, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
