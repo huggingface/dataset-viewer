@@ -41,3 +41,10 @@ def get_request_parameter_config(request: Request) -> str:
     if not config or not are_valid_parameters([config]):
         raise MissingRequiredParameterError("Parameter 'config' is required")
     return config
+
+
+def get_request_parameter_split(request: Request) -> str:
+    split = request.query_params.get("split")
+    if not split or not are_valid_parameters([split]):
+        raise MissingRequiredParameterError("Parameter 'split' is required")
+    return split

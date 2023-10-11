@@ -26,6 +26,7 @@ from libapi.request import (
     get_request_parameter_dataset,
     get_request_parameter_length,
     get_request_parameter_offset,
+    get_request_parameter_split,
 )
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
@@ -92,7 +93,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
                     dataset = get_request_parameter_dataset(request)
                     config = get_request_parameter_config(request)
-                    split = request.query_params.get("split")
+                    split = get_request_parameter_split(request)
                     where = request.query_params.get("where")
                     if (
                         not dataset

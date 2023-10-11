@@ -9,7 +9,11 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_config, get_request_parameter_dataset
+from libapi.request import (
+    get_request_parameter_config,
+    get_request_parameter_dataset,
+    get_request_parameter_split,
+)
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -52,7 +56,7 @@ def create_force_refresh_endpoint(
                 split = None
             else:
                 config = get_request_parameter_config(request)
-                split = request.query_params.get("split")
+                split = get_request_parameter_split(request)
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
             try:
