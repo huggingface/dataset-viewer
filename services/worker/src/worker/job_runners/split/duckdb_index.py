@@ -45,6 +45,7 @@ from worker.utils import (
     retry,
 )
 
+DUCKDB_INDEX_JOB_RUNNER_FOLDER = "job_runner"
 DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
@@ -299,7 +300,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            cache_directory=Path(duckdb_index_cache_directory),
+            cache_directory=Path(duckdb_index_cache_directory) / DUCKDB_INDEX_JOB_RUNNER_FOLDER,
         )
         self.duckdb_index_config = app_config.duckdb_index
 

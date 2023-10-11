@@ -30,17 +30,19 @@ class BackfillConfig:
 
 
 DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_SUBDIRECTORY = "downloads"
-DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS = 10 * 60  # 10 minutes
-DUCKDB_INDEX_FILE_EXTENSION = ".duckdb"
+DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
+DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY = "job_runner"
+DUCKDB_INDEX_DOWNLOADS_EXPIRED_TIME_INTERVAL_SECONDS = 10 * 60  # 10 minutes
+DUCKDB_INDEX_JOB_RUNNER_EXPIRED_TIME_INTERVAL_SECONDS = 10 * 60  # 10 minutes
 
 
 @dataclass(frozen=True)
 class DuckDbConfig:
     cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
-    subdirectory: str = DUCKDB_INDEX_SUBDIRECTORY
-    expired_time_interval_seconds: int = DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
-    file_extension: str = DUCKDB_INDEX_FILE_EXTENSION
+    downloads_subdirectory: str = DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
+    downloads_expired_time_interval_seconds: int = DUCKDB_INDEX_DOWNLOADS_EXPIRED_TIME_INTERVAL_SECONDS
+    job_runner_subdirectory: str = DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY
+    job_runner_expired_time_interval_seconds: int = DUCKDB_INDEX_JOB_RUNNER_EXPIRED_TIME_INTERVAL_SECONDS
 
     @classmethod
     def from_env(cls) -> "DuckDbConfig":
@@ -48,11 +50,20 @@ class DuckDbConfig:
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
-                subdirectory=env.str(name="SUBDIRECTORY", default=DUCKDB_INDEX_SUBDIRECTORY),
-                expired_time_interval_seconds=env.int(
-                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
+                downloads_subdirectory=env.str(
+                    name="DOWNLOADS_SUBDIRECTORY", default=DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
                 ),
-                file_extension=env.str(name="FILE_EXTENSION", default=DUCKDB_INDEX_FILE_EXTENSION),
+                downloads_expired_time_interval_seconds=env.int(
+                    name="DOWNLOADS_EXPIRED_TIME_INTERVAL_SECONDS",
+                    default=DUCKDB_INDEX_DOWNLOADS_EXPIRED_TIME_INTERVAL_SECONDS,
+                ),
+                job_runner_subdirectory=env.str(
+                    name="JOB_RUNNER_SUBDIRECTORY", default=DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY
+                ),
+                job_runner_expired_time_interval_seconds=env.int(
+                    name="JOB_RUNNER_EXPIRED_TIME_INTERVAL_SECONDS",
+                    default=DUCKDB_INDEX_JOB_RUNNER_EXPIRED_TIME_INTERVAL_SECONDS,
+                ),
             )
 
 

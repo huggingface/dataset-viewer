@@ -12,9 +12,9 @@ from libcommon.storage import init_duckdb_index_cache_dir, init_hf_datasets_cach
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
+from cache_maintenance.clean_duckdb_index_files import clean_duckdb_index_files
 from cache_maintenance.clean_hf_datasets_cache import clean_hf_datasets_cache
 from cache_maintenance.config import JobConfig
-from cache_maintenance.delete_indexes import delete_indexes
 from cache_maintenance.discussions import post_messages
 from cache_maintenance.queue_metrics import collect_queue_metrics
 
@@ -77,13 +77,19 @@ def run_job() -> None:
                 )
                 return
             collect_cache_metrics()
-        elif action == "delete-indexes":
+        elif action == "clean-duckdb-index-downloads":
             duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
-            delete_indexes(
+            clean_duckdb_index_files(
                 duckdb_index_cache_directory=duckdb_index_cache_directory,
-                subdirectory=job_config.duckdb.subdirectory,
-                expired_time_interval_seconds=job_config.duckdb.expired_time_interval_seconds,
-                file_extension=job_config.duckdb.file_extension,
+                subdirectory=job_config.duckdb.downloads_subdirectory,
+                expired_time_interval_seconds=job_config.duckdb.downloads_expired_time_interval_seconds,
+            )
+        elif action == "clean-duckdb-index-job-runner":
+            duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
+            clean_duckdb_index_files(
+                duckdb_index_cache_directory=duckdb_index_cache_directory,
+                subdirectory=job_config.duckdb.job_runner_subdirectory,
+                expired_time_interval_seconds=job_config.duckdb.job_runner_expired_time_interval_seconds,
             )
         elif action == "post-messages":
             if not cache_resource.is_available():

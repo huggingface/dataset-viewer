@@ -1,25 +1,25 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-{{- define "containerDeleteIndexes" -}}
-- name: "{{ include "name" . }}-delete-indexes"
+{{- define "containerCleanDuckdbIndexDownloads" -}}
+- name: "{{ include "name" . }}-clean-duckdb-index-downloads"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
-  resources: {{ toYaml .Values.deleteIndexes.resources | nindent 4 }}
+  resources: {{ toYaml .Values.cleanDuckdbIndexDownloads.resources | nindent 4 }}
   env:
     {{ include "envCache" . | nindent 2 }}
     {{ include "envQueue" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
-    value: {{ .Values.deleteIndexes.action | quote }}
+    value: {{ .Values.cleanDuckdbIndexDownloads.action | quote }}
   - name: LOG_LEVEL
-    value: {{ .Values.deleteIndexes.log.level | quote }}
+    value: {{ .Values.cleanDuckdbIndexDownloads.log.level | quote }}
   - name: DUCKDB_INDEX_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
-  - name: DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
-    value: {{ .Values.duckDBIndex.expiredTimeIntervalSeconds | quote }}
+  - name: DUCKDB_INDEX_DOWNLOADS_EXPIRED_TIME_INTERVAL_SECONDS
+    value: {{ .Values.cleanDuckdbIndexDownloads.expiredTimeIntervalSeconds | quote }}
 {{- end -}}

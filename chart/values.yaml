@@ -288,8 +288,6 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
-  # the time interval at which a downloaded index will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
 
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
@@ -329,7 +327,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-duckdb-downloads, post-messages, skip}
   log:
     level: "info"
   backfill:
@@ -374,11 +372,11 @@ cleanHfDatasetsCache:
       cpu: 0
   tolerations: []
 
-deleteIndexes:
+cleanDuckdbIndexDownloads:
   enabled: true
   log:
     level: "info"
-  action: "delete-indexes"
+  action: "clean-duckdb-index-downloads"
   error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
@@ -389,6 +387,27 @@ deleteIndexes:
     limits:
       cpu: 0
   tolerations: []
+  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+
+cleanDuckdbIndexJobRunner:
+  enabled: true
+  log:
+    level: "info"
+  action: "clean-duckdb-index-job-runner"
+  error_codes_to_retry: ""
+  schedule: "0 0 * * *"
+  # at 00:00
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+
 
 postMessages:
   enabled: true

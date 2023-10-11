@@ -7,7 +7,8 @@ Available actions:
 - `backfill`: backfill the cache (i.e. create jobs to add the missing entries or update the outdated entries)
 - `collect-cache-metrics`: compute and store the cache metrics
 - `collect-queue-metrics`: compute and store the queue metrics
-- `delete-indexes`: delete temporary DuckDB index files downloaded to handle /search requests
+- `clean-duckdb-index-downloads`: delete temporary DuckDB index files downloaded to handle /search and /filter requests
+- `clean-duckdb-index-job-runner`: delete temporary DuckDB index files created by the job runners
 - `post-messages`: post messages in Hub discussions
 - `skip`: do nothing
 
