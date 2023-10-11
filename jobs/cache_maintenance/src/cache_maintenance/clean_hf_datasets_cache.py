@@ -19,7 +19,8 @@ def clean_hf_datasets_cache(hf_datasets_cache: StrPath, expired_time_interval_se
     if len(str(hf_datasets_cache)) < 10:
         raise RuntimeError(f"Sanity check on hf_datasets_cache failed: len('{hf_datasets_cache}') < 10.")
     logging.info("delete hf datasets cache")
-    pattern = f"{hf_datasets_cache}/*"
+    # path is like {hf_datasets_cache}/{deployName}/datasets
+    pattern = f"{hf_datasets_cache}/*/datasets/*"
     logging.info(f"looking for all files and directories with pattern {pattern}")
     now = datetime.now().replace(tzinfo=None)
     errors_dirs = 0
