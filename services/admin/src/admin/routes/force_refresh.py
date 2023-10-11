@@ -9,6 +9,7 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
+from libapi.request import get_request_parameter_dataset
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -102,10 +103,3 @@ def create_force_refresh_endpoint(
             return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=0)
 
     return force_refresh_endpoint
-
-
-def get_request_parameter_dataset(request):
-    dataset = request.query_params.get("dataset")
-    if not dataset or not are_valid_parameters([dataset]):
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-    return dataset

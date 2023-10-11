@@ -4,11 +4,8 @@
 import logging
 from typing import Optional
 
-from libapi.exceptions import (
-    ApiError,
-    MissingRequiredParameterError,
-    UnexpectedApiError,
-)
+from libapi.exceptions import ApiError, UnexpectedApiError
+from libapi.request import get_request_parameter_dataset
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import ProcessingGraph
@@ -16,12 +13,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    Endpoint,
-    are_valid_parameters,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
+from admin.utils import Endpoint, get_json_admin_error_response, get_json_ok_response
 
 
 def create_dataset_backfill_plan_endpoint(
@@ -63,10 +55,3 @@ def create_dataset_backfill_plan_endpoint(
             return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return dataset_state_endpoint
-
-
-def get_request_parameter_dataset(request):
-    dataset = request.query_params.get("dataset")
-    if not dataset or not are_valid_parameters([dataset]):
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-    return dataset

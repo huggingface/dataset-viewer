@@ -21,7 +21,11 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_length, get_request_parameter_offset
+from libapi.request import (
+    get_request_parameter_dataset,
+    get_request_parameter_length,
+    get_request_parameter_offset,
+)
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
@@ -231,10 +235,3 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
-
-
-def get_request_parameter_dataset(request):
-    dataset = request.query_params.get("dataset")
-    if not dataset or not are_valid_parameters([dataset]):
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-    return dataset

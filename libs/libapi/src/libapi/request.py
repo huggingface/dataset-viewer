@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
 from starlette.requests import Request
 
-from libapi.exceptions import InvalidParameterError
+from libapi.exceptions import InvalidParameterError, MissingRequiredParameterError
+from libapi.utils import are_valid_parameters
 
 
 def get_request_parameter_length(request: Request) -> int:
@@ -27,3 +27,10 @@ def get_request_parameter_offset(request: Request) -> int:
     if offset < 0:
         raise InvalidParameterError(message="Parameter 'offset' must be positive")
     return offset
+
+
+def get_request_parameter_dataset(request: Request) -> str:
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset

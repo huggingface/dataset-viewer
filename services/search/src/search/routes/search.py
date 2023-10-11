@@ -20,7 +20,11 @@ from libapi.exceptions import (
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_length, get_request_parameter_offset
+from libapi.request import (
+    get_request_parameter_dataset,
+    get_request_parameter_length,
+    get_request_parameter_offset,
+)
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
@@ -261,10 +265,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-
-def get_request_parameter_dataset(request):
-    dataset = request.query_params.get("dataset")
-    if not dataset or not are_valid_parameters([dataset]):
-        raise MissingRequiredParameterError("Parameter 'dataset' is required")
-    return dataset
