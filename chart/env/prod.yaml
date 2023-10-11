@@ -180,7 +180,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-duckdb-downloads, post-messages, skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-duckdb-index-downloads, clean-duckdb-index-job-runner, post-messages, skip}
   log:
     level: "debug"
   backfill:
