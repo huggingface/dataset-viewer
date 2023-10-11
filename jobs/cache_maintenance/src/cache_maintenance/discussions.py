@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from time import sleep
 from typing import Literal, Optional, TypedDict
 from urllib import parse
 
@@ -108,6 +109,8 @@ def post_messages_on_parquet_conversion(
                     description=create_discussion_description(),
                     token=bot_token,
                 )
+                sleep(1)
+                # ^ see https://github.com/huggingface/moon-landing/issues/7729 (internal)
                 counters["new_discussions"] += 1
             if discussion.status == CLOSED_STATUS:
                 counters["dismissed_messages"] += 1
