@@ -22,6 +22,7 @@ from libapi.exceptions import (
     UnexpectedApiError,
 )
 from libapi.request import (
+    get_request_parameter_config,
     get_request_parameter_dataset,
     get_request_parameter_length,
     get_request_parameter_offset,
@@ -90,7 +91,7 @@ def create_filter_endpoint(
             try:
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
                     dataset = get_request_parameter_dataset(request)
-                    config = request.query_params.get("config")
+                    config = get_request_parameter_config(request)
                     split = request.query_params.get("split")
                     where = request.query_params.get("where")
                     if (

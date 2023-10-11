@@ -13,6 +13,7 @@ from libapi.exceptions import (
     UnexpectedApiError,
 )
 from libapi.request import (
+    get_request_parameter_config,
     get_request_parameter_dataset,
     get_request_parameter_length,
     get_request_parameter_offset,
@@ -84,7 +85,7 @@ def create_rows_endpoint(
             try:
                 with StepProfiler(method="rows_endpoint", step="validate parameters"):
                     dataset = get_request_parameter_dataset(request)
-                    config = request.query_params.get("config")
+                    config = get_request_parameter_config(request)
                     split = request.query_params.get("split")
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
                         raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")

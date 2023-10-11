@@ -34,3 +34,10 @@ def get_request_parameter_dataset(request: Request) -> str:
     if not dataset or not are_valid_parameters([dataset]):
         raise MissingRequiredParameterError("Parameter 'dataset' is required")
     return dataset
+
+
+def get_request_parameter_config(request: Request) -> str:
+    config = request.query_params.get("config")
+    if not config or not are_valid_parameters([config]):
+        raise MissingRequiredParameterError("Parameter 'config' is required")
+    return config
