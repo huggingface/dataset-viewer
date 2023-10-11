@@ -348,6 +348,7 @@ class ProcessingGraphConfig:
                 ],
                 "job_runner_version": PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION,
                 "difficulty": 70,
+                "bonus_difficulty_if_dataset_is_big": 20,
             },
             "split-is-valid": {
                 "input_type": "split",
