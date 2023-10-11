@@ -153,7 +153,7 @@ def create_search_endpoint(
                     dataset = get_required_request_parameter(request, "dataset")
                     config = get_required_request_parameter(request, "config")
                     split = get_required_request_parameter(request, "split")
-                    query = request.query_params.get("query")
+                    query = get_required_request_parameter(request, "query")
 
                     if (
                         not dataset

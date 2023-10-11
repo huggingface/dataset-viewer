@@ -92,7 +92,7 @@ def create_filter_endpoint(
                     dataset = get_required_request_parameter(request, "dataset")
                     config = get_required_request_parameter(request, "config")
                     split = get_required_request_parameter(request, "split")
-                    where = request.query_params.get("where")
+                    where = get_required_request_parameter(request, "where")
                     if (
                         not dataset
                         or not config
