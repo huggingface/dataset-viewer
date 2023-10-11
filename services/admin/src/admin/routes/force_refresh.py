@@ -42,9 +42,7 @@ def create_force_refresh_endpoint(
 ) -> Endpoint:
     async def force_refresh_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]) or not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            dataset = get_request_parameter_dataset(request)
             if input_type == "dataset":
                 config = None
                 split = None
@@ -104,3 +102,10 @@ def create_force_refresh_endpoint(
             return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=0)
 
     return force_refresh_endpoint
+
+
+def get_request_parameter_dataset(request):
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset

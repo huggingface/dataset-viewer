@@ -43,9 +43,7 @@ def create_recreate_dataset_endpoint(
 ) -> Endpoint:
     async def recreate_dataset_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]) or not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            dataset = get_request_parameter_dataset(request)
             try:
                 priority = Priority(request.query_params.get("priority", "low"))
             except ValueError:
@@ -94,3 +92,10 @@ def create_recreate_dataset_endpoint(
             return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=0)
 
     return recreate_dataset_endpoint
+
+
+def get_request_parameter_dataset(request):
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset

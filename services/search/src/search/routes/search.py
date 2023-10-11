@@ -146,7 +146,7 @@ def create_search_endpoint(
         with StepProfiler(method="search_endpoint", step="all"):
             try:
                 with StepProfiler(method="search_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
+                    dataset = get_request_parameter_dataset(request)
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
                     query = request.query_params.get("query")
@@ -261,3 +261,10 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
+
+
+def get_request_parameter_dataset(request):
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset

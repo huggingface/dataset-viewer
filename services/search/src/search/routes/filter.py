@@ -85,7 +85,7 @@ def create_filter_endpoint(
         with StepProfiler(method="filter_endpoint", step="all"):
             try:
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
+                    dataset = get_request_parameter_dataset(request)
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
                     where = request.query_params.get("where")
@@ -231,3 +231,10 @@ def execute_filter_query(
 def validate_where_parameter(where: str) -> None:
     if SQL_INVALID_SYMBOLS_PATTERN.search(where):
         raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
+
+
+def get_request_parameter_dataset(request):
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset

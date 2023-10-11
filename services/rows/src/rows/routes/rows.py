@@ -79,7 +79,7 @@ def create_rows_endpoint(
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
                 with StepProfiler(method="rows_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
+                    dataset = get_request_parameter_dataset(request)
                     config = request.query_params.get("config")
                     split = request.query_params.get("split")
                     if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
@@ -189,3 +189,10 @@ def create_rows_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return rows_endpoint
+
+
+def get_request_parameter_dataset(request):
+    dataset = request.query_params.get("dataset")
+    if not dataset or not are_valid_parameters([dataset]):
+        raise MissingRequiredParameterError("Parameter 'dataset' is required")
+    return dataset
