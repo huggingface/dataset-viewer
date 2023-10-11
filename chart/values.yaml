@@ -396,8 +396,8 @@ cleanDuckdbIndexJobRunner:
     level: "info"
   action: "clean-duckdb-index-job-runner"
   error_codes_to_retry: ""
-  schedule: "0 0 * * *"
-  # at 00:00
+  schedule: "0 */3 * * *"
+  # every 3 hours
   nodeSelector: {}
   resources:
     requests:
