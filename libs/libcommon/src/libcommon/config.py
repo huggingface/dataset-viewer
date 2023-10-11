@@ -61,29 +61,22 @@ class AssetsConfig:
                 s3_folder_name=env.str(name="S3_FOLDER_NAME", default=ASSETS_S3_FOLDER_NAME),
             )
 
-
-S3_BUCKET = "hf-datasets-server-statics"
 S3_ACCESS_KEY_ID = None
 S3_SECRET_ACCESS_KEY = None
-S3_REGION = "us-east-1"
 
 
 @dataclass(frozen=True)
 class S3Config:
-    bucket: str = S3_BUCKET
     access_key_id: Optional[str] = S3_ACCESS_KEY_ID
     secret_access_key: Optional[str] = S3_SECRET_ACCESS_KEY
-    region: str = S3_REGION
 
     @classmethod
     def from_env(cls) -> "S3Config":
         env = Env(expand_vars=True)
         with env.prefixed("S3_"):
             return cls(
-                bucket=env.str(name="BUCKET", default=S3_BUCKET),
                 access_key_id=env.str(name="ACCESS_KEY_ID", default=S3_ACCESS_KEY_ID),
                 secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=S3_SECRET_ACCESS_KEY),
-                region=env.str(name="REGION", default=S3_REGION),
             )
 
 
@@ -93,8 +86,9 @@ CACHED_ASSETS_CLEAN_CACHE_PROBA = 0.05
 CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER = 100
 CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER = 200
 CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER = 10_000
-CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
-
+CACHED_ASSETS_FOLDER_NAME = "cached-assets"
+CACHED_ASSETS_STORAGE_ROOT = "storage"
+CACHED_ASSETS_STORAGE_PROTOCOL = "file"
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
@@ -104,7 +98,9 @@ class CachedAssetsConfig:
     keep_first_rows_number: int = CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
     keep_most_recent_rows_number: int = CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER
     max_cleaned_rows_number: int = CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
-    s3_folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
+    folder_name: str = CACHED_ASSETS_FOLDER_NAME
+    storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
+    storage_root: str = CACHED_ASSETS_STORAGE_ROOT
 
     @classmethod
     def from_env(cls) -> "CachedAssetsConfig":
@@ -123,7 +119,9 @@ class CachedAssetsConfig:
                 max_cleaned_rows_number=env.float(
                     name="MAX_CLEAN_SAMPLE_SIZE", default=CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
                 ),
-                s3_folder_name=env.str(name="S3_FOLDER_NAME", default=CACHED_ASSETS_S3_FOLDER_NAME),
+                folder_name=env.str(name="S3_FOLDER_NAME", default=CACHED_ASSETS_FOLDER_NAME),
+                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
+                storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT)
             )
 
 

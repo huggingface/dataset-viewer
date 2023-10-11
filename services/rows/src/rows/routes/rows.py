@@ -152,7 +152,6 @@ def create_rows_endpoint(
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
                         s3_client=s3_client,
                         cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,

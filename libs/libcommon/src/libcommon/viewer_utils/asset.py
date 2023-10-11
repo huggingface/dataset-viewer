@@ -88,105 +88,6 @@ class AudioSource(TypedDict):
     type: str
 
 
-SupportedSource = Union[ImageSource, AudioSource]
-
-
-def upload_asset_file(
-    url_dir_path: str,
-    filename: str,
-    file_path: Path,
-    overwrite: bool = True,
-    s3_client: Optional[S3Client] = None,
-    s3_folder_name: Optional[str] = None,
-) -> None:
-    if s3_client is not None:
-        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        if overwrite or not s3_client.exists(object_key):
-            s3_client.upload(str(file_path), object_key)
-
-
-def create_asset_file(
-    dataset: str,
-    config: str,
-    split: str,
-    row_idx: int,
-    column: str,
-    filename: str,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
-    fn: Callable[[Path, str, bool], SupportedSource],
-) -> SupportedSource:
-    # get url dir path
-    assets_base_url = storage_options.assets_base_url
-    assets_directory = storage_options.assets_directory
-    overwrite = storage_options.overwrite
-    use_s3_storage = isinstance(storage_options, S3StorageOptions)
-    logging.debug(f"storage options with {use_s3_storage=}")
-    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
-    src = f"{assets_base_url}/{url_dir_path}/{filename}"
-
-    # configure file path
-    file_path = (
-        get_unique_path_for_filename(assets_directory, filename)
-        if use_s3_storage
-        else get_and_create_dir_path(
-            assets_directory=assets_directory,
-            url_dir_path=url_dir_path,
-        )
-        / filename
-    )
-
-    # create file locally
-    asset_file = fn(file_path=file_path, src=src, overwrite=overwrite)  # type: ignore
-
-    # upload to s3 if enabled
-    if use_s3_storage:
-        s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
-        s3_folder_name = s3_storage_options.s3_folder_name
-        s3_client = s3_storage_options.s3_client
-
-        upload_asset_file(
-            url_dir_path=url_dir_path,
-            filename=filename,
-            file_path=file_path,
-            overwrite=overwrite,
-            s3_client=s3_client,
-            s3_folder_name=s3_folder_name,
-        )
-        os.remove(file_path)
-
-    return asset_file
-
-
-def save_image(image: Image.Image, file_path: Path, src: str, overwrite: bool) -> ImageSource:
-    if overwrite or not file_path.exists():
-        image.save(file_path)
-    return ImageSource(src=src, height=image.height, width=image.width)
-
-
-def save_audio(
-    audio_file_bytes: bytes, audio_file_extension: str, file_path: Path, src: str, overwrite: bool
-) -> AudioSource:
-    if file_path.suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
-        raise ValueError(
-            f"Audio format {file_path.suffix} is not supported. Supported formats are"
-            f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
-        )
-    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[file_path.suffix]
-
-    if overwrite or not file_path.exists():
-        if audio_file_extension == file_path.suffix:
-            with open(file_path, "wb") as f:
-                f.write(audio_file_bytes)
-        else:  # we need to convert
-            # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
-                tmpfile.write(audio_file_bytes)
-                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
-                segment.export(file_path, format=file_path.suffix[1:])
-
-    return AudioSource(src=src, type=media_type)
-
-
 def create_image_file(
     dataset: str,
     config: str,
@@ -196,21 +97,29 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     storage_options: DirectoryStorageOptions,
+    ext: str,
 ) -> ImageSource:
-    fn = partial(save_image, image=image)
-    return cast(
-        ImageSource,
-        create_asset_file(
-            dataset=dataset,
-            config=config,
-            split=split,
-            row_idx=row_idx,
-            column=column,
-            filename=filename,
-            storage_options=storage_options,
-            fn=fn,
-        ),
-    )
+    # get url dir path
+    assets_base_url = storage_options.assets_base_url
+    overwrite = storage_options.overwrite
+    use_s3_storage = isinstance(storage_options, S3StorageOptions)
+    logging.info(f"storage options with {use_s3_storage=}")
+    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
+    src = f"{assets_base_url}/{url_dir_path}/{filename}"
+
+    # upload to s3 if enabled
+    if use_s3_storage:
+        s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
+        s3_folder_name = s3_storage_options.s3_folder_name
+        s3_client = s3_storage_options.s3_client
+        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
+
+        if overwrite or not s3_client.exists(object_key=object_key):
+            image_path = f"{s3_client._storage_root}/{object_key}"
+            with s3_client._fs.open(image_path, 'wb') as f:
+                image.save(fp=f, format="JPEG")
+    return ImageSource(src=src, height=image.height, width=image.width)
+
 
 
 def create_audio_file(
@@ -224,19 +133,42 @@ def create_audio_file(
     filename: str,
     storage_options: DirectoryStorageOptions,
 ) -> list[AudioSource]:
-    fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
-    return [
-        cast(
-            AudioSource,
-            create_asset_file(
-                dataset=dataset,
-                config=config,
-                split=split,
-                row_idx=row_idx,
-                column=column,
-                filename=filename,
-                storage_options=storage_options,
-                fn=fn,
-            ),
-        )
-    ]
+    # get url dir path
+    assets_base_url = storage_options.assets_base_url
+    # assets_directory = storage_options.assets_directory
+    overwrite = storage_options.overwrite
+    use_s3_storage = isinstance(storage_options, S3StorageOptions)
+    logging.info(f"storage options with {use_s3_storage=}")
+    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
+    src = f"{assets_base_url}/{url_dir_path}/{filename}"
+
+    # upload to s3 if enabled
+    if use_s3_storage:
+        s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
+        s3_folder_name = s3_storage_options.s3_folder_name
+        s3_client = s3_storage_options.s3_client
+        suffix = f".{filename.split('.')[-1]}"
+        if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+            raise ValueError(
+                f"Audio format {suffix} is not supported. Supported formats are"
+                f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
+            )
+        media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
+        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
+        audio_path = f"{s3_client._storage_root}/{object_key}"
+        if overwrite or not s3_client.exists(object_key=object_key):
+            if audio_file_extension == suffix:
+                with s3_client._fs.open(audio_path, 'wb') as f:
+                    f.write(audio_file_bytes)
+            else:  # we need to convert
+                # might spawn a process to convert the audio file using ffmpeg
+                print("convertion firts")
+                with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                    tmpfile.write(audio_file_bytes)
+                    segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                    print("convertion temp done")
+                    with s3_client._fs.open(audio_path, 'wb') as f:
+                        segment.export(f, format=suffix[1:])
+                        print("segment export done")
+
+    return AudioSource(src=src, type=media_type)

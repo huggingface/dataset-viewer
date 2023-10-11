@@ -88,6 +88,7 @@ def image(
                 filename=f"{append_hash_suffix('image', json_path)}{ext}",
                 image=value,
                 storage_options=storage_options,
+                ext=ext,
             )
         except OSError:
             # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191

@@ -282,7 +282,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         self.assets_base_url = app_config.assets.base_url
         self.storage_options = S3StorageOptions(
             assets_base_url=self.assets_base_url,
-            assets_directory=self.assets_directory,
             overwrite=True,
             s3_client=s3_client,
             s3_folder_name=app_config.assets.s3_folder_name,

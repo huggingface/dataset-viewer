@@ -37,13 +37,21 @@ if __name__ == "__main__":
         statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
         processing_graph = ProcessingGraph(app_config.processing_graph)
-        s3_client = S3Client(
-            aws_access_key_id=app_config.s3.access_key_id,
-            aws_secret_access_key=app_config.s3.secret_access_key,
-            region_name=app_config.s3.region,
-            bucket_name=app_config.s3.bucket,
-        )
+        # s3_client = S3Client(
+        #     aws_access_key_id=app_config.s3.access_key_id,
+        #     aws_secret_access_key=app_config.s3.secret_access_key,
+        #     region_name=app_config.s3.region,
+        #     bucket_name=app_config.s3.bucket,
+        # )
 
+        s3_client = S3Client(
+            implementation="s3",
+            root="hf-datasets-server-statics-staging"
+            # aws_access_key_id=app_config.cached_assets_s3.access_key_id,
+            # aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
+            # region_name=app_config.cached_assets_s3.region,
+            # bucket_name=app_config.cached_assets_s3.bucket,
+        )
         with (
             LibrariesResource(
                 hf_endpoint=app_config.common.hf_endpoint,

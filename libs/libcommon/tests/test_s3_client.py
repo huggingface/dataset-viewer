@@ -23,21 +23,3 @@ def test_is_available() -> None:
         conn.create_bucket(Bucket=bucket_name)
         s3_client = S3Client(region_name=region, bucket_name=bucket_name)
         assert s3_client.is_available()
-
-
-def test_upload_file_and_verify_if_exists() -> None:
-    with mock_s3():
-        region = "us-east-1"
-        bucket_name = "bucket"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
-        s3_client = S3Client(region_name=region, bucket_name=bucket_name)
-        assert s3_client.is_available()
-
-        # validate object does not exist in bucket
-        assert not s3_client.exists(object_key="non_existent")
-
-        # validate object exists in bucket after uploading
-        with NamedTemporaryFile() as tmp:
-            s3_client.upload(file_path=tmp.name, object_key="sample")
-            assert s3_client.exists(object_key="sample")

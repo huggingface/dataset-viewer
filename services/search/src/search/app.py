@@ -68,11 +68,11 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     s3_client = S3Client(
-        aws_access_key_id=app_config.s3.access_key_id,
-        aws_secret_access_key=app_config.s3.secret_access_key,
-        region_name=app_config.s3.region,
-        bucket_name=app_config.s3.bucket,
-    )
+                protocol=app_config.cached_assets.storage_protocol,
+                root=app_config.cached_assets.storage_root,
+                key=app_config.s3.access_key_id,
+                secret=app_config.s3.secret_access_key,)
+    
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
