@@ -80,7 +80,7 @@ class MongoResource(Resource):
     mongoengine_alias: str
     server_selection_timeout_ms: int = 30_000
 
-    _client: MongoClient = field(init=False)
+    _client: MongoClient = field(init=False, repr=False)
 
     def allocate(self) -> None:
         try:

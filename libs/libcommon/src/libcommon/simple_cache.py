@@ -4,12 +4,14 @@
 import types
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
-from bson import ObjectId
+from bson import CodecOptions, ObjectId
+from bson.codec_options import TypeCodec, TypeRegistry  # type: ignore[attr-defined]
+from bson.datetime_ms import DatetimeMS
 from bson.errors import InvalidId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist
@@ -31,6 +33,26 @@ from libcommon.constants import (
 )
 from libcommon.utils import JobParams, get_datetime
 
+
+class DateCodec(TypeCodec):  # type: ignore[misc]
+    python_type = date  # the Python type acted upon by this type codec
+    bson_type = DatetimeMS  # the BSON type acted upon by this type codec
+
+    def transform_python(self, value: date) -> DatetimeMS:
+        """Function that transforms a custom type value into a type
+        that BSON can encode."""
+        return DatetimeMS(datetime(value.year, value.month, value.day))
+
+    def transform_bson(self, value: DatetimeMS) -> datetime:
+        """Function that transforms a vanilla BSON type value into our
+        custom type."""
+        # we can't distinguish between a date and a datetime so we return a datetime
+        return value.as_datetime()
+
+
+date_codec = DateCodec()
+
+
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -45,6 +67,9 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
+        cls._collection = cls._get_db().get_collection(  # type: ignore[attr-defined]
+            cls._get_collection_name(), codec_options=CodecOptions(type_registry=TypeRegistry([DateCodec()]))   # type: ignore[call-arg]
+        )
         return QuerySet(cls, cls._get_collection())
 
 
