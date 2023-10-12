@@ -35,6 +35,8 @@ from libcommon.utils import JobParams, get_datetime
 
 
 class DateCodec(TypeCodec):  # type: ignore[misc]
+    """To be able to save datetime.date objects like datetime.datetime objects in mongo"""
+
     python_type = date  # the Python type acted upon by this type codec
     bson_type = DatetimeMS  # the BSON type acted upon by this type codec
 
