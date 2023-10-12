@@ -39,12 +39,8 @@ def clean_directory(pattern: str, expired_time_interval_seconds: int) -> None:
                 total_dirs += 1
                 errors += os.path.isdir(path)
     if errors:
-        logging.error(
-            f"clean_directory failed to remove {errors} directories at the root of the cache directory."
-        )
+        logging.error(f"clean_directory failed to remove {errors} directories at the root of the cache directory.")
     if total_files:
         logging.info(f"clean_directory removed {total_files} files at the root of the cache directory.")
 
-    logging.info(
-        f"clean_directory removed {total_dirs - errors} directories at the root of the cache directory."
-    )
+    logging.info(f"clean_directory removed {total_dirs - errors} directories at the root of the cache directory.")
