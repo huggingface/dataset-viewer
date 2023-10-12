@@ -35,10 +35,6 @@ EXPOSED_HEADERS = [
 ]
 
 
-def get_json_ok_response(content: Any, max_age: int) -> Response:
-    return get_json_response(content=content, max_age=max_age)
-
-
 def get_json_error_response(
     content: Any, max_age: int, status_code: HTTPStatus = HTTPStatus.OK, error_code: Optional[str] = None
 ) -> Response:
