@@ -11,7 +11,7 @@ from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overl
 
 import pandas as pd
 from bson import CodecOptions, ObjectId
-from bson.codec_options import TypeCodec, TypeRegistry  # type: ignore[attr-defined]
+from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.datetime_ms import DatetimeMS
 from bson.errors import InvalidId
 from mongoengine import Document
@@ -35,44 +35,32 @@ from libcommon.constants import (
 from libcommon.utils import JobParams, get_datetime
 
 
-def no_op_on_value(self, value):  # type: ignore
-    return value
-
-
-class DateCodec(TypeCodec):  # type: ignore[misc]
+class DateCodec(TypeEncoder):  # type: ignore[misc]
     """To be able to save datetime.date objects like datetime.datetime objects in mongo"""
 
     python_type = date  # the Python type acted upon by this type codec
-    bson_type = str  # the BSON type acted upon by this type codec
     transform_python = str  # convert date objects to strings in mongo
-    transform_bson = no_op_on_value  # reload from mongo as strings
 
 
-class TimeCodec(TypeCodec):  # type: ignore[misc]
+class TimeCodec(TypeEncoder):  # type: ignore[misc]
     """To be able to save datetime.time objects as strings in mongo"""
 
     python_type = time  # the Python type acted upon by this type codec
-    bson_type = str  # the BSON type acted upon by this type codec
     transform_python = str  # convert time objects to strings in mongo
-    transform_bson = no_op_on_value  # reload from mongo as strings
 
 
-class TimedeltaCodec(TypeCodec):  # type: ignore[misc]
-    """To be able to save datetime.time objects as strings in mongo"""
+class TimedeltaCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.timedelta objects as strings in mongo"""
 
     python_type = timedelta  # the Python type acted upon by this type codec
-    bson_type = str  # the BSON type acted upon by this type codec
     transform_python = str  # convert timedelta objects to strings in mongo
-    transform_bson = no_op_on_value  # reload from mongo as strings
 
 
-class DecimalCodec(TypeCodec):  # type: ignore[misc]
-    """To be able to save datetime.time objects as strings in mongo"""
+class DecimalCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save decimal.Decimal objects as strings in mongo"""
 
     python_type = Decimal  # the Python type acted upon by this type codec
-    bson_type = str  # the BSON type acted upon by this type codec
     transform_python = str  # convert decimal objects to strings in mongo
-    transform_bson = no_op_on_value  # reload from mongo as strings
 
 
 type_registry = TypeRegistry([DateCodec(), TimeCodec(), TimedeltaCodec(), DecimalCodec()])
@@ -83,11 +71,11 @@ type_registry = TypeRegistry([DateCodec(), TimeCodec(), TimedeltaCodec(), Decima
 U = TypeVar("U", bound=Document)
 
 
-def no_op_on_self(self, _):  # type: ignore
+def np_op(self, _):  # type: ignore
     return self
 
 
-QuerySet.__class_getitem__ = types.MethodType(no_op_on_self, QuerySet)
+QuerySet.__class_getitem__ = types.MethodType(np_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
