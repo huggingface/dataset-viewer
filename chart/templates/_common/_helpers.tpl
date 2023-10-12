@@ -111,12 +111,12 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 
 {{- define "labels.cleanDuckdbIndexDownloads" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-index-downloads"
+app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-downloads"
 {{- end -}}
 
 {{- define "labels.cleanDuckdbIndexJobRunner" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-index-job-runner"
+app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-job-runner"
 {{- end -}}
 
 {{- define "labels.cleanHfDatasetsCache" -}}

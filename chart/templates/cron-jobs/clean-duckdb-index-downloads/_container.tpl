@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 {{- define "containerCleanDuckdbIndexDownloads" -}}
-- name: "{{ include "name" . }}-clean-duckdb-index-downloads"
+- name: "{{ include "name" . }}-clean-duckdb-downloads"
   image: {{ include "jobs.cacheMaintenance.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:

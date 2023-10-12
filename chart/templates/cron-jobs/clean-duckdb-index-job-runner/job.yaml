@@ -6,7 +6,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   labels: {{ include "labels.cleanDuckdbIndexJobRunner" . | nindent 4 }}
-  name: "{{ include "name" . }}-job-clean-duckdb-index-job-runner"
+  name: "{{ include "name" . }}-job-clean-duckdb-job-runner"
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: {{ .Values.cleanDuckdbIndexJobRunner.schedule | quote }}
