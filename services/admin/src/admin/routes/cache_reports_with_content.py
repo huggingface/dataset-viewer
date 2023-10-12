@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
-from libapi.utils import get_json_ok_response
+from libapi.utils import get_json_api_error_response, get_json_ok_response
 from libcommon.simple_cache import (
     InvalidCursor,
     InvalidLimit,
@@ -15,7 +15,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import Endpoint, get_json_admin_error_response
+from admin.utils import Endpoint
 
 
 def create_cache_reports_with_content_endpoint(
@@ -53,8 +53,8 @@ def create_cache_reports_with_content_endpoint(
                     "Invalid limit. CACHE_REPORTS_WITH_CONTENT_NUM_RESULTS must be a strictly positive integer."
                 ) from e
         except ApiError as e:
-            return get_json_admin_error_response(e, max_age=max_age)
+            return get_json_api_error_response(e, max_age=max_age)
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
+            return get_json_api_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return cache_reports_with_content_endpoint
