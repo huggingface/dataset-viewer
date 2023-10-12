@@ -11,7 +11,7 @@ from typing import Any
 
 def clean_files_and_directories(pattern: str, expired_time_interval_seconds: int) -> None:
     """
-    Delete temporary cache directories that matches the given pattern.
+    Delete temporary cache directories that match the given pattern.
     """
     # sanity check
     if len(str(pattern)) < 10:
