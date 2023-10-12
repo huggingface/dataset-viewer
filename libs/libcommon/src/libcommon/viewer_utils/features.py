@@ -26,7 +26,7 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import StorageOptions
 from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
@@ -57,7 +57,7 @@ def image(
     row_idx: int,
     value: Any,
     featureName: str,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
@@ -105,7 +105,7 @@ def audio(
     row_idx: int,
     value: Any,
     featureName: str,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     if value is None:
@@ -176,7 +176,7 @@ def get_cell_value(
     cell: Any,
     featureName: str,
     fieldType: Any,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     json_path: Optional[list[Union[str, int]]] = None,
 ) -> Any:
     # always allow None values in the cells

@@ -10,7 +10,7 @@ import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
 from libapi.response import create_response
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import S3Client
 from libcommon.storage import StrPath
 
 from search.config import AppConfig

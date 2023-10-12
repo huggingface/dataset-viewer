@@ -2,17 +2,13 @@
 # Copyright 2023 The HuggingFace Authors.
 from dataclasses import dataclass
 
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
 
 
 @dataclass
-class DirectoryStorageOptions:
+class StorageOptions:
     assets_base_url: str
+    assets_directory: str
     overwrite: bool
-
-
-@dataclass
-class S3StorageOptions(DirectoryStorageOptions):
-    s3_folder_name: str
-    s3_client: S3Client
+    storage_client: StorageClient

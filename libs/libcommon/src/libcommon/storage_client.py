@@ -3,13 +3,13 @@
 import fsspec
 from typing import Any
 
-class S3ClientInitializeError(Exception):
+class StorageClientInitializeError(Exception):
     pass
 
 
-class S3Client:
+class StorageClient:
     """
-    A resource that represents a connection to S3.
+    A resource that represents a connection to a storage client.
 
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
@@ -35,5 +35,5 @@ class S3Client:
 
     def exists(self, object_key: str) -> bool:
         if not self.is_available():
-            raise S3ClientInitializeError()
+            raise StorageClientInitializeError()
         return self._fs.exists(f"{self._storage_root}/{object_key}")

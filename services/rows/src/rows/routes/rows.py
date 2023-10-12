@@ -26,7 +26,7 @@ from libapi.utils import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
@@ -44,7 +44,7 @@ def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    s3_client: S3Client,
+    storage_client: StorageClient,
     cached_assets_s3_folder_name: str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
@@ -152,7 +152,7 @@ def create_rows_endpoint(
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        s3_client=s3_client,
+                        storage_client=storage_client,
                         cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,

@@ -6,7 +6,7 @@ from tempfile import NamedTemporaryFile
 import boto3
 from moto import mock_s3
 
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import S3Client
 
 
 def test_is_available() -> None:

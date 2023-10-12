@@ -33,7 +33,7 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
@@ -63,7 +63,7 @@ def create_filter_endpoint(
     target_revision: str,
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
-    s3_client: S3Client,
+    storage_client: StorageClient,
     cached_assets_s3_folder_name: str,
     cache_max_days: int,
     blocked_datasets: list[str],
@@ -190,7 +190,7 @@ def create_filter_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
+                        storage_client=storage_client,
                         cached_assets_s3_folder_name=cached_assets_s3_folder_name,
                         pa_table=pa_table,
                         offset=offset,

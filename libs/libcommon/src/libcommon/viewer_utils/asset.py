@@ -4,21 +4,19 @@
 import contextlib
 import logging
 import os
-from collections.abc import Callable, Generator
-from functools import partial
+from collections.abc import Generator
 from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional, TypedDict, Union, cast
+from typing import TypedDict, cast
 from uuid import uuid4
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
-from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath, remove_dir
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import StorageOptions
 
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
@@ -96,28 +94,23 @@ def create_image_file(
     column: str,
     filename: str,
     image: Image.Image,
-    storage_options: DirectoryStorageOptions,
+    storage_options: StorageOptions,
     ext: str,
 ) -> ImageSource:
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     overwrite = storage_options.overwrite
-    use_s3_storage = isinstance(storage_options, S3StorageOptions)
-    logging.info(f"storage options with {use_s3_storage=}")
     url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
-    # upload to s3 if enabled
-    if use_s3_storage:
-        s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
-        s3_folder_name = s3_storage_options.s3_folder_name
-        s3_client = s3_storage_options.s3_client
-        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
+    assets_directory = storage_options.assets_directory
+    storage_client = storage_options.storage_client
+    object_key = f"{assets_directory}/{url_dir_path}/{filename}"
 
-        if overwrite or not s3_client.exists(object_key=object_key):
-            image_path = f"{s3_client._storage_root}/{object_key}"
-            with s3_client._fs.open(image_path, 'wb') as f:
-                image.save(fp=f, format="JPEG")
+    if overwrite or not storage_client.exists(object_key=object_key):
+        image_path = f"{storage_client._storage_root}/{object_key}"
+        with storage_client._fs.open(image_path, 'wb') as f:
+            image.save(fp=f, format="JPEG")
     return ImageSource(src=src, height=image.height, width=image.width)
 
 
@@ -131,44 +124,37 @@ def create_audio_file(
     audio_file_bytes: bytes,
     audio_file_extension: str,
     filename: str,
-    storage_options: DirectoryStorageOptions,
+    storage_options: StorageOptions,
 ) -> list[AudioSource]:
     # get url dir path
     assets_base_url = storage_options.assets_base_url
-    # assets_directory = storage_options.assets_directory
     overwrite = storage_options.overwrite
-    use_s3_storage = isinstance(storage_options, S3StorageOptions)
-    logging.info(f"storage options with {use_s3_storage=}")
     url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
-    # upload to s3 if enabled
-    if use_s3_storage:
-        s3_storage_options: S3StorageOptions = cast(S3StorageOptions, storage_options)
-        s3_folder_name = s3_storage_options.s3_folder_name
-        s3_client = s3_storage_options.s3_client
-        suffix = f".{filename.split('.')[-1]}"
-        if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
+    assets_directory = storage_options.assets_directory
+    storage_client = storage_options.storage_client
+    suffix = f".{filename.split('.')[-1]}"
+    if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
             raise ValueError(
                 f"Audio format {suffix} is not supported. Supported formats are"
                 f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
             )
-        media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
-        object_key = f"{s3_folder_name}/{url_dir_path}/{filename}"
-        audio_path = f"{s3_client._storage_root}/{object_key}"
-        if overwrite or not s3_client.exists(object_key=object_key):
-            if audio_file_extension == suffix:
-                with s3_client._fs.open(audio_path, 'wb') as f:
-                    f.write(audio_file_bytes)
-            else:  # we need to convert
+    media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
+    object_key = f"{assets_directory}/{url_dir_path}/{filename}"
+    audio_path = f"{storage_client._storage_root}/{object_key}"
+    if overwrite or not storage_client.exists(object_key=object_key):
+        if audio_file_extension == suffix:
+            with storage_client._fs.open(audio_path, 'wb') as f:
+                f.write(audio_file_bytes)
+        else:  # we need to convert
                 # might spawn a process to convert the audio file using ffmpeg
-                print("convertion firts")
-                with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
-                    tmpfile.write(audio_file_bytes)
-                    segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
-                    print("convertion temp done")
-                    with s3_client._fs.open(audio_path, 'wb') as f:
-                        segment.export(f, format=suffix[1:])
-                        print("segment export done")
-
+            print("convertion firts")
+            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
+                tmpfile.write(audio_file_bytes)
+                segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                print("convertion temp done")
+                with storage_client._fs.open(audio_path, 'wb') as f:
+                    segment.export(f, format=suffix[1:])
+                    print("segment export done")
     return AudioSource(src=src, type=media_type)

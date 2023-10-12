@@ -6,7 +6,7 @@ import tempfile
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
@@ -37,21 +37,12 @@ if __name__ == "__main__":
         statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
         processing_graph = ProcessingGraph(app_config.processing_graph)
-        # s3_client = S3Client(
-        #     aws_access_key_id=app_config.s3.access_key_id,
-        #     aws_secret_access_key=app_config.s3.secret_access_key,
-        #     region_name=app_config.s3.region,
-        #     bucket_name=app_config.s3.bucket,
-        # )
+        storage_client = StorageClient(
+                protocol=app_config.cached_assets.storage_protocol,
+                root=app_config.cached_assets.storage_root,
+                key=app_config.s3.access_key_id,
+                secret=app_config.s3.secret_access_key,)
 
-        s3_client = S3Client(
-            implementation="s3",
-            root="hf-datasets-server-statics-staging"
-            # aws_access_key_id=app_config.cached_assets_s3.access_key_id,
-            # aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
-            # region_name=app_config.cached_assets_s3.region,
-            # bucket_name=app_config.cached_assets_s3.bucket,
-        )
         with (
             LibrariesResource(
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -78,7 +69,7 @@ if __name__ == "__main__":
                 parquet_metadata_directory=parquet_metadata_directory,
                 duckdb_index_cache_directory=duckdb_index_cache_directory,
                 statistics_cache_directory=statistics_cache_directory,
-                s3_client=s3_client,
+                storage_client=storage_client,
             )
             worker_executor = WorkerExecutor(
                 app_config=app_config,

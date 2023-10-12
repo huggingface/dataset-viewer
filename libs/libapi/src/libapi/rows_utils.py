@@ -5,7 +5,7 @@ from functools import partial
 from typing import Optional, Union
 
 from datasets import Features
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import StorageOptions
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
@@ -17,7 +17,7 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -46,7 +46,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:

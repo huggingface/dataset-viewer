@@ -22,7 +22,7 @@ from libcommon.simple_cache import (
     get_best_response,
 )
 from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.storage_options import StorageOptions
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from libcommon.viewer_utils.asset import glob_rows_in_assets_dir
 from starlette.requests import Request
@@ -212,7 +212,7 @@ def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: list[str],
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    storage_options: StorageOptions,
     row_idx_column: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows

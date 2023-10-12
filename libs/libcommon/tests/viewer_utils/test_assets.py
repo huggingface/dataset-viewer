@@ -10,7 +10,7 @@ from datasets import Dataset
 from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import S3Client
 from libcommon.storage import StrPath
 from libcommon.storage_options import S3StorageOptions
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file

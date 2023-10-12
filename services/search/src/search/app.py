@@ -10,7 +10,7 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import (
     exists,
     init_cached_assets_dir,
@@ -67,7 +67,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
-    s3_client = S3Client(
+    storage_client = StorageClient(
                 protocol=app_config.cached_assets.storage_protocol,
                 root=app_config.cached_assets.storage_root,
                 key=app_config.s3.access_key_id,
@@ -90,7 +90,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
                 cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
-                s3_client=s3_client,
+                storage_client=storage_client,
                 cache_max_days=app_config.cache.max_days,
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -113,7 +113,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
-                s3_client=s3_client,
+                storage_client=storage_client,
                 cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,

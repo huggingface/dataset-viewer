@@ -14,7 +14,7 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import S3Client
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, Priority, Status, get_datetime

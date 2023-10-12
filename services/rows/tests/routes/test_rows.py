@@ -26,7 +26,7 @@ from libcommon.parquet_utils import (
     TooBigRows,
 )
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.s3_client import S3Client
+from libcommon.storage_client import S3Client
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
