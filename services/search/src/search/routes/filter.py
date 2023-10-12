@@ -15,17 +15,15 @@ from libapi.duckdb import (
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
-from libapi.exceptions import (
-    ApiError,
-    InvalidParameterError,
-    MissingRequiredParameterError,
-    UnexpectedApiError,
+from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
+from libapi.request import (
+    get_request_parameter_length,
+    get_request_parameter_offset,
+    get_required_request_parameter,
 )
-from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
-    are_valid_parameters,
     clean_cached_assets_randomly,
     get_json_api_error_response,
     get_json_error_response,
@@ -85,20 +83,10 @@ def create_filter_endpoint(
         with StepProfiler(method="filter_endpoint", step="all"):
             try:
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
-                    config = request.query_params.get("config")
-                    split = request.query_params.get("split")
-                    where = request.query_params.get("where")
-                    if (
-                        not dataset
-                        or not config
-                        or not split
-                        or not where
-                        or not are_valid_parameters([dataset, config, split, where])
-                    ):
-                        raise MissingRequiredParameterError(
-                            "Parameters 'dataset', 'config', 'split' and 'where' are required"
-                        )
+                    dataset = get_required_request_parameter(request, "dataset")
+                    config = get_required_request_parameter(request, "config")
+                    split = get_required_request_parameter(request, "split")
+                    where = get_required_request_parameter(request, "where")
                     validate_where_parameter(where)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)

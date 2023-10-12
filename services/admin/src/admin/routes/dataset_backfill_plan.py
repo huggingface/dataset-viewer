@@ -4,11 +4,8 @@
 import logging
 from typing import Optional
 
-from libapi.exceptions import (
-    ApiError,
-    MissingRequiredParameterError,
-    UnexpectedApiError,
-)
+from libapi.exceptions import ApiError, UnexpectedApiError
+from libapi.request import get_required_request_parameter
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import ProcessingGraph
@@ -16,12 +13,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    Endpoint,
-    are_valid_parameters,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
+from admin.utils import Endpoint, get_json_admin_error_response, get_json_ok_response
 
 
 def create_dataset_backfill_plan_endpoint(
@@ -36,9 +28,7 @@ def create_dataset_backfill_plan_endpoint(
 ) -> Endpoint:
     async def dataset_state_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]) or not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            dataset = get_required_request_parameter(request, "dataset")
             logging.info(f"/dataset-state, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
