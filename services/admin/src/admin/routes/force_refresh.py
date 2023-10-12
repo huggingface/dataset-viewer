@@ -10,7 +10,7 @@ from libapi.exceptions import (
     UnexpectedApiError,
 )
 from libapi.request import get_required_request_parameter
-from libapi.utils import get_json_api_error_response, get_json_ok_response
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
@@ -22,7 +22,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import Endpoint, are_valid_parameters
+from admin.utils import are_valid_parameters
 
 
 def create_force_refresh_endpoint(

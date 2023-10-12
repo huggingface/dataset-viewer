@@ -5,13 +5,12 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, UnexpectedApiError
-from libapi.utils import get_json_api_error_response, get_json_ok_response
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.simple_cache import CachedResponseDocument
 from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import Endpoint
 
 
 def create_num_dataset_infos_by_builder_name_endpoint(

@@ -6,7 +6,7 @@ from typing import Optional
 
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.request import get_required_request_parameter
-from libapi.utils import get_json_api_error_response, get_json_ok_response
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import ProcessingGraph
@@ -14,7 +14,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import Endpoint
 
 
 def create_dataset_backfill_plan_endpoint(

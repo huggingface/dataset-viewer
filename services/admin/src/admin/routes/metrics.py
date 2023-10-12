@@ -3,6 +3,7 @@
 
 import logging
 
+from libapi.utils import Endpoint
 from libcommon.prometheus import (
     Prometheus,
     update_assets_disk_usage,
@@ -17,8 +18,6 @@ from libcommon.storage import StrPath
 from prometheus_client import CONTENT_TYPE_LATEST
 from starlette.requests import Request
 from starlette.responses import Response
-
-from admin.utils import Endpoint
 
 
 def create_metrics_endpoint(

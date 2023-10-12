@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
-from libapi.utils import get_json_api_error_response, get_json_ok_response
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.simple_cache import (
     InvalidCursor,
     InvalidLimit,
@@ -15,7 +15,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import Endpoint
 
 
 def create_cache_reports_with_content_endpoint(
