@@ -18,14 +18,12 @@ def clean_directory(pattern: str, expired_time_interval_seconds: int) -> None:
         raise RuntimeError(f"Sanity check on pattern failed: len('{pattern}') < 10.")
     logging.info(f"looking for all files and directories with pattern {pattern}")
     now = datetime.now().replace(tzinfo=None)
-    errors_dirs = 0
+    errors = 0
     total_dirs = 0
     total_files = 0
 
     def rmtree_on_error(function: Any, path: str, excinfo: Any) -> None:  # noqa: U100, args needed for onerror=
-        nonlocal errors_dirs
         logging.error(f"failed to delete directory {path=}")
-        errors_dirs += 1
 
     for path in glob.glob(pattern):
         last_access_time_value = os.path.getatime(path)
@@ -39,9 +37,14 @@ def clean_directory(pattern: str, expired_time_interval_seconds: int) -> None:
                 logging.info(f"deleting directory {path=} {last_access_datetime=}")
                 shutil.rmtree(path, onerror=rmtree_on_error)
                 total_dirs += 1
-    if errors_dirs:
+                errors += os.path.isdir(path)
+    if errors:
         logging.error(
-            f"clean_directory failed to remove {errors_dirs} directories at the root of the cache directory."
+            f"clean_directory failed to remove {errors} directories at the root of the cache directory."
         )
-    logging.info(f"clean_directory removed {total_dirs - errors_dirs} directories at the root of the cache directory.")
-    logging.info(f"clean_directory removed {total_files} files at the root of the cache directory.")
+    if total_files:
+        logging.info(f"clean_directory removed {total_files} files at the root of the cache directory.")
+
+    logging.info(
+        f"clean_directory removed {total_dirs - errors} directories at the root of the cache directory."
+    )
