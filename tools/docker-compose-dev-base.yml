@@ -39,6 +39,7 @@ services:
       service: common
     # volumes to local source directory for development
     volumes:
+      - ../libs/libapi/src:/src/libs/libapi/src
       - ../services/admin/src:/src/services/admin/src
   api:
     extends:
