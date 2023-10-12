@@ -68,7 +68,7 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
         cls._collection = cls._get_db().get_collection(  # type: ignore[attr-defined]
-            cls._get_collection_name(), codec_options=CodecOptions(type_registry=TypeRegistry([DateCodec()]))   # type: ignore[call-arg]
+            cls._get_collection_name(), codec_options=CodecOptions(type_registry=TypeRegistry([DateCodec()]))  # type: ignore[call-arg]
         )
         return QuerySet(cls, cls._get_collection())
 
