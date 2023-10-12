@@ -7,10 +7,6 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import Response
 
-EXPOSED_HEADERS = [
-    "X-Error-Code",
-]
-
 
 def is_non_empty_string(string: Any) -> bool:
     return isinstance(string, str) and bool(string and string.strip())
