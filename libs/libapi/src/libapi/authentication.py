@@ -46,7 +46,7 @@ def get_jwt_token(request: Optional[Request] = None) -> Optional[str]:
     return None if token == authorization else token
 
 
-def auth_check(
+async def auth_check(
     dataset: str,
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
@@ -106,7 +106,8 @@ def auth_check(
                     f"Checking authentication on the Hugging Face Hub for dataset {dataset}, url: {url}, timeout:"
                     f" {hf_timeout_seconds}, authorization: {auth.authorization}"
                 )
-                response = httpx.get(url, auth=auth, timeout=hf_timeout_seconds)
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, auth=auth, timeout=hf_timeout_seconds)
             except Exception as err:
                 raise AuthCheckHubRequestError(
                     (

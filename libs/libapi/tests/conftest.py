@@ -34,3 +34,8 @@ def api_config(hf_endpoint: str) -> ApiConfig:
 @fixture(scope="session")
 def hf_auth_path(api_config: ApiConfig) -> str:
     return api_config.hf_auth_path
+
+
+@fixture
+def anyio_backend() -> str:
+    return "asyncio"

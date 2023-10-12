@@ -96,7 +96,7 @@ def create_filter_endpoint(
                     )
                 with StepProfiler(method="filter_endpoint", step="check authentication"):
                     # If auth_check fails, it will raise an exception that will be caught below
-                    auth_check(
+                    await auth_check(
                         dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,
