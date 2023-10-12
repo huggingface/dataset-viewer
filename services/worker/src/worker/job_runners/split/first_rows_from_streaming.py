@@ -244,7 +244,6 @@ def compute_first_rows_response(
 
 
 class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
-    assets_directory: StrPath
     first_rows_config: FirstRowsConfig
 
     @staticmethod
@@ -268,7 +267,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         hf_datasets_cache: Path,
-        assets_directory: StrPath,
         storage_client: StorageClient,
     ) -> None:
         super().__init__(
@@ -278,13 +276,11 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows
-        self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
         self.storage_options = StorageOptions(
             assets_base_url=self.assets_base_url,
             overwrite=True,
             storage_client=storage_client,
-            assets_directory=app_config.assets.folder_name,
         )
 
     def compute(self) -> CompleteJobResult:

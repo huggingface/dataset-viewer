@@ -152,7 +152,6 @@ def compute_first_rows_response(
 
 
 class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
-    assets_directory: StrPath
     first_rows_config: FirstRowsConfig
     indexer: Indexer
 
@@ -177,7 +176,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         processing_graph: ProcessingGraph,
-        assets_directory: StrPath,
         parquet_metadata_directory: StrPath,
         storage_client: StorageClient,
     ) -> None:
@@ -187,7 +185,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             processing_step=processing_step,
         )
         self.first_rows_config = app_config.first_rows
-        self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
@@ -204,7 +201,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             assets_base_url=self.assets_base_url,
             overwrite=True,
             storage_client=storage_client,
-            assets_directory=app_config.assets.folder_name,
         )
 
     def compute(self) -> CompleteJobResult:

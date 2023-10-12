@@ -9,6 +9,5 @@ from libcommon.storage import StrPath
 @dataclass
 class StorageOptions:
     assets_base_url: str
-    assets_directory: str
     overwrite: bool
     storage_client: StorageClient

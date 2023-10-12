@@ -30,19 +30,19 @@ if __name__ == "__main__":
 
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+    if app_config.assets.storage_protocol == "file":
+        init_assets_dir(directory=f"{app_config.assets.storage_root}/{app_config.assets.folder_name}")
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
     processing_graph = ProcessingGraph(app_config.processing_graph)
     storage_client = StorageClient(
-        implementation="s3",
-        root="hf-datasets-server-statics-staging"
-        # aws_access_key_id=app_config.cached_assets_s3.access_key_id,
-        # aws_secret_access_key=app_config.cached_assets_s3.secret_access_key,
-        # region_name=app_config.cached_assets_s3.region,
-        # bucket_name=app_config.cached_assets_s3.bucket,
+        protocol=app_config.assets.storage_protocol,
+        root=app_config.assets.storage_root,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        folder=app_config.assets.folder_name,
     )
 
     with (
@@ -67,7 +67,6 @@ if __name__ == "__main__":
             app_config=app_config,
             processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            assets_directory=assets_directory,
             parquet_metadata_directory=parquet_metadata_directory,
             duckdb_index_cache_directory=duckdb_index_cache_directory,
             statistics_cache_directory=statistics_cache_directory,

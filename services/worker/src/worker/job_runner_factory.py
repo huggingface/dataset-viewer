@@ -79,7 +79,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
     app_config: AppConfig
     processing_graph: ProcessingGraph
     hf_datasets_cache: Path
-    assets_directory: StrPath
     parquet_metadata_directory: StrPath
     duckdb_index_cache_directory: StrPath
     statistics_cache_directory: StrPath
@@ -114,7 +113,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
-                assets_directory=self.assets_directory,
                 storage_client=self.storage_client,
             )
         if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
@@ -185,7 +183,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 processing_graph=self.processing_graph,
-                assets_directory=self.assets_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
                 storage_client=self.storage_client,
             )

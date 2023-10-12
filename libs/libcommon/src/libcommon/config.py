@@ -44,13 +44,11 @@ ASSETS_BASE_URL = "assets"
 ASSETS_FOLDER_NAME = "assets"
 ASSETS_STORAGE_ROOT = "storage"
 ASSETS_STORAGE_PROTOCOL = "file"
-ASSETS_STORAGE_DIRECTORY = None
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
     folder_name: str = ASSETS_FOLDER_NAME
     storage_protocol: str = ASSETS_STORAGE_PROTOCOL
     storage_root: str = ASSETS_STORAGE_ROOT
@@ -61,7 +59,6 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORAGE_DIRECTORY),
                 folder_name=env.str(name="FOLDER_NAME", default=ASSETS_FOLDER_NAME),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=ASSETS_STORAGE_PROTOCOL),
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),

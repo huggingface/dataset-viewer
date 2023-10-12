@@ -16,7 +16,6 @@ from libapi.request import (
 from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
-    clean_cached_assets,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -28,7 +27,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
@@ -132,15 +130,6 @@ def create_rows_endpoint(
                         features=rows_index.parquet_index.features,
                         unsupported_columns=rows_index.parquet_index.unsupported_columns,
                         num_rows_total=rows_index.parquet_index.num_rows_total,
-                    )
-                with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
-                    update_last_modified_date_of_rows_in_assets_dir(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        offset=offset,
-                        length=length,
-                        assets_directory=cached_assets_directory,
                     )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)

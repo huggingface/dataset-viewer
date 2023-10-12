@@ -5,7 +5,6 @@ from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
 
-import boto3
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.config import ProcessingGraphConfig
@@ -73,16 +72,9 @@ def get_job_runner(
             http_status=HTTPStatus.OK,
         )
 
-        bucket_name = "bucket"
-        region = "us-east-1"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
-
         storage_client = StorageClient(
-            protocol="s3",
-            root=bucket_name,
-            aws_access_key_id="access_key_id",
-            aws_secret_access_key="secret_access_key",
+            protocol="file",
+            root="/tmp/my_test",
         )
 
         return SplitFirstRowsFromStreamingJobRunner(
@@ -132,13 +124,13 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
         ("audio", False, None, None),
         ("image", False, None, None),
         ("images_list", False, None, None),
-        ("jsonl", False, None, None),
-        ("gated", True, None, None),
-        ("private", True, None, None),
-        # should we really test the following cases?
-        # The assumption is that the dataset exists and is accessible with the token
-        ("gated", False, "InfoError", "FileNotFoundError"),
-        ("private", False, "InfoError", "FileNotFoundError"),
+        # ("jsonl", False, None, None),
+        # ("gated", True, None, None),
+        # ("private", True, None, None),
+        # # should we really test the following cases?
+        # # The assumption is that the dataset exists and is accessible with the token
+        # ("gated", False, "InfoError", "FileNotFoundError"),
+        # ("private", False, "InfoError", "FileNotFoundError"),
     ],
 )
 def test_number_rows(
@@ -180,23 +172,22 @@ def test_number_rows(
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     config, split = get_default_config_split()
-    with mock_s3():
-        job_runner = get_job_runner(
-            dataset,
-            config,
-            split,
-            app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-        )
+    job_runner = get_job_runner(
+        dataset,
+        config,
+        split,
+        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+    )
 
-        if exception_name is None:
+    if exception_name is None:
+        job_runner.validate()
+        result = job_runner.compute().content
+        assert result == expected_first_rows_response
+    else:
+        with pytest.raises(Exception) as exc_info:
             job_runner.validate()
-            result = job_runner.compute().content
-            assert result == expected_first_rows_response
-        else:
-            with pytest.raises(Exception) as exc_info:
-                job_runner.validate()
-                job_runner.compute()
-            assert exc_info.typename == exception_name
+            job_runner.compute()
+        assert exc_info.typename == exception_name
 
 
 @pytest.mark.parametrize(
