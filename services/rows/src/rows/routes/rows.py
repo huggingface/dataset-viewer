@@ -7,16 +7,15 @@ from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
-from libapi.exceptions import (
-    ApiError,
-    MissingRequiredParameterError,
-    UnexpectedApiError,
+from libapi.exceptions import ApiError, UnexpectedApiError
+from libapi.request import (
+    get_request_parameter_length,
+    get_request_parameter_offset,
+    get_required_request_parameter,
 )
-from libapi.request import get_request_parameter_length, get_request_parameter_offset
 from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
-    are_valid_parameters,
     clean_cached_assets,
     get_json_api_error_response,
     get_json_error_response,
@@ -79,11 +78,9 @@ def create_rows_endpoint(
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
                 with StepProfiler(method="rows_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
-                    config = request.query_params.get("config")
-                    split = request.query_params.get("split")
-                    if not dataset or not config or not split or not are_valid_parameters([dataset, config, split]):
-                        raise MissingRequiredParameterError("Parameter 'dataset', 'config' and 'split' are required")
+                    dataset = get_required_request_parameter(request, "dataset")
+                    config = get_required_request_parameter(request, "config")
+                    split = get_required_request_parameter(request, "split")
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logging.info(

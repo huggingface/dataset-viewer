@@ -288,8 +288,6 @@ duckDBIndex:
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
   maxParquetSizeBytes: "100_000_000"
-  # the time interval at which a downloaded index will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
 
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
@@ -306,8 +304,6 @@ descriptiveStatistics:
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
 
 discussions:
   # name of the Hub user associated with the Datasets Server bot app
@@ -329,7 +325,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
   log:
     level: "info"
   backfill:
@@ -363,7 +359,7 @@ cleanHfDatasetsCache:
   enabled: true
   log:
     level: "info"
-  action: "clean-hf-datasets-cache"
+  action: "clean-directory"
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -373,12 +369,16 @@ cleanHfDatasetsCache:
     limits:
       cpu: 0
   tolerations: []
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+  subfolderPattern: "*/datasets/*"
 
-deleteIndexes:
+
+cleanDuckdbIndexDownloads:
   enabled: true
   log:
     level: "info"
-  action: "delete-indexes"
+  action: "clean-directory"
   error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
@@ -389,6 +389,29 @@ deleteIndexes:
     limits:
       cpu: 0
   tolerations: []
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+  subfolderPattern: "downloads/*"
+
+cleanDuckdbIndexJobRunner:
+  enabled: true
+  log:
+    level: "info"
+  action: "clean-directory"
+  error_codes_to_retry: ""
+  schedule: "0 */3 * * *"
+  # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+  subfolderPattern: "job_runner/*"
+
 
 postMessages:
   enabled: true

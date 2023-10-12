@@ -16,15 +16,17 @@ from libapi.duckdb import (
 )
 from libapi.exceptions import (
     ApiError,
-    MissingRequiredParameterError,
     SearchFeatureNotAvailableError,
     UnexpectedApiError,
 )
-from libapi.request import get_request_parameter_length, get_request_parameter_offset
+from libapi.request import (
+    get_request_parameter_length,
+    get_request_parameter_offset,
+    get_required_request_parameter,
+)
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
-    are_valid_parameters,
     clean_cached_assets_randomly,
     get_json_api_error_response,
     get_json_error_response,
@@ -146,24 +148,11 @@ def create_search_endpoint(
         with StepProfiler(method="search_endpoint", step="all"):
             try:
                 with StepProfiler(method="search_endpoint", step="validate parameters"):
-                    dataset = request.query_params.get("dataset")
-                    config = request.query_params.get("config")
-                    split = request.query_params.get("split")
-                    query = request.query_params.get("query")
-
-                    if (
-                        not dataset
-                        or not config
-                        or not split
-                        or not query
-                        or not are_valid_parameters([dataset, config, split, query])
-                    ):
-                        raise MissingRequiredParameterError(
-                            "Parameter 'dataset', 'config', 'split' and 'query' are required"
-                        )
-
+                    dataset = get_required_request_parameter(request, "dataset")
+                    config = get_required_request_parameter(request, "config")
+                    split = get_required_request_parameter(request, "split")
+                    query = get_required_request_parameter(request, "query")
                     offset = get_request_parameter_offset(request)
-
                     length = get_request_parameter_length(request)
 
                 with StepProfiler(method="search_endpoint", step="check authentication"):

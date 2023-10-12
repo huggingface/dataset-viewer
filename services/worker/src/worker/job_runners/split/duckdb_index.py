@@ -17,7 +17,10 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
-from libcommon.constants import PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
+from libcommon.constants import (
+    DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
+    PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
+)
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     CreateCommitError,
@@ -299,7 +302,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
             job_info=job_info,
             app_config=app_config,
             processing_step=processing_step,
-            cache_directory=Path(duckdb_index_cache_directory),
+            cache_directory=Path(duckdb_index_cache_directory) / DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
         )
         self.duckdb_index_config = app_config.duckdb_index
 

@@ -4,11 +4,9 @@
 import logging
 from typing import Optional
 
-from libapi.exceptions import (
-    ApiError,
-    MissingRequiredParameterError,
-    UnexpectedApiError,
-)
+from libapi.exceptions import ApiError, UnexpectedApiError
+from libapi.request import get_required_request_parameter
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_dataset_responses_without_content_for_kind
@@ -16,12 +14,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    Endpoint,
-    are_valid_parameters,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
 
 
 def create_dataset_status_endpoint(
@@ -33,9 +25,7 @@ def create_dataset_status_endpoint(
 ) -> Endpoint:
     async def dataset_status_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]) or not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            dataset = get_required_request_parameter(request, "dataset")
             logging.info(f"/dataset-status, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
@@ -61,8 +51,8 @@ def create_dataset_status_endpoint(
                 max_age=max_age,
             )
         except ApiError as e:
-            return get_json_admin_error_response(e, max_age=max_age)
+            return get_json_api_error_response(e, max_age=max_age)
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
+            return get_json_api_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return dataset_status_endpoint

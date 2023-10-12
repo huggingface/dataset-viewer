@@ -237,7 +237,6 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        job_runner.pre_compute()
         response = job_runner.compute()
         assert response
         content = response.content
@@ -254,7 +253,6 @@ def test_compute(
             assert url.rsplit("/", 2)[1] == split
         assert file_name is not None
         assert Features.from_dict(features) is not None
-        job_runner.post_compute()
 
         # download locally duckdb index file
         duckdb_file = requests.get(url, headers={"authorization": f"Bearer {app_config.common.hf_token}"})

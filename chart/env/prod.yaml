@@ -155,16 +155,12 @@ optInOutUrlsScan:
 
 duckDBIndex:
   maxParquetSizeBytes: "5_000_000_000"
-  expiredTimeIntervalSeconds: 259_200 # 3 days
 
 rowsIndex:
   maxArrowDataInMemory: "300_000_000"
 
 descriptiveStatistics:
   maxParquetSizeBytes: "5_000_000_000"
-
-hfDatasetsCache:
-  expiredTimeIntervalSeconds: 10800 # 3 hours
 
 # --- jobs (pre-install/upgrade hooks) ---
 
@@ -181,7 +177,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
   log:
     level: "debug"
   backfill:
@@ -218,10 +214,18 @@ backfill:
 cleanHfDatasetsCache:
   nodeSelector:
     role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 10_800 # 3 hours
 
-deleteIndexes:
+cleanDuckdbIndexDownloads:
   nodeSelector:
     role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 259_200 # 3 days
+
+
+cleanDuckdbIndexJobRunner:
+  nodeSelector:
+    role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 10_800 # 3 hours
 
 postMessages:
   nodeSelector:

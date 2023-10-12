@@ -4,7 +4,9 @@
 import logging
 from typing import Optional
 
-from libapi.exceptions import MissingRequiredParameterError, UnexpectedApiError
+from libapi.exceptions import UnexpectedApiError
+from libapi.request import get_required_request_parameter
+from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
@@ -14,12 +16,6 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-from admin.utils import (
-    Endpoint,
-    are_valid_parameters,
-    get_json_admin_error_response,
-    get_json_ok_response,
-)
 
 
 def create_dataset_backfill_endpoint(
@@ -34,9 +30,7 @@ def create_dataset_backfill_endpoint(
 ) -> Endpoint:
     async def dataset_backfill_endpoint(request: Request) -> Response:
         try:
-            dataset = request.query_params.get("dataset")
-            if not are_valid_parameters([dataset]) or not dataset:
-                raise MissingRequiredParameterError("Parameter 'dataset' is required")
+            dataset = get_required_request_parameter(request, "dataset")
             logging.info(f"/dataset-backfill, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
@@ -61,8 +55,8 @@ def create_dataset_backfill_endpoint(
                 max_age=0,
             )
         except CustomError as e:
-            return get_json_admin_error_response(e, max_age=0)
+            return get_json_api_error_response(e, max_age=0)
         except Exception as e:
-            return get_json_admin_error_response(UnexpectedApiError("Unexpected error.", e), max_age=0)
+            return get_json_api_error_response(UnexpectedApiError("Unexpected error.", e), max_age=0)
 
     return dataset_backfill_endpoint
