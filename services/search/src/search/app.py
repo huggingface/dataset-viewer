@@ -36,9 +36,8 @@ def create_app() -> Starlette:
 def create_app_with_config(app_config: AppConfig) -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
-    if not exists(cached_assets_directory):
-        raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
+    if app_config.cached_assets.storage_protocol == "file":
+        init_cached_assets_dir(directory=f"{app_config.cached_assets.storage_root}/{app_config.cached_assets.folder_name}")
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
@@ -68,11 +67,12 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     storage_client = StorageClient(
-                protocol=app_config.cached_assets.storage_protocol,
-                root=app_config.cached_assets.storage_root,
-                key=app_config.s3.access_key_id,
-                secret=app_config.s3.secret_access_key,)
-    
+            protocol=app_config.cached_assets.storage_protocol,
+            root=app_config.cached_assets.storage_root,
+            key=app_config.s3.access_key_id,
+            secret=app_config.s3.secret_access_key,
+            folder=app_config.cached_assets.folder_name,
+    )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
@@ -88,8 +88,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cached_assets_base_url=app_config.cached_assets.base_url,
-                cached_assets_directory=cached_assets_directory,
-                cached_assets_folder_name=app_config.cached_assets.folder_name,
                 storage_client=storage_client,
                 cache_max_days=app_config.cache.max_days,
                 target_revision=app_config.duckdb_index.target_revision,
@@ -112,9 +110,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_base_url=app_config.cached_assets.base_url,
-                cached_assets_directory=cached_assets_directory,
                 storage_client=storage_client,
-                cached_assets_folder_name=app_config.cached_assets.folder_name,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,

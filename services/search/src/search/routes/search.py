@@ -78,9 +78,7 @@ def create_response(
     config: str,
     split: str,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
     storage_client: StorageClient,
-    cached_assets_folder_name: str,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -95,7 +93,6 @@ def create_response(
     logging.debug(f"create response for {dataset=} {config=} {split=}")
     storage_options = StorageOptions(
         assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
         overwrite=False,
         storage_client=storage_client,
     )
@@ -122,9 +119,7 @@ def create_search_endpoint(
     processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
     storage_client: StorageClient,
-    cached_assets_folder_name: str,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -218,9 +213,7 @@ def create_search_endpoint(
                         config,
                         split,
                         cached_assets_base_url,
-                        cached_assets_directory,
                         storage_client,
-                        cached_assets_folder_name,
                         offset,
                         features,
                         num_rows_total,

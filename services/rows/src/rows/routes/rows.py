@@ -40,9 +40,7 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
     storage_client: StorageClient,
-    cached_assets_folder_name: str,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     max_arrow_data_in_memory: int,
@@ -124,7 +122,6 @@ def create_rows_endpoint(
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
                         storage_client=storage_client,
-                        cached_assets_folder_name=cached_assets_folder_name,
                         pa_table=pa_table,
                         offset=offset,
                         features=rows_index.parquet_index.features,
