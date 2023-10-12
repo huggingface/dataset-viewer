@@ -19,7 +19,7 @@ def create_response(
     split: str,
     cached_assets_base_url: str,
     storage_client: StorageClient,
-    cached_assets_s3_folder_name: str,
+    cached_assets_folder_name: str,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -36,7 +36,7 @@ def create_response(
         assets_base_url=cached_assets_base_url,
         overwrite=False,
         storage_client=storage_client,
-        assets_directory=cached_assets_s3_folder_name,
+        assets_directory=cached_assets_folder_name,
     )
     return {
         "features": to_features_list(features),

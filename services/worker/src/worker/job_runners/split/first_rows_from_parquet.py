@@ -16,8 +16,8 @@ from libcommon.exceptions import (
 )
 from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.storage_options import StorageOptions
 from libcommon.utils import JobInfo, Row, RowItem
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
@@ -204,7 +204,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             assets_base_url=self.assets_base_url,
             overwrite=True,
             storage_client=storage_client,
-            s3_folder_name=app_config.assets.s3_folder_name,
+            assets_directory=app_config.assets.folder_name,
         )
 
     def compute(self) -> CompleteJobResult:

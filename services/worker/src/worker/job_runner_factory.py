@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig

@@ -10,7 +10,7 @@ import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
 from libapi.response import create_response
-from libcommon.storage_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
 
 from search.config import AppConfig
@@ -86,7 +86,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
             "age": [35, 30, 25, 30],
         }
     )
-    s3_client = S3Client(
+    storage_client = StorageClient(
         region_name=app_config.s3.region,
         aws_access_key_id=app_config.s3.access_key_id,
         aws_secret_access_key=app_config.s3.secret_access_key,
@@ -98,7 +98,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         split=split,
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
-        s3_client=s3_client,
+        storage_client=storage_client,
         cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
         pa_table=pa_table,
         offset=0,

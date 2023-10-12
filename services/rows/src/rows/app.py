@@ -84,7 +84,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_directory=cached_assets_directory,
-                cached_assets_s3_folder_name=app_config.cached_assets.folder_name,
+                cached_assets_folder_name=app_config.cached_assets.folder_name,
                 storage_client=storage_client,
                 parquet_metadata_directory=parquet_metadata_directory,
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,

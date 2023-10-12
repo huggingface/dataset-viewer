@@ -26,7 +26,7 @@ from libcommon.parquet_utils import (
     TooBigRows,
 )
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.storage_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
@@ -459,7 +459,7 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
 
 
 def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
-    s3_client = S3Client(
+    storage_client = StorageClient(
         region_name=app_config.s3.region,
         aws_access_key_id=app_config.s3.access_key_id,
         aws_secret_access_key=app_config.s3.secret_access_key,
@@ -471,7 +471,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
         cached_assets_directory=cached_assets_directory,
-        s3_client=s3_client,
+        storage_client=storage_client,
         cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
         pa_table=ds.data,
         offset=0,
@@ -499,7 +499,7 @@ def test_create_response_with_image(
         region = "us-east-1"
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
-        s3_client = S3Client(
+        storage_client = StorageClient(
             region_name=region,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
@@ -512,7 +512,7 @@ def test_create_response_with_image(
             config=config,
             split=split,
             cached_assets_base_url=app_config.cached_assets.base_url,
-            s3_client=s3_client,
+            storage_client=storage_client,
             cached_assets_directory=cached_assets_directory,
             cached_assets_s3_folder_name=folder_name,
             pa_table=ds_image.data,

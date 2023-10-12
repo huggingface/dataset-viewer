@@ -6,13 +6,13 @@ import sys
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage_client import StorageClient
 from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
+from libcommon.storage_client import StorageClient
 
 from worker.config import AppConfig
 from worker.job_runner_factory import JobRunnerFactory

@@ -16,9 +16,9 @@ from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage_client import S3Client
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 from moto import mock_s3
 
@@ -83,7 +83,7 @@ def get_job_runner(
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
 
-        s3_client = S3Client(
+        storage_client = StorageClient(
             region_name=region,
             aws_access_key_id="access_key_id",
             aws_secret_access_key="secret_access_key",
@@ -108,7 +108,7 @@ def get_job_runner(
             processing_graph=processing_graph,
             assets_directory=assets_directory,
             parquet_metadata_directory=parquet_metadata_directory,
-            s3_client=s3_client,
+            storage_client=storage_client,
         )
 
     return _get_job_runner

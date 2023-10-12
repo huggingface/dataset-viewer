@@ -14,9 +14,9 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage_client import S3Client
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
@@ -210,7 +210,7 @@ def job_runner_factory(
     statistics_cache_directory: StrPath,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph)
-    s3_client = S3Client(
+    storage_client = StorageClient(
         region_name="us-east-1",
         aws_access_key_id="access_key_id",
         aws_secret_access_key="secret_access_key",
@@ -224,7 +224,7 @@ def job_runner_factory(
         parquet_metadata_directory=parquet_metadata_directory,
         duckdb_index_cache_directory=duckdb_index_cache_directory,
         statistics_cache_directory=statistics_cache_directory,
-        s3_client=s3_client,
+        storage_client=storage_client,
     )
 
 

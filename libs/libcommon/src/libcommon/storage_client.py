@@ -20,20 +20,12 @@ class StorageClient:
     _storage_root: str
 
     def __init__(self, protocol: str, root: str, **kwargs: Any) -> None:
-        try:
-            self._storage_root = root
-            if(protocol == "s3"):
-                self._fs = fsspec.filesystem(protocol, **kwargs)
-            else:
-                self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
-            print(type(self._fs))
-        except Exception as e:
-            self._fs = None
+        self._storage_root = root
+        if(protocol == "s3"):
+            self._fs = fsspec.filesystem(protocol, **kwargs)
+        else:
+            self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
 
-    def is_available(self) -> bool:
-        return self._fs is not None
 
     def exists(self, object_key: str) -> bool:
-        if not self.is_available():
-            raise StorageClientInitializeError()
         return self._fs.exists(f"{self._storage_root}/{object_key}")

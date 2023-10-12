@@ -10,7 +10,7 @@ from datasets import Dataset
 from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.storage_client import S3Client
+from libcommon.storage_client import StorageClient
 from libcommon.storage import StrPath
 from libcommon.storage_options import S3StorageOptions
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
@@ -26,12 +26,12 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
     folder_name = f"/tmp/{bucket}/{assets_folder}"
     os.makedirs(folder_name)
 
-    s3_client = S3Client(implementation="file", root=f"/tmp/{bucket}")
+    storage_client = StorageClient(implementation="file", root=f"/tmp/{bucket}")
     storage_options = S3StorageOptions(
         assets_base_url="http://localhost/assets",
         assets_directory=cached_assets_directory,
         overwrite=True,
-        s3_client=s3_client,
+        storage_client=storage_client,
         s3_folder_name=assets_folder,
     )
 
@@ -50,7 +50,7 @@ def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         "height": 480,
         "width": 640,
     }
-    assert s3_client.exists("assets/dataset/--/config/split/7/col/image.jpg")
+    assert storage_client.exists("assets/dataset/--/config/split/7/col/image.jpg")
 
     image = PILImage.open(f"{folder_name}/dataset/--/config/split/7/col/image.jpg")
     assert image is not None
@@ -74,7 +74,7 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
         conn = boto3.resource("s3", region_name=region)
         conn.create_bucket(Bucket=bucket_name)
 
-        s3_client = S3Client(
+        storage_client = StorageClient(
             region_name=region,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
@@ -84,7 +84,7 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
             assets_base_url="http://localhost/assets",
             assets_directory=cached_assets_directory,
             overwrite=True,
-            s3_client=s3_client,
+            storage_client=storage_client,
             s3_folder_name=folder_name,
         )
 

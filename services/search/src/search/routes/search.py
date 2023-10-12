@@ -27,7 +27,6 @@ from libapi.request import (
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
-    clean_cached_assets_randomly,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -81,7 +80,7 @@ def create_response(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     storage_client: StorageClient,
-    cached_assets_s3_folder_name: str,
+    cached_assets_folder_name: str,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -99,7 +98,6 @@ def create_response(
         assets_directory=cached_assets_directory,
         overwrite=False,
         storage_client=storage_client,
-        s3_folder_name=cached_assets_s3_folder_name,
     )
 
     return PaginatedResponse(
@@ -126,7 +124,7 @@ def create_search_endpoint(
     cached_assets_base_url: str,
     cached_assets_directory: StrPath,
     storage_client: StorageClient,
-    cached_assets_s3_folder_name: str,
+    cached_assets_folder_name: str,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -138,10 +136,6 @@ def create_search_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
-    clean_cache_proba: float = 0.0,
-    keep_first_rows_number: int = -1,
-    keep_most_recent_rows_number: int = -1,
-    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -211,17 +205,6 @@ def create_search_endpoint(
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
                     Path(index_file_location).touch()
-
-                with StepProfiler(method="search_endpoint", step="clean cache randomly"):
-                    clean_cached_assets_randomly(
-                        clean_cache_proba=clean_cache_proba,
-                        dataset=dataset,
-                        cached_assets_directory=cached_assets_directory,
-                        keep_first_rows_number=keep_first_rows_number,
-                        keep_most_recent_rows_number=keep_most_recent_rows_number,
-                        max_cleaned_rows_number=max_cleaned_rows_number,
-                    )
-
                 with StepProfiler(method="search_endpoint", step="create response"):
                     if "features" in duckdb_index_cache_entry["content"] and isinstance(
                         duckdb_index_cache_entry["content"]["features"], dict
@@ -237,7 +220,7 @@ def create_search_endpoint(
                         cached_assets_base_url,
                         cached_assets_directory,
                         storage_client,
-                        cached_assets_s3_folder_name,
+                        cached_assets_folder_name,
                         offset,
                         features,
                         num_rows_total,

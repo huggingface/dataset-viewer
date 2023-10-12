@@ -6,13 +6,13 @@ import tempfile
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage_client import StorageClient
 from libcommon.storage import (
     init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
+from libcommon.storage_client import StorageClient
 
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
@@ -38,10 +38,11 @@ if __name__ == "__main__":
 
         processing_graph = ProcessingGraph(app_config.processing_graph)
         storage_client = StorageClient(
-                protocol=app_config.cached_assets.storage_protocol,
-                root=app_config.cached_assets.storage_root,
-                key=app_config.s3.access_key_id,
-                secret=app_config.s3.secret_access_key,)
+            protocol=app_config.cached_assets.storage_protocol,
+            root=app_config.cached_assets.storage_root,
+            key=app_config.s3.access_key_id,
+            secret=app_config.s3.secret_access_key,
+        )
 
         with (
             LibrariesResource(
