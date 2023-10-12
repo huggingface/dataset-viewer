@@ -156,7 +156,7 @@ mongodbMigration:
 
 cacheMaintenance:
   action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, delete-indexes, post-messages, skip}
+  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
   log:
     level: "debug"
   backfill:

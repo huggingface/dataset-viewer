@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.cleanDuckdbIndexDownloads.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.cleanDuckdbIndexDownloads" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-clean-duckdb-index-downloads"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cleanDuckdbIndexDownloads.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 180
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.cleanDuckdbIndexDownloads.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.cleanDuckdbIndexDownloads.tolerations | nindent 12 }}
+          containers: {{ include "containerCleanDuckdbIndexDownloads" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+          initContainers: {{ include "initContainerDuckDBIndex" . | nindent 12 }}
+          volumes: {{ include "volumeDuckDBIndex" . | nindent 12 }}
+{{- end}}

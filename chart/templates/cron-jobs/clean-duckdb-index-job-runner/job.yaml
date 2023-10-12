@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-{{- if and .Values.images.jobs.cacheMaintenance .Values.deleteIndexes.enabled }}
+{{- if and .Values.images.jobs.cacheMaintenance .Values.cleanDuckdbIndexJobRunner.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  labels: {{ include "labels.deleteIndexes" . | nindent 4 }}
-  name: "{{ include "name" . }}-job-delete-indexes"
+  labels: {{ include "labels.cleanDuckdbIndexJobRunner" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-clean-duckdb-index-job-runner"
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: {{ .Values.deleteIndexes.schedule | quote }}
+  schedule: {{ .Values.cleanDuckdbIndexJobRunner.schedule | quote }}
   jobTemplate:
     spec:
       ttlSecondsAfterFinished: 180
@@ -18,9 +18,9 @@ spec:
           restartPolicy: OnFailure
           {{- include "dnsConfig" . | nindent 10 }}
           {{- include "image.imagePullSecrets" . | nindent 6 }}
-          nodeSelector: {{ toYaml .Values.deleteIndexes.nodeSelector | nindent 12 }}
-          tolerations: {{ toYaml .Values.deleteIndexes.tolerations | nindent 12 }}
-          containers: {{ include "containerDeleteIndexes" . | nindent 12 }}
+          nodeSelector: {{ toYaml .Values.cleanDuckdbIndexJobRunner.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.cleanDuckdbIndexJobRunner.tolerations | nindent 12 }}
+          containers: {{ include "containerCleanDuckdbIndexJobRunner" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
           initContainers: {{ include "initContainerDuckDBIndex" . | nindent 12 }}
           volumes: {{ include "volumeDuckDBIndex" . | nindent 12 }}

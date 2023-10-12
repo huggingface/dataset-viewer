@@ -29,54 +29,6 @@ class BackfillConfig:
         )
 
 
-DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_SUBDIRECTORY = "downloads"
-DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS = 10 * 60  # 10 minutes
-DUCKDB_INDEX_FILE_EXTENSION = ".duckdb"
-
-
-@dataclass(frozen=True)
-class DuckDbConfig:
-    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
-    subdirectory: str = DUCKDB_INDEX_SUBDIRECTORY
-    expired_time_interval_seconds: int = DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
-    file_extension: str = DUCKDB_INDEX_FILE_EXTENSION
-
-    @classmethod
-    def from_env(cls) -> "DuckDbConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DUCKDB_INDEX_"):
-            return cls(
-                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
-                subdirectory=env.str(name="SUBDIRECTORY", default=DUCKDB_INDEX_SUBDIRECTORY),
-                expired_time_interval_seconds=env.int(
-                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DUCKDB_INDEX_EXPIRED_TIME_INTERVAL_SECONDS
-                ),
-                file_extension=env.str(name="FILE_EXTENSION", default=DUCKDB_INDEX_FILE_EXTENSION),
-            )
-
-
-DATASETS_BASED_HF_DATASETS_CACHE = None
-DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS = 3 * 60 * 60  # 3 hours
-
-
-@dataclass(frozen=True)
-class DatasetsBasedConfig:
-    hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
-    expired_time_interval_seconds: int = DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
-
-    @classmethod
-    def from_env(cls) -> "DatasetsBasedConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DATASETS_BASED_"):
-            return cls(
-                hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
-                expired_time_interval_seconds=env.int(
-                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
-                ),
-            )
-
-
 DISCUSSIONS_BOT_ASSOCIATED_USER_NAME = None
 DISCUSSIONS_BOT_TOKEN = None
 DISCUSSIONS_PARQUET_REVISION = "refs/convert/parquet"
@@ -101,6 +53,30 @@ class DiscussionsConfig:
             )
 
 
+DIRECTORY_CLEANING_CACHE_DIRECTORY = None
+DIRECTORY_CLEANING_SUBFOLDER_PATTERN = "*/datasets/*"
+DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS = 3 * 60 * 60  # 3 hours
+
+
+@dataclass(frozen=True)
+class DirectoryCleaning:
+    cache_directory: Optional[str] = DIRECTORY_CLEANING_CACHE_DIRECTORY
+    subfolder_pattern: str = DIRECTORY_CLEANING_SUBFOLDER_PATTERN
+    expired_time_interval_seconds: int = DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS
+
+    @classmethod
+    def from_env(cls) -> "DirectoryCleaning":
+        env = Env(expand_vars=True)
+        with env.prefixed("DIRECTORY_CLEANING_"):
+            return cls(
+                cache_directory=env.str(name="CACHE_DIRECTORY", default=DIRECTORY_CLEANING_CACHE_DIRECTORY),
+                subfolder_pattern=env.str(name="SUBFOLDER_PATTERN", default=DIRECTORY_CLEANING_SUBFOLDER_PATTERN),
+                expired_time_interval_seconds=env.int(
+                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS
+                ),
+            )
+
+
 CACHE_MAINTENANCE_ACTION = None
 
 
@@ -112,8 +88,7 @@ class JobConfig:
     common: CommonConfig = field(default_factory=CommonConfig)
     graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     backfill: BackfillConfig = field(default_factory=BackfillConfig)
-    datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
-    duckdb: DuckDbConfig = field(default_factory=DuckDbConfig)
+    directory_cleaning: DirectoryCleaning = field(default_factory=DirectoryCleaning)
     discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
 
@@ -128,8 +103,7 @@ class JobConfig:
             common=CommonConfig.from_env(),
             graph=ProcessingGraphConfig.from_env(),
             backfill=BackfillConfig.from_env(),
-            datasets_based=DatasetsBasedConfig.from_env(),
-            duckdb=DuckDbConfig.from_env(),
+            directory_cleaning=DirectoryCleaning.from_env(),
             discussions=DiscussionsConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),
         )

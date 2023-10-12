@@ -16,8 +16,10 @@
     value: {{ .Values.cleanHfDatasetsCache.action | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.cleanHfDatasetsCache.log.level | quote }}
-  - name: DATASETS_BASED_HF_DATASETS_CACHE
+  - name: DIRECTORY_CLEANING_CACHE_DIRECTORY
     value: {{ .Values.hfDatasetsCache.cacheDirectory | quote }}
-  - name: DATASETS_BASED_EXPIRED_TIME_INTERVAL_SECONDS
-    value: {{ .Values.hfDatasetsCache.expiredTimeIntervalSeconds | quote }}
+  - name: DIRECTORY_CLEANING_SUBFOLDER_PATTERN
+    value: {{ .Values.cleanHfDatasetsCache.subfolderPattern | quote }}
+  - name: DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS
+    value: {{ .Values.cleanHfDatasetsCache.expiredTimeIntervalSeconds | quote }}
 {{- end -}}
