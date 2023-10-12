@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 import duckdb
 from huggingface_hub import hf_hub_download
+from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
@@ -58,7 +59,7 @@ def get_download_folder(
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-    return f"{root_directory}/downloads/{subdirectory}"
+    return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{subdirectory}"
 
 
 def download_index_file(

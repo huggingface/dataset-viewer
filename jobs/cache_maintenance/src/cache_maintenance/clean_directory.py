@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 
-def clean_files_and_directories(pattern: str, expired_time_interval_seconds: int) -> None:
+def clean_directory(pattern: str, expired_time_interval_seconds: int) -> None:
     """
     Delete temporary cache directories that match the given pattern.
     """
@@ -41,11 +41,7 @@ def clean_files_and_directories(pattern: str, expired_time_interval_seconds: int
                 total_dirs += 1
     if errors_dirs:
         logging.error(
-            f"clean_files_and_directories failed to remove {errors_dirs} directories at the root of the cache"
-            " directory."
+            f"clean_directory failed to remove {errors_dirs} directories at the root of the cache directory."
         )
-    logging.info(
-        f"clean_files_and_directories removed {total_dirs - errors_dirs} directories at the root of the cache"
-        " directory."
-    )
-    logging.info(f"clean_files_and_directories removed {total_files} files at the root of the cache directory.")
+    logging.info(f"clean_directory removed {total_dirs - errors_dirs} directories at the root of the cache directory.")
+    logging.info(f"clean_directory removed {total_files} files at the root of the cache directory.")

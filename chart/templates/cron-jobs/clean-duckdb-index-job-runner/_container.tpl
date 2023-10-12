@@ -18,8 +18,10 @@
     value: {{ .Values.cleanDuckdbIndexJobRunner.action | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.cleanDuckdbIndexJobRunner.log.level | quote }}
-  - name: DUCKDB_INDEX_CACHE_DIRECTORY
+  - name: DIRECTORY_CLEANING_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
-  - name: DUCKDB_INDEX_JOB_RUNNER_EXPIRED_TIME_INTERVAL_SECONDS
+  - name: DIRECTORY_CLEANING_SUBFOLDER_PATTERN
+    value: {{ .Values.cleanDuckdbIndexJobRunner.subfolderPattern | quote }}
+  - name: DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS
     value: {{ .Values.cleanDuckdbIndexJobRunner.expiredTimeIntervalSeconds | quote }}
 {{- end -}}

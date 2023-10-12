@@ -8,11 +8,11 @@ from datetime import datetime
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import init_duckdb_index_cache_dir, init_hf_datasets_cache_dir
+from libcommon.storage import init_dir
 
 from cache_maintenance.backfill import backfill_cache
 from cache_maintenance.cache_metrics import collect_cache_metrics
-from cache_maintenance.clean_files_and_directories import clean_files_and_directories
+from cache_maintenance.clean_directory import clean_directory
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import post_messages
 from cache_maintenance.queue_metrics import collect_queue_metrics
@@ -56,12 +56,12 @@ def run_job() -> None:
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
                 cache_max_days=job_config.cache.max_days,
             )
-        elif action == "clean-hf-datasets-cache":
-            hf_datasets_cache = init_hf_datasets_cache_dir(directory=job_config.datasets_based.hf_datasets_cache)
-            folder_pattern = f"{hf_datasets_cache}/*/datasets/*"
-            clean_files_and_directories(
+        elif action == "clean-directory":
+            directory_path = init_dir(directory=job_config.directory_cleaning.cache_directory)
+            folder_pattern = f"{directory_path}/{job_config.directory_cleaning.subfolder_pattern}"
+            clean_directory(
                 pattern=folder_pattern,
-                expired_time_interval_seconds=job_config.datasets_based.expired_time_interval_seconds,
+                expired_time_interval_seconds=job_config.directory_cleaning.expired_time_interval_seconds,
             )
         elif action == "collect-queue-metrics":
             if not queue_resource.is_available():
@@ -77,20 +77,6 @@ def run_job() -> None:
                 )
                 return
             collect_cache_metrics()
-        elif action == "clean-duckdb-index-downloads":
-            duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
-            folder_pattern = f"{duckdb_index_cache_directory}/{job_config.duckdb.downloads_subdirectory}/*"
-            clean_files_and_directories(
-                pattern=folder_pattern,
-                expired_time_interval_seconds=job_config.duckdb.downloads_expired_time_interval_seconds,
-            )
-        elif action == "clean-duckdb-index-job-runner":
-            duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=job_config.duckdb.cache_directory)
-            folder_pattern = f"{duckdb_index_cache_directory}/{job_config.duckdb.job_runner_subdirectory}/*"
-            clean_files_and_directories(
-                pattern=folder_pattern,
-                expired_time_interval_seconds=job_config.duckdb.downloads_expired_time_interval_seconds,
-            )
         elif action == "post-messages":
             if not cache_resource.is_available():
                 logging.warning(

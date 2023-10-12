@@ -304,8 +304,6 @@ descriptiveStatistics:
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
   cacheDirectory: "/storage/hf-datasets-cache"
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
 
 discussions:
   # name of the Hub user associated with the Datasets Server bot app
@@ -361,7 +359,7 @@ cleanHfDatasetsCache:
   enabled: true
   log:
     level: "info"
-  action: "clean-hf-datasets-cache"
+  action: "clean-directory"
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -371,12 +369,16 @@ cleanHfDatasetsCache:
     limits:
       cpu: 0
   tolerations: []
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
+  subfolderPattern: "*/datasets/*"
+
 
 cleanDuckdbIndexDownloads:
   enabled: true
   log:
     level: "info"
-  action: "clean-duckdb-index-downloads"
+  action: "clean-directory"
   error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
@@ -387,14 +389,15 @@ cleanDuckdbIndexDownloads:
     limits:
       cpu: 0
   tolerations: []
-  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
   expiredTimeIntervalSeconds: 600
+  subfolderPattern: "downloads/*"
 
 cleanDuckdbIndexJobRunner:
   enabled: true
   log:
     level: "info"
-  action: "clean-duckdb-index-job-runner"
+  action: "clean-directory"
   error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
@@ -405,8 +408,9 @@ cleanDuckdbIndexJobRunner:
     limits:
       cpu: 0
   tolerations: []
-  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
   expiredTimeIntervalSeconds: 600
+  subfolderPattern: "job_runner/*"
 
 
 postMessages:
