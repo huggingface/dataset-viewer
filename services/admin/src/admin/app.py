@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import uvicorn
+from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -41,7 +42,6 @@ from admin.routes.obsolete_cache import (
 )
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 from admin.routes.recreate_dataset import create_recreate_dataset_endpoint
-from admin.utils import EXPOSED_HEADERS
 
 
 def create_app() -> Starlette:
