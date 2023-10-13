@@ -4,8 +4,8 @@
 import logging
 from typing import Any, Optional, Union
 
+import httpx
 import jwt
-import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import (
     EllipticCurvePrivateKey,
@@ -174,7 +174,7 @@ def fetch_jwt_public_key_json(
         RuntimeError: if the request fails
     """
     try:
-        response = requests.get(url, timeout=hf_timeout_seconds)
+        response = httpx.get(url, timeout=hf_timeout_seconds)
         response.raise_for_status()
         return response.json()
     except Exception as err:
