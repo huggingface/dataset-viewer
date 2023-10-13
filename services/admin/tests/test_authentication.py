@@ -5,8 +5,8 @@ from collections.abc import Mapping
 from typing import Optional
 
 import pytest
-import responses
 from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
+from pytest_httpx import HTTPXMock
 from starlette.datastructures import Headers
 from starlette.requests import Request
 
@@ -19,13 +19,11 @@ def test_no_auth_check() -> None:
     assert auth_check()
 
 
-@responses.activate
 def test_unreachable_external_auth_check_service() -> None:
     with pytest.raises(RuntimeError):
         auth_check(external_auth_url="https://auth.check", organization="org")
 
 
-@responses.activate
 @pytest.mark.parametrize(
     "status,error",
     [
@@ -36,10 +34,12 @@ def test_unreachable_external_auth_check_service() -> None:
         (429, ValueError),
     ],
 )
-def test_external_auth_responses_without_request(status: int, error: Optional[type[Exception]]) -> None:
+def test_external_auth_responses_without_request(
+    status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock
+) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
-    responses.add(responses.GET, url, status=status, body=body)
+    httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
         assert auth_check(external_auth_url=url, organization="org1")
     else:
@@ -47,15 +47,14 @@ def test_external_auth_responses_without_request(status: int, error: Optional[ty
             auth_check(external_auth_url=url, organization="org1")
 
 
-@responses.activate
 @pytest.mark.parametrize(
     "org,status,error",
     [("org1", 200, None), ("org2", 403, ExternalAuthenticatedError)],
 )
-def test_org(org: str, status: int, error: Optional[type[Exception]]) -> None:
+def test_org(org: str, status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
-    responses.add(responses.GET, url, status=status, body=body)
+    httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
         assert auth_check(external_auth_url=url, organization=org)
     else:
@@ -78,12 +77,11 @@ def create_request(headers: Mapping[str, str]) -> Request:
     )
 
 
-@responses.activate
-def test_valid_responses_with_request() -> None:
+def test_valid_responses_with_request(httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
     organization = "org1"
 
-    responses.add_callback(responses.GET, url, callback=request_callback)
+    httpx_mock.add_callback(method="GET", url=url, callback=request_callback)
 
     with pytest.raises(ExternalAuthenticatedError):
         auth_check(
