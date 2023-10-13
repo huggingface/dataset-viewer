@@ -476,10 +476,6 @@ def compute_descriptive_statistics_response(
     )
 
     con = duckdb.connect(":memory:")  # we don't load data in local db file, we load it in an in-memory table
-    # configure duckdb extensions
-    con.sql(f"SET extension_directory='{local_parquet_directory}';")
-    con.sql("INSTALL httpfs")
-    con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
     logging.info("Loading data into in-memory table. ")
     con.sql(
