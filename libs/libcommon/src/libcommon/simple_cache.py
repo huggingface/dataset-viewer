@@ -70,11 +70,11 @@ type_registry = TypeRegistry([DateCodec(), TimeCodec(), TimedeltaCodec(), Decima
 U = TypeVar("U", bound=Document)
 
 
-def np_op(self, _):  # type: ignore
+def no_op(self, _):  # type: ignore
     return self
 
 
-QuerySet.__class_getitem__ = types.MethodType(np_op, QuerySet)
+QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 
 class QuerySetManager(Generic[U]):
