@@ -154,8 +154,6 @@ def compute_index_rows(
     if extensions_directory is not None:
         con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
 
-    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="httpfs"))
-    con.execute(LOAD_EXTENSION_COMMAND.format(extension="httpfs"))
     con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
     con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
 
