@@ -3,27 +3,10 @@
 
 from typing import Literal, Optional
 
-import requests
+import httpx
+from libapi.authentication import RequestAuth
 from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticatedError
-from requests import PreparedRequest
-from requests.auth import AuthBase
 from starlette.requests import Request
-
-
-class RequestAuth(AuthBase):
-    """Attaches input Request authentication headers to the given Request object."""
-
-    def __init__(self, request: Optional[Request]) -> None:
-        if request is not None:
-            self.authorization = request.headers.get("authorization")
-        else:
-            self.authorization = None
-
-    def __call__(self, r: PreparedRequest) -> PreparedRequest:
-        # modify and return the request
-        if self.authorization:
-            r.headers["authorization"] = self.authorization
-        return r
 
 
 def auth_check(
@@ -50,7 +33,7 @@ def auth_check(
     if organization is None or external_auth_url is None:
         return True
     try:
-        response = requests.get(external_auth_url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
+        response = httpx.get(external_auth_url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
     except Exception as err:
         raise RuntimeError("External authentication check failed", err) from err
     if response.status_code == 200:
