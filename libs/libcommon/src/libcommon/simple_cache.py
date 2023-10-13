@@ -12,7 +12,6 @@ from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overl
 import pandas as pd
 from bson import CodecOptions, ObjectId
 from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
-from bson.datetime_ms import DatetimeMS
 from bson.errors import InvalidId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist
