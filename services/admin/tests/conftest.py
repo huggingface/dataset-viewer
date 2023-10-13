@@ -59,3 +59,8 @@ def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
         yield resource
         _clean_queue_database()
+
+
+@fixture
+def anyio_backend() -> str:
+    return "asyncio"

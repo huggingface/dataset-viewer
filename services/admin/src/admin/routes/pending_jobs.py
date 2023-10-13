@@ -25,7 +25,7 @@ def create_pending_jobs_endpoint(
         logging.info("/pending-jobs")
         try:
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

@@ -12,7 +12,7 @@ spec:
   schedule: {{ .Values.cleanDuckdbIndexDownloads.schedule | quote }}
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 180
+      ttlSecondsAfterFinished: 3600
       template:
         spec:
           restartPolicy: OnFailure

@@ -406,10 +406,10 @@ workers:
     replicas: 4
     resources:
       requests:
-        cpu: 2
+        cpu: 8
         memory: "34Gi"
       limits:
-        cpu: 2
+        cpu: 8
         memory: "34Gi"
     tolerations: []
   - deployName: "medium"

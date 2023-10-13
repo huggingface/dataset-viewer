@@ -240,7 +240,7 @@ def create_endpoint(
 
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
-                    auth_check(
+                    await auth_check(
                         dataset,
                         external_auth_url=external_auth_url,
                         request=request,
