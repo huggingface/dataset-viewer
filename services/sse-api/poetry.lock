@@ -1382,7 +1382,6 @@ psutil = "^5.9.4"
 pydub = "^0.25.1"
 pymongo = {version = "^4.5.0", extras = ["srv"]}
 pytz = "^2020.1"
-requests = "^2.31.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 tqdm = "^4.65.0"
@@ -3261,33 +3260,6 @@ files = [
 ]
 
 [[package]]
-name = "types-requests"
-version = "2.31.0.2"
-description = "Typing stubs for requests"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "types-requests-2.31.0.2.tar.gz", hash = "sha256:6aa3f7faf0ea52d728bb18c0a0d1522d9bfd8c72d26ff6f61bfc3d06a411cf40"},
-    {file = "types_requests-2.31.0.2-py3-none-any.whl", hash = "sha256:56d181c85b5925cbc59f4489a57e72a8b2166f18273fd8ba7b6fe0c0b986f12a"},
-]
-
-[package.dependencies]
-types-urllib3 = "*"
-
-[[package]]
-name = "types-urllib3"
-version = "1.26.25.14"
-description = "Typing stubs for urllib3"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "types-urllib3-1.26.25.14.tar.gz", hash = "sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f"},
-    {file = "types_urllib3-1.26.25.14-py3-none-any.whl", hash = "sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e"},
-]
-
-[[package]]
 name = "typing-extensions"
 version = "4.7.1"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -3756,4 +3728,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "c291000b54ddd7c5b99856cbec8ae9292e566c1cd8a31e92a28598978472e207"
+content-hash = "7decbd975524a0f0d1eb7d33391ae432a2af7f7d2206fc688fb1cff9c6b5cd19"
