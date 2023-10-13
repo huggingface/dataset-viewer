@@ -29,7 +29,7 @@ def create_dataset_status_endpoint(
             logging.info(f"/dataset-status, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

@@ -45,7 +45,7 @@ def create_recreate_dataset_endpoint(
             logging.info(f"/recreate-dataset, dataset={dataset}, priority={priority}")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

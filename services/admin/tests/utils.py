@@ -1,22 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from collections.abc import Mapping
-from io import BufferedReader
-from typing import Union
-
-from requests import PreparedRequest
-from responses import Response
-
-_Body = Union[str, BaseException, Response, BufferedReader, bytes]
+import httpx
 
 
-def request_callback(request: PreparedRequest) -> Union[Exception, tuple[int, Mapping[str, str], _Body]]:
+def request_callback(request: httpx.Request) -> httpx.Response:
     # return 404 if a token has been provided,
     # and 200 if none has been provided
-    # there is no logic behind this behavior, it's just to test if th
-    # token are correctly passed to the auth_check service
+    # there is no logic behind this behavior, it's just to test if the
+    # tokens are correctly passed to the auth_check service
     body = '{"orgs": [{"name": "org1"}]}'
     if request.headers.get("authorization"):
-        return (404, {"Content-Type": "text/plain"}, body)
-    return (200, {"Content-Type": "text/plain"}, body)
+        return httpx.Response(status_code=404, text=body)
+    return httpx.Response(status_code=200, text=body)

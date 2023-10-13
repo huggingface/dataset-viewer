@@ -2527,6 +2527,25 @@ toml = "*"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-httpx"
+version = "0.26.0"
+description = "Send responses to httpx."
+category = "dev"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pytest_httpx-0.26.0-py3-none-any.whl", hash = "sha256:ca372b94c569c0aca2f06240f6f78cc223dfbc3ab97b5700d4e14c9a73eab17a"},
+    {file = "pytest_httpx-0.26.0.tar.gz", hash = "sha256:b489c5a7bb847551943eaee601bc35053b35dc4f5961c944305120f14a1d770a"},
+]
+
+[package.dependencies]
+httpx = ">=0.25.0,<0.26.0"
+pytest = ">=7.0.0,<8.0.0"
+
+[package.extras]
+testing = ["pytest-asyncio (>=0.21.0,<0.22.0)", "pytest-cov (>=4.0.0,<5.0.0)"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -2639,25 +2658,6 @@ urllib3 = ">=1.21.1,<3"
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
-
-[[package]]
-name = "responses"
-version = "0.18.0"
-description = "A utility library for mocking out the `requests` Python library."
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "responses-0.18.0-py3-none-any.whl", hash = "sha256:15c63ad16de13ee8e7182d99c9334f64fd81f1ee79f90748d527c28f7ca9dd51"},
-    {file = "responses-0.18.0.tar.gz", hash = "sha256:380cad4c1c1dc942e5e8a8eaae0b4d4edf708f4f010db8b7bcfafad1fcd254ff"},
-]
-
-[package.dependencies]
-requests = ">=2.0,<3.0"
-urllib3 = ">=1.25.10"
-
-[package.extras]
-tests = ["coverage (>=6.0.0)", "flake8", "mypy", "pytest (>=4.6)", "pytest-cov", "pytest-localserver", "types-mock", "types-requests"]
 
 [[package]]
 name = "rich"
@@ -3371,4 +3371,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "36bee5baedf76ee0e632b3eb535a6f947aa0a0b4fe33fc14c0e415a29e2ed185"
+content-hash = "f02262b78325d19904d880f4796df771b88fe8c00a9873785366df8cd878498d"

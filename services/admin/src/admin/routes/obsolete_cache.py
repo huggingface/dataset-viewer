@@ -59,7 +59,7 @@ def create_get_obsolete_cache_endpoint(
     async def get_obsolete_cache_endpoint(request: Request) -> Response:
         try:
             logging.info("/obsolete-cache")
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,
@@ -116,7 +116,7 @@ def create_delete_obsolete_cache_endpoint(
     async def delete_obsolete_cache_endpoint(request: Request) -> Response:
         try:
             logging.info("/obsolete-cache")
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

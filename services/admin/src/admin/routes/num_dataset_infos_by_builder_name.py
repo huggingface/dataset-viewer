@@ -24,7 +24,7 @@ def create_num_dataset_infos_by_builder_name_endpoint(
             logging.info("/num-dataset-infos-by-builder-name")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

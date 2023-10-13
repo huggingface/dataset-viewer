@@ -34,7 +34,7 @@ def create_dataset_backfill_endpoint(
             logging.info(f"/dataset-backfill, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,
