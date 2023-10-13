@@ -88,7 +88,7 @@ def create_rows_endpoint(
                     )
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below
-                    auth_check(
+                    await auth_check(
                         dataset=dataset,
                         external_auth_url=external_auth_url,
                         request=request,

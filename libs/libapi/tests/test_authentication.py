@@ -52,6 +52,9 @@ api_token_ok = "api token ok"
 api_token_wrong = "api token wrong"
 
 
+pytestmark = pytest.mark.anyio
+
+
 def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
     """Simulates the https://huggingface.co/api/datasets/%s/auth-check Hub API endpoint.
 
@@ -90,18 +93,18 @@ def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
     raise RuntimeError(f"Unexpected dataset: {dataset}")
 
 
-def test_no_external_auth_check() -> None:
-    assert auth_check(dataset_public)
+async def test_no_external_auth_check() -> None:
+    assert await auth_check(dataset_public)
 
 
-def test_invalid_external_auth_check_url() -> None:
+async def test_invalid_external_auth_check_url() -> None:
     with pytest.raises(ValueError):
-        auth_check(dataset_public, external_auth_url="https://doesnotexist/")
+        await auth_check(dataset_public, external_auth_url="https://doesnotexist/")
 
 
-def test_unreachable_external_auth_check_service() -> None:
+async def test_unreachable_external_auth_check_service() -> None:
     with pytest.raises(AuthCheckHubRequestError):
-        auth_check(dataset_public, external_auth_url="https://doesnotexist/%s")
+        await auth_check(dataset_public, external_auth_url="https://doesnotexist/%s")
 
 
 @pytest.mark.parametrize(
@@ -114,7 +117,7 @@ def test_unreachable_external_auth_check_service() -> None:
         (429, pytest.raises(ValueError)),
     ],
 )
-def test_external_auth_responses_without_request(
+async def test_external_auth_responses_without_request(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
@@ -125,7 +128,7 @@ def test_external_auth_responses_without_request(
     external_auth_url = hf_endpoint + hf_auth_path
     httpserver.expect_request(hf_auth_path % dataset).respond_with_data(status=status_code)
     with expectation:
-        auth_check(dataset, external_auth_url=external_auth_url)
+        await auth_check(dataset, external_auth_url=external_auth_url)
 
 
 TIMEOUT_TIME = 0.2
@@ -144,7 +147,7 @@ def sleeping(_: werkzeug.wrappers.Request) -> werkzeug.wrappers.Response:
         (TIMEOUT_TIME / 2, pytest.raises(AuthCheckHubRequestError)),
     ],
 )
-def test_hf_timeout_seconds(
+async def test_hf_timeout_seconds(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
@@ -155,7 +158,7 @@ def test_hf_timeout_seconds(
     external_auth_url = hf_endpoint + hf_auth_path
     httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(func=sleeping)
     with expectation:
-        auth_check(dataset, external_auth_url=external_auth_url, hf_timeout_seconds=hf_timeout_seconds)
+        await auth_check(dataset, external_auth_url=external_auth_url, hf_timeout_seconds=hf_timeout_seconds)
 
 
 def create_request(headers: Mapping[str, str]) -> Request:
@@ -179,7 +182,7 @@ def get_jwt(dataset: str) -> str:
     )
 
 
-def assert_auth_headers(
+async def assert_auth_headers(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
@@ -190,7 +193,7 @@ def assert_auth_headers(
     external_auth_url = hf_endpoint + hf_auth_path
     httpserver.expect_request(hf_auth_path % dataset).respond_with_handler(auth_callback)
     with expectation:
-        auth_check(
+        await auth_check(
             dataset,
             external_auth_url=external_auth_url,
             request=create_request(headers=headers),
@@ -212,14 +215,14 @@ def assert_auth_headers(
         ({"Authorization": f"Bearer {get_jwt(dataset_public)}"}, does_not_raise()),
     ],
 )
-def test_external_auth_service_dataset_public(
+async def test_external_auth_service_dataset_public(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_public, headers, expectation)
+    await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_public, headers, expectation)
 
 
 @pytest.mark.parametrize(
@@ -235,14 +238,16 @@ def test_external_auth_service_dataset_public(
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_with_access)}"}, does_not_raise()),
     ],
 )
-def test_external_auth_service_dataset_protected_with_access(
+async def test_external_auth_service_dataset_protected_with_access(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_protected_with_access, headers, expectation)
+    await assert_auth_headers(
+        httpserver, hf_endpoint, hf_auth_path, dataset_protected_with_access, headers, expectation
+    )
 
 
 @pytest.mark.parametrize(
@@ -258,14 +263,16 @@ def test_external_auth_service_dataset_protected_with_access(
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_without_access)}"}, does_not_raise()),
     ],
 )
-def test_external_auth_service_dataset_protected_without_access(
+async def test_external_auth_service_dataset_protected_without_access(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_protected_without_access, headers, expectation)
+    await assert_auth_headers(
+        httpserver, hf_endpoint, hf_auth_path, dataset_protected_without_access, headers, expectation
+    )
 
 
 @pytest.mark.parametrize(
@@ -281,14 +288,14 @@ def test_external_auth_service_dataset_protected_without_access(
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_inexistent)}"}, does_not_raise()),
     ],
 )
-def test_external_auth_service_dataset_inexistent(
+async def test_external_auth_service_dataset_inexistent(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_inexistent, headers, expectation)
+    await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_inexistent, headers, expectation)
 
 
 @pytest.mark.parametrize(
@@ -304,11 +311,11 @@ def test_external_auth_service_dataset_inexistent(
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_throttled)}"}, does_not_raise()),
     ],
 )
-def test_external_auth_service_dataset_throttled(
+async def test_external_auth_service_dataset_throttled(
     httpserver: HTTPServer,
     hf_endpoint: str,
     hf_auth_path: str,
     headers: Mapping[str, str],
     expectation: Any,
 ) -> None:
-    assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_throttled, headers, expectation)
+    await assert_auth_headers(httpserver, hf_endpoint, hf_auth_path, dataset_throttled, headers, expectation)
