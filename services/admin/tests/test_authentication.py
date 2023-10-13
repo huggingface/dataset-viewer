@@ -14,14 +14,16 @@ from admin.authentication import auth_check
 
 from .utils import request_callback
 
-
-def test_no_auth_check() -> None:
-    assert auth_check()
+pytestmark = pytest.mark.anyio
 
 
-def test_unreachable_external_auth_check_service() -> None:
+async def test_no_auth_check() -> None:
+    assert await auth_check()
+
+
+async def test_unreachable_external_auth_check_service() -> None:
     with pytest.raises(RuntimeError):
-        auth_check(external_auth_url="https://auth.check", organization="org")
+        await auth_check(external_auth_url="https://auth.check", organization="org")
 
 
 @pytest.mark.parametrize(
@@ -34,32 +36,32 @@ def test_unreachable_external_auth_check_service() -> None:
         (429, ValueError),
     ],
 )
-def test_external_auth_responses_without_request(
+async def test_external_auth_responses_without_request(
     status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock
 ) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
     httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
-        assert auth_check(external_auth_url=url, organization="org1")
+        assert await auth_check(external_auth_url=url, organization="org1")
     else:
         with pytest.raises(error):
-            auth_check(external_auth_url=url, organization="org1")
+            await auth_check(external_auth_url=url, organization="org1")
 
 
 @pytest.mark.parametrize(
     "org,status,error",
     [("org1", 200, None), ("org2", 403, ExternalAuthenticatedError)],
 )
-def test_org(org: str, status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock) -> None:
+async def test_org(org: str, status: int, error: Optional[type[Exception]], httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
     body = '{"orgs": [{"name": "org1"}]}'
     httpx_mock.add_response(method="GET", url=url, status_code=status, text=body)
     if error is None:
-        assert auth_check(external_auth_url=url, organization=org)
+        assert await auth_check(external_auth_url=url, organization=org)
     else:
         with pytest.raises(error):
-            auth_check(external_auth_url=url, organization=org)
+            await auth_check(external_auth_url=url, organization=org)
 
 
 def create_request(headers: Mapping[str, str]) -> Request:
@@ -77,20 +79,20 @@ def create_request(headers: Mapping[str, str]) -> Request:
     )
 
 
-def test_valid_responses_with_request(httpx_mock: HTTPXMock) -> None:
+async def test_valid_responses_with_request(httpx_mock: HTTPXMock) -> None:
     url = "https://auth.check"
     organization = "org1"
 
     httpx_mock.add_callback(method="GET", url=url, callback=request_callback)
 
     with pytest.raises(ExternalAuthenticatedError):
-        auth_check(
+        await auth_check(
             external_auth_url=url,
             request=create_request(headers={"authorization": "Bearer token"}),
             organization=organization,
         )
 
-    assert auth_check(
+    assert await auth_check(
         external_auth_url=url,
         request=create_request(headers={}),
         organization=organization,
