@@ -74,7 +74,7 @@ def create_force_refresh_endpoint(
                     total_difficulty += bonus_difficulty_if_dataset_is_big
 
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

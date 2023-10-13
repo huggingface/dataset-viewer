@@ -26,7 +26,7 @@ def create_cache_reports_endpoint(
             cursor = request.query_params.get("cursor") or ""
             logging.info(f"Cache reports for {cache_kind}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
-            auth_check(
+            await auth_check(
                 external_auth_url=external_auth_url,
                 request=request,
                 organization=organization,

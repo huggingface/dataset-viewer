@@ -9,7 +9,7 @@ from libapi.exceptions import ExternalAuthenticatedError, ExternalUnauthenticate
 from starlette.requests import Request
 
 
-def auth_check(
+async def auth_check(
     external_auth_url: Optional[str] = None,
     request: Optional[Request] = None,
     organization: Optional[str] = None,
@@ -33,7 +33,8 @@ def auth_check(
     if organization is None or external_auth_url is None:
         return True
     try:
-        response = httpx.get(external_auth_url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(external_auth_url, auth=RequestAuth(request), timeout=hf_timeout_seconds)
     except Exception as err:
         raise RuntimeError("External authentication check failed", err) from err
     if response.status_code == 200:
