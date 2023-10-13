@@ -41,7 +41,6 @@ pytest = "^7.2.1"
 pytest-cov = "^2.12.1"
 types-psutil = "^5.9.5"
 types-pytz = "^2022.1.1"
-types-requests = "^2.28.11"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
