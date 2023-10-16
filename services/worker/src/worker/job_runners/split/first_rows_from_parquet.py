@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+from typing import Optional
 
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem
@@ -35,11 +36,13 @@ def transform_rows(
     rows: list[RowItem],
     features: Features,
     storage_options: S3StorageOptions,
+    revision: Optional[str] = None,
 ) -> list[Row]:
     return [
         {
             featureName: get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -65,6 +68,7 @@ def compute_first_rows_response(
     rows_min_number: int,
     columns_max_number: int,
     indexer: Indexer,
+    revision: Optional[str] = None,
 ) -> SplitFirstRowsResponse:
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
 
@@ -122,6 +126,7 @@ def compute_first_rows_response(
     try:
         transformed_rows = transform_rows(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             rows=rows,
@@ -221,5 +226,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 rows_min_number=self.first_rows_config.min_number,
                 columns_max_number=self.first_rows_config.columns_max_number,
                 indexer=self.indexer,
+                revision=self.job_info["params"]["revision"],
             )
         )

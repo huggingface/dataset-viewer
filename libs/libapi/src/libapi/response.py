@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -27,6 +28,7 @@ def create_response(
     unsupported_columns: list[str],
     num_rows_total: int,
     use_row_idx_column: bool = False,
+    revision: Optional[str] = None,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -45,6 +47,7 @@ def create_response(
         "rows": to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             storage_options=storage_options,

@@ -44,11 +44,13 @@ def transform_rows(
     rows: list[Row],
     features: Features,
     storage_options: S3StorageOptions,
+    revision: Optional[str] = None,
 ) -> list[Row]:
     return [
         {
             featureName: get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -75,6 +77,7 @@ def compute_first_rows_response(
     rows_min_number: int,
     columns_max_number: int,
     max_size_fallback: Optional[int] = None,
+    revision: Optional[str] = None,
 ) -> SplitFirstRowsResponse:
     """
     Get the response of /first-rows for one specific split of a dataset from huggingface.co.
@@ -213,6 +216,7 @@ def compute_first_rows_response(
     try:
         transformed_rows = transform_rows(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             rows=rows,
@@ -301,5 +305,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 rows_max_number=self.first_rows_config.max_number,
                 rows_min_number=self.first_rows_config.min_number,
                 columns_max_number=self.first_rows_config.columns_max_number,
+                revision=self.job_info["params"]["revision"],
             )
         )

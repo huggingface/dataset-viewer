@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from pathlib import Path
 from typing import Optional
 
 import pyarrow as pa
@@ -27,7 +26,6 @@ from libapi.request import (
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
     Endpoint,
-    clean_cached_assets_randomly,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -85,6 +83,7 @@ def create_response(
     offset: int,
     features: Features,
     num_rows_total: int,
+    revision: Optional[str] = None,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
@@ -105,10 +104,11 @@ def create_response(
     return PaginatedResponse(
         features=to_features_list(features_without_key),
         rows=to_rows_list(
-            pa_table,
-            dataset,
-            config,
-            split,
+            pa_table=pa_table,
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
             storage_options=storage_options,
             offset=offset,
             features=features,
@@ -138,10 +138,6 @@ def create_search_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
-    clean_cache_proba: float = 0.0,
-    keep_first_rows_number: int = -1,
-    keep_most_recent_rows_number: int = -1,
-    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -210,16 +206,6 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
-
-                with StepProfiler(method="search_endpoint", step="clean cache randomly"):
-                    clean_cached_assets_randomly(
-                        clean_cache_proba=clean_cache_proba,
-                        dataset=dataset,
-                        cached_assets_directory=cached_assets_directory,
-                        keep_first_rows_number=keep_first_rows_number,
-                        keep_most_recent_rows_number=keep_most_recent_rows_number,
-                        max_cleaned_rows_number=max_cleaned_rows_number,
-                    )
 
                 with StepProfiler(method="search_endpoint", step="create response"):
                     if "features" in duckdb_index_cache_entry["content"] and isinstance(

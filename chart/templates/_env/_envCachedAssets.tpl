@@ -6,14 +6,6 @@
   value: "{{ include "cachedAssets.baseUrl" . }}"
 - name: CACHED_ASSETS_STORAGE_DIRECTORY
   value: {{ .Values.cachedAssets.storageDirectory | quote }}
-- name: CACHED_ASSETS_CLEAN_CACHE_PROBA
-  value: {{ .Values.cachedAssets.cleanCacheProba | quote }}
-- name: CACHED_ASSETS_KEEP_FIRST_ROWS_NUMBER
-  value: {{ .Values.cachedAssets.keepFirstRowsNumber | quote }}
-- name: CACHED_ASSETS_KEEP_MOST_RECENT_ROWS_NUMBER
-  value: {{ .Values.cachedAssets.keepMostRecentRowsNumber | quote }}
-- name: CACHED_ASSETS_MAX_CLEANED_ROWS_NUMBER
-  value: {{ .Values.cachedAssets.maxCleanedRowsNumber | quote }}
 - name: CACHED_ASSETS_S3_FOLDER_NAME
   value: {{ .Values.cachedAssets.s3FolderName | quote }}
 {{- end -}}

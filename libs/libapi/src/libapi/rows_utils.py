@@ -20,11 +20,13 @@ def _transform_row(
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
+    revision: Optional[str] = None,
 ) -> Row:
     row_idx, row = row_idx_and_row
     transformed_row = {
         featureName: get_cell_value(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
@@ -49,10 +51,12 @@ def transform_rows(
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
+    revision: Optional[str] = None,
 ) -> list[Row]:
     fn = partial(
         _transform_row,
         dataset=dataset,
+        revision=revision,
         config=config,
         split=split,
         features=features,

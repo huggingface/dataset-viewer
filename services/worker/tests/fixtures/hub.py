@@ -563,7 +563,7 @@ def get_AUDIO_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
+                    "src": f"http://localhost/assets/{dataset}/main/{config}/{split}/0/col/audio.wav",
                     "type": "audio/wav",
                 },
             ]
@@ -581,7 +581,7 @@ def get_IMAGE_rows(dataset: str) -> Any:
     return [
         {
             "col": {
-                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+                "src": f"http://localhost/assets/{dataset}/main/{config}/{split}/0/col/image.jpg",
                 "height": 480,
                 "width": 640,
             },
@@ -600,12 +600,12 @@ def get_IMAGES_LIST_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
+                    "src": f"http://localhost/assets/{dataset}/main/{config}/{split}/0/col/image-1d100e9.jpg",
                     "height": 480,
                     "width": 640,
                 },
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+                    "src": f"http://localhost/assets/{dataset}/main/{config}/{split}/0/col/image-1d300ea.jpg",
                     "height": 480,
                     "width": 640,
                 },

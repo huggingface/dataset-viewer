@@ -59,6 +59,7 @@ def image(
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
+    revision: Optional[str] = None,
 ) -> Any:
     if value is None:
         return None
@@ -81,6 +82,7 @@ def image(
         try:
             return create_image_file(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -106,6 +108,7 @@ def audio(
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
+    revision: Optional[str] = None,
 ) -> Any:
     if value is None:
         return None
@@ -156,6 +159,7 @@ def audio(
     # this function can raise, we don't catch it
     return create_audio_file(
         dataset=dataset,
+        revision=revision,
         config=config,
         split=split,
         row_idx=row_idx,
@@ -177,6 +181,7 @@ def get_cell_value(
     fieldType: Any,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
+    revision: Optional[str] = None,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
@@ -184,6 +189,7 @@ def get_cell_value(
     if isinstance(fieldType, Image):
         return image(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
@@ -195,6 +201,7 @@ def get_cell_value(
     elif isinstance(fieldType, Audio):
         return audio(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
@@ -212,6 +219,7 @@ def get_cell_value(
         return [
             get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -230,6 +238,7 @@ def get_cell_value(
             return [
                 get_cell_value(
                     dataset=dataset,
+                    revision=revision,
                     config=config,
                     split=split,
                     row_idx=row_idx,
@@ -251,6 +260,7 @@ def get_cell_value(
                 key: [
                     get_cell_value(
                         dataset=dataset,
+                        revision=revision,
                         config=config,
                         split=split,
                         row_idx=row_idx,
@@ -272,6 +282,7 @@ def get_cell_value(
         return {
             key: get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
