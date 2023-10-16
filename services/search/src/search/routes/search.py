@@ -215,17 +215,18 @@ def create_search_endpoint(
                     else:
                         features = Features.from_arrow_schema(pa_table.schema)
                     response = create_response(
-                        pa_table,
-                        dataset,
-                        config,
-                        split,
-                        cached_assets_base_url,
-                        cached_assets_directory,
-                        s3_client,
-                        cached_assets_s3_folder_name,
-                        offset,
-                        features,
-                        num_rows_total,
+                        pa_table=pa_table,
+                        dataset=dataset,
+                        revision=revision,
+                        config=config,
+                        split=split,
+                        cached_assets_base_url=cached_assets_base_url,
+                        cached_assets_directory=cached_assets_directory,
+                        s3_client=s3_client,
+                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                        offset=offset,
+                        features=features,
+                        num_rows_total=num_rows_total,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)
