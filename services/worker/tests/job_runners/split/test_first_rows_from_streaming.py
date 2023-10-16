@@ -90,7 +90,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": "main",
                     "config": config,
                     "split": split,
                 },

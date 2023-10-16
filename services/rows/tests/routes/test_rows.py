@@ -537,7 +537,9 @@ def test_create_response_with_image(
         ]
 
         body = (
-            conn.Object(bucket_name, "cached-assets/ds_image/revision/default/train/0/image/image.jpg").get()["Body"].read()
+            conn.Object(bucket_name, "cached-assets/ds_image/revision/default/train/0/image/image.jpg")
+            .get()["Body"]
+            .read()
         )
         assert body is not None
 
