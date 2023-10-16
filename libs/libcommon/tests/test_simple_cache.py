@@ -3,6 +3,7 @@
 
 from collections.abc import Mapping
 from datetime import datetime
+from decimal import Decimal
 from http import HTTPStatus
 from time import process_time
 from typing import Any, Optional, TypedDict
@@ -189,6 +190,28 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "dataset_git_revision": dataset_git_revision,
         "progress": None,
     }
+
+
+def test_upsert_response_types() -> None:
+    kind = "test_kind"
+    dataset = "test_dataset"
+
+    now = datetime.now()
+    decimal = Decimal(now.time().microsecond * 1e-6)
+    content = {
+        "datetime": now,  # microsecond is truncated to millisecond
+        "time": now.time(),  # time it turned into a string
+        "date": now.date(),  # date is turned into a string
+        "decimal": decimal,  # decimal is turned into a string
+    }
+    upsert_response(kind=kind, dataset=dataset, content=content, http_status=HTTPStatus.OK)
+    cached_response = get_response(kind=kind, dataset=dataset)
+    assert cached_response["content"]["datetime"] == datetime(
+        now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond // 1000 * 1000
+    )
+    assert cached_response["content"]["time"] == str(now.time())
+    assert cached_response["content"]["date"] == str(now.date())
+    assert cached_response["content"]["decimal"] == str(decimal)
 
 
 def test_delete_response() -> None:
