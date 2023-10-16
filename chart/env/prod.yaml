@@ -227,6 +227,11 @@ cleanDuckdbIndexJobRunner:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 10_800 # 3 hours
 
+cleanStatsCache:
+  nodeSelector:
+    role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 10_800 # 3 hours
+
 postMessages:
   nodeSelector:
     role-datasets-server: "true"
