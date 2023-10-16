@@ -3834,7 +3834,7 @@
                       "error": "Parameter 'split' is required"
                     }
                   },
-                  "missing-query": {
+                  "missing-where": {
                     "summary": "The where parameter is missing.",
                     "value": {
                       "error": "Parameter 'where' is required"
@@ -3858,7 +3858,7 @@
                       "error": "Parameter 'split' is required"
                     }
                   },
-                  "empty-query": {
+                  "empty-where": {
                     "summary": "The where parameter is empty.",
                     "value": {
                       "error": "Parameter 'where' is required"
@@ -3892,6 +3892,18 @@
                     "summary": "The length must not be too large.",
                     "value": {
                       "error": "Parameter 'length' must not be greater than 100"
+                    }
+                  },
+                  "where-with-invalid-symbols": {
+                    "summary": "The where parameter contains invalid symbols.",
+                    "value": {
+                      "error": "Parameter 'where' contains invalid symbols"
+                    }
+                  },
+                  "invalid-where": {
+                    "summary": "The where parameter is invalid.",
+                    "value": {
+                      "error": "Parameter 'where' is invalid"
                     }
                   }
                 }
