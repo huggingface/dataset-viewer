@@ -252,7 +252,7 @@ class ConfigNamesConfig:
 DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
 DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
-DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES = 100_000_000
+DUCKDB_INDEX_MAX_DATASET_SIZE = 100_000_000
 DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
 DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
@@ -265,7 +265,7 @@ class DuckDbIndexConfig:
     committer_hf_token: Optional[str] = DUCKDB_INDEX_COMMITTER_HF_TOKEN
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
     url_template: str = DUCKDB_INDEX_URL_TEMPLATE
-    max_parquet_size_bytes: int = DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+    max_dataset_size: int = DUCKDB_INDEX_MAX_DATASET_SIZE
     extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
 
     @classmethod
@@ -278,8 +278,8 @@ class DuckDbIndexConfig:
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
                 url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
-                max_parquet_size_bytes=env.int(
-                    name="MAX_PARQUET_SIZE_BYTES", default=DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
+                max_dataset_size=env.int(
+                    name="MAX_DATASET_SIZE", default=DUCKDB_INDEX_MAX_DATASET_SIZE
                 ),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )

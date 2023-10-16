@@ -287,7 +287,9 @@ duckDBIndex:
   # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
-  maxParquetSizeBytes: "100_000_000"
+  maxDatasetSize: "100_000_000"
+  # the time interval at which a downloaded index will be considered as expired and will be deleted
+  expiredTimeIntervalSeconds: 600
 
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
