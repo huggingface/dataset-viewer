@@ -3,6 +3,7 @@
 
 import logging
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 
 import pyarrow as pa
@@ -209,6 +210,7 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
+                    Path(index_file_location).touch()
 
                 with StepProfiler(method="search_endpoint", step="clean cache randomly"):
                     clean_cached_assets_randomly(
