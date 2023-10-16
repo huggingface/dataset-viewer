@@ -20,7 +20,7 @@ spec:
           {{- include "image.imagePullSecrets" . | nindent 6 }}
           nodeSelector: {{ toYaml .Values.cleanStatsCache.nodeSelector | nindent 12 }}
           tolerations: {{ toYaml .Values.cleanStatsCache.tolerations | nindent 12 }}
-          containers: {{ include "containerCleanHfDatasetsCache" . | nindent 12 }}
+          containers: {{ include "containerCleanStatsCache" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
           initContainers: {{ include "initContainerDescriptiveStatistics" . | nindent 12 }}
           volumes: {{ include "volumeDescriptiveStatistics" . | nindent 12 }}
