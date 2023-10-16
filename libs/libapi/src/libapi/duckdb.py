@@ -50,6 +50,8 @@ def get_index_file_location_and_download_if_missing(
                     repo_file_location=repo_file_location,
                     hf_token=hf_token,
                 )
+        # Update its modification time
+        index_path.touch()
         return index_file_location
 
 
