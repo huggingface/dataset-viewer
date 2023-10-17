@@ -35,10 +35,10 @@ from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo, SplitHubFile
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, DuckDbIndexConfig
-from worker.dtos import CompleteJobResult
+from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
@@ -60,14 +60,6 @@ LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
-
-
-class DuckdbIndexWithFeatures(SplitHubFile):
-    features: Optional[dict[str, Any]]
-    has_fts: bool
-    partial_index: bool
-    indexed_num_rows: Optional[int]  # field can be missing in old cache entries
-    indexed_num_bytes: Optional[int]  # field can be missing in old cache entries
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -101,7 +93,7 @@ def compute_index_rows(
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
-) -> DuckdbIndexWithFeatures:
+) -> SplitDuckdbIndex:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
 
     # get parquet urls and dataset_info
@@ -138,14 +130,11 @@ def compute_index_rows(
             num_rows += parquet_metadata.num_rows
             for row_group_id in range(parquet_metadata.num_row_groups):
                 num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
-                if num_bytes > max_dataset_size:
-                    break
-            else:
-                continue
-            break
+            if num_bytes > max_dataset_size:
+                break
 
-        partial_index = parquet_export_is_partial or (num_parquet_files_to_index < len(split_parquet_files))
-        split_parquet_files = split_parquet_files[:parquet_file_id + 1]
+        partial = parquet_export_is_partial or (num_parquet_files_to_index < len(split_parquet_files))
+        split_parquet_files = split_parquet_files[: parquet_file_id + 1]
 
         # get the features
         features = content_parquet_and_info["dataset_info"]["features"]
@@ -286,7 +275,7 @@ def compute_index_rows(
     # we added the __hf_index_id column for the index
     features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
-    return DuckdbIndexWithFeatures(
+    return SplitDuckdbIndex(
         dataset=dataset,
         config=config,
         split=split,
@@ -301,8 +290,9 @@ def compute_index_rows(
         size=repo_file.size,
         features=features,
         has_fts=is_indexable,
-        partial_index=partial_index,
-        indexed_num_rows=num_rows,
+        partial=partial,
+        num_rows=num_rows,
+        num_bytes=num_bytes,
     )
 
 

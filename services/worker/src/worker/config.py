@@ -278,9 +278,7 @@ class DuckDbIndexConfig:
                 committer_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=DUCKDB_INDEX_COMMITTER_HF_TOKEN),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
                 url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
-                max_dataset_size=env.int(
-                    name="MAX_DATASET_SIZE", default=DUCKDB_INDEX_MAX_DATASET_SIZE
-                ),
+                max_dataset_size=env.int(name="MAX_DATASET_SIZE", default=DUCKDB_INDEX_MAX_DATASET_SIZE),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )
 
