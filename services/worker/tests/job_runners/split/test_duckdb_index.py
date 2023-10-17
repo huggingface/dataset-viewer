@@ -39,6 +39,7 @@ GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRun
 
 @pytest.fixture
 def get_job_runner(
+    parquet_metadata_directory: StrPath,
     duckdb_index_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
@@ -103,6 +104,7 @@ def get_job_runner(
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
             duckdb_index_cache_directory=duckdb_index_cache_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
