@@ -155,7 +155,6 @@ optInOutUrlsScan:
 
 duckDBIndex:
   maxDatasetSize: "5_000_000_000"
-  expiredTimeIntervalSeconds: 259_200 # 3 days
 
 rowsIndex:
   maxArrowDataInMemory: "300_000_000"
