@@ -5,7 +5,7 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import duckdb
 import pyarrow.parquet as pq
