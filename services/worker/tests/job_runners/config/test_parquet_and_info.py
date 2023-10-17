@@ -92,6 +92,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision="dataset_git_revision",
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -164,6 +165,7 @@ def test_compute_legacy_configs(
         upsert_response(
             kind="dataset-config-names",
             dataset=hub_public_legacy_configs,
+            dataset_git_revision="dataset_git_revision",
             http_status=HTTPStatus.OK,
             content={
                 "config_names": [

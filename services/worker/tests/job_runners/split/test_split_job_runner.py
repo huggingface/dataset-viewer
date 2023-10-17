@@ -39,6 +39,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
     upsert_response(
         kind="dataset-config-names",
         dataset="dataset",
+        dataset_git_revision="dataset_git_revision",
         content={"config_names": [{"dataset": "dataset", "config": config}]},
         http_status=HTTPStatus.OK,
     )
@@ -83,6 +84,7 @@ def test_creation(
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={"config_names": [{"dataset": dataset, "config": upsert_config}]},
         http_status=HTTPStatus.OK,
     )

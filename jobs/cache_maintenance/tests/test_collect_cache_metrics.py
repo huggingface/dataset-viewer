@@ -17,6 +17,7 @@ def test_collect_cache_metrics() -> None:
     upsert_response(
         kind=kind,
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         split=split,
         content=content,

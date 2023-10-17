@@ -29,6 +29,7 @@ def test_get_obsolete_cache(dataset_names: list[str], expected_report: list[Data
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={"config_names": [{"dataset": dataset, "config": "config"}]},
         http_status=HTTPStatus.OK,
     )
@@ -36,6 +37,7 @@ def test_get_obsolete_cache(dataset_names: list[str], expected_report: list[Data
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config="config",
         content={"splits": [{"dataset": dataset, "config": "config", "split": "split"}]},
         http_status=HTTPStatus.OK,
@@ -74,6 +76,7 @@ def test_delete_obsolete_cache(
     upsert_response(
         kind="kind_1",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={"config_names": [{"dataset": dataset, "config": "config"}]},
         http_status=HTTPStatus.OK,
     )
@@ -81,6 +84,7 @@ def test_delete_obsolete_cache(
     upsert_response(
         kind="kind_2",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config="config",
         content={"splits": [{"dataset": dataset, "config": "config", "split": "split"}]},
         http_status=HTTPStatus.OK,

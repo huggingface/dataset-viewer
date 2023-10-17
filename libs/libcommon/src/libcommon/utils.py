@@ -134,7 +134,7 @@ def get_datetime(days: Optional[float] = None) -> datetime:
 
 def inputs_to_string(
     dataset: str,
-    revision: Optional[str] = None,
+    revision: str,
     config: Optional[str] = None,
     split: Optional[str] = None,
     prefix: Optional[str] = None,

@@ -197,6 +197,7 @@ def test_compute(
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content=config_names_content,
         http_status=config_names_status,
     )
@@ -208,6 +209,7 @@ def test_compute(
             upsert_response(
                 kind="config-opt-in-out-urls-count",
                 dataset=dataset,
+                dataset_git_revision="dataset_git_revision",
                 config=split_item["config"],
                 content=content,
                 http_status=status,

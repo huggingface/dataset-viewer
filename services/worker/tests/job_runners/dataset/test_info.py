@@ -37,6 +37,7 @@ GetJobRunner = Callable[[str, AppConfig], DatasetInfoJobRunner]
 UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
     kind="dataset-config-names",
     dataset="dataset_ok",
+    dataset_git_revision="dataset_git_revision",
     config=None,
     http_status=HTTPStatus.OK,
     content={
@@ -50,6 +51,7 @@ UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_INFO_1: UpstreamResponse = UpstreamResponse(
     kind="config-info",
     dataset="dataset_ok",
+    dataset_git_revision="dataset_git_revision",
     config="config_1",
     http_status=HTTPStatus.OK,
     content={"dataset_info": CONFIG_INFO_1, "partial": False},
@@ -58,6 +60,7 @@ UPSTREAM_RESPONSE_CONFIG_INFO_1: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_INFO_2: UpstreamResponse = UpstreamResponse(
     kind="config-info",
     dataset="dataset_ok",
+    dataset_git_revision="dataset_git_revision",
     config="config_2",
     http_status=HTTPStatus.OK,
     content={"dataset_info": CONFIG_INFO_2, "partial": False},
@@ -181,6 +184,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="config-info",
                     dataset="dataset_ok",
+                    dataset_git_revision="dataset_git_revision",
                     config="config_2",
                     http_status=HTTPStatus.NOT_FOUND,
                     content={"error": "error"},
@@ -196,6 +200,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="status_error",
+                    dataset_git_revision="dataset_git_revision",
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
                     content={"error": "error"},
@@ -211,6 +216,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="format_error",
+                    dataset_git_revision="dataset_git_revision",
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={"not_dataset_info": "wrong_format"},

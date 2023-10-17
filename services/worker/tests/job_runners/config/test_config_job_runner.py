@@ -73,6 +73,7 @@ def test_creation(
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={"config_names": [{"dataset": dataset, "config": upsert_config}]},
         http_status=HTTPStatus.OK,
     )

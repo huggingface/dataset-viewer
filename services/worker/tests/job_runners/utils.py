@@ -9,6 +9,7 @@ from typing import Any, Optional, TypedDict
 class _UpstreamResponse(TypedDict):
     kind: str
     dataset: str
+    dataset_git_revision: str
     http_status: HTTPStatus
     content: Mapping[str, Any]
 

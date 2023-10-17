@@ -492,7 +492,9 @@ class Queue:
             revision=revision,
             config=config,
             split=split,
-            unicity_id=inputs_to_string(dataset=dataset, config=config, split=split, prefix=job_type),
+            unicity_id=inputs_to_string(
+                revision=revision, dataset=dataset, config=config, split=split, prefix=job_type
+            ),
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
@@ -520,6 +522,7 @@ class Queue:
                     config=job_info["params"]["config"],
                     split=job_info["params"]["split"],
                     unicity_id=inputs_to_string(
+                        revision=job_info["params"]["revision"],
                         dataset=job_info["params"]["dataset"],
                         config=job_info["params"]["config"],
                         split=job_info["params"]["split"],

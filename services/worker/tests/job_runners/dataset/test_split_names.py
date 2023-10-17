@@ -152,6 +152,7 @@ def test_compute_progress(
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={
             "config_names": [
                 {
@@ -169,6 +170,7 @@ def test_compute_progress(
         upsert_response(
             kind="config-split-names-from-info",
             dataset=dataset,
+            dataset_git_revision="dataset_git_revision",
             config=config["config"],
             content=config["response"],
             http_status=HTTPStatus.OK,
@@ -176,6 +178,7 @@ def test_compute_progress(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision="dataset_git_revision",
             config=config["config"],
             content=config["response"],
             http_status=HTTPStatus.OK,
@@ -194,6 +197,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={
             "config_names": [
                 {
@@ -209,6 +213,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     upsert_response(
         kind="config-split-names-from-info",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -216,6 +221,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -236,6 +242,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         content={
             "config_names": [
                 {
@@ -252,6 +259,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     upsert_response(
         kind="config-split-names-from-info",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content={"wrong_format": []},
         http_status=HTTPStatus.OK,
@@ -259,6 +267,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content={"splits": [{"dataset": "dataset", "config": "config", "split": "split"}]},
         http_status=HTTPStatus.OK,
