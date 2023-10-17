@@ -4,12 +4,14 @@
 import types
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
-from bson import ObjectId
+from bson import CodecOptions, ObjectId
+from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist
@@ -31,6 +33,38 @@ from libcommon.constants import (
 )
 from libcommon.utils import JobParams, get_datetime
 
+
+class DateCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.date objects like datetime.datetime objects in mongo"""
+
+    python_type = date  # the Python type acted upon by this type codec
+    transform_python = str  # convert date objects to strings in mongo
+
+
+class TimeCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.time objects as strings in mongo"""
+
+    python_type = time  # the Python type acted upon by this type codec
+    transform_python = str  # convert time objects to strings in mongo
+
+
+class TimedeltaCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.timedelta objects as strings in mongo"""
+
+    python_type = timedelta  # the Python type acted upon by this type codec
+    transform_python = str  # convert timedelta objects to strings in mongo
+
+
+class DecimalCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save decimal.Decimal objects as strings in mongo"""
+
+    python_type = Decimal  # the Python type acted upon by this type codec
+    transform_python = str  # convert decimal objects to strings in mongo
+
+
+type_registry = TypeRegistry([DateCodec(), TimeCodec(), TimedeltaCodec(), DecimalCodec()])
+
+
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -45,6 +79,10 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
+        codec_options = CodecOptions(type_registry=type_registry)  # type: ignore[call-arg]
+        cls._collection = cls._get_db().get_collection(  # type: ignore[attr-defined]
+            cls._get_collection_name(), codec_options=codec_options
+        )
         return QuerySet(cls, cls._get_collection())
 
 
