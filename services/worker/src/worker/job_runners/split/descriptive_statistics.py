@@ -481,7 +481,13 @@ def compute_descriptive_statistics_response(
     logging.info(f"Original number of threads={n_threads}")
     con.sql("SET threads TO 8;")
     n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
-    logging.info(f"Number of threads={n_threads}")
+    logging.info(f"Current number of threads={n_threads}")
+
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Original {max_memory=}")
+    con.sql("SET max_memory TO '28gb';")
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Current {max_memory=}")
 
     logging.info("Loading data into in-memory table. ")
     create_table_command = CREATE_TABLE_COMMAND.format(
