@@ -476,19 +476,22 @@ def compute_descriptive_statistics_response(
     )
 
     con = duckdb.connect(":memory:")  # we don't load data in local db file, we load it in an in-memory table
-    # configure duckdb extensions
-    con.sql(f"SET extension_directory='{local_parquet_directory}';")
-    con.sql("INSTALL httpfs")
-    con.sql("LOAD httpfs")
     con.sql("SET enable_progress_bar=true;")
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Original number of threads={n_threads}")
+    con.sql("SET threads TO 8;")
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Number of threads={n_threads}")
+
     logging.info("Loading data into in-memory table. ")
-    con.sql(
-        CREATE_TABLE_COMMAND.format(
-            table_name=DATA_TABLE_NAME,
-            column_names=all_feature_names,
-            select_from=f"read_parquet('{local_parquet_glob_path}')",
-        )
+    create_table_command = CREATE_TABLE_COMMAND.format(
+        table_name=DATA_TABLE_NAME,
+        column_names=all_feature_names,
+        select_from=f"read_parquet('{local_parquet_glob_path}')",
     )
+    logging.info(create_table_command)
+    con.sql(create_table_command)
+    logging.info("Loading finished. ")
 
     if string_features:
         logging.info(f"Compute statistics for string columns {string_features}")
