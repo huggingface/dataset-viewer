@@ -54,6 +54,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision="dataset_git_revision",
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -233,6 +234,7 @@ def test_compute(
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content=split_names_content,
         http_status=split_names_status,
@@ -243,6 +245,7 @@ def test_compute(
             upsert_response(
                 kind="split-opt-in-out-urls-count",
                 dataset=dataset,
+                dataset_git_revision="dataset_git_revision",
                 config=split_item["config"],
                 split=split_item["split"],
                 content=content,

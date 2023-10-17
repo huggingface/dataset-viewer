@@ -59,6 +59,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision="dataset_git_revision",
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -273,6 +274,7 @@ def test_compute(
     upsert_response(
         kind="config-parquet-and-info",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content=upstream_content,
         http_status=upstream_status,

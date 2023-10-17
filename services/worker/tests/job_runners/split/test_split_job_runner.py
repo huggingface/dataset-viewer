@@ -92,6 +92,7 @@ def test_creation(
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         config=config,
         content={"splits": [{"dataset": dataset, "config": upsert_config, "split": upsert_split}]},
         http_status=HTTPStatus.OK,

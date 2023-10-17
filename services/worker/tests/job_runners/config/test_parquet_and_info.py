@@ -472,6 +472,7 @@ def test_previous_step_error(
     upsert_response(
         "dataset-config-names",
         dataset=dataset,
+        dataset_git_revision="dataset_git_revision",
         http_status=upstream_status,
         content=upstream_content,
     )
