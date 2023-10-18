@@ -22,6 +22,8 @@ from worker.job_runners.config.split_names_from_info import (
     ConfigSplitNamesFromInfoJobRunner,
 )
 
+from ..utils import REVISION_NAME
+
 GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesFromInfoJobRunner]
 
 
@@ -52,7 +54,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -62,7 +64,7 @@ def get_job_runner(
                 "type": ConfigSplitNamesFromInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -144,7 +146,7 @@ def test_compute(
     upsert_response(
         kind="config-info",
         dataset=dataset,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=upstream_content,
         http_status=upstream_status,

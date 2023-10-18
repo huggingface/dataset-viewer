@@ -60,6 +60,7 @@ from worker.resources import LibrariesResource
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
@@ -92,7 +93,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -102,7 +103,7 @@ def get_job_runner(
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -165,7 +166,7 @@ def test_compute_legacy_configs(
         upsert_response(
             kind="dataset-config-names",
             dataset=hub_public_legacy_configs,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             http_status=HTTPStatus.OK,
             content={
                 "config_names": [
@@ -472,7 +473,7 @@ def test_previous_step_error(
     upsert_response(
         "dataset-config-names",
         dataset=dataset,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         http_status=upstream_status,
         content=upstream_content,
     )
@@ -581,7 +582,7 @@ def get_dataset_config_names_job_runner(
                 "type": DatasetConfigNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": None,
                     "split": None,
                 },

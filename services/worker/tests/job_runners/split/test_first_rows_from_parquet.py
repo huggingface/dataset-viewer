@@ -28,6 +28,8 @@ from worker.job_runners.split.first_rows_from_parquet import (
 )
 from worker.utils import get_json_size
 
+from ..utils import REVISION_NAME
+
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
 
 
@@ -66,7 +68,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -74,7 +76,7 @@ def get_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
@@ -97,7 +99,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -171,7 +173,7 @@ def test_compute(
     upsert_response(
         kind="config-level",
         dataset=dataset,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,
@@ -285,7 +287,7 @@ def test_from_parquet_truncation(
     upsert_response(
         kind="config-level",
         dataset=dataset,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,

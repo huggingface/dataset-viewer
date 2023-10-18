@@ -35,6 +35,8 @@ from PIL import Image as PILImage  # type: ignore
 
 from rows.config import AppConfig
 
+REVISION_NAME = "revision"
+
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases(app_config: AppConfig) -> None:
@@ -130,7 +132,7 @@ def dataset_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -160,7 +162,7 @@ def dataset_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -201,7 +203,7 @@ def dataset_empty_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_empty",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -231,7 +233,7 @@ def dataset_empty_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds_empty",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -274,7 +276,7 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_sharded",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -305,7 +307,7 @@ def dataset_sharded_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds_sharded",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,
@@ -331,7 +333,7 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_image",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,

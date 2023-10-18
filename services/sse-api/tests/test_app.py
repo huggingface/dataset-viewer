@@ -22,6 +22,8 @@ from sse_api.constants import HUB_CACHE_KIND
 
 from .uvicorn_server import UvicornServer
 
+REVISION_NAME = "revision"
+
 
 @pytest_asyncio.fixture(scope="function")
 async def app_test(
@@ -93,7 +95,7 @@ def init_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -105,7 +107,7 @@ def init_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset2",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -117,7 +119,7 @@ def init_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND + "-NOT",
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -129,7 +131,7 @@ def init_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset3",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": False,
             "viewer": True,
@@ -145,7 +147,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -158,7 +160,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -171,7 +173,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset2",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -184,7 +186,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND + "-NOT",
         dataset="dataset2",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": True,
             "viewer": True,
@@ -197,7 +199,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": False,
             "viewer": True,
@@ -210,7 +212,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": False,
             "viewer": True,
@@ -228,7 +230,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": False,
             "viewer": True,
@@ -241,7 +243,7 @@ async def update_hub_cache() -> None:
     upsert_response(
         kind=HUB_CACHE_KIND,
         dataset="dataset1",
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         content={
             "preview": False,
             "viewer": True,

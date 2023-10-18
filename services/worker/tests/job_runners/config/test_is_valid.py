@@ -14,7 +14,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 
-from ..utils import UpstreamResponse
+from ..utils import REVISION_NAME, UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +33,7 @@ SPLIT_2 = "split2"
 UPSTREAM_RESPONSE_SPLIT_NAMES: UpstreamResponse = UpstreamResponse(
     kind="config-split-names-from-streaming",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     http_status=HTTPStatus.OK,
     content={
@@ -46,7 +46,7 @@ UPSTREAM_RESPONSE_SPLIT_NAMES: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_1_OK: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_1,
     http_status=HTTPStatus.OK,
@@ -55,7 +55,7 @@ UPSTREAM_RESPONSE_SPLIT_1_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_1,
     http_status=HTTPStatus.OK,
@@ -64,7 +64,7 @@ UPSTREAM_RESPONSE_SPLIT_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_2,
     http_status=HTTPStatus.OK,
@@ -73,7 +73,7 @@ UPSTREAM_RESPONSE_SPLIT_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_2_OK: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_2,
     http_status=HTTPStatus.OK,
@@ -82,7 +82,7 @@ UPSTREAM_RESPONSE_SPLIT_2_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_1_ERROR: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_1,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -91,7 +91,7 @@ UPSTREAM_RESPONSE_SPLIT_1_ERROR: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SPLIT_2_ERROR: UpstreamResponse = UpstreamResponse(
     kind="split-is-valid",
     dataset=DATASET,
-    dataset_git_revision="dataset_git_revision",
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG,
     split=SPLIT_2,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -135,7 +135,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -147,7 +147,7 @@ def get_job_runner(
                     "dataset": dataset,
                     "config": config,
                     "split": None,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
