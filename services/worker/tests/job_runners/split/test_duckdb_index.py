@@ -203,6 +203,7 @@ def get_parquet_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -255,6 +256,7 @@ def get_parquet_metadata_job_runner(
 
         upsert_response(
             kind="dataset-config-names",
+            dataset_git_revision=REVISION_NAME,
             dataset=dataset,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
@@ -351,6 +353,7 @@ def test_compute(
     upsert_response(
         "config-parquet-and-info",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         http_status=HTTPStatus.OK,
         content=config_parquet_and_info,
@@ -380,6 +383,7 @@ def test_compute(
     upsert_response(
         "config-parquet-metadata",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         http_status=HTTPStatus.OK,
         content=config_parquet_metadata,

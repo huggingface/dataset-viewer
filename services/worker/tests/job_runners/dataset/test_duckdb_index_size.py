@@ -20,7 +20,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.dataset.duckdb_index_size import DatasetDuckdbIndexSizeJobRunner
 
-from ..utils import UpstreamResponse
+from ..utils import REVISION_NAME, UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -81,6 +81,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="dataset_ok",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={
@@ -93,6 +94,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="config-duckdb-index-size",
                     dataset="dataset_ok",
+                    dataset_git_revision=REVISION_NAME,
                     config="config_1",
                     http_status=HTTPStatus.OK,
                     content={
@@ -129,6 +131,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="config-duckdb-index-size",
                     dataset="dataset_ok",
+                    dataset_git_revision=REVISION_NAME,
                     config="config_2",
                     http_status=HTTPStatus.OK,
                     content={
@@ -219,6 +222,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="status_error",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
                     content={"error": "error"},
@@ -234,6 +238,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="format_error",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={"not_dataset_info": "wrong_format"},
