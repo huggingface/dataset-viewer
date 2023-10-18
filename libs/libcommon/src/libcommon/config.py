@@ -422,7 +422,7 @@ class ProcessingGraphConfig:
                 "triggered_by": [
                     "config-split-names-from-info",
                     "config-split-names-from-streaming",
-                    "config-info",
+                    "config-parquet-metadata",
                 ],
                 "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
