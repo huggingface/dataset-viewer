@@ -49,6 +49,8 @@ DATA_TABLE_NAME = "data"
 BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
 STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
+DATABASE_FILENAME = "db.duckdb"
+
 
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM {data_table_name} WHERE "{column_name}" IS NULL;
@@ -475,7 +477,7 @@ def compute_descriptive_statistics_response(
         f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
     )
 
-    con = duckdb.connect(":memory:")  # we don't load data in local db file, we load it in an in-memory table
+    con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
     con.sql("SET enable_progress_bar=true;")
     n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
     logging.info(f"Original number of threads={n_threads}")
