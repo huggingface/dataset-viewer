@@ -55,9 +55,7 @@ def get_index_file_location_and_download_if_missing(
         return index_file_location
 
 
-def get_download_folder(
-    root_directory: StrPath, dataset: str, revision: str, config: str, split: str
-) -> str:
+def get_download_folder(root_directory: StrPath, dataset: str, revision: str, config: str, split: str) -> str:
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
