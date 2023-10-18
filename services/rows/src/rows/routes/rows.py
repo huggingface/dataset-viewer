@@ -119,7 +119,7 @@ def create_rows_endpoint(
                 with StepProfiler(method="rows_endpoint", step="transform to a list"):
                     response = create_response(
                         dataset=dataset,
-                        revision=revision,
+                        revision=revision,  # type: ignore
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,

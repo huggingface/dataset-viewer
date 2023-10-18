@@ -14,13 +14,13 @@ from tqdm.contrib.concurrent import thread_map
 def _transform_row(
     row_idx_and_row: tuple[int, Row],
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     features: Features,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
-    revision: Optional[str] = None,
 ) -> Row:
     row_idx, row = row_idx_and_row
     transformed_row = {
@@ -44,6 +44,7 @@ def _transform_row(
 
 def transform_rows(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     rows: list[Row],
@@ -51,7 +52,6 @@ def transform_rows(
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     offset: int,
     row_idx_column: Optional[str],
-    revision: Optional[str] = None,
 ) -> list[Row]:
     fn = partial(
         _transform_row,

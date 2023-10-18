@@ -201,6 +201,7 @@ Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     offset: int,
@@ -208,7 +209,6 @@ def to_rows_list(
     unsupported_columns: list[str],
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     row_idx_column: Optional[str] = None,
-    revision: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):

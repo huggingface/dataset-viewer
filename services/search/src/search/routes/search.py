@@ -74,6 +74,7 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
 def create_response(
     pa_table: pa.Table,
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
@@ -83,7 +84,6 @@ def create_response(
     offset: int,
     features: Features,
     num_rows_total: int,
-    revision: Optional[str] = None,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)

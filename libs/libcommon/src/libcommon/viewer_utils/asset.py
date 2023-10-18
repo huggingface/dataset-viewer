@@ -29,10 +29,7 @@ def get_and_create_dir_path(assets_directory: StrPath, url_dir_path: str) -> Pat
     return dir_path
 
 
-def get_url_dir_path(
-    dataset: str, config: str, split: str, row_idx: int, column: str, revision: Optional[str] = None
-) -> str:
-    revision = "main" if revision is None else revision
+def get_url_dir_path(dataset: str, revision: str, config: str, split: str, row_idx: int, column: str) -> str:
     return f"{dataset}/{revision}/{config}/{split}/{str(row_idx)}/{column}"
 
 
@@ -75,6 +72,7 @@ def upload_asset_file(
 
 def create_asset_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -82,7 +80,6 @@ def create_asset_file(
     filename: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     fn: Callable[[Path, str, bool], SupportedSource],
-    revision: Optional[str] = None,
 ) -> SupportedSource:
     # get url dir path
     assets_base_url = storage_options.assets_base_url
@@ -160,6 +157,7 @@ def save_audio(
 
 def create_image_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -167,7 +165,6 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     storage_options: DirectoryStorageOptions,
-    revision: Optional[str] = None,
 ) -> ImageSource:
     fn = partial(save_image, image=image)
     return cast(
@@ -188,6 +185,7 @@ def create_image_file(
 
 def create_audio_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -196,7 +194,6 @@ def create_audio_file(
     audio_file_extension: str,
     filename: str,
     storage_options: DirectoryStorageOptions,
-    revision: Optional[str] = None,
 ) -> list[AudioSource]:
     fn = partial(save_audio, audio_file_bytes=audio_file_bytes, audio_file_extension=audio_file_extension)
     return [

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -16,6 +15,7 @@ ROW_IDX_COLUMN = "__hf_index_id"
 
 def create_response(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
@@ -28,7 +28,6 @@ def create_response(
     unsupported_columns: list[str],
     num_rows_total: int,
     use_row_idx_column: bool = False,
-    revision: Optional[str] = None,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(

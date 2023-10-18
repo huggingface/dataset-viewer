@@ -52,6 +52,7 @@ def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] =
 
 def image(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -59,7 +60,6 @@ def image(
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    revision: Optional[str] = None,
 ) -> Any:
     if value is None:
         return None
@@ -101,6 +101,7 @@ def image(
 
 def audio(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -108,7 +109,6 @@ def audio(
     featureName: str,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    revision: Optional[str] = None,
 ) -> Any:
     if value is None:
         return None
@@ -173,6 +173,7 @@ def audio(
 
 def get_cell_value(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -181,7 +182,6 @@ def get_cell_value(
     fieldType: Any,
     storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     json_path: Optional[list[Union[str, int]]] = None,
-    revision: Optional[str] = None,
 ) -> Any:
     # always allow None values in the cells
     if cell is None:
