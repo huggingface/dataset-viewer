@@ -26,6 +26,9 @@ from .constants import (
 )
 
 DATASET = "dataset"
+
+REVISION_NAME = "revision"
+
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
 

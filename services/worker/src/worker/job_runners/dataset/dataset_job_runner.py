@@ -16,6 +16,7 @@ from worker.job_runners._job_runner_with_datasets_cache import (
 
 class DatasetJobRunner(JobRunner):
     dataset: str
+    dataset_git_revision: str
 
     def __init__(
         self,
@@ -26,7 +27,10 @@ class DatasetJobRunner(JobRunner):
         super().__init__(job_info=job_info, app_config=app_config, processing_step=processing_step)
         if job_info["params"]["dataset"] is None:
             raise ParameterMissingError("'dataset' parameter is required")
+        if job_info["params"]["revision"] is None:
+            raise ParameterMissingError("'revision' parameter is required")
         self.dataset = job_info["params"]["dataset"]
+        self.revision = job_info["params"]["revision"]
 
 
 class DatasetJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, DatasetJobRunner):

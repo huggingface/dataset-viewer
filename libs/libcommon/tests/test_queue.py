@@ -618,7 +618,7 @@ def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     job_type_2 = "job_type_2"
     job_type_3 = "job_type_3"
     job_type_4 = "job_type_4"
-    revision = "not important"
+    revision = "dataset_git_revision"
     difficulty = 50
     queue = Queue()
     queue.add_job(
@@ -686,6 +686,6 @@ def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
 
     assert len(Lock.objects()) == 2
-    assert len(Lock.objects(key=f"{job_type_1},{dataset}", owner=None)) == 1
-    assert len(Lock.objects(key=f"{job_type_1},{dataset}", owner__ne=None)) == 0
+    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner=None)) == 1
+    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 0
     # ^ does not test much, because at that time, the lock should already have been released

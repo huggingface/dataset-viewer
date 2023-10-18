@@ -64,7 +64,13 @@ def test_cache_state_exists(dataset: str, config: Optional[str], split: Optional
         job_runner_version=JOB_RUNNER_VERSION,
     ).exists
     upsert_response(
-        kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
+        kind=cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        content={},
+        http_status=HTTPStatus.OK,
+        dataset_git_revision=REVISION_NAME,
     )
     assert CacheState(
         dataset=dataset,
@@ -103,7 +109,13 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         job_runner_version=JOB_RUNNER_VERSION,
     ).is_success
     upsert_response(
-        kind=cache_kind, dataset=dataset, config=config, split=split, content={}, http_status=HTTPStatus.OK
+        kind=cache_kind,
+        dataset=dataset,
+        config=config,
+        split=split,
+        content={},
+        http_status=HTTPStatus.OK,
+        dataset_git_revision=REVISION_NAME,
     )
     assert CacheState(
         dataset=dataset,
@@ -120,6 +132,7 @@ def test_cache_state_is_success(dataset: str, config: Optional[str], split: Opti
         split=split,
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        dataset_git_revision=REVISION_NAME,
     )
     assert not CacheState(
         dataset=dataset,
@@ -206,6 +219,7 @@ def test_config_state_as_dict() -> None:
         split=None,
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
+        dataset_git_revision=REVISION_NAME,
     )
     config_state = ConfigState(
         dataset=dataset,
@@ -248,6 +262,7 @@ def test_dataset_state_as_dict() -> None:
         split=None,
         content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
+        dataset_git_revision=REVISION_NAME,
     )
     upsert_response(
         kind=config_step.cache_kind,
@@ -256,6 +271,7 @@ def test_dataset_state_as_dict() -> None:
         split=None,
         content=SPLIT_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
+        dataset_git_revision=REVISION_NAME,
     )
     dataset_state = DatasetState(
         dataset=dataset,

@@ -26,6 +26,7 @@ from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromStreamingJobRunner]
 
@@ -61,6 +62,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -68,6 +70,7 @@ def get_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
@@ -90,7 +93,7 @@ def get_job_runner(
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
