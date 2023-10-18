@@ -32,6 +32,7 @@ from worker.resources import LibrariesResource
 
 from ...constants import CI_SPAWNING_TOKEN
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitOptInOutUrlsScanJobRunner]
 
@@ -72,6 +73,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -79,6 +81,7 @@ def get_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
@@ -89,7 +92,7 @@ def get_job_runner(
                 "type": SplitOptInOutUrlsScanJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -215,10 +218,10 @@ def test_compute(
     upsert_response(
         kind="split-image-url-columns",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         split=split,
         content=upstream_content,
-        dataset_git_revision="dataset_git_revision",
         job_runner_version=PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
         progress=1.0,
         http_status=HTTPStatus.OK,
@@ -283,7 +286,7 @@ def test_compute_failed(
             config=config,
             split=split,
             content=upstream_content,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
             progress=1.0,
             http_status=upstream_status,
@@ -312,7 +315,7 @@ def test_compute_error_from_spawning(
         config=config,
         split=split,
         content=IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
         progress=1.0,
         http_status=HTTPStatus.OK,
