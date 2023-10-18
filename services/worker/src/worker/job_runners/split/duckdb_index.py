@@ -52,6 +52,7 @@ DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
+DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
@@ -97,22 +98,21 @@ def compute_index_rows(
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
 
     # get parquet urls and dataset_info
-    config_parquet_and_info_step = "config-parquet-and-info"
-    parquet_and_info_best_response = get_previous_step_or_raise(
-        kinds=[config_parquet_and_info_step],
+    config_parquet_metadata_step = "config-parquet-metadata"
+    parquet_metadata_best_response = get_previous_step_or_raise(
+        kinds=[config_parquet_metadata_step],
         dataset=dataset,
         config=config,
     )
-    content_parquet_and_info = parquet_and_info_best_response.response["content"]
+    content_parquet_metadata = parquet_metadata_best_response.response["content"]
     try:
         split_parquet_files = [
             parquet_file
-            for parquet_file in content_parquet_and_info["parquet_files"]
+            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
             if parquet_file["config"] == config and parquet_file["split"] == split
         ]
 
-        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
-        if not parquet_file_names:
+        if not split_parquet_files:
             raise ParquetResponseEmptyError("No parquet files found.")
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
@@ -135,9 +135,10 @@ def compute_index_rows(
 
         partial = parquet_export_is_partial or (num_parquet_files_to_index < len(split_parquet_files))
         split_parquet_files = split_parquet_files[: parquet_file_id + 1]
+        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
         # get the features
-        features = content_parquet_and_info["dataset_info"]["features"]
+        features = content_parquet_metadata["features"]
         column_names = ",".join(f'"{column}"' for column in features)
 
         # look for indexable columns (= possibly nested columns containing string data)
@@ -148,11 +149,14 @@ def compute_index_rows(
 
     except KeyError as e:
         raise PreviousStepFormatError(
-            f"Previous step '{config_parquet_and_info_step}' did not return the expected content.", e
+            f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
     # index all columns
-    db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
+    if partial:
+        db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
+    else:
+        db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
     con = duckdb.connect(str(db_path.resolve()))
 
     # configure duckdb extensions
@@ -197,7 +201,10 @@ def compute_index_rows(
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    if partial:
+        index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME}"
+    else:
+        index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
 
     try:
         with lock.git_branch(
