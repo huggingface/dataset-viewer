@@ -21,7 +21,7 @@ from worker.config import AppConfig
 from worker.dtos import ConfigParquetResponse, DatasetParquetResponse
 from worker.job_runners.dataset.parquet import DatasetParquetJobRunner
 
-from ..utils import UpstreamResponse
+from ..utils import REVISION_NAME, UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -58,7 +58,7 @@ def get_job_runner(
                 "type": DatasetParquetJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": None,
                     "split": None,
                 },
@@ -82,6 +82,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="ok",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={
@@ -94,6 +95,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="config-parquet",
                     dataset="ok",
+                    dataset_git_revision=REVISION_NAME,
                     config="config_1",
                     http_status=HTTPStatus.OK,
                     content=ConfigParquetResponse(
@@ -114,6 +116,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="config-parquet",
                     dataset="ok",
+                    dataset_git_revision=REVISION_NAME,
                     config="config_2",
                     http_status=HTTPStatus.OK,
                     content=ConfigParquetResponse(
@@ -154,6 +157,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="status_error",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.NOT_FOUND,
                     content={"error": "error"},
@@ -169,6 +173,7 @@ def get_job_runner(
                 UpstreamResponse(
                     kind="dataset-config-names",
                     dataset="format_error",
+                    dataset_git_revision=REVISION_NAME,
                     config=None,
                     http_status=HTTPStatus.OK,
                     content={"not_parquet_files": "wrong_format"},

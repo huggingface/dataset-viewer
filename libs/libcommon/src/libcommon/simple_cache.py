@@ -126,7 +126,7 @@ class CachedResponseDocument(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
-    dataset_git_revision = StringField()
+    dataset_git_revision = StringField(required=True)
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()
 
@@ -219,6 +219,7 @@ def decrease_metric_for_artifact(kind: str, dataset: str, config: Optional[str],
 def upsert_response(
     kind: str,
     dataset: str,
+    dataset_git_revision: str,
     content: Mapping[str, Any],
     http_status: HTTPStatus,
     config: Optional[str] = None,
@@ -226,7 +227,6 @@ def upsert_response(
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
-    dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
@@ -655,6 +655,7 @@ def get_responses_count_by_kind_status_and_error_code() -> list[CountEntry]:
 class CacheReport(TypedDict):
     kind: str
     dataset: str
+    dataset_git_revision: str
     config: Optional[str]
     split: Optional[str]
     http_status: int
@@ -662,7 +663,6 @@ class CacheReport(TypedDict):
     details: Mapping[str, Any]
     updated_at: datetime
     job_runner_version: Optional[int]
-    dataset_git_revision: Optional[str]
     progress: Optional[float]
 
 
@@ -934,7 +934,7 @@ def fetch_names(
 @dataclass
 class DatasetWithRevision:
     dataset: str
-    revision: Optional[str]
+    revision: str
 
 
 def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[DatasetWithRevision]:

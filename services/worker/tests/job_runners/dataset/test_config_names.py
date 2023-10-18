@@ -17,6 +17,7 @@ from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, AppConfig], DatasetConfigNamesJobRunner]
 
@@ -47,7 +48,7 @@ def get_job_runner(
                 "type": DatasetConfigNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": None,
                     "split": None,
                 },

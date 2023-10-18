@@ -40,7 +40,20 @@ from libcommon.simple_cache import (
 )
 from libcommon.utils import get_datetime
 
-from .utils import CONFIG_NAME_1, CONFIG_NAME_2, CONTENT_ERROR, DATASET_NAME
+from .utils import (
+    CACHE_KIND,
+    CONFIG_NAME_1,
+    CONFIG_NAME_2,
+    CONTENT_ERROR,
+    DATASET_GIT_REVISION_A,
+    DATASET_GIT_REVISION_B,
+    DATASET_GIT_REVISION_C,
+    DATASET_NAME,
+    DATASET_NAME_A,
+    DATASET_NAME_B,
+    DATASET_NAME_C,
+    REVISION_NAME,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -49,16 +62,20 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 
 
 def test_insert_null_values() -> None:
-    kind = "test_kind"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    dataset_c = "test_dataset_c"
+    kind = CACHE_KIND
+    dataset_a = DATASET_NAME_A
+    dataset_git_revision_a = DATASET_GIT_REVISION_A
+    dataset_b = DATASET_NAME_B
+    dataset_c = DATASET_NAME_C
+    dataset_git_revision_c = DATASET_GIT_REVISION_C
     config = None
     split = None
     content = {"some": "content"}
     http_status = HTTPStatus.OK
 
-    CachedResponseDocument.objects(kind=kind, dataset=dataset_a, config=config, split=split).upsert_one(
+    CachedResponseDocument.objects(
+        kind=kind, dataset=dataset_a, dataset_git_revision=dataset_git_revision_a, config=config, split=split
+    ).upsert_one(
         content=content,
         http_status=http_status,
     )
@@ -70,7 +87,13 @@ def test_insert_null_values() -> None:
     cached_response.validate()
 
     CachedResponseDocument(
-        kind=kind, dataset=dataset_b, config=config, split=split, content=content, http_status=http_status
+        kind=kind,
+        dataset=dataset_b,
+        dataset_git_revision=dataset_git_revision_a,
+        config=config,
+        split=split,
+        content=content,
+        http_status=http_status,
     ).save()
     assert CachedResponseDocument.objects.count() == 2
     cached_response = CachedResponseDocument.objects(dataset=dataset_b).get()
@@ -83,6 +106,7 @@ def test_insert_null_values() -> None:
         {
             "kind": kind,
             "dataset": dataset_c,
+            "dataset_git_revision": dataset_git_revision_c,
             "config": None,
             "split": None,
             "content": content,
@@ -111,21 +135,30 @@ def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str,
     ],
 )
 def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
     config = None
     split = None
     content = {"some": "content"}
 
     assert CacheTotalMetricDocument.objects().count() == 0
-    upsert_response(kind=kind, dataset=dataset, config=config, split=split, content=content, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.OK,
+    )
     cached_response = get_response(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_response == {
         "http_status": HTTPStatus.OK,
         "content": content,
         "error_code": None,
         "job_runner_version": None,
-        "dataset_git_revision": None,
+        "dataset_git_revision": dataset_git_revision,
         "progress": None,
     }
     cached_response_without_content = get_response_without_content(
@@ -135,14 +168,22 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
         "http_status": HTTPStatus.OK,
         "error_code": None,
         "job_runner_version": None,
-        "dataset_git_revision": None,
+        "dataset_git_revision": dataset_git_revision,
         "progress": None,
     }
 
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=1)
 
     # ensure it's idempotent
-    upsert_response(kind=kind, dataset=dataset, config=config, split=split, content=content, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.OK,
+    )
     cached_response2 = get_response(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_response2 == cached_response
 
@@ -150,7 +191,13 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
 
     another_config = "another_config"
     upsert_response(
-        kind=kind, dataset=dataset, config=another_config, split=split, content=content, http_status=HTTPStatus.OK
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=another_config,
+        split=split,
+        content=content,
+        http_status=HTTPStatus.OK,
     )
     get_response(kind=kind, dataset=dataset, config=config, split=split)
 
@@ -165,17 +212,16 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
 
     error_code = "error_code"
     job_runner_version = 0
-    dataset_git_revision = "123456"
     upsert_response(
         kind=kind,
         dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
         config=config,
         split=split,
         content=content,
         http_status=HTTPStatus.BAD_REQUEST,
         error_code=error_code,
         job_runner_version=job_runner_version,
-        dataset_git_revision=dataset_git_revision,
     )
 
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=0)
@@ -193,8 +239,9 @@ def test_upsert_response(config: Optional[str], split: Optional[str]) -> None:
 
 
 def test_upsert_response_types() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
 
     now = datetime.now()
     decimal = Decimal(now.time().microsecond * 1e-6)
@@ -204,7 +251,13 @@ def test_upsert_response_types() -> None:
         "date": now.date(),  # date is turned into a string
         "decimal": decimal,  # decimal is turned into a string
     }
-    upsert_response(kind=kind, dataset=dataset, content=content, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        content=content,
+        http_status=HTTPStatus.OK,
+    )
     cached_response = get_response(kind=kind, dataset=dataset)
     assert cached_response["content"]["datetime"] == datetime(
         now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond // 1000 * 1000
@@ -215,13 +268,31 @@ def test_upsert_response_types() -> None:
 
 
 def test_delete_response() -> None:
-    kind = "test_kind"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
+    kind = CACHE_KIND
+    dataset_a = DATASET_NAME_A
+    dataset_git_revision_a = DATASET_GIT_REVISION_A
+    dataset_b = DATASET_NAME_B
+    dataset_git_revision_b = DATASET_GIT_REVISION_B
     config = None
     split = "test_split"
-    upsert_response(kind=kind, dataset=dataset_a, config=config, split=split, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind, dataset=dataset_b, config=config, split=split, content={}, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind,
+        dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_a,
+        config=config,
+        split=split,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=kind,
+        dataset=dataset_b,
+        dataset_git_revision=dataset_git_revision_b,
+        config=config,
+        split=split,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind, total=2)
 
     get_response(kind=kind, dataset=dataset_a, config=config, split=split)
@@ -236,13 +307,35 @@ def test_delete_response() -> None:
 def test_delete_dataset_responses() -> None:
     kind_a = "test_kind_a"
     kind_b = "test_kind_b"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
+    dataset_a = DATASET_NAME_A
+    dataset_b = DATASET_NAME_B
+    dataset_git_revision_a = DATASET_GIT_REVISION_A
+    dataset_git_revision_b = DATASET_GIT_REVISION_B
     config = "test_config"
     split = "test_split"
-    upsert_response(kind=kind_a, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind_b, dataset=dataset_a, config=config, split=split, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind_a, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    upsert_response(
+        kind=kind_a,
+        dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_a,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=kind_b,
+        dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_b,
+        config=config,
+        split=split,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=kind_a,
+        dataset=dataset_b,
+        dataset_git_revision=dataset_git_revision_b,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_a, total=2)
     assert_metric(http_status=HTTPStatus.OK, error_code=None, kind=kind_b, total=1)
     get_response(kind=kind_a, dataset=dataset_a)
@@ -260,14 +353,21 @@ def test_delete_dataset_responses() -> None:
 
 def test_big_row() -> None:
     # https://github.com/huggingface/datasets-server/issues/197
-    kind = "test_kind"
-    dataset = "test_dataset"
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
     config = "test_config"
     split = "test_split"
     big_content = {"big": "a" * 100_000_000}
     with pytest.raises(DocumentTooLarge):
         upsert_response(
-            kind=kind, dataset=dataset, config=config, split=split, content=big_content, http_status=HTTPStatus.OK
+            kind=kind,
+            dataset=dataset,
+            dataset_git_revision=dataset_git_revision,
+            config=config,
+            split=split,
+            content=big_content,
+            http_status=HTTPStatus.OK,
         )
 
 
@@ -276,12 +376,26 @@ def test_has_any_successful_response_empty() -> None:
 
 
 def test_has_any_successful_response_two_valid_datasets() -> None:
-    kind = "test_kind"
+    kind = CACHE_KIND
     other_kind = "other_kind"
-    dataset_a = "test_dataset_a"
-    dataset_b = "test_dataset_b"
-    upsert_response(kind=kind, dataset=dataset_a, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind, dataset=dataset_b, content={}, http_status=HTTPStatus.OK)
+    dataset_a = DATASET_NAME_A
+    dataset_git_revision_a = DATASET_GIT_REVISION_A
+    dataset_b = DATASET_NAME_B
+    dataset_git_revision_b = DATASET_GIT_REVISION_B
+    upsert_response(
+        kind=kind,
+        dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_a,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=kind,
+        dataset=dataset_b,
+        dataset_git_revision=dataset_git_revision_b,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
     assert has_any_successful_response(dataset=dataset_a, kinds=[kind])
     assert has_any_successful_response(dataset=dataset_b, kinds=[kind])
     assert not has_any_successful_response(dataset=dataset_b, kinds=[other_kind])
@@ -291,34 +405,63 @@ def test_has_any_successful_response_two_valid_datasets() -> None:
 def test_has_any_successful_response_two_valid_kinds() -> None:
     kind_a = "test_kind_a"
     kind_b = "test_kind_b"
-    dataset = "test_dataset"
-    upsert_response(kind=kind_a, dataset=dataset, content={}, http_status=HTTPStatus.OK)
-    upsert_response(kind=kind_b, dataset=dataset, content={}, http_status=HTTPStatus.OK)
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
+    upsert_response(
+        kind=kind_a, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
+    )
+    upsert_response(
+        kind=kind_b, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
+    )
     assert has_any_successful_response(dataset=dataset, kinds=[kind_a, kind_b])
 
 
 def test_has_any_successful_response_at_least_one_valid_response() -> None:
     kind_a = "test_kind_a"
     kind_b = "test_kind_b"
-    dataset = "test_dataset"
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
     config = "test_config"
-    upsert_response(kind=kind_a, dataset=dataset, config=config, content={}, http_status=HTTPStatus.OK)
     upsert_response(
-        kind=kind_b, dataset=dataset, config=config, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+        kind=kind_a,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config,
+        content={},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind=kind_b,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config,
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     assert has_any_successful_response(dataset=dataset, config=config, kinds=[kind_a, kind_b])
 
 
 def test_has_any_successful_response_only_invalid_responses() -> None:
-    kind = "test_kind"
-    dataset = "test_dataset"
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    dataset_git_revision = REVISION_NAME
     config_a = "test_config_a"
     config_b = "test_config_b"
     upsert_response(
-        kind=kind, dataset=dataset, config=config_a, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config_a,
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     upsert_response(
-        kind=kind, dataset=dataset, config=config_b, content={}, http_status=HTTPStatus.INTERNAL_SERVER_ERROR
+        kind=kind,
+        dataset=dataset,
+        dataset_git_revision=dataset_git_revision,
+        config=config_b,
+        content={},
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
     assert not has_any_successful_response(dataset=dataset, kinds=[kind])
 
@@ -327,19 +470,21 @@ def test_count_by_status_and_error_code() -> None:
     assert not get_responses_count_by_kind_status_and_error_code()
 
     upsert_response(
-        kind="test_kind",
-        dataset="test_dataset",
+        kind=CACHE_KIND,
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
         content={"key": "value"},
         http_status=HTTPStatus.OK,
     )
 
     assert get_responses_count_by_kind_status_and_error_code() == [
-        {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1}
+        {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1}
     ]
 
     upsert_response(
         kind="test_kind2",
-        dataset="test_dataset",
+        dataset=DATASET_NAME,
+        dataset_git_revision=REVISION_NAME,
         config="test_config",
         split="test_split",
         content={
@@ -351,12 +496,12 @@ def test_count_by_status_and_error_code() -> None:
 
     metrics = get_responses_count_by_kind_status_and_error_code()
     assert len(metrics) == 2
-    assert {"kind": "test_kind", "http_status": 200, "error_code": None, "count": 1} in metrics
+    assert {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1} in metrics
     assert {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1} in metrics
 
 
 def test_get_cache_reports() -> None:
-    kind = "test_kind"
+    kind = CACHE_KIND
     kind_2 = "test_kind_2"
     expected_cache_reports: CacheReportsPage = {"cache_reports": [], "next_cursor": ""}
     assert get_cache_reports(kind=kind, cursor="", limit=2) == expected_cache_reports
@@ -366,19 +511,22 @@ def test_get_cache_reports() -> None:
     }
     assert get_cache_reports_with_content(kind=kind, cursor="", limit=2) == expected_cache_reports_with_content
 
-    dataset_a = "test_dataset_a"
+    dataset_a = DATASET_NAME_A
+    dataset_git_revision_a = DATASET_GIT_REVISION_A
     content_a = {"key": "a"}
     http_status_a = HTTPStatus.OK
     updated_at_a = datetime(2020, 1, 1, 0, 0, 0)
     upsert_response(
         kind=kind,
         dataset=dataset_a,
+        dataset_git_revision=dataset_git_revision_a,
         content=content_a,
         http_status=http_status_a,
         updated_at=updated_at_a,
     )
 
-    dataset_b = "test_dataset_b"
+    dataset_b = DATASET_NAME_B
+    dataset_git_revision_b = DATASET_GIT_REVISION_B
     config_b = "test_config_b"
     content_b = {"key": "b"}
     http_status_b = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -387,22 +535,22 @@ def test_get_cache_reports() -> None:
         "error": "error b",
     }
     job_runner_version_b = 0
-    dataset_git_revision_b = "123456"
     updated_at_b = datetime(2020, 1, 1, 0, 0, 1)
     upsert_response(
         kind=kind,
         dataset=dataset_b,
+        dataset_git_revision=dataset_git_revision_b,
         config=config_b,
         content=content_b,
         details=details_b,
         http_status=http_status_b,
         error_code=error_code_b,
         job_runner_version=job_runner_version_b,
-        dataset_git_revision=dataset_git_revision_b,
         updated_at=updated_at_b,
     )
 
-    dataset_c = "test_dataset_c"
+    dataset_c = DATASET_NAME_C
+    dataset_git_revision_c = DATASET_GIT_REVISION_C
     config_c = "test_config_c"
     split_c = "test_split_c"
     content_c = {"key": "c"}
@@ -415,6 +563,7 @@ def test_get_cache_reports() -> None:
     upsert_response(
         kind=kind,
         dataset=dataset_c,
+        dataset_git_revision=dataset_git_revision_c,
         config=config_c,
         split=split_c,
         content=content_c,
@@ -426,6 +575,7 @@ def test_get_cache_reports() -> None:
     upsert_response(
         kind=kind_2,
         dataset=dataset_c,
+        dataset_git_revision=dataset_git_revision_c,
         content=content_c,
         details=details_c,
         http_status=http_status_c,
@@ -435,6 +585,7 @@ def test_get_cache_reports() -> None:
     upsert_response(
         kind=kind_2,
         dataset=dataset_c,
+        dataset_git_revision=dataset_git_revision_c,
         config=config_c,
         split=split_c,
         content=content_c,
@@ -456,7 +607,7 @@ def test_get_cache_reports() -> None:
             "details": {},
             "updated_at": updated_at_a,
             "job_runner_version": None,
-            "dataset_git_revision": None,
+            "dataset_git_revision": dataset_git_revision_a,
             "progress": None,
         },
         {
@@ -488,7 +639,7 @@ def test_get_cache_reports() -> None:
                 "details": details_c,
                 "updated_at": updated_at_c,
                 "job_runner_version": None,
-                "dataset_git_revision": None,
+                "dataset_git_revision": dataset_git_revision_c,
                 "progress": None,
             },
         ],
@@ -507,7 +658,7 @@ def test_get_cache_reports() -> None:
             "error_code": None,
             "content": content_a,
             "job_runner_version": None,
-            "dataset_git_revision": None,
+            "dataset_git_revision": dataset_git_revision_a,
             "details": {},
             "updated_at": updated_at_a,
             "progress": None,
@@ -541,7 +692,7 @@ def test_get_cache_reports() -> None:
                 "error_code": error_code_c,
                 "content": content_c,
                 "job_runner_version": None,
-                "dataset_git_revision": None,
+                "dataset_git_revision": dataset_git_revision_c,
                 "details": details_c,
                 "updated_at": updated_at_c,
                 "progress": None,
@@ -577,7 +728,7 @@ def test_get_cache_reports() -> None:
 @pytest.mark.parametrize("num_entries", [1, 10, 100, 1_000])
 def test_stress_get_cache_reports(num_entries: int) -> None:
     MAX_SECONDS = 0.1
-    kind = "test_kind"
+    kind = CACHE_KIND
     content = {"key": "value"}
     http_status = HTTPStatus.OK
     splits = [f"split{i}" for i in range(num_entries)]
@@ -585,6 +736,7 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
         upsert_response(
             kind=kind,
             dataset="dataset",
+            dataset_git_revision=REVISION_NAME,
             config="config",
             split=split,
             content=content,
@@ -602,7 +754,7 @@ def test_stress_get_cache_reports(num_entries: int) -> None:
 
 
 def test_get_outdated_split_full_names_for_step() -> None:
-    kind = "kind"
+    kind = CACHE_KIND
     current_version = 2
     minor_version = 1
 
@@ -610,6 +762,7 @@ def test_get_outdated_split_full_names_for_step() -> None:
     upsert_response(
         kind=kind,
         dataset="dataset_with_current_version",
+        dataset_git_revision=REVISION_NAME,
         content={},
         http_status=HTTPStatus.OK,
         job_runner_version=current_version,
@@ -619,6 +772,7 @@ def test_get_outdated_split_full_names_for_step() -> None:
     upsert_response(
         kind=kind,
         dataset="dataset_with_minor_version",
+        dataset_git_revision=REVISION_NAME,
         content={},
         http_status=HTTPStatus.OK,
         job_runner_version=minor_version,
@@ -631,6 +785,7 @@ def test_get_outdated_split_full_names_for_step() -> None:
 class EntrySpec(TypedDict):
     kind: str
     dataset: str
+    dataset_git_revision: str
     config: Optional[str]
     http_status: HTTPStatus
     progress: Optional[float]
@@ -668,6 +823,7 @@ def test_get_best_response(
         "ok1": {
             "kind": "kind1",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.OK,
             "progress": 1.0,
@@ -675,6 +831,7 @@ def test_get_best_response(
         "ok2": {
             "kind": "kind2",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.OK,
             "progress": 1.0,
@@ -682,6 +839,7 @@ def test_get_best_response(
         "partial1": {
             "kind": "kind1",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.OK,
             "progress": 0,
@@ -689,6 +847,7 @@ def test_get_best_response(
         "partial2": {
             "kind": "kind2",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.OK,
             "progress": 0.5,
@@ -696,6 +855,7 @@ def test_get_best_response(
         "ok_config1": {
             "kind": "kind1",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": "config",
             "http_status": HTTPStatus.OK,
             "progress": 1.0,
@@ -703,6 +863,7 @@ def test_get_best_response(
         "error1": {
             "kind": "kind1",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
             "progress": 1.0,
@@ -710,6 +871,7 @@ def test_get_best_response(
         "error2": {
             "kind": "kind2",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.NOT_FOUND,
             "progress": 1.0,
@@ -717,6 +879,7 @@ def test_get_best_response(
         "cache_miss": {
             "kind": "kind1",
             "dataset": "dataset",
+            "dataset_git_revision": REVISION_NAME,
             "config": None,
             "http_status": HTTPStatus.NOT_FOUND,
             "progress": None,
@@ -727,6 +890,7 @@ def test_get_best_response(
         upsert_response(
             kind=entries[entry]["kind"],
             dataset=entries[entry]["dataset"],
+            dataset_git_revision=entries[entry]["dataset_git_revision"],
             config=entries[entry]["config"],
             http_status=entries[entry]["http_status"],
             progress=entries[entry]["progress"],
@@ -763,7 +927,7 @@ def test_cached_artifact_error() -> None:
     }
     content = {"error": error_message}
     job_runner_version = 1
-    dataset_git_revision = "dataset_git_revision"
+    dataset_git_revision = REVISION_NAME
     progress = 1.0
     upsert_response(
         kind=kind,
@@ -843,6 +1007,7 @@ def test_fetch_names(
         upsert_response(
             kind=kind,
             dataset=DATASET_NAME,
+            dataset_git_revision=REVISION_NAME,
             config=CONFIG_NAME_1,
             split=None,
             content=response_spec["content"],
@@ -863,10 +1028,10 @@ def test_fetch_names(
 class Entry(TypedDict):
     kind: str
     dataset: str
+    dataset_git_revision: str
     config: str
     http_status: HTTPStatus
     updated_at: datetime
-    dataset_git_revision: Optional[str]
 
 
 DAYS = 2
@@ -889,17 +1054,9 @@ ENTRY_2: Entry = {
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
     "updated_at": AFTER_1,
-    "dataset_git_revision": None,
+    "dataset_git_revision": REVISION_A,
 }
 DATASET_2 = f"{DATASET_NAME}_2"
-ENTRY_3: Entry = {
-    "kind": CACHE_KIND_A,
-    "dataset": DATASET_2,
-    "config": CONFIG_NAME_1,
-    "http_status": HTTPStatus.OK,
-    "updated_at": AFTER_1,
-    "dataset_git_revision": None,
-}
 ENTRY_4: Entry = {
     "kind": CACHE_KIND_A,
     "dataset": DATASET_NAME,
@@ -914,7 +1071,7 @@ ENTRY_5: Entry = {
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
     "updated_at": AFTER_1,
-    "dataset_git_revision": None,
+    "dataset_git_revision": REVISION_A,
 }
 ENTRY_6: Entry = {
     "kind": CACHE_KIND_A,
@@ -922,11 +1079,10 @@ ENTRY_6: Entry = {
     "config": CONFIG_NAME_1,
     "http_status": HTTPStatus.OK,
     "updated_at": BEFORE,
-    "dataset_git_revision": None,
+    "dataset_git_revision": REVISION_A,
 }
 
 DATASET_REV_A = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_A)
-DATASET_2_REV_NONE = DatasetWithRevision(dataset=DATASET_2, revision=None)
 DATASET_REV_B = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_B)
 
 
@@ -944,13 +1100,11 @@ def assert_lists_are_equal(a: list[DatasetWithRevision], b: list[DatasetWithRevi
         ([], []),
         ([ENTRY_1], [DATASET_REV_A]),
         ([ENTRY_2], []),
-        ([ENTRY_3], [DATASET_2_REV_NONE]),
         ([ENTRY_4], [DATASET_REV_B]),
         ([ENTRY_5], []),
         ([ENTRY_6], []),
-        ([ENTRY_1, ENTRY_3], [DATASET_REV_A, DATASET_2_REV_NONE]),
         ([ENTRY_1, ENTRY_4], [DATASET_REV_B]),
-        ([ENTRY_1, ENTRY_2, ENTRY_3, ENTRY_4, ENTRY_5, ENTRY_6], [DATASET_REV_B, DATASET_2_REV_NONE]),
+        ([ENTRY_1, ENTRY_2, ENTRY_4, ENTRY_5, ENTRY_6], [DATASET_REV_B]),
     ],
 )
 def test_get_datasets_with_last_updated_kind(

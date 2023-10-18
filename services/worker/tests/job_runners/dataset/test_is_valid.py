@@ -14,7 +14,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
 
-from ..utils import UpstreamResponse
+from ..utils import REVISION_NAME, UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -32,6 +32,7 @@ CONFIG_2 = "config2"
 UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
     kind="dataset-config-names",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={
         "config_names": [
@@ -43,6 +44,7 @@ UPSTREAM_RESPONSE_CONFIG_NAMES: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True},
@@ -50,6 +52,7 @@ UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": False, "search": False},
@@ -57,6 +60,7 @@ UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_2,
     http_status=HTTPStatus.OK,
     content={"viewer": False, "preview": False, "search": True},
@@ -64,6 +68,7 @@ UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_2,
     http_status=HTTPStatus.OK,
     content={"viewer": True, "preview": True, "search": True},
@@ -71,6 +76,7 @@ UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_1_ERROR: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_1,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
@@ -78,6 +84,7 @@ UPSTREAM_RESPONSE_CONFIG_1_ERROR: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_CONFIG_2_ERROR: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     config=CONFIG_2,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
@@ -122,7 +129,7 @@ def get_job_runner(
                     "dataset": dataset,
                     "config": None,
                     "split": None,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
