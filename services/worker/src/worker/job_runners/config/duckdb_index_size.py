@@ -53,6 +53,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
         total = 0
         pending = 0
         split_duckdb_index_sizes: list[SplitDuckdbIndexSize] = []
+        partial = False
         for split_item in content["splits"]:
             split = split_item["split"]
             total += 1
@@ -76,7 +77,6 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
 
             split_duckdb_index = duckdb_index_response["content"]
             config_info = config_info_response["content"]
-            partial = config_info["partial"]
             if (
                 "num_rows" in split_duckdb_index
                 and isinstance(split_duckdb_index["num_rows"], int)
@@ -106,6 +106,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
                         num_bytes=split_info["num_examples"],
                     )
                 )
+                partial = partial or config_info["partial"]
 
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
