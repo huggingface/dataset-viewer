@@ -890,9 +890,12 @@ def test_get_writer_batch_size_from_row_group_size(
 
 @pytest.mark.use_hub_prod_endpoint
 def test_disable_dataset_scripts_support(tmp_path: Path) -> None:
+    # with dataset script: squad, lhoestq/squad, lhoestq/custom_squad
+    # no dataset script: lhoest/demo1
     cache_dir = str(tmp_path / "test_disable_dataset_scripts_support_cache_dir")
     dynamic_modules_path = str(tmp_path / "test_disable_dataset_scripts_support_dynamic_modules_path")
     with disable_dataset_scripts_support(allow_list=[]):
+        dataset_module_factory("lhoestq/demo1", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
         with pytest.raises(DatasetWithScriptNotSupportedError):
             dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
     with disable_dataset_scripts_support(allow_list=["canonical"]):
