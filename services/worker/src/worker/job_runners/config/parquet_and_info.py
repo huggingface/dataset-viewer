@@ -89,8 +89,6 @@ DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
 
-DATASET_SCRIPTS_ALLOW_LIST = ["canonical"]
-
 # For paths like "en/partial-train/0000.parquet" in the C4 dataset.
 # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
 PARTIAL_SPLIT_PREFIX = "partial-"
@@ -1091,6 +1089,7 @@ def compute_config_parquet_and_info_response(
     max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
     no_max_size_limit_datasets: list[str],
+    dataset_scripts_allow_list: list[str],
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
@@ -1127,6 +1126,10 @@ def compute_config_parquet_and_info_response(
             The maximum size in bytes of parquet files that are allowed to be copied without being converted.
         no_max_size_limit_datasets (`list[str]`):
             List of datasets that should be fully converted (no partial conversion).
+        dataset_scripts_allow_list (`list[str]`):
+            List of datasets for which we support dataset scripts.
+            Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
+            The keyword `canonical` can be used to refer to all the datasets without namespaces.
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
@@ -1199,7 +1202,7 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
-        with disable_dataset_scripts_support(allow_list=DATASET_SCRIPTS_ALLOW_LIST):
+        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
             builder = load_dataset_builder(
                 path=dataset,
                 name=config,
@@ -1356,5 +1359,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
                 no_max_size_limit_datasets=self.parquet_and_info_config.no_max_size_limit_datasets,
+                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )
