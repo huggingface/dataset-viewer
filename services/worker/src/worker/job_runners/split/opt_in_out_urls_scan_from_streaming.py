@@ -177,11 +177,12 @@ def compute_opt_in_out_urls_scan_response(
 
     # get the info
     try:
-        info = get_dataset_config_info(
-            path=dataset,
-            config_name=config,
-            token=hf_token,
-        )
+        with disable_dataset_scripts_support(dataset_scripts_allow_list):
+            info = get_dataset_config_info(
+                path=dataset,
+                config_name=config,
+                token=hf_token,
+            )
     except Exception as err:
         raise InfoError(
             f"The info cannot be fetched for the config '{config}' of the dataset.",
