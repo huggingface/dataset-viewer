@@ -20,6 +20,7 @@ import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
+from datasets.load import dataset_module_factory
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -27,7 +28,11 @@ from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.config import ProcessingGraphConfig
 from libcommon.dataset import get_dataset_info_for_supported_datasets
-from libcommon.exceptions import CustomError, DatasetManualDownloadError
+from libcommon.exceptions import (
+    CustomError,
+    DatasetManualDownloadError,
+    DatasetWithScriptNotSupportedError,
+)
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -57,6 +62,7 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
+from worker.utils import disable_dataset_scripts_support
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
@@ -880,3 +886,25 @@ def test_get_writer_batch_size_from_row_group_size(
         num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
     )
     assert writer_batch_size == expected
+
+
+def test_disable_dataset_scripts_support(use_hub_prod_endpoint: Any, tmp_path: Path) -> None:
+    # with dataset script: squad, lhoestq/squad, lhoestq/custom_squad
+    # no dataset script: lhoest/demo1
+    cache_dir = str(tmp_path / "test_disable_dataset_scripts_support_cache_dir")
+    dynamic_modules_path = str(tmp_path / "test_disable_dataset_scripts_support_dynamic_modules_path")
+    with disable_dataset_scripts_support(allow_list=[]):
+        dataset_module_factory("lhoestq/demo1", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]):
+        dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]):
+        dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory(
+                "lhoestq/custom_squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path
+            )

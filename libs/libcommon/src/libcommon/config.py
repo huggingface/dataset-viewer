@@ -144,6 +144,7 @@ class RowsIndexConfig:
 
 
 COMMON_BLOCKED_DATASETS: list[str] = []
+COMMON_DATASET_SCRIPTS_ALLOW_LIST: list[str] = []
 COMMON_HF_ENDPOINT = "https://huggingface.co"
 COMMON_HF_TOKEN = None
 
@@ -151,6 +152,7 @@ COMMON_HF_TOKEN = None
 @dataclass(frozen=True)
 class CommonConfig:
     blocked_datasets: list[str] = field(default_factory=COMMON_BLOCKED_DATASETS.copy)
+    dataset_scripts_allow_list: list[str] = field(default_factory=COMMON_DATASET_SCRIPTS_ALLOW_LIST.copy)
     hf_endpoint: str = COMMON_HF_ENDPOINT
     hf_token: Optional[str] = COMMON_HF_TOKEN
 
@@ -160,6 +162,9 @@ class CommonConfig:
         with env.prefixed("COMMON_"):
             return cls(
                 blocked_datasets=env.list(name="BLOCKED_DATASETS", default=COMMON_BLOCKED_DATASETS.copy()),
+                dataset_scripts_allow_list=env.list(
+                    name="DATASET_SCRIPTS_ALLOW_LIST", default=COMMON_DATASET_SCRIPTS_ALLOW_LIST.copy()
+                ),
                 hf_endpoint=env.str(name="HF_ENDPOINT", default=COMMON_HF_ENDPOINT),
                 hf_token=env.str(name="HF_TOKEN", default=COMMON_HF_TOKEN),  # nosec
             )

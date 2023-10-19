@@ -3,6 +3,7 @@ services:
     environment:
       # common
       COMMON_BLOCKED_DATASETS: ${COMMON_BLOCKED_DATASETS-}
+      COMMON_DATASET_SCRIPTS_ALLOW_LIST: ${COMMON_DATASET_SCRIPTS_ALLOW_LIST-}
       COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://huggingface.co}
       COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-}
       # log

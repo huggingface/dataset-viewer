@@ -86,6 +86,7 @@ CacheableErrorCode = Literal[
     "DatasetRevisionEmptyError",
     "DatasetRevisionNotFoundError",
     "DatasetScriptError",
+    "DatasetWithScriptNotSupportedError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",
@@ -547,3 +548,10 @@ class UnsupportedExternalFilesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
+
+
+class DatasetWithScriptNotSupportedError(CacheableError):
+    """We don't support some datasets because they have a dataset script."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithScriptNotSupportedError", cause, True)

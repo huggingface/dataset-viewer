@@ -24,7 +24,7 @@ from libcommon.utils import JobInfo
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import get_rows_or_raise
+from worker.utils import disable_dataset_scripts_support, get_rows_or_raise
 
 
 async def check_spawning(
@@ -102,6 +102,7 @@ def compute_opt_in_out_urls_scan_response(
     max_concurrent_requests_number: int,
     max_requests_per_second: int,
     spawning_url: str,
+    dataset_scripts_allow_list: list[str],
 ) -> OptInOutUrlsScanResponse:
     """
     Get the response of split-opt-in-out-urls-scan cache for a specific split of a dataset from huggingface.co.
@@ -132,6 +133,11 @@ def compute_opt_in_out_urls_scan_response(
             The maximum number of requests to be processed by second.
         spawning_url (`str`):
             Spawgning API URL
+        dataset_scripts_allow_list (`list[str]`):
+            List of datasets for which we support dataset scripts.
+            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
+            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
+            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
     Returns:
         [`OptInOutUrlsScanResponse`]
@@ -148,6 +154,8 @@ def compute_opt_in_out_urls_scan_response(
           If the split rows could not be obtained using the datasets library in streaming mode.
         - [`libcommon.exceptions.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
+        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
@@ -200,15 +208,16 @@ def compute_opt_in_out_urls_scan_response(
         )
 
     # get the rows
-    rows_content = get_rows_or_raise(
-        dataset=dataset,
-        config=config,
-        split=split,
-        info=info,
-        rows_max_number=rows_max_number,
-        token=hf_token,
-        column_names=image_url_columns,
-    )
+    with disable_dataset_scripts_support(dataset_scripts_allow_list):
+        rows_content = get_rows_or_raise(
+            dataset=dataset,
+            config=config,
+            split=split,
+            info=info,
+            rows_max_number=rows_max_number,
+            token=hf_token,
+            column_names=image_url_columns,
+        )
     rows = rows_content["rows"]
 
     # get the urls
@@ -300,5 +309,6 @@ class SplitOptInOutUrlsScanJobRunner(SplitJobRunnerWithDatasetsCache):
                 max_concurrent_requests_number=self.urls_scan_config.max_concurrent_requests_number,
                 max_requests_per_second=self.urls_scan_config.max_requests_per_second,
                 spawning_url=self.urls_scan_config.spawning_url,
+                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )

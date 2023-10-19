@@ -62,6 +62,19 @@ def monkeypatch_session() -> Iterator[MonkeyPatch]:
     mp.undo()
 
 
+@fixture()
+def use_hub_prod_endpoint() -> Iterator[MonkeyPatch]:
+    mp = MonkeyPatch()
+    mp.setattr(
+        "huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE",
+        "https://huggingface.co/{repo_id}/resolve/{revision}/{filename}",
+    )
+    # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
+    mp.setattr("datasets.config.HF_ENDPOINT", "https://huggingface.co")
+    yield mp
+    mp.undo()
+
+
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture
 def set_env_vars(
