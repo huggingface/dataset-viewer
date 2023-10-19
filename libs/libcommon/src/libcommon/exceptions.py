@@ -86,6 +86,7 @@ CacheableErrorCode = Literal[
     "DatasetRevisionEmptyError",
     "DatasetRevisionNotFoundError",
     "DatasetScriptError",
+    "DatasetWithScriptNotSupportedError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DisabledViewerError",

@@ -23,7 +23,6 @@ from datasets import (
     DatasetInfo,
     DownloadConfig,
     IterableDataset,
-    disable_caching,
     load_dataset,
 )
 from datasets.load import HubDatasetModuleFactoryWithScript
