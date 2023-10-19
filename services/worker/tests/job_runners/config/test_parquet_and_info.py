@@ -161,6 +161,7 @@ def test_compute_legacy_configs(
     hub_public_legacy_configs: str,
 ) -> None:
     app_config = replace(app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size=20_000))
+    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
 
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
