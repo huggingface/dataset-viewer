@@ -18,13 +18,7 @@ from urllib.parse import quote
 import datasets
 import PIL
 import requests
-from datasets import (
-    Dataset,
-    DatasetInfo,
-    DownloadConfig,
-    IterableDataset,
-    load_dataset,
-)
+from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
 from datasets.load import HubDatasetModuleFactoryWithScript
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
