@@ -116,7 +116,7 @@ def compute_first_rows_response(
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` can be used to refer to all the datasets without namespaces.
+            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` can be used to refer to all the datasets without namespace.
     Returns:
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
     Raises the following errors:
