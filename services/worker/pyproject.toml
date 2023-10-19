@@ -76,7 +76,8 @@ requires = ["poetry-core>=1.0.0"]
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "wip: tests being developed"
+    "wip: tests being developed",
+    "use_hub_prod_endpoint: use the prod endpoint instead of hub-ci"
 ]
 
 [tool.coverage.run]

@@ -16,7 +16,7 @@ from libcommon.storage import (
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
-from pytest import MonkeyPatch, fixture
+from pytest import FixtureRequest, MonkeyPatch, fixture
 
 from worker.config import AppConfig
 from worker.main import WORKER_STATE_FILE_NAME
@@ -51,12 +51,15 @@ def statistics_cache_directory(app_config: AppConfig) -> StrPath:
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
-@fixture(scope="session", autouse=True)
-def monkeypatch_session() -> Iterator[MonkeyPatch]:
+@fixture(autouse=True)
+def monkeypatch_session(request: FixtureRequest) -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
-    mp.setattr("huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
-    # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
-    mp.setattr("datasets.config.HF_ENDPOINT", CI_HUB_ENDPOINT)
+
+    if "use_hub_prod_endpoint" not in request.keywords:
+        mp.setattr("huggingface_hub.file_download.HUGGINGFACE_CO_URL_TEMPLATE", CI_URL_TEMPLATE)
+        # ^ see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191056
+        mp.setattr("datasets.config.HF_ENDPOINT", CI_HUB_ENDPOINT)
+
     mp.setattr("datasets.config.HF_UPDATE_DOWNLOAD_COUNTS", False)
     yield mp
     mp.undo()

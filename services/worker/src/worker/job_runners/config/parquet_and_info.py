@@ -80,6 +80,7 @@ from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
+    disable_dataset_scripts_support,
     hf_hub_url,
     retry,
 )
@@ -87,6 +88,8 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
+
+DATASET_SCRIPTS_ALLOW_LIST = ["canonical"]
 
 # For paths like "en/partial-train/0000.parquet" in the C4 dataset.
 # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
@@ -1164,6 +1167,8 @@ def compute_config_parquet_and_info_response(
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
@@ -1194,13 +1199,14 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
-        builder = load_dataset_builder(
-            path=dataset,
-            name=config,
-            revision=source_revision,
-            token=hf_token,
-            download_config=download_config,
-        )
+        with disable_dataset_scripts_support(allow_list=DATASET_SCRIPTS_ALLOW_LIST):
+            builder = load_dataset_builder(
+                path=dataset,
+                name=config,
+                revision=source_revision,
+                token=hf_token,
+                download_config=download_config,
+            )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except FileNotFoundError as err:
