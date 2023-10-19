@@ -898,11 +898,11 @@ def test_disable_dataset_scripts_support(tmp_path: Path) -> None:
         dataset_module_factory("lhoestq/demo1", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
         with pytest.raises(DatasetWithScriptNotSupportedError):
             dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
-    with disable_dataset_scripts_support(allow_list=["canonical"]):
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]):
         dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
         with pytest.raises(DatasetWithScriptNotSupportedError):
             dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
-    with disable_dataset_scripts_support(allow_list=["canonical", "lhoestq/s*"]):
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]):
         dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
         dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
         with pytest.raises(DatasetWithScriptNotSupportedError):

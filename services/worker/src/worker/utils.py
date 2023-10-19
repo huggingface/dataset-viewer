@@ -392,7 +392,9 @@ def disable_dataset_scripts_support(allow_list: list[str]) -> AbstractContextMan
         dynamic_modules_path: Optional[str] = None,
     ) -> None:
         for allowed_pattern in allow_list:
-            if (allowed_pattern == "canonical" and "/" not in name) or fnmatch(name, allowed_pattern):
+            if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in name) or fnmatch(
+                name, allowed_pattern
+            ):
                 break
         else:
             raise DatasetWithScriptNotSupportedError(
