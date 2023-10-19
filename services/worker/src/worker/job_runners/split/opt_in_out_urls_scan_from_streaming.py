@@ -153,6 +153,8 @@ def compute_opt_in_out_urls_scan_response(
           If the split rows could not be obtained using the datasets library in streaming mode.
         - [`libcommon.exceptions.NormalRowsError`]
           If the split rows could not be obtained using the datasets library in normal mode.
+        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
 
