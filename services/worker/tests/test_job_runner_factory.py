@@ -16,6 +16,8 @@ from worker.config import AppConfig
 from worker.job_runner_factory import JobRunnerFactory
 from worker.resources import LibrariesResource
 
+from .job_runners.utils import REVISION_NAME
+
 
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
@@ -75,7 +77,7 @@ def test_create_job_runner(
         "type": job_type,
         "params": {
             "dataset": dataset,
-            "revision": "revision",
+            "revision": REVISION_NAME,
             "config": config,
             "split": split,
         },
@@ -88,6 +90,7 @@ def test_create_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -96,6 +99,7 @@ def test_create_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,

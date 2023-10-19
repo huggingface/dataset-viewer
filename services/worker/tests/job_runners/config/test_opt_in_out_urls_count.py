@@ -17,6 +17,8 @@ from worker.job_runners.config.opt_in_out_urls_count import (
     ConfigOptInOutUrlsCountJobRunner,
 )
 
+from ..utils import REVISION_NAME
+
 
 @pytest.fixture(autouse=True)
 def prepare_and_clean_mongo(app_config: AppConfig) -> None:
@@ -54,6 +56,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -63,7 +66,7 @@ def get_job_runner(
                 "type": ConfigOptInOutUrlsCountJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -233,6 +236,7 @@ def test_compute(
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=split_names_content,
         http_status=split_names_status,
@@ -243,6 +247,7 @@ def test_compute(
             upsert_response(
                 kind="split-opt-in-out-urls-count",
                 dataset=dataset,
+                dataset_git_revision=REVISION_NAME,
                 config=split_item["config"],
                 split=split_item["split"],
                 content=content,

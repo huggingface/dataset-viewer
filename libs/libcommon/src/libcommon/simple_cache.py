@@ -4,12 +4,14 @@
 import types
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, Generic, NamedTuple, Optional, TypedDict, TypeVar, overload
 
 import pandas as pd
-from bson import ObjectId
+from bson import CodecOptions, ObjectId
+from bson.codec_options import TypeEncoder, TypeRegistry  # type: ignore[attr-defined]
 from bson.errors import InvalidId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist
@@ -31,6 +33,38 @@ from libcommon.constants import (
 )
 from libcommon.utils import JobParams, get_datetime
 
+
+class DateCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.date objects like datetime.datetime objects in mongo"""
+
+    python_type = date  # the Python type acted upon by this type codec
+    transform_python = str  # convert date objects to strings in mongo
+
+
+class TimeCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.time objects as strings in mongo"""
+
+    python_type = time  # the Python type acted upon by this type codec
+    transform_python = str  # convert time objects to strings in mongo
+
+
+class TimedeltaCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save datetime.timedelta objects as strings in mongo"""
+
+    python_type = timedelta  # the Python type acted upon by this type codec
+    transform_python = str  # convert timedelta objects to strings in mongo
+
+
+class DecimalCodec(TypeEncoder):  # type: ignore[misc]
+    """To be able to save decimal.Decimal objects as strings in mongo"""
+
+    python_type = Decimal  # the Python type acted upon by this type codec
+    transform_python = str  # convert decimal objects to strings in mongo
+
+
+type_registry = TypeRegistry([DateCodec(), TimeCodec(), TimedeltaCodec(), DecimalCodec()])
+
+
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
 U = TypeVar("U", bound=Document)
@@ -45,6 +79,10 @@ QuerySet.__class_getitem__ = types.MethodType(no_op, QuerySet)
 
 class QuerySetManager(Generic[U]):
     def __get__(self, instance: object, cls: type[U]) -> QuerySet[U]:
+        codec_options = CodecOptions(type_registry=type_registry)  # type: ignore[call-arg]
+        cls._collection = cls._get_db().get_collection(  # type: ignore[attr-defined]
+            cls._get_collection_name(), codec_options=codec_options
+        )
         return QuerySet(cls, cls._get_collection())
 
 
@@ -88,7 +126,7 @@ class CachedResponseDocument(Document):
     http_status = EnumField(HTTPStatus, required=True)
     error_code = StringField()
     content = DictField(required=True)
-    dataset_git_revision = StringField()
+    dataset_git_revision = StringField(required=True)
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()
 
@@ -181,6 +219,7 @@ def decrease_metric_for_artifact(kind: str, dataset: str, config: Optional[str],
 def upsert_response(
     kind: str,
     dataset: str,
+    dataset_git_revision: str,
     content: Mapping[str, Any],
     http_status: HTTPStatus,
     config: Optional[str] = None,
@@ -188,7 +227,6 @@ def upsert_response(
     error_code: Optional[str] = None,
     details: Optional[Mapping[str, Any]] = None,
     job_runner_version: Optional[int] = None,
-    dataset_git_revision: Optional[str] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
 ) -> None:
@@ -279,8 +317,8 @@ def _clean_nested_mongo_object(obj: Any) -> Any:
 
 class CacheEntryWithoutContent(TypedDict):
     http_status: HTTPStatus
+    dataset_git_revision: str
     error_code: Optional[str]
-    dataset_git_revision: Optional[str]
     progress: Optional[float]
     job_runner_version: Optional[int]
 
@@ -450,6 +488,7 @@ def get_response_with_details(
 
 
 CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
+DATASET_GIT_REVISION_NOT_FOUND = "dataset-git-revision-not-found"
 
 
 def get_response_or_missing_error(
@@ -466,7 +505,7 @@ def get_response_or_missing_error(
             },
             http_status=HTTPStatus.NOT_FOUND,
             error_code=CACHED_RESPONSE_NOT_FOUND,
-            dataset_git_revision=None,
+            dataset_git_revision=DATASET_GIT_REVISION_NOT_FOUND,
             job_runner_version=None,
             progress=None,
             details={},
@@ -617,6 +656,7 @@ def get_responses_count_by_kind_status_and_error_code() -> list[CountEntry]:
 class CacheReport(TypedDict):
     kind: str
     dataset: str
+    dataset_git_revision: str
     config: Optional[str]
     split: Optional[str]
     http_status: int
@@ -624,7 +664,6 @@ class CacheReport(TypedDict):
     details: Mapping[str, Any]
     updated_at: datetime
     job_runner_version: Optional[int]
-    dataset_git_revision: Optional[str]
     progress: Optional[float]
 
 
@@ -896,7 +935,7 @@ def fetch_names(
 @dataclass
 class DatasetWithRevision:
     dataset: str
-    revision: Optional[str]
+    revision: str
 
 
 def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[DatasetWithRevision]:

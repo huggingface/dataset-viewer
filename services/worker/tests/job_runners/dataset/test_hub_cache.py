@@ -14,7 +14,7 @@ from libcommon.utils import Priority
 from worker.config import AppConfig
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 
-from ..utils import UpstreamResponse
+from ..utils import REVISION_NAME, UpstreamResponse
 
 
 @pytest.fixture(autouse=True)
@@ -30,6 +30,7 @@ DATASET = "dataset"
 UPSTREAM_RESPONSE_IS_VALID_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"preview": True, "viewer": False, "search": True},
     progress=0.5,
@@ -37,6 +38,7 @@ UPSTREAM_RESPONSE_IS_VALID_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_IS_VALID_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-is-valid",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
     progress=0.0,
@@ -44,6 +46,7 @@ UPSTREAM_RESPONSE_IS_VALID_ERROR: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SIZE_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-size",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": False},
     progress=0.2,
@@ -51,6 +54,7 @@ UPSTREAM_RESPONSE_SIZE_OK: UpstreamResponse = UpstreamResponse(
 UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     kind="dataset-size",
     dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
     progress=None,
@@ -83,7 +87,7 @@ def get_job_runner(
                     "dataset": dataset,
                     "config": None,
                     "split": None,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                 },
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,

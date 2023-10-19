@@ -18,11 +18,13 @@ from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesRes
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
 )
+from worker.utils import disable_dataset_scripts_support
 
 
 def compute_config_names_response(
     dataset: str,
     max_number: int,
+    dataset_scripts_allow_list: list[str],
     hf_token: Optional[str] = None,
 ) -> DatasetConfigNamesResponse:
     """
@@ -35,6 +37,11 @@ def compute_config_names_response(
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
+        dataset_scripts_allow_list (`list[str]`):
+            List of datasets for which we support dataset scripts.
+            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
+            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
+            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
@@ -46,14 +53,17 @@ def compute_config_names_response(
           The dataset tries to import a module that is not installed.
         - [`libcommon.exceptions.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
+        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get config names for dataset={dataset}")
     # get the list of splits in streaming mode
     try:
-        config_name_items: list[ConfigNameItem] = [
-            {"dataset": dataset, "config": str(config)}
-            for config in sorted(get_dataset_config_names(path=dataset, token=hf_token))
-        ]
+        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
+            config_name_items: list[ConfigNameItem] = [
+                {"dataset": dataset, "config": str(config)}
+                for config in sorted(get_dataset_config_names(path=dataset, token=hf_token))
+            ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except ImportError as err:
@@ -87,5 +97,6 @@ class DatasetConfigNamesJobRunner(DatasetJobRunnerWithDatasetsCache):
                 dataset=self.dataset,
                 hf_token=self.app_config.common.hf_token,
                 max_number=self.app_config.config_names.max_number,
+                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )

@@ -201,6 +201,7 @@ Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     offset: int,
@@ -217,6 +218,7 @@ def to_rows_list(
     try:
         transformed_rows = transform_rows(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             rows=pa_table.to_pylist(),

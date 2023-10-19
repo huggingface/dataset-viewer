@@ -1,15 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import contextlib
-import logging
-import os
-from collections.abc import Generator
-from os import makedirs
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TypedDict, cast
-from uuid import uuid4
+from typing import TypedDict
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -23,8 +17,8 @@ DATASETS_SERVER_MDATE_FILENAME = ".dss"
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
-def get_url_dir_path(dataset: str, config: str, split: str, row_idx: int, column: str) -> str:
-    return f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
+def get_url_dir_path(dataset: str, revision: str, config: str, split: str, row_idx: int, column: str) -> str:
+    return f"{dataset}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
 
 
 def delete_asset_dir(dataset: str, directory: StrPath) -> None:
@@ -45,6 +39,7 @@ class AudioSource(TypedDict):
 
 def create_image_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -57,7 +52,7 @@ def create_image_file(
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     overwrite = storage_options.overwrite
-    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
+    url_dir_path = get_url_dir_path(revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
     storage_client = storage_options.storage_client
@@ -74,6 +69,7 @@ def create_image_file(
 
 def create_audio_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -86,7 +82,7 @@ def create_audio_file(
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     overwrite = storage_options.overwrite
-    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
+    url_dir_path = get_url_dir_path(revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
     storage_client = storage_options.storage_client

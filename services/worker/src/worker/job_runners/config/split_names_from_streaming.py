@@ -19,11 +19,13 @@ from libcommon.exceptions import (
 
 from worker.dtos import CompleteJobResult, FullSplitItem, JobRunnerInfo, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
+from worker.utils import disable_dataset_scripts_support
 
 
 def compute_split_names_from_streaming_response(
     dataset: str,
     config: str,
+    dataset_scripts_allow_list: list[str],
     hf_token: Optional[str] = None,
 ) -> SplitsList:
     """
@@ -45,6 +47,11 @@ def compute_split_names_from_streaming_response(
             by a `/`.
         config (`str`):
             A configuration name.
+        dataset_scripts_allow_list (`list[str]`):
+            List of datasets for which we support dataset scripts.
+            Unix shell-style wildcards also work in the dataset name for namespaced datasets,
+            for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
+            The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
     Returns:
@@ -56,13 +63,16 @@ def compute_split_names_from_streaming_response(
           The dataset is empty.
         - [`libcommon.exceptions.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
+        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:
-        split_name_items: list[FullSplitItem] = [
-            {"dataset": dataset, "config": config, "split": str(split)}
-            for split in get_dataset_split_names(path=dataset, config_name=config, token=hf_token)
-        ]
+        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
+            split_name_items: list[FullSplitItem] = [
+                {"dataset": dataset, "config": config, "split": str(split)}
+                for split in get_dataset_split_names(path=dataset, config_name=config, token=hf_token)
+            ]
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
     except _EmptyDatasetError as err:
@@ -97,5 +107,6 @@ class ConfigSplitNamesFromStreamingJobRunner(ConfigJobRunnerWithDatasetsCache):
                 dataset=self.dataset,
                 config=self.config,
                 hf_token=self.app_config.common.hf_token,
+                dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )

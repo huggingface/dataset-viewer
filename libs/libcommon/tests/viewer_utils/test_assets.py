@@ -90,6 +90,7 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
 
         value = create_audio_file(
             dataset="dataset",
+            revision="revision",
             config="config",
             split="split",
             row_idx=7,
@@ -102,9 +103,11 @@ def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cach
 
         assert value == [
             {
-                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                "src": "http://localhost/assets/dataset/--/revision/--/config/split/7/col/audio.wav",
                 "type": "audio/wav",
             },
         ]
-        audio_object = conn.Object(bucket_name, "assets/dataset/--/config/split/7/col/audio.wav").get()["Body"].read()
+        audio_object = (
+            conn.Object(bucket_name, "assets/dataset/--/revision/--/config/split/7/col/audio.wav").get()["Body"].read()
+        )
         assert audio_object is not None

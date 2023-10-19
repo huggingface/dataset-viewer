@@ -22,6 +22,8 @@ from worker.config import AppConfig
 from worker.dtos import ConfigParquetAndInfoResponse, ConfigParquetResponse
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
 
+from ..utils import REVISION_NAME
+
 
 @pytest.fixture(autouse=True)
 def prepare_and_clean_mongo(app_config: AppConfig) -> None:
@@ -59,6 +61,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -68,7 +71,7 @@ def get_job_runner(
                 "type": ConfigParquetJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -273,6 +276,7 @@ def test_compute(
     upsert_response(
         kind="config-parquet-and-info",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=upstream_content,
         http_status=upstream_status,

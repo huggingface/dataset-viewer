@@ -158,6 +158,7 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
+                        revision=revision,
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,

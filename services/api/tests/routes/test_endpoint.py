@@ -114,6 +114,7 @@ def test_get_cache_entry_from_steps() -> None:
     upsert_response(
         kind=cache_without_error,
         dataset=dataset,
+        dataset_git_revision=revision,
         config=config,
         content={},
         http_status=HTTPStatus.OK,
@@ -122,6 +123,7 @@ def test_get_cache_entry_from_steps() -> None:
     upsert_response(
         kind=cache_with_error,
         dataset=dataset,
+        dataset_git_revision=revision,
         config=config,
         content={},
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,

@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import random
 from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
@@ -96,6 +95,22 @@ def create_rows_endpoint(
                             split=split,
                         )
                         revision = rows_index.revision
+                    with StepProfiler(method="rows_endpoint", step="query the rows"):
+                        pa_table = rows_index.query(offset=offset, length=length)
+                    with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                        response = create_response(
+                            dataset=dataset,
+                            revision=revision,
+                            config=config,
+                            split=split,
+                            cached_assets_base_url=cached_assets_base_url,
+                            storage_client=storage_client,
+                            pa_table=pa_table,
+                            offset=offset,
+                            features=rows_index.parquet_index.features,
+                            unsupported_columns=rows_index.parquet_index.unsupported_columns,
+                            num_rows_total=rows_index.parquet_index.num_rows_total,
+                        )
                 except CachedArtifactNotFoundError:
                     config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
                     config_parquet_metadata_processing_steps = (
@@ -113,21 +128,6 @@ def create_rows_endpoint(
                             cache_max_days=cache_max_days,
                             blocked_datasets=blocked_datasets,
                         )
-                with StepProfiler(method="rows_endpoint", step="query the rows"):
-                    pa_table = rows_index.query(offset=offset, length=length)
-                with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        cached_assets_base_url=cached_assets_base_url,
-                        storage_client=storage_client,
-                        pa_table=pa_table,
-                        offset=offset,
-                        features=rows_index.parquet_index.features,
-                        unsupported_columns=rows_index.parquet_index.unsupported_columns,
-                        num_rows_total=rows_index.parquet_index.num_rows_total,
-                    )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except CachedArtifactError as e:

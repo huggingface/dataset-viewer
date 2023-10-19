@@ -78,6 +78,7 @@ def test_value(
     assert feature.dtype == output_dtype
     value = get_cell_value(
         dataset="dataset",
+        revision="revision",
         config="config",
         split="split",
         row_idx=7,
@@ -105,6 +106,9 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             )
             assert os.path.exists(path)
             assert os.path.getsize(path) > 0
+
+
+ASSETS_BASE_URL_SPLIT = "http://localhost/assets/dataset/--/revision/--/config/split"
 
 
 @pytest.mark.parametrize(
@@ -161,7 +165,7 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             "audio",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio.wav",
                     "type": "audio/wav",
                 }
             ],
@@ -171,7 +175,7 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             "audio_ogg",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/audio.wav",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio.wav",
                     "type": "audio/wav",
                 }
             ],
@@ -183,7 +187,7 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
         (
             "image",
             {
-                "src": "http://localhost/assets/dataset/--/config/split/7/col/image.jpg",
+                "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image.jpg",
                 "height": 480,
                 "width": 640,
             },
@@ -202,12 +206,12 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             "images_list",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-1d100e9.jpg",
                     "height": 480,
                     "width": 640,
                 },
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-1d300ea.jpg",
                     "height": 480,
                     "width": 640,
                 },
@@ -219,13 +223,13 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             [
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-1d100e9.wav",
                         "type": "audio/wav",
                     },
                 ],
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-1d300ea.wav",
                         "type": "audio/wav",
                     },
                 ],
@@ -236,12 +240,12 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             "images_sequence",
             [
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d100e9.jpg",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-1d100e9.jpg",
                     "height": 480,
                     "width": 640,
                 },
                 {
-                    "src": "http://localhost/assets/dataset/--/config/split/7/col/image-1d300ea.jpg",
+                    "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-1d300ea.jpg",
                     "height": 480,
                     "width": 640,
                 },
@@ -253,13 +257,13 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             [
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d100e9.wav",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-1d100e9.wav",
                         "type": "audio/wav",
                     },
                 ],
                 [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-1d300ea.wav",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-1d300ea.wav",
                         "type": "audio/wav",
                     },
                 ],
@@ -272,12 +276,12 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
                 "a": 0,
                 "b": [
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/image-89101db.jpg",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-89101db.jpg",
                         "height": 480,
                         "width": 640,
                     },
                     {
-                        "src": "http://localhost/assets/dataset/--/config/split/7/col/image-89301dc.jpg",
+                        "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/image-89301dc.jpg",
                         "height": 480,
                         "width": 640,
                     },
@@ -286,13 +290,13 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
                     "ca": [
                         [
                             {
-                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18360330.wav",
+                                "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-18360330.wav",
                                 "type": "audio/wav",
                             },
                         ],
                         [
                             {
-                                "src": "http://localhost/assets/dataset/--/config/split/7/col/audio-18380331.wav",
+                                "src": f"{ASSETS_BASE_URL_SPLIT}/7/col/audio-18380331.wav",
                                 "type": "audio/wav",
                             },
                         ],
@@ -321,6 +325,7 @@ def test_others(
     # decoded
     value = get_cell_value(
         dataset="dataset",
+        revision="revision",
         config="config",
         split="split",
         row_idx=7,
@@ -334,6 +339,7 @@ def test_others(
     # encoded
     value = get_cell_value(
         dataset="dataset",
+        revision="revision",
         config="config",
         split="split",
         row_idx=7,

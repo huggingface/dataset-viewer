@@ -14,6 +14,15 @@ from libcommon.utils import JobInfo, Priority
 
 DATASET_NAME = "dataset"
 
+
+DATASET_NAME_A = "test_dataset_a"
+DATASET_NAME_B = "test_dataset_b"
+DATASET_NAME_C = "test_dataset_c"
+DATASET_GIT_REVISION_A = "test_dataset_git_revision_a"
+DATASET_GIT_REVISION_B = "test_dataset_git_revision_b"
+DATASET_GIT_REVISION_C = "test_dataset_git_revision_C"
+
+
 REVISION_NAME = "revision"
 
 CONFIG_NAME_1 = "config1"

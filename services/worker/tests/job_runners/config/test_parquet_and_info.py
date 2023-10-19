@@ -20,6 +20,7 @@ import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
+from datasets.load import dataset_module_factory
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -27,7 +28,11 @@ from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.config import ProcessingGraphConfig
 from libcommon.dataset import get_dataset_info_for_supported_datasets
-from libcommon.exceptions import CustomError, DatasetManualDownloadError
+from libcommon.exceptions import (
+    CustomError,
+    DatasetManualDownloadError,
+    DatasetWithScriptNotSupportedError,
+)
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -57,9 +62,11 @@ from worker.job_runners.config.parquet_and_info import (
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.resources import LibrariesResource
+from worker.utils import disable_dataset_scripts_support
 
 from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 
@@ -92,6 +99,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -101,7 +109,7 @@ def get_job_runner(
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -153,6 +161,7 @@ def test_compute_legacy_configs(
     hub_public_legacy_configs: str,
 ) -> None:
     app_config = replace(app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size=20_000))
+    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
 
     dataset_name = hub_public_legacy_configs
     original_configs = {"first", "second"}
@@ -164,6 +173,7 @@ def test_compute_legacy_configs(
         upsert_response(
             kind="dataset-config-names",
             dataset=hub_public_legacy_configs,
+            dataset_git_revision=REVISION_NAME,
             http_status=HTTPStatus.OK,
             content={
                 "config_names": [
@@ -470,6 +480,7 @@ def test_previous_step_error(
     upsert_response(
         "dataset-config-names",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         http_status=upstream_status,
         content=upstream_content,
     )
@@ -578,7 +589,7 @@ def get_dataset_config_names_job_runner(
                 "type": DatasetConfigNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": None,
                     "split": None,
                 },
@@ -643,6 +654,7 @@ def test_concurrency(
     For this test, we need a lot of configs for the same dataset (say 20) and one job runner for each.
     Ideally we would try for both quick and slow jobs.
     """
+    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
     repo_id = hub_public_n_configs
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     revision = hf_api.dataset_info(repo_id=repo_id, files_metadata=False).sha
@@ -876,3 +888,25 @@ def test_get_writer_batch_size_from_row_group_size(
         num_rows=num_rows, row_group_byte_size=row_group_byte_size, max_row_group_byte_size=max_row_group_byte_size
     )
     assert writer_batch_size == expected
+
+
+def test_disable_dataset_scripts_support(use_hub_prod_endpoint: Any, tmp_path: Path) -> None:
+    # with dataset script: squad, lhoestq/squad, lhoestq/custom_squad
+    # no dataset script: lhoest/demo1
+    cache_dir = str(tmp_path / "test_disable_dataset_scripts_support_cache_dir")
+    dynamic_modules_path = str(tmp_path / "test_disable_dataset_scripts_support_dynamic_modules_path")
+    with disable_dataset_scripts_support(allow_list=[]):
+        dataset_module_factory("lhoestq/demo1", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]):
+        dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+    with disable_dataset_scripts_support(allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]):
+        dataset_module_factory("squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        dataset_module_factory("lhoestq/squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path)
+        with pytest.raises(DatasetWithScriptNotSupportedError):
+            dataset_module_factory(
+                "lhoestq/custom_squad", cache_dir=cache_dir, dynamic_modules_path=dynamic_modules_path
+            )

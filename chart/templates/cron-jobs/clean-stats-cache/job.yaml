@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.cleanStatsCache.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.cleanStatsCache" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-clean-stats-cache"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.cleanStatsCache.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.cleanStatsCache.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.cleanStatsCache.tolerations | nindent 12 }}
+          containers: {{ include "containerCleanStatsCache" . | nindent 12 }}
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+          initContainers: {{ include "initContainerDescriptiveStatistics" . | nindent 12 }}
+          volumes: {{ include "volumeDescriptiveStatistics" . | nindent 12 }}
+{{- end}}

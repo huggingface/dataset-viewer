@@ -4,7 +4,6 @@
 import io
 import os
 import shutil
-import time
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
@@ -33,6 +32,8 @@ from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
 from rows.config import AppConfig
+
+REVISION_NAME = "revision"
 
 
 @pytest.fixture(autouse=True)
@@ -129,6 +130,7 @@ def dataset_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -158,6 +160,7 @@ def dataset_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -198,6 +201,7 @@ def dataset_empty_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_empty",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -227,6 +231,7 @@ def dataset_empty_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds_empty",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -269,6 +274,7 @@ def dataset_sharded_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_sharded",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -299,6 +305,7 @@ def dataset_sharded_with_config_parquet_metadata(
     upsert_response(
         kind="config-parquet-metadata",
         dataset="ds_sharded",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_metadata_content,
         http_status=HTTPStatus.OK,
@@ -324,6 +331,7 @@ def dataset_image_with_config_parquet() -> dict[str, Any]:
     upsert_response(
         kind="config-parquet",
         dataset="ds_image",
+        dataset_git_revision=REVISION_NAME,
         config="default",
         content=config_parquet_content,
         http_status=HTTPStatus.OK,
@@ -466,6 +474,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
     )
     response = create_response(
         dataset="ds",
+        revision="revision",
         config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
@@ -508,6 +517,7 @@ def test_create_response_with_image(
 
         response = create_response(
             dataset=dataset,
+            revision="revision",
             config=config,
             split=split,
             cached_assets_base_url=app_config.cached_assets.base_url,
@@ -526,7 +536,9 @@ def test_create_response_with_image(
                 "row_idx": 0,
                 "row": {
                     "image": {
-                        "src": "http://localhost/cached-assets/ds_image/--/default/train/0/image/image.jpg",
+                        "src": (
+                            "http://localhost/cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg"
+                        ),
                         "height": 480,
                         "width": 640,
                     }
@@ -536,7 +548,9 @@ def test_create_response_with_image(
         ]
 
         body = (
-            conn.Object(bucket_name, "cached-assets/ds_image/--/default/train/0/image/image.jpg").get()["Body"].read()
+            conn.Object(bucket_name, "cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg")
+            .get()["Body"]
+            .read()
         )
         assert body is not None
 

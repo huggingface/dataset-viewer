@@ -31,6 +31,7 @@ from worker.job_runners.split.duckdb_index import (
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndexJobRunner]
 
@@ -75,6 +76,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -82,6 +84,7 @@ def get_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
@@ -92,7 +95,7 @@ def get_job_runner(
                 "type": SplitDuckDbIndexJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -136,6 +139,7 @@ def get_parquet_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -145,7 +149,7 @@ def get_parquet_job_runner(
                 "type": ConfigParquetAndInfoJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -223,6 +227,7 @@ def test_compute(
     upsert_response(
         "config-parquet-and-info",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         http_status=HTTPStatus.OK,
         content=config_parquet,

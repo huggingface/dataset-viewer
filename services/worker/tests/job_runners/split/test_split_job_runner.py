@@ -15,6 +15,8 @@ from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 
+from ..utils import REVISION_NAME
+
 
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
@@ -39,6 +41,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
     upsert_response(
         kind="dataset-config-names",
         dataset="dataset",
+        dataset_git_revision=REVISION_NAME,
         content={"config_names": [{"dataset": "dataset", "config": config}]},
         http_status=HTTPStatus.OK,
     )
@@ -50,7 +53,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "type": test_processing_step.job_type,
                 "params": {
                     "dataset": "dataset",
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -83,6 +86,7 @@ def test_creation(
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         content={"config_names": [{"dataset": dataset, "config": upsert_config}]},
         http_status=HTTPStatus.OK,
     )
@@ -90,6 +94,7 @@ def test_creation(
     upsert_response(
         kind="config-split-names-from-streaming",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content={"splits": [{"dataset": dataset, "config": upsert_config, "split": upsert_split}]},
         http_status=HTTPStatus.OK,
@@ -102,7 +107,7 @@ def test_creation(
                 "type": test_processing_step.job_type,
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -120,7 +125,7 @@ def test_creation(
                     "type": test_processing_step.job_type,
                     "params": {
                         "dataset": dataset,
-                        "revision": "revision",
+                        "revision": REVISION_NAME,
                         "config": config,
                         "split": split,
                     },

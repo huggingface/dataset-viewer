@@ -3,7 +3,6 @@
 
 import logging
 from http import HTTPStatus
-from pathlib import Path
 from typing import Optional
 
 import pyarrow as pa
@@ -75,6 +74,7 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
 def create_response(
     pa_table: pa.Table,
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
@@ -100,10 +100,11 @@ def create_response(
     return PaginatedResponse(
         features=to_features_list(features_without_key),
         rows=to_rows_list(
-            pa_table,
-            dataset,
-            config,
-            split,
+            pa_table=pa_table,
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
             storage_options=storage_options,
             offset=offset,
             features=features,
@@ -199,7 +200,6 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
-                    Path(index_file_location).touch()
                 with StepProfiler(method="search_endpoint", step="create response"):
                     if "features" in duckdb_index_cache_entry["content"] and isinstance(
                         duckdb_index_cache_entry["content"]["features"], dict
@@ -208,15 +208,16 @@ def create_search_endpoint(
                     else:
                         features = Features.from_arrow_schema(pa_table.schema)
                     response = create_response(
-                        pa_table,
-                        dataset,
-                        config,
-                        split,
-                        cached_assets_base_url,
-                        storage_client,
-                        offset,
-                        features,
-                        num_rows_total,
+                        pa_table=pa_table,
+                        dataset=dataset,
+                        revision=revision,
+                        config=config,
+                        split=split,
+                        cached_assets_base_url=cached_assets_base_url,
+                        storage_client=storage_client,
+                        offset=offset,
+                        features=features,
+                        num_rows_total=num_rows_total,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)

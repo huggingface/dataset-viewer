@@ -2270,12 +2270,12 @@
                           "row_idx": 0,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/0/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/0/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/0/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/0/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2286,12 +2286,12 @@
                           "row_idx": 1,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/1/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/1/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/1/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/1/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2302,12 +2302,12 @@
                           "row_idx": 2,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/2/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/2/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/default/train/2/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/assets/huggan/horse2zebra/--/main/--/default/train/2/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2390,7 +2390,7 @@
                             "id": "id10059_229vKIGbxrI_00001",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/0/audio/audio.wav",
+                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/main/--/voxceleb/train/0/audio/audio.wav",
                                 "type": "audio/wav"
                               }
                             ],
@@ -2408,7 +2408,7 @@
                             "id": "id10059_229vKIGbxrI_00002",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/1/audio/audio.wav",
+                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/main/--/voxceleb/train/1/audio/audio.wav",
                                 "type": "audio/wav"
                               }
                             ],
@@ -2426,7 +2426,7 @@
                             "id": "id10059_229vKIGbxrI_00003",
                             "audio": [
                               {
-                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/voxceleb/train/2/audio/audio.wav",
+                                "src": "https://datasets-server.huggingface.co/assets/asapp/slue/--/main/--/voxceleb/train/2/audio/audio.wav",
                                 "type": "audio/wav"
                               }
                             ],
@@ -2711,12 +2711,12 @@
                           "row_idx": 234,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/234/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/234/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/234/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/234/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2727,12 +2727,12 @@
                           "row_idx": 235,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/235/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/235/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/235/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/235/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -2743,12 +2743,12 @@
                           "row_idx": 236,
                           "row": {
                             "imageA": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/236/imageA/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/236/imageA/image.jpg",
                               "height": 256,
                               "width": 256
                             },
                             "imageB": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/default/train/236/imageB/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/huggan/horse2zebra/--/main/--/default/train/236/imageB/image.jpg",
                               "height": 256,
                               "width": 256
                             }
@@ -3128,7 +3128,7 @@
                           "row_idx": 16,
                           "row": {
                             "image": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/16/image/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/main/--/default/train/16/image/image.jpg",
                               "height": 431,
                               "width": 431
                             },
@@ -3140,7 +3140,7 @@
                           "row_idx": 54,
                           "row": {
                             "image": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/54/image/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/main/--/default/train/54/image/image.jpg",
                               "height": 1280,
                               "width": 1280
                             },
@@ -3152,7 +3152,7 @@
                           "row_idx": 56,
                           "row": {
                             "image": {
-                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/default/train/56/image/image.jpg",
+                              "src": "https://datasets-server.huggingface.co/cached-assets/lambdalabs/pokemon-blip-captions/--/main/--/default/train/56/image/image.jpg",
                               "height": 1280,
                               "width": 1280
                             },

@@ -52,6 +52,7 @@ def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] =
 
 def image(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -81,6 +82,7 @@ def image(
         try:
             return create_image_file(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -100,6 +102,7 @@ def image(
 
 def audio(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -157,6 +160,7 @@ def audio(
     # this function can raise, we don't catch it
     return create_audio_file(
         dataset=dataset,
+        revision=revision,
         config=config,
         split=split,
         row_idx=row_idx,
@@ -170,6 +174,7 @@ def audio(
 
 def get_cell_value(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -185,6 +190,7 @@ def get_cell_value(
     if isinstance(fieldType, Image):
         return image(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
@@ -196,6 +202,7 @@ def get_cell_value(
     elif isinstance(fieldType, Audio):
         return audio(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
@@ -213,6 +220,7 @@ def get_cell_value(
         return [
             get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -231,6 +239,7 @@ def get_cell_value(
             return [
                 get_cell_value(
                     dataset=dataset,
+                    revision=revision,
                     config=config,
                     split=split,
                     row_idx=row_idx,
@@ -252,6 +261,7 @@ def get_cell_value(
                 key: [
                     get_cell_value(
                         dataset=dataset,
+                        revision=revision,
                         config=config,
                         split=split,
                         row_idx=row_idx,
@@ -273,6 +283,7 @@ def get_cell_value(
         return {
             key: get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
