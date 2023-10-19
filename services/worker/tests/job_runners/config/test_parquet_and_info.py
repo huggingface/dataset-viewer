@@ -888,8 +888,7 @@ def test_get_writer_batch_size_from_row_group_size(
     assert writer_batch_size == expected
 
 
-@pytest.mark.use_hub_prod_endpoint
-def test_disable_dataset_scripts_support(tmp_path: Path) -> None:
+def test_disable_dataset_scripts_support(use_hub_prod_endpoint: Any, tmp_path: Path) -> None:
     # with dataset script: squad, lhoestq/squad, lhoestq/custom_squad
     # no dataset script: lhoest/demo1
     cache_dir = str(tmp_path / "test_disable_dataset_scripts_support_cache_dir")
