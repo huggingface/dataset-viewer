@@ -83,7 +83,7 @@ common:
   blockedDatasets: "Graphcore/gqa,Graphcore/gqa-lxmert,Graphcore/vqa,Graphcore/vqa-lxmert,echarlaix/gqa-lxmert,echarlaix/vqa,echarlaix/vqa-lxmert,KakologArchives/KakologArchives,open-llm-leaderboard/*"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
-  # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` can be used to refer to all the datasets without namespace.
+  # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
   datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}}"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
