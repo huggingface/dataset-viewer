@@ -1327,7 +1327,6 @@ httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 orjson = "^3.8.6"
 pyjwt = {version = "^2.6.0", extras = ["crypto"]}
-requests = "^2.28.2"
 starlette = "^0.28.0"
 starlette-prometheus = "^0.9.0"
 
@@ -3292,33 +3291,6 @@ files = [
 ]
 
 [[package]]
-name = "types-requests"
-version = "2.31.0.1"
-description = "Typing stubs for requests"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "types-requests-2.31.0.1.tar.gz", hash = "sha256:3de667cffa123ce698591de0ad7db034a5317457a596eb0b4944e5a9d9e8d1ac"},
-    {file = "types_requests-2.31.0.1-py3-none-any.whl", hash = "sha256:afb06ef8f25ba83d59a1d424bd7a5a939082f94b94e90ab5e6116bd2559deaa3"},
-]
-
-[package.dependencies]
-types-urllib3 = "*"
-
-[[package]]
-name = "types-urllib3"
-version = "1.26.25.13"
-description = "Typing stubs for urllib3"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "types-urllib3-1.26.25.13.tar.gz", hash = "sha256:3300538c9dc11dad32eae4827ac313f5d986b8b21494801f1bf97a1ac6c03ae5"},
-    {file = "types_urllib3-1.26.25.13-py3-none-any.whl", hash = "sha256:5dbd1d2bef14efee43f5318b5d36d805a489f6600252bb53626d4bfafd95e27c"},
-]
-
-[[package]]
 name = "typing-extensions"
 version = "4.7.1"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -3663,4 +3635,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.15"
-content-hash = "e2ed15b71e85da1c739432208f806566b820cf6f2cf16e9fd7b7a5431d8008e5"
+content-hash = "9fe69cd1d37b5c59604510b5288ffce9899d7657aaf20edd7a9702993cae3691"
