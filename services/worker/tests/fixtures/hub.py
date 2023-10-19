@@ -18,6 +18,7 @@ from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 
 from ..constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
+from ..job_runners.utils import REVISION_NAME
 
 DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
@@ -563,7 +564,7 @@ def get_AUDIO_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/audio.wav",
+                    "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/audio.wav",
                     "type": "audio/wav",
                 },
             ]
@@ -581,7 +582,7 @@ def get_IMAGE_rows(dataset: str) -> Any:
     return [
         {
             "col": {
-                "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image.jpg",
+                "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image.jpg",
                 "height": 480,
                 "width": 640,
             },
@@ -593,6 +594,8 @@ IMAGES_LIST_cols = {
     "col": [{"_type": "Image"}],
 }
 
+ASSETS_BASE_URL = "http://localhost/assets"
+
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
     config, split = get_default_config_split()
@@ -600,12 +603,16 @@ def get_IMAGES_LIST_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d100e9.jpg",
+                    "src": (
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d100e9.jpg"
+                    ),
                     "height": 480,
                     "width": 640,
                 },
                 {
-                    "src": f"http://localhost/assets/{dataset}/--/{config}/{split}/0/col/image-1d300ea.jpg",
+                    "src": (
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d300ea.jpg"
+                    ),
                     "height": 480,
                     "width": 640,
                 },

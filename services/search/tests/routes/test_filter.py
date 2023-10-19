@@ -94,6 +94,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
     )
     response = create_response(
         dataset=dataset,
+        revision="revision",
         config=config,
         split=split,
         cached_assets_base_url=app_config.cached_assets.base_url,

@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import contextlib
 import logging
 import os
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from functools import partial
 from os import makedirs
 from pathlib import Path
@@ -31,8 +30,8 @@ def get_and_create_dir_path(assets_directory: StrPath, url_dir_path: str) -> Pat
     return dir_path
 
 
-def get_url_dir_path(dataset: str, config: str, split: str, row_idx: int, column: str) -> str:
-    return f"{dataset}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
+def get_url_dir_path(dataset: str, revision: str, config: str, split: str, row_idx: int, column: str) -> str:
+    return f"{dataset}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
 
 
 def get_unique_path_for_filename(assets_directory: StrPath, filename: str) -> Path:
@@ -42,39 +41,6 @@ def get_unique_path_for_filename(assets_directory: StrPath, filename: str) -> Pa
 def delete_asset_dir(dataset: str, directory: StrPath) -> None:
     dir_path = Path(directory).resolve() / dataset
     remove_dir(dir_path)
-
-
-def glob_rows_in_assets_dir(
-    dataset: str,
-    assets_directory: StrPath,
-) -> Generator[Path, None, None]:
-    return Path(assets_directory).resolve().glob(os.path.join(dataset, DATASET_SEPARATOR, "*", "*", "*"))
-
-
-def update_directory_modification_date(path: Path) -> None:
-    if path.is_dir():
-        # update the directory's last modified date
-        temporary_file = path / DATASETS_SERVER_MDATE_FILENAME
-        if temporary_file.is_dir():
-            raise ValueError(f"Cannot create temporary file {temporary_file} in {path}")
-        temporary_file.touch(exist_ok=True)
-        if temporary_file.is_file():
-            with contextlib.suppress(FileNotFoundError):
-                temporary_file.unlink()
-
-
-def update_last_modified_date_of_rows_in_assets_dir(
-    dataset: str,
-    config: str,
-    split: str,
-    offset: int,
-    length: int,
-    assets_directory: StrPath,
-) -> None:
-    update_directory_modification_date(Path(assets_directory).resolve() / dataset.split("/")[0])
-    row_dirs_path = Path(assets_directory).resolve() / dataset / DATASET_SEPARATOR / config / split
-    for row_idx in range(offset, offset + length):
-        update_directory_modification_date(row_dirs_path / str(row_idx))
 
 
 class ImageSource(TypedDict):
@@ -107,6 +73,7 @@ def upload_asset_file(
 
 def create_asset_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -121,7 +88,9 @@ def create_asset_file(
     overwrite = storage_options.overwrite
     use_s3_storage = isinstance(storage_options, S3StorageOptions)
     logging.debug(f"storage options with {use_s3_storage=}")
-    url_dir_path = get_url_dir_path(dataset=dataset, config=config, split=split, row_idx=row_idx, column=column)
+    url_dir_path = get_url_dir_path(
+        dataset=dataset, revision=revision, config=config, split=split, row_idx=row_idx, column=column
+    )
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
 
     # configure file path
@@ -189,6 +158,7 @@ def save_audio(
 
 def create_image_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -202,6 +172,7 @@ def create_image_file(
         ImageSource,
         create_asset_file(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=row_idx,
@@ -215,6 +186,7 @@ def create_image_file(
 
 def create_audio_file(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     row_idx: int,
@@ -230,6 +202,7 @@ def create_audio_file(
             AudioSource,
             create_asset_file(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,

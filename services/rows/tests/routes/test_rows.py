@@ -4,7 +4,6 @@
 import io
 import os
 import shutil
-import time
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
@@ -29,7 +28,6 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import _clean_cache_database, upsert_response
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
@@ -476,6 +474,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
     )
     response = create_response(
         dataset="ds",
+        revision="revision",
         config="default",
         split="train",
         cached_assets_base_url=app_config.cached_assets.base_url,
@@ -518,6 +517,7 @@ def test_create_response_with_image(
 
         response = create_response(
             dataset=dataset,
+            revision="revision",
             config=config,
             split=split,
             cached_assets_base_url=app_config.cached_assets.base_url,
@@ -536,7 +536,9 @@ def test_create_response_with_image(
                 "row_idx": 0,
                 "row": {
                     "image": {
-                        "src": "http://localhost/cached-assets/ds_image/--/default/train/0/image/image.jpg",
+                        "src": (
+                            "http://localhost/cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg"
+                        ),
                         "height": 480,
                         "width": 640,
                     }
@@ -546,31 +548,11 @@ def test_create_response_with_image(
         ]
 
         body = (
-            conn.Object(bucket_name, "cached-assets/ds_image/--/default/train/0/image/image.jpg").get()["Body"].read()
+            conn.Object(bucket_name, "cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg")
+            .get()["Body"]
+            .read()
         )
         assert body is not None
 
         image = PILImage.open(io.BytesIO(body))
         assert image is not None
-
-
-def test_update_last_modified_date_of_rows_in_assets_dir(tmp_path: Path) -> None:
-    cached_assets_directory = tmp_path / "cached-assets"
-    split_dir = cached_assets_directory / "ds/--/default/train"
-    split_dir.mkdir(parents=True)
-    n_rows = 8
-    for i in range(n_rows):
-        (split_dir / str(i)).mkdir()
-        time.sleep(0.01)
-    update_last_modified_date_of_rows_in_assets_dir(
-        dataset="ds",
-        config="default",
-        split="train",
-        offset=2,
-        length=3,
-        assets_directory=cached_assets_directory,
-    )
-    most_recent_rows_dirs = sorted(list(split_dir.glob("*")), key=os.path.getmtime, reverse=True)
-    most_recent_rows = [int(row_dir.name) for row_dir in most_recent_rows_dirs]
-    assert sorted(most_recent_rows[:3]) == [2, 3, 4]
-    assert most_recent_rows[3:] == [7, 6, 5, 1, 0]

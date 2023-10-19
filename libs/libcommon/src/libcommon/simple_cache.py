@@ -317,8 +317,8 @@ def _clean_nested_mongo_object(obj: Any) -> Any:
 
 class CacheEntryWithoutContent(TypedDict):
     http_status: HTTPStatus
+    dataset_git_revision: str
     error_code: Optional[str]
-    dataset_git_revision: Optional[str]
     progress: Optional[float]
     job_runner_version: Optional[int]
 
@@ -488,6 +488,7 @@ def get_response_with_details(
 
 
 CACHED_RESPONSE_NOT_FOUND = "CachedResponseNotFound"
+DATASET_GIT_REVISION_NOT_FOUND = "dataset-git-revision-not-found"
 
 
 def get_response_or_missing_error(
@@ -504,7 +505,7 @@ def get_response_or_missing_error(
             },
             http_status=HTTPStatus.NOT_FOUND,
             error_code=CACHED_RESPONSE_NOT_FOUND,
-            dataset_git_revision=None,
+            dataset_git_revision=DATASET_GIT_REVISION_NOT_FOUND,
             job_runner_version=None,
             progress=None,
             details={},

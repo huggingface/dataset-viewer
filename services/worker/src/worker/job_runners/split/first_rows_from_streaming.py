@@ -39,6 +39,7 @@ from worker.utils import create_truncated_row_items, get_json_size, get_rows_or_
 
 def transform_rows(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     rows: list[Row],
@@ -49,6 +50,7 @@ def transform_rows(
         {
             featureName: get_cell_value(
                 dataset=dataset,
+                revision=revision,
                 config=config,
                 split=split,
                 row_idx=row_idx,
@@ -65,6 +67,7 @@ def transform_rows(
 
 def compute_first_rows_response(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     storage_options: S3StorageOptions,
@@ -213,6 +216,7 @@ def compute_first_rows_response(
     try:
         transformed_rows = transform_rows(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             rows=rows,
@@ -292,6 +296,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         return CompleteJobResult(
             compute_first_rows_response(
                 dataset=self.dataset,
+                revision=self.dataset_git_revision,
                 config=self.config,
                 split=self.split,
                 storage_options=self.storage_options,

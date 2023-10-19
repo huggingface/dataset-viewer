@@ -24,7 +24,6 @@ from libapi.request import (
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
-    clean_cached_assets_randomly,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -73,10 +72,6 @@ def create_filter_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
-    clean_cache_proba: float = 0.0,
-    keep_first_rows_number: int = -1,
-    keep_most_recent_rows_number: int = -1,
-    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -162,18 +157,10 @@ def create_filter_endpoint(
                         limit=length,
                         offset=offset,
                     )
-                with StepProfiler(method="filter_endpoint", step="clean cache randomly"):
-                    clean_cached_assets_randomly(
-                        clean_cache_proba=clean_cache_proba,
-                        dataset=dataset,
-                        cached_assets_directory=cached_assets_directory,
-                        keep_first_rows_number=keep_first_rows_number,
-                        keep_most_recent_rows_number=keep_most_recent_rows_number,
-                        max_cleaned_rows_number=max_cleaned_rows_number,
-                    )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
                         dataset=dataset,
+                        revision=revision,
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
