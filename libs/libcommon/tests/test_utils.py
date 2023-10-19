@@ -20,13 +20,10 @@ from libcommon.utils import (
 @pytest.mark.parametrize(
     "dataset,revision,config,split,prefix,expected",
     [
-        ("dataset", None, None, None, None, "dataset"),
         ("dataset", "revision", None, None, None, "dataset,revision"),
         ("dataset", "revision", "config", None, None, "dataset,revision,config"),
         ("dataset", "revision", None, "split", None, "dataset,revision"),
         ("dataset", "revision", "config", "split", None, "dataset,revision,config,split"),
-        ("dataset", None, "config", "split", None, "dataset,config,split"),
-        ("dataset", None, None, None, "prefix", "prefix,dataset"),
         ("dataset", "revision", "config", "split", "prefix", "prefix,dataset,revision,config,split"),
     ],
 )

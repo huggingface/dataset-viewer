@@ -20,6 +20,7 @@ from cache_maintenance.discussions import (
 )
 
 from .utils import (
+    REVISION_NAME,
     TemporaryDataset,
     close_discussion,
     count_comments,
@@ -45,7 +46,9 @@ def test_limit_to_one_dataset_per_namespace(datasets: set[str], valid_expected_d
         {
             d.dataset
             for d in limit_to_one_dataset_per_namespace(
-                datasets_with_revision=[DatasetWithRevision(dataset=dataset, revision=None) for dataset in datasets]
+                datasets_with_revision=[
+                    DatasetWithRevision(dataset=dataset, revision=REVISION_NAME) for dataset in datasets
+                ]
             )
         }
         == expected_datasets
@@ -174,12 +177,14 @@ def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig)
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset1.repo_id,
+            dataset_git_revision=REVISION_NAME,
             content={},
             http_status=HTTPStatus.OK,
         )
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset2.repo_id,
+            dataset_git_revision=REVISION_NAME,
             content={},
             http_status=HTTPStatus.OK,
         )
@@ -234,6 +239,7 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset.repo_id,
+            dataset_git_revision=REVISION_NAME,
             content={},
             http_status=HTTPStatus.OK,
         )
@@ -265,7 +271,7 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            dataset_revision=None,
+            dataset_revision=REVISION_NAME,
         )
 
 
@@ -276,6 +282,7 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset.repo_id,
+            dataset_git_revision=REVISION_NAME,
             content={},
             http_status=HTTPStatus.OK,
             updated_at=get_datetime(days=DAYS + 10),
@@ -300,6 +307,7 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
         upsert_response(
             kind=PARQUET_CACHE_KIND,
             dataset=dataset.repo_id,
+            dataset_git_revision=REVISION_NAME,
             content={},
             http_status=HTTPStatus.OK,
         )
@@ -327,5 +335,5 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            dataset_revision=None,
+            dataset_revision=REVISION_NAME,
         )

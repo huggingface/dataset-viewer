@@ -413,6 +413,25 @@ cleanDuckdbIndexJobRunner:
   subfolderPattern: "job_runner/*"
 
 
+cleanStatsCache:
+  enabled: true
+  log:
+    level: "info"
+  action: "clean-directory"
+  error_codes_to_retry: ""
+  schedule: "0 */3 * * *"
+  # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+  expiredTimeIntervalSeconds: 600
+  subfolderPattern: "*"
+
+
 postMessages:
   enabled: true
   log:

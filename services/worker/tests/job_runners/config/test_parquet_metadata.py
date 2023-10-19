@@ -33,6 +33,7 @@ from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobR
 
 from ...constants import CI_USER_TOKEN
 from ...fixtures.hub import hf_api
+from ..utils import REVISION_NAME
 
 
 @pytest.fixture(autouse=True)
@@ -75,6 +76,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -84,7 +86,7 @@ def get_job_runner(
                 "type": ConfigParquetMetadataJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },
@@ -237,6 +239,7 @@ def test_compute(
     upsert_response(
         kind="config-parquet",
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         content=upstream_content,
         http_status=upstream_status,

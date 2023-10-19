@@ -134,14 +134,12 @@ def get_datetime(days: Optional[float] = None) -> datetime:
 
 def inputs_to_string(
     dataset: str,
-    revision: Optional[str] = None,
+    revision: str,
     config: Optional[str] = None,
     split: Optional[str] = None,
     prefix: Optional[str] = None,
 ) -> str:
-    result = dataset
-    if revision is not None:
-        result = f"{result},{revision}"
+    result = f"{dataset},{revision}"
     if config is not None:
         result = f"{result},{config}"
         if split is not None:

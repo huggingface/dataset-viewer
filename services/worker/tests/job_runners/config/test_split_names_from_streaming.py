@@ -21,6 +21,7 @@ from worker.job_runners.config.split_names_from_streaming import (
 from worker.resources import LibrariesResource
 
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesFromStreamingJobRunner]
 
@@ -53,6 +54,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -62,7 +64,7 @@ def get_job_runner(
                 "type": ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": None,
                 },

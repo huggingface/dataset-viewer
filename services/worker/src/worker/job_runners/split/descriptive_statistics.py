@@ -49,6 +49,8 @@ DATA_TABLE_NAME = "data"
 BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
 STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
+DATABASE_FILENAME = "db.duckdb"
+
 
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM {data_table_name} WHERE "{column_name}" IS NULL;
@@ -475,20 +477,29 @@ def compute_descriptive_statistics_response(
         f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
     )
 
-    con = duckdb.connect(":memory:")  # we don't load data in local db file, we load it in an in-memory table
-    # configure duckdb extensions
-    con.sql(f"SET extension_directory='{local_parquet_directory}';")
-    con.sql("INSTALL httpfs")
-    con.sql("LOAD httpfs")
+    con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
     con.sql("SET enable_progress_bar=true;")
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Original number of threads={n_threads}")
+    con.sql("SET threads TO 8;")
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Current number of threads={n_threads}")
+
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Original {max_memory=}")
+    con.sql("SET max_memory TO '28gb';")
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Current {max_memory=}")
+
     logging.info("Loading data into in-memory table. ")
-    con.sql(
-        CREATE_TABLE_COMMAND.format(
-            table_name=DATA_TABLE_NAME,
-            column_names=all_feature_names,
-            select_from=f"read_parquet('{local_parquet_glob_path}')",
-        )
+    create_table_command = CREATE_TABLE_COMMAND.format(
+        table_name=DATA_TABLE_NAME,
+        column_names=all_feature_names,
+        select_from=f"read_parquet('{local_parquet_glob_path}')",
     )
+    logging.info(create_table_command)
+    con.sql(create_table_command)
+    logging.info("Loading finished. ")
 
     if string_features:
         logging.info(f"Compute statistics for string columns {string_features}")

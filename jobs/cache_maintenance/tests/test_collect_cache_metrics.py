@@ -7,6 +7,8 @@ from libcommon.simple_cache import CacheTotalMetricDocument, upsert_response
 
 from cache_maintenance.cache_metrics import collect_cache_metrics
 
+from .utils import REVISION_NAME
+
 
 def test_collect_cache_metrics() -> None:
     dataset = "test_dataset"
@@ -17,6 +19,7 @@ def test_collect_cache_metrics() -> None:
     upsert_response(
         kind=kind,
         dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
         config=config,
         split=split,
         content=content,

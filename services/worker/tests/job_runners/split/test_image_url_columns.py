@@ -21,6 +21,7 @@ from worker.dtos import ImageUrlColumnsResponse
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 
 from ...fixtures.hub import get_default_config_split
+from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitImageUrlColumnsJobRunner]
 
@@ -54,6 +55,7 @@ def get_job_runner(
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             content={"config_names": [{"dataset": dataset, "config": config}]},
             http_status=HTTPStatus.OK,
         )
@@ -61,6 +63,7 @@ def get_job_runner(
         upsert_response(
             kind="config-split-names-from-streaming",
             dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
             config=config,
             content={"splits": [{"dataset": dataset, "config": config, "split": split}]},
             http_status=HTTPStatus.OK,
@@ -71,7 +74,7 @@ def get_job_runner(
                 "type": SplitImageUrlColumnsJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
-                    "revision": "revision",
+                    "revision": REVISION_NAME,
                     "config": config,
                     "split": split,
                 },
@@ -218,7 +221,7 @@ def test_compute(
         config=config,
         split=split,
         content=upstream_content,
-        dataset_git_revision="dataset_git_revision",
+        dataset_git_revision=REVISION_NAME,
         job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
         progress=1.0,
         http_status=HTTPStatus.OK,
@@ -263,7 +266,7 @@ def test_compute_failed(
             config=config,
             split=split,
             content=upstream_content,
-            dataset_git_revision="dataset_git_revision",
+            dataset_git_revision=REVISION_NAME,
             job_runner_version=PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
             progress=1.0,
             http_status=upstream_status,
