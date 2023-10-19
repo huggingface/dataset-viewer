@@ -654,6 +654,7 @@ def test_concurrency(
     For this test, we need a lot of configs for the same dataset (say 20) and one job runner for each.
     Ideally we would try for both quick and slow jobs.
     """
+    app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
     repo_id = hub_public_n_configs
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     revision = hf_api.dataset_info(repo_id=repo_id, files_metadata=False).sha
