@@ -97,6 +97,24 @@ def create_rows_endpoint(
                             split=split,
                         )
                         revision = rows_index.revision
+                    with StepProfiler(method="rows_endpoint", step="query the rows"):
+                        pa_table = rows_index.query(offset=offset, length=length)
+                    with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                        response = create_response(
+                            dataset=dataset,
+                            revision=revision,
+                            config=config,
+                            split=split,
+                            cached_assets_base_url=cached_assets_base_url,
+                            cached_assets_directory=cached_assets_directory,
+                            s3_client=s3_client,
+                            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                            pa_table=pa_table,
+                            offset=offset,
+                            features=rows_index.parquet_index.features,
+                            unsupported_columns=rows_index.parquet_index.unsupported_columns,
+                            num_rows_total=rows_index.parquet_index.num_rows_total,
+                        )
                 except CachedArtifactNotFoundError:
                     config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
                     config_parquet_metadata_processing_steps = (
@@ -114,24 +132,6 @@ def create_rows_endpoint(
                             cache_max_days=cache_max_days,
                             blocked_datasets=blocked_datasets,
                         )
-                with StepProfiler(method="rows_endpoint", step="query the rows"):
-                    pa_table = rows_index.query(offset=offset, length=length)
-                with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(
-                        dataset=dataset,
-                        revision=revision,  # type: ignore
-                        config=config,
-                        split=split,
-                        cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
-                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
-                        pa_table=pa_table,
-                        offset=offset,
-                        features=rows_index.parquet_index.features,
-                        unsupported_columns=rows_index.parquet_index.unsupported_columns,
-                        num_rows_total=rows_index.parquet_index.num_rows_total,
-                    )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except CachedArtifactError as e:

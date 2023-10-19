@@ -14,6 +14,7 @@ from uuid import uuid4
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
+from libcommon.constants import DATASET_SEPARATOR
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
@@ -30,7 +31,7 @@ def get_and_create_dir_path(assets_directory: StrPath, url_dir_path: str) -> Pat
 
 
 def get_url_dir_path(dataset: str, revision: str, config: str, split: str, row_idx: int, column: str) -> str:
-    return f"{dataset}/{revision}/{config}/{split}/{str(row_idx)}/{column}"
+    return f"{dataset}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
 
 
 def get_unique_path_for_filename(assets_directory: StrPath, filename: str) -> Path:

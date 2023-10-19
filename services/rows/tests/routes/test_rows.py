@@ -536,7 +536,9 @@ def test_create_response_with_image(
                 "row_idx": 0,
                 "row": {
                     "image": {
-                        "src": "http://localhost/cached-assets/ds_image/revision/default/train/0/image/image.jpg",
+                        "src": (
+                            "http://localhost/cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg"
+                        ),
                         "height": 480,
                         "width": 640,
                     }
@@ -546,7 +548,7 @@ def test_create_response_with_image(
         ]
 
         body = (
-            conn.Object(bucket_name, "cached-assets/ds_image/revision/default/train/0/image/image.jpg")
+            conn.Object(bucket_name, "cached-assets/ds_image/--/revision/--/default/train/0/image/image.jpg")
             .get()["Body"]
             .read()
         )

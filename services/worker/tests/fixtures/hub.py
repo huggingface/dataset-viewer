@@ -564,7 +564,7 @@ def get_AUDIO_rows(dataset: str) -> Any:
         {
             "col": [
                 {
-                    "src": f"http://localhost/assets/{dataset}/{REVISION_NAME}/{config}/{split}/0/col/audio.wav",
+                    "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/audio.wav",
                     "type": "audio/wav",
                 },
             ]
@@ -582,7 +582,7 @@ def get_IMAGE_rows(dataset: str) -> Any:
     return [
         {
             "col": {
-                "src": f"http://localhost/assets/{dataset}/{REVISION_NAME}/{config}/{split}/0/col/image.jpg",
+                "src": f"http://localhost/assets/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image.jpg",
                 "height": 480,
                 "width": 640,
             },
@@ -594,6 +594,8 @@ IMAGES_LIST_cols = {
     "col": [{"_type": "Image"}],
 }
 
+ASSETS_BASE_URL = "http://localhost/assets"
+
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
     config, split = get_default_config_split()
@@ -602,14 +604,14 @@ def get_IMAGES_LIST_rows(dataset: str) -> Any:
             "col": [
                 {
                     "src": (
-                        f"http://localhost/assets/{dataset}/{REVISION_NAME}/{config}/{split}/0/col/image-1d100e9.jpg"
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d100e9.jpg"
                     ),
                     "height": 480,
                     "width": 640,
                 },
                 {
                     "src": (
-                        f"http://localhost/assets/{dataset}/{REVISION_NAME}/{config}/{split}/0/col/image-1d300ea.jpg"
+                        f"{ASSETS_BASE_URL}/{dataset}/--/{REVISION_NAME}/--/{config}/{split}/0/col/image-1d300ea.jpg"
                     ),
                     "height": 480,
                     "width": 640,
