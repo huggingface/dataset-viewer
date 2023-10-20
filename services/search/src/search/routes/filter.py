@@ -6,6 +6,7 @@ import re
 from http import HTTPStatus
 from typing import Optional
 
+import anyio
 import duckdb
 import pyarrow as pa
 from datasets import Features
@@ -150,12 +151,8 @@ def create_filter_endpoint(
                         features,
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
-                    num_rows_total, pa_table = execute_filter_query(
-                        index_file_location=index_file_location,
-                        columns=supported_columns,
-                        where=where,
-                        limit=length,
-                        offset=offset,
+                    num_rows_total, pa_table = await anyio.to_thread.run_sync(
+                        execute_filter_query, index_file_location, supported_columns, where, length, offset
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = create_response(
