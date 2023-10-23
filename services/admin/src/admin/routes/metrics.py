@@ -6,7 +6,6 @@ import logging
 from libapi.utils import Endpoint
 from libcommon.prometheus import (
     Prometheus,
-    update_assets_disk_usage,
     update_descriptive_statistics_disk_usage,
     update_duckdb_disk_usage,
     update_hf_datasets_disk_usage,
@@ -21,7 +20,6 @@ from starlette.responses import Response
 
 
 def create_metrics_endpoint(
-    assets_directory: StrPath,
     descriptive_statistics_directory: StrPath,
     duckdb_directory: StrPath,
     hf_datasets_directory: StrPath,
@@ -33,7 +31,7 @@ def create_metrics_endpoint(
         logging.info("/metrics")
         update_queue_jobs_total()
         update_responses_in_cache_total()
-        update_assets_disk_usage(directory=assets_directory)
+        # TODO: Update disk usage from fsspec
         update_descriptive_statistics_disk_usage(directory=descriptive_statistics_directory)
         update_duckdb_disk_usage(directory=duckdb_directory)
         update_hf_datasets_disk_usage(directory=hf_datasets_directory)

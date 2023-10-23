@@ -13,9 +13,8 @@ from libcommon.operations import backfill_dataset
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
-from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
-from libcommon.viewer_utils.asset import delete_asset_dir
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -24,8 +23,8 @@ from admin.authentication import auth_check
 
 def create_recreate_dataset_endpoint(
     processing_graph: ProcessingGraph,
-    assets_directory: StrPath,
-    cached_assets_directory: StrPath,
+    cached_assets_storage_client: StorageClient,
+    assets_storage_client: StorageClient,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -58,8 +57,8 @@ def create_recreate_dataset_endpoint(
             deleted_cached_responses = delete_dataset_responses(dataset=dataset)
             if deleted_cached_responses is not None and deleted_cached_responses > 0:
                 # delete assets
-                delete_asset_dir(dataset=dataset, directory=assets_directory)
-                delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
+                cached_assets_storage_client.delete_dataset_directory(dataset)
+                assets_storage_client.delete_dataset_directory(dataset)
             # create the jobs to backfill the dataset
             backfill_dataset(
                 dataset=dataset,

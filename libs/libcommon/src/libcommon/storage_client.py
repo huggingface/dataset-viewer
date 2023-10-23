@@ -3,6 +3,7 @@
 from typing import Any
 
 import fsspec
+import logging
 
 
 class StorageClientInitializeError(Exception):
@@ -38,3 +39,8 @@ class StorageClient:
 
     def get_base_directory(self) -> str:
         return f"{self._storage_root}/{self._folder}"
+
+    def delete_dataset_directory(self, dataset) -> None:
+        dataset_key = f"{self.get_base_directory()}/{dataset}"
+        self._fs.rm(dataset_key, recursive=True)
+        logging.info(f"Directory removed: {dataset_key}")
