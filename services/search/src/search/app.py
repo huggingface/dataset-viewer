@@ -10,11 +10,7 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage import (
-    exists,
-    init_cached_assets_dir,
-    init_duckdb_index_cache_dir,
-)
+from libcommon.storage import exists, init_duckdb_index_cache_dir
 from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -36,10 +32,6 @@ def create_app() -> Starlette:
 def create_app_with_config(app_config: AppConfig) -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    if app_config.cached_assets.storage_protocol == "file":
-        init_cached_assets_dir(
-            directory=f"{app_config.cached_assets.storage_root}/{app_config.cached_assets.folder_name}"
-        )
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):

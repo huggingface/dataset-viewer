@@ -101,7 +101,7 @@ services:
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-/cached-assets}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       # prometheus
@@ -130,7 +130,7 @@ services:
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-/cached-assets}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}

@@ -40,9 +40,9 @@ from libcommon.constants import (
 if TYPE_CHECKING:
     from libcommon.processing_graph import ProcessingGraphSpecification
 
-ASSETS_BASE_URL = "assets"
+ASSETS_BASE_URL = "http://localhost/assets"
 ASSETS_FOLDER_NAME = "assets"
-ASSETS_STORAGE_ROOT = "storage"
+ASSETS_STORAGE_ROOT = "/storage"
 ASSETS_STORAGE_PROTOCOL = "file"
 
 
@@ -84,17 +84,15 @@ class S3Config:
             )
 
 
-CACHED_ASSETS_BASE_URL = "cached-assets"
+CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
 CACHED_ASSETS_FOLDER_NAME = "cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "storage"
+CACHED_ASSETS_STORAGE_ROOT = "/storage"
 CACHED_ASSETS_STORAGE_PROTOCOL = "file"
-CACHED_ASSETS_STORAGE_DIRECTORY = None
 
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_directory: Optional[str] = CACHED_ASSETS_STORAGE_DIRECTORY
     folder_name: str = CACHED_ASSETS_FOLDER_NAME
     storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
     storage_root: str = CACHED_ASSETS_STORAGE_ROOT
@@ -105,7 +103,6 @@ class CachedAssetsConfig:
         with env.prefixed("CACHED_ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                storage_directory=env.str(name="STORAGE_DIRECTORY", default=CACHED_ASSETS_STORAGE_DIRECTORY),
                 folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_FOLDER_NAME),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),

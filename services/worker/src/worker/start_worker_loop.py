@@ -7,7 +7,6 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import (
-    init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
@@ -30,8 +29,6 @@ if __name__ == "__main__":
 
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    if app_config.assets.storage_protocol == "file":
-        init_assets_dir(directory=f"{app_config.assets.storage_root}/{app_config.assets.folder_name}")
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
