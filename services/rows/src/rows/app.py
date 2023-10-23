@@ -10,8 +10,8 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.storage_client import StorageClient
 from libcommon.storage import exists, init_cached_assets_dir, init_parquet_metadata_dir
+from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -32,7 +32,9 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     if app_config.cached_assets.storage_protocol == "file":
-        init_cached_assets_dir(directory=f"{app_config.cached_assets.storage_root}/{app_config.cached_assets.folder_name}")
+        init_cached_assets_dir(
+            directory=f"{app_config.cached_assets.storage_root}/{app_config.cached_assets.folder_name}"
+        )
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     if not exists(parquet_metadata_directory):
         raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
@@ -62,11 +64,11 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
 
     storage_client = StorageClient(
-            protocol=app_config.cached_assets.storage_protocol,
-            root=app_config.cached_assets.storage_root,
-            key=app_config.s3.access_key_id,
-            secret=app_config.s3.secret_access_key,
-            folder=app_config.cached_assets.folder_name,
+        protocol=app_config.cached_assets.storage_protocol,
+        root=app_config.cached_assets.storage_root,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        folder=app_config.cached_assets.folder_name,
     )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():

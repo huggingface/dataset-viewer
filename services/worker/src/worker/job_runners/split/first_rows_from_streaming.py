@@ -25,7 +25,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
-from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.storage_options import StorageOptions
 from libcommon.utils import JobInfo, Row

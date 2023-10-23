@@ -4,6 +4,7 @@
 import datetime
 import os
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -11,18 +12,28 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Features, Image, Value
 
-from libcommon.storage import StrPath
-from libcommon.storage_options import DirectoryStorageOptions
+from libcommon.storage_client import StorageClient
+from libcommon.storage_options import StorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
 )
 
+ASSETS_FOLDER = "assets"
+ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
+
 
 @pytest.fixture
-def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions:
-    return DirectoryStorageOptions(
-        assets_base_url="http://localhost/assets", assets_directory=cached_assets_directory, overwrite=True
+def storage_options(tmp_path: Path) -> StorageOptions:
+    storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder=ASSETS_FOLDER,
+    )
+    return StorageOptions(
+        assets_base_url=ASSETS_BASE_URL,
+        overwrite=False,
+        storage_client=storage_client,
     )
 
 
@@ -66,7 +77,7 @@ def storage_options(cached_assets_directory: StrPath) -> DirectoryStorageOptions
     ],
 )
 def test_value(
-    storage_options: DirectoryStorageOptions,
+    storage_options: StorageOptions,
     dataset_type: str,
     output_value: Any,
     output_dtype: str,
@@ -90,7 +101,7 @@ def test_value(
     assert value == output_value
 
 
-def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageOptions) -> None:
+def assert_output_has_valid_files(value: Any, storage_options: StorageOptions) -> None:
     if isinstance(value, list):
         for item in value:
             assert_output_has_valid_files(item, storage_options=storage_options)
@@ -101,7 +112,7 @@ def assert_output_has_valid_files(value: Any, storage_options: DirectoryStorageO
             and value["src"].startswith(storage_options.assets_base_url)
         ):
             path = os.path.join(
-                storage_options.assets_directory,
+                storage_options.storage_client.get_base_directory(),
                 value["src"][len(storage_options.assets_base_url) + 1 :],  # noqa: E203
             )
             assert os.path.exists(path)
@@ -314,7 +325,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    storage_options: DirectoryStorageOptions,
+    storage_options: StorageOptions,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]

@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 
 from libcommon.storage_client import StorageClient
-from libcommon.storage import StrPath
 
 
 @dataclass

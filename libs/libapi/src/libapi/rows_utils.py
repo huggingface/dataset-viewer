@@ -2,7 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import Optional, Union
+from typing import Optional
 
 from datasets import Features
 from libcommon.storage_options import StorageOptions

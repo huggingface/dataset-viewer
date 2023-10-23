@@ -64,6 +64,7 @@ class AssetsConfig:
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
 
+
 S3_ACCESS_KEY_ID = None
 S3_SECRET_ACCESS_KEY = None
 
@@ -107,7 +108,7 @@ class CachedAssetsConfig:
                 storage_directory=env.str(name="STORAGE_DIRECTORY", default=CACHED_ASSETS_STORAGE_DIRECTORY),
                 folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_FOLDER_NAME),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
-                storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT)
+                storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )
 
 

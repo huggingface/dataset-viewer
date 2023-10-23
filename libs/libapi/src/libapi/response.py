@@ -3,7 +3,6 @@ import logging
 import pyarrow as pa
 from datasets import Features
 from libcommon.storage_client import StorageClient
-from libcommon.storage import StrPath
 from libcommon.storage_options import StorageOptions
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import to_features_list

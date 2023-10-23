@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-import fsspec
 from typing import Any
+
+import fsspec
+
 
 class StorageClientInitializeError(Exception):
     pass
@@ -20,15 +22,19 @@ class StorageClient:
     _storage_root: str
     _folder: str
 
-    def __init__(self, protocol: str, root: str, folder:str, **kwargs: Any) -> None:
+    def __init__(self, protocol: str, root: str, folder: str, **kwargs: Any) -> None:
         self._storage_root = root
         self._folder = folder
-        if(protocol == "s3"):
+        if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
-        elif(protocol == "file"):
+        elif protocol == "file":
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
         else:
             raise StorageClientInitializeError("unsupported protocol")
 
     def exists(self, object_key: str) -> bool:
-        return self._fs.exists(f"{self._storage_root}/{self._folder}/{object_key}")
+        object_path = f"{self.get_base_directory()}/{object_key}"
+        return bool(self._fs.exists(object_path))
+
+    def get_base_directory(self) -> str:
+        return f"{self._storage_root}/{self._folder}"
