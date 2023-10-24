@@ -78,7 +78,7 @@ def image(
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
     # attempt to generate one of the supported formats; if unsuccessful, throw an error
-    for ext in [".jpg", ".png"]:
+    for ext, format in [(".jpg", "JPEG"), (".png", "PNG")]:
         try:
             return create_image_file(
                 dataset=dataset,
@@ -89,6 +89,7 @@ def image(
                 column=featureName,
                 filename=f"{append_hash_suffix('image', json_path)}{ext}",
                 image=value,
+                format=format,
                 storage_options=storage_options,
             )
         except OSError:

@@ -40,6 +40,7 @@ def test_create_image_file(datasets: Mapping[str, Dataset], storage_options: Sto
         column="col",
         filename="image.jpg",
         row_idx=7,
+        format="JPEG",
         storage_options=storage_options,
     )
     image_key = "dataset/--/revision/--/config/split/7/col/image.jpg"

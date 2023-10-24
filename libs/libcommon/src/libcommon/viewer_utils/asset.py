@@ -46,23 +46,24 @@ def create_image_file(
     column: str,
     filename: str,
     image: Image.Image,
+    format: str,
     storage_options: StorageOptions,
 ) -> ImageSource:
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     overwrite = storage_options.overwrite
+    storage_client = storage_options.storage_client
+
     url_dir_path = get_url_dir_path(
-        revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column
+        dataset=dataset, revision=revision, config=config, split=split, row_idx=row_idx, column=column
     )
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
-
-    storage_client = storage_options.storage_client
-    object_key = f"{storage_client._folder}/{url_dir_path}/{filename}"
-    image_path = f"{storage_client._storage_root}/{object_key}"
+    object_key = f"{url_dir_path}/{filename}"
+    image_path = f"{storage_client.get_base_directory()}/{object_key}"
 
     if overwrite or not storage_client.exists(object_key=object_key):
         with storage_client._fs.open(image_path, "wb") as f:
-            image.save(fp=f, format="JPEG")
+            image.save(fp=f, format=format)
     return ImageSource(src=src, height=image.height, width=image.width)
 
 
@@ -81,12 +82,14 @@ def create_audio_file(
     # get url dir path
     assets_base_url = storage_options.assets_base_url
     overwrite = storage_options.overwrite
+    storage_client = storage_options.storage_client
+
     url_dir_path = get_url_dir_path(
         revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column
     )
     src = f"{assets_base_url}/{url_dir_path}/{filename}"
-
-    storage_client = storage_options.storage_client
+    object_key = f"{url_dir_path}/{filename}"
+    audio_path = f"{storage_client.get_base_directory()}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(
@@ -94,8 +97,7 @@ def create_audio_file(
             f" {','.join(SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE)}."
         )
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
-    object_key = f"{storage_client._folder}/{url_dir_path}/{filename}"
-    audio_path = f"{storage_client._storage_root}/{object_key}"
+
     if overwrite or not storage_client.exists(object_key=object_key):
         if audio_file_extension == suffix:
             with storage_client._fs.open(audio_path, "wb") as f:
