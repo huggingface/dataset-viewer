@@ -227,27 +227,34 @@ with gr.Blocks() as demo:
                 return requests.get(f"{DSS_ENDPOINT}/is-valid?dataset={dataset}", headers=headers, timeout=60)
     
             is_valid_responses = thread_map(get_is_valid_response, trending_datasets, desc="get_is_valid_response")
-            trending_datasets_coverage = {"All trending dataset": []}
+            trending_datasets_coverage = {"All trending datasets": []}
+            error_datasets = []
             for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
-                if is_valid_response.status_code == 200:
-                    response_json = response.json()
-                    trending_datasets_coverage["All trending dataset"].append(dataset)
-                    for is_valid_field in response_json["content"]:
-                        pretty_field = is_valid_field.replace("_", " ").capitalize()
-                        if pretty_field not in trending_datasets_coverage:
-                            trending_datasets_coverage[pretty_field] = []
-                        trending_datasets_coverage[pretty_field].append("✅" if response_json["content"][is_valid_field] is True else "❌")
+                if is_valid_response.status_code in (200, 500, 501):
+                    response_json = is_valid_response.json()
+                    if "error" not in response_json:
+                        trending_datasets_coverage["All trending datasets"].append(dataset)
+                        for is_valid_field in response_json:
+                            pretty_field = is_valid_field.replace("_", " ").capitalize()
+                            if pretty_field not in trending_datasets_coverage:
+                                trending_datasets_coverage[pretty_field] = []
+                            trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
+                    else:
+                        error_datasets.append(dataset)
                 else:
                     out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
                         "Error": [f"❌ Failed to fetch coverage for {dataset} from {DSS_ENDPOINT} (error {is_valid_response.status_code})"]
                     }))
                     break
             else:
+                trending_datasets_coverage["All trending datasets"] += error_datasets
+                for pretty_field in trending_datasets_coverage:
+                    trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
                 out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
-                trending_datasets_coverage_stats = {"Num trending datasets": len(trending_datasets), **{
-                    is_valid_field: f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"
+                trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
+                    is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
                     for is_valid_field in trending_datasets_coverage
-                    if is_valid_field != "All trending dataset"
+                    if is_valid_field != "All trending datasets"
                 }}
                 out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
         else:
