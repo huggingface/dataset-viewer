@@ -64,7 +64,7 @@ def create_app() -> Starlette:
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         root=app_config.assets.storage_root,
-        folder=app_config.cached_assets.folder_name,
+        folder=app_config.assets.folder_name,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
     )
