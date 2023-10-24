@@ -661,20 +661,20 @@ sortedcontainers = ">=2.4.0,<3.0.0"
 
 [[package]]
 name = "datasets"
-version = "2.14.5"
+version = "2.14.6"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "datasets-2.14.5-py3-none-any.whl", hash = "sha256:dd4155091034cba04d5a28711f2ed3944275ed15c5d0c5a2d0b6b9ea34a2bdfe"},
-    {file = "datasets-2.14.5.tar.gz", hash = "sha256:b738a86540ab8e1a7806c8a3790b67be0056318d0c5d5a58a1b0dbdd76c0f568"},
+    {file = "datasets-2.14.6-py3-none-any.whl", hash = "sha256:4de857ffce21cfc847236745c69f102e33cd1f0fa8398e7be9964525fd4cd5db"},
+    {file = "datasets-2.14.6.tar.gz", hash = "sha256:97ebbace8ec7af11434a87d1215379927f8fee2beab2c4a674003756ecfe920c"},
 ]
 
 [package.dependencies]
 aiohttp = "*"
 dill = ">=0.3.0,<0.3.8"
-fsspec = {version = ">=2023.1.0,<2023.9.0", extras = ["http"]}
+fsspec = {version = ">=2023.1.0,<=2023.10.0", extras = ["http"]}
 huggingface-hub = ">=0.14.0,<1.0.0"
 librosa = {version = "*", optional = true, markers = "extra == \"audio\""}
 multiprocess = "*"
@@ -1333,7 +1333,7 @@ develop = true
 [package.dependencies]
 appdirs = "^1.4.4"
 boto3 = "^1.28.29"
-datasets = {version = "^2.14.5", extras = ["audio", "vision"]}
+datasets = {version = "^2.14.6", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.16.4"
 mongo-types = "0.15.1"
