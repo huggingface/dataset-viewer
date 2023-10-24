@@ -56,17 +56,17 @@ def create_app() -> Starlette:
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         root=app_config.cached_assets.storage_root,
+        folder=app_config.cached_assets.folder_name,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
-        folder=app_config.cached_assets.folder_name,
     )
 
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         root=app_config.assets.storage_root,
+        folder=app_config.cached_assets.folder_name,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
-        folder=app_config.cached_assets.folder_name,
     )
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)

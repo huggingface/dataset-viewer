@@ -32,6 +32,7 @@ class StorageClient:
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
         else:
             raise StorageClientInitializeError("unsupported protocol")
+        logging.info(f"storage client initialized with {protocol=} {root=} {folder=}")
 
     def exists(self, object_key: str) -> bool:
         object_path = f"{self.get_base_directory()}/{object_key}"
