@@ -66,6 +66,7 @@ def create_response(
 
 def create_maybe_partial_response(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
@@ -97,6 +98,7 @@ def create_maybe_partial_response(
         "rows": to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             storage_options=storage_options,
