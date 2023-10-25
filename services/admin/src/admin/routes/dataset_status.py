@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, UnexpectedApiError
-from libapi.request import get_required_request_parameter
+from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
@@ -25,7 +25,7 @@ def create_dataset_status_endpoint(
 ) -> Endpoint:
     async def dataset_status_endpoint(request: Request) -> Response:
         try:
-            dataset = get_required_request_parameter(request, "dataset")
+            dataset = get_request_parameter(request, "dataset", required=True)
             logging.info(f"/dataset-status, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below

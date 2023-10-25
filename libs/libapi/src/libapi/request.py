@@ -29,8 +29,9 @@ def get_request_parameter_offset(request: Request) -> int:
     return offset
 
 
-def get_required_request_parameter(request: Request, parameter_name: str) -> str:
-    parameter = request.query_params.get(parameter_name)
-    if not parameter or not is_non_empty_string(parameter):
-        raise MissingRequiredParameterError(f"Parameter '{parameter_name}' is required")
+def get_request_parameter(request: Request, parameter_name: str, required: bool = False, default: str = "") -> str:
+    parameter = request.query_params.get(parameter_name, default)
+    if required:
+        if not parameter or not is_non_empty_string(parameter):
+            raise MissingRequiredParameterError(f"Parameter '{parameter_name}' is required")
     return parameter

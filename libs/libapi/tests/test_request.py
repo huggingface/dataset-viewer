@@ -9,9 +9,9 @@ from starlette.requests import Request
 
 from libapi.exceptions import InvalidParameterError, MissingRequiredParameterError
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 
 
@@ -28,7 +28,7 @@ def build_request() -> Callable[..., Request]:
 def test_get_required_request_parameter(expected_value: str, build_request: Callable[..., Request]) -> None:
     parameter_name = "dataset"
     request = build_request(query_string=f"{parameter_name}={expected_value}")
-    assert get_required_request_parameter(request, parameter_name) == expected_value
+    assert get_request_parameter(request, parameter_name, required=True) == expected_value
 
 
 @pytest.mark.parametrize("parameter", [None, "", " "])
@@ -39,7 +39,7 @@ def test_get_required_request_parameter_raises(
     expected_error_message = f"Parameter '{parameter_name}' is required"
     request = build_request(query_string=f"{parameter_name}={parameter}") if parameter is not None else build_request()
     with pytest.raises(MissingRequiredParameterError, match=expected_error_message):
-        _ = get_required_request_parameter(request, parameter_name)
+        _ = get_request_parameter(request, parameter_name, required=True)
 
 
 @pytest.mark.parametrize("length, expected_value", [("50", 50)])

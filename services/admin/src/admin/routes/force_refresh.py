@@ -9,7 +9,7 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
-from libapi.request import get_required_request_parameter
+from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -43,16 +43,16 @@ def create_force_refresh_endpoint(
 ) -> Endpoint:
     async def force_refresh_endpoint(request: Request) -> Response:
         try:
-            dataset = get_required_request_parameter(request, "dataset")
+            dataset = get_request_parameter(request, "dataset", required=True)
             if input_type == "dataset":
                 config = None
                 split = None
             elif input_type == "config":
-                config = get_required_request_parameter(request, "config")
+                config = get_request_parameter(request, "config", required=True)
                 split = None
             else:
-                config = get_required_request_parameter(request, "config")
-                split = get_required_request_parameter(request, "split")
+                config = get_request_parameter(request, "config", required=True)
+                split = get_request_parameter(request, "split", required=True)
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
             try:

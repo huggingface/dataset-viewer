@@ -20,9 +20,9 @@ from libapi.exceptions import (
     UnexpectedApiError,
 )
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
@@ -145,10 +145,10 @@ def create_search_endpoint(
         with StepProfiler(method="search_endpoint", step="all"):
             try:
                 with StepProfiler(method="search_endpoint", step="validate parameters"):
-                    dataset = get_required_request_parameter(request, "dataset")
-                    config = get_required_request_parameter(request, "config")
-                    split = get_required_request_parameter(request, "split")
-                    query = get_required_request_parameter(request, "query")
+                    dataset = get_request_parameter(request, "dataset", required=True)
+                    config = get_request_parameter(request, "config", required=True)
+                    split = get_request_parameter(request, "split", required=True)
+                    query = get_request_parameter(request, "query", required=True)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
 
