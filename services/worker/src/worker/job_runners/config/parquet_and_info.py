@@ -1088,7 +1088,6 @@ def compute_config_parquet_and_info_response(
     max_dataset_size: int,
     max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
-    no_max_size_limit_datasets: list[str],
     dataset_scripts_allow_list: list[str],
 ) -> ConfigParquetAndInfoResponse:
     """
@@ -1124,8 +1123,6 @@ def compute_config_parquet_and_info_response(
             The maximum number of external data files of a dataset. This is for datasets with loading scripts only.
         max_row_group_byte_size_for_copy (`int`):
             The maximum size in bytes of parquet files that are allowed to be copied without being converted.
-        no_max_size_limit_datasets (`list[str]`):
-            List of datasets that should be fully converted (no partial conversion).
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
@@ -1232,7 +1229,7 @@ def compute_config_parquet_and_info_response(
             )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder,
-                max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size,
+                max_dataset_size=max_dataset_size,
                 writer_batch_size=writer_batch_size,
             )
     else:
@@ -1252,9 +1249,7 @@ def compute_config_parquet_and_info_response(
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
         ):
-            parquet_operations, partial = stream_convert_to_parquet(
-                builder, max_dataset_size=None if dataset in no_max_size_limit_datasets else max_dataset_size
-            )
+            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
         else:
             parquet_operations = convert_to_parquet(builder)
 
@@ -1359,7 +1354,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 max_dataset_size=self.parquet_and_info_config.max_dataset_size,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
-                no_max_size_limit_datasets=self.parquet_and_info_config.no_max_size_limit_datasets,
                 dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
         )
