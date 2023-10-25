@@ -104,6 +104,10 @@ class PaginatedResponse(TypedDict):
     num_rows_per_page: int
 
 
+class MaybePartialPaginatedResponse(PaginatedResponse):
+    partial: bool
+
+
 MAX_NUM_ROWS_PER_PAGE = 100
 
 

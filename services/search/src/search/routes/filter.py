@@ -21,7 +21,7 @@ from libapi.request import (
     get_request_parameter_offset,
     get_required_request_parameter,
 )
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import ROW_IDX_COLUMN, create_maybe_partial_response
 from libapi.utils import (
     Endpoint,
     clean_cached_assets_randomly,
@@ -127,6 +127,13 @@ def create_filter_endpoint(
                             error_code=duckdb_index_cache_entry["error_code"],
                             revision=revision,
                         )
+
+                    # check if the index is on the full dataset or if it's partial
+                    url = duckdb_index_cache_entry["content"]["url"]
+                    filename = duckdb_index_cache_entry["content"]["filename"]
+                    split_directory = url.split("/")[-2]
+                    partial = split_directory.startswith("partial-") or filename.startswith("partial-")
+
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
                     index_file_location = get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
@@ -134,8 +141,8 @@ def create_filter_endpoint(
                         config=config,
                         split=split,
                         revision=revision,
-                        filename=duckdb_index_cache_entry["content"]["filename"],
-                        url=duckdb_index_cache_entry["content"]["url"],
+                        filename=filename,
+                        url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
@@ -172,7 +179,7 @@ def create_filter_endpoint(
                         max_cleaned_rows_number=max_cleaned_rows_number,
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
-                    response = create_response(
+                    response = create_maybe_partial_response(
                         dataset=dataset,
                         config=config,
                         split=split,
@@ -185,6 +192,7 @@ def create_filter_endpoint(
                         features=features,
                         unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
+                        partial=partial,
                         use_row_idx_column=True,
                     )
                 with StepProfiler(method="filter_endpoint", step="generate the OK response"):

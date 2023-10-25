@@ -37,7 +37,7 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
 from libcommon.storage_options import S3StorageOptions
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, MaybePartialPaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -84,7 +84,8 @@ def create_response(
     offset: int,
     features: Features,
     num_rows_total: int,
-) -> PaginatedResponse:
+    partial: bool,
+) -> MaybePartialPaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
 
@@ -101,7 +102,7 @@ def create_response(
         s3_folder_name=cached_assets_s3_folder_name,
     )
 
-    return PaginatedResponse(
+    return MaybePartialPaginatedResponse(
         features=to_features_list(features_without_key),
         rows=to_rows_list(
             pa_table,
@@ -116,6 +117,7 @@ def create_response(
         ),
         num_rows_total=num_rows_total,
         num_rows_per_page=MAX_NUM_ROWS_PER_PAGE,
+        partial=partial,
     )
 
 
@@ -193,6 +195,12 @@ def create_search_endpoint(
                     if duckdb_index_cache_entry["content"]["has_fts"] is not True:
                         raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
+                    # check if the index is on the full dataset or if it's partial
+                    url = duckdb_index_cache_entry["content"]["url"]
+                    filename = duckdb_index_cache_entry["content"]["filename"]
+                    split_directory = url.split("/")[-2]
+                    partial = split_directory.startswith("partial-") or filename.startswith("partial-")
+
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     index_file_location = get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
@@ -200,8 +208,8 @@ def create_search_endpoint(
                         config=config,
                         split=split,
                         revision=revision,
-                        filename=duckdb_index_cache_entry["content"]["filename"],
-                        url=duckdb_index_cache_entry["content"]["url"],
+                        filename=filename,
+                        url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
@@ -239,6 +247,7 @@ def create_search_endpoint(
                         offset,
                         features,
                         num_rows_total,
+                        partial,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)
