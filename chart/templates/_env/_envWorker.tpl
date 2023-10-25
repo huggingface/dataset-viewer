@@ -57,8 +57,6 @@
   value: {{ .Values.parquetAndInfo.maxExternalDataFiles | quote }}
 - name: PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
   value: {{ .Values.parquetAndInfo.maxRowGroupByteSizeForCopy | quote }}
-- name: PARQUET_AND_INFO_NO_MAX_SIZE_LIMIT_DATASETS
-  value: {{ .Values.parquetAndInfo.noMaxSizeLimitDatasets | quote }}
 - name: PARQUET_AND_INFO_SOURCE_REVISION
   value: {{ .Values.parquetAndInfo.sourceRevision | quote }}
 - name: PARQUET_AND_INFO_TARGET_REVISION

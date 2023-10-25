@@ -14,6 +14,7 @@ from tqdm.contrib.concurrent import thread_map
 def _transform_row(
     row_idx_and_row: tuple[int, Row],
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     features: Features,
@@ -25,6 +26,7 @@ def _transform_row(
     transformed_row = {
         featureName: get_cell_value(
             dataset=dataset,
+            revision=revision,
             config=config,
             split=split,
             row_idx=offset + row_idx if row_idx_column is None else row[row_idx_column],
@@ -42,6 +44,7 @@ def _transform_row(
 
 def transform_rows(
     dataset: str,
+    revision: str,
     config: str,
     split: str,
     rows: list[Row],
@@ -53,6 +56,7 @@ def transform_rows(
     fn = partial(
         _transform_row,
         dataset=dataset,
+        revision=revision,
         config=config,
         split=split,
         features=features,

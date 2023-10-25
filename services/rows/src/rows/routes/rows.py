@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-import random
 from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
@@ -16,7 +15,6 @@ from libapi.request import (
 from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
-    clean_cached_assets,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -28,7 +26,6 @@ from libcommon.prometheus import StepProfiler
 from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import update_last_modified_date_of_rows_in_assets_dir
 from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
@@ -57,10 +54,6 @@ def create_rows_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
-    clean_cache_proba: float = 0.0,
-    keep_first_rows_number: int = -1,
-    keep_most_recent_rows_number: int = -1,
-    max_cleaned_rows_number: int = -1,
 ) -> Endpoint:
     indexer = Indexer(
         processing_graph=processing_graph,
@@ -104,6 +97,24 @@ def create_rows_endpoint(
                             split=split,
                         )
                         revision = rows_index.revision
+                    with StepProfiler(method="rows_endpoint", step="query the rows"):
+                        pa_table = rows_index.query(offset=offset, length=length)
+                    with StepProfiler(method="rows_endpoint", step="transform to a list"):
+                        response = create_response(
+                            dataset=dataset,
+                            revision=revision,
+                            config=config,
+                            split=split,
+                            cached_assets_base_url=cached_assets_base_url,
+                            cached_assets_directory=cached_assets_directory,
+                            s3_client=s3_client,
+                            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                            pa_table=pa_table,
+                            offset=offset,
+                            features=rows_index.parquet_index.features,
+                            unsupported_columns=rows_index.parquet_index.unsupported_columns,
+                            num_rows_total=rows_index.parquet_index.num_rows_total,
+                        )
                 except CachedArtifactNotFoundError:
                     config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
                     config_parquet_metadata_processing_steps = (
@@ -121,52 +132,6 @@ def create_rows_endpoint(
                             cache_max_days=cache_max_days,
                             blocked_datasets=blocked_datasets,
                         )
-                with StepProfiler(method="rows_endpoint", step="query the rows"):
-                    pa_table = rows_index.query(offset=offset, length=length)
-                with StepProfiler(method="rows_endpoint", step="clean cache"):
-                    # no need to do it every time
-                    if random.random() < clean_cache_proba:  # nosec
-                        if (
-                            keep_first_rows_number < 0
-                            and keep_most_recent_rows_number < 0
-                            and max_cleaned_rows_number < 0
-                        ):
-                            logger.debug(
-                                "Params keep_first_rows_number, keep_most_recent_rows_number and"
-                                " max_cleaned_rows_number are not set. Skipping cached assets cleaning."
-                            )
-                        else:
-                            clean_cached_assets(
-                                dataset=dataset,
-                                cached_assets_directory=cached_assets_directory,
-                                keep_first_rows_number=keep_first_rows_number,
-                                keep_most_recent_rows_number=keep_most_recent_rows_number,
-                                max_cleaned_rows_number=max_cleaned_rows_number,
-                            )
-                with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                    response = create_response(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
-                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
-                        pa_table=pa_table,
-                        offset=offset,
-                        features=rows_index.parquet_index.features,
-                        unsupported_columns=rows_index.parquet_index.unsupported_columns,
-                        num_rows_total=rows_index.parquet_index.num_rows_total,
-                    )
-                with StepProfiler(method="rows_endpoint", step="update last modified time of rows in asset dir"):
-                    update_last_modified_date_of_rows_in_assets_dir(
-                        dataset=dataset,
-                        config=config,
-                        split=split,
-                        offset=offset,
-                        length=length,
-                        assets_directory=cached_assets_directory,
-                    )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)
             except CachedArtifactError as e:

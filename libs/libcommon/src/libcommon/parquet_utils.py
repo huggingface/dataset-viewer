@@ -255,7 +255,6 @@ class RowsIndex:
         unsupported_features: list[FeatureType] = [],
     ):
         self.dataset = dataset
-        self.revision: Optional[str] = None
         self.config = config
         self.split = split
         self.processing_graph = processing_graph

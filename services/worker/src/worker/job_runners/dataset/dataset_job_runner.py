@@ -30,7 +30,7 @@ class DatasetJobRunner(JobRunner):
         if job_info["params"]["revision"] is None:
             raise ParameterMissingError("'revision' parameter is required")
         self.dataset = job_info["params"]["dataset"]
-        self.revision = job_info["params"]["revision"]
+        self.dataset_git_revision = job_info["params"]["revision"]
 
 
 class DatasetJobRunnerWithDatasetsCache(JobRunnerWithDatasetsCache, DatasetJobRunner):

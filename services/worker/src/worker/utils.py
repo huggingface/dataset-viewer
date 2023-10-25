@@ -9,12 +9,17 @@ import time
 import traceback
 import warnings
 from collections.abc import Callable, Sequence
+from contextlib import AbstractContextManager
+from fnmatch import fnmatch
 from typing import Any, Optional, TypeVar, Union, cast
+from unittest.mock import patch
 from urllib.parse import quote
 
+import datasets
 import PIL
 import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
+from datasets.load import HubDatasetModuleFactoryWithScript
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
@@ -23,6 +28,7 @@ from libcommon.constants import EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
+    DatasetWithScriptNotSupportedError,
     NormalRowsError,
     PreviousStepFormatError,
     SplitNotFoundError,
@@ -372,3 +378,37 @@ def is_dataset_script_error() -> bool:
     (t, v, tb) = sys.exc_info()
     cause_traceback: list[str] = traceback.format_exception(t, v, tb)
     return any(EXTERNAL_DATASET_SCRIPT_PATTERN in cause for cause in cause_traceback)
+
+
+def disable_dataset_scripts_support(allow_list: list[str]) -> AbstractContextManager[Any]:
+    original_init = HubDatasetModuleFactoryWithScript.__init__
+
+    def raise_unsupported_dataset_with_script_or_init(
+        self: HubDatasetModuleFactoryWithScript,
+        name: str,
+        revision: Optional[Union[str, datasets.Version]] = None,
+        download_config: Optional[DownloadConfig] = None,
+        download_mode: Optional[Union[datasets.DownloadMode, str]] = None,
+        dynamic_modules_path: Optional[str] = None,
+    ) -> None:
+        for allowed_pattern in allow_list:
+            if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in name) or fnmatch(
+                name, allowed_pattern
+            ):
+                break
+        else:
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            )
+        original_init(
+            self=self,
+            name=name,
+            revision=revision,
+            download_config=download_config,
+            download_mode=download_mode,
+            dynamic_modules_path=dynamic_modules_path,
+        )
+
+    return patch.object(HubDatasetModuleFactoryWithScript, "__init__", raise_unsupported_dataset_with_script_or_init)
