@@ -1249,9 +1249,7 @@ def compute_config_parquet_and_info_response(
             max_dataset_size=max_dataset_size,
             max_external_data_files=max_external_data_files,
         ):
-            parquet_operations, partial = stream_convert_to_parquet(
-                builder, max_dataset_size=max_dataset_size
-            )
+            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
         else:
             parquet_operations = convert_to_parquet(builder)
 
