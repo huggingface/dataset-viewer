@@ -56,7 +56,7 @@ def create_force_refresh_endpoint(
                 if not are_valid_parameters([config, split]):
                     raise MissingRequiredParameterError("Parameters 'config' and 'split' are required")
             try:
-                priority = Priority(request.query_params.get("priority", "low"))
+                priority = Priority(get_request_parameter(request, "priority", default="low"))
             except ValueError:
                 raise InvalidParameterError(
                     f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."

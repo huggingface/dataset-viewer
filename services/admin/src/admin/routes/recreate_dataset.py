@@ -37,7 +37,7 @@ def create_recreate_dataset_endpoint(
         try:
             dataset = get_request_parameter(request, "dataset", required=True)
             try:
-                priority = Priority(request.query_params.get("priority", "low"))
+                priority = Priority(get_request_parameter(request, "priority", default="low"))
             except ValueError:
                 raise InvalidParameterError(
                     f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
