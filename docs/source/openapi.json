@@ -334,6 +334,33 @@
           }
         }
       },
+      "MaybePartialPaginatedResponse": {
+        "type": "object",
+        "required": ["features", "rows", "num_rows_total", "num_rows_per_page", "partial"],
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureItem"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RowItem"
+            }
+          },
+          "num_rows_total": {
+            "type": "integer"
+          },
+          "num_rows_per_page": {
+            "type": "integer"
+          },
+          "partial": {
+            "type": "boolean"
+          }
+        }
+      },
       "FeatureItem": {
         "type": "object",
         "required": ["feature_idx", "name", "type"],
@@ -3058,7 +3085,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
+                  "$ref": "#/components/schemas/MaybePartialPaginatedResponse"
                 },
                 "examples": {
                   "Search on a text dataset (imdb)": {
@@ -3104,7 +3131,8 @@
                         }
                       ],
                       "num_rows_total": 624,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Search on an image dataset": {
@@ -3162,7 +3190,8 @@
                         }
                       ],
                       "num_rows_total": 94,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }
@@ -3464,7 +3493,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
+                  "$ref": "#/components/schemas/MaybePartialPaginatedResponse"
                 },
                 "examples": {
                   "Filter on float equality (julien-c/titanic-survival)": {
@@ -3544,7 +3573,8 @@
                         }
                       ],
                       "num_rows_total": 33,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Filter on string equality (julien-c/titanic-survival)": {
@@ -3624,7 +3654,8 @@
                         }
                       ],
                       "num_rows_total": 314,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Filter on float inequality (julien-c/titanic-survival)": {
@@ -3784,7 +3815,8 @@
                         }
                       ],
                       "num_rows_total": 64,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }
