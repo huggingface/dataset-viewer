@@ -377,6 +377,9 @@ def test_compute(
     parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
     parquet_metadata_response = parquet_metadata_job_runner.compute()
     config_parquet_metadata = parquet_metadata_response.content
+    parquet_export_num_rows = sum(
+        parquet_file["num_rows"] for parquet_file in config_parquet_metadata["parquet_files_metadata"]
+    )
 
     assert config_parquet_metadata["partial"] is partial_parquet_export
 
@@ -417,7 +420,7 @@ def test_compute(
         assert Features.from_dict(features) is not None
         assert isinstance(partial, bool)
         assert partial == expected_partial
-        if partial:
+        if content["num_rows"] < parquet_export_num_rows:
             assert url.rsplit("/", 1)[1] == "partial-index.duckdb"
         else:
             assert url.rsplit("/", 1)[1] == "index.duckdb"

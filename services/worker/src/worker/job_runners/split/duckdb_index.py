@@ -133,6 +133,11 @@ def compute_index_rows(
             if num_bytes > max_dataset_size:
                 break
 
+        index_filename = (
+            DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
+            if (num_parquet_files_to_index < len(split_parquet_files))
+            else DUCKDB_DEFAULT_INDEX_FILENAME
+        )
         partial = parquet_export_is_partial or (num_parquet_files_to_index < len(split_parquet_files))
         split_parquet_files = split_parquet_files[: parquet_file_id + 1]
         parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
@@ -153,10 +158,7 @@ def compute_index_rows(
         ) from e
 
     # index all columns
-    if partial:
-        db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
-    else:
-        db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
+    db_path = duckdb_index_file_directory.resolve() / index_filename
     con = duckdb.connect(str(db_path.resolve()))
 
     # configure duckdb extensions
@@ -201,10 +203,7 @@ def compute_index_rows(
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    if partial:
-        index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME}"
-    else:
-        index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    index_file_location = f"{config}/{split_directory}/{index_filename}"
 
     try:
         with lock.git_branch(
