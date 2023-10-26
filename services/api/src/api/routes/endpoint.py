@@ -118,8 +118,8 @@ def create_endpoint(
                     context=context,
                 ):
                     dataset = get_request_parameter(request, "dataset")
-                    config = get_request_parameter(request, "config")
-                    split = get_request_parameter(request, "split")
+                    config = get_request_parameter(request, "config") or None
+                    split = get_request_parameter(request, "split") or None
                     logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
                     dataset, config, split, input_type = validate_parameters(
                         dataset, config, split, steps_by_input_type
@@ -186,7 +186,7 @@ def create_endpoint(
 
 
 def validate_parameters(
-    dataset: str, config: str, split: str, steps_by_input_type: StepsByInputType
+    dataset: str, config: Optional[str], split: Optional[str], steps_by_input_type: StepsByInputType
 ) -> tuple[str, Optional[str], Optional[str], InputType]:
     input_types = get_input_types_by_priority(steps_by_input_type=steps_by_input_type)
     error_message = "No processing steps supported for parameters"
