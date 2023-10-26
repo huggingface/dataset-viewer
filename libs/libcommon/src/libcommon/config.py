@@ -92,7 +92,7 @@ CACHED_ASSETS_STORAGE_PROTOCOL = "file"
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
-    base_url: str = ASSETS_BASE_URL
+    base_url: str = CACHED_ASSETS_BASE_URL
     folder_name: str = CACHED_ASSETS_FOLDER_NAME
     storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
     storage_root: str = CACHED_ASSETS_STORAGE_ROOT

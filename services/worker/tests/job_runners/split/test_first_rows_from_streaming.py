@@ -123,13 +123,13 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
         ("audio", False, None, None),
         ("image", False, None, None),
         ("images_list", False, None, None),
-        # ("jsonl", False, None, None),
-        # ("gated", True, None, None),
-        # ("private", True, None, None),
-        # # should we really test the following cases?
-        # # The assumption is that the dataset exists and is accessible with the token
-        # ("gated", False, "InfoError", "FileNotFoundError"),
-        # ("private", False, "InfoError", "FileNotFoundError"),
+        ("jsonl", False, None, None),
+        ("gated", True, None, None),
+        ("private", True, None, None),
+        # should we really test the following cases?
+        # The assumption is that the dataset exists and is accessible with the token
+        ("gated", False, "InfoError", "FileNotFoundError"),
+        ("private", False, "InfoError", "FileNotFoundError"),
     ],
 )
 def test_number_rows(
