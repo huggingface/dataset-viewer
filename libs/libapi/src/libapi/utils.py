@@ -94,7 +94,7 @@ def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: 
 
 
 def is_non_empty_string(string: Any) -> bool:
-    return isinstance(string, str) and bool(string and string.strip())
+    return isinstance(string, str) and bool(string.strip())
 
 
 def are_valid_parameters(parameters: list[Any]) -> bool:

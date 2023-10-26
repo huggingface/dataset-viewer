@@ -109,6 +109,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-cache-metrics-collector"
 app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 {{- end -}}
 
+{{- define "labels.cleanDuckdbIndexCache" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-cache"
+{{- end -}}
+
 {{- define "labels.cleanDuckdbIndexDownloads" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-downloads"

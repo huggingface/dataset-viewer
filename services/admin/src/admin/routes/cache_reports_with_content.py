@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
+from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.simple_cache import (
     InvalidCursor,
@@ -27,7 +28,7 @@ def create_cache_reports_with_content_endpoint(
 ) -> Endpoint:
     async def cache_reports_with_content_endpoint(request: Request) -> Response:
         try:
-            cursor = request.query_params.get("cursor") or ""
+            cursor = get_request_parameter(request, "cursor")
             logging.info(f"Cache reports with content for {cache_kind}, cursor={cursor}")
             # if auth_check fails, it will raise an exception that will be caught below
             await auth_check(
