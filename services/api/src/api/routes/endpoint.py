@@ -233,11 +233,6 @@ def create_endpoint(
                     dataset, config, split = validator.get_useful_parameters(
                         dataset_parameter, config_parameter, split_parameter
                     )
-
-                # for now, dataset is always required in the endpoints.
-                if not dataset:
-                    raise MissingRequiredParameterError("Parameter 'dataset' is required")
-
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
                     await auth_check(
