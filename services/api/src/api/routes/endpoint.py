@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Optional, TypedDict
@@ -26,7 +25,6 @@ from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingSte
 from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 from starlette.responses import Response
-from typing_extensions import override
 
 from api.config import EndpointConfig
 
@@ -89,106 +87,9 @@ HARD_CODED_OPT_IN_OUT_URLS = {
 }
 
 
-class InputTypeValidator(ABC):
-    input_type: InputType = NotImplemented
-
-    @abstractmethod
-    def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
-        pass
-
-    @abstractmethod
-    def get_error_message(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_useful_parameters(
-        self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        pass
-
-    @staticmethod
-    def from_input_type(input_type: InputType) -> "InputTypeValidator":
-        return (
-            DatasetInputTypeValidator()
-            if input_type == "dataset"
-            else ConfigInputTypeValidator()
-            if input_type == "config"
-            else SplitInputTypeValidator()
-        )
-
-
-class DatasetInputTypeValidator(InputTypeValidator):
-    input_type: InputType = "dataset"
-
-    @override
-    def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
-        return are_valid_parameters([dataset])
-
-    @override
-    def get_error_message(self) -> str:
-        return "Parameter 'dataset' is required"
-
-    @override
-    def get_useful_parameters(
-        self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        return (dataset, None, None)
-
-
-class ConfigInputTypeValidator(InputTypeValidator):
-    input_type: InputType = "config"
-
-    @override
-    def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
-        return are_valid_parameters([dataset, config])
-
-    @override
-    def get_error_message(self) -> str:
-        return "Parameters 'config' and 'dataset' are required"
-
-    @override
-    def get_useful_parameters(
-        self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        return (dataset, config, None)
-
-
-class SplitInputTypeValidator(InputTypeValidator):
-    input_type: InputType = "split"
-
-    @override
-    def are_parameters_sufficient(self, dataset: Optional[str], config: Optional[str], split: Optional[str]) -> bool:
-        return are_valid_parameters([dataset, config, split])
-
-    @override
-    def get_error_message(self) -> str:
-        return "Parameters 'split', 'config' and 'dataset' are required"
-
-    @override
-    def get_useful_parameters(
-        self, dataset: Optional[str], config: Optional[str], split: Optional[str]
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
-        return (dataset, config, split)
-
-
-def get_input_type_validators_by_priority(steps_by_input_type: StepsByInputType) -> list[InputTypeValidator]:
+def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> list[InputType]:
     input_type_order: list[InputType] = ["split", "config", "dataset"]
-    return [
-        InputTypeValidator.from_input_type(input_type)
-        for input_type in input_type_order
-        if input_type in steps_by_input_type
-    ]
-
-
-def get_input_type_validator_by_parameters(
-    validators: list[InputTypeValidator], dataset: Optional[str], config: Optional[str], split: Optional[str]
-) -> InputTypeValidator:
-    error_message = "No processing steps supported for parameters"
-    for validator in validators:
-        error_message = validator.get_error_message()
-        if validator.are_parameters_sufficient(dataset=dataset, config=config, split=split):
-            return validator
-    raise MissingRequiredParameterError(error_message)
+    return [input_type for input_type in input_type_order if input_type in steps_by_input_type]
 
 
 def create_endpoint(
@@ -220,13 +121,10 @@ def create_endpoint(
                     config = get_request_parameter(request, "config")
                     split = get_request_parameter(request, "split")
                     logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
-                    validator = get_input_type_validator_by_parameters(
-                        validators, dataset_parameter, config_parameter, split_parameter
+                    dataset, config, split, input_type = validate_parameters(
+                        dataset, config, split, steps_by_input_type
                     )
-                    processing_steps = steps_by_input_type[validator.input_type]
-                    dataset, config, split = validator.get_useful_parameters(
-                        dataset_parameter, config_parameter, split_parameter
-                    )
+                    processing_steps = steps_by_input_type[input_type]
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
                     await auth_check(
@@ -242,7 +140,7 @@ def create_endpoint(
                     # TODO: remove once full scan is implemented for spawning urls scan
                     if (
                         endpoint_name == "/opt-in-out-urls"
-                        and validator.input_type == "dataset"
+                        and input_type == "dataset"
                         and dataset in HARD_CODED_OPT_IN_OUT_URLS
                     ):
                         return get_json_ok_response(
