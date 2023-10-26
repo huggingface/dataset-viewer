@@ -1349,7 +1349,7 @@ develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
-datasets = {version = "^2.14.5", extras = ["audio", "vision"]}
+datasets = {version = "^2.14.6", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.16.4"
 mongo-types = "0.15.1"

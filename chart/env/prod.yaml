@@ -145,7 +145,6 @@ firstRows:
 parquetAndInfo:
   maxDatasetSize: "5_000_000_000"
   maxRowGroupByteSizeForCopy: "300_000_000"
-  noMaxSizeLimitDatasets: "Open-Orca/OpenOrca"
 
 optInOutUrlsScan:
   maxConcurrentRequestsNumber: 100
