@@ -291,3 +291,30 @@ def create_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return processing_step_endpoint
+
+
+def validate_parameters(
+    dataset: str, config: str, split: str, steps_by_input_type: StepsByInputType
+) -> tuple[str, Optional[str], Optional[str], InputType]:
+    input_types = get_input_types_by_priority(steps_by_input_type=steps_by_input_type)
+    error_message = "No processing steps supported for parameters"
+    for input_type in input_types:
+        if (
+            input_type == "split"
+            and (error_message := "Parameters 'dataset', 'config' and 'split' are required")
+            and are_valid_parameters([dataset, config, split])
+        ):
+            return dataset, config, split, input_type
+        elif (
+            input_type == "config"
+            and (error_message := "Parameters 'dataset' and 'config' are required")
+            and are_valid_parameters([dataset, config])
+        ):
+            return dataset, config, None, input_type
+        elif (
+            input_type == "dataset"
+            and (error_message := "Parameter 'dataset' is required")
+            and are_valid_parameters([dataset])
+        ):
+            return dataset, None, None, input_type
+    raise MissingRequiredParameterError(error_message)
