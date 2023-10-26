@@ -1331,18 +1331,39 @@
           "error": "Parameter 'dataset' is required"
         }
       },
+      "MissingDatasetConfigParameterError": {
+        "summary": "One of the dataset or config parameters is missing.",
+        "description": "try without setting ?dataset",
+        "value": {
+          "error": "Parameters 'dataset' and 'config' are required"
+        }
+      },
+      "EmptyDatasetConfigParameterError": {
+        "summary": "One of the dataset or config parameters is empty.",
+        "description": "try with ?dataset=",
+        "value": {
+          "error": "Parameters 'dataset' and 'config' are required"
+        }
+      },
       "MissingDatasetConfigSplitParameterError": {
         "summary": "One of the dataset, config or split parameters is missing.",
         "description": "try without setting ?dataset",
         "value": {
-          "error": "Parameters 'split', 'config' and 'dataset' are required"
+          "error": "Parameters 'dataset', 'config' and 'split' are required"
         }
       },
       "EmptyDatasetConfigSplitParameterError": {
         "summary": "One of the dataset, config or split parameters is empty.",
         "description": "try with ?dataset=",
         "value": {
-          "error": "Parameters 'split', 'config' and 'dataset' are required"
+          "error": "Parameters 'dataset', 'config' and 'split' are required"
+        }
+      },
+      "UnsupportedProcessingStepsDatasetConfigSplitParameterError": {
+        "summary": "None of the processing steps is supported for dataset, config or split parameters.",
+        "description": "",
+        "value": {
+          "error": "No processing steps supported for parameters"
         }
       },
       "ResponseNotReadyError": {
@@ -1531,7 +1552,7 @@
         }
       },
       "Dataset422": {
-        "description": "The `dataset` parameter has not been provided.",
+        "description": "The 'dataset' parameter has not been provided or is invalid.",
         "headers": {
           "Cache-Control": {
             "$ref": "#/components/headers/Cache-Control"
@@ -1594,6 +1615,35 @@
           }
         }
       },
+      "DatasetConfig422": {
+        "description": "Some of the 'dataset' or 'config' parameters have not been provided or are invalid.",
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/Cache-Control"
+          },
+          "Access-Control-Allow-Origin": {
+            "$ref": "#/components/headers/Access-Control-Allow-Origin"
+          },
+          "X-Error-Code": {
+            "$ref": "#/components/headers/X-Error-Code-422"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CustomError"
+            },
+            "examples": {
+              "missing required parameter": {
+                "$ref": "#/components/examples/MissingDatasetConfigParameterError"
+              },
+              "empty required parameter": {
+                "$ref": "#/components/examples/EmptyDatasetConfigParameterError"
+              }
+            }
+          }
+        }
+      },
       "DatasetConfigSplit404": {
         "description": "If the repository to download from cannot be found, or if the config or split does not exist in the dataset. Note that this may be because the dataset doesn't exist, or because it is set to `private` and you do not have access.",
         "headers": {
@@ -1633,7 +1683,7 @@
         }
       },
       "DatasetConfigSplit422": {
-        "description": "Some of the `dataset`, `config`, or `split` parameters have not been provided or are invalid.",
+        "description": "Some of the 'dataset', 'config' or 'split' parameters have not been provided or are invalid.",
         "headers": {
           "Cache-Control": {
             "$ref": "#/components/headers/Cache-Control"
