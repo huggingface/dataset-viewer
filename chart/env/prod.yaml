@@ -213,7 +213,7 @@ backfill:
 cleanDuckdbIndexCache:
   nodeSelector:
     role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
+  expiredTimeIntervalSeconds: 259_200 # 3 days
 
 cleanHfDatasetsCache:
   nodeSelector:
