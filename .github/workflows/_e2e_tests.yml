@@ -52,6 +52,8 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
+          ASSETS_STORAGE_ROOT: /tmp
+          CACHED_ASSETS_STORAGE_ROOT: /tmp
         run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry
