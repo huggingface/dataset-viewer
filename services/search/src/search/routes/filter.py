@@ -18,9 +18,9 @@ from libapi.duckdb import (
 )
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
@@ -79,10 +79,10 @@ def create_filter_endpoint(
         with StepProfiler(method="filter_endpoint", step="all"):
             try:
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
-                    dataset = get_required_request_parameter(request, "dataset")
-                    config = get_required_request_parameter(request, "config")
-                    split = get_required_request_parameter(request, "split")
-                    where = get_required_request_parameter(request, "where")
+                    dataset = get_request_parameter(request, "dataset", required=True)
+                    config = get_request_parameter(request, "config", required=True)
+                    split = get_request_parameter(request, "split", required=True)
+                    where = get_request_parameter(request, "where", required=True)
                     validate_where_parameter(where)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
