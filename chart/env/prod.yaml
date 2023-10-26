@@ -220,7 +220,6 @@ cleanDuckdbIndexDownloads:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
 
-
 cleanDuckdbIndexJobRunner:
   nodeSelector:
     role-datasets-server: "true"
@@ -333,7 +332,7 @@ api:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 8
   service:
     type: NodePort
   resources:
@@ -408,7 +407,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 4
+    replicas: 6
     resources:
       requests:
         cpu: 8
@@ -424,7 +423,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 20
+    replicas: 30
     resources:
       requests:
         cpu: 1
