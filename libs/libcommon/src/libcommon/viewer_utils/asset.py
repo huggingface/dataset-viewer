@@ -9,8 +9,8 @@ from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath, remove_dir
-from libcommon.storage_options import StorageOptions
 
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
@@ -47,12 +47,12 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     format: str,
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
 ) -> ImageSource:
     # get url dir path
-    assets_base_url = storage_options.assets_base_url
-    overwrite = storage_options.overwrite
-    storage_client = storage_options.storage_client
+    assets_base_url = public_assets_storage.assets_base_url
+    overwrite = public_assets_storage.overwrite
+    storage_client = public_assets_storage.storage_client
 
     url_dir_path = get_url_dir_path(
         dataset=dataset, revision=revision, config=config, split=split, row_idx=row_idx, column=column
@@ -77,12 +77,12 @@ def create_audio_file(
     audio_file_bytes: bytes,
     audio_file_extension: str,
     filename: str,
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
 ) -> list[AudioSource]:
     # get url dir path
-    assets_base_url = storage_options.assets_base_url
-    overwrite = storage_options.overwrite
-    storage_client = storage_options.storage_client
+    assets_base_url = public_assets_storage.assets_base_url
+    overwrite = public_assets_storage.overwrite
+    storage_client = public_assets_storage.storage_client
 
     url_dir_path = get_url_dir_path(
         revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column

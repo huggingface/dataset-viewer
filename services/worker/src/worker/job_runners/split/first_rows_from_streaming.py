@@ -25,8 +25,8 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.processing_graph import ProcessingStep
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.storage_options import StorageOptions
 from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
@@ -48,7 +48,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
 ) -> list[Row]:
     return [
         {
@@ -61,7 +61,7 @@ def transform_rows(
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                storage_options=storage_options,
+                public_assets_storage=public_assets_storage,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -74,7 +74,7 @@ def compute_first_rows_response(
     revision: str,
     config: str,
     split: str,
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
     hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
@@ -98,8 +98,8 @@ def compute_first_rows_response(
             A configuration name.
         split (`str`):
             A split name.
-        storage_options (`StorageOptions`):
-            The storage options that contains the assets_base_url and assets_directory.
+        public_assets_storage (`PublicAssetsStorage`):
+            The public assets storage configuration.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
@@ -236,7 +236,7 @@ def compute_first_rows_response(
             split=split,
             rows=rows,
             features=features,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
         )
     except Exception as err:
         raise RowsPostProcessingError(
@@ -296,7 +296,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         )
         self.first_rows_config = app_config.first_rows
         self.assets_base_url = app_config.assets.base_url
-        self.storage_options = StorageOptions(
+        self.public_assets_storage = PublicAssetsStorage(
             assets_base_url=self.assets_base_url,
             overwrite=True,
             storage_client=storage_client,
@@ -309,7 +309,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 revision=self.dataset_git_revision,
                 config=self.config,
                 split=self.split,
-                storage_options=self.storage_options,
+                public_assets_storage=self.public_assets_storage,
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,

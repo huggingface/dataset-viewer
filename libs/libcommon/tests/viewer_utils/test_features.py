@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 from datasets import Audio, Dataset, Features, Image, Value
 
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.storage_options import StorageOptions
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
@@ -24,13 +24,13 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 
 
 @pytest.fixture
-def storage_options(tmp_path: Path) -> StorageOptions:
+def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
         root=str(tmp_path),
         folder=ASSETS_FOLDER,
     )
-    return StorageOptions(
+    return PublicAssetsStorage(
         assets_base_url=ASSETS_BASE_URL,
         overwrite=False,
         storage_client=storage_client,
@@ -77,7 +77,7 @@ def storage_options(tmp_path: Path) -> StorageOptions:
     ],
 )
 def test_value(
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
     dataset_type: str,
     output_value: Any,
     output_dtype: str,
@@ -96,24 +96,24 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
     )
     assert value == output_value
 
 
-def assert_output_has_valid_files(value: Any, storage_options: StorageOptions) -> None:
+def assert_output_has_valid_files(value: Any, public_assets_storage: PublicAssetsStorage) -> None:
     if isinstance(value, list):
         for item in value:
-            assert_output_has_valid_files(item, storage_options=storage_options)
+            assert_output_has_valid_files(item, public_assets_storage=public_assets_storage)
     elif isinstance(value, dict):
         if (
             "src" in value
             and isinstance(value["src"], str)
-            and value["src"].startswith(storage_options.assets_base_url)
+            and value["src"].startswith(public_assets_storage.assets_base_url)
         ):
             path = os.path.join(
-                storage_options.storage_client.get_base_directory(),
-                value["src"][len(storage_options.assets_base_url) + 1 :],  # noqa: E203
+                public_assets_storage.storage_client.get_base_directory(),
+                value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
             )
             assert os.path.exists(path)
             assert os.path.getsize(path) > 0
@@ -325,7 +325,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    storage_options: StorageOptions,
+    public_assets_storage: PublicAssetsStorage,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -343,10 +343,10 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
     )
     assert value == output_value
-    assert_output_has_valid_files(output_value, storage_options=storage_options)
+    assert_output_has_valid_files(output_value, public_assets_storage=public_assets_storage)
     # encoded
     value = get_cell_value(
         dataset="dataset",
@@ -357,10 +357,10 @@ def test_others(
         cell=dataset.with_format("arrow")[0].to_pydict()["col"][0],
         featureName="col",
         fieldType=feature,
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
     )
     assert value == output_value
-    assert_output_has_valid_files(output_value, storage_options=storage_options)
+    assert_output_has_valid_files(output_value, public_assets_storage=public_assets_storage)
 
 
 def test_get_supported_unsupported_columns() -> None:

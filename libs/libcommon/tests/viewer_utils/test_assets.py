@@ -7,8 +7,8 @@ import soundfile  # type: ignore
 from datasets import Dataset
 from PIL import Image as PILImage  # type: ignore
 
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.storage_options import StorageOptions
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 ASSETS_FOLDER = "assets"
@@ -16,20 +16,20 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 
 
 @pytest.fixture
-def storage_options(tmp_path: Path) -> StorageOptions:
+def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
         root=str(tmp_path),
         folder=ASSETS_FOLDER,
     )
-    return StorageOptions(
+    return PublicAssetsStorage(
         assets_base_url=ASSETS_BASE_URL,
         overwrite=False,
         storage_client=storage_client,
     )
 
 
-def test_create_image_file(datasets: Mapping[str, Dataset], storage_options: StorageOptions) -> None:
+def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
     dataset = datasets["image"]
     value = create_image_file(
         dataset="dataset",
@@ -41,7 +41,7 @@ def test_create_image_file(datasets: Mapping[str, Dataset], storage_options: Sto
         filename="image.jpg",
         row_idx=7,
         format="JPEG",
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
     )
     image_key = "dataset/--/revision/--/config/split/7/col/image.jpg"
     assert value == {
@@ -49,13 +49,13 @@ def test_create_image_file(datasets: Mapping[str, Dataset], storage_options: Sto
         "height": 480,
         "width": 640,
     }
-    assert storage_options.storage_client.exists(image_key)
+    assert public_assets_storage.storage_client.exists(image_key)
 
-    image = PILImage.open(f"{storage_options.storage_client.get_base_directory()}/{image_key}")
+    image = PILImage.open(f"{public_assets_storage.storage_client.get_base_directory()}/{image_key}")
     assert image is not None
 
 
-def test_create_audio_file(datasets: Mapping[str, Dataset], storage_options: StorageOptions) -> None:
+def test_create_audio_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
     dataset = datasets["audio"]
     value = dataset[0]["col"]
     buffer = BytesIO()
@@ -71,7 +71,7 @@ def test_create_audio_file(datasets: Mapping[str, Dataset], storage_options: Sto
         audio_file_bytes=audio_file_bytes,
         column="col",
         filename="audio.wav",
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
     )
 
     audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
@@ -82,4 +82,4 @@ def test_create_audio_file(datasets: Mapping[str, Dataset], storage_options: Sto
         },
     ]
 
-    assert storage_options.storage_client.exists(audio_key)
+    assert public_assets_storage.storage_client.exists(audio_key)

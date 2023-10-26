@@ -6,7 +6,7 @@ from libcommon.storage_client import StorageClient
 
 
 @dataclass
-class StorageOptions:
+class PublicAssetsStorage:
     assets_base_url: str
     overwrite: bool
     storage_client: StorageClient

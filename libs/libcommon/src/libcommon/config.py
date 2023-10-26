@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 ASSETS_BASE_URL = "http://localhost/assets"
 ASSETS_FOLDER_NAME = "assets"
-ASSETS_STORAGE_ROOT = "/storage"
+ASSETS_STORAGE_ROOT = "/tmp"
 ASSETS_STORAGE_PROTOCOL = "file"
 
 
@@ -86,7 +86,7 @@ class S3Config:
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
 CACHED_ASSETS_FOLDER_NAME = "cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "/storage"
+CACHED_ASSETS_STORAGE_ROOT = "/tmp"
 CACHED_ASSETS_STORAGE_PROTOCOL = "file"
 
 

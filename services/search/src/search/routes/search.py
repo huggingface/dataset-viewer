@@ -34,9 +34,9 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.storage_options import StorageOptions
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -92,7 +92,7 @@ def create_response(
     )
     pa_table = pa_table.drop(unsupported_columns)
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    storage_options = StorageOptions(
+    public_assets_storage = PublicAssetsStorage(
         assets_base_url=cached_assets_base_url,
         overwrite=False,
         storage_client=storage_client,
@@ -106,7 +106,7 @@ def create_response(
             revision=revision,
             config=config,
             split=split,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
