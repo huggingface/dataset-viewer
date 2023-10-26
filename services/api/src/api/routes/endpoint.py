@@ -13,6 +13,7 @@ from libapi.exceptions import (
     MissingRequiredParameterError,
     UnexpectedApiError,
 )
+from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
@@ -215,17 +216,10 @@ def create_endpoint(
                     step="validate parameters and get processing steps",
                     context=context,
                 ):
-                    # validating request parameters
-                    dataset_parameter = request.query_params.get("dataset")
-                    config_parameter = request.query_params.get("config")
-                    split_parameter = request.query_params.get("split")
-                    validators = get_input_type_validators_by_priority(steps_by_input_type=steps_by_input_type)
-
-                    logging.debug(
-                        f"endpoint={endpoint_name} dataset={dataset_parameter} config={config_parameter}"
-                        + f" split={split_parameter}"
-                    )
-
+                    dataset = get_request_parameter(request, "dataset")
+                    config = get_request_parameter(request, "config")
+                    split = get_request_parameter(request, "split")
+                    logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
                     validator = get_input_type_validator_by_parameters(
                         validators, dataset_parameter, config_parameter, split_parameter
                     )
