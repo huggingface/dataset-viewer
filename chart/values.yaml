@@ -247,6 +247,9 @@ configNames:
   # the max number of configs per dataset
   maxNumber: 3_000
 
+s3:
+  region: "us-east-1"
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"

@@ -37,9 +37,10 @@ if __name__ == "__main__":
     storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         root=app_config.assets.storage_root,
+        folder=app_config.assets.folder_name,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
-        folder=app_config.assets.folder_name,
+        client_kwargs={"region_name": app_config.s3.region_name},
     )
 
     with (

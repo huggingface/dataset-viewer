@@ -67,12 +67,14 @@ class AssetsConfig:
 
 S3_ACCESS_KEY_ID = None
 S3_SECRET_ACCESS_KEY = None
+S3_REGION_NAME = "us-east-1"
 
 
 @dataclass(frozen=True)
 class S3Config:
     access_key_id: Optional[str] = S3_ACCESS_KEY_ID
     secret_access_key: Optional[str] = S3_SECRET_ACCESS_KEY
+    region_name: str = S3_REGION_NAME
 
     @classmethod
     def from_env(cls) -> "S3Config":
@@ -81,6 +83,7 @@ class S3Config:
             return cls(
                 access_key_id=env.str(name="ACCESS_KEY_ID", default=S3_ACCESS_KEY_ID),
                 secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=S3_SECRET_ACCESS_KEY),
+                region_name=env.str(name="REGION_NAME", default=S3_REGION_NAME),
             )
 
 
