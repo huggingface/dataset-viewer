@@ -210,6 +210,11 @@ backfill:
       cpu: 2
       memory: "8Gi"
 
+cleanDuckdbIndexCache:
+  nodeSelector:
+    role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 259_200 # 3 days
+
 cleanHfDatasetsCache:
   nodeSelector:
     role-datasets-server: "true"
