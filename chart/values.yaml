@@ -379,7 +379,7 @@ cleanDuckdbIndexCache:
   enabled: true
   log:
     level: "info"
-  action: "cache"
+  action: "clean-directory"
   error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
