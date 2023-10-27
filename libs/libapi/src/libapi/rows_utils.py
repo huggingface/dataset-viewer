@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable
 from functools import partial
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
+import anyio
 from datasets import Features
 from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Row
@@ -69,6 +71,11 @@ async def transform_rows(
         # Also multithreading is ok to convert audio data
         # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
         desc = f"_transform_row for {dataset}"
-        return thread_map(fn, enumerate(rows), desc=desc, total=len(rows))  # type: ignore
+        _thread_map = partial(thread_map, desc=desc, total=len(rows))
+        return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
     else:
-        return [fn((row_idx, row)) for row_idx, row in enumerate(rows)]
+
+        def _map(func: Callable[[Any], Any], *iterables: Any) -> list[Row]:
+            return list(map(func, *iterables))
+
+        return await anyio.to_thread.run_sync(_map, fn, enumerate(rows))
