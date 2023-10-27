@@ -12,7 +12,6 @@ import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
-    duckdb_connect,
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
@@ -36,6 +35,8 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
+
+from search.duckdb import duckdb_connect
 
 FILTER_QUERY = """\
     SELECT {columns}
@@ -122,7 +123,7 @@ def create_filter_endpoint(
                             revision=revision,
                         )
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
-                    index_file_location = get_index_file_location_and_download_if_missing(
+                    index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,
