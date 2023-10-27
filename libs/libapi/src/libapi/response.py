@@ -13,7 +13,7 @@ from libapi.utils import to_rows_list
 ROW_IDX_COLUMN = "__hf_index_id"
 
 
-def create_response(
+async def create_response(
     dataset: str,
     revision: str,
     config: str,

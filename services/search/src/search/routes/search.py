@@ -73,7 +73,7 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
     return num_rows_total, pa_table
 
 
-def create_response(
+async def create_response(
     pa_table: pa.Table,
     dataset: str,
     revision: str,
@@ -218,7 +218,7 @@ def create_search_endpoint(
                         features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                     else:
                         features = Features.from_arrow_schema(pa_table.schema)
-                    response = create_response(
+                    response = await create_response(
                         pa_table=pa_table,
                         dataset=dataset,
                         revision=revision,

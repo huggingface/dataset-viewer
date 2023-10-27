@@ -472,7 +472,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
         aws_secret_access_key=app_config.s3.secret_access_key,
         bucket_name=app_config.s3.bucket,
     )
-    response = create_response(
+    response = await create_response(
         dataset="ds",
         revision="revision",
         config="default",
@@ -515,7 +515,7 @@ def test_create_response_with_image(
         )
         folder_name = "cached-assets"
 
-        response = create_response(
+        response = await create_response(
             dataset=dataset,
             revision="revision",
             config=config,
