@@ -44,7 +44,7 @@ from libcommon.viewer_utils.features import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-from search.duckdb import duckdb_connect
+from search.duckdb_connection import duckdb_connect
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"

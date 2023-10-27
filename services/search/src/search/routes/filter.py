@@ -36,7 +36,7 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
 
-from search.duckdb import duckdb_connect
+from search.duckdb_connection import duckdb_connect
 
 FILTER_QUERY = """\
     SELECT {columns}
