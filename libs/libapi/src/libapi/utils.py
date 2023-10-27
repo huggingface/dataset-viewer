@@ -198,7 +198,7 @@ def get_cache_entry_from_steps(
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
 
-def to_rows_list(
+async def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
     revision: str,

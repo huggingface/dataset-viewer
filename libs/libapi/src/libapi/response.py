@@ -43,7 +43,7 @@ async def create_response(
     )
     return {
         "features": to_features_list(features),
-        "rows": to_rows_list(
+        "rows": await to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
             revision=revision,

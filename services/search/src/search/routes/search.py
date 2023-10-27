@@ -105,7 +105,7 @@ async def create_response(
 
     return PaginatedResponse(
         features=to_features_list(features_without_key),
-        rows=to_rows_list(
+        rows=await to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
             revision=revision,
