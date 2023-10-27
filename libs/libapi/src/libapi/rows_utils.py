@@ -42,7 +42,7 @@ def _transform_row(
     return transformed_row
 
 
-def transform_rows(
+async def transform_rows(
     dataset: str,
     revision: str,
     config: str,
