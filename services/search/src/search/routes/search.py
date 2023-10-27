@@ -192,7 +192,7 @@ def create_search_endpoint(
                         raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
-                    index_file_location = get_index_file_location_and_download_if_missing(
+                    index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,

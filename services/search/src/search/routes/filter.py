@@ -124,7 +124,7 @@ def create_filter_endpoint(
                             revision=revision,
                         )
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
-                    index_file_location = get_index_file_location_and_download_if_missing(
+                    index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,

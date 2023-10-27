@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
 import json
 import logging
 import os
@@ -6,6 +9,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Any, Optional
 
+import anyio
 import duckdb
 from huggingface_hub import hf_hub_download
 from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
@@ -20,7 +24,7 @@ REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
-def get_index_file_location_and_download_if_missing(
+async def get_index_file_location_and_download_if_missing(
     duckdb_index_file_directory: StrPath,
     dataset: str,
     revision: str,
@@ -42,13 +46,15 @@ def get_index_file_location_and_download_if_missing(
         index_path = Path(index_file_location)
         if not index_path.is_file():
             with StepProfiler(method="get_index_file_location_and_download_if_missing", step="download index file"):
-                download_index_file(
-                    cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
-                    index_folder=index_folder,
-                    target_revision=target_revision,
-                    dataset=dataset,
-                    repo_file_location=repo_file_location,
-                    hf_token=hf_token,
+                cache_folder = f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}"
+                await anyio.to_thread.run_sync(
+                    download_index_file,
+                    cache_folder,
+                    index_folder,
+                    target_revision,
+                    dataset,
+                    repo_file_location,
+                    hf_token,
                 )
         # Update its modification time
         index_path.touch()
