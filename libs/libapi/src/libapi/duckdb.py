@@ -46,15 +46,15 @@ async def get_index_file_location_and_download_if_missing(
         index_path = Path(index_file_location)
         if not index_path.is_file():
             with StepProfiler(method="get_index_file_location_and_download_if_missing", step="download index file"):
+                cache_folder = f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}"
                 await anyio.to_thread.run_sync(
-                    download_index_file(
-                        cache_folder=f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}",
-                        index_folder=index_folder,
-                        target_revision=target_revision,
-                        dataset=dataset,
-                        repo_file_location=repo_file_location,
-                        hf_token=hf_token,
-                    )
+                    download_index_file,
+                    cache_folder,
+                    index_folder,
+                    target_revision,
+                    dataset,
+                    repo_file_location,
+                    hf_token,
                 )
         # Update its modification time
         index_path.touch()
