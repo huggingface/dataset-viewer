@@ -16,6 +16,8 @@ from libcommon.storage import StrPath
 from search.config import AppConfig
 from search.routes.filter import execute_filter_query, validate_where_parameter
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture
 def ds() -> Dataset:
@@ -76,7 +78,7 @@ def test_execute_filter_query_raises(where: str, index_file_location: str) -> No
         )
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+async def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     pa_table = pa.Table.from_pydict(
         {

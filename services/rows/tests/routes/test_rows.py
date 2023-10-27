@@ -35,6 +35,8 @@ from rows.config import AppConfig
 
 REVISION_NAME = "revision"
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture(autouse=True)
 def clean_mongo_databases(app_config: AppConfig) -> None:
@@ -465,7 +467,7 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
         rows_index_with_empty_dataset.query(offset=-1, length=2)
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
+async def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     s3_client = S3Client(
         region_name=app_config.s3.region,
         aws_access_key_id=app_config.s3.access_key_id,
@@ -496,7 +498,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_direc
     assert response["num_rows_per_page"] == 100
 
 
-def test_create_response_with_image(
+async def test_create_response_with_image(
     ds_image: Dataset, app_config: AppConfig, cached_assets_directory: StrPath
 ) -> None:
     dataset, config, split = "ds_image", "default", "train"
