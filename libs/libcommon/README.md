@@ -49,3 +49,11 @@ Set environment variables to configure the job queues to precompute API response
 
 - `QUEUE_MONGO_DATABASE`: name of the database used for storing the queue. Defaults to `datasets_server_queue`.
 - `QUEUE_MONGO_URL`: URL used to connect to the MongoDB server. Defaults to `mongodb://localhost:27017`.
+
+## S3 configuration
+
+Set environment variables to configure the connection to S3.
+
+- `S3_REGION_NAME`: bucket region name when using `s3` as storage protocol for assets or cached assets. Defaults to `us-east-1`.
+- `S3_ACCESS_KEY_ID`: unique identifier associated with an AWS account. It's used to identify the AWS account that is making requests to S3. Defaults to empty.
+- `S3_SECRET_ACCESS_KEY`: secret key associated with an AWS account. Defaults to empty.
