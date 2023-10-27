@@ -35,7 +35,8 @@ services:
       context: ..
       dockerfile: services/admin/dev.Dockerfile
     volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
+      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro

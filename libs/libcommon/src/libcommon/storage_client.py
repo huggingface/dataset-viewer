@@ -24,6 +24,7 @@ class StorageClient:
     _folder: str
 
     def __init__(self, protocol: str, root: str, folder: str, **kwargs: Any) -> None:
+        logging.info(f"trying to initialize storage client with {protocol=} {root=} {folder=}")
         self._storage_root = root
         self._folder = folder
         if protocol == "s3":
@@ -36,7 +37,6 @@ class StorageClient:
             self._fs.ls(self._storage_root)
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
-        logging.info(f"storage client initialized with {protocol=} {root=} {folder=}")
 
     def exists(self, object_key: str) -> bool:
         object_path = f"{self.get_base_directory()}/{object_key}"
