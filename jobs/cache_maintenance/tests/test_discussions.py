@@ -26,23 +26,25 @@ from .utils import (
     fetch_bot_discussion,
 )
 
+DEFAULT_BOT_NAME = "parquet-converter"
+
 
 @pytest.mark.parametrize(
     "datasets, valid_expected_datasets",
     [
-        (set(), [set()]),
-        ({"a/b"}, [{"a/b"}]),
-        ({"a"}, [set()]),
-        ({"a/b/c"}, [set()]),
-        ({"a/b", "a/b"}, [{"a/b"}]),
-        ({"a/b", "a/c"}, [{"a/b"}, {"a/c"}]),
-        ({"a/b", "b/b"}, [{"a/b", "b/b"}]),
-        ({"a/b", "b"}, [{"a/b"}]),
+        ([], [set()]),
+        (["a/b"], [{"a/b"}]),
+        (["a"], [set()]),
+        (["a/b/c"], [set()]),
+        (["a/b", "a/b"], [{"a/b"}]),
+        (["a/b", "a/c"], [{"a/b"}, {"a/c"}]),
+        (["a/b", "b/b"], [{"a/b", "b/b"}]),
+        (["a/b", "b"], [{"a/b"}]),
     ],
 )
-def test_limit_to_one_dataset_per_namespace(datasets: set[str], valid_expected_datasets: list[set[str]]) -> None:
+def test_limit_to_one_dataset_per_namespace(datasets: list[str], valid_expected_datasets: list[set[str]]) -> None:
     assert any(
-        {d for d in limit_to_one_dataset_per_namespace(datasets=datasets)} == expected_datasets
+        set(limit_to_one_dataset_per_namespace(datasets=datasets)) == expected_datasets
         for expected_datasets in valid_expected_datasets
     )
 
@@ -95,7 +97,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+            bot_associated_user_name=job_config.discussions.bot_associated_user_name or DEFAULT_BOT_NAME,
         )
         # set a new "config-parquet" entry for the dataset
         second_revision = "9a0bd9fe2a87bbb82702ed170a53cf4e86535070"
@@ -187,12 +189,12 @@ def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig)
             dataset=dataset1.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+            bot_associated_user_name=job_config.discussions.bot_associated_user_name or DEFAULT_BOT_NAME,
         ) or create_discussion_description(
             dataset=dataset2.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+            bot_associated_user_name=job_config.discussions.bot_associated_user_name or DEFAULT_BOT_NAME,
         )
 
 
@@ -242,7 +244,7 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+            bot_associated_user_name=job_config.discussions.bot_associated_user_name or DEFAULT_BOT_NAME,
         )
 
 
@@ -304,5 +306,5 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
             dataset=dataset.repo_id,
             hf_endpoint=job_config.common.hf_endpoint,
             parquet_revision=job_config.discussions.parquet_revision,
-            bot_associated_user_name=job_config.discussions.bot_associated_user_name,
+            bot_associated_user_name=job_config.discussions.bot_associated_user_name or DEFAULT_BOT_NAME,
         )
