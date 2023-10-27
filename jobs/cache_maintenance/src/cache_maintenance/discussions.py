@@ -129,10 +129,9 @@ def create_discussion_description(
         revision=parquet_revision,
     )
     return (
-        f"The {bot_associated_user_name} bot has converted this dataset to Parquet. There are some"
-        " advantages associated with having a version of your dataset available in the "
-        "[Parquet format](https://parquet.apache.org/). You can learn more about these in the"
-        f""" [documentation](https://huggingface.co/docs/datasets-server/parquet).
+        f"The {bot_associated_user_name} bot has created a version of this dataset in the [Parquet"
+        " format](https://parquet.apache.org/). You can learn more about the advantages associated with this format"
+        f""" in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
 The Parquet files are published in the {link_parquet} branch."""
     )
