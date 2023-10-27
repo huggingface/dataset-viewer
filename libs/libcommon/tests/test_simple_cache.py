@@ -19,7 +19,6 @@ from libcommon.simple_cache import (
     CacheReportsPage,
     CacheReportsWithContentPage,
     CacheTotalMetricDocument,
-    DatasetWithRevision,
     InvalidCursor,
     InvalidLimit,
     delete_dataset_responses,
@@ -1081,35 +1080,31 @@ ENTRY_6: Entry = {
     "updated_at": BEFORE,
     "dataset_git_revision": REVISION_A,
 }
-
-DATASET_REV_A = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_A)
-DATASET_REV_B = DatasetWithRevision(dataset=DATASET_NAME, revision=REVISION_B)
-
-
-def get_dataset(dataset_with_revision: DatasetWithRevision) -> str:
-    return dataset_with_revision.dataset
-
-
-def assert_lists_are_equal(a: list[DatasetWithRevision], b: list[DatasetWithRevision]) -> None:
-    assert sorted(a, key=get_dataset) == sorted(b, key=get_dataset)
+ENTRY_7: Entry = {
+    "kind": CACHE_KIND_A,
+    "dataset": DATASET_NAME_A,
+    "config": CONFIG_NAME_1,
+    "http_status": HTTPStatus.OK,
+    "updated_at": AFTER_1,
+    "dataset_git_revision": REVISION_A,
+}
 
 
 @pytest.mark.parametrize(
     "entries,expected_datasets",
     [
         ([], []),
-        ([ENTRY_1], [DATASET_REV_A]),
+        ([ENTRY_1], [DATASET_NAME]),
         ([ENTRY_2], []),
-        ([ENTRY_4], [DATASET_REV_B]),
+        ([ENTRY_4], [DATASET_NAME]),
         ([ENTRY_5], []),
         ([ENTRY_6], []),
-        ([ENTRY_1, ENTRY_4], [DATASET_REV_B]),
-        ([ENTRY_1, ENTRY_2, ENTRY_4, ENTRY_5, ENTRY_6], [DATASET_REV_B]),
+        ([ENTRY_1, ENTRY_4], [DATASET_NAME]),
+        ([ENTRY_1, ENTRY_2, ENTRY_4, ENTRY_5, ENTRY_6], [DATASET_NAME]),
+        ([ENTRY_1, ENTRY_7], [DATASET_NAME, DATASET_NAME_A]),
     ],
 )
-def test_get_datasets_with_last_updated_kind(
-    entries: list[Entry], expected_datasets: list[DatasetWithRevision]
-) -> None:
+def test_get_datasets_with_last_updated_kind(entries: list[Entry], expected_datasets: list[str]) -> None:
     for entry in entries:
         upsert_response(
             kind=entry["kind"],
@@ -1123,5 +1118,5 @@ def test_get_datasets_with_last_updated_kind(
         )
     kind = CACHE_KIND_A
     days = DAYS
-    assert_lists_are_equal(get_datasets_with_last_updated_kind(kind=kind, days=days), expected_datasets)
+    assert sorted(get_datasets_with_last_updated_kind(kind=kind, days=days)) == sorted(expected_datasets)
     # ^ the order is not meaningful, so we sort to make the test deterministic
