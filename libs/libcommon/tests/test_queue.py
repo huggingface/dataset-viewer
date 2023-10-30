@@ -676,7 +676,7 @@ def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert started_job_info_2["params"]["dataset"] == other_dataset
     assert started_job_info_2["type"] == job_type_1
 
-    queue.cancel_dataset_jobs(dataset=dataset)
+    assert queue.cancel_dataset_jobs(dataset=dataset) == 4
 
     assert JobDocument.objects().count() == 6
     assert JobDocument.objects(dataset=dataset).count() == 4
