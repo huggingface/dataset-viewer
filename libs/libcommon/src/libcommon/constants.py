@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+ASSETS_CACHE_APPNAME = "datasets_server_assets"
 CACHE_COLLECTION_RESPONSES = "cachedResponsesBlue"
 CACHE_MONGOENGINE_ALIAS = "cache"
+CACHED_ASSETS_CACHE_APPNAME = "datasets_server_cached_assets"
 HF_DATASETS_CACHE_APPNAME = "hf_datasets_cache"
 PARQUET_METADATA_CACHE_APPNAME = "datasets_server_parquet_metadata"
 DESCRIPTIVE_STATISTICS_CACHE_APPNAME = "datasets_server_descriptive_statistics"

@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import os
+import shutil
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
@@ -8,7 +10,6 @@ from unittest.mock import patch
 import pytest
 from libapi.exceptions import UnexpectedApiError
 from libcommon.simple_cache import has_some_cache, upsert_response
-from libcommon.storage_client import StorageClient
 from pytest import raises
 
 from admin.routes.obsolete_cache import (
@@ -58,31 +59,21 @@ def test_get_obsolete_cache(dataset_names: list[str], expected_report: list[Data
     ],
 )
 def test_delete_obsolete_cache(
-    dataset_names: list[str], minimun_supported_datasets: int, should_keep: bool, should_raise: bool, tmp_path: Path
+    dataset_names: list[str], minimun_supported_datasets: int, should_keep: bool, should_raise: bool
 ) -> None:
+    assets_directory = "/tmp/assets"
+    cached_assets_directory = "/tmp/cached-assets"
     dataset = "dataset"
+    os.makedirs(f"{assets_directory}/{dataset}", exist_ok=True)
+    os.makedirs(f"{cached_assets_directory}/{dataset}", exist_ok=True)
 
-    assets_storage_client = StorageClient(
-        protocol="file",
-        root=str(tmp_path),
-        folder="assets",
-    )
-    cached_assets_storage_client = StorageClient(
-        protocol="file",
-        root=str(tmp_path),
-        folder="cached-assets",
-    )
+    asset_file = Path(f"{assets_directory}/{dataset}/image.jpg")
+    asset_file.touch()
+    assert asset_file.is_file()
 
-    cached_assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
-    assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
-
-    image_key = f"{dataset}/image.jpg"
-
-    assets_storage_client._fs.touch(f"{assets_storage_client.get_base_directory()}/{image_key}")
-    assert assets_storage_client.exists(image_key)
-
-    cached_assets_storage_client._fs.touch(f"{cached_assets_storage_client.get_base_directory()}/{image_key}")
-    assert cached_assets_storage_client.exists(image_key)
+    cached_asset_file = Path(f"{cached_assets_directory}/{dataset}/image.jpg")
+    cached_asset_file.touch()
+    assert cached_asset_file.is_file()
 
     upsert_response(
         kind="kind_1",
@@ -109,21 +100,23 @@ def test_delete_obsolete_cache(
                     delete_obsolete_cache(
                         hf_endpoint="hf_endpoint",
                         hf_token="hf_token",
-                        cached_assets_storage_client=cached_assets_storage_client,
-                        assets_storage_client=assets_storage_client,
+                        assets_directory=assets_directory,
+                        cached_assets_directory=cached_assets_directory,
                     )
             else:
                 deletion_report = delete_obsolete_cache(
                     hf_endpoint="hf_endpoint",
                     hf_token="hf_token",
-                    cached_assets_storage_client=cached_assets_storage_client,
-                    assets_storage_client=assets_storage_client,
+                    assets_directory=assets_directory,
+                    cached_assets_directory=cached_assets_directory,
                 )
                 assert len(deletion_report) == 0 if should_keep else 1
                 if len(deletion_report) > 0:
                     assert deletion_report[0]["dataset"] == "dataset"
                     assert deletion_report[0]["cache_records"] == 2  # for kind_1 and kind_2
-    assert assets_storage_client.exists(image_key) == should_keep
-    assert cached_assets_storage_client.exists(image_key) == should_keep
-
+    assert asset_file.is_file() == should_keep
+    assert cached_asset_file.is_file() == should_keep
     assert has_some_cache(dataset=dataset) == should_keep
+
+    shutil.rmtree(assets_directory, ignore_errors=True)
+    shutil.rmtree(cached_assets_directory, ignore_errors=True)

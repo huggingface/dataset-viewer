@@ -6,7 +6,8 @@ from typing import Optional
 
 import pytest
 
-from libcommon.storage import StrPath, init_dir, remove_dir
+from libcommon.constants import ASSETS_CACHE_APPNAME
+from libcommon.storage import StrPath, init_assets_dir, init_dir, remove_dir
 
 
 @pytest.mark.parametrize(
@@ -44,6 +45,43 @@ def test_init_dir(
         assert type(result) is str, result
         if appname:
             assert appname in str(result), result
+    Path(result).exists()
+    Path(result).is_dir()
+
+
+@pytest.mark.parametrize(
+    "has_directory,is_directory_string",
+    [
+        (False, False),
+        (False, False),
+        (False, True),
+        (False, True),
+        (True, False),
+        (True, False),
+        (True, True),
+        (True, True),
+    ],
+)
+def test_init_assets_dir(
+    tmp_path_factory: pytest.TempPathFactory, has_directory: bool, is_directory_string: bool
+) -> None:
+    subdirectory = "subdirectory"
+    tmp_path = tmp_path_factory.mktemp("test") / subdirectory
+    directory: Optional[StrPath]
+    if has_directory:
+        directory = str(tmp_path) if is_directory_string else tmp_path
+        result = init_assets_dir(directory=directory)
+        assert result == directory
+        assert subdirectory in str(result), result
+        assert ASSETS_CACHE_APPNAME not in str(result), result
+    else:
+        directory = None
+        result = init_assets_dir(directory=directory)
+        assert result != directory, result
+        assert subdirectory not in str(result), result
+        assert type(result) is str, result
+        assert ASSETS_CACHE_APPNAME in str(result), result
+
     Path(result).exists()
     Path(result).is_dir()
 

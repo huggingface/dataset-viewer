@@ -7,12 +7,14 @@ from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import (
+    exists,
+    init_assets_dir,
+    init_cached_assets_dir,
     init_duckdb_index_cache_dir,
     init_hf_datasets_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
-from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -47,29 +49,20 @@ def create_app() -> Starlette:
 
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
+    assets_directory = init_assets_dir(directory=app_config.assets.storage_directory)
+    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     hf_datasets_cache_directory = init_hf_datasets_cache_dir(app_config.datasets_based.hf_datasets_cache)
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
-    cached_assets_storage_client = StorageClient(
-        protocol=app_config.cached_assets.storage_protocol,
-        root=app_config.cached_assets.storage_root,
-        folder=app_config.cached_assets.folder_name,
-        key=app_config.s3.access_key_id,
-        secret=app_config.s3.secret_access_key,
-        client_kwargs={"region_name": app_config.s3.region_name},
-    )
+    if not exists(assets_directory):
+        raise RuntimeError("The assets storage directory could not be accessed. Exiting.")
 
-    assets_storage_client = StorageClient(
-        protocol=app_config.assets.storage_protocol,
-        root=app_config.assets.storage_root,
-        folder=app_config.assets.folder_name,
-        key=app_config.s3.access_key_id,
-        secret=app_config.s3.secret_access_key,
-        client_kwargs={"region_name": app_config.s3.region_name},
-    )
+    if not exists(cached_assets_directory):
+        raise RuntimeError("The cached-assets storage directory could not be accessed. Exiting.")
+
+    processing_graph = ProcessingGraph(app_config.processing_graph)
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -96,6 +89,7 @@ def create_app() -> Starlette:
         Route(
             "/metrics",
             endpoint=create_metrics_endpoint(
+                assets_directory=assets_directory,
                 descriptive_statistics_directory=statistics_cache_directory,
                 duckdb_directory=duckdb_index_cache_directory,
                 hf_datasets_directory=hf_datasets_cache_directory,
@@ -166,8 +160,8 @@ def create_app() -> Starlette:
             endpoint=create_delete_obsolete_cache_endpoint(
                 hf_endpoint=app_config.common.hf_endpoint,
                 max_age=app_config.admin.max_age,
-                cached_assets_storage_client=cached_assets_storage_client,
-                assets_storage_client=assets_storage_client,
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
@@ -188,8 +182,8 @@ def create_app() -> Starlette:
             "/recreate-dataset",
             endpoint=create_recreate_dataset_endpoint(
                 processing_graph=processing_graph,
-                cached_assets_storage_client=cached_assets_storage_client,
-                assets_storage_client=assets_storage_client,
+                assets_directory=assets_directory,
+                cached_assets_directory=cached_assets_directory,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.admin.external_auth_url,

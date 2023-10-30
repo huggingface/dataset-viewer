@@ -4,10 +4,8 @@
 {{- define "envCachedAssets" -}}
 - name: CACHED_ASSETS_BASE_URL
   value: "{{ include "cachedAssets.baseUrl" . }}"
-- name: CACHED_ASSETS_FOLDER_NAME
-  value: {{ .Values.cachedAssets.folderName | quote }}
-- name: CACHED_ASSETS_STORAGE_ROOT
-  value: {{ .Values.cachedAssets.storageRoot | quote }}
-- name: CACHED_ASSETS_STORAGE_PROTOCOL
-  value: {{ .Values.cachedAssets.storageProtocol | quote }}
+- name: CACHED_ASSETS_STORAGE_DIRECTORY
+  value: {{ .Values.cachedAssets.storageDirectory | quote }}
+- name: CACHED_ASSETS_S3_FOLDER_NAME
+  value: {{ .Values.cachedAssets.s3FolderName | quote }}
 {{- end -}}

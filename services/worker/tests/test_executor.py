@@ -14,9 +14,9 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
-from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, Priority, Status, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
@@ -204,25 +204,27 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
 def job_runner_factory(
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
+    assets_directory: StrPath,
     parquet_metadata_directory: StrPath,
     duckdb_index_cache_directory: StrPath,
     statistics_cache_directory: StrPath,
-    tmp_path: Path,
 ) -> JobRunnerFactory:
     processing_graph = ProcessingGraph(app_config.processing_graph)
-    storage_client = StorageClient(
-        protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+    s3_client = S3Client(
+        region_name="us-east-1",
+        aws_access_key_id="access_key_id",
+        aws_secret_access_key="secret_access_key",
+        bucket_name="bucket",
     )
     return JobRunnerFactory(
         app_config=app_config,
         processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        assets_directory=assets_directory,
         parquet_metadata_directory=parquet_metadata_directory,
         duckdb_index_cache_directory=duckdb_index_cache_directory,
         statistics_cache_directory=statistics_cache_directory,
-        storage_client=storage_client,
+        s3_client=s3_client,
     )
 
 

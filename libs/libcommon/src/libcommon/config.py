@@ -40,18 +40,16 @@ from libcommon.constants import (
 if TYPE_CHECKING:
     from libcommon.processing_graph import ProcessingGraphSpecification
 
-ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_FOLDER_NAME = "assets"
-ASSETS_STORAGE_ROOT = "/storage"
-ASSETS_STORAGE_PROTOCOL = "file"
+ASSETS_BASE_URL = "assets"
+ASSETS_STORAGE_DIRECTORY = None
+ASSETS_S3_FOLDER_NAME = "assets"
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    folder_name: str = ASSETS_FOLDER_NAME
-    storage_protocol: str = ASSETS_STORAGE_PROTOCOL
-    storage_root: str = ASSETS_STORAGE_ROOT
+    storage_directory: Optional[str] = ASSETS_STORAGE_DIRECTORY
+    s3_folder_name: str = ASSETS_S3_FOLDER_NAME
 
     @classmethod
     def from_env(cls) -> "AssetsConfig":
@@ -59,46 +57,46 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                folder_name=env.str(name="FOLDER_NAME", default=ASSETS_FOLDER_NAME),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=ASSETS_STORAGE_PROTOCOL),
-                storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=ASSETS_STORAGE_DIRECTORY),
+                s3_folder_name=env.str(name="S3_FOLDER_NAME", default=ASSETS_S3_FOLDER_NAME),
             )
 
 
+S3_BUCKET = "hf-datasets-server-statics"
 S3_ACCESS_KEY_ID = None
 S3_SECRET_ACCESS_KEY = None
-S3_REGION_NAME = "us-east-1"
+S3_REGION = "us-east-1"
 
 
 @dataclass(frozen=True)
 class S3Config:
+    bucket: str = S3_BUCKET
     access_key_id: Optional[str] = S3_ACCESS_KEY_ID
     secret_access_key: Optional[str] = S3_SECRET_ACCESS_KEY
-    region_name: str = S3_REGION_NAME
+    region: str = S3_REGION
 
     @classmethod
     def from_env(cls) -> "S3Config":
         env = Env(expand_vars=True)
         with env.prefixed("S3_"):
             return cls(
+                bucket=env.str(name="BUCKET", default=S3_BUCKET),
                 access_key_id=env.str(name="ACCESS_KEY_ID", default=S3_ACCESS_KEY_ID),
                 secret_access_key=env.str(name="SECRET_ACCESS_KEY", default=S3_SECRET_ACCESS_KEY),
-                region_name=env.str(name="REGION_NAME", default=S3_REGION_NAME),
+                region=env.str(name="REGION", default=S3_REGION),
             )
 
 
-CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_FOLDER_NAME = "cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "/storage"
-CACHED_ASSETS_STORAGE_PROTOCOL = "file"
+CACHED_ASSETS_BASE_URL = "cached-assets"
+CACHED_ASSETS_STORAGE_DIRECTORY = None
+CACHED_ASSETS_S3_FOLDER_NAME = "cached-assets"
 
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
-    base_url: str = CACHED_ASSETS_BASE_URL
-    folder_name: str = CACHED_ASSETS_FOLDER_NAME
-    storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
-    storage_root: str = CACHED_ASSETS_STORAGE_ROOT
+    base_url: str = ASSETS_BASE_URL
+    storage_directory: Optional[str] = CACHED_ASSETS_STORAGE_DIRECTORY
+    s3_folder_name: str = CACHED_ASSETS_S3_FOLDER_NAME
 
     @classmethod
     def from_env(cls) -> "CachedAssetsConfig":
@@ -106,9 +104,8 @@ class CachedAssetsConfig:
         with env.prefixed("CACHED_ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_FOLDER_NAME),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
-                storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
+                storage_directory=env.str(name="STORAGE_DIRECTORY", default=CACHED_ASSETS_STORAGE_DIRECTORY),
+                s3_folder_name=env.str(name="S3_FOLDER_NAME", default=CACHED_ASSETS_S3_FOLDER_NAME),
             )
 
 

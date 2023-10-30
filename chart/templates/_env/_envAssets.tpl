@@ -4,10 +4,8 @@
 {{- define "envAssets" -}}
 - name: ASSETS_BASE_URL
   value: "{{ include "assets.baseUrl" . }}"
-- name: ASSETS_FOLDER_NAME
-  value: {{ .Values.assets.folderName | quote }}
-- name: ASSETS_STORAGE_ROOT
-  value: {{ .Values.assets.storageRoot | quote }}
-- name: ASSETS_STORAGE_PROTOCOL
-  value: {{ .Values.assets.storageProtocol | quote }}
+- name: ASSETS_STORAGE_DIRECTORY
+  value: {{ .Values.assets.storageDirectory | quote }}
+- name: ASSETS_S3_FOLDER_NAME
+  value: {{ .Values.assets.s3FolderName | quote }}
 {{- end -}}
