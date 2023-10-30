@@ -1253,7 +1253,7 @@ mongoengine = "^0.27.0"
 networkx = "^3.0"
 numba = "0.56.4"
 orjson = "^3.8.6"
-pandas = "^2.0.1"
+pandas = "~2.0.3"
 psutil = "^5.9.4"
 pydub = "^0.25.1"
 pymongo = {version = "^4.5.0", extras = ["srv"]}
