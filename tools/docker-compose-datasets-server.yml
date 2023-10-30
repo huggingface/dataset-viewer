@@ -4,8 +4,7 @@ services:
     # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
-      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
+      - storage:${STORAGE_DIRECTORY-/storage}:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
