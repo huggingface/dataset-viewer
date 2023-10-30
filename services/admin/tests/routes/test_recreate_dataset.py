@@ -10,6 +10,7 @@ from unittest.mock import patch
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import has_some_cache, upsert_response
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, Status
 
 from admin.routes.recreate_dataset import recreate_dataset
@@ -18,6 +19,17 @@ REVISION_NAME = "revision"
 
 
 def test_recreate_dataset(tmp_path: Path, processing_graph: ProcessingGraph) -> None:
+    assets_storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder="assets",
+    )
+    cached_assets_storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder="cached-assets",
+    )
+
     assets_directory = tmp_path / "assets"
     cached_assets_directory = tmp_path / "cached-assets"
     dataset = "dataset"
@@ -56,8 +68,8 @@ def test_recreate_dataset(tmp_path: Path, processing_graph: ProcessingGraph) -> 
         recreate_dataset_report = recreate_dataset(
             hf_endpoint="hf_endpoint",
             hf_token="hf_token",
-            assets_directory=assets_directory,
-            cached_assets_directory=cached_assets_directory,
+            assets_storage_client=assets_storage_client,
+            cached_assets_storage_client=cached_assets_storage_client,
             dataset=dataset,
             priority=Priority.HIGH,
             processing_graph=processing_graph,

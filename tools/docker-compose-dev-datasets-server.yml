@@ -4,13 +4,12 @@ services:
     # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
-      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}:ro
+      - storage:${STORAGE_DIRECTORY-/storage}:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
-      ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
-      CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      ASSETS_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/storage/assets}
+      CACHED_ASSETS_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/storage/cached-assets}
       OPENAPI_FILE: ${OPENAPI_FILE-docs/source/openapi.json}
       HOST: localhost
       PORT: 80
@@ -35,7 +34,7 @@ services:
       context: ..
       dockerfile: services/admin/dev.Dockerfile
     volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:ro
+      - storage:${STORAGE_DIRECTORY-/storage}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
@@ -57,7 +56,12 @@ services:
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
       # storage
-      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage}
+      ASSETS_FOLDER_NAME: ${ASSETS_FOLDER_NAME-assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -97,11 +101,14 @@ services:
       file: docker-compose-dev-base.yml
       service: rows
     volumes:
-      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      # storage
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       # prometheus
@@ -126,11 +133,14 @@ services:
       file: docker-compose-dev-base.yml
       service: search
     volumes:
-      - cached-assets:${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      - storage:${STORAGE_DIRECTORY-/storage}
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      CACHED_ASSETS_STORAGE_DIRECTORY: ${CACHED_ASSETS_STORAGE_DIRECTORY-/cached-assets}
+      # storage
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -175,7 +185,7 @@ services:
     deploy:
       replicas: ${DEV_WORKER_REPLICAS-4}
     volumes:
-      - assets:${ASSETS_STORAGE_DIRECTORY-/assets}:rw
+      - storage:${STORAGE_DIRECTORY-/storage}:rw
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
@@ -184,7 +194,9 @@ services:
       service: datasets-worker
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
-      ASSETS_STORAGE_DIRECTORY: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage}
+      ASSETS_FOLDER_NAME: ${ASSETS_FOLDER_NAME-assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
       CONFIG_NAMES_MAX_NUMBER: ${CONFIG_NAMES_MAX_NUMBER-3_000}
       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS: ${DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS-10}
@@ -239,8 +251,7 @@ services:
       start_period: 20s
       start_interval: 2s
 volumes:
-  assets:
-  cached-assets:
+  storage:
   mongo:
   parquet-metadata:
   duckdb-index:

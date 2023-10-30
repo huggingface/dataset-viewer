@@ -247,31 +247,24 @@ configNames:
   # the max number of configs per dataset
   maxNumber: 3_000
 
+s3:
+  regionName: "us-east-1"
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
   # Directory on the shared storage (audio files and images)
-  storageDirectory: "/storage/assets"
-  s3FolderName: "assets"
+  storageRoot: "/storage"
+  folderName: "assets"
+  storageProtocol: "file"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
   # baseUrl: "not used for now"
   # Directory on the cached shared storage (audio files and images)
-  storageDirectory: "/storage/cached-assets"
-  # Probability of cleaning the cached assets directory at each request.
-  cleanCacheProba: 0.05
-  # When cleaning the cached assets directory: keep the rows with an index below a certain number.
-  keepFirstRowsNumber: 100
-  # When cleaning the cached assets directory: keep the most recently accessed rows.
-  keepMostRecentRowsNumber: 200
-  # When cleaning the cached assets directory: maximum number of rows to discard.
-  maxCleanedRowsNumber: 10000
-  s3FolderName: "cached-assets"
-
-s3:
-  bucket: "hf-datasets-server-statics"
-  region: "us-east-1"
+  storageRoot: "/storage"
+  folderName: "cached-assets"
+  storageProtocol: "file"
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)

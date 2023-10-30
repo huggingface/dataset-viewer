@@ -8,11 +8,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import (
-    StrPath,
-    init_cached_assets_dir,
-    init_duckdb_index_cache_dir,
-)
+from libcommon.storage import StrPath, init_duckdb_index_cache_dir
 from pytest import MonkeyPatch, fixture
 
 from search.config import AppConfig
@@ -90,11 +86,6 @@ def hf_endpoint(app_config: AppConfig) -> str:
 @fixture(scope="session")
 def hf_auth_path(app_config: AppConfig) -> str:
     return app_config.api.hf_auth_path
-
-
-@fixture
-def cached_assets_directory(app_config: AppConfig) -> StrPath:
-    return init_cached_assets_dir(app_config.cached_assets.storage_directory)
 
 
 @fixture
