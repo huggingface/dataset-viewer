@@ -6,10 +6,10 @@ import logging
 import os
 import re
 from hashlib import sha1
-from pathlib import Path
 from typing import Optional
 
 import anyio
+from anyio import Path
 from huggingface_hub import hf_hub_download
 from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
 from libcommon.processing_graph import ProcessingGraph
@@ -43,7 +43,7 @@ async def get_index_file_location_and_download_if_missing(
         repo_file_location = f"{config}/{split_directory}/{filename}"
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = Path(index_file_location)
-        if not index_path.is_file():
+        if not await index_path.is_file():
             with StepProfiler(method="get_index_file_location_and_download_if_missing", step="download index file"):
                 cache_folder = f"{duckdb_index_file_directory}/{HUB_DOWNLOAD_CACHE_FOLDER}"
                 await anyio.to_thread.run_sync(
@@ -56,7 +56,7 @@ async def get_index_file_location_and_download_if_missing(
                     hf_token,
                 )
         # Update its modification time
-        index_path.touch()
+        await index_path.touch()
         return index_file_location
 
 
