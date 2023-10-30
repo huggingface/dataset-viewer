@@ -12,8 +12,7 @@ from libcommon.simple_cache import (
     get_all_datasets,
     get_cache_count_for_dataset,
 )
-from libcommon.storage import StrPath
-from libcommon.viewer_utils.asset import delete_asset_dir
+from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -76,8 +75,8 @@ def create_get_obsolete_cache_endpoint(
 
 def delete_obsolete_cache(
     hf_endpoint: str,
-    assets_directory: StrPath,
-    cached_assets_directory: StrPath,
+    cached_assets_storage_client: StorageClient,
+    assets_storage_client: StorageClient,
     hf_token: Optional[str] = None,
 ) -> list[DatasetCacheReport]:
     supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
@@ -93,8 +92,8 @@ def delete_obsolete_cache(
         datasets_cache_records = delete_dataset_responses(dataset=dataset)
         if datasets_cache_records is not None and datasets_cache_records > 0:
             # delete assets
-            delete_asset_dir(dataset=dataset, directory=assets_directory)
-            delete_asset_dir(dataset=dataset, directory=cached_assets_directory)
+            cached_assets_storage_client.delete_dataset_directory(dataset)
+            assets_storage_client.delete_dataset_directory(dataset)
             logging.debug(f"{dataset} has been deleted with {datasets_cache_records} cache records")
         else:
             logging.debug(f"unable to delete {dataset}")
@@ -106,8 +105,8 @@ def delete_obsolete_cache(
 def create_delete_obsolete_cache_endpoint(
     hf_endpoint: str,
     max_age: int,
-    assets_directory: StrPath,
-    cached_assets_directory: StrPath,
+    cached_assets_storage_client: StorageClient,
+    assets_storage_client: StorageClient,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
@@ -127,8 +126,8 @@ def create_delete_obsolete_cache_endpoint(
                 delete_obsolete_cache(
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
-                    assets_directory=assets_directory,
-                    cached_assets_directory=cached_assets_directory,
+                    cached_assets_storage_client=cached_assets_storage_client,
+                    assets_storage_client=assets_storage_client,
                 ),
                 max_age=max_age,
             )

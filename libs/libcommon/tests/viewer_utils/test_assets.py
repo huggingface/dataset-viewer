@@ -1,123 +1,85 @@
-import io
-import os
 from collections.abc import Mapping
 from io import BytesIO
+from pathlib import Path
 
-import boto3
+import pytest
 import soundfile  # type: ignore
 from datasets import Dataset
-from moto import mock_s3
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.s3_client import S3Client
-from libcommon.storage import StrPath
-from libcommon.storage_options import S3StorageOptions
+from libcommon.public_assets_storage import PublicAssetsStorage
+from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
+ASSETS_FOLDER = "assets"
+ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 
-def test_create_image_file_with_s3_storage(datasets: Mapping[str, Dataset], cached_assets_directory: StrPath) -> None:
-    # ensure directory is emtpy
-    assert len(os.listdir(cached_assets_directory)) == 0
+
+@pytest.fixture
+def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
+    storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder=ASSETS_FOLDER,
+    )
+    return PublicAssetsStorage(
+        assets_base_url=ASSETS_BASE_URL,
+        overwrite=False,
+        storage_client=storage_client,
+    )
+
+
+def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
     dataset = datasets["image"]
-    with mock_s3():
-        bucket_name = "bucket"
-        region = "us-east-1"
-        access_key_id = "access_key_id"
-        secret_access_key = "secret_access_key"
-        folder_name = "assets"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
+    value = create_image_file(
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        image=dataset[0]["col"],
+        column="col",
+        filename="image.jpg",
+        row_idx=7,
+        format="JPEG",
+        public_assets_storage=public_assets_storage,
+    )
+    image_key = "dataset/--/revision/--/config/split/7/col/image.jpg"
+    assert value == {
+        "src": f"{ASSETS_BASE_URL}/{image_key}",
+        "height": 480,
+        "width": 640,
+    }
+    assert public_assets_storage.storage_client.exists(image_key)
 
-        s3_client = S3Client(
-            region_name=region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-            bucket_name=bucket_name,
-        )
-        storage_options = S3StorageOptions(
-            assets_base_url="http://localhost/assets",
-            assets_directory=cached_assets_directory,
-            overwrite=True,
-            s3_client=s3_client,
-            s3_folder_name=folder_name,
-        )
-
-        value = create_image_file(
-            dataset="dataset",
-            revision="revision",
-            config="config",
-            split="split",
-            image=dataset[0]["col"],
-            column="col",
-            filename="image.jpg",
-            row_idx=7,
-            storage_options=storage_options,
-        )
-        assert value == {
-            "src": "http://localhost/assets/dataset/--/revision/--/config/split/7/col/image.jpg",
-            "height": 480,
-            "width": 640,
-        }
-        body = (
-            conn.Object(bucket_name, "assets/dataset/--/revision/--/config/split/7/col/image.jpg").get()["Body"].read()
-        )
-        assert body is not None
-
-        image = PILImage.open(io.BytesIO(body))
-        assert image is not None
-    # ensure directory remains emtpy after file uploading
-    assert len(os.listdir(cached_assets_directory)) == 0
+    image = PILImage.open(f"{public_assets_storage.storage_client.get_base_directory()}/{image_key}")
+    assert image is not None
 
 
-def test_create_audio_file_with_s3_storage(datasets: Mapping[str, Dataset], cached_assets_directory: StrPath) -> None:
+def test_create_audio_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
     dataset = datasets["audio"]
     value = dataset[0]["col"]
     buffer = BytesIO()
     soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
     audio_file_bytes = buffer.read()
-    with mock_s3():
-        bucket_name = "bucket"
-        region = "us-east-1"
-        access_key_id = "access_key_id"
-        secret_access_key = "secret_access_key"
-        folder_name = "assets"
-        conn = boto3.resource("s3", region_name=region)
-        conn.create_bucket(Bucket=bucket_name)
+    value = create_audio_file(
+        dataset="dataset",
+        revision="revision",
+        config="config",
+        split="split",
+        row_idx=7,
+        audio_file_extension=".wav",
+        audio_file_bytes=audio_file_bytes,
+        column="col",
+        filename="audio.wav",
+        public_assets_storage=public_assets_storage,
+    )
 
-        s3_client = S3Client(
-            region_name=region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-            bucket_name=bucket_name,
-        )
-        storage_options = S3StorageOptions(
-            assets_base_url="http://localhost/assets",
-            assets_directory=cached_assets_directory,
-            overwrite=True,
-            s3_client=s3_client,
-            s3_folder_name=folder_name,
-        )
+    audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
+    assert value == [
+        {
+            "src": f"{ASSETS_BASE_URL}/{audio_key}",
+            "type": "audio/wav",
+        },
+    ]
 
-        value = create_audio_file(
-            dataset="dataset",
-            revision="revision",
-            config="config",
-            split="split",
-            row_idx=7,
-            audio_file_extension=".wav",
-            audio_file_bytes=audio_file_bytes,
-            column="col",
-            filename="audio.wav",
-            storage_options=storage_options,
-        )
-
-        assert value == [
-            {
-                "src": "http://localhost/assets/dataset/--/revision/--/config/split/7/col/audio.wav",
-                "type": "audio/wav",
-            },
-        ]
-        audio_object = (
-            conn.Object(bucket_name, "assets/dataset/--/revision/--/config/split/7/col/audio.wav").get()["Body"].read()
-        )
-        assert audio_object is not None
+    assert public_assets_storage.storage_client.exists(audio_key)
