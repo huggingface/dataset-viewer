@@ -53,3 +53,8 @@ module = [
 ]
 # ^ huggingface_hub is not typed since version 0.13.0
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"

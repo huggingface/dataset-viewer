@@ -64,3 +64,8 @@ module = [
 ]
 ignore_missing_imports = true
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"

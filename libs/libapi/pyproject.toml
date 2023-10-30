@@ -60,3 +60,8 @@ module = [
     "tqdm.*"
 ]
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"
