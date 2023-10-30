@@ -14,7 +14,6 @@ from libcommon.config import (
     ParquetMetadataConfig,
     ProcessingGraphConfig,
     QueueConfig,
-    S3Config,
 )
 
 ADMIN_UVICORN_HOSTNAME = "localhost"
@@ -141,7 +140,6 @@ class AppConfig:
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    s3: S3Config = field(default_factory=S3Config)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -159,5 +157,4 @@ class AppConfig:
             processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             admin=AdminConfig.from_env(common_config),
-            s3=S3Config.from_env(),
         )

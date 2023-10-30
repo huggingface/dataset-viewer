@@ -3,7 +3,6 @@
 
 import os
 from collections.abc import Generator
-from pathlib import Path
 
 import duckdb
 import pyarrow as pa
@@ -11,21 +10,11 @@ import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
 from libapi.response import create_response
-from libcommon.storage_client import StorageClient
+from libcommon.s3_client import S3Client
+from libcommon.storage import StrPath
 
 from search.config import AppConfig
 from search.routes.filter import execute_filter_query, validate_where_parameter
-
-CACHED_ASSETS_FOLDER = "cached-assets"
-
-
-@pytest.fixture
-def storage_client(tmp_path: Path) -> StorageClient:
-    return StorageClient(
-        protocol="file",
-        root=str(tmp_path),
-        folder=CACHED_ASSETS_FOLDER,
-    )
 
 
 @pytest.fixture
@@ -87,7 +76,7 @@ def test_execute_filter_query_raises(where: str, index_file_location: str) -> No
         )
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
+def test_create_response(ds: Dataset, app_config: AppConfig, cached_assets_directory: StrPath) -> None:
     dataset, config, split = "ds", "default", "train"
     pa_table = pa.Table.from_pydict(
         {
@@ -97,13 +86,21 @@ def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: Sto
             "age": [35, 30, 25, 30],
         }
     )
+    s3_client = S3Client(
+        region_name=app_config.s3.region,
+        aws_access_key_id=app_config.s3.access_key_id,
+        aws_secret_access_key=app_config.s3.secret_access_key,
+        bucket_name=app_config.s3.bucket,
+    )
     response = create_response(
         dataset=dataset,
         revision="revision",
         config=config,
         split=split,
         cached_assets_base_url=app_config.cached_assets.base_url,
-        storage_client=storage_client,
+        cached_assets_directory=cached_assets_directory,
+        s3_client=s3_client,
+        cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
         pa_table=pa_table,
         offset=0,
         features=ds.features,

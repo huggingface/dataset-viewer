@@ -152,15 +152,6 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
-
-assets:
-  storageRoot: "hf-datasets-server-statics"
-  storageProtocol: "s3"
-
-cachedAssets:
-  storageRoot: "hf-datasets-server-statics"
-  storageProtocol: "s3"
-
 duckDBIndex:
   maxParquetSizeBytes: "5_000_000_000"
 
