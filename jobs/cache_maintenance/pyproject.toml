@@ -33,9 +33,6 @@ markers = [
 [tool.coverage.run]
 source = ["cache_maintenance"]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 119
 preview = true

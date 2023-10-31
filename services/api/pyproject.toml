@@ -41,9 +41,6 @@ markers = [
 [tool.coverage.run]
 source = ["api"]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 119
 preview = true

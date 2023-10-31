@@ -42,9 +42,6 @@ log_cli = true
 [tool.coverage.run]
 source = ["sse_api"]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 119
 preview = true

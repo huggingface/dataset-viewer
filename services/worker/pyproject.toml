@@ -79,9 +79,6 @@ markers = [
 [tool.coverage.run]
 source = ["worker"]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 119
 preview = true

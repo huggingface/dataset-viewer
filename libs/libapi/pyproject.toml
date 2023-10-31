@@ -36,9 +36,6 @@ filterwarnings = ["ignore::DeprecationWarning"]
 [tool.coverage.run]
 source = ["libapi"]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 119
 preview = true
