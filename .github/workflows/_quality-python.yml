@@ -42,8 +42,6 @@ jobs:
           poetry install
       - name: Run black
         run: poetry run black --check tests src
-      - name: Run isort
-        run: poetry run isort --check-only tests src
       - name: Run ruff on src
         run: poetry run ruff check src
       - name: Run ruff on tests

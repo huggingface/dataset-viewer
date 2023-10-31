@@ -14,7 +14,6 @@ lock:
 .PHONY: quality
 quality:
 	poetry run black --check tests src
-	poetry run isort --check-only tests src
 	poetry run ruff check src
 	poetry run ruff check tests --ignore=ARG
 	poetry run mypy tests src
@@ -25,7 +24,8 @@ quality:
 .PHONY: style
 style:
 	poetry run black tests src
-	poetry run isort tests src
+	poetry run ruff check --fix src
+	poetry run ruff check --fix tests --ignore=ARG
 
 .PHONY: pip-audit
 pip-audit:
