@@ -10,12 +10,8 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
-from libcommon.s3_client import S3Client
-from libcommon.storage import (
-    exists,
-    init_cached_assets_dir,
-    init_duckdb_index_cache_dir,
-)
+from libcommon.storage import exists, init_duckdb_index_cache_dir
+from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -36,9 +32,6 @@ def create_app() -> Starlette:
 def create_app_with_config(app_config: AppConfig) -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
-    cached_assets_directory = init_cached_assets_dir(directory=app_config.cached_assets.storage_directory)
-    if not exists(cached_assets_directory):
-        raise RuntimeError("The cached assets storage directory could not be accessed. Exiting.")
 
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     if not exists(duckdb_index_cache_directory):
@@ -67,11 +60,13 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
-    s3_client = S3Client(
-        aws_access_key_id=app_config.s3.access_key_id,
-        aws_secret_access_key=app_config.s3.secret_access_key,
-        region_name=app_config.s3.region,
-        bucket_name=app_config.s3.bucket,
+    storage_client = StorageClient(
+        protocol=app_config.cached_assets.storage_protocol,
+        root=app_config.cached_assets.storage_root,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        folder=app_config.cached_assets.folder_name,
+        client_kwargs={"region_name": app_config.s3.region_name},
     )
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
@@ -88,9 +83,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cached_assets_base_url=app_config.cached_assets.base_url,
-                cached_assets_directory=cached_assets_directory,
-                cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
-                s3_client=s3_client,
+                storage_client=storage_client,
                 cache_max_days=app_config.cache.max_days,
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -112,9 +105,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_base_url=app_config.cached_assets.base_url,
-                cached_assets_directory=cached_assets_directory,
-                s3_client=s3_client,
-                cached_assets_s3_folder_name=app_config.cached_assets.s3_folder_name,
+                storage_client=storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,

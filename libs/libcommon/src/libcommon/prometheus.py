@@ -51,12 +51,6 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
     labelnames=["kind", "http_status", "error_code"],
     multiprocess_mode="liveall",
 )
-ASSETS_DISK_USAGE = Gauge(
-    name="assets_disk_usage",
-    documentation="Usage of the disk where the assets and cached_assets are stored",
-    labelnames=["type"],
-    multiprocess_mode="liveall",
-)
 DESCRIPTIVE_STATISTICS_DISK_USAGE = Gauge(
     name="descriptive_statistics_disk_usage",
     documentation="Usage of the disk where the descriptive statistics temporary files are stored (workers)",
@@ -107,10 +101,6 @@ def update_disk_gauge(gauge: Gauge, directory: StrPath) -> None:
     gauge.labels(type="used").set(used)
     gauge.labels(type="free").set(free)
     gauge.labels(type="percent").set(percent)
-
-
-def update_assets_disk_usage(directory: StrPath) -> None:
-    update_disk_gauge(ASSETS_DISK_USAGE, directory)
 
 
 def update_descriptive_statistics_disk_usage(directory: StrPath) -> None:

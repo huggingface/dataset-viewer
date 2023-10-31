@@ -2,10 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from functools import partial
-from typing import Optional, Union
+from typing import Optional
 
 from datasets import Features
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
@@ -18,7 +18,7 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    public_assets_storage: PublicAssetsStorage,
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -33,7 +33,7 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -49,7 +49,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    public_assets_storage: PublicAssetsStorage,
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:
@@ -60,7 +60,7 @@ def transform_rows(
         config=config,
         split=split,
         features=features,
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
         offset=offset,
         row_idx_column=row_idx_column,
     )
