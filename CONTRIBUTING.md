@@ -50,7 +50,7 @@ If you would like to work on any of the open Issues:
 
 5. Develop the features on your branch.
 
-6. Format your code. Run black and isort so that your newly added files look nice with the following command:
+6. Format your code. Run the linter and formatter, so that your newly added files look nice with the following command:
 
    ```bash
    make style
