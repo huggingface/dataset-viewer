@@ -17,7 +17,6 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-black = "^22.12.0"
 boto3 = "^1.28.43"
 moto = "^4.2.0"
 mypy = "^1.0.0"
