@@ -232,5 +232,3 @@ def create_search_endpoint(
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
     return search_endpoint
-
-a = ( 1, 2 )
