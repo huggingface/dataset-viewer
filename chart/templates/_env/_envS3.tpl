@@ -2,8 +2,10 @@
 # Copyright 2023 The HuggingFace Authors.
 
 {{- define "envS3" -}}
-- name: S3_REGION_NAME
-  value: {{ .Values.s3.regionName | quote }}
+- name: S3_BUCKET
+  value: {{ .Values.s3.bucket | quote }}
+- name: S3_REGION
+  value: {{ .Values.s3.region | quote }}
 - name: S3_ACCESS_KEY_ID
   {{- if .Values.secrets.s3.accessKeyId.fromSecret }}
   valueFrom:

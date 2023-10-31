@@ -932,13 +932,7 @@ def fetch_names(
         return []
 
 
-@dataclass
-class DatasetWithRevision:
-    dataset: str
-    revision: str
-
-
-def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[DatasetWithRevision]:
+def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[str]:
     """
     Get the list of datasets for which an artifact of some kind has been updated in the last days.
 
@@ -947,21 +941,21 @@ def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[DatasetWit
         days (int): The number of days to look back.
 
     Returns:
-        list[DatasetWithRevision]: The list of datasets, with the git revision of the last artifact.
+        list[str]: The list of datasets.
     """
 
     pipeline = [
         {"$match": {"kind": kind, "http_status": HTTPStatus.OK, "updated_at": {"$gt": get_datetime(days=days)}}},
         {"$sort": {"updated_at": 1}},
-        {"$group": {"_id": "$dataset", "revision": {"$last": "$dataset_git_revision"}}},
-        {"$project": {"dataset": "$_id", "_id": 0, "revision": 1}},
+        {"$group": {"_id": 0, "datasets": {"$addToSet": "$dataset"}}},
+        {"$unwind": "$datasets"},
     ]
-    return list(
-        DatasetWithRevision(dataset=response["dataset"], revision=response["revision"])
-        for response in CachedResponseDocument.objects(
+    return [
+        str(dataset["datasets"])
+        for dataset in CachedResponseDocument.objects(
             kind=kind, http_status=HTTPStatus.OK, updated_at__gt=get_datetime(days=days)
         ).aggregate(pipeline)
-    )
+    ]
 
 
 # only for the tests

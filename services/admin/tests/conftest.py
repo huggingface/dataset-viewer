@@ -7,6 +7,7 @@ from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
+from libcommon.storage import StrPath, init_assets_dir
 from pytest import MonkeyPatch, fixture
 
 from admin.config import AppConfig
@@ -39,6 +40,11 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 @fixture(scope="session")
 def processing_graph(app_config: AppConfig) -> ProcessingGraph:
     return ProcessingGraph(app_config.processing_graph)
+
+
+@fixture(scope="session")
+def assets_directory(app_config: AppConfig) -> StrPath:
+    return init_assets_dir(directory=app_config.assets.storage_directory)
 
 
 @fixture(autouse=True)

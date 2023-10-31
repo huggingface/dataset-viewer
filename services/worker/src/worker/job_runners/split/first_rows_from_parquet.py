@@ -16,9 +16,9 @@ from libcommon.exceptions import (
 )
 from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.public_assets_storage import PublicAssetsStorage
+from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
-from libcommon.storage_client import StorageClient
+from libcommon.storage_options import S3StorageOptions
 from libcommon.utils import JobInfo, Row, RowItem
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
@@ -35,7 +35,7 @@ def transform_rows(
     split: str,
     rows: list[RowItem],
     features: Features,
-    public_assets_storage: PublicAssetsStorage,
+    storage_options: S3StorageOptions,
 ) -> list[Row]:
     return [
         {
@@ -48,7 +48,7 @@ def transform_rows(
                 cell=row["row"][featureName] if featureName in row["row"] else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                public_assets_storage=public_assets_storage,
+                storage_options=storage_options,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -61,7 +61,7 @@ def compute_first_rows_response(
     revision: str,
     config: str,
     split: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_options: S3StorageOptions,
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
@@ -130,7 +130,7 @@ def compute_first_rows_response(
             split=split,
             rows=rows,
             features=features,
-            public_assets_storage=public_assets_storage,
+            storage_options=storage_options,
         )
     except Exception as err:
         raise RowsPostProcessingError(
@@ -156,6 +156,7 @@ def compute_first_rows_response(
 
 
 class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
+    assets_directory: StrPath
     first_rows_config: FirstRowsConfig
     indexer: Indexer
 
@@ -180,8 +181,9 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         processing_graph: ProcessingGraph,
+        assets_directory: StrPath,
         parquet_metadata_directory: StrPath,
-        storage_client: StorageClient,
+        s3_client: S3Client,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -189,6 +191,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             processing_step=processing_step,
         )
         self.first_rows_config = app_config.first_rows
+        self.assets_directory = assets_directory
         self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
@@ -201,10 +204,12 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
 
-        self.public_assets_storage = PublicAssetsStorage(
+        self.storage_options = S3StorageOptions(
             assets_base_url=self.assets_base_url,
+            assets_directory=self.assets_directory,
             overwrite=True,
-            storage_client=storage_client,
+            s3_client=s3_client,
+            s3_folder_name=app_config.assets.s3_folder_name,
         )
 
     def compute(self) -> CompleteJobResult:
@@ -214,7 +219,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 revision=self.dataset_git_revision,
                 config=self.config,
                 split=self.split,
-                public_assets_storage=self.public_assets_storage,
+                storage_options=self.storage_options,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,

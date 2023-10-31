@@ -4,17 +4,19 @@
 from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
-from pathlib import Path
 
+import boto3
 import pytest
 from datasets.packaged_modules import csv
 from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.s3_client import S3Client
 from libcommon.simple_cache import upsert_response
-from libcommon.storage_client import StorageClient
+from libcommon.storage import StrPath
 from libcommon.utils import Priority
+from moto import mock_s3
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_streaming import (
@@ -31,10 +33,10 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromStreamingJ
 
 @pytest.fixture
 def get_job_runner(
+    assets_directory: StrPath,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
-    tmp_path: Path,
 ) -> GetJobRunner:
     def _get_job_runner(
         dataset: str,
@@ -74,6 +76,18 @@ def get_job_runner(
             http_status=HTTPStatus.OK,
         )
 
+        bucket_name = "bucket"
+        region = "us-east-1"
+        conn = boto3.resource("s3", region_name=region)
+        conn.create_bucket(Bucket=bucket_name)
+
+        s3_client = S3Client(
+            region_name=region,
+            aws_access_key_id="access_key_id",
+            aws_secret_access_key="secret_access_key",
+            bucket_name=bucket_name,
+        )
+
         return SplitFirstRowsFromStreamingJobRunner(
             job_info={
                 "type": SplitFirstRowsFromStreamingJobRunner.get_job_type(),
@@ -90,11 +104,8 @@ def get_job_runner(
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
-            storage_client=StorageClient(
-                protocol="file",
-                root=str(tmp_path),
-                folder="assets",
-            ),
+            assets_directory=assets_directory,
+            s3_client=s3_client,
         )
 
     return _get_job_runner
@@ -103,17 +114,18 @@ def get_job_runner(
 def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
     dataset = hub_public_csv
     config, split = get_default_config_split()
-    job_runner = get_job_runner(dataset, config, split, app_config)
-    response = job_runner.compute()
-    assert response
-    content = response.content
-    assert content
-    assert content["features"][0]["feature_idx"] == 0
-    assert content["features"][0]["name"] == "col_1"
-    assert content["features"][0]["type"]["_type"] == "Value"
-    assert content["features"][0]["type"]["dtype"] == "int64"  # <---|
-    assert content["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
-    assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
+    with mock_s3():
+        job_runner = get_job_runner(dataset, config, split, app_config)
+        response = job_runner.compute()
+        assert response
+        content = response.content
+        assert content
+        assert content["features"][0]["feature_idx"] == 0
+        assert content["features"][0]["name"] == "col_1"
+        assert content["features"][0]["type"]["_type"] == "Value"
+        assert content["features"][0]["type"]["dtype"] == "int64"  # <---|
+        assert content["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+        assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
 
 
 @pytest.mark.parametrize(
@@ -171,22 +183,23 @@ def test_number_rows(
     dataset = hub_datasets[name]["name"]
     expected_first_rows_response = hub_datasets[name]["first_rows_response"]
     config, split = get_default_config_split()
-    job_runner = get_job_runner(
-        dataset,
-        config,
-        split,
-        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
-    )
+    with mock_s3():
+        job_runner = get_job_runner(
+            dataset,
+            config,
+            split,
+            app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
+        )
 
-    if exception_name is None:
-        job_runner.validate()
-        result = job_runner.compute().content
-        assert result == expected_first_rows_response
-    else:
-        with pytest.raises(Exception) as exc_info:
+        if exception_name is None:
             job_runner.validate()
-            job_runner.compute()
-        assert exc_info.typename == exception_name
+            result = job_runner.compute().content
+            assert result == expected_first_rows_response
+        else:
+            with pytest.raises(Exception) as exc_info:
+                job_runner.validate()
+                job_runner.compute()
+            assert exc_info.typename == exception_name
 
 
 @pytest.mark.parametrize(
@@ -215,29 +228,30 @@ def test_from_streaming_truncation(
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
     config, split = get_default_config_split()
-    job_runner = get_job_runner(
-        dataset,
-        config,
-        split,
-        replace(
-            app_config,
-            common=replace(app_config.common, hf_token=None),
-            first_rows=replace(
-                app_config.first_rows,
-                max_number=1_000_000,
-                min_number=10,
-                max_bytes=rows_max_bytes,
-                min_cell_bytes=10,
-                columns_max_number=columns_max_number,
+    with mock_s3():
+        job_runner = get_job_runner(
+            dataset,
+            config,
+            split,
+            replace(
+                app_config,
+                common=replace(app_config.common, hf_token=None),
+                first_rows=replace(
+                    app_config.first_rows,
+                    max_number=1_000_000,
+                    min_number=10,
+                    max_bytes=rows_max_bytes,
+                    min_cell_bytes=10,
+                    columns_max_number=columns_max_number,
+                ),
             ),
-        ),
-    )
+        )
 
-    if error_code:
-        with pytest.raises(CustomError) as error_info:
-            job_runner.compute()
-        assert error_info.value.code == error_code
-    else:
-        response = job_runner.compute().content
-        assert get_json_size(response) <= rows_max_bytes
-        assert response["truncated"] == truncated
+        if error_code:
+            with pytest.raises(CustomError) as error_info:
+                job_runner.compute()
+            assert error_info.value.code == error_code
+        else:
+            response = job_runner.compute().content
+            assert get_json_size(response) <= rows_max_bytes
+            assert response["truncated"] == truncated

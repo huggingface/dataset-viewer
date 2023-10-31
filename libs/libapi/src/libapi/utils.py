@@ -4,7 +4,7 @@
 import logging
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import pyarrow as pa
 from datasets import Features
@@ -12,12 +12,12 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
     get_best_response,
 )
+from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -207,7 +207,7 @@ def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: list[str],
-    public_assets_storage: PublicAssetsStorage,
+    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
     row_idx_column: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
@@ -223,7 +223,7 @@ def to_rows_list(
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            public_assets_storage=public_assets_storage,
+            storage_options=storage_options,
             offset=offset,
             row_idx_column=row_idx_column,
         )

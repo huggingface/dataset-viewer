@@ -54,6 +54,12 @@ def test_metrics() -> None:
 
     # the disk usage metrics, on the other end, are computed at runtime, so we should see them
     assert has_metric(
+        name="assets_disk_usage",
+        labels={"type": "total", "pid": "[0-9]*"},
+        metric_names=metric_names,
+    ), "assets_disk_usage"
+
+    assert has_metric(
         name="descriptive_statistics_disk_usage",
         labels={"type": "total", "pid": "[0-9]*"},
         metric_names=metric_names,
