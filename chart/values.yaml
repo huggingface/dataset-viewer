@@ -84,7 +84,7 @@ common:
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
   # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}}"
+  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-V2"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
