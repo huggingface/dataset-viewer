@@ -26,9 +26,6 @@
     value: {{ include "search.url" . | quote }}
   - name: URL_SSE_API
     value: {{ include "sseApi.url" . | quote }}
-  volumeMounts:
-  {{ include "volumeMountAssetsRO" . | nindent 2 }}
-  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   - name: nginx-templates
     mountPath: /etc/nginx/templates
     mountPropagation: None
