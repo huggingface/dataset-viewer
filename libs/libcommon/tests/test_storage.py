@@ -42,7 +42,7 @@ def test_init_dir(
         result = init_dir(directory=directory, appname=appname)
         assert result != directory, result
         assert subdirectory not in str(result), result
-        assert type(result) is str, result
+        assert isinstance(result, str), result
         if appname:
             assert appname in str(result), result
     Path(result).exists()
@@ -79,7 +79,7 @@ def test_init_assets_dir(
         result = init_assets_dir(directory=directory)
         assert result != directory, result
         assert subdirectory not in str(result), result
-        assert type(result) is str, result
+        assert isinstance(result, str), result
         assert ASSETS_CACHE_APPNAME in str(result), result
 
     Path(result).exists()
