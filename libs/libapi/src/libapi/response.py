@@ -2,9 +2,8 @@ import logging
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.s3_client import S3Client
-from libcommon.storage import StrPath
-from libcommon.storage_options import S3StorageOptions
+from libcommon.public_assets_storage import PublicAssetsStorage
+from libcommon.storage_client import StorageClient
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import to_features_list
 
@@ -19,9 +18,7 @@ def create_response(
     config: str,
     split: str,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     pa_table: pa.Table,
     offset: int,
     features: Features,
@@ -34,12 +31,10 @@ def create_response(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    storage_options = S3StorageOptions(
+    public_assets_storage = PublicAssetsStorage(
         assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
         overwrite=False,
-        s3_client=s3_client,
-        s3_folder_name=cached_assets_s3_folder_name,
+        storage_client=storage_client,
     )
     return {
         "features": to_features_list(features),
@@ -49,7 +44,7 @@ def create_response(
             revision=revision,
             config=config,
             split=split,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,

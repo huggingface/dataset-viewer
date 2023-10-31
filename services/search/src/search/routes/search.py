@@ -33,9 +33,9 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
-from libcommon.storage_options import S3StorageOptions
+from libcommon.storage_client import StorageClient
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -80,9 +80,7 @@ def create_response(
     config: str,
     split: str,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -95,12 +93,10 @@ def create_response(
     )
     pa_table = pa_table.drop(unsupported_columns)
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    storage_options = S3StorageOptions(
+    public_assets_storage = PublicAssetsStorage(
         assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
         overwrite=False,
-        s3_client=s3_client,
-        s3_folder_name=cached_assets_s3_folder_name,
+        storage_client=storage_client,
     )
 
     return PaginatedResponse(
@@ -111,7 +107,7 @@ def create_response(
             revision=revision,
             config=config,
             split=split,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -126,9 +122,7 @@ def create_search_endpoint(
     processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -225,9 +219,7 @@ def create_search_endpoint(
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
-                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                        storage_client=storage_client,
                         offset=offset,
                         features=features,
                         num_rows_total=num_rows_total,
