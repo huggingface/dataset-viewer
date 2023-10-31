@@ -18,6 +18,8 @@ from search.routes.filter import execute_filter_query, validate_where_parameter
 
 CACHED_ASSETS_FOLDER = "cached-assets"
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture
 def storage_client(tmp_path: Path) -> StorageClient:
@@ -87,7 +89,7 @@ def test_execute_filter_query_raises(where: str, index_file_location: str) -> No
         )
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
+async def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
     dataset, config, split = "ds", "default", "train"
     pa_table = pa.Table.from_pydict(
         {
@@ -97,7 +99,7 @@ def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: Sto
             "age": [35, 30, 25, 30],
         }
     )
-    response = create_response(
+    response = await create_response(
         dataset=dataset,
         revision="revision",
         config=config,

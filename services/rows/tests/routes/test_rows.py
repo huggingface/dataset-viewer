@@ -33,6 +33,8 @@ from rows.config import AppConfig
 REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture
 def storage_client(tmp_path: Path) -> StorageClient:
@@ -472,8 +474,8 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
         rows_index_with_empty_dataset.query(offset=-1, length=2)
 
 
-def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
-    response = create_response(
+async def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
+    response = await create_response(
         dataset="ds",
         revision="revision",
         config="default",
@@ -495,11 +497,12 @@ def test_create_response(ds: Dataset, app_config: AppConfig, storage_client: Sto
     assert response["num_rows_per_page"] == 100
 
 
-def test_create_response_with_image(ds_image: Dataset, app_config: AppConfig, storage_client: StorageClient) -> None:
+async def test_create_response_with_image(
+    ds_image: Dataset, app_config: AppConfig, storage_client: StorageClient
+) -> None:
     dataset, config, split = "ds_image", "default", "train"
     image_key = "ds_image/--/revision/--/default/train/0/image/image.jpg"
-
-    response = create_response(
+    response = await create_response(
         dataset=dataset,
         revision="revision",
         config=config,
@@ -526,7 +529,6 @@ def test_create_response_with_image(ds_image: Dataset, app_config: AppConfig, st
             "truncated_cells": [],
         }
     ]
-
     assert storage_client.exists(image_key)
     image = PILImage.open(f"{storage_client.get_base_directory()}/{image_key}")
     assert image is not None

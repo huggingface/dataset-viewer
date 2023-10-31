@@ -97,3 +97,8 @@ def image_path() -> str:
     image_path = Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"
     assert image_path.is_file()
     return str(image_path)
+
+
+@fixture
+def anyio_backend() -> str:
+    return "asyncio"

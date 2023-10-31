@@ -154,7 +154,7 @@ def create_filter_endpoint(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
-                    response = create_response(
+                    response = await create_response(
                         dataset=dataset,
                         revision=revision,
                         config=config,

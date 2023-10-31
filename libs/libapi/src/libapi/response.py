@@ -12,7 +12,7 @@ from libapi.utils import to_rows_list
 ROW_IDX_COLUMN = "__hf_index_id"
 
 
-def create_response(
+async def create_response(
     dataset: str,
     revision: str,
     config: str,
@@ -38,7 +38,7 @@ def create_response(
     )
     return {
         "features": to_features_list(features),
-        "rows": to_rows_list(
+        "rows": await to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
             revision=revision,

@@ -98,7 +98,7 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         pa_table = rows_index.query(offset=offset, length=length)
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                        response = create_response(
+                        response = await create_response(
                             dataset=dataset,
                             revision=revision,
                             config=config,

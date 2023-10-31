@@ -198,7 +198,7 @@ def get_cache_entry_from_steps(
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
 
-def to_rows_list(
+async def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
     revision: str,
@@ -216,7 +216,7 @@ def to_rows_list(
             pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
-        transformed_rows = transform_rows(
+        transformed_rows = await transform_rows(
             dataset=dataset,
             revision=revision,
             config=config,

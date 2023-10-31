@@ -91,3 +91,8 @@ def hf_auth_path(app_config: AppConfig) -> str:
 @fixture
 def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
     return init_duckdb_index_cache_dir(app_config.duckdb_index.cache_directory)
+
+
+@fixture
+def anyio_backend() -> str:
+    return "asyncio"
