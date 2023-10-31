@@ -22,7 +22,7 @@ def clean_directory(pattern: str, expired_time_interval_seconds: int) -> None:
     total_dirs = 0
     total_files = 0
 
-    def rmtree_on_error(function: Any, path: str, excinfo: Any) -> None:  # noqa: U100, args needed for onerror=
+    def rmtree_on_error(function: Any, path: str, excinfo: Any) -> None:  # noqa: ARG001, args needed for onerror=
         logging.error(f"failed to delete directory {path=}")
 
     for path in glob.glob(pattern):
