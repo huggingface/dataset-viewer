@@ -42,10 +42,6 @@ markers = [
 [tool.coverage.run]
 source = ["rows"]
 
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 disallow_untyped_calls = false

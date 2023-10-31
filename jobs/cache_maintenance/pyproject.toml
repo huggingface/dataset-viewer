@@ -32,10 +32,6 @@ markers = [
 [tool.coverage.run]
 source = ["cache_maintenance"]
 
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 

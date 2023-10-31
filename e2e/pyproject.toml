@@ -30,10 +30,6 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 

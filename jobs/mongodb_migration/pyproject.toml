@@ -31,10 +31,6 @@ markers = [
 [tool.coverage.run]
 source = ["mongodb_migration"]
 
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 

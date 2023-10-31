@@ -50,10 +50,6 @@ markers = [
 [tool.coverage.run]
 source = ["libcommon"]
 
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 
