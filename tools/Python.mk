@@ -13,9 +13,9 @@ lock:
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
-	poetry run black --check tests src
 	poetry run ruff check src
 	poetry run ruff check tests --ignore=ARG
+	poetry run ruff format --check src tests
 	poetry run mypy tests src
 	poetry run bandit -r src
 	$(MAKE) pip-audit
@@ -23,9 +23,9 @@ quality:
 # Format source code automatically
 .PHONY: style
 style:
-	poetry run black tests src
 	poetry run ruff check --fix src
 	poetry run ruff check --fix tests --ignore=ARG
+	poetry run ruff format src tests
 
 .PHONY: pip-audit
 pip-audit:
