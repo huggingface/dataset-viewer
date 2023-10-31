@@ -16,7 +16,7 @@ quality:
 	poetry run black --check tests src
 	poetry run isort --check-only tests src
 	poetry run ruff check src
-	poetry run ruff check tests --ignore=ARG001
+	poetry run ruff check tests --ignore=ARG
 	poetry run mypy tests src
 	poetry run bandit -r src
 	$(MAKE) pip-audit

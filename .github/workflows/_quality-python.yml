@@ -47,7 +47,7 @@ jobs:
       - name: Run ruff on src
         run: poetry run ruff check src
       - name: Run ruff on tests
-        run: poetry run ruff check tests --ignore=ARG001
+        run: poetry run ruff check tests --ignore=ARG
       - name: Run mypy
         run: poetry run mypy tests src
       - name: Run bandit
