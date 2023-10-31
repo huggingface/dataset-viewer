@@ -2,18 +2,13 @@ import os
 import time
 from dataclasses import dataclass
 from http import HTTPStatus
-from pathlib import Path
 from typing import Optional
 
-import pytest
-
 from libcommon.prometheus import (
-    ASSETS_DISK_USAGE,
     QUEUE_JOBS_TOTAL,
     RESPONSES_IN_CACHE_TOTAL,
     Prometheus,
     StepProfiler,
-    update_assets_disk_usage,
     update_queue_jobs_total,
     update_responses_in_cache_total,
 )
@@ -204,24 +199,6 @@ def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
         )
         in metrics.metrics
     )
-
-
-@pytest.mark.parametrize("usage_type", ["total", "used", "free", "percent"])
-def test_assets_metrics(usage_type: str, tmp_path: Path) -> None:
-    ASSETS_DISK_USAGE.clear()
-
-    metrics = get_metrics()
-    name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})
-    assert name not in metrics.metrics
-
-    update_assets_disk_usage(directory=tmp_path)
-
-    metrics = get_metrics()
-    name = metrics.forge_metric_key(name="assets_disk_usage", content={"type": usage_type})
-    assert name in metrics.metrics
-    assert metrics.metrics[name] >= 0
-    if usage_type == "percent":
-        assert metrics.metrics[name] <= 100
 
 
 def test_process_metrics() -> None:
