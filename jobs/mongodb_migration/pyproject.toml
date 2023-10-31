@@ -38,3 +38,17 @@ preview = true
 
 [tool.mypy]
 strict = true
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"
+
+[tool.ruff.lint]
+extend-select = [
+    "ARG",  # flake8-unused-arguments
+    "I",  # isort
+    # flake8-pep585:
+    "UP006",  # non-pep585-annotation
+    "UP035",  # deprecated-import
+]
