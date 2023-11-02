@@ -530,9 +530,9 @@ async def test_create_response_with_image(
                 }
             },
             "truncated_cells": [],
-            "partial": False,
         }
     ]
+    assert response["partial"] is False
     assert storage_client.exists(image_key)
     image = PILImage.open(f"{storage_client.get_base_directory()}/{image_key}")
     assert image is not None
