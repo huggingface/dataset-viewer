@@ -11,7 +11,6 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import (
     StrPath,
-    init_assets_dir,
     init_duckdb_index_cache_dir,
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
@@ -135,11 +134,6 @@ def libraries_resource(app_config: AppConfig) -> Iterator[LibrariesResource]:
         numba_path=app_config.numba.path,
     ) as libraries_resource:
         yield libraries_resource
-
-
-@fixture
-def assets_directory(app_config: AppConfig) -> StrPath:
-    return init_assets_dir(app_config.assets.storage_directory)
 
 
 @fixture

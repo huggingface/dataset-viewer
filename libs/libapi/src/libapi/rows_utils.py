@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from collections.abc import Callable
 from functools import partial
-from typing import Optional, Union
+from typing import Any, Optional
 
+import anyio
 from datasets import Features
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
@@ -18,7 +20,7 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    public_assets_storage: PublicAssetsStorage,
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -33,7 +35,7 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -42,14 +44,14 @@ def _transform_row(
     return transformed_row
 
 
-def transform_rows(
+async def transform_rows(
     dataset: str,
     revision: str,
     config: str,
     split: str,
     rows: list[Row],
     features: Features,
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    public_assets_storage: PublicAssetsStorage,
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:
@@ -60,7 +62,7 @@ def transform_rows(
         config=config,
         split=split,
         features=features,
-        storage_options=storage_options,
+        public_assets_storage=public_assets_storage,
         offset=offset,
         row_idx_column=row_idx_column,
     )
@@ -69,6 +71,11 @@ def transform_rows(
         # Also multithreading is ok to convert audio data
         # (we use pydub which might spawn one ffmpeg process per conversion, which releases the GIL)
         desc = f"_transform_row for {dataset}"
-        return thread_map(fn, enumerate(rows), desc=desc, total=len(rows))  # type: ignore
+        _thread_map = partial(thread_map, desc=desc, total=len(rows))
+        return await anyio.to_thread.run_sync(_thread_map, fn, enumerate(rows))
     else:
-        return [fn((row_idx, row)) for row_idx, row in enumerate(rows)]
+
+        def _map(func: Callable[[Any], Any], *iterables: Any) -> list[Row]:
+            return list(map(func, *iterables))
+
+        return await anyio.to_thread.run_sync(_map, fn, enumerate(rows))

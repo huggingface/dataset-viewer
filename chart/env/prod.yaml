@@ -152,6 +152,15 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
+
+assets:
+  storageRoot: "hf-datasets-server-statics"
+  storageProtocol: "s3"
+
+cachedAssets:
+  storageRoot: "hf-datasets-server-statics"
+  storageProtocol: "s3"
+
 duckDBIndex:
   maxDatasetSize: "5_000_000_000"
 
@@ -210,6 +219,11 @@ backfill:
       cpu: 2
       memory: "8Gi"
 
+cleanDuckdbIndexCache:
+  nodeSelector:
+    role-datasets-server: "true"
+  expiredTimeIntervalSeconds: 259_200 # 3 days
+
 cleanHfDatasetsCache:
   nodeSelector:
     role-datasets-server: "true"
@@ -219,7 +233,6 @@ cleanDuckdbIndexDownloads:
   nodeSelector:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
-
 
 cleanDuckdbIndexJobRunner:
   nodeSelector:
@@ -333,7 +346,7 @@ api:
   uvicornNumWorkers: "9"
   nodeSelector:
     role-datasets-server: "true"
-  replicas: 4
+  replicas: 8
   service:
     type: NodePort
   resources:
@@ -408,7 +421,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 4
+    replicas: 6
     resources:
       requests:
         cpu: 8
@@ -424,7 +437,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 20
+    replicas: 30
     resources:
       requests:
         cpu: 1

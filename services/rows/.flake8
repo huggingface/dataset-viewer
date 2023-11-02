@@ -1,9 +1,0 @@
-[flake8]
-# Recommend matching the black line length (119),
-# rather than using the flake8 default of 79:
-max-line-length = 119
-extend-ignore = U101,W503
-unused-arguments-ignore-abstract-functions = true
-unused-arguments-ignore-overload-functions = true
-unused-arguments-ignore-override-functions = true
-unused-arguments-ignore-dunder = true

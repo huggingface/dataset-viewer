@@ -12,15 +12,14 @@ import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
-    duckdb_connect,
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
 from libapi.exceptions import ApiError, InvalidParameterError, UnexpectedApiError
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 from libapi.response import ROW_IDX_COLUMN, create_maybe_partial_response
 from libapi.utils import (
@@ -31,11 +30,13 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
 from starlette.responses import Response
+
+from search.duckdb_connection import duckdb_connect
 
 FILTER_QUERY = """\
     SELECT {columns}
@@ -60,9 +61,7 @@ def create_filter_endpoint(
     duckdb_index_file_directory: StrPath,
     target_revision: str,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     cache_max_days: int,
     blocked_datasets: list[str],
     hf_endpoint: str,
@@ -79,10 +78,10 @@ def create_filter_endpoint(
         with StepProfiler(method="filter_endpoint", step="all"):
             try:
                 with StepProfiler(method="filter_endpoint", step="validate parameters"):
-                    dataset = get_required_request_parameter(request, "dataset")
-                    config = get_required_request_parameter(request, "config")
-                    split = get_required_request_parameter(request, "split")
-                    where = get_required_request_parameter(request, "where")
+                    dataset = get_request_parameter(request, "dataset", required=True)
+                    config = get_request_parameter(request, "config", required=True)
+                    split = get_request_parameter(request, "split", required=True)
+                    where = get_request_parameter(request, "where", required=True)
                     validate_where_parameter(where)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
@@ -131,7 +130,7 @@ def create_filter_endpoint(
                     partial = split_directory.startswith("partial-") or filename.startswith("partial-")
 
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
-                    index_file_location = get_index_file_location_and_download_if_missing(
+                    index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,
@@ -162,15 +161,13 @@ def create_filter_endpoint(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
-                    response = create_maybe_partial_response(
+                    response = await create_maybe_partial_response(
                         dataset=dataset,
                         revision=revision,
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
-                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                        storage_client=storage_client,
                         pa_table=pa_table,
                         offset=offset,
                         features=features,

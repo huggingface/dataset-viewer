@@ -4,7 +4,7 @@
 import logging
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -12,12 +12,12 @@ from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
     CacheEntry,
     get_best_response,
 )
-from libcommon.storage_options import DirectoryStorageOptions, S3StorageOptions
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -94,7 +94,7 @@ def get_json_api_error_response(error: CustomError, max_age: int = 0, revision: 
 
 
 def is_non_empty_string(string: Any) -> bool:
-    return isinstance(string, str) and bool(string and string.strip())
+    return isinstance(string, str) and bool(string.strip())
 
 
 def are_valid_parameters(parameters: list[Any]) -> bool:
@@ -198,7 +198,7 @@ def get_cache_entry_from_steps(
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]
 
 
-def to_rows_list(
+async def to_rows_list(
     pa_table: pa.Table,
     dataset: str,
     revision: str,
@@ -207,7 +207,7 @@ def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: list[str],
-    storage_options: Union[DirectoryStorageOptions, S3StorageOptions],
+    public_assets_storage: PublicAssetsStorage,
     row_idx_column: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
@@ -216,14 +216,14 @@ def to_rows_list(
             pa_table = pa_table.add_column(idx, column, pa.array([None] * num_rows))
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
-        transformed_rows = transform_rows(
+        transformed_rows = await transform_rows(
             dataset=dataset,
             revision=revision,
             config=config,
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
             offset=offset,
             row_idx_column=row_idx_column,
         )

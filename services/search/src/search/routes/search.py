@@ -10,7 +10,6 @@ import pyarrow as pa
 from datasets import Features
 from libapi.authentication import auth_check
 from libapi.duckdb import (
-    duckdb_connect,
     get_cache_entry_from_duckdb_index_job,
     get_index_file_location_and_download_if_missing,
 )
@@ -20,9 +19,9 @@ from libapi.exceptions import (
     UnexpectedApiError,
 )
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 from libapi.response import ROW_IDX_COLUMN
 from libapi.utils import (
@@ -34,9 +33,9 @@ from libapi.utils import (
 )
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
+from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
-from libcommon.storage_options import S3StorageOptions
+from libcommon.storage_client import StorageClient
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, MaybePartialPaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -44,6 +43,8 @@ from libcommon.viewer_utils.features import (
 )
 from starlette.requests import Request
 from starlette.responses import Response
+
+from search.duckdb_connection import duckdb_connect
 
 FTS_COMMAND_COUNT = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"
@@ -72,16 +73,14 @@ def full_text_search(index_file_location: str, query: str, offset: int, length: 
     return num_rows_total, pa_table
 
 
-def create_response(
+async def create_response(
     pa_table: pa.Table,
     dataset: str,
     revision: str,
     config: str,
     split: str,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     offset: int,
     features: Features,
     num_rows_total: int,
@@ -95,23 +94,21 @@ def create_response(
     )
     pa_table = pa_table.drop(unsupported_columns)
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    storage_options = S3StorageOptions(
+    public_assets_storage = PublicAssetsStorage(
         assets_base_url=cached_assets_base_url,
-        assets_directory=cached_assets_directory,
         overwrite=False,
-        s3_client=s3_client,
-        s3_folder_name=cached_assets_s3_folder_name,
+        storage_client=storage_client,
     )
 
     return MaybePartialPaginatedResponse(
         features=to_features_list(features_without_key),
-        rows=to_rows_list(
+        rows=await to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
             revision=revision,
             config=config,
             split=split,
-            storage_options=storage_options,
+            public_assets_storage=public_assets_storage,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,
@@ -127,9 +124,7 @@ def create_search_endpoint(
     processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     target_revision: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -147,10 +142,10 @@ def create_search_endpoint(
         with StepProfiler(method="search_endpoint", step="all"):
             try:
                 with StepProfiler(method="search_endpoint", step="validate parameters"):
-                    dataset = get_required_request_parameter(request, "dataset")
-                    config = get_required_request_parameter(request, "config")
-                    split = get_required_request_parameter(request, "split")
-                    query = get_required_request_parameter(request, "query")
+                    dataset = get_request_parameter(request, "dataset", required=True)
+                    config = get_request_parameter(request, "config", required=True)
+                    split = get_request_parameter(request, "split", required=True)
+                    query = get_request_parameter(request, "query", required=True)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
 
@@ -200,7 +195,7 @@ def create_search_endpoint(
                     partial = split_directory.startswith("partial-") or filename.startswith("partial-")
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
-                    index_file_location = get_index_file_location_and_download_if_missing(
+                    index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,
@@ -225,16 +220,14 @@ def create_search_endpoint(
                         features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                     else:
                         features = Features.from_arrow_schema(pa_table.schema)
-                    response = create_response(
+                    response = await create_response(
                         pa_table=pa_table,
                         dataset=dataset,
                         revision=revision,
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        cached_assets_directory=cached_assets_directory,
-                        s3_client=s3_client,
-                        cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                        storage_client=storage_client,
                         offset=offset,
                         features=features,
                         num_rows_total=num_rows_total,

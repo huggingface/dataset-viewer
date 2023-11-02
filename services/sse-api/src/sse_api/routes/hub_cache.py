@@ -7,6 +7,7 @@ import logging
 from asyncio import CancelledError
 from collections.abc import AsyncGenerator, AsyncIterable
 
+from libapi.request import get_request_parameter
 from libapi.utils import Endpoint
 from sse_starlette import EventSourceResponse, ServerSentEvent
 from starlette.requests import Request
@@ -26,7 +27,7 @@ def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
     async def hub_cache_endpoint(request: Request) -> Response:
         logging.info("/hub-cache")
 
-        all = request.query_params.get("all", "false").lower() == "true"
+        all = get_request_parameter(request, "all", default="false").lower() == "true"
         # ^ the values that trigger the initialization are "true", "True" and any other case-insensitive variant
 
         uuid, event = hub_cache_watcher.subscribe()

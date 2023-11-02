@@ -8,9 +8,9 @@ from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.request import (
+    get_request_parameter,
     get_request_parameter_length,
     get_request_parameter_offset,
-    get_required_request_parameter,
 )
 from libapi.response import create_response
 from libapi.utils import (
@@ -23,9 +23,9 @@ from libapi.utils import (
 from libcommon.parquet_utils import Indexer
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
-from libcommon.s3_client import S3Client
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
+from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import UNSUPPORTED_FEATURES
 from starlette.requests import Request
 from starlette.responses import Response
@@ -39,9 +39,7 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 def create_rows_endpoint(
     processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
-    cached_assets_directory: StrPath,
-    s3_client: S3Client,
-    cached_assets_s3_folder_name: str,
+    storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
     cache_max_days: int,
     max_arrow_data_in_memory: int,
@@ -71,9 +69,9 @@ def create_rows_endpoint(
         with StepProfiler(method="rows_endpoint", step="all"):
             try:
                 with StepProfiler(method="rows_endpoint", step="validate parameters"):
-                    dataset = get_required_request_parameter(request, "dataset")
-                    config = get_required_request_parameter(request, "config")
-                    split = get_required_request_parameter(request, "split")
+                    dataset = get_request_parameter(request, "dataset", required=True)
+                    config = get_request_parameter(request, "config", required=True)
+                    split = get_request_parameter(request, "split", required=True)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logging.info(
@@ -100,15 +98,13 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         pa_table = rows_index.query(offset=offset, length=length)
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
-                        response = create_response(
+                        response = await create_response(
                             dataset=dataset,
                             revision=revision,
                             config=config,
                             split=split,
                             cached_assets_base_url=cached_assets_base_url,
-                            cached_assets_directory=cached_assets_directory,
-                            s3_client=s3_client,
-                            cached_assets_s3_folder_name=cached_assets_s3_folder_name,
+                            storage_client=storage_client,
                             pa_table=pa_table,
                             offset=offset,
                             features=rows_index.parquet_index.features,

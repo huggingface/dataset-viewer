@@ -40,14 +40,12 @@ jobs:
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: Run black
-        run: poetry run black --check tests src
-      - name: Run isort
-        run: poetry run isort --check-only tests src
-      - name: Run flake8 on src
-        run: poetry run flake8 src
-      - name: Run flake8 on tests
-        run: poetry run flake8 tests --ignore=U100
+      - name: Run ruff linter on src
+        run: poetry run ruff check src
+      - name: Run ruff linter on tests
+        run: poetry run ruff check tests --ignore=ARG
+      - name: Run ruff formatter
+        run: poetry run ruff format --check src tests
       - name: Run mypy
         run: poetry run mypy tests src
       - name: Run bandit

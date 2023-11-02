@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 from collections.abc import Iterator
-from pathlib import Path
 
 from environs import Env
 from pytest import fixture
@@ -9,7 +8,6 @@ from pytest import fixture
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_cached_assets_dir
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets"]
@@ -24,7 +22,7 @@ def env() -> Env:
 def cache_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="CACHE_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("CACHE_MONGO_URL is not set")
         return url
     except Exception as e:
@@ -35,7 +33,7 @@ def cache_mongo_host(env: Env) -> str:
 def queue_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="QUEUE_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("QUEUE_MONGO_URL is not set")
         return url
     except Exception as e:
@@ -46,17 +44,11 @@ def queue_mongo_host(env: Env) -> str:
 def metrics_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="METRICS_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("METRICS_MONGO_URL is not set")
         return url
     except Exception as e:
         raise ValueError("METRICS_MONGO_URL is not set") from e
-
-
-@fixture
-def cached_assets_directory(tmp_path: Path) -> StrPath:
-    cached_assets_directory = tmp_path / "cached-assets"
-    return init_cached_assets_dir(cached_assets_directory)
 
 
 @fixture
