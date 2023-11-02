@@ -51,7 +51,6 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
 
     try:
         total = 0
-        pending = 0
         split_duckdb_index_sizes: list[SplitDuckdbIndexSize] = []
         partial = False
         for split_item in content["splits"]:
@@ -66,7 +65,6 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
                 logging.debug(
                     "No response found in previous step for this dataset: 'split-duckdb-index' or 'config-info'."
                 )
-                pending += 1
                 continue
             if duckdb_index_response["http_status"] != HTTPStatus.OK:
                 logging.debug(f"Previous step gave an error: {duckdb_index_response['http_status']}.")
