@@ -46,7 +46,7 @@ def env() -> Env:
 def cache_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="CACHE_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("CACHE_MONGO_URL is not set")
         return url
     except Exception as e:

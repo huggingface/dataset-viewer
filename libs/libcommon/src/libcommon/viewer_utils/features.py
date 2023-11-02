@@ -212,7 +212,7 @@ def get_cell_value(
             json_path=json_path,
         )
     elif isinstance(fieldType, list):
-        if type(cell) != list:
+        if not isinstance(cell, list):
             raise TypeError("list cell must be a list.")
         if len(fieldType) != 1:
             raise TypeError("the feature type should be a 1-element list.")
@@ -233,7 +233,7 @@ def get_cell_value(
             for (idx, subCell) in enumerate(cell)
         ]
     elif isinstance(fieldType, Sequence):
-        if type(cell) == list:
+        if isinstance(cell, list):
             if fieldType.length >= 0 and len(cell) != fieldType.length:
                 raise TypeError("the cell length should be the same as the Sequence length.")
             return [
@@ -254,8 +254,8 @@ def get_cell_value(
         # if the internal feature of the Sequence is a dict, then the value will automatically
         # be converted into a dictionary of lists. See
         # https://huggingface.co/docs/datasets/v2.5.1/en/package_reference/main_classes#datasets.Features
-        if type(cell) == dict:
-            if any((type(v) != list) or (k not in fieldType.feature) for k, v in cell.items()):
+        if isinstance(cell, dict):
+            if any(not isinstance(v, list) or (k not in fieldType.feature) for k, v in cell.items()):
                 raise TypeError("The value of a Sequence of dicts should be a dictionary of lists.")
             return {
                 key: [
@@ -278,7 +278,7 @@ def get_cell_value(
         raise TypeError("Sequence cell must be a list or a dict.")
 
     elif isinstance(fieldType, dict):
-        if type(cell) != dict:
+        if not isinstance(cell, dict):
             raise TypeError("dict cell must be a dict.")
         return {
             key: get_cell_value(

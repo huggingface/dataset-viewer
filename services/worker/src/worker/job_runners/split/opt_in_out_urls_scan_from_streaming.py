@@ -73,9 +73,7 @@ async def opt_in_out_scan_urls(
         for offset in range(0, len(urls), urls_number_per_batch):
             offsets.append(offset)
             limit = offset + urls_number_per_batch
-            tasks.append(
-                create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, spawning_url))
-            )  # noqa: E203
+            tasks.append(create_task(opt_in_out_task(urls[offset:limit], session, semaphore, limiter, spawning_url)))  # noqa: E203
         await wait(tasks)
 
     opt_in_urls_indices = []

@@ -159,7 +159,8 @@ def get_parquet_and_info_job_runner(
 
 
 def count_expected_statistics_for_numerical_column(
-    column: pd.Series, dtype: ColumnType  # type: ignore
+    column: pd.Series,  # type: ignore
+    dtype: ColumnType,
 ) -> dict:  # type: ignore
     minimum, maximum, mean, median, std = (
         column.min(),
@@ -203,7 +204,8 @@ def count_expected_statistics_for_numerical_column(
 
 
 def count_expected_statistics_for_categorical_column(
-    column: pd.Series, class_label_feature: ClassLabel  # type: ignore
+    column: pd.Series,  # type: ignore
+    class_label_feature: ClassLabel,
 ) -> dict:  # type: ignore
     n_samples = column.shape[0]
     nan_count = column.isna().sum()

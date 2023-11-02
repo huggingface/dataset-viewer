@@ -22,7 +22,7 @@ def env() -> Env:
 def cache_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="CACHE_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("CACHE_MONGO_URL is not set")
         return url
     except Exception as e:
@@ -33,7 +33,7 @@ def cache_mongo_host(env: Env) -> str:
 def queue_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="QUEUE_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("QUEUE_MONGO_URL is not set")
         return url
     except Exception as e:
@@ -44,7 +44,7 @@ def queue_mongo_host(env: Env) -> str:
 def metrics_mongo_host(env: Env) -> str:
     try:
         url = env.str(name="METRICS_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("METRICS_MONGO_URL is not set")
         return url
     except Exception as e:

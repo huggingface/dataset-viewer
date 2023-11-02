@@ -14,7 +14,7 @@ def env() -> Env:
 def mongo_host(env: Env) -> str:
     try:
         url = env.str(name="DATABASE_MIGRATIONS_MONGO_URL")
-        if type(url) is not str:
+        if not isinstance(url, str):
             raise ValueError("DATABASE_MIGRATIONS_MONGO_URL is not set")
         return url
     except Exception as e:

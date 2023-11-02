@@ -18,7 +18,8 @@ class MigrationAddOwnerToQueueLock(Migration):
         logging.info("If missing, add the owner field with the same value as the field job_id to the locks")
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
         db[QUEUE_COLLECTION_LOCKS].update_many(
-            {"owner": {"$exists": False}}, [{"$set": {"owner": "$job_id"}}]  # type: ignore
+            {"owner": {"$exists": False}},
+            [{"$set": {"owner": "$job_id"}}],  # type: ignore
         )
 
     def down(self) -> None:

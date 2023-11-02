@@ -18,16 +18,12 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-black = "^22.12.0"
-flake8 = "^3.9.2"
-flake8-pep585 = "^0.1.7"
-flake8-unused-arguments = "^0.0.13"
-isort = "^5.12.0"
 mypy = "^1.0.0"
 pandas-stubs = "^1.5.3"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-cov = "^2.12.1"
+ruff = "^0.1.3"
 types-jsonschema = "^4.17.0.4"
 types-psutil = "^5.9.5"
 
@@ -45,13 +41,6 @@ markers = [
 [tool.coverage.run]
 source = ["search"]
 
-[tool.isort]
-profile = "black"
-
-[tool.black]
-line-length = 119
-preview = true
-
 [tool.mypy]
 strict = true
 disallow_untyped_calls = false
@@ -68,3 +57,17 @@ module = [
 ]
 # ^ prometheus_client is now typed, but starlette-prometheus requires an old version
 ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 119
+src = ["src"]
+target-version = "py39"
+
+[tool.ruff.lint]
+extend-select = [
+    "ARG",  # flake8-unused-arguments
+    "I",  # isort
+    # flake8-pep585:
+    "UP006",  # non-pep585-annotation
+    "UP035",  # deprecated-import
+]
