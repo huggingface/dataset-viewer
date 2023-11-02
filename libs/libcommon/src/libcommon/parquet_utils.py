@@ -72,6 +72,7 @@ class ParquetIndexWithMetadata:
     httpfs: HTTPFileSystem
     hf_token: Optional[str]
     max_arrow_data_in_memory: int
+    partial: bool
 
     num_rows_total: int = field(init=False)
 
@@ -200,6 +201,11 @@ class ParquetIndexWithMetadata:
         if not parquet_file_metadata_items:
             raise ParquetResponseEmptyError("No parquet files found.")
 
+        # check if the parquet export is the full dataset or if it's partial
+        url = parquet_file_metadata_items[0]["url"]
+        split_directory = url.split("/")[-2]
+        partial = split_directory.startswith("partial-")
+
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items",
             step="get the index from parquet metadata",
@@ -238,6 +244,7 @@ class ParquetIndexWithMetadata:
             httpfs=httpfs,
             hf_token=hf_token,
             max_arrow_data_in_memory=max_arrow_data_in_memory,
+            partial=partial,
         )
 
 

@@ -102,9 +102,6 @@ class PaginatedResponse(TypedDict):
     rows: list[RowItem]
     num_rows_total: int
     num_rows_per_page: int
-
-
-class MaybePartialPaginatedResponse(PaginatedResponse):
     partial: bool
 
 

@@ -10,7 +10,7 @@ from libapi.duckdb import get_index_file_location_and_download_if_missing
 
 @pytest.mark.parametrize("partial_index", [False, True])
 @pytest.mark.parametrize("partial_split", [False, True])
-def test_get_index_file_location_and_download_if_missing(
+async def test_get_index_file_location_and_download_if_missing(
     partial_split: bool, partial_index: bool, tmp_path_factory: TempPathFactory
 ) -> None:
     duckdb_index_file_directory = (
@@ -41,7 +41,7 @@ def test_get_index_file_location_and_download_if_missing(
 
     expected_repo_file_location = f"{config}/{split_directory}/{filename}"
     with patch("libapi.duckdb.download_index_file", side_effect=download_index_file) as download_mock:
-        get_index_file_location_and_download_if_missing(
+        await get_index_file_location_and_download_if_missing(
             duckdb_index_file_directory=duckdb_index_file_directory,
             dataset=dataset,
             config=config,

@@ -36,7 +36,7 @@ from libcommon.prometheus import StepProfiler
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, MaybePartialPaginatedResponse
+from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,
@@ -85,7 +85,7 @@ async def create_response(
     features: Features,
     num_rows_total: int,
     partial: bool,
-) -> MaybePartialPaginatedResponse:
+) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
 
@@ -100,7 +100,7 @@ async def create_response(
         storage_client=storage_client,
     )
 
-    return MaybePartialPaginatedResponse(
+    return PaginatedResponse(
         features=to_features_list(features_without_key),
         rows=await to_rows_list(
             pa_table=pa_table,

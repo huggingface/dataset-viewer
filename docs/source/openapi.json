@@ -312,30 +312,6 @@
       },
       "PaginatedResponse": {
         "type": "object",
-        "required": ["features", "rows", "num_rows_total", "num_rows_per_page"],
-        "properties": {
-          "features": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FeatureItem"
-            }
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RowItem"
-            }
-          },
-          "num_rows_total": {
-            "type": "integer"
-          },
-          "num_rows_per_page": {
-            "type": "integer"
-          }
-        }
-      },
-      "MaybePartialPaginatedResponse": {
-        "type": "object",
         "required": ["features", "rows", "num_rows_total", "num_rows_per_page", "partial"],
         "properties": {
           "features": {
@@ -2764,7 +2740,8 @@
                         }
                       ],
                       "num_rows_total": 25000,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "A slice of an image dataset (huggan/horse2zebra)": {
@@ -2834,7 +2811,8 @@
                         }
                       ],
                       "num_rows_total": 1334,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }
@@ -3135,7 +3113,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MaybePartialPaginatedResponse"
+                  "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
                   "Search on a text dataset (imdb)": {
@@ -3543,7 +3521,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MaybePartialPaginatedResponse"
+                  "$ref": "#/components/schemas/PaginatedResponse"
                 },
                 "examples": {
                   "Filter on float equality (julien-c/titanic-survival)": {

@@ -21,7 +21,7 @@ from libapi.request import (
     get_request_parameter_length,
     get_request_parameter_offset,
 )
-from libapi.response import ROW_IDX_COLUMN, create_maybe_partial_response
+from libapi.response import ROW_IDX_COLUMN, create_response
 from libapi.utils import (
     Endpoint,
     get_json_api_error_response,
@@ -161,7 +161,7 @@ def create_filter_endpoint(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
-                    response = await create_maybe_partial_response(
+                    response = await create_response(
                         dataset=dataset,
                         revision=revision,
                         config=config,
