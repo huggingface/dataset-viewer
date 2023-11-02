@@ -31,3 +31,10 @@ where=age>30 AND (name='Simone' OR children=0)
 ```
 will filter the data to select only those rows where the float "age" column is larger than 30 and,
 either the string "name" column is equal to 'Simone' or the integer "children" column is equal to 0.
+
+<Tip>
+  Note that, following SQL syntax, string values in comparison predicates must be enclosed in single quotes,
+  for example: <code>'Scarlett'</code>.
+  Additionally, if the string value contains a single quote, it must be escaped with another single quote,
+  for example: <code>'O''Hara'</code>.
+</Tip>
