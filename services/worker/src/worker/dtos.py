@@ -172,7 +172,7 @@ class ConfigSizeResponse(TypedDict):
 class SplitDuckdbIndex(SplitHubFile):
     features: Optional[dict[str, Any]]
     has_fts: bool
-    # The 2 following fields can be None in old cache entries
+    # The following fields can be None in old cache entries
     # (added in Oct 2023 with PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION = 2)
     partial: Optional[bool]
     num_rows: Optional[int]
