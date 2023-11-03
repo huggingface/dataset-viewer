@@ -28,7 +28,7 @@ images:
     useGlobalRegistry: false
     registry: docker.io
     repository: nginx
-    tag: "1.20"
+    tag: "1.25.3"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -391,7 +391,6 @@ cleanDuckdbIndexCache:
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "cache/*"
 
-
 cleanDuckdbIndexDownloads:
   enabled: true
   log:
@@ -430,7 +429,6 @@ cleanDuckdbIndexJobRunner:
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "job_runner/*"
 
-
 cleanStatsCache:
   enabled: true
   log:
@@ -448,7 +446,6 @@ cleanStatsCache:
   tolerations: []
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "*"
-
 
 postMessages:
   enabled: true
