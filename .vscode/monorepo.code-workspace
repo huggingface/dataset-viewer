@@ -2,7 +2,8 @@
   "folders": [
     {
       "name": "ROOT",
-      "path": ".."
+      "path": "..",
+      "python.defaultInterpreterPath": "${workspaceFolder}/e2e/.venv/bin/python"
     },
     {
       "name": "e2e",
