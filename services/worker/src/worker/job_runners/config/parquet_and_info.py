@@ -384,6 +384,13 @@ def _is_too_big_from_external_data_files(
     # No need to check them since they're already caught by `raise_if_too_big_from_hub`
     if type(builder).__module__.startswith("datasets."):
         return False
+    message = (
+        "Couldn't get the %s of external files in `_split_generators` because a request"
+        " failed. Please consider moving your data files in this dataset repository instead"
+        " (e.g. inside a data/ folder)."
+    )
+    message_list = message % "list"
+    message_size = message % "size"
     # For datasets with a loading script however, we need to check the downloaded files
     mock_dl_manager = _MockStreamingDownloadManager(
         base_path=builder.base_path, download_config=DownloadConfig(token=hf_token)
@@ -397,46 +404,19 @@ def _is_too_big_from_external_data_files(
                 raise UnsupportedExternalFilesError(
                     (
                         "Couldn't get the list of external files in `_split_generators` because it doesn't support"
-                        f" streaming:\n{error}"
+                        " streaming."
                     ),
                     error,
                 ) from error
-        elif isinstance(error, requests.exceptions.HTTPError):
-            raise ExternalFilesSizeRequestHTTPError(
-                (
-                    "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                    " (e.g. inside a data/ folder)."
-                ),
-                error,
-            ) from error
-        elif isinstance(error, requests.exceptions.ConnectionError):
-            raise ExternalFilesSizeRequestConnectionError(
-                (
-                    "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                    " (e.g. inside a data/ folder)."
-                ),
-                error,
-            ) from error
-        elif isinstance(error, requests.exceptions.Timeout):
-            raise ExternalFilesSizeRequestTimeoutError(
-                (
-                    "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                    " (e.g. inside a data/ folder)."
-                ),
-                error,
-            ) from error
         else:
-            raise ExternalFilesSizeRequestError(
-                (
-                    "Couldn't get the list of external files in `_split_generators` because a request"
-                    f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                    " (e.g. inside a data/ folder)."
-                ),
-                error,
-            ) from error
+            if isinstance(error, requests.exceptions.HTTPError):
+                raise ExternalFilesSizeRequestHTTPError(message_list, error) from error
+            elif isinstance(error, requests.exceptions.ConnectionError):
+                raise ExternalFilesSizeRequestConnectionError(message_list, error) from error
+            elif isinstance(error, requests.exceptions.Timeout):
+                raise ExternalFilesSizeRequestTimeoutError(message_list, error) from error
+            else:
+                raise ExternalFilesSizeRequestError(message_list, error) from error
     ext_data_files = mock_dl_manager.ext_data_files
     if len(ext_data_files) > max_external_data_files:
         return True
@@ -452,41 +432,13 @@ def _is_too_big_from_external_data_files(
                 return False
         except requests.exceptions.RequestException as error:
             if isinstance(error, requests.exceptions.HTTPError):
-                raise ExternalFilesSizeRequestHTTPError(
-                    (
-                        "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                        " (e.g. inside a data/ folder)."
-                    ),
-                    error,
-                ) from error
+                raise ExternalFilesSizeRequestHTTPError(message_size, error) from error
             elif isinstance(error, requests.exceptions.ConnectionError):
-                raise ExternalFilesSizeRequestConnectionError(
-                    (
-                        "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                        " (e.g. inside a data/ folder)."
-                    ),
-                    error,
-                ) from error
+                raise ExternalFilesSizeRequestConnectionError(message_size, error) from error
             elif isinstance(error, requests.exceptions.Timeout):
-                raise ExternalFilesSizeRequestTimeoutError(
-                    (
-                        "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                        " (e.g. inside a data/ folder)."
-                    ),
-                    error,
-                ) from error
+                raise ExternalFilesSizeRequestTimeoutError(message_size, error) from error
             else:
-                raise ExternalFilesSizeRequestError(
-                    (
-                        "Couldn't get the size of external files in `_split_generators` because a request"
-                        f" failed:\n{error}\nPlease consider moving your data files in this dataset repository instead"
-                        " (e.g. inside a data/ folder)."
-                    ),
-                    error,
-                ) from error
+                raise ExternalFilesSizeRequestError(message_size, error) from error
     return False
 
 
