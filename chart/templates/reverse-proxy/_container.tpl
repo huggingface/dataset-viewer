@@ -6,10 +6,6 @@
   image: {{ include "reverseproxy.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
-  - name: ASSETS_DIRECTORY
-    value: {{ .Values.assets.storageDirectory | quote }}
-  - name: CACHED_ASSETS_DIRECTORY
-    value: {{ .Values.cachedAssets.storageDirectory | quote }}
   - name: OPENAPI_FILE
     value: {{ .Values.reverseProxy.openapiFile | quote }}
   - name: HOST

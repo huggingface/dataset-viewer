@@ -251,8 +251,6 @@ assets:
   storageRoot: "/storage"
   folderName: "assets"
   storageProtocol: "file"
-  # TODO: remove
-  storageDirectory: "/storage/assets"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
@@ -261,8 +259,6 @@ cachedAssets:
   storageRoot: "/storage"
   folderName: "cached-assets"
   storageProtocol: "file"
-  # TODO: remove
-  storageDirectory: "/storage/cached-assets"
 
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
