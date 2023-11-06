@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -89,6 +90,7 @@ class WorkerExecutor:
                 loop.stop()
 
         loop = asyncio.get_event_loop()
+        loop.add_signal_handler(signal.SIGTERM, self.stop, worker_loop_executor)
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
