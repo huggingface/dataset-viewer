@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 import os
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from http import HTTPStatus
 from typing import Optional
 
@@ -290,6 +291,7 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
+        ("descriptive_statistics_partial", None),
         ("descriptive_statistics_string_text", None),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
@@ -312,6 +314,7 @@ def test_compute(
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
+        "descriptive_statistics_partial": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
@@ -319,6 +322,7 @@ def test_compute(
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
+        "descriptive_statistics_partial": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
     }
@@ -327,9 +331,23 @@ def test_compute(
     config, split = splits_response["splits"][0]["config"], splits_response["splits"][0]["split"]
     expected_response = expected.get(hub_dataset_name)
 
+    partial = hub_dataset_name.endswith("_partial")
+    app_config = (
+        app_config
+        if not partial
+        else replace(
+            app_config,
+            parquet_and_info=replace(
+                app_config.parquet_and_info, max_dataset_size=1, max_row_group_byte_size_for_copy=1
+            ),
+        )
+    )
+
     # computing and pushing real parquet files because we need them for stats computation
     parquet_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
     parquet_and_info_response = parquet_job_runner.compute()
+    assert parquet_and_info_response
+    assert parquet_and_info_response.content["partial"] is partial
 
     upsert_response(
         "config-parquet-and-info",
@@ -340,7 +358,6 @@ def test_compute(
         content=parquet_and_info_response.content,
     )
 
-    assert parquet_and_info_response
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
     if expected_error_code:
