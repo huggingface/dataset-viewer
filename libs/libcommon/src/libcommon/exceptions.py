@@ -301,28 +301,28 @@ class ExternalFilesSizeRequestConnectionError(CacheableError):
     """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestConnectionError", cause, False)
 
 
 class ExternalFilesSizeRequestError(CacheableError):
     """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestError", cause, False)
 
 
 class ExternalFilesSizeRequestHTTPError(CacheableError):
     """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestHTTPError", cause, False)
 
 
 class ExternalFilesSizeRequestTimeoutError(CacheableError):
     """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "ExternalFilesSizeRequestTimeoutError", cause, False)
 
 
 class ExternalServerError(CacheableError):
@@ -547,7 +547,7 @@ class UnsupportedExternalFilesError(CacheableError):
     """We failed to get the size of the external files."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, True)
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "UnsupportedExternalFilesError", cause, False)
 
 
 class DatasetWithScriptNotSupportedError(CacheableError):
