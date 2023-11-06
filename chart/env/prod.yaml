@@ -139,7 +139,7 @@ firstRows:
   maxBytes: "200_000"
 
 parquetAndInfo:
-  maxDatasetSize: "5_000_000_000"
+  maxDatasetSizeBytes: "5_000_000_000"
   maxRowGroupByteSizeForCopy: "300_000_000"
 
 optInOutUrlsScan:
@@ -158,7 +158,7 @@ cachedAssets:
   storageProtocol: "s3"
 
 duckDBIndex:
-  maxDatasetSize: "5_000_000_000"
+  maxDatasetSizeBytes: "5_000_000_000"
 
 rowsIndex:
   maxArrowDataInMemory: "300_000_000"

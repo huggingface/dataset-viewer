@@ -284,7 +284,7 @@ def get_parquet_metadata_job_runner(
 
 
 @pytest.mark.parametrize(
-    "hub_dataset_name,max_dataset_size,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
+    "hub_dataset_name,max_dataset_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
         ("duckdb_index", None, 5, True, False, None),
         ("duckdb_index_from_partial_export", None, 5, True, True, None),
@@ -302,7 +302,7 @@ def test_compute(
     hub_responses_duckdb_index: HubDatasetTest,
     hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
-    max_dataset_size: Optional[int],
+    max_dataset_size_bytes: Optional[int],
     expected_has_fts: bool,
     expected_rows_count: int,
     expected_partial: bool,
@@ -322,8 +322,10 @@ def test_compute(
 
     app_config = (
         app_config
-        if max_dataset_size is None
-        else replace(app_config, duckdb_index=replace(app_config.duckdb_index, max_dataset_size=max_dataset_size))
+        if max_dataset_size_bytes is None
+        else replace(
+            app_config, duckdb_index=replace(app_config.duckdb_index, max_dataset_size_bytes=max_dataset_size_bytes)
+        )
     )
     app_config = (
         app_config
@@ -331,7 +333,7 @@ def test_compute(
         else replace(
             app_config,
             parquet_and_info=replace(
-                app_config.parquet_and_info, max_dataset_size=1, max_row_group_byte_size_for_copy=1
+                app_config.parquet_and_info, max_dataset_size_bytes=1, max_row_group_byte_size_for_copy=1
             ),
         )
     )
