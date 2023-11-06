@@ -25,8 +25,6 @@
 - name: TMPDIR
   value: "/tmp"
   # ^ensure the temporary files are created in /tmp, which is writable
-- name: WORKER_STORAGE_PATHS
-  value: {{ .Values.assets.storageDirectory | quote }}
 # specific to the /first-rows job runner
 - name: FIRST_ROWS_MAX_BYTES
   value: {{ .Values.firstRows.maxBytes | quote }}

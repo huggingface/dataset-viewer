@@ -2,7 +2,8 @@
   "folders": [
     {
       "name": "ROOT",
-      "path": ".."
+      "path": "..",
+      "python.defaultInterpreterPath": "${workspaceFolder}/e2e/.venv/bin/python"
     },
     {
       "name": "e2e",
@@ -68,15 +69,19 @@
       "libs": true,
       "services": true
     },
-    "python.formatting.provider": "black",
-    "python.linting.enabled": true,
-    "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": true,
-    "spectral.rulesetFile": ".spectral.yml"
+    "spectral.rulesetFile": ".spectral.yml",
+    "[python]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll": true,
+        "source.organizeImports": true
+      },
+      "editor.defaultFormatter": "charliermarsh.ruff"
+    }
   },
   "extensions": {
     "recommendations": [
-      "ms-python.python",
+      "charliermarsh.ruff",
       "ms-kubernetes-tools.vscode-kubernetes-tools",
       "stoplight.spectral"
     ]

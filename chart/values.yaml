@@ -28,7 +28,7 @@ images:
     useGlobalRegistry: false
     registry: docker.io
     repository: nginx
-    tag: "1.20"
+    tag: "1.25.3"
   jobs:
     mongodbMigration:
       registry: huggingface
@@ -138,18 +138,12 @@ uid: 1000
 gid: 3000
 
 persistence:
-  cachedAssets:
-    existingClaim: ""
   descriptiveStatistics:
     existingClaim: ""
   duckDBIndex:
     existingClaim: ""
   hfDatasetsCache:
     existingClaim: ""
-  nfs:
-    existingClaim: ""
-    storageClass: ""
-    size: 20Gi
   parquetMetadata:
     existingClaim: ""
 
@@ -167,7 +161,7 @@ mongodb:
 
 cache:
   # Maximum number of days to keep the cached API responses
-  maxDays: 90
+  maxDays: 1000
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
@@ -273,8 +267,6 @@ cachedAssets:
 parquetMetadata:
   # Directory on the shared storage (parquet metadata files used for random access in /rows)
   storageDirectory: "/storage/parquet-metadata"
-  # Temporary - to synchronize the files from NFS to dedicated EFS
-  storageDirectoryNew: "/storage/parquet-metadata-new"
 
 duckDBIndex:
   # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
@@ -391,7 +383,6 @@ cleanDuckdbIndexCache:
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "cache/*"
 
-
 cleanDuckdbIndexDownloads:
   enabled: true
   log:
@@ -430,7 +421,6 @@ cleanDuckdbIndexJobRunner:
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "job_runner/*"
 
-
 cleanStatsCache:
   enabled: true
   log:
@@ -448,7 +438,6 @@ cleanStatsCache:
   tolerations: []
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "*"
-
 
 postMessages:
   enabled: true
