@@ -34,6 +34,7 @@
   - name: DUCKDB_INDEX_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   volumeMounts:
+  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
