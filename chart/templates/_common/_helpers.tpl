@@ -202,15 +202,6 @@ The assets base URL
 {{- end }}
 
 {{/*
-The assets/ subpath in the NFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "assets.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "assets" }}
-{{- end }}
-
-{{/*
 The cached-assets base URL
 */}}
 {{- define "cachedAssets.baseUrl" -}}
@@ -218,16 +209,7 @@ The cached-assets base URL
 {{- end }}
 
 {{/*
-The cached-assets/ subpath in the NFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "cachedAssets.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "cached-assets" }}
-{{- end }}
-
-{{/*
-The parquet-metadata/ subpath in the NFS
+The parquet-metadata/ subpath in the EFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
@@ -245,7 +227,7 @@ The duckdb-index/ subpath in EFS
 {{- end }}
 
 {{/*
-The stats-cache/ subpath in the NFS
+The stats-cache/ subpath in the EFS
 - in a subdirectory named as the chart (datasets-server/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
