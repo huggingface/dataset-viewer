@@ -17,7 +17,7 @@ class MigrationAddPartialToSplitDuckdbIndexCacheResponse(Migration):
         # See https://docs.mongoengine.org/guide/migration.html#example-1-addition-of-a-field
         logging.info(
             "If missing, add the 'partial', 'num_rows' and 'num_bytes' fields with the default value"
-            " (False, None, None) to the cached results of split-duckdb-index"
+            " (None, None, None) to the cached results of split-duckdb-index"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].update_many(
@@ -28,7 +28,7 @@ class MigrationAddPartialToSplitDuckdbIndexCacheResponse(Migration):
             },
             {
                 "$set": {
-                    "content.partial": True,
+                    "content.partial": None,
                     "content.num_rows": None,
                     "content.num_bytes": None,
                 }

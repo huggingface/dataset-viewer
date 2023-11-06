@@ -15,7 +15,7 @@ def assert_partial_and_num_rows_and_num_bytes_fields(dataset: str, kind: str) ->
     db = get_db(CACHE_MONGOENGINE_ALIAS)
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
-    assert entry["content"]["partial"] is False
+    assert entry["content"]["partial"] is None
     assert entry["content"]["num_rows"] is None
     assert entry["content"]["num_bytes"] is None
 
