@@ -117,6 +117,9 @@ class WorkerExecutor:
         if exceptions:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
 
+    def stop(self, worker_loop_executor: OutputExecutor) -> None:
+        worker_loop_executor.stop()
+
     def get_state(self) -> Optional[WorkerState]:
         worker_state_file_path = self.state_file_path
         if not os.path.exists(worker_state_file_path):
