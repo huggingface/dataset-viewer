@@ -45,8 +45,6 @@
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountAssetsRW" . | nindent 2 }}
-  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountDescriptiveStatisticsRO" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRO" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRO" . | nindent 2 }}
