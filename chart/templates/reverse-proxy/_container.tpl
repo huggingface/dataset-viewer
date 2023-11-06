@@ -6,6 +6,10 @@
   image: {{ include "reverseproxy.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
+  - name: ASSETS_DIRECTORY
+    value: {{ .Values.assets.storageDirectory | quote }}
+  - name: CACHED_ASSETS_DIRECTORY
+    value: {{ .Values.cachedAssets.storageDirectory | quote }}
   - name: OPENAPI_FILE
     value: {{ .Values.reverseProxy.openapiFile | quote }}
   - name: HOST
@@ -22,6 +26,9 @@
     value: {{ include "search.url" . | quote }}
   - name: URL_SSE_API
     value: {{ include "sseApi.url" . | quote }}
+  volumeMounts:
+  {{ include "volumeMountAssetsRO" . | nindent 2 }}
+  {{ include "volumeMountCachedAssetsRO" . | nindent 2 }}
   - name: nginx-templates
     mountPath: /etc/nginx/templates
     mountPropagation: None

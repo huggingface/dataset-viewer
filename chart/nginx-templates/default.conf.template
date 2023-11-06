@@ -29,6 +29,14 @@ server {
     return 307 https://raw.githubusercontent.com/huggingface/datasets-server/main/${OPENAPI_FILE};
   }
 
+  location /assets/ {
+    alias ${ASSETS_DIRECTORY}/;
+  }
+
+  location /cached-assets/ {
+    alias ${CACHED_ASSETS_DIRECTORY}/;
+  }
+
   location /admin/ {
     # note the trailing slash, to remove the /admin/ prefix
     proxy_pass ${URL_ADMIN}/;
