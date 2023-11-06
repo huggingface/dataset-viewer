@@ -20,6 +20,11 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 
+# For partial Parquet export we have paths like "en/partial-train/0000.parquet".
+# "-" is not allowed is split names so we use it in the prefix to avoid collisions.
+# We also use this prefix for the DuckDB index file name
+PARTIAL_PREFIX = "partial-"
+
 
 class ParquetResponseEmptyError(Exception):
     pass
@@ -46,6 +51,30 @@ class ParquetFileMetadataItem(TypedDict):
     size: int
     num_rows: int
     parquet_metadata_subpath: str
+
+
+def parquet_export_is_partial(parquet_file_url: str) -> bool:
+    """
+    Check if the Parquet export is the full dataset or if it's partial.
+    The check is based on the split directory name from the URL.
+    If it starts with "partial-" then it is a partially exported split.
+
+    Args:
+        parquet_file_url (str): URL of a Parquet file from the Parquet export
+            It must be placed in a directory name after the split,
+            e.g. "train" or "partial-train" for a partial split export.
+
+            You can also pass the URL of any file in the directory since
+            this function only checks the name of the parent directory.
+            For example it also works for DuckDB index files in the same
+            directory as the Parquet files.
+
+    Returns:
+        partial (bool): True is the Parquet export is partial,
+            or False if it's the full dataset.
+    """
+    split_directory_name_for_parquet_export = parquet_file_url.rsplit("/", 2)[1]
+    return split_directory_name_for_parquet_export.startswith(PARTIAL_PREFIX)
 
 
 @dataclass
@@ -201,10 +230,7 @@ class ParquetIndexWithMetadata:
         if not parquet_file_metadata_items:
             raise ParquetResponseEmptyError("No parquet files found.")
 
-        # check if the parquet export is the full dataset or if it's partial
-        url = parquet_file_metadata_items[0]["url"]
-        split_directory = url.split("/")[-2]
-        partial = split_directory.startswith("partial-")
+        partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
 
         with StepProfiler(
             method="parquet_index_with_metadata.from_parquet_metadata_items",

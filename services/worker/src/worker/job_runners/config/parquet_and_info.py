@@ -67,6 +67,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
 )
+from libcommon.parquet_utils import PARTIAL_PREFIX
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -88,10 +89,6 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
-
-# For paths like "en/partial-train/0000.parquet" in the C4 dataset.
-# Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-PARTIAL_SPLIT_PREFIX = "partial-"
 
 T = TypeVar("T")
 
@@ -122,7 +119,9 @@ class ParquetFile:
 
     @property
     def path_in_repo(self) -> str:
-        partial_prefix = PARTIAL_SPLIT_PREFIX if self.partial else ""
+        # For paths like "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        partial_prefix = PARTIAL_PREFIX if self.partial else ""
         # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
         return f"{self.config}/{partial_prefix}{self.split}/{self.shard_idx:04d}.parquet"
 
@@ -137,8 +136,8 @@ def parse_repo_filename(filename: str) -> tuple[str, str]:
     if len(parts) != 3:
         raise ValueError(f"Invalid filename: {filename}")
     config, split, _ = parts
-    if split.startswith(PARTIAL_SPLIT_PREFIX):
-        split = split[len(PARTIAL_SPLIT_PREFIX) :]  # noqa: E203
+    if split.startswith(PARTIAL_PREFIX):
+        split = split[len(PARTIAL_PREFIX) :]  # noqa: E203
     return config, split
 
 

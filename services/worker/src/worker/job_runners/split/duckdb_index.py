@@ -31,6 +31,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
+from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -118,7 +119,7 @@ def compute_index_rows(
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
         split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
-        parquet_export_is_partial = split_directory.startswith("partial-")
+        partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
         num_parquet_files_to_index = 0
         num_bytes = 0
@@ -138,7 +139,7 @@ def compute_index_rows(
             if (num_parquet_files_to_index < len(split_parquet_files))
             else DUCKDB_DEFAULT_INDEX_FILENAME
         )
-        partial = parquet_export_is_partial or (num_parquet_files_to_index < len(split_parquet_files))
+        partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
         split_parquet_files = split_parquet_files[: parquet_file_id + 1]
         parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 

@@ -28,6 +28,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath
@@ -126,8 +127,7 @@ def create_filter_endpoint(
                     # check if the index is on the full dataset or if it's partial
                     url = duckdb_index_cache_entry["content"]["url"]
                     filename = duckdb_index_cache_entry["content"]["filename"]
-                    split_directory = url.split("/")[-2]
-                    partial = split_directory.startswith("partial-") or filename.startswith("partial-")
+                    partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
                     index_file_location = await get_index_file_location_and_download_if_missing(
