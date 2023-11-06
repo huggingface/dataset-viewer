@@ -1,0 +1,17 @@
+{{- if (not .Values.persistence.nfs.existingClaim) }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  labels: {{ include "hf.labels.commons" . | nindent 4 }}
+  name: {{ include "name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.persistence.nfs.size }}
+  {{ if ne "" .Values.persistence.nfs.storageClass }}
+  storageClassName: {{ .Values.persistence.nfs.storageClass }}
+  {{ end }}
+{{- end }}

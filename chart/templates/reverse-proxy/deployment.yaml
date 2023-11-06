@@ -27,10 +27,14 @@ spec:
     spec:
       {{- include "image.imagePullSecrets" . | nindent 6 }}
       initContainers: 
+        {{ include "initContainerAssets" . | nindent 8 }}
+        {{ include "initContainerCachedAssets" . | nindent 8 }}
       containers: {{ include "containerReverseProxy" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.reverseProxy.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.reverseProxy.tolerations | nindent 8 }}
       volumes:
+      {{ include "volumeCachedAssets" . | nindent 6 }}
+      {{ include "volumeNfs" . | nindent 6 }}
       - name: nginx-templates
         configMap:
           name: "{{ include "name" . }}-reverse-proxy"
