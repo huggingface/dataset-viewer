@@ -322,6 +322,7 @@ def test_compute(
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
+        "descriptive_statistics_partial": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
     }
