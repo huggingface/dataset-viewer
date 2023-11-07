@@ -31,6 +31,7 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
+from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.public_assets_storage import PublicAssetsStorage
@@ -84,6 +85,7 @@ async def create_response(
     offset: int,
     features: Features,
     num_rows_total: int,
+    partial: bool,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
@@ -115,6 +117,7 @@ async def create_response(
         ),
         num_rows_total=num_rows_total,
         num_rows_per_page=MAX_NUM_ROWS_PER_PAGE,
+        partial=partial,
     )
 
 
@@ -186,6 +189,11 @@ def create_search_endpoint(
                     if duckdb_index_cache_entry["content"]["has_fts"] is not True:
                         raise SearchFeatureNotAvailableError("The split does not have search feature enabled.")
 
+                    # check if the index is on the full dataset or if it's partial
+                    url = duckdb_index_cache_entry["content"]["url"]
+                    filename = duckdb_index_cache_entry["content"]["filename"]
+                    partial = duckdb_index_is_partial(url)
+
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
                     index_file_location = await get_index_file_location_and_download_if_missing(
                         duckdb_index_file_directory=duckdb_index_file_directory,
@@ -193,8 +201,8 @@ def create_search_endpoint(
                         config=config,
                         split=split,
                         revision=revision,
-                        filename=duckdb_index_cache_entry["content"]["filename"],
-                        url=duckdb_index_cache_entry["content"]["url"],
+                        filename=filename,
+                        url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
@@ -223,6 +231,7 @@ def create_search_endpoint(
                         offset=offset,
                         features=features,
                         num_rows_total=num_rows_total,
+                        partial=partial,
                     )
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)

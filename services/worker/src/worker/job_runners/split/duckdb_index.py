@@ -5,9 +5,10 @@ import copy
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import duckdb
+import pyarrow.parquet as pq
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
@@ -29,16 +30,16 @@ from libcommon.exceptions import (
     LockedDatasetTimeoutError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
-    SplitWithTooBigParquetError,
 )
+from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo, SplitHubFile
+from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, DuckDbIndexConfig
-from worker.dtos import CompleteJobResult
+from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
@@ -52,6 +53,7 @@ DATASET_TYPE = "dataset"
 STRING_FEATURE_DTYPE = "string"
 VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
+DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, {columns} FROM"
@@ -60,11 +62,6 @@ LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
-
-
-class DuckdbIndexWithFeatures(SplitHubFile):
-    features: Optional[dict[str, Any]]
-    has_fts: bool
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -94,45 +91,60 @@ def compute_index_rows(
     commit_message: str,
     url_template: str,
     hf_token: Optional[str],
-    max_parquet_size_bytes: int,
+    max_dataset_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
-) -> DuckdbIndexWithFeatures:
+    parquet_metadata_directory: StrPath,
+) -> SplitDuckdbIndex:
     logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
 
     # get parquet urls and dataset_info
-    config_parquet_and_info_step = "config-parquet-and-info"
-    parquet_and_info_best_response = get_previous_step_or_raise(
-        kinds=[config_parquet_and_info_step],
+    config_parquet_metadata_step = "config-parquet-metadata"
+    parquet_metadata_best_response = get_previous_step_or_raise(
+        kinds=[config_parquet_metadata_step],
         dataset=dataset,
         config=config,
     )
-    content_parquet_and_info = parquet_and_info_best_response.response["content"]
+    content_parquet_metadata = parquet_metadata_best_response.response["content"]
     try:
         split_parquet_files = [
             parquet_file
-            for parquet_file in content_parquet_and_info["parquet_files"]
+            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
             if parquet_file["config"] == config and parquet_file["split"] == split
         ]
 
-        split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
-
-        if split_parquets_size > max_parquet_size_bytes:
-            raise SplitWithTooBigParquetError(
-                f"The indexing is limited to split parquets under {max_parquet_size_bytes} bytes. "
-                f"Current size of sum of split parquets is {split_parquets_size} bytes."
-            )
-
-        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
-        if not parquet_file_names:
+        if not split_parquet_files:
             raise ParquetResponseEmptyError("No parquet files found.")
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
         split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+        partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
+
+        num_parquet_files_to_index = 0
+        num_bytes = 0
+        num_rows = 0
+        for parquet_file_id, parquet_file in enumerate(split_parquet_files):
+            parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
+            parquet_metadata = pq.read_metadata(parquet_metadata_path)
+            num_parquet_files_to_index += 1
+            num_rows += parquet_metadata.num_rows
+            for row_group_id in range(parquet_metadata.num_row_groups):
+                num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
+            if num_bytes > max_dataset_size_bytes:
+                break
+
+        index_filename = (
+            DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
+            if (num_parquet_files_to_index < len(split_parquet_files))
+            else DUCKDB_DEFAULT_INDEX_FILENAME
+        )
+        partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
+        split_parquet_files = split_parquet_files[: parquet_file_id + 1]
+        parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
         # get the features
-        features = content_parquet_and_info["dataset_info"]["features"]
+        features = content_parquet_metadata["features"]
         column_names = ",".join(f'"{column}"' for column in features)
 
         # look for indexable columns (= possibly nested columns containing string data)
@@ -143,11 +155,11 @@ def compute_index_rows(
 
     except KeyError as e:
         raise PreviousStepFormatError(
-            f"Previous step '{config_parquet_and_info_step}' did not return the expected content.", e
+            f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
     # index all columns
-    db_path = duckdb_index_file_directory.resolve() / DUCKDB_DEFAULT_INDEX_FILENAME
+    db_path = duckdb_index_file_directory.resolve() / index_filename
     con = duckdb.connect(str(db_path.resolve()))
 
     # configure duckdb extensions
@@ -192,7 +204,7 @@ def compute_index_rows(
 
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
-    index_file_location = f"{config}/{split_directory}/{DUCKDB_DEFAULT_INDEX_FILENAME}"
+    index_file_location = f"{config}/{split_directory}/{index_filename}"
 
     try:
         with lock.git_branch(
@@ -268,7 +280,7 @@ def compute_index_rows(
     # we added the __hf_index_id column for the index
     features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
-    return DuckdbIndexWithFeatures(
+    return SplitDuckdbIndex(
         dataset=dataset,
         config=config,
         split=split,
@@ -283,6 +295,9 @@ def compute_index_rows(
         size=repo_file.size,
         features=features,
         has_fts=is_indexable,
+        partial=partial,
+        num_rows=num_rows,
+        num_bytes=num_bytes,
     )
 
 
@@ -295,6 +310,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         app_config: AppConfig,
         processing_step: ProcessingStep,
         duckdb_index_cache_directory: StrPath,
+        parquet_metadata_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
@@ -303,6 +319,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
             cache_directory=Path(duckdb_index_cache_directory) / DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
         )
         self.duckdb_index_config = app_config.duckdb_index
+        self.parquet_metadata_directory = parquet_metadata_directory
 
     @staticmethod
     def get_job_type() -> str:
@@ -329,6 +346,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
-                max_parquet_size_bytes=self.duckdb_index_config.max_parquet_size_bytes,
+                max_dataset_size_bytes=self.duckdb_index_config.max_dataset_size_bytes,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )

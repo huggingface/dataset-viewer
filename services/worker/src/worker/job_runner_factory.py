@@ -251,6 +251,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 processing_step=processing_step,
                 duckdb_index_cache_directory=self.duckdb_index_cache_directory,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
 
         if job_type == DatasetHubCacheJobRunner.get_job_type():

@@ -160,7 +160,9 @@ def test_compute_legacy_configs(
     get_job_runner: GetJobRunner,
     hub_public_legacy_configs: str,
 ) -> None:
-    app_config = replace(app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size=20_000))
+    app_config = replace(
+        app_config, parquet_and_info=replace(app_config.parquet_and_info, max_dataset_size_bytes=20_000)
+    )
     app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
 
     dataset_name = hub_public_legacy_configs
@@ -247,7 +249,9 @@ def test__is_too_big_from_hub(
         files_metadata=True,
     )
     assert (
-        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=app_config.parquet_and_info.max_dataset_size)
+        _is_too_big_from_hub(
+            dataset_info=dataset_info, max_dataset_size_bytes=app_config.parquet_and_info.max_dataset_size_bytes
+        )
         == expected
     )
 
@@ -268,14 +272,14 @@ def test__is_too_big_from_datasets(
     assert (
         _is_too_big_from_datasets(
             info=builder.info,
-            max_dataset_size=app_config.parquet_and_info.max_dataset_size,
+            max_dataset_size_bytes=app_config.parquet_and_info.max_dataset_size_bytes,
         )
         == expected
     )
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,max_external_data_files,expected",
+    "max_dataset_size_bytes,max_external_data_files,expected",
     [
         (None, None, False),
         (10, None, True),
@@ -284,17 +288,17 @@ def test__is_too_big_from_datasets(
 def test__is_too_big_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
     expected: bool,
-    max_dataset_size: Optional[int],
+    max_dataset_size_bytes: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
 ) -> None:
-    max_dataset_size = max_dataset_size or app_config.parquet_and_info.max_dataset_size
+    max_dataset_size_bytes = max_dataset_size_bytes or app_config.parquet_and_info.max_dataset_size_bytes
     max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
     assert (
         _is_too_big_from_external_data_files(
             builder=external_files_dataset_builder,
             hf_token=app_config.common.hf_token,
-            max_dataset_size=max_dataset_size,
+            max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
         )
         == expected
@@ -302,7 +306,7 @@ def test__is_too_big_external_files(
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,max_external_data_files,expected",
+    "max_dataset_size_bytes,max_external_data_files,expected",
     [
         (None, None, False),
         (None, 1, True),
@@ -311,17 +315,17 @@ def test__is_too_big_external_files(
 def test_raise_if_too_many_external_files(
     external_files_dataset_builder: "datasets.builder.DatasetBuilder",
     expected: bool,
-    max_dataset_size: Optional[int],
+    max_dataset_size_bytes: Optional[int],
     max_external_data_files: Optional[int],
     app_config: AppConfig,
 ) -> None:
-    max_dataset_size = max_dataset_size or app_config.parquet_and_info.max_dataset_size
+    max_dataset_size_bytes = max_dataset_size_bytes or app_config.parquet_and_info.max_dataset_size_bytes
     max_external_data_files = max_external_data_files or app_config.parquet_and_info.max_external_data_files
     assert (
         _is_too_big_from_external_data_files(
             builder=external_files_dataset_builder,
             hf_token=app_config.common.hf_token,
-            max_dataset_size=max_dataset_size,
+            max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
         )
         == expected
@@ -369,7 +373,7 @@ def test_partially_converted_if_big_non_parquet(
     assert len(content["parquet_files"]) == 1
     assert_content_is_equal(content, hub_responses_big_csv["parquet_and_info_response"])
     # dataset is partially generated
-    assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size
+    assert content["parquet_files"][0]["size"] < app_config.parquet_and_info.max_dataset_size_bytes
     assert content["parquet_files"][0]["url"].endswith("/partial-train/0000.parquet")
 
 
@@ -741,7 +745,7 @@ def test_get_delete_operations(
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,expected_num_shards",
+    "max_dataset_size_bytes,expected_num_shards",
     [
         (1, 1),
         (150, 2),
@@ -751,17 +755,19 @@ def test_get_delete_operations(
     ],
 )
 def test_stream_convert_to_parquet_arrowbasedbuilder(
-    csv_path: str, max_dataset_size: int, expected_num_shards: int, tmp_path: Path
+    csv_path: str, max_dataset_size_bytes: int, expected_num_shards: int, tmp_path: Path
 ) -> None:
     num_data_files = 10
     builder = load_dataset_builder(
         "csv",
         data_files={"train": [csv_path] * num_data_files},
-        cache_dir=str(tmp_path / f"test_stream_convert_to_parquet-{max_dataset_size=}"),
+        cache_dir=str(tmp_path / f"test_stream_convert_to_parquet-{max_dataset_size_bytes=}"),
     )
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            parquet_operations, partial = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=max_dataset_size_bytes
+            )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_data_files)
@@ -769,17 +775,17 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
     assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
-    if max_dataset_size is not None:
+    if max_dataset_size_bytes is not None:
         one_sample_max_size = 100
-        expected_max_dataset_size = max_dataset_size + one_sample_max_size
+        expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
             sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
-            < expected_max_dataset_size
+            < expected_max_dataset_size_bytes
         )
 
 
 @pytest.mark.parametrize(
-    "max_dataset_size,expected_num_shards",
+    "max_dataset_size_bytes,expected_num_shards",
     [
         (1, 1),
         (150, 19),
@@ -789,7 +795,7 @@ def test_stream_convert_to_parquet_arrowbasedbuilder(
     ],
 )
 def test_stream_convert_to_parquet_generatorbasedbuilder(
-    max_dataset_size: int, expected_num_shards: int, tmp_path: Path
+    max_dataset_size_bytes: int, expected_num_shards: int, tmp_path: Path
 ) -> None:
     num_rows = 1000
 
@@ -801,7 +807,9 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
     with patch("worker.job_runners.config.parquet_and_info.get_writer_batch_size_from_info", lambda ds_config_info: 1):
         with patch.object(datasets.config, "MAX_SHARD_SIZE", 1):
-            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            parquet_operations, partial = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=max_dataset_size_bytes
+            )
     num_shards = len(parquet_operations)
     assert num_shards == expected_num_shards
     assert partial == (expected_num_shards < num_rows)
@@ -809,12 +817,12 @@ def test_stream_convert_to_parquet_generatorbasedbuilder(
     parquet_files = list_generated_parquet_files(builder, partial=partial)
     assert len(parquet_files) == expected_num_shards
     assert all(os.path.isfile(parquet_file.local_file) for parquet_file in parquet_files)
-    if max_dataset_size is not None:
+    if max_dataset_size_bytes is not None:
         one_sample_max_size = 100
-        expected_max_dataset_size = max_dataset_size + one_sample_max_size
+        expected_max_dataset_size_bytes = max_dataset_size_bytes + one_sample_max_size
         assert (
             sum(pq.ParquetFile(parquet_file.local_file).read().nbytes for parquet_file in parquet_files)
-            < expected_max_dataset_size
+            < expected_max_dataset_size_bytes
         )
 
 
@@ -828,14 +836,14 @@ def test_limit_parquet_writes(tmp_path: Path) -> None:
             num_examples += 1
 
     one_sample_size = 8
-    max_dataset_size = 50_000
-    expected_max_dataset_size = max_dataset_size + datasets.config.DEFAULT_MAX_BATCH_SIZE * one_sample_size
-    expected_max_num_examples = 1 + max_dataset_size // one_sample_size + datasets.config.DEFAULT_MAX_BATCH_SIZE
+    max_dataset_size_bytes = 50_000
+    expected_max_dataset_size_bytes = max_dataset_size_bytes + datasets.config.DEFAULT_MAX_BATCH_SIZE * one_sample_size
+    expected_max_num_examples = 1 + max_dataset_size_bytes // one_sample_size + datasets.config.DEFAULT_MAX_BATCH_SIZE
     cache_dir = str(tmp_path / "test_limit_parquet_writes_cache_dir")
     builder = ParametrizedGeneratorBasedBuilder(generator=long_generator, cache_dir=cache_dir)
-    with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
+    with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
         builder.download_and_prepare(file_format="parquet")
-        assert builder.info.dataset_size == limiter.total_bytes <= expected_max_dataset_size
+        assert builder.info.dataset_size == limiter.total_bytes <= expected_max_dataset_size_bytes
         assert builder.info.splits["train"].num_examples == num_examples < expected_max_num_examples
 
 

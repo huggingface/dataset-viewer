@@ -334,6 +334,7 @@ def test_ParquetIndexWithMetadata_query(
         httpfs=httpfs,
         hf_token=CI_USER_TOKEN,
         max_arrow_data_in_memory=999999999,
+        partial=False,
     )
     with patch("libcommon.parquet_utils.HTTPFile", AuthenticatedHTTPFile):
         out = index.query(offset=0, length=2).to_pydict()

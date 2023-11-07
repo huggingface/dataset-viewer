@@ -312,7 +312,7 @@
       },
       "PaginatedResponse": {
         "type": "object",
-        "required": ["features", "rows", "num_rows_total", "num_rows_per_page"],
+        "required": ["features", "rows", "num_rows_total", "num_rows_per_page", "partial"],
         "properties": {
           "features": {
             "type": "array",
@@ -331,6 +331,9 @@
           },
           "num_rows_per_page": {
             "type": "integer"
+          },
+          "partial": {
+            "type": "boolean"
           }
         }
       },
@@ -2737,7 +2740,8 @@
                         }
                       ],
                       "num_rows_total": 25000,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "A slice of an image dataset (huggan/horse2zebra)": {
@@ -2807,7 +2811,8 @@
                         }
                       ],
                       "num_rows_total": 1334,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }
@@ -3154,7 +3159,8 @@
                         }
                       ],
                       "num_rows_total": 624,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Search on an image dataset": {
@@ -3212,7 +3218,8 @@
                         }
                       ],
                       "num_rows_total": 94,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }
@@ -3594,7 +3601,8 @@
                         }
                       ],
                       "num_rows_total": 33,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Filter on string equality (julien-c/titanic-survival)": {
@@ -3674,7 +3682,8 @@
                         }
                       ],
                       "num_rows_total": 314,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   },
                   "Filter on float inequality (julien-c/titanic-survival)": {
@@ -3834,7 +3843,8 @@
                         }
                       ],
                       "num_rows_total": 64,
-                      "num_rows_per_page": 100
+                      "num_rows_per_page": 100,
+                      "partial": false
                     }
                   }
                 }

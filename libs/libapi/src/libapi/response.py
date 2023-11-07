@@ -4,7 +4,10 @@ import pyarrow as pa
 from datasets import Features
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
+from libcommon.utils import (
+    MAX_NUM_ROWS_PER_PAGE,
+    PaginatedResponse,
+)
 from libcommon.viewer_utils.features import to_features_list
 
 from libapi.utils import to_rows_list
@@ -24,6 +27,7 @@ async def create_response(
     features: Features,
     unsupported_columns: list[str],
     num_rows_total: int,
+    partial: bool,
     use_row_idx_column: bool = False,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
@@ -52,4 +56,5 @@ async def create_response(
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
+        "partial": partial,
     }

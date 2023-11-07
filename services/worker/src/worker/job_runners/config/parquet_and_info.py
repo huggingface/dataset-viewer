@@ -67,6 +67,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
 )
+from libcommon.parquet_utils import PARTIAL_PREFIX
 from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -88,10 +89,6 @@ from worker.utils import (
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
-
-# For paths like "en/partial-train/0000.parquet" in the C4 dataset.
-# Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-PARTIAL_SPLIT_PREFIX = "partial-"
 
 T = TypeVar("T")
 
@@ -122,7 +119,9 @@ class ParquetFile:
 
     @property
     def path_in_repo(self) -> str:
-        partial_prefix = PARTIAL_SPLIT_PREFIX if self.partial else ""
+        # For paths like "en/partial-train/0000.parquet" in the C4 dataset.
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        partial_prefix = PARTIAL_PREFIX if self.partial else ""
         # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
         return f"{self.config}/{partial_prefix}{self.split}/{self.shard_idx:04d}.parquet"
 
@@ -137,8 +136,8 @@ def parse_repo_filename(filename: str) -> tuple[str, str]:
     if len(parts) != 3:
         raise ValueError(f"Invalid filename: {filename}")
     config, split, _ = parts
-    if split.startswith(PARTIAL_SPLIT_PREFIX):
-        split = split[len(PARTIAL_SPLIT_PREFIX) :]  # noqa: E203
+    if split.startswith(PARTIAL_PREFIX):
+        split = split[len(PARTIAL_PREFIX) :]  # noqa: E203
     return config, split
 
 
@@ -181,7 +180,7 @@ def is_parquet_builder_with_hub_files(builder: DatasetBuilder) -> bool:
 
 def _is_too_big_from_hub(
     dataset_info: DatasetInfo,
-    max_dataset_size: int,
+    max_dataset_size_bytes: int,
 ) -> bool:
     """
     Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the repository
@@ -190,16 +189,16 @@ def _is_too_big_from_hub(
     Args:
         dataset_info (`DatasetInfo`):
             The dataset info
-        max_dataset_size (`int`):
+        max_dataset_size_bytes (`int`):
             The maximum size of the dataset in bytes
     """
     dataset_size: int = sum(sibling.size for sibling in dataset_info.siblings if sibling.size is not None)
-    return bool(dataset_size > max_dataset_size)
+    return bool(dataset_size > max_dataset_size_bytes)
 
 
 def _is_too_big_from_datasets(
     info: datasets.DatasetInfo,
-    max_dataset_size: int,
+    max_dataset_size_bytes: int,
 ) -> bool:
     """
     Raise an error if the dataset is too big to be converted to parquet, as measured by the sum of the configs
@@ -208,11 +207,11 @@ def _is_too_big_from_datasets(
     Args:
         info (`datasets.DatasetInfo`):
             Dataset info from the datasets library
-        max_dataset_size (`int`):
+        max_dataset_size_bytes (`int`):
             The maximum size of the dataset in bytes
     """
     dataset_size = info.dataset_size if info.dataset_size is not None else 0
-    return bool(dataset_size > max_dataset_size)
+    return bool(dataset_size > max_dataset_size_bytes)
 
 
 def raise_if_requires_manual_download(
@@ -258,7 +257,7 @@ def is_dataset_too_big(
     builder: DatasetBuilder,
     hf_endpoint: str,
     hf_token: Optional[str],
-    max_dataset_size: int,
+    max_dataset_size_bytes: int,
     max_external_data_files: int,
 ) -> bool:
     """
@@ -278,7 +277,7 @@ def is_dataset_too_big(
             An app authentication token with read access to all the datasets.
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
-        max_dataset_size (`int`):
+        max_dataset_size_bytes (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
         max_external_data_files (`int`):
@@ -307,14 +306,14 @@ def is_dataset_too_big(
             f" '{hf_endpoint}'."
         )
     return (
-        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size=max_dataset_size)
+        _is_too_big_from_hub(dataset_info=dataset_info, max_dataset_size_bytes=max_dataset_size_bytes)
         or _is_too_big_from_datasets(
             builder.info,
-            max_dataset_size=max_dataset_size,
+            max_dataset_size_bytes=max_dataset_size_bytes,
         )
         or _is_too_big_from_external_data_files(
             builder=builder,
-            max_dataset_size=max_dataset_size,
+            max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
             hf_token=hf_token,
         )
@@ -378,7 +377,7 @@ class _MockStreamingDownloadManager(StreamingDownloadManager):  # type: ignore
 
 
 def _is_too_big_from_external_data_files(
-    builder: DatasetBuilder, max_dataset_size: int, max_external_data_files: int, hf_token: Optional[str]
+    builder: DatasetBuilder, max_dataset_size_bytes: int, max_external_data_files: int, hf_token: Optional[str]
 ) -> bool:
     # Packaged dataset modules only load data files that are inside the dataset repository.
     # No need to check them since they're already caught by `raise_if_too_big_from_hub`
@@ -428,7 +427,7 @@ def _is_too_big_from_external_data_files(
                 for i, size in enumerate(pool.imap_unordered(get_size, ext_data_files)):
                     if size is not None:
                         total_size += size
-                        return total_size > max_dataset_size
+                        return total_size > max_dataset_size_bytes
                 return False
         except requests.exceptions.RequestException as error:
             if isinstance(error, requests.exceptions.HTTPError):
@@ -662,10 +661,10 @@ class limit_parquet_writes:
 
     ```python
     builder = load_dataset_builder("squad")
-    max_dataset_size = 10_000_000
-    with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
+    max_dataset_size_bytes = 10_000_000
+    with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
         builder.download_and_prepare(file_format="parquet")
-        assert builder.info.dataset_size == limiter.total_bytes < max_dataset_size + epsilon
+        assert builder.info.dataset_size == limiter.total_bytes < max_dataset_size_bytes + epsilon
     ```
 
     The limiter is usually used with a `StreamingDownloadManager` to not have to download
@@ -673,10 +672,10 @@ class limit_parquet_writes:
 
     ```python
     builder = load_dataset_builder("squad")
-    max_dataset_size = 10_000_000
+    max_dataset_size_bytes = 10_000_000
     dl_manager = StreamingDownloadManager(...)
     for split_generator in builder._split_generators(dl_manager):
-        with limit_parquet_writes(builder, max_dataset_size=max_dataset_size):
+        with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes):
             builder._prepare_split(split_generator=split_generator, file_format="parquet")
     ```
     """
@@ -684,11 +683,11 @@ class limit_parquet_writes:
     def __init__(
         self,
         builder: Union[datasets.builder.GeneratorBasedBuilder, datasets.builder.ArrowBasedBuilder],
-        max_dataset_size: int,
+        max_dataset_size_bytes: int,
     ) -> None:
         self.total_bytes = 0
         self.builder = builder
-        self.max_dataset_size = max_dataset_size
+        self.max_dataset_size_bytes = max_dataset_size_bytes
         self.exit_stack = ExitStack()
 
     def __enter__(self) -> "limit_parquet_writes":
@@ -712,7 +711,7 @@ class limit_parquet_writes:
             @functools.wraps(generator)
             def wrapped(*args: Any, **kwargs: Any) -> Generator[T, None, None]:
                 for item in generator(*args, **kwargs):
-                    if limiter.total_bytes < limiter.max_dataset_size:
+                    if limiter.total_bytes < limiter.max_dataset_size_bytes:
                         yield item
                     else:
                         break
@@ -772,7 +771,7 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
 
 
 def stream_convert_to_parquet(
-    builder: DatasetBuilder, max_dataset_size: Optional[int], writer_batch_size: Optional[int] = None
+    builder: DatasetBuilder, max_dataset_size_bytes: Optional[int], writer_batch_size: Optional[int] = None
 ) -> tuple[list[CommitOperationAdd], bool]:
     """Stream and prepare the dataset as parquet files and fills the builder info."""
     writer_batch_size = writer_batch_size or get_writer_batch_size_from_info(builder.info)
@@ -795,16 +794,16 @@ def stream_convert_to_parquet(
     partial = False
     for split in splits_generators:
         split_dict.add(splits_generators[split].split_info)
-        if max_dataset_size is None:
+        if max_dataset_size_bytes is None:
             builder._prepare_split(
                 split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
             )
         else:
-            with limit_parquet_writes(builder, max_dataset_size=max_dataset_size) as limiter:
+            with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
                 builder._prepare_split(
                     split_generator=splits_generators[split], file_format="parquet", **prepare_split_kwargs
                 )
-                partial = partial or limiter.total_bytes >= max_dataset_size
+                partial = partial or limiter.total_bytes >= max_dataset_size_bytes
     builder.info.splits = split_dict
     builder.info.dataset_size = sum(split.num_bytes for split in builder.info.splits.values())
     builder.info.download_size = None
@@ -1037,7 +1036,7 @@ def compute_config_parquet_and_info_response(
     target_revision: str,
     commit_message: str,
     url_template: str,
-    max_dataset_size: int,
+    max_dataset_size_bytes: int,
     max_external_data_files: int,
     max_row_group_byte_size_for_copy: int,
     dataset_scripts_allow_list: list[str],
@@ -1068,7 +1067,7 @@ def compute_config_parquet_and_info_response(
             The commit message to use when storing the parquet files
         url_template (`str`):
             The template to use to build the parquet file url
-        max_dataset_size (`int`):
+        max_dataset_size_bytes (`int`):
             The maximum size of a dataset in bytes. If the dataset is under the limit (which means that the size
             can be fetched), it will be allowed.
         max_external_data_files (`int`):
@@ -1181,7 +1180,7 @@ def compute_config_parquet_and_info_response(
             )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder,
-                max_dataset_size=max_dataset_size,
+                max_dataset_size_bytes=max_dataset_size_bytes,
                 writer_batch_size=writer_batch_size,
             )
     else:
@@ -1198,10 +1197,12 @@ def compute_config_parquet_and_info_response(
             builder=builder,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
-            max_dataset_size=max_dataset_size,
+            max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
         ):
-            parquet_operations, partial = stream_convert_to_parquet(builder, max_dataset_size=max_dataset_size)
+            parquet_operations, partial = stream_convert_to_parquet(
+                builder, max_dataset_size_bytes=max_dataset_size_bytes
+            )
         else:
             parquet_operations = convert_to_parquet(builder)
 
@@ -1303,7 +1304,7 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
                 target_revision=self.parquet_and_info_config.target_revision,
                 commit_message=self.parquet_and_info_config.commit_message,
                 url_template=self.parquet_and_info_config.url_template,
-                max_dataset_size=self.parquet_and_info_config.max_dataset_size,
+                max_dataset_size_bytes=self.parquet_and_info_config.max_dataset_size_bytes,
                 max_external_data_files=self.parquet_and_info_config.max_external_data_files,
                 max_row_group_byte_size_for_copy=self.parquet_and_info_config.max_row_group_byte_size_for_copy,
                 dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,

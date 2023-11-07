@@ -86,7 +86,7 @@ def set_env_vars(
     mp.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
     mp.setenv("FIRST_ROWS_MAX_NUMBER", "7")
-    mp.setenv("PARQUET_AND_INFO_MAX_DATASET_SIZE", "10_000")
+    mp.setenv("PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES", "10_000")
     mp.setenv("DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES", "20_000")
     mp.setenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", "10")
     mp.setenv("PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES", "10")

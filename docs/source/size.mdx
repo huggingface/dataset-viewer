@@ -138,3 +138,7 @@ The endpoint response is a JSON containing the size of the dataset, as well as e
   "partial": false
 }
 ```
+
+If the size has `partial: true` it means that the actual size of the dataset couldn't been determined because it's too big.
+
+In that case the number of rows and bytes can be inferior to the actual numbers.

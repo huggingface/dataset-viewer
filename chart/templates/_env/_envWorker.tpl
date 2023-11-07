@@ -51,8 +51,8 @@
   {{- else }}
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
-- name: PARQUET_AND_INFO_MAX_DATASET_SIZE
-  value: {{ .Values.parquetAndInfo.maxDatasetSize | quote }}
+- name: PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES
+  value: {{ .Values.parquetAndInfo.maxDatasetSizeBytes | quote }}
 - name: PARQUET_AND_INFO_MAX_EXTERNAL_DATA_FILES
   value: {{ .Values.parquetAndInfo.maxExternalDataFiles | quote }}
 - name: PARQUET_AND_INFO_MAX_ROW_GROUP_BYTE_SIZE_FOR_COPY
@@ -105,8 +105,8 @@
   value: {{ .Values.duckDBIndex.targetRevision | quote }}
 - name: DUCKDB_INDEX_URL_TEMPLATE
   value: {{ .Values.duckDBIndex.urlTemplate | quote }}
-- name: DUCKDB_INDEX_MAX_PARQUET_SIZE_BYTES
-  value: {{ .Values.duckDBIndex.maxParquetSizeBytes | quote }}
+- name: DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES
+  value: {{ .Values.duckDBIndex.maxDatasetSizeBytes | quote }}
 - name: DUCKDB_INDEX_CACHE_DIRECTORY
   value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY

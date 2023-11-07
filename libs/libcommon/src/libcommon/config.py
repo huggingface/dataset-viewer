@@ -10,6 +10,7 @@ from environs import Env
 
 from libcommon.constants import (
     MIN_BYTES_FOR_BONUS_DIFFICULTY,
+    PROCESSING_STEP_CONFIG_DUCKDB_INDEX_SIZE_VERSION,
     PROCESSING_STEP_CONFIG_INFO_VERSION,
     PROCESSING_STEP_CONFIG_IS_VALID_VERSION,
     PROCESSING_STEP_CONFIG_OPT_IN_OUT_URLS_COUNT_VERSION,
@@ -20,6 +21,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
     PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
+    PROCESSING_STEP_DATASET_DUCKDB_INDEX_SIZE_VERSION,
     PROCESSING_STEP_DATASET_HUB_CACHE_VERSION,
     PROCESSING_STEP_DATASET_INFO_VERSION,
     PROCESSING_STEP_DATASET_IS_VALID_VERSION,
@@ -410,12 +412,24 @@ class ProcessingGraphConfig:
                 "triggered_by": [
                     "config-split-names-from-info",
                     "config-split-names-from-streaming",
-                    "config-parquet-and-info",
+                    "config-parquet-metadata",
                 ],
                 "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
                 "bonus_difficulty_if_dataset_is_big": 20,
+            },
+            "config-duckdb-index-size": {
+                "input_type": "config",
+                "triggered_by": ["split-duckdb-index"],
+                "job_runner_version": PROCESSING_STEP_CONFIG_DUCKDB_INDEX_SIZE_VERSION,
+                "difficulty": 20,
+            },
+            "dataset-duckdb-index-size": {
+                "input_type": "dataset",
+                "triggered_by": ["config-duckdb-index-size"],
+                "job_runner_version": PROCESSING_STEP_DATASET_DUCKDB_INDEX_SIZE_VERSION,
+                "difficulty": 20,
             },
             "dataset-hub-cache": {
                 "input_type": "dataset",

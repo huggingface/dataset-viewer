@@ -338,7 +338,7 @@ def test_compute(
         else replace(
             app_config,
             parquet_and_info=replace(
-                app_config.parquet_and_info, max_dataset_size=1, max_row_group_byte_size_for_copy=1
+                app_config.parquet_and_info, max_dataset_size_bytes=1, max_row_group_byte_size_for_copy=1
             ),
         )
     )
