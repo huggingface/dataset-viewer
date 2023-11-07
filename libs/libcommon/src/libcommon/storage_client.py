@@ -47,5 +47,8 @@ class StorageClient:
 
     def delete_dataset_directory(self, dataset: str) -> None:
         dataset_key = f"{self.get_base_directory()}/{dataset}"
-        self._fs.rm(dataset_key, recursive=True)
-        logging.info(f"Directory removed: {dataset_key}")
+        try:
+            self._fs.rm(dataset_key, recursive=True)
+            logging.info(f"Directory deleted: {dataset_key}")
+        except Exception:
+            logging.warning(f"Could not delete directory {dataset_key}")
