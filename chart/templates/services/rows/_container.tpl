@@ -33,7 +33,6 @@
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
   volumeMounts:
-  {{ include "volumeMountCachedAssetsRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
