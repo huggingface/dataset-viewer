@@ -50,17 +50,27 @@ def test_get_obsolete_cache(dataset_names: list[str], expected_report: list[Data
 
 
 @pytest.mark.parametrize(
-    "dataset_names,minimun_supported_datasets,should_keep,should_raise",
+    "dataset_names,minimun_supported_datasets,create_assets,create_cached_assets,should_keep,should_raise",
     [
-        (["dataset"], 1, True, False),  # do not delete, dataset is still supported
-        ([], 1000, True, True),  # do not delete, number of supported datasets is less than threshold
-        ([], 0, False, False),  # delete dataset
+        (["dataset"], 1, True, True, True, False),  # do not delete, dataset is still supported
+        ([], 1000, True, True, True, True),  # do not delete, number of supported datasets is less than threshold
+        ([], 0, True, True, False, False),  # delete dataset with assets and cached assets
+        ([], 0, False, True, False, False),  # delete dataset with assets
+        ([], 0, True, False, False, False),  # delete dataset with cached assets
+        ([], 0, False, False, False, False),  # delete dataset without assets or cached assets
     ],
 )
 def test_delete_obsolete_cache(
-    dataset_names: list[str], minimun_supported_datasets: int, should_keep: bool, should_raise: bool, tmp_path: Path
+    dataset_names: list[str],
+    minimun_supported_datasets: int,
+    create_assets: bool,
+    create_cached_assets: bool,
+    should_keep: bool,
+    should_raise: bool,
+    tmp_path: Path,
 ) -> None:
     dataset = "dataset"
+    image_key = f"{dataset}/image.jpg"
 
     assets_storage_client = StorageClient(
         protocol="file",
@@ -73,16 +83,15 @@ def test_delete_obsolete_cache(
         folder="cached-assets",
     )
 
-    cached_assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
-    assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
+    if create_assets:
+        assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
+        assets_storage_client._fs.touch(f"{assets_storage_client.get_base_directory()}/{image_key}")
+        assert assets_storage_client.exists(image_key)
 
-    image_key = f"{dataset}/image.jpg"
-
-    assets_storage_client._fs.touch(f"{assets_storage_client.get_base_directory()}/{image_key}")
-    assert assets_storage_client.exists(image_key)
-
-    cached_assets_storage_client._fs.touch(f"{cached_assets_storage_client.get_base_directory()}/{image_key}")
-    assert cached_assets_storage_client.exists(image_key)
+    if create_cached_assets:
+        cached_assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
+        cached_assets_storage_client._fs.touch(f"{cached_assets_storage_client.get_base_directory()}/{image_key}")
+        assert cached_assets_storage_client.exists(image_key)
 
     upsert_response(
         kind="kind_1",
@@ -123,7 +132,9 @@ def test_delete_obsolete_cache(
                 if len(deletion_report) > 0:
                     assert deletion_report[0]["dataset"] == "dataset"
                     assert deletion_report[0]["cache_records"] == 2  # for kind_1 and kind_2
-    assert assets_storage_client.exists(image_key) == should_keep
-    assert cached_assets_storage_client.exists(image_key) == should_keep
+    if create_assets:
+        assert assets_storage_client.exists(image_key) == should_keep
+    if create_cached_assets:
+        assert cached_assets_storage_client.exists(image_key) == should_keep
 
     assert has_some_cache(dataset=dataset) == should_keep
