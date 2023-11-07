@@ -92,7 +92,7 @@ class WorkerExecutor:
 
         loop = asyncio.get_event_loop()
         logging.info("Starting webapp for /healthcheck and /metrics.")
-        loop.create_task(start_web_app)
+        loop.create_task(start_web_app())
         loop.add_signal_handler(signal.SIGTERM, self.stop, worker_loop_executor)
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")
