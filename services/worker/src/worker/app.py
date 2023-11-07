@@ -22,7 +22,7 @@ def create_app() -> Starlette:
 async def start_web_app() -> None:
     uvicorn_config = UvicornConfig.from_env()
     config = uvicorn.Config(
-        "app:create_app",
+        "worker.app:create_app",
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
         factory=True,
