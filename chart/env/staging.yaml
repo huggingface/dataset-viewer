@@ -138,7 +138,7 @@ firstRows:
   maxBytes: "200_000"
 
 parquetAndInfo:
-  maxDatasetSize: "500_000_000"
+  maxDatasetSizeBytes: "500_000_000"
 
 assets:
   storageRoot: "hf-datasets-server-statics-staging"

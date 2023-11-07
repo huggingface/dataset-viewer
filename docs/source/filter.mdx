@@ -38,3 +38,7 @@ either the string "name" column is equal to 'Simone' or the integer "children" c
   Additionally, if the string value contains a single quote, it must be escaped with another single quote,
   for example: <code>'O''Hara'</code>.
 </Tip>
+
+If the result has `partial: true` it means that the filtering couldn't be run on the full dataset because it's too big.
+
+Indeed, the indexing for `/filter` can be partial if the dataset is bigger than 5GB. In that case, it only uses the first 5GB.

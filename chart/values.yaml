@@ -217,10 +217,10 @@ parquetAndInfo:
   # the git commit message when the parquet files are uploaded to the Hub. Defaults to `Update parquet files`.
   commitMessage: "Update parquet files"
   # the maximum size in bytes of the dataset to pre-compute the parquet files. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to this value.
-  maxDatasetSize: "100_000_000"
-  # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
+  maxDatasetSizeBytes: "100_000_000"
+  # the maximum number of external files of the datasets. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSizeBytes` bytes.
   maxExternalDataFiles: "10_000"
-  # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSize` bytes.
+  # the maximum size in bytes of the row groups of parquet datasets that are copied to the target revision. Bigger datasets, or datasets without that information, are partially streamed to get parquet files up to `maxDatasetSizeBytes` bytes.
   maxRowGroupByteSizeForCopy: "300_000_000"
   # the git revision of the dataset to use to prepare the parquet files. Defaults to `main`.
   sourceRevision: "main"
@@ -286,7 +286,7 @@ duckDBIndex:
   # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
-  maxParquetSizeBytes: "100_000_000"
+  maxDatasetSizeBytes: "100_000_000"
 
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM

@@ -487,6 +487,7 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
         features=ds.features,
         unsupported_columns=[],
         num_rows_total=10,
+        partial=False,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "text", "type": {"dtype": "string", "_type": "Value"}}]
     assert response["rows"] == [
@@ -495,6 +496,7 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
     ]
     assert response["num_rows_total"] == 10
     assert response["num_rows_per_page"] == 100
+    assert response["partial"] is False
 
 
 async def test_create_response_with_image(
@@ -514,6 +516,7 @@ async def test_create_response_with_image(
         features=ds_image.features,
         unsupported_columns=[],
         num_rows_total=10,
+        partial=False,
     )
     assert response["features"] == [{"feature_idx": 0, "name": "image", "type": {"_type": "Image"}}]
     assert response["rows"] == [
@@ -529,6 +532,7 @@ async def test_create_response_with_image(
             "truncated_cells": [],
         }
     ]
+    assert response["partial"] is False
     assert storage_client.exists(image_key)
     image = PILImage.open(f"{storage_client.get_base_directory()}/{image_key}")
     assert image is not None

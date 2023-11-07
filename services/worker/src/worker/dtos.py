@@ -169,6 +169,63 @@ class ConfigSizeResponse(TypedDict):
     partial: bool
 
 
+class SplitDuckdbIndex(SplitHubFile):
+    features: Optional[dict[str, Any]]
+    has_fts: bool
+    # The following fields can be None in old cache entries
+    # (added in Oct 2023 with PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION = 2)
+    partial: Optional[bool]
+    num_rows: Optional[int]
+    num_bytes: Optional[int]
+
+
+class SplitDuckdbIndexSize(TypedDict):
+    dataset: str
+    config: str
+    split: str
+    has_fts: bool
+    num_rows: int
+    num_bytes: int
+
+
+class ConfigDuckdbIndexSize(TypedDict):
+    dataset: str
+    config: str
+    has_fts: bool
+    num_rows: int
+    num_bytes: int
+
+
+class ConfigDuckdbIndexSizeContent(TypedDict):
+    config: ConfigDuckdbIndexSize
+    splits: list[SplitDuckdbIndexSize]
+
+
+class ConfigDuckdbIndexSizeResponse(TypedDict):
+    size: ConfigDuckdbIndexSizeContent
+    partial: bool
+
+
+class DatasetDuckdbIndexSize(TypedDict):
+    dataset: str
+    has_fts: bool
+    num_rows: int
+    num_bytes: int
+
+
+class DatasetDuckdbIndexSizeContent(TypedDict):
+    dataset: DatasetDuckdbIndexSize
+    configs: list[ConfigDuckdbIndexSize]
+    splits: list[SplitDuckdbIndexSize]
+
+
+class DatasetDuckdbIndexSizeResponse(TypedDict):
+    size: DatasetDuckdbIndexSizeContent
+    pending: list[PreviousJob]
+    failed: list[PreviousJob]
+    partial: bool
+
+
 class ConfigNameItem(TypedDict):
     dataset: str
     config: str

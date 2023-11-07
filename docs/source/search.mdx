@@ -144,9 +144,15 @@ For example, here are the `features` and the slice 150-151 of matching `rows` of
     }
   ],
   "num_rows_total": 5247,
-  "num_rows_per_page": 100
+  "num_rows_per_page": 100,
+  "partial": false
 }
 ```
+
+If the result has `partial: true` it means that the search couldn't be run on the full dataset because it's too big.
+
+Indeed, the indexing for `/search` can be partial if the dataset is bigger than 5GB. In that case, it only uses the first 5GB.
+
 
 ## Truncated responses
 

@@ -102,6 +102,7 @@ class PaginatedResponse(TypedDict):
     rows: list[RowItem]
     num_rows_total: int
     num_rows_per_page: int
+    partial: bool
 
 
 MAX_NUM_ROWS_PER_PAGE = 100
