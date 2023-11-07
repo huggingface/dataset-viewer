@@ -18,6 +18,7 @@ from libcommon.utils import get_datetime
 from mirakuru import OutputExecutor, ProcessExitedWithError
 
 from worker import start_worker_loop
+from worker.app import start_web_app
 from worker.config import AppConfig
 from worker.job_manager import JobManager
 from worker.job_runner_factory import JobRunnerFactory
@@ -90,6 +91,8 @@ class WorkerExecutor:
                 loop.stop()
 
         loop = asyncio.get_event_loop()
+        logging.info("Starting webapp for /healthcheck and /metrics.")
+        loop.create_task(start_web_app)
         loop.add_signal_handler(signal.SIGTERM, self.stop, worker_loop_executor)
         loop.set_exception_handler(custom_exception_handler)
         logging.info("Starting heartbeat.")

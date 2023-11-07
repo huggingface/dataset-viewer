@@ -19,12 +19,14 @@ def create_app() -> Starlette:
     )
 
 
-def start_web_app() -> None:
+async def start_web_app() -> None:
     uvicorn_config = UvicornConfig.from_env()
-    uvicorn.run(
+    config = uvicorn.Config(
         "app:create_app",
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
         factory=True,
         workers=uvicorn_config.num_workers,
     )
+    server = uvicorn.Server(config)
+    await server.serve()

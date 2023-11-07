@@ -13,7 +13,6 @@ from libcommon.storage import (
 )
 from libcommon.storage_client import StorageClient
 
-from worker.app import start_web_app
 from worker.config import AppConfig
 from worker.executor import WorkerExecutor
 from worker.job_runner_factory import JobRunnerFactory
@@ -23,7 +22,6 @@ WORKER_STATE_FILE_NAME = "worker_state.json"
 
 
 if __name__ == "__main__":
-    start_web_app()
     with tempfile.TemporaryDirectory() as tmp_dir:
         state_file_path = os.path.join(tmp_dir, WORKER_STATE_FILE_NAME)
         os.environ["WORKER_STATE_FILE_PATH"] = state_file_path
