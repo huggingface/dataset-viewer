@@ -682,6 +682,15 @@ workers:
     workerJobTypesBlocked: ""
     # job types that this worker can process
     workerJobTypesOnly: ""
+    # Directory where the uvicorn workers share their prometheus metrics
+    # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+    prometheusMultiprocDirectory: "/tmp"
+    # hostname - it must not be set to localhost to work in Kube!
+    uvicornHostname: "0.0.0.0"
+    # Number of uvicorn workers for running the application
+    uvicornNumWorkers: "1"
+    # Application endpoint port
+    uvicornPort: 8080
     nodeSelector: {}
     replicas: 1
     resources:
