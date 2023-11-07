@@ -12,6 +12,9 @@ from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner
+from worker.job_runners.config.duckdb_index_size import (
+    ConfigDuckdbIndexSizeJobRunner,
+)
 from worker.job_runners.config.info import ConfigInfoJobRunner
 from worker.job_runners.config.is_valid import ConfigIsValidJobRunner
 from worker.job_runners.config.opt_in_out_urls_count import (
@@ -28,6 +31,9 @@ from worker.job_runners.config.split_names_from_streaming import (
     ConfigSplitNamesFromStreamingJobRunner,
 )
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
+from worker.job_runners.dataset.duckdb_index_size import (
+    DatasetDuckdbIndexSizeJobRunner,
+)
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
@@ -254,6 +260,20 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
 
+        if job_type == ConfigDuckdbIndexSizeJobRunner.get_job_type():
+            return ConfigDuckdbIndexSizeJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
+
+        if job_type == DatasetDuckdbIndexSizeJobRunner.get_job_type():
+            return DatasetDuckdbIndexSizeJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
+
         if job_type == DatasetHubCacheJobRunner.get_job_type():
             return DatasetHubCacheJobRunner(
                 job_info=job_info,
@@ -284,6 +304,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
             SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatisticsJobRunner.get_job_type(),
+            ConfigDuckdbIndexSizeJobRunner.get_job_type(),
+            DatasetDuckdbIndexSizeJobRunner.get_job_type(),
             DatasetHubCacheJobRunner.get_job_type(),
         ]
         raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
