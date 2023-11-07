@@ -24,16 +24,24 @@ server {
   listen ${PORT};
   listen [::]:${PORT};
   server_name ${HOST};
+  set $assets_directory ${ASSETS_DIRECTORY};
+  set $cached_assets_directory ${CACHED_ASSETS_DIRECTORY};
 
   location /openapi.json {
     return 307 https://raw.githubusercontent.com/huggingface/datasets-server/main/${OPENAPI_FILE};
   }
 
   location /assets/ {
+    if ($assets_directory = false) {
+      return 404;
+    }
     alias ${ASSETS_DIRECTORY}/;
   }
 
   location /cached-assets/ {
+    if ($cached_assets_directory = false) {
+      return 404;
+    }
     alias ${CACHED_ASSETS_DIRECTORY}/;
   }
 
