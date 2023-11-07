@@ -260,6 +260,20 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
 
+        if job_type == ConfigDuckdbIndexSizeJobRunner.get_job_type():
+            return ConfigDuckdbIndexSizeJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
+
+        if job_type == DatasetDuckdbIndexSizeJobRunner.get_job_type():
+            return DatasetDuckdbIndexSizeJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+                processing_step=processing_step,
+            )
+
         if job_type == DatasetHubCacheJobRunner.get_job_type():
             return DatasetHubCacheJobRunner(
                 job_info=job_info,
