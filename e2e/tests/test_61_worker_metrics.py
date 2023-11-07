@@ -18,5 +18,6 @@ def test_worker_metrics() -> None:
     metrics = {
         parts[0]: float(parts[1]) for line in lines if line and line[0] != "#" and (parts := line.rsplit(" ", 1))
     }
-    # see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
-    assert "process_start_time_seconds" in metrics
+    assert "process_start_time_seconds" not in metrics
+    # ^ see https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn
+    assert "method_steps_processing_time_seconds_sum" in {metric.split("{")[0] for metric in metrics}
