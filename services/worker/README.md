@@ -8,11 +8,11 @@ Use environment variables to configure the workers. The prefix of each environme
 
 ### Uvicorn
 
-The following environment variables are used to configure the Uvicorn server (`ADMIN_UVICORN_` prefix). It is used for the /healthcheck and the /metrics endpoints:
+The following environment variables are used to configure the Uvicorn server (`WORKER_UVICORN_` prefix). It is used for the /healthcheck and the /metrics endpoints:
 
-- `ADMIN_UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
-- `ADMIN_UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
-- `ADMIN_UVICORN_PORT`: the port. Defaults to `8000`.
+- `WORKER_UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
+- `WORKER_UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
+- `WORKER_UVICORN_PORT`: the port. Defaults to `8000`.
 
 ### Prometheus
 
