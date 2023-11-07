@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import time
 from collections.abc import Mapping
 from pathlib import Path
@@ -176,6 +177,12 @@ def poll_until_ready_and_assert(
         assert response.headers.get("X-Revision") is not None, log(response, url, relative_url)
         assert len(str(response.headers.get("X-Revision"))) == 40, log(response, url, relative_url)
     return response
+
+
+def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
+    label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
+    s = name + "{" + label_str + "}"
+    return any(re.match(s, metric_name) is not None for metric_name in metric_names)
 
 
 # explicit re-export

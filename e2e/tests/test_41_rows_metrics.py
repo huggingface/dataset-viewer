@@ -2,16 +2,8 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import os
-import re
-from collections.abc import Mapping
 
-from .utils import ROWS_URL, get
-
-
-def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> bool:
-    label_str = ",".join([f'{k}="{v}"' for k, v in labels.items()])
-    s = name + "{" + label_str + "}"
-    return any(re.match(s, metric_name) is not None for metric_name in metric_names)
+from .utils import ROWS_URL, get, has_metric
 
 
 def test_metrics() -> None:
