@@ -107,8 +107,6 @@ def set_worker_state(worker_state_file_path: str) -> Iterator[WorkerState]:
 
 @fixture
 def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
-    if not queue_mongo_resource.is_available():
-        raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info()
     try:
         JobDocument.get(job_id=job_info["job_id"]).delete()
@@ -139,8 +137,6 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
 def set_long_running_job_in_queue(
     app_config: AppConfig, queue_mongo_resource: QueueMongoResource
 ) -> Iterator[JobDocument]:
-    if not queue_mongo_resource.is_available():
-        raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("long")
     try:
         JobDocument.get(job_id=job_info["job_id"]).delete()
@@ -235,12 +231,19 @@ def executor(
     worker_executor.stop()
 
 
-def test_executor_get_state(executor: WorkerExecutor, set_worker_state: WorkerState) -> None:
+def test_executor_get_state(
+    executor: WorkerExecutor,
+    set_worker_state: WorkerState,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> None:
     assert executor.get_state() == set_worker_state
 
 
 def test_executor_get_empty_state(
     executor: WorkerExecutor,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     assert executor.get_state() is None
 
@@ -249,6 +252,8 @@ def test_executor_heartbeat(
     executor: WorkerExecutor,
     set_just_started_job_in_queue: JobDocument,
     set_worker_state: WorkerState,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     current_job = set_just_started_job_in_queue
     assert current_job.last_heartbeat is None
@@ -266,27 +271,25 @@ def test_executor_kill_zombies(
     set_zombie_job_in_queue: JobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
     cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
-    try:
-        executor.kill_zombies()
-        assert JobDocument.objects(pk=zombie.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
-        assert JobDocument.objects(pk=normal_job.pk).get().status == Status.STARTED
-        response = CachedResponseDocument.objects()[0]
-        expected_error = {
-            "error": "Job manager crashed while running this job (missing heartbeats).",
-        }
-        assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobManagerCrashedError"
-        assert response.dataset == zombie.dataset
-        assert response.config == zombie.config
-        assert response.split == zombie.split
-        assert response.content == expected_error
-        assert response.details == expected_error
-    finally:
-        CachedResponseDocument.objects().delete()
+    executor.kill_zombies()
+    assert JobDocument.objects(pk=zombie.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
+    assert JobDocument.objects(pk=normal_job.pk).get().status == Status.STARTED
+    response = CachedResponseDocument.objects()[0]
+    expected_error = {
+        "error": "Job manager crashed while running this job (missing heartbeats).",
+    }
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "JobManagerCrashedError"
+    assert response.dataset == zombie.dataset
+    assert response.config == zombie.config
+    assert response.split == zombie.split
+    assert response.content == expected_error
+    assert response.details == expected_error
 
 
 def test_executor_start(
@@ -297,8 +300,6 @@ def test_executor_start(
     tmp_dataset_repo_factory: Callable[[str], str],
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
-    if not queue_mongo_resource.is_available():
-        raise RuntimeError("Mongo resource is not available")
     zombie = set_zombie_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
     # tmp_dataset_repo_factory(zombie.dataset)
@@ -327,8 +328,6 @@ def test_executor_start(
 def test_executor_raises_on_bad_worker(
     executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, bad_worker_loop_type: str
 ) -> None:
-    if not queue_mongo_resource.is_available():
-        raise RuntimeError("Mongo resource is not available")
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
         with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
             os.environ, {"WORKER_TEST_TIME": str(_TIME)}
@@ -345,47 +344,41 @@ def test_executor_stops_on_long_job(
     set_long_running_job_in_queue: JobDocument,
     set_just_started_job_in_queue: JobDocument,
 ) -> None:
-    if not queue_mongo_resource.is_available():
-        raise RuntimeError("Mongo resource is not available")
     long_job = set_long_running_job_in_queue
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(long_job.dataset)
-    try:
-        with patch.dict(os.environ, {"WORKER_LOOP_TYPE": "start_worker_loop_with_long_job"}):
-            with patch.object(executor, "max_seconds_without_heartbeat_for_zombies", -1):  # don't kill normal_job
-                with patch.object(
-                    executor, "kill_long_job_interval_seconds", 0.1
-                ):  # make sure it has the time to kill the job
-                    with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
-                        os.environ, {"WORKER_TEST_TIME": str(_TIME)}
-                    ):
-                        executor.start()
+    with patch.dict(os.environ, {"WORKER_LOOP_TYPE": "start_worker_loop_with_long_job"}):
+        with patch.object(executor, "max_seconds_without_heartbeat_for_zombies", -1):  # don't kill normal_job
+            with patch.object(
+                executor, "kill_long_job_interval_seconds", 0.1
+            ):  # make sure it has the time to kill the job
+                with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
+                    os.environ, {"WORKER_TEST_TIME": str(_TIME)}
+                ):
+                    executor.start()
 
-        assert long_job is not None
-        assert str(long_job.pk) == get_job_info("long")["job_id"]
+    assert long_job is not None
+    assert str(long_job.pk) == get_job_info("long")["job_id"]
 
-        long_job.reload()
-        assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
+    long_job.reload()
+    assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
 
-        responses = CachedResponseDocument.objects()
-        assert len(responses) == 1
-        response = responses[0]
-        expected_error = {
-            "error": "Job manager was killed while running this job (job exceeded maximum duration).",
-        }
-        assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
-        assert response.error_code == "JobManagerExceededMaximumDurationError"
-        assert response.dataset == long_job.dataset
-        assert response.config == long_job.config
-        assert response.split == long_job.split
-        assert response.content == expected_error
-        assert response.details == expected_error
+    responses = CachedResponseDocument.objects()
+    assert len(responses) == 1
+    response = responses[0]
+    expected_error = {
+        "error": "Job manager was killed while running this job (job exceeded maximum duration).",
+    }
+    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.error_code == "JobManagerExceededMaximumDurationError"
+    assert response.dataset == long_job.dataset
+    assert response.config == long_job.config
+    assert response.split == long_job.split
+    assert response.content == expected_error
+    assert response.details == expected_error
 
-        normal_job.reload()
-        assert normal_job.status == Status.STARTED, "must stay untouched"
-
-    finally:
-        CachedResponseDocument.objects().delete()
+    normal_job.reload()
+    assert normal_job.status == Status.STARTED, "must stay untouched"
 
 
 if __name__ == "__main__":
