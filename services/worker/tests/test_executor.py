@@ -323,13 +323,10 @@ def test_executor_start(
     "bad_worker_loop_type", ["start_worker_loop_that_crashes", "start_worker_loop_that_times_out"]
 )
 def test_executor_raises_on_bad_worker(
-    executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, tmp_path: Path, bad_worker_loop_type: str
+    executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, bad_worker_loop_type: str
 ) -> None:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
-    bad_start_worker_loop_path = tmp_path / "bad_start_worker_loop.py"
-    with bad_start_worker_loop_path.open("w") as bad_start_worker_loop_f:
-        bad_start_worker_loop_f.write("raise RuntimeError('Tried to start a bad worker loop.')")
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
         with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
             os.environ, {"WORKER_TEST_TIME": str(_TIME)}
