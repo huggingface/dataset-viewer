@@ -335,7 +335,6 @@ def test_executor_stops_on_long_job(
     set_just_started_job_in_queue: JobDocument,
 ) -> None:
     long_job = set_long_running_job_in_queue
-    normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(long_job.dataset)
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": "start_worker_loop_with_long_job"}):
         with patch.object(executor, "max_seconds_without_heartbeat_for_zombies", -1):  # don't kill normal_job
