@@ -19,14 +19,12 @@ def create_app() -> Starlette:
     )
 
 
-async def start_web_app() -> None:
+if __name__ == "__main__":
     uvicorn_config = UvicornConfig.from_env()
-    config = uvicorn.Config(
-        "worker.app:create_app",
+    uvicorn.run(
+        "worker.start_web_app:create_app",
         host=uvicorn_config.hostname,
         port=uvicorn_config.port,
         factory=True,
         workers=uvicorn_config.num_workers,
     )
-    server = uvicorn.Server(config)
-    await server.serve()

@@ -229,8 +229,10 @@ def job_runner_factory(
 @fixture
 def executor(
     app_config: AppConfig, job_runner_factory: JobRunnerFactory, worker_state_file_path: str
-) -> WorkerExecutor:
-    return WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
+) -> Iterator[WorkerExecutor]:
+    worker_executor = WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
+    yield worker_executor
+    worker_executor.stop()
 
 
 def test_executor_get_state(executor: WorkerExecutor, set_worker_state: WorkerState) -> None:
