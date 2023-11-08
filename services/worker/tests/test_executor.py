@@ -224,7 +224,11 @@ def job_runner_factory(
 
 @fixture
 def executor(
-    app_config: AppConfig, job_runner_factory: JobRunnerFactory, worker_state_file_path: str
+    app_config: AppConfig,
+    job_runner_factory: JobRunnerFactory,
+    worker_state_file_path: str,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
 ) -> Iterator[WorkerExecutor]:
     worker_executor = WorkerExecutor(app_config, job_runner_factory, state_file_path=worker_state_file_path)
     yield worker_executor
@@ -234,16 +238,12 @@ def executor(
 def test_executor_get_state(
     executor: WorkerExecutor,
     set_worker_state: WorkerState,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     assert executor.get_state() == set_worker_state
 
 
 def test_executor_get_empty_state(
     executor: WorkerExecutor,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     assert executor.get_state() is None
 
@@ -252,8 +252,6 @@ def test_executor_heartbeat(
     executor: WorkerExecutor,
     set_just_started_job_in_queue: JobDocument,
     set_worker_state: WorkerState,
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     current_job = set_just_started_job_in_queue
     assert current_job.last_heartbeat is None
@@ -270,8 +268,6 @@ def test_executor_kill_zombies(
     set_long_running_job_in_queue: JobDocument,
     set_zombie_job_in_queue: JobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
-    cache_mongo_resource: CacheMongoResource,
-    queue_mongo_resource: QueueMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
     normal_job = set_just_started_job_in_queue
@@ -294,11 +290,9 @@ def test_executor_kill_zombies(
 
 def test_executor_start(
     executor: WorkerExecutor,
-    queue_mongo_resource: QueueMongoResource,
     set_just_started_job_in_queue: JobDocument,
     set_zombie_job_in_queue: JobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
-    cache_mongo_resource: CacheMongoResource,
 ) -> None:
     zombie = set_zombie_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
@@ -325,9 +319,7 @@ def test_executor_start(
 @pytest.mark.parametrize(
     "bad_worker_loop_type", ["start_worker_loop_that_crashes", "start_worker_loop_that_times_out"]
 )
-def test_executor_raises_on_bad_worker(
-    executor: WorkerExecutor, queue_mongo_resource: QueueMongoResource, bad_worker_loop_type: str
-) -> None:
+def test_executor_raises_on_bad_worker(executor: WorkerExecutor, bad_worker_loop_type: str) -> None:
     with patch.dict(os.environ, {"WORKER_LOOP_TYPE": bad_worker_loop_type}):
         with patch("worker.executor.START_WORKER_LOOP_PATH", __file__), patch.dict(
             os.environ, {"WORKER_TEST_TIME": str(_TIME)}
@@ -338,8 +330,6 @@ def test_executor_raises_on_bad_worker(
 
 def test_executor_stops_on_long_job(
     executor: WorkerExecutor,
-    queue_mongo_resource: QueueMongoResource,
-    cache_mongo_resource: CacheMongoResource,
     tmp_dataset_repo_factory: Callable[[str], str],
     set_long_running_job_in_queue: JobDocument,
     set_just_started_job_in_queue: JobDocument,
@@ -363,7 +353,7 @@ def test_executor_stops_on_long_job(
     long_job.reload()
     assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
 
-    responses = CachedResponseDocument.objects()
+    responses = CachedResponseDocument.objects(error_code="JobManagerExceededMaximumDurationError")
     assert len(responses) == 1
     response = responses[0]
     expected_error = {
