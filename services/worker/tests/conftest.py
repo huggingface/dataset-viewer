@@ -115,6 +115,8 @@ def app_config(set_env_vars: MonkeyPatch) -> Iterator[AppConfig]:
 @fixture
 def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
     with CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url) as resource:
+        if not resource.is_available():
+            raise RuntimeError("Mongo resource is not available")
         yield resource
         _clean_cache_database()
 
@@ -122,6 +124,8 @@ def cache_mongo_resource(app_config: AppConfig) -> Iterator[CacheMongoResource]:
 @fixture
 def queue_mongo_resource(app_config: AppConfig) -> Iterator[QueueMongoResource]:
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url) as resource:
+        if not resource.is_available():
+            raise RuntimeError("Mongo resource is not available")
         yield resource
         _clean_queue_database()
 

@@ -17,6 +17,28 @@ from libcommon.config import (
     S3Config,
 )
 
+WORKER_UVICORN_HOSTNAME = "localhost"
+WORKER_UVICORN_NUM_WORKERS = 2
+WORKER_UVICORN_PORT = 8000
+
+
+@dataclass(frozen=True)
+class UvicornConfig:
+    hostname: str = WORKER_UVICORN_HOSTNAME
+    num_workers: int = WORKER_UVICORN_NUM_WORKERS
+    port: int = WORKER_UVICORN_PORT
+
+    @classmethod
+    def from_env(cls) -> "UvicornConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("WORKER_UVICORN_"):
+            return cls(
+                hostname=env.str(name="HOSTNAME", default=WORKER_UVICORN_HOSTNAME),
+                num_workers=env.int(name="NUM_WORKERS", default=WORKER_UVICORN_NUM_WORKERS),
+                port=env.int(name="PORT", default=WORKER_UVICORN_PORT),
+            )
+
+
 WORKER_CONTENT_MAX_BYTES = 10_000_000
 WORKER_DIFFICULTY_MAX = None
 WORKER_DIFFICULTY_MIN = None

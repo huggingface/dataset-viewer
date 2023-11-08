@@ -27,12 +27,14 @@ numpy = "~1.22.4"
 openpyxl = "^3.1.1"
 pdf2image = "^1.16.2"
 pillow = "^10.0.1"
+prometheus_client = "^0.12.0"
 py7zr = "^0.20.4"
 pyarrow = "^11.0.0"
 pydub = "^0.25.1"
 PyICU = "^2.10.2"
 rarfile = "^4.0"
 scikit-learn = "^1.2.1"
+starlette = "^0.28.0"
 tensorflow-aarch64 = {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-cpu = [
     {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
@@ -49,6 +51,7 @@ torch = [
 transformers = "^4.30.0"
 trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
+uvicorn = "^0.20.0"
 wget = "^3.2"
 
 [tool.poetry.group.dev.dependencies]
@@ -92,9 +95,10 @@ module = [
     "fsspec.*",
     "boto3.*",
     "moto.*",
-
+    "prometheus_client.*"
 ]
 ignore_missing_imports = true
+# ^ prometheus_client is now typed, but we use an old version to stick with the other services
 
 [tool.ruff]
 line-length = 119

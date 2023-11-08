@@ -15,15 +15,16 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.utils import get_datetime
-from mirakuru import OutputExecutor, ProcessExitedWithError
+from mirakuru import OutputExecutor, ProcessExitedWithError, TCPExecutor
 
-from worker import start_worker_loop
-from worker.config import AppConfig
+from worker import start_web_app, start_worker_loop
+from worker.config import AppConfig, UvicornConfig
 from worker.job_manager import JobManager
 from worker.job_runner_factory import JobRunnerFactory
 from worker.loop import WorkerState
 
 START_WORKER_LOOP_PATH = start_worker_loop.__file__
+START_WEB_APP_PATH = start_web_app.__file__
 
 
 async def every(
@@ -65,6 +66,8 @@ class WorkerExecutor:
         self.kill_zombies_interval_seconds = self.app_config.worker.kill_zombies_interval_seconds
         self.kill_long_job_interval_seconds = self.app_config.worker.kill_long_job_interval_seconds
 
+        self.executors: list[Union[OutputExecutor, TCPExecutor]] = []
+
     def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.state_file_path
         start_worker_loop_command = [
@@ -74,10 +77,21 @@ class WorkerExecutor:
         ]
         return OutputExecutor(start_worker_loop_command, banner, timeout=10)
 
+    def _create_web_app_executor(self) -> TCPExecutor:
+        logging.info("Starting webapp for /healthcheck and /metrics.")
+        start_web_app_command = [sys.executable, START_WEB_APP_PATH]
+        uvicorn_config = UvicornConfig.from_env()
+        return TCPExecutor(start_web_app_command, host=uvicorn_config.hostname, port=uvicorn_config.port, timeout=10)
+
     def start(self) -> None:
         exceptions = []
         worker_loop_executor = self._create_worker_loop_executor()
         worker_loop_executor.start()  # blocking until the banner is printed
+        self.executors.append(worker_loop_executor)
+
+        web_app_executor = self._create_web_app_executor()
+        web_app_executor.start()  # blocking until the banner is printed
+        self.executors.append(web_app_executor)
 
         def custom_exception_handler(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
             nonlocal exceptions
@@ -90,8 +104,9 @@ class WorkerExecutor:
                 loop.stop()
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGTERM, self.stop, worker_loop_executor)
+        loop.add_signal_handler(signal.SIGTERM, self.stop)
         loop.set_exception_handler(custom_exception_handler)
+
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
         loop.create_task(
@@ -119,8 +134,9 @@ class WorkerExecutor:
         if exceptions:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
 
-    def stop(self, worker_loop_executor: OutputExecutor) -> None:
-        worker_loop_executor.stop()
+    def stop(self) -> None:
+        for executor in self.executors:
+            executor.stop()
 
     def get_state(self) -> Optional[WorkerState]:
         worker_state_file_path = self.state_file_path

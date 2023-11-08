@@ -293,6 +293,14 @@ See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-a
 {{- end }}
 
 {{/*
+The URL to access the worker service from another container
+See https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#a-aaaa-records
+*/}}
+{{- define "worker.url" -}}
+{{- printf "http://%s-worker.%s.svc.cluster.local:80" ( include "name" . ) ( .Release.Namespace ) }}
+{{- end }}
+
+{{/*
 Return the HUB url
 */}}
 {{- define "datasetsServer.hub.url" -}}

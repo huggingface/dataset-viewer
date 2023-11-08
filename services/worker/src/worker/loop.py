@@ -11,6 +11,7 @@ from typing import Optional, TypedDict
 import orjson
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
+from libcommon.prometheus import StepProfiler
 from libcommon.queue import (
     AlreadyStartedJobError,
     EmptyQueueError,
@@ -117,7 +118,8 @@ class Loop:
                     # loop immediately to try another job
                     # see https://github.com/huggingface/datasets-server/issues/265
                     continue
-                self.sleep()
+                with StepProfiler("loop", "sleep"):
+                    self.sleep()
         except BaseException:
             logging.exception("quit due to an uncaught error while processing the job")
             raise
@@ -125,31 +127,35 @@ class Loop:
     def process_next_job(self) -> bool:
         logging.debug("try to process a job")
 
-        try:
-            job_info = self.queue.start_job(
-                difficulty_min=self.app_config.worker.difficulty_min,
-                difficulty_max=self.app_config.worker.difficulty_max,
-                job_types_blocked=self.app_config.worker.job_types_blocked,
-                job_types_only=self.app_config.worker.job_types_only,
-            )
-            self.set_worker_state(current_job_info=job_info)
-            logging.debug(f"job assigned: {job_info}")
-        except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
-            self.set_worker_state(current_job_info=None)
-            logging.debug(e)
-            return False
+        with StepProfiler("loop", "start_job"):
+            try:
+                job_info = self.queue.start_job(
+                    difficulty_min=self.app_config.worker.difficulty_min,
+                    difficulty_max=self.app_config.worker.difficulty_max,
+                    job_types_blocked=self.app_config.worker.job_types_blocked,
+                    job_types_only=self.app_config.worker.job_types_only,
+                )
+                self.set_worker_state(current_job_info=job_info)
+                logging.debug(f"job assigned: {job_info}")
+            except (EmptyQueueError, AlreadyStartedJobError, LockTimeoutError, NoWaitingJobError) as e:
+                self.set_worker_state(current_job_info=None)
+                logging.debug(e)
+                return False
 
-        job_runner = self.job_runner_factory.create_job_runner(job_info)
-        job_manager = JobManager(
-            job_info=job_info,
-            app_config=self.app_config,
-            job_runner=job_runner,
-            processing_graph=self.processing_graph,
-        )
-        job_result = job_manager.run_job()
-        job_manager.finish(job_result=job_result)
-        self.set_worker_state(current_job_info=None)
-        return True
+        with StepProfiler("loop", "run_job", job_info["type"]):
+            job_runner = self.job_runner_factory.create_job_runner(job_info)
+            job_manager = JobManager(
+                job_info=job_info,
+                app_config=self.app_config,
+                job_runner=job_runner,
+                processing_graph=self.processing_graph,
+            )
+            job_result = job_manager.run_job()
+
+        with StepProfiler("loop", "finish_job"):
+            job_manager.finish(job_result=job_result)
+            self.set_worker_state(current_job_info=None)
+            return True
 
     def set_worker_state(self, current_job_info: Optional[JobInfo]) -> None:
         worker_state: WorkerState = {"current_job_info": current_job_info, "last_updated": get_datetime()}

@@ -6,6 +6,18 @@
 
 Use environment variables to configure the workers. The prefix of each environment variable gives its scope.
 
+### Uvicorn
+
+The following environment variables are used to configure the Uvicorn server (`WORKER_UVICORN_` prefix). It is used for the /healthcheck and the /metrics endpoints:
+
+- `WORKER_UVICORN_HOSTNAME`: the hostname. Defaults to `"localhost"`.
+- `WORKER_UVICORN_NUM_WORKERS`: the number of uvicorn workers. Defaults to `2`.
+- `WORKER_UVICORN_PORT`: the port. Defaults to `8000`.
+
+### Prometheus
+
+- `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every uvicorn worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
+
 ## Worker configuration
 
 Set environment variables to configure the worker.
