@@ -15,7 +15,7 @@ from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.utils import get_datetime
-from mirakuru import Executor, OutputExecutor, ProcessExitedWithError, TCPExecutor
+from mirakuru import OutputExecutor, ProcessExitedWithError, TCPExecutor
 
 from worker import start_web_app, start_worker_loop
 from worker.config import AppConfig, UvicornConfig
@@ -66,9 +66,9 @@ class WorkerExecutor:
         self.kill_zombies_interval_seconds = self.app_config.worker.kill_zombies_interval_seconds
         self.kill_long_job_interval_seconds = self.app_config.worker.kill_long_job_interval_seconds
 
-        self.executors: list[Executor] = []
+        self.executors: list[Union[OutputExecutor, TCPExecutor]] = []
 
-    def _create_worker_loop_executor(self) -> Executor:
+    def _create_worker_loop_executor(self) -> OutputExecutor:
         banner = self.state_file_path
         start_worker_loop_command = [
             sys.executable,
@@ -77,7 +77,7 @@ class WorkerExecutor:
         ]
         return OutputExecutor(start_worker_loop_command, banner, timeout=10)
 
-    def _create_web_app_executor(self) -> Executor:
+    def _create_web_app_executor(self) -> TCPExecutor:
         logging.info("Starting webapp for /healthcheck and /metrics.")
         start_web_app_command = [sys.executable, START_WEB_APP_PATH]
         uvicorn_config = UvicornConfig.from_env()
