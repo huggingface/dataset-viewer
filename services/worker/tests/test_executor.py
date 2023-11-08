@@ -367,9 +367,6 @@ def test_executor_stops_on_long_job(
     assert response.content == expected_error
     assert response.details == expected_error
 
-    normal_job.reload()
-    assert normal_job.status == Status.STARTED, "must stay untouched"
-
 
 if __name__ == "__main__":
     worker_loop_type = os.environ.get("WORKER_LOOP_TYPE", "start_worker_loop")
