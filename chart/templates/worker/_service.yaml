@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
+{{- define "serviceWorker" -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
+  annotations: {}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "labels.worker" . | nindent 4 }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: {{ .workerValues.uvicornPort }}
+  selector: {{ include "labels.worker" . | nindent 4 }}
+{{- end -}}
