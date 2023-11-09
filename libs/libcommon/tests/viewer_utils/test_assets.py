@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import soundfile  # type: ignore
-import validators
+import validators  # type: ignore
 from datasets import Dataset
 from PIL import Image as PILImage  # type: ignore
 

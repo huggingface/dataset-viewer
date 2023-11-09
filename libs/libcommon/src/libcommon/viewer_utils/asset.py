@@ -36,7 +36,7 @@ class AudioSource(TypedDict):
 
 def generate_asset_src(
     base_url: str, dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
-) -> (str, str):
+) -> tuple[str, str]:
     dir_path = f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}"
     return dir_path, f"{base_url}/{dir_path}/{filename}"
 
