@@ -3,7 +3,7 @@
 
 {{- if .Values.monitoring.enabled }}
 apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+kind: PodMonitor
 metadata:
   labels: {{ include "labels.worker" . | nindent 4 }}
   name: "{{ include "name" . }}-worker"
