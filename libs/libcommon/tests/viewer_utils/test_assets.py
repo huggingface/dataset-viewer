@@ -97,6 +97,13 @@ def test_generate_asset_src(dataset: str, config: str, split: str, column: str) 
     base_url = "https://datasets-server.huggingface.co/assets"
     filename = "image.jpg"
     _, src = generate_asset_src(
-        base_url=base_url, dataset=dataset, revision="revision", config=config, split=split, row_idx=0, column=column, filename=filename
+        base_url=base_url,
+        dataset=dataset,
+        revision="revision",
+        config=config,
+        split=split,
+        row_idx=0,
+        column=column,
+        filename=filename,
     )
     assert validators.url(src)
