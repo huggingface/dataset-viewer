@@ -9,7 +9,7 @@ metadata:
   name: "{{ include "name" . }}-worker"
   namespace: {{ .Release.Namespace }}
 spec:
-  endpoints:
+  podMetricsEndpoints:
     - path: /metrics
       port: http
   namespaceSelector:
