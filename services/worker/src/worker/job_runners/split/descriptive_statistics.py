@@ -479,15 +479,15 @@ def compute_descriptive_statistics_response(
 
     con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
     con.sql("SET enable_progress_bar=true;")
+    
+    # DuckDB uses n_threads = num kubernetes cpu (limits)
     n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
-    logging.info(f"Original number of threads={n_threads}")
-    con.sql("SET threads TO 8;")
-    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
-    logging.info(f"Current number of threads={n_threads}")
+    logging.info(f"Number of threads={n_threads}")
 
+    # However DuckDB uses max_memory = memory of the entite kubernetes node so we lower it
     max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
     logging.info(f"Original {max_memory=}")
-    con.sql("SET max_memory TO '28gb';")
+    con.sql(f"SET max_memory TO '{28 if n_threads >= 8 else 10}gb';")
     max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
     logging.info(f"Current {max_memory=}")
 
