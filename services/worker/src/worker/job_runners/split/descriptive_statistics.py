@@ -479,7 +479,7 @@ def compute_descriptive_statistics_response(
 
     con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
     con.sql("SET enable_progress_bar=true;")
-    
+
     # DuckDB uses n_threads = num kubernetes cpu (limits)
     n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
     logging.info(f"Number of threads={n_threads}")
