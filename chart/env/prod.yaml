@@ -436,7 +436,7 @@ workers:
     replicas: 30
     resources:
       requests:
-        cpu: 1
+        cpu: 2
         memory: "14Gi"
       limits:
         cpu: 2
