@@ -24,6 +24,8 @@ export DUCKDB_INDEX_COMMITTER_HF_TOKEN := hf_app_datasets-server-parquet-convert
 export PORT_REVERSE_PROXY := 9000
 export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1
+export WORKER_UVICORN_NUM_WORKERS := 2
+export WORKER_UVICORN_PORT := 9086
 
 export COMPOSE_PROJECT_NAME := e2e
 

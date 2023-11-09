@@ -141,6 +141,7 @@ class CachedResponseDocument(Document):
             ("dataset", "kind", "http_status"),
             ("kind", "http_status", "error_code"),
             ("kind", "http_status", "_id"),
+            ("kind", "_id"),  # < recommended by Atlas, for find "kind: dataset-hub-cache", sort "_id: 1"
         ],
     }
     objects = QuerySetManager["CachedResponseDocument"]()

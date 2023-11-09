@@ -223,11 +223,20 @@ services:
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       WORKER_STORAGE_PATHS: ${ASSETS_STORAGE_DIRECTORY-/assets}
+      # prometheus
+      PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # ^ note: the datasets cache is automatically added, so no need to add it here
+      # uvicorn
+      WORKER_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
+      WORKER_UVICORN_NUM_WORKERS: ${WORKER_UVICORN_NUM_WORKERS-2}
+      WORKER_UVICORN_PORT: ${WORKER_UVICORN_PORT-8086}
     depends_on:
       mongodb:
         condition: service_healthy
     restart: always
+    ports:
+      # for debug
+      - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
   mongodb:
     image: "mongo:6.0.9"
     ports:

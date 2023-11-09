@@ -28,6 +28,16 @@
     value: {{ .workerValues.workerJobTypesOnly | quote }}
   - name: ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY
     value: {{ .Values.rowsIndex.maxArrowDataInMemory | quote }}
+  # prometheus
+  - name: PROMETHEUS_MULTIPROC_DIR
+    value:  {{ .workerValues.prometheusMultiprocDirectory | quote }}
+  # uvicorn
+  - name: WORKER_UVICORN_HOSTNAME
+    value: {{ .workerValues.uvicornHostname | quote }}
+  - name: WORKER_UVICORN_NUM_WORKERS
+    value: {{ .workerValues.uvicornNumWorkers | quote }}
+  - name: WORKER_UVICORN_PORT
+    value: {{ .workerValues.uvicornPort | quote }}
   volumeMounts:
   {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
@@ -36,4 +46,20 @@
   securityContext:
     allowPrivilegeEscalation: false
   resources: {{ toYaml .workerValues.resources | nindent 4 }}
+  readinessProbe:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
+      port: {{ .workerValues.uvicornPort }}
+  livenessProbe:
+    failureThreshold: 30
+    periodSeconds: 5
+    httpGet:
+      path: /healthcheck
+      port: {{ .workerValues.uvicornPort }}
+  ports:
+  - containerPort: {{ .workerValues.uvicornPort }}
+    name: http
+    protocol: TCP
 {{- end -}}

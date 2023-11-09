@@ -279,6 +279,10 @@ search:
 
 workers:
   - deployName: "all"
+    prometheusMultiprocDirectory: "/tmp"
+    uvicornHostname: "0.0.0.0"
+    uvicornNumWorkers: "1"
+    uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
@@ -292,6 +296,10 @@ workers:
         cpu: 1
         memory: "4Gi"
   - deployName: "light"
+    prometheusMultiprocDirectory: "/tmp"
+    uvicornHostname: "0.0.0.0"
+    uvicornNumWorkers: "1"
+    uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""

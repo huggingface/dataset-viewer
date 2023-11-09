@@ -148,7 +148,6 @@ optInOutUrlsScan:
   rowsMaxNumber: 100_000
   urlsNumberPerBatch: 1000
 
-
 assets:
   storageRoot: "hf-datasets-server-statics"
   storageProtocol: "s3"
@@ -411,6 +410,10 @@ sseApi:
 
 workers:
   - deployName: "heavy"
+    prometheusMultiprocDirectory: "/tmp"
+    uvicornHostname: "0.0.0.0"
+    uvicornNumWorkers: "1"
+    uvicornPort: 8080
     workerDifficultyMax: 100
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
@@ -427,6 +430,10 @@ workers:
         memory: "34Gi"
     tolerations: []
   - deployName: "medium"
+    prometheusMultiprocDirectory: "/tmp"
+    uvicornHostname: "0.0.0.0"
+    uvicornNumWorkers: "1"
+    uvicornPort: 8080
     workerDifficultyMax: 70
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
@@ -443,6 +450,10 @@ workers:
         memory: "14Gi"
     tolerations: []
   - deployName: "light"
+    prometheusMultiprocDirectory: "/tmp"
+    uvicornHostname: "0.0.0.0"
+    uvicornNumWorkers: "1"
+    uvicornPort: 8080
     workerDifficultyMax: 40
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
