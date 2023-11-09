@@ -40,7 +40,7 @@ def create_hub_cache_endpoint(hub_cache_watcher: HubCacheWatcher) -> Endpoint:
                     new_value = await event.wait_value()
                     event.clear()
                     if new_value is not None:
-                        logging.info(f"Sending new value: {new_value}")
+                        logging.debug(f"Sending new value: {new_value}")
                         yield ServerSentEvent(data=json.dumps(dataclasses.asdict(new_value)), event="message")
             finally:
                 hub_cache_watcher.unsubscribe(uuid)
