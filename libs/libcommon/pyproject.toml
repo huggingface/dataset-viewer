@@ -18,6 +18,7 @@ numba = "0.56.4"
 orjson = "^3.8.6"
 pandas = "~2.0.3"
 psutil = "^5.9.4"
+pyarrow = "^14.0.0"
 pydub = "^0.25.1"
 pymongo = { extras = ["srv"], version = "^4.5.0" }
 pytz = "^2020.1"
