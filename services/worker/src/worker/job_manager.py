@@ -13,6 +13,7 @@ from libcommon.exceptions import (
     DatasetScriptError,
     JobManagerCrashedError,
     JobManagerExceededMaximumDurationError,
+    PreviousStepStillProcessingError,
     ResponseAlreadyComputedError,
     TooBigContentError,
     UnexpectedError,
@@ -21,6 +22,7 @@ from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
     CachedArtifactError,
+    CachedArtifactNotFoundError,
     CacheEntryDoesNotExistError,
     get_response_without_content_params,
 )
@@ -174,6 +176,10 @@ class JobManager:
                         "The computed response content exceeds the supported size in bytes"
                         f" ({self.worker_config.content_max_bytes})."
                     )
+            except CachedArtifactNotFoundError as err:
+                raise PreviousStepStillProcessingError(
+                    message="The previous steps are still being processed", cause=err
+                )
             finally:
                 # ensure the post_compute hook is called even if the compute raises an exception
                 self.job_runner.post_compute()
