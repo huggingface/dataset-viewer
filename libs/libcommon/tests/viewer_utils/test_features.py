@@ -143,32 +143,33 @@ ASSETS_BASE_URL_SPLIT = "http://localhost/assets/dataset/--/revision/--/config/s
         ("list", [{"a": 0}], [{"a": Value(dtype="int64", id=None)}]),
         ("sequence_simple", [0], "Sequence"),
         ("sequence", {"a": [0]}, "Sequence"),
-        # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional
-        #   arrays
-        ("array2d", [[0.0, 0.0], [0.0, 0.0]], "Array2D"),
-        ("array3d", [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], "Array3D"),
-        (
-            "array4d",
-            [
-                [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-                [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-            ],
-            "Array4D",
-        ),
-        (
-            "array5d",
-            [
-                [
-                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-                ],
-                [
-                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-                    [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
-                ],
-            ],
-            "Array5D",
-        ),
+        # 2023/11/10: disabled temporarily. See https://github.com/huggingface/datasets-server/pull/2089#issuecomment-1805518831
+        # # - a :class:`Array2D`, :class:`Array3D`, :class:`Array4D` or :class:`Array5D` feature for multidimensional
+        # #   arrays
+        # ("array2d", [[0.0, 0.0], [0.0, 0.0]], "Array2D"),
+        # ("array3d", [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], "Array3D"),
+        # (
+        #     "array4d",
+        #     [
+        #         [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #         [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #     ],
+        #     "Array4D",
+        # ),
+        # (
+        #     "array5d",
+        #     [
+        #         [
+        #             [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #             [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #         ],
+        #         [
+        #             [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #             [[[0.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        #         ],
+        #     ],
+        #     "Array5D",
+        # ),
         # - an :class:`Audio` feature to store the absolute path to an audio file or a dictionary with the relative
         #   path to an audio file ("path" key) and its bytes content ("bytes" key). This feature extracts the audio
         #   data.
