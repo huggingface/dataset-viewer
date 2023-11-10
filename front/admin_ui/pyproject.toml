@@ -5,7 +5,7 @@ description = "Admin interface for datasets-server"
 authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]
-python = "3.9.15"
+python = "3.9.18"
 duckdb = "^0.8.1"
 gradio = "^3.34.0"
 huggingface-hub = "^0.16.4"
