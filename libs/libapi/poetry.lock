@@ -1142,7 +1142,7 @@ version = "0.6.8"
 description = "Library for utils common to all the services"
 category = "main"
 optional = false
-python-versions = "3.9.15"
+python-versions = "3.9.18"
 files = []
 develop = true
 
@@ -3309,5 +3309,5 @@ multidict = ">=4.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "3.9.15"
-content-hash = "d61dee5c510e4b2a87754c5943115c9600dd6011eabe57d57d2c83ebf455db2b"
+python-versions = "3.9.18"
+content-hash = "537cbc9217b3746a3e25873fdd45f691f506db37ac2ec79c93297cdbe12d2dda"

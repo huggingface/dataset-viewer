@@ -1313,7 +1313,7 @@ version = "0.6.8"
 description = "Library for utils common to all the services"
 category = "main"
 optional = false
-python-versions = "3.9.15"
+python-versions = "3.9.18"
 files = []
 develop = true
 
@@ -3406,5 +3406,5 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 
 [metadata]
 lock-version = "2.0"
-python-versions = "3.9.15"
-content-hash = "0f36b1aa6d49029a862657580c26a6cf07989b3bbe4155f3e0c3917d9c39b74a"
+python-versions = "3.9.18"
+content-hash = "a803c442793edebb46699a94ebf6ecd4d3c8de5f240730781a07d2e62132f8a0"

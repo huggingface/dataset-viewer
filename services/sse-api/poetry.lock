@@ -1193,7 +1193,7 @@ version = "0.1.0"
 description = "Library for the API services"
 category = "main"
 optional = false
-python-versions = "3.9.15"
+python-versions = "3.9.18"
 files = []
 develop = true
 
@@ -1217,7 +1217,7 @@ version = "0.6.8"
 description = "Library for utils common to all the services"
 category = "main"
 optional = false
-python-versions = "3.9.15"
+python-versions = "3.9.18"
 files = []
 develop = true
 
@@ -3652,5 +3652,5 @@ multidict = ">=4.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "3.9.15"
-content-hash = "e3544bd19c861abba2666b30e5dad9a31eecae07fa6ba770cf54e793e5b78031"
+python-versions = "3.9.18"
+content-hash = "03de4d9674ebf157e50ba5ddd781314a1655f6f5e64adeee4fd0e4226eb89fe3"

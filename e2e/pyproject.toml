@@ -6,7 +6,7 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.15"
+python = "3.9.18"
 openapi-spec-validator = "^0.5.5"
 
 [tool.poetry.group.dev.dependencies]
