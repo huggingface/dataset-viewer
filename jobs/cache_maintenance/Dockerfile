@@ -1,6 +1,6 @@
 # build with
 #   docker build -t some_tag_admin -f Dockerfile ../..
-FROM python:3.9.15-slim
+FROM python:3.9.18-slim
 
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1 \

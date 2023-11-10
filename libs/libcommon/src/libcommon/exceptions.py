@@ -111,6 +111,7 @@ CacheableErrorCode = Literal[
     "ParquetResponseEmptyError",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
+    "PreviousStepStillProcessingError",
     "ResponseAlreadyComputedError",
     "RowsPostProcessingError",
     "SplitsNamesError",
@@ -439,6 +440,13 @@ class PreviousStepStatusError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
+
+
+class PreviousStepStillProcessingError(CacheableError):
+    """The previous steps are still being processed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStillProcessingError", cause, False)
 
 
 class ResponseAlreadyComputedError(CacheableError):
