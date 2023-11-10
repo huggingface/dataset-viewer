@@ -11,7 +11,6 @@ duckdb = "^0.8.1"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
-pyarrow = "^11.0.0"
 soundfile = ">=0.12.1"
 uvicorn = "^0.20.0"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
