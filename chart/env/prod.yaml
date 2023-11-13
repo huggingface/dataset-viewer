@@ -347,10 +347,10 @@ api:
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "4Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
 
 rows:
   # Number of uvicorn workers for running the application
