@@ -310,28 +310,13 @@ mongodbMigration:
       cpu: 0
   tolerations: []
 
-cacheMaintenance:
-  action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
-  log:
-    level: "info"
-  backfill:
-    error_codes_to_retry: ""
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
 # --- cron jobs  ---
 backfill:
   enabled: false
   log:
     level: "info"
   action: "backfill"
-  error_codes_to_retry: ""
+  errorCodesToRetry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -365,7 +350,6 @@ cleanDuckdbIndexCache:
   log:
     level: "info"
   action: "clean-directory"
-  error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -384,7 +368,6 @@ cleanDuckdbIndexDownloads:
   log:
     level: "info"
   action: "clean-directory"
-  error_codes_to_retry: ""
   schedule: "0 0 * * *"
   # at 00:00
   nodeSelector: {}
@@ -403,7 +386,6 @@ cleanDuckdbIndexJobRunner:
   log:
     level: "info"
   action: "clean-directory"
-  error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -422,7 +404,6 @@ cleanStatsCache:
   log:
     level: "info"
   action: "clean-directory"
-  error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -440,7 +421,6 @@ deleteObsoleteCache:
   log:
     level: "info"
   action: "delete-obsolete-cache"
-  error_codes_to_retry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -456,7 +436,6 @@ postMessages:
   log:
     level: "info"
   action: "post-messages"
-  error_codes_to_retry: ""
   schedule: "10 0 * * *"
   # at 00:10
   nodeSelector: {}
