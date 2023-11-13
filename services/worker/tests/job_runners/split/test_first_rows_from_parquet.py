@@ -159,7 +159,9 @@ def test_compute(
                 "num_rows": len(ds),
                 "parquet_metadata_subpath": fake_metadata_subpath,
             }
-        ] if has_parquet_files else []
+        ]
+        if has_parquet_files
+        else []
     }
 
     upsert_response(
