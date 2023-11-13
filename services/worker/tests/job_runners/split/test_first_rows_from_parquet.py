@@ -121,11 +121,12 @@ def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSyste
 
 
 @pytest.mark.parametrize(
-    "rows_max_bytes,columns_max_number,error_code",
+    "rows_max_bytes,columns_max_number,has_parquet_files,error_code",
     [
-        (0, 10, "TooBigContentError"),  # too small limit, even with truncation
-        (1_000, 1, "TooManyColumnsError"),  # too small columns limit
-        (1_000, 10, None),
+        (0, 10, True, "TooBigContentError"),  # too small limit, even with truncation
+        (1_000, 1, True, "TooManyColumnsError"),  # too small columns limit
+        (1_000, 10, True, None),
+        (1_000, 10, False, "ParquetResponseEmptyError"),
     ],
 )
 def test_compute(
@@ -136,6 +137,7 @@ def test_compute(
     app_config: AppConfig,
     rows_max_bytes: int,
     columns_max_number: int,
+    has_parquet_files: bool,
     error_code: str,
 ) -> None:
     dataset, config, split = "dataset", "config", "split"
@@ -157,7 +159,7 @@ def test_compute(
                 "num_rows": len(ds),
                 "parquet_metadata_subpath": fake_metadata_subpath,
             }
-        ]
+        ] if has_parquet_files else []
     }
 
     upsert_response(
