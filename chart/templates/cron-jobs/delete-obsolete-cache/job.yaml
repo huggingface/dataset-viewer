@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- if and .Values.images.jobs.cacheMaintenance .Values.deleteObsoleteCache.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels: {{ include "labels.deleteObsoleteCache" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-delete-obsolete-cache"
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.deleteObsoleteCache.schedule | quote }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- include "dnsConfig" . | nindent 10 }}
+          {{- include "image.imagePullSecrets" . | nindent 6 }}
+          nodeSelector: {{ toYaml .Values.deleteObsoleteCache.nodeSelector | nindent 12 }}
+          tolerations: {{ toYaml .Values.deleteObsoleteCache.tolerations | nindent 12 }}
+          containers: []
+          securityContext: {{ include "securityContext" . | nindent 12 }}
+          initContainers: []
+          volumes: []
+{{- end}}

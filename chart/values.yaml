@@ -435,6 +435,22 @@ cleanStatsCache:
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "*"
 
+deleteObsoleteCache:
+  enabled: true
+  log:
+    level: "info"
+  action: "delete-obsolete-cache"
+  error_codes_to_retry: ""
+  schedule: "0 */3 * * *"
+  # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 postMessages:
   enabled: true
   log:
