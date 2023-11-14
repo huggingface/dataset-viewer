@@ -64,7 +64,7 @@ def delete_obsolete_cache(
     for dataset in datasets_to_delete:
         # delete cache records
         datasets_cache_records = delete_dataset_responses(dataset=dataset)
-        deleted_cached_records += datasets_cache_records
+        deleted_cached_records += datasets_cache_records if datasets_cache_records is not None else 0
         if datasets_cache_records is not None and datasets_cache_records > 0:
             # delete assets
             cached_assets_storage_client.delete_dataset_directory(dataset)
