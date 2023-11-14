@@ -153,20 +153,6 @@ mongodbMigration:
     limits:
       cpu: 1
 
-# --- jobs (post-upgrade hooks) ---
-
-cacheMaintenance:
-  action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
-  log:
-    level: "debug"
-  backfill:
-    error_codes_to_retry: ""
-  resources:
-    requests:
-      cpu: 100m
-    limits:
-      cpu: 1
 
 # --- cron jobs  ---
 backfill:
