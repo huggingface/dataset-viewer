@@ -15,8 +15,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import Indexer, TooBigRows
-from libcommon.parquet_utils import ParquetResponseEmptyError as EmptyError
+from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
@@ -79,7 +78,7 @@ def compute_first_rows_response(
             config=config,
             split=split,
         )
-    except EmptyError:
+    except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
 
     # validate the features
