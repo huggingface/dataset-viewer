@@ -60,16 +60,19 @@ def delete_obsolete_cache(
     datasets_to_delete = existing_datasets.difference(supported_dataset_names)
 
     deletion_report = []
+    deleted_cached_records = 0
     for dataset in datasets_to_delete:
         # delete cache records
         datasets_cache_records = delete_dataset_responses(dataset=dataset)
+        deleted_cached_records += datasets_cache_records
         if datasets_cache_records is not None and datasets_cache_records > 0:
             # delete assets
             cached_assets_storage_client.delete_dataset_directory(dataset)
             assets_storage_client.delete_dataset_directory(dataset)
-            logging.debug(f"{dataset} has been deleted with {datasets_cache_records} cache records")
+            logging.info(f"{dataset} has been deleted with {datasets_cache_records} cache records")
         else:
             logging.debug(f"unable to delete {dataset}")
         deletion_report.append(DatasetCacheReport(dataset=dataset, cache_records=datasets_cache_records))
-    logging.info("obsolete cache has been deleted")
+    logging.info(f"{len(deletion_report)} datasets have been removed with {deleted_cached_records} cache records.")
+    
     return deletion_report
