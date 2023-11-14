@@ -26,7 +26,7 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 PARTIAL_PREFIX = "partial-"
 
 
-class ParquetResponseEmptyError(Exception):
+class EmptyParquetMetadataError(Exception):
     pass
 
 
@@ -228,7 +228,7 @@ class ParquetIndexWithMetadata:
         unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
-            raise ParquetResponseEmptyError("No parquet files found.")
+            raise EmptyParquetMetadataError("No parquet files found.")
 
         partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
 
