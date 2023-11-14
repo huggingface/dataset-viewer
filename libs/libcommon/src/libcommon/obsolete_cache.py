@@ -74,5 +74,5 @@ def delete_obsolete_cache(
             logging.debug(f"unable to delete {dataset}")
         deletion_report.append(DatasetCacheReport(dataset=dataset, cache_records=datasets_cache_records))
     logging.info(f"{len(deletion_report)} datasets have been removed with {deleted_cached_records} cache records.")
-    
+
     return deletion_report
