@@ -20,7 +20,7 @@ spec:
           {{- include "image.imagePullSecrets" . | nindent 6 }}
           nodeSelector: {{ toYaml .Values.deleteObsoleteCache.nodeSelector | nindent 12 }}
           tolerations: {{ toYaml .Values.deleteObsoleteCache.tolerations | nindent 12 }}
-          containers: []
+          containers: {{ include "containerDeleteObsoleteCache" . | nindent 12 }}
           securityContext: {{ include "securityContext" . | nindent 12 }}
           initContainers: []
           volumes: []
