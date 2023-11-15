@@ -3,6 +3,7 @@
 
 # Python and tools
 *.pyc
+*.egg-info/
 .venv/
 .mypy_cache
 .pytest_cache
