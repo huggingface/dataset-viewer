@@ -12,3 +12,5 @@ Classifier: Programming Language :: Python :: 3.6
 Classifier: Programming Language :: Python :: 3.7
 Classifier: Programming Language :: Python :: 3.8
 Requires-Python: >=3.6
+Requires-Dist: cbor>=1.0.0
+Requires-Dist: numpy>=1.11.2
