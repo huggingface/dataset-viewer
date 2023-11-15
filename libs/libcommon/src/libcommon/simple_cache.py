@@ -143,6 +143,7 @@ class CachedResponseDocument(Document):
             ("kind", "http_status", "_id"),
             ("kind", "_id"),  # < recommended by Atlas
             ("details.cause_exception", "error_code", "details.copied_from_artifact"),  # < recommended by Atlas
+            ("error_code", "kind", "details.copied_from_artifact"),  # < recommended by Atlas
             ("http_status", "error_code", "kind", "updated_at"),  # < recommended by Atlas
         ],
     }
