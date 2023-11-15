@@ -6,11 +6,16 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
+import boto3
 import numpy as np
 import pytest
+from aiobotocore.response import StreamingBody
 from datasets import Audio, Dataset, Features, Image, Value
+from moto import mock_s3
+from urllib3.response import HTTPHeaderDict  # type: ignore
 
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
@@ -381,3 +386,74 @@ def test_get_supported_unsupported_columns() -> None:
     supported_columns, unsupported_columns = get_supported_unsupported_columns(features, unsupported_features)
     assert supported_columns == ["image1", "image2", "image3", "string"]
     assert unsupported_columns == ["audio1", "audio2", "audio3", "binary"]
+
+
+# specific test created for https://github.com/huggingface/datasets-server/issues/2045
+# which is reproduced only when using s3 for fsspec
+def test_ogg_audio_with_s3(
+    datasets: Mapping[str, Dataset],
+) -> None:
+    dataset = datasets["audio_ogg"]
+    feature = dataset.features["col"]
+    bucket_name = "bucket"
+    s3_resource = "s3"
+    with mock_s3():
+        conn = boto3.resource(s3_resource, region_name="us-east-1")
+        conn.create_bucket(Bucket=bucket_name)
+
+        # patch _validate to avoid calling self._fs.ls because of known issue in aiotbotocore
+        # at https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L47
+        with patch("libcommon.storage_client.StorageClient._validate", return_value=None):
+            storage_client = StorageClient(
+                protocol=s3_resource,
+                root=bucket_name,
+                folder=ASSETS_FOLDER,
+            )
+        public_assets_storage = PublicAssetsStorage(
+            assets_base_url=ASSETS_BASE_URL,
+            overwrite=True,
+            storage_client=storage_client,
+        )
+
+        # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore
+        # at https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L47
+        # see https://github.com/getmoto/moto/issues/6836 and https://github.com/aio-libs/aiobotocore/issues/755
+        # copied from https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L23
+        async def convert_to_response_dict(http_response, operation_model):  # type: ignore
+            response_dict = {
+                "headers": HTTPHeaderDict({}),
+                "status_code": http_response.status_code,
+                "context": {
+                    "operation_name": operation_model.name,
+                },
+            }
+            if response_dict["status_code"] >= 300:
+                response_dict["body"] = await http_response.content
+            elif operation_model.has_event_stream_output:
+                response_dict["body"] = http_response.raw
+            elif operation_model.has_streaming_output:
+                length = response_dict["headers"].get("content-length")
+                response_dict["body"] = StreamingBody(http_response.raw, length)
+            else:
+                response_dict["body"] = http_response.content
+            return response_dict
+
+        with patch("aiobotocore.endpoint.convert_to_response_dict", side_effect=convert_to_response_dict):
+            value = get_cell_value(
+                dataset="dataset",
+                revision="revision",
+                config="config",
+                split="split",
+                row_idx=7,
+                cell=dataset[0]["col"],
+                featureName="col",
+                fieldType=feature,
+                public_assets_storage=public_assets_storage,
+            )
+            audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
+            assert value == [
+                {
+                    "src": f"{ASSETS_BASE_URL}/{audio_key}",
+                    "type": "audio/wav",
+                },
+            ]
