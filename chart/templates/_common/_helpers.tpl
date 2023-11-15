@@ -89,11 +89,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 {{- end -}}
 
-{{- define "labels.cacheMaintenance" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-cache-maintenance"
-{{- end -}}
-
 {{- define "labels.queueMetricsCollector" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-queue-metrics-collector"
@@ -132,6 +127,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-clean-hf-datasets-cache"
 {{- define "labels.cleanStatsCache" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-clean-stats-cache"
+{{- end -}}
+
+{{- define "labels.deleteObsoleteCache" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-delete-obsolete-cache"
 {{- end -}}
 
 {{- define "labels.postMessages" -}}

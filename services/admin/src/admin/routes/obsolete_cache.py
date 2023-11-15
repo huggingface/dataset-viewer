@@ -2,49 +2,16 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
-from typing import Optional, TypedDict
+from typing import Optional
 
 from libapi.exceptions import UnexpectedApiError
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.dataset import get_supported_dataset_infos
-from libcommon.simple_cache import (
-    delete_dataset_responses,
-    get_all_datasets,
-    get_cache_count_for_dataset,
-)
+from libcommon.obsolete_cache import delete_obsolete_cache, get_obsolete_cache
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
 from admin.authentication import auth_check
-
-MINIMUM_SUPPORTED_DATASETS = 20_000
-
-
-class DatasetCacheReport(TypedDict):
-    dataset: str
-    cache_records: Optional[int]
-
-
-def get_supported_dataset_names(
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-) -> set[str]:
-    supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    return {dataset_info.id for dataset_info in supported_dataset_infos}
-
-
-def get_obsolete_cache(
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-) -> list[DatasetCacheReport]:
-    supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    existing_datasets = get_all_datasets()
-    datasets_to_delete = existing_datasets.difference(supported_dataset_names)
-    return [
-        DatasetCacheReport(dataset=dataset, cache_records=get_cache_count_for_dataset(dataset=dataset))
-        for dataset in datasets_to_delete
-    ]
 
 
 def create_get_obsolete_cache_endpoint(
@@ -71,35 +38,6 @@ def create_get_obsolete_cache_endpoint(
             return get_json_api_error_response(UnexpectedApiError("Unexpected error.", e), max_age=max_age)
 
     return get_obsolete_cache_endpoint
-
-
-def delete_obsolete_cache(
-    hf_endpoint: str,
-    cached_assets_storage_client: StorageClient,
-    assets_storage_client: StorageClient,
-    hf_token: Optional[str] = None,
-) -> list[DatasetCacheReport]:
-    supported_dataset_names = get_supported_dataset_names(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    if len(supported_dataset_names) < MINIMUM_SUPPORTED_DATASETS:
-        raise UnexpectedApiError(f"only {len(supported_dataset_names)} datasets were found")
-
-    existing_datasets = get_all_datasets()
-    datasets_to_delete = existing_datasets.difference(supported_dataset_names)
-
-    deletion_report = []
-    for dataset in datasets_to_delete:
-        # delete cache records
-        datasets_cache_records = delete_dataset_responses(dataset=dataset)
-        if datasets_cache_records is not None and datasets_cache_records > 0:
-            # delete assets
-            cached_assets_storage_client.delete_dataset_directory(dataset)
-            assets_storage_client.delete_dataset_directory(dataset)
-            logging.debug(f"{dataset} has been deleted with {datasets_cache_records} cache records")
-        else:
-            logging.debug(f"unable to delete {dataset}")
-        deletion_report.append(DatasetCacheReport(dataset=dataset, cache_records=datasets_cache_records))
-
-    return deletion_report
 
 
 def create_delete_obsolete_cache_endpoint(

@@ -176,24 +176,6 @@ mongodbMigration:
     limits:
       cpu: 1
 
-# --- jobs (post-upgrade hooks) ---
-
-cacheMaintenance:
-  action: "skip"
-  # ^ allowed values are {backfill, collect-queue-metrics, collect-cache-metrics, clean-directory, post-messages, skip}
-  log:
-    level: "debug"
-  backfill:
-    error_codes_to_retry: ""
-  nodeSelector:
-    role-datasets-server: "true"
-  resources:
-    requests:
-      cpu: 1
-      memory: "4Gi"
-    limits:
-      cpu: 2
-      memory: "8Gi"
 
 # --- cron jobs  ---
 backfill:
@@ -201,7 +183,7 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  error_codes_to_retry: "CreateCommitError,LockedDatasetTimeoutError,ExternalServerError"
+  errorCodesToRetry: "CreateCommitError,LockedDatasetTimeoutError,ExternalServerError"
   schedule: "20 21 * * *"
   # every four hours
   nodeSelector:
@@ -240,6 +222,10 @@ cleanStatsCache:
   expiredTimeIntervalSeconds: 10_800 # 3 hours
 
 postMessages:
+  nodeSelector:
+    role-datasets-server: "true"
+
+deleteObsoleteCache:
   nodeSelector:
     role-datasets-server: "true"
 
@@ -347,10 +333,10 @@ api:
   resources:
     requests:
       cpu: 1
-      memory: "512Mi"
+      memory: "4Gi"
     limits:
       cpu: 4
-      memory: "4Gi"
+      memory: "8Gi"
 
 rows:
   # Number of uvicorn workers for running the application

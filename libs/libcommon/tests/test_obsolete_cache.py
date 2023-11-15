@@ -6,18 +6,24 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from libapi.exceptions import UnexpectedApiError
-from libcommon.simple_cache import has_some_cache, upsert_response
-from libcommon.storage_client import StorageClient
 from pytest import raises
 
-from admin.routes.obsolete_cache import (
+from libcommon.obsolete_cache import (
     DatasetCacheReport,
+    NotEnoughSupportedDatasetsError,
     delete_obsolete_cache,
     get_obsolete_cache,
 )
+from libcommon.resources import CacheMongoResource
+from libcommon.simple_cache import has_some_cache, upsert_response
+from libcommon.storage_client import StorageClient
 
 REVISION_NAME = "revision"
+
+
+@pytest.fixture(autouse=True)
+def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
+    return cache_mongo_resource
 
 
 @pytest.mark.parametrize(
@@ -45,7 +51,7 @@ def test_get_obsolete_cache(dataset_names: list[str], expected_report: list[Data
     )
     assert has_some_cache(dataset=dataset)
 
-    with patch("admin.routes.obsolete_cache.get_supported_dataset_names", return_value=dataset_names):
+    with patch("libcommon.obsolete_cache.get_supported_dataset_names", return_value=dataset_names):
         assert get_obsolete_cache(hf_endpoint="hf_endpoint", hf_token="hf_token") == expected_report
 
 
@@ -111,10 +117,10 @@ def test_delete_obsolete_cache(
     )
     assert has_some_cache(dataset=dataset)
 
-    with patch("admin.routes.obsolete_cache.get_supported_dataset_names", return_value=dataset_names):
-        with patch("admin.routes.obsolete_cache.MINIMUM_SUPPORTED_DATASETS", minimun_supported_datasets):
+    with patch("libcommon.obsolete_cache.get_supported_dataset_names", return_value=dataset_names):
+        with patch("libcommon.obsolete_cache.MINIMUM_SUPPORTED_DATASETS", minimun_supported_datasets):
             if should_raise:
-                with raises(UnexpectedApiError):
+                with raises(NotEnoughSupportedDatasetsError):
                     delete_obsolete_cache(
                         hf_endpoint="hf_endpoint",
                         hf_token="hf_token",

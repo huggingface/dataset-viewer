@@ -26,7 +26,7 @@ version: 2.0.0
 # It is recommended to use it with quotes.
 #
 # See https://github.com/huggingface/datasets-server/releases
-appVersion: "0.21.2"
+appVersion: "0.22.2"
 
 icon: https://huggingface.co/front/assets/huggingface_logo-noborder.svg
 dependencies:

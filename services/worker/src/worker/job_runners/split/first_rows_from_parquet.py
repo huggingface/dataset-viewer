@@ -10,11 +10,12 @@ from libcommon.constants import (
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.exceptions import (
+    ParquetResponseEmptyError,
     RowsPostProcessingError,
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import Indexer, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
@@ -71,11 +72,14 @@ def compute_first_rows_response(
 ) -> SplitFirstRowsResponse:
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
 
-    rows_index = indexer.get_rows_index(
-        dataset=dataset,
-        config=config,
-        split=split,
-    )
+    try:
+        rows_index = indexer.get_rows_index(
+            dataset=dataset,
+            config=config,
+            split=split,
+        )
+    except EmptyParquetMetadataError:
+        raise ParquetResponseEmptyError("No parquet files found.")
 
     # validate the features
     features = rows_index.parquet_index.features
