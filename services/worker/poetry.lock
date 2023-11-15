@@ -994,14 +994,14 @@ toml = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "datasets"
-version = "2.14.6"
+version = "2.14.7"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "datasets-2.14.6-py3-none-any.whl", hash = "sha256:4de857ffce21cfc847236745c69f102e33cd1f0fa8398e7be9964525fd4cd5db"},
-    {file = "datasets-2.14.6.tar.gz", hash = "sha256:97ebbace8ec7af11434a87d1215379927f8fee2beab2c4a674003756ecfe920c"},
+    {file = "datasets-2.14.7-py3-none-any.whl", hash = "sha256:1a64041a7da4f4130f736fc371c1f528b8ddd208cebe156400f65719bdbba79d"},
+    {file = "datasets-2.14.7.tar.gz", hash = "sha256:394cf9b4ec0694b25945977b16ad5d18d5c15fb0e94141713eb8ead7452caf9e"},
 ]
 
 [package.dependencies]
@@ -1016,6 +1016,7 @@ packaging = "*"
 pandas = "*"
 Pillow = {version = ">=6.2.1", optional = true, markers = "extra == \"vision\""}
 pyarrow = ">=8.0.0"
+pyarrow-hotfix = "*"
 pyyaml = ">=5.1"
 requests = ">=2.19.0"
 soundfile = {version = ">=0.12.1", optional = true, markers = "extra == \"audio\""}
@@ -1933,7 +1934,7 @@ develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
-datasets = {version = "^2.14.6", extras = ["audio", "vision"]}
+datasets = {version = "^2.14.7", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.16.4"
 mongo-types = "0.15.1"
@@ -3378,6 +3379,18 @@ files = [
 
 [package.dependencies]
 numpy = ">=1.16.6"
+
+[[package]]
+name = "pyarrow-hotfix"
+version = "0.5"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "pyarrow_hotfix-0.5-py3-none-any.whl", hash = "sha256:7e20a1195f2e0dd7b50dffb9f90699481acfce3176bfbfb53eded04f34c4f7c6"},
+    {file = "pyarrow_hotfix-0.5.tar.gz", hash = "sha256:ba697c743d435545e99bfbd89818b284e4404c19119c0ed63380a92998c4d0b1"},
+]
 
 [[package]]
 name = "pyasn1"

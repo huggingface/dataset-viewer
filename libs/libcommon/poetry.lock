@@ -582,14 +582,14 @@ toml = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "datasets"
-version = "2.14.6"
+version = "2.14.7"
 description = "HuggingFace community-driven open-source library of datasets"
 category = "main"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "datasets-2.14.6-py3-none-any.whl", hash = "sha256:4de857ffce21cfc847236745c69f102e33cd1f0fa8398e7be9964525fd4cd5db"},
-    {file = "datasets-2.14.6.tar.gz", hash = "sha256:97ebbace8ec7af11434a87d1215379927f8fee2beab2c4a674003756ecfe920c"},
+    {file = "datasets-2.14.7-py3-none-any.whl", hash = "sha256:1a64041a7da4f4130f736fc371c1f528b8ddd208cebe156400f65719bdbba79d"},
+    {file = "datasets-2.14.7.tar.gz", hash = "sha256:394cf9b4ec0694b25945977b16ad5d18d5c15fb0e94141713eb8ead7452caf9e"},
 ]
 
 [package.dependencies]
@@ -604,6 +604,7 @@ packaging = "*"
 pandas = "*"
 Pillow = {version = ">=6.2.1", optional = true, markers = "extra == \"vision\""}
 pyarrow = ">=8.0.0"
+pyarrow-hotfix = "*"
 pyyaml = ">=5.1"
 requests = ">=2.19.0"
 soundfile = {version = ">=0.12.1", optional = true, markers = "extra == \"audio\""}
@@ -1947,6 +1948,18 @@ files = [
 numpy = ">=1.16.6"
 
 [[package]]
+name = "pyarrow-hotfix"
+version = "0.5"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "pyarrow_hotfix-0.5-py3-none-any.whl", hash = "sha256:7e20a1195f2e0dd7b50dffb9f90699481acfce3176bfbfb53eded04f34c4f7c6"},
+    {file = "pyarrow_hotfix-0.5.tar.gz", hash = "sha256:ba697c743d435545e99bfbd89818b284e4404c19119c0ed63380a92998c4d0b1"},
+]
+
+[[package]]
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
@@ -3008,4 +3021,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "9ab716319826c95640d2d9435d259a35d0499cdffa442c20c9ade992362c61c0"
+content-hash = "10f469c707d9027eca56fcdb0e48a3be8a500e85fd4695dba84b93242f488c6c"
