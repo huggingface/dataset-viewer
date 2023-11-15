@@ -13,7 +13,9 @@ from datasets.features.features import FeatureType
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
+from pyarrow.lib import ArrowInvalid
 
+from libcommon.exceptions import ParquetSchemaMismatchError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -208,12 +210,15 @@ class ParquetIndexWithMetadata:
                 )
 
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
-            pa_table = pa.concat_tables(
-                [
-                    row_group_readers[i].read(self.supported_columns)
-                    for i in range(first_row_group_id, last_row_group_id + 1)
-                ]
-            )
+            try:
+                pa_table = pa.concat_tables(
+                    [
+                        row_group_readers[i].read(self.supported_columns)
+                        for i in range(first_row_group_id, last_row_group_id + 1)
+                    ]
+                )
+            except ArrowInvalid as e:
+                raise ParquetSchemaMismatchError("Split parquet files have different schema.", e)
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
 
