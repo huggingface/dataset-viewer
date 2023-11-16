@@ -15,7 +15,6 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.exceptions import ParquetSchemaMismatchError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -41,6 +40,10 @@ class FileSystemError(Exception):
 
 
 class TooBigRows(Exception):
+    pass
+
+
+class SchemaMismatchError(Exception):
     pass
 
 
@@ -218,7 +221,7 @@ class ParquetIndexWithMetadata:
                     ]
                 )
             except ArrowInvalid as err:
-                raise ParquetSchemaMismatchError("Split parquet files have different schema.", err)
+                raise SchemaMismatchError("Parquet files have different schema.", err)
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
 

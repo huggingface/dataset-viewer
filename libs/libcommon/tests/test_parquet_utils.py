@@ -21,6 +21,7 @@ from libcommon.parquet_utils import (
     Indexer,
     ParquetIndexWithMetadata,
     RowsIndex,
+    SchemaMismatchError,
     TooBigRows,
     parquet_export_is_partial,
 )
@@ -77,6 +78,18 @@ def ds_sharded_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractF
     for shard_idx in range(num_shards):
         with tmpfs.open(f"default/train/{shard_idx:04d}.parquet", "wb") as f:
             ds.to_parquet(f)
+    yield tmpfs
+
+
+@pytest.fixture
+def ds_sharded_fs_with_different_schema(tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
+    first_dataset = Dataset.from_dict({"text": ["Hello there", "General Kenobi"]})
+    second_dataset = Dataset.from_dict({"other_column": [0, 1]})
+
+    with tmpfs.open("default/train/0000.parquet", "wb") as f:
+        first_dataset.to_parquet(f)
+    with tmpfs.open("default/train/0001.parquet", "wb") as f:
+        second_dataset.to_parquet(f)
     yield tmpfs
 
 
@@ -368,7 +381,7 @@ def rows_index_with_too_big_rows(
 ) -> Generator[RowsIndex, None, None]:
     indexer = Indexer(
         processing_graph=PROCESSING_GRAPH,
-        hf_token="token",  # app_config.common.hf_token,
+        hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
         max_arrow_data_in_memory=1,
@@ -384,7 +397,7 @@ def indexer(
 ) -> Indexer:
     return Indexer(
         processing_graph=PROCESSING_GRAPH,
-        hf_token="token",  # app_config.common.hf_token,
+        hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
         max_arrow_data_in_memory=9999999999,
@@ -466,3 +479,17 @@ def test_rows_index_query_with_empty_dataset(rows_index_with_empty_dataset: Rows
     assert rows_index_with_empty_dataset.query(offset=0, length=1).to_pydict() == ds_sharded[:0]
     with pytest.raises(IndexError):
         rows_index_with_empty_dataset.query(offset=-1, length=2)
+
+
+def test_indexer_schema_mistmatch_error(
+    indexer: Indexer,
+    ds_sharded_fs: AbstractFileSystem,
+    ds_sharded_fs_with_different_schema: AbstractFileSystem,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+) -> None:
+    with ds_sharded_fs_with_different_schema.open("default/train/0000.parquet") as first_parquet:
+        with ds_sharded_fs_with_different_schema.open("default/train/0001.parquet") as second_parquet:
+            with patch("libcommon.parquet_utils.HTTPFile", side_effect=[first_parquet, second_parquet]):
+                index = indexer.get_rows_index("ds_sharded", "default", "train")
+                with pytest.raises(SchemaMismatchError):
+                    index.query(offset=0, length=3)

@@ -12,10 +12,11 @@ from libcommon.constants import (
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
+    SplitParquetSchemaMismatchError,
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
@@ -80,6 +81,8 @@ def compute_first_rows_response(
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
+    except SchemaMismatchError:
+        raise SplitParquetSchemaMismatchError("Split parquet files have different schema.")
 
     # validate the features
     features = rows_index.parquet_index.features
