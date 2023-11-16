@@ -217,8 +217,8 @@ class ParquetIndexWithMetadata:
                         for i in range(first_row_group_id, last_row_group_id + 1)
                     ]
                 )
-            except ArrowInvalid as e:
-                raise ParquetSchemaMismatchError("Split parquet files have different schema.", e)
+            except ArrowInvalid as err:
+                raise ParquetSchemaMismatchError("Split parquet files have different schema.", err)
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
 

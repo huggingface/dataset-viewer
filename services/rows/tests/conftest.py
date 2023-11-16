@@ -2,20 +2,15 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from collections.abc import Iterator
-from pathlib import Path
 
 from libapi.config import UvicornConfig
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
-from libcommon.storage import StrPath, init_parquet_metadata_dir
 from pytest import MonkeyPatch, fixture
 
 from rows.config import AppConfig
-
-# Import fixture modules as plugins
-pytest_plugins = ["tests.fixtures.fsspec"]
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -85,18 +80,6 @@ def hf_endpoint(app_config: AppConfig) -> str:
 @fixture(scope="session")
 def hf_auth_path(app_config: AppConfig) -> str:
     return app_config.api.hf_auth_path
-
-
-@fixture
-def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
-    return init_parquet_metadata_dir(app_config.parquet_metadata.storage_directory)
-
-
-@fixture
-def image_path() -> str:
-    image_path = Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"
-    assert image_path.is_file()
-    return str(image_path)
 
 
 @fixture
