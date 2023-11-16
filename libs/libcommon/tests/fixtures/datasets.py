@@ -10,6 +10,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from datasets import (
+    Array2D,
+    Array3D,
+    Array4D,
+    Array5D,
     Audio,
     ClassLabel,
     Dataset,
@@ -65,11 +69,10 @@ def datasets() -> Mapping[str, Dataset]:
         "list": other([{"a": 0}], None),
         "sequence_simple": other([0], None),
         "sequence": other([{"a": 0}], Sequence(feature={"a": Value(dtype="int64")})),
-        # 2023/11/10: disabled temporarily. See https://github.com/huggingface/datasets-server/pull/2089#issuecomment-1805518831
-        # "array2d": other(np.zeros((2, 2), dtype="float32"), Array2D(shape=(2, 2), dtype="float32")),
-        # "array3d": other(np.zeros((2, 2, 2), dtype="float32"), Array3D(shape=(2, 2, 2), dtype="float32")),
-        # "array4d": other(np.zeros((2, 2, 2, 2), dtype="float32"), Array4D(shape=(2, 2, 2, 2), dtype="float32")),
-        # "array5d": other(np.zeros((2, 2, 2, 2, 2), dtype="float32"), Array5D(shape=(2, 2, 2, 2, 2), dtype="float32")),
+        "array2d": other(np.zeros((2, 2), dtype="float32"), Array2D(shape=(2, 2), dtype="float32")),
+        "array3d": other(np.zeros((2, 2, 2), dtype="float32"), Array3D(shape=(2, 2, 2), dtype="float32")),
+        "array4d": other(np.zeros((2, 2, 2, 2), dtype="float32"), Array4D(shape=(2, 2, 2, 2), dtype="float32")),
+        "array5d": other(np.zeros((2, 2, 2, 2, 2), dtype="float32"), Array5D(shape=(2, 2, 2, 2, 2), dtype="float32")),
         "audio": other({"array": [0.1, 0.2, 0.3], "sampling_rate": sampling_rate}, Audio(sampling_rate=sampling_rate)),
         "audio_ogg": other(
             str(Path(__file__).resolve().parent / "data" / "test_audio_vorbis.ogg"), Audio(sampling_rate=sampling_rate)

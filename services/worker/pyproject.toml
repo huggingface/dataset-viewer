@@ -7,14 +7,14 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-aiohttp = "^3.8.4"
+aiohttp = "^3.8.6"
 aiolimiter = "^1.0.0"
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
 duckdb = "^0.8.1"
 environs = "^9.5.0"
 gdown = "^4.6.3"
-huggingface-hub = "^0.16.4"
+huggingface-hub = "^0.18.0"
 kenlm = { git = "https://github.com/kpu/kenlm", branch = "master" }
 kss = "^2.6.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
