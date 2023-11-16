@@ -109,7 +109,6 @@ CacheableErrorCode = Literal[
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
-    "ParquetSchemaMismatchError",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
@@ -428,13 +427,6 @@ class ParquetResponseEmptyError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "ParquetResponseEmptyError", cause, False)
-
-
-class ParquetSchemaMismatchError(CacheableError):
-    """Parquet files have different schemas."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.UNPROCESSABLE_ENTITY, "ParquetSchemaMismatchError", cause, False)
 
 
 class PreviousStepFormatError(CacheableError):
