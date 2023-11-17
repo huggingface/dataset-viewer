@@ -498,7 +498,7 @@ class SplitNotFoundError(CacheableError):
 
 
 class SplitParquetSchemaMismatchError(CacheableError):
-    """The split parquet files have different schema."""
+    """The Parquet files have different schemas, they should have identical column names."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(

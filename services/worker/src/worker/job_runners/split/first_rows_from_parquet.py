@@ -81,8 +81,11 @@ def compute_first_rows_response(
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
-    except SchemaMismatchError:
-        raise SplitParquetSchemaMismatchError("Split parquet files have different schema.")
+    except SchemaMismatchError as err:
+        raise SplitParquetSchemaMismatchError(
+            "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
+            cause=err,
+        )
 
     # validate the features
     features = rows_index.parquet_index.features
