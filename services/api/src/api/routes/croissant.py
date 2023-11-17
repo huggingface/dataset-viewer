@@ -73,14 +73,6 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 "includes": f"{config}/*/*.parquet",
             }
         )
-        record_set.append(
-            {
-                "@type": "ml:RecordSet",
-                "name": config,
-                "description": f"'{config}' subset{' (first 5GB)' if partial else ''}",
-                "field": fields,
-            }
-        )
         skipped_columns = []
         for column, feature in features.items():
             if isinstance(feature, Value) and feature.dtype in HF_TO_CRROISSANT_VALUE_TYPE:
@@ -109,6 +101,19 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 )
             else:
                 skipped_columns.append(column)
+        description = f"'{config}' subset"
+        if partial:
+            description += " (first 5GB)"
+        if skipped_columns:
+            description += f" ({len(skipped_columns)} skipped columns: {', '.join(skipped_columns)})"
+        record_set.append(
+            {
+                "@type": "ml:RecordSet",
+                "name": config,
+                "description": description,
+                "field": fields,
+            }
+        )
     return {
         "@context": {
             "@language": "en",
