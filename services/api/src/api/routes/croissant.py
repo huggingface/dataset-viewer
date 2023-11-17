@@ -99,7 +99,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                         "@type": "ml:Field",
                         "name": column,
                         "description": f"Image column '{column}' from Hugging Face parquet file.",
-                        "dataType": HF_TO_CRROISSANT_VALUE_TYPE[feature.dtype],
+                        "dataType": "sc:ImageObject",
                         "source": {
                             "distribution": distribution_name,
                             "extract": {"column": column},
