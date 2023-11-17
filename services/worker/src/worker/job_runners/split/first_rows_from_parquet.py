@@ -81,11 +81,6 @@ def compute_first_rows_response(
         )
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
-    except SchemaMismatchError as err:
-        raise SplitParquetSchemaMismatchError(
-            "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
-            cause=err,
-        )
 
     # validate the features
     features = rows_index.parquet_index.features
@@ -120,6 +115,12 @@ def compute_first_rows_response(
         all_fetched = rows_index.parquet_index.num_rows_total <= rows_max_number
     except TooBigRows as err:
         raise TooBigContentError(str(err))
+    except SchemaMismatchError as err:
+        raise SplitParquetSchemaMismatchError(
+            "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
+            cause=err,
+        )
+
     rows = [
         RowItem(
             {
