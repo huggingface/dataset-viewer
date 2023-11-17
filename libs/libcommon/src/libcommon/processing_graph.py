@@ -150,6 +150,7 @@ class ProcessingGraph:
     _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
     _config_parquet_metadata_processing_steps: list[ProcessingStep] = field(init=False)
     _dataset_config_names_processing_steps: list[ProcessingStep] = field(init=False)
+    _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
 
@@ -278,6 +279,11 @@ class ProcessingGraph:
         self._dataset_config_names_processing_steps = [
             self.get_processing_step(processing_step_name)
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_config_names")
+            if provides
+        ]
+        self._dataset_info_processing_steps = [
+            self._processing_steps[processing_step_name]
+            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_info")
             if provides
         ]
         self._topologically_ordered_processing_steps = [
@@ -471,6 +477,18 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of processing steps that provide a config's parquet response
         """
         return copy_processing_steps_list(self._config_parquet_processing_steps)
+
+    def get_dataset_info_processing_steps(self) -> list[ProcessingStep]:
+        """
+        Get the processing steps that provide a dataset's info response.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            list[ProcessingStep]: The list of processing steps that provide a dataset's info response
+        """
+        return copy_processing_steps_list(self._dataset_info_processing_steps)
 
     def get_config_parquet_metadata_processing_steps(self) -> list[ProcessingStep]:
         """
