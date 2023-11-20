@@ -52,6 +52,8 @@ STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
 DATABASE_FILENAME = "db.duckdb"
 
+SWITCH_TO_POLARS_SIZE_BYTES = 1_000_000_000
+
 
 COMPUTE_NAN_COUNTS_COMMAND = """
     SELECT COUNT(*) FROM {data_table_name} WHERE "{column_name}" IS NULL;
@@ -260,7 +262,11 @@ def compute_numerical_statistics_polars(
     )
     stats_names = pl.Series(col_stats.keys())
     stats_expressions = [pl.struct(stat) for stat in col_stats.values()]
-    stats = df.select(pl.col(column_name)).select(name=stats_names, stats=pl.concat_list(stats_expressions).flatten()).unnest("stats")
+    stats = (
+        df.select(pl.col(column_name))
+        .select(name=stats_names, stats=pl.concat_list(stats_expressions).flatten())
+        .unnest("stats")
+    )
     minimum, maximum, mean, median, std, nan_count = stats[column_name].to_list()
 
     if column_type == ColumnType.FLOAT:
@@ -338,7 +344,7 @@ def compute_categorical_statistics_polars(
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
-    ids2counts = dict(df[column_name].value_counts().rows())
+    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())  # type: ignore
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
     no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
 
@@ -417,15 +423,14 @@ def compute_string_statistics_polars(
     n_bins: int,
     n_samples: int,
     dtype: Optional[str],
-):
+) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
     if dtype != "large_string":
-
         n_unique = df[column_name].n_unique()
         nan_count = df[column_name].null_count()
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
         if n_unique <= MAX_NUM_STRING_LABELS:
-            labels2counts = dict(df[column_name].value_counts().rows())
+            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,
@@ -435,7 +440,9 @@ def compute_string_statistics_polars(
                 frequencies=labels2counts,
             )
 
-    lengths_df = df.select(pl.col(column_name)).with_columns(pl.col(column_name).str.len_chars().alias(f"{column_name}_len"))
+    lengths_df = df.select(pl.col(column_name)).with_columns(
+        pl.col(column_name).str.len_chars().alias(f"{column_name}_len")
+    )
     return compute_numerical_statistics_polars(
         df=lengths_df,
         column_name=f"{column_name}_len",
@@ -447,78 +454,77 @@ def compute_string_statistics_polars(
 
 def compute_descriptive_statistics_response_polars(
     path: Path,
-    string_features: dict,
-    categorical_features: dict,
-    numerical_features: dict,
+    string_features: Optional[dict[str, dict]],  # type: ignore
+    categorical_features: Optional[dict[str, dict]],  # type: ignore
+    numerical_features: Optional[dict[str, dict]],  # type: ignore
     histogram_num_bins: int,
     num_examples: int,
-):
-    # df = pl.read_parquet(path)  # we can read one column at time
+) -> SplitDescriptiveStatisticsResponse:
     stats = []
 
     if string_features:
-        logging.info(f"Compute statistics for string columns {string_features}")
-    for feature_name, feature in tqdm(string_features.items()):
-        logging.info(f"Compute for string column {feature_name} with POLARS")
-        df = pl.read_parquet(path, columns=[feature_name])
-        string_column_stats = compute_string_statistics_polars(
-            df,
-            feature_name,
-            n_bins=histogram_num_bins,
-            n_samples=num_examples,
-            dtype=feature.get("dtype"),
-        )
-        stats.append(
-            StatisticsPerColumnItem(
-                column_name=feature_name,
-                column_type=ColumnType.STRING_LABEL
-                if "frequencies" in string_column_stats
-                else ColumnType.STRING_TEXT,
-                column_statistics=string_column_stats,
+        logging.info(f"Compute statistics for string columns {string_features} with POLARS")
+        for feature_name, feature in tqdm(string_features.items()):
+            logging.info(f"Compute for string column '{feature_name}'")
+            df = pl.read_parquet(path, columns=[feature_name])
+            string_column_stats = compute_string_statistics_polars(
+                df,
+                feature_name,
+                n_bins=histogram_num_bins,
+                n_samples=num_examples,
+                dtype=feature.get("dtype"),
             )
-        )
+            stats.append(
+                StatisticsPerColumnItem(
+                    column_name=feature_name,
+                    column_type=ColumnType.STRING_LABEL
+                    if "frequencies" in string_column_stats
+                    else ColumnType.STRING_TEXT,
+                    column_statistics=string_column_stats,
+                )
+            )
 
     # # compute for ClassLabels (we are sure that these are discrete categories)
     if categorical_features:
-        logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        logging.info(f"Compute statistics for categorical columns {categorical_features}  with POLARS")
         categorical_features = Features.from_dict(categorical_features)
-    for feature_name, feature in tqdm(categorical_features.items()):
-        logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}' with POLARS")
-        df = pl.read_parquet(path, columns=[feature_name])
-        cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics_polars(
-            df,
-            feature_name,
-            class_label_feature=feature,
-            n_samples=num_examples,
-        )
-        stats.append(
-            StatisticsPerColumnItem(
-                column_name=feature_name,
-                column_type=ColumnType.CLASS_LABEL,
-                column_statistics=cat_column_stats,
+        for feature_name, feature in tqdm(categorical_features.items()):  # type: ignore
+            logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
+            df = pl.read_parquet(path, columns=[feature_name])
+            cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics_polars(
+                df,
+                feature_name,
+                class_label_feature=feature,
+                n_samples=num_examples,
             )
-        )
+            stats.append(
+                StatisticsPerColumnItem(
+                    column_name=feature_name,
+                    column_type=ColumnType.CLASS_LABEL,
+                    column_statistics=cat_column_stats,
+                )
+            )
 
     if numerical_features:
-        logging.info(f"Compute statistics for numerical columns {numerical_features}")
-    for feature_name, feature in tqdm(numerical_features.items()):
-        logging.info(f"Compute for numerical column {feature_name} with POLARS")
-        column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
-        df = pl.read_parquet(path, columns=[feature_name])
-        numerical_column_stats = compute_numerical_statistics_polars(
-            df,
-            column_name=feature_name,
-            n_bins=histogram_num_bins,
-            n_samples=num_examples,
-            column_type=column_type,
-        )
-        stats.append(
-            StatisticsPerColumnItem(
+        logging.info(f"Compute statistics for numerical columns {numerical_features} with POLARS")
+        for feature_name, feature in tqdm(numerical_features.items()):
+            logging.info(f"Compute for numerical column '{feature_name}'")
+            column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
+            df = pl.read_parquet(path, columns=[feature_name])
+            numerical_column_stats = compute_numerical_statistics_polars(
+                df,
                 column_name=feature_name,
+                n_bins=histogram_num_bins,
+                n_samples=num_examples,
                 column_type=column_type,
-                column_statistics=numerical_column_stats,
             )
-        )
+            stats.append(
+                StatisticsPerColumnItem(
+                    column_name=feature_name,
+                    column_type=column_type,
+                    column_statistics=numerical_column_stats,
+                )
+            )
     return SplitDescriptiveStatisticsResponse(
         num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
     )
@@ -661,7 +667,7 @@ def compute_descriptive_statistics_response(
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
-    if split_parquets_size > 1_000_000_000:
+    if split_parquets_size > SWITCH_TO_POLARS_SIZE_BYTES:
         logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
         response = compute_descriptive_statistics_response_polars(
             path=local_parquet_glob_path,
@@ -670,7 +676,6 @@ def compute_descriptive_statistics_response(
             numerical_features=numerical_features,
             num_examples=num_examples,
             histogram_num_bins=histogram_num_bins,
-
         )
         return response
 
