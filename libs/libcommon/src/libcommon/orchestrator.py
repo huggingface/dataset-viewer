@@ -10,11 +10,7 @@ import pandas as pd
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.processing_graph import (
-    ProcessingGraph,
-    ProcessingStep,
-    ProcessingStepDoesNotExist,
-)
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
@@ -29,6 +25,9 @@ from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
 
 # TODO: clean dangling cache entries
+
+MAX_CONFIGS_THRESHOLD_TO_LOWER_PRIORITY = 500
+MAX_SPLITS_THRESHOLD_TO_LOWER_PRIORITY = 500
 
 
 @dataclass
@@ -290,7 +289,12 @@ class AfterJobPlan(Plan):
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
-                    self.update(next_processing_step, config_name, None)
+                    self.update(
+                        next_processing_step,
+                        config_name,
+                        None,
+                        self.priority if len(config_names) < MAX_CONFIGS_THRESHOLD_TO_LOWER_PRIORITY else Priority.LOW,
+                    )
             elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
@@ -306,7 +310,12 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name)
+                    self.update(
+                        next_processing_step,
+                        config,
+                        split_name,
+                        self.priority if len(split_names) < MAX_SPLITS_THRESHOLD_TO_LOWER_PRIORITY else Priority.LOW,
+                    )
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"
@@ -325,6 +334,7 @@ class AfterJobPlan(Plan):
         next_processing_step: ProcessingStep,
         config: Optional[str],
         split: Optional[str],
+        priority: Optional[Priority] = None,
     ) -> None:
         # ignore unrelated jobs
         config_mask = (
@@ -364,7 +374,7 @@ class AfterJobPlan(Plan):
                         "split": split,
                         "revision": self.revision,
                     },
-                    "priority": self.priority,
+                    "priority": priority if priority is not None else self.priority,
                     "difficulty": difficulty,
                 }
             )

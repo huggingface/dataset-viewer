@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 
@@ -11,11 +12,7 @@ from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponseDocument,
-    has_some_cache,
-    upsert_response_params,
-)
+from libcommon.simple_cache import CachedResponseDocument, has_some_cache, upsert_response_params
 from libcommon.utils import JobOutput, JobResult, Priority, Status
 
 from .utils import (
@@ -107,6 +104,46 @@ def test_after_job_plan(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(artifacts_to_create)
+
+
+@pytest.mark.parametrize(
+    "configs_threshold,parent_priority,children_priority",
+    [
+        (10, Priority.NORMAL, Priority.NORMAL),
+        (2, Priority.NORMAL, Priority.LOW),
+        (10, Priority.HIGH, Priority.HIGH),
+        (2, Priority.HIGH, Priority.LOW),
+        (10, Priority.LOW, Priority.LOW),
+        (2, Priority.LOW, Priority.LOW),
+    ],
+)
+def test_after_job_plan_lower_priority(
+    configs_threshold: int, parent_priority: Priority, children_priority: Priority
+) -> None:
+    processing_graph = PROCESSING_GRAPH_FAN_IN_OUT
+    job_info = artifact_id_to_job_info(ARTIFACT_DA)
+    job_info["priority"] = parent_priority
+    # put the cache (to be able to get the config names - case PROCESSING_GRAPH_FAN_IN_OUT)
+    upsert_response_params(
+        # inputs
+        kind=STEP_DA,
+        job_params=job_info["params"],
+        job_runner_version=JOB_RUNNER_VERSION,
+        # output
+        content=CONFIG_NAMES_CONTENT,
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+    with patch("libcommon.orchestrator.MAX_CONFIGS_THRESHOLD_TO_LOWER_PRIORITY", configs_threshold):
+        after_job_plan = AfterJobPlan(
+            processing_graph=processing_graph,
+            job_info=job_info,
+        )
+    after_job_plan.run()
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    assert (pending_jobs_df["priority"] == children_priority).all()
 
 
 def test_after_job_plan_delete() -> None:
