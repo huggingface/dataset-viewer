@@ -52,7 +52,7 @@ STRING_LENGTHS_TABLE_NAME = "string_lengths"
 
 DATABASE_FILENAME = "db.duckdb"
 
-SWITCH_TO_POLARS_SIZE_BYTES = 1_000_000_000
+SWITCH_TO_POLARS_DATASET_LIST = ["Open-Orca/OpenOrca", "vivym/midjourney-messages", "HuggingFaceH4/ultrachat_200k"]
 
 
 COMPUTE_NAN_COUNTS_COMMAND = """
@@ -667,7 +667,7 @@ def compute_descriptive_statistics_response(
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
-    if split_parquets_size > SWITCH_TO_POLARS_SIZE_BYTES:
+    if dataset in SWITCH_TO_POLARS_DATASET_LIST:
         logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
         response = compute_descriptive_statistics_response_polars(
             path=local_parquet_glob_path,
