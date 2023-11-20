@@ -12,10 +12,11 @@ from libcommon.constants import (
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
+    SplitParquetSchemaMismatchError,
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, TooBigRows
+from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
@@ -114,6 +115,12 @@ def compute_first_rows_response(
         all_fetched = rows_index.parquet_index.num_rows_total <= rows_max_number
     except TooBigRows as err:
         raise TooBigContentError(str(err))
+    except SchemaMismatchError as err:
+        raise SplitParquetSchemaMismatchError(
+            "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
+            cause=err,
+        )
+
     rows = [
         RowItem(
             {
