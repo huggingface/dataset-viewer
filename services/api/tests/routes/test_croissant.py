@@ -57,4 +57,5 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert isinstance(croissant["recordSet"], list)
     assert len(croissant["recordSet"]) == 1
     assert isinstance(croissant["recordSet"][0]["field"], list)
+    assert isinstance(squad_info["features"], dict)
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1

@@ -48,6 +48,7 @@ class ProcessingStepSpecification(TypedDict, total=False):
     enables_search: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
+    provides_dataset_info: bool
     provides_config_info: bool
     provides_config_split_names: bool
     provides_config_parquet: bool
