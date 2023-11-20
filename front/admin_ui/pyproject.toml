@@ -8,6 +8,7 @@ authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 python = "3.9.18"
 duckdb = "^0.8.1"
 gradio = "^3.34.0"
+huggingface-hub = "^0.18.0"
 libcommon = { path = "../../libs/libcommon", develop=true }
 matplotlib = "^3.7.0"
 pygraphviz = "~1.10"
