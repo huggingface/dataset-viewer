@@ -10,7 +10,7 @@ python = "3.9.18"
 appdirs = "^1.4.4"
 datasets = {version = "^2.15.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.18.0"
+huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "fix-test-send-ref-in-lfs-payload"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
