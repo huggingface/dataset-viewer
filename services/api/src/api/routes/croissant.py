@@ -2,7 +2,7 @@ import logging
 from collections.abc import Mapping
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Optional, TypedDict
+from typing import Any, Optional
 
 from datasets import Features, Image, Value
 from libapi.authentication import auth_check
@@ -27,17 +27,7 @@ from starlette.responses import Response
 
 MAX_CONFIGS = 100
 
-
-class ParquetFile(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
-HF_TO_CRROISSANT_VALUE_TYPE = {
+HF_TO_CROISSANT_VALUE_TYPE = {
     "string": "sc:Text",
     "int32": "sc:Integer",
     "int64": "sc:Integer",
@@ -53,7 +43,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
             "@type": "sc:FileObject",
             "name": "repo",
             "description": "The Hugging Face git repository.",
-            "contentUrl": f"https://huggingface.co/datasets/{dataset}",
+            "contentUrl": f"https://huggingface.co/datasets/{dataset}/tree/refs%2Fconvert%2Fparquet",
             "encodingFormat": "git+https",
             "sha256": "https://github.com/mlcommons/croissant/issues/80",
         }
@@ -75,13 +65,13 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         )
         skipped_columns = []
         for column, feature in features.items():
-            if isinstance(feature, Value) and feature.dtype in HF_TO_CRROISSANT_VALUE_TYPE:
+            if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
                 fields.append(
                     {
                         "@type": "ml:Field",
                         "name": column,
                         "description": f"Column '{column}' from the Hugging Face parquet file.",
-                        "dataType": HF_TO_CRROISSANT_VALUE_TYPE[feature.dtype],
+                        "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
                         "source": {"distribution": distribution_name, "extract": {"column": column}},
                     }
                 )
