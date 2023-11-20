@@ -178,9 +178,7 @@ class ProcessingGraph:
                 )
             provides_dataset_info = specification.get("provides_dataset_info", False)
             if provides_dataset_info and input_type != "dataset":
-                raise ValueError(
-                    f"Processing step {name} provides dataset info but its input type is {input_type}."
-                )
+                raise ValueError(f"Processing step {name} provides dataset info but its input type is {input_type}.")
             provides_config_split_names = specification.get("provides_config_split_names", False)
             if provides_config_split_names and input_type != "config":
                 raise ValueError(
