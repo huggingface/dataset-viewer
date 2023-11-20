@@ -4,7 +4,7 @@ from http import HTTPStatus
 from itertools import islice
 from typing import Any, Optional
 
-from datasets import Features, Image, Value
+from datasets import ClassLabel, Features, Image, Value
 from libapi.authentication import auth_check
 from libapi.exceptions import (
     ApiError,
@@ -53,6 +53,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         config = info["config_name"]
         features = Features.from_dict(info["features"])
         fields: list[dict[str, Any]] = []
+        splits = list(info["splits"])
         distribution_name = f"parquet-files-for-config-{config}"
         distribution.append(
             {
@@ -89,13 +90,30 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                         },
                     }
                 )
+            elif isinstance(feature, ClassLabel):
+                fields.append(
+                    {
+                        "@type": "ml:Field",
+                        "name": column,
+                        "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
+                        + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
+                        "dataType": "sc:Integer",
+                        "source": {"distribution": distribution_name, "extract": {"column": column}},
+                    }
+                )
             else:
                 skipped_columns.append(column)
-        description = f"{dataset} ('{config}' subset)"
+        description = f"{dataset} - '{config}' subset"
         if partial:
             description += " (first 5GB)"
+        description_body = ""
+        if len(splits) > 1:
+            description_body += f"\n- {len(splits)} split{'s' if len(splits) > 1 else ''}: {', '.join(splits)}"
         if skipped_columns:
-            description += f" ({len(skipped_columns)} skipped column{'s' if len(skipped_columns) > 1 else ''}: {', '.join(skipped_columns)})"
+            description_body += f"\n- {len(skipped_columns)} skipped column{'s' if len(skipped_columns) > 1 else ''}: {', '.join(skipped_columns)}"
+        if description_body:
+            description += "\n\nAdditional information:"
+            description += description_body
         record_set.append(
             {
                 "@type": "ml:RecordSet",
