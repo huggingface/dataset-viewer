@@ -117,6 +117,7 @@ CacheableErrorCode = Literal[
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
     "SplitNotFoundError",
+    "SplitParquetSchemaMismatchError",
     "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
@@ -491,6 +492,19 @@ class SplitNotFoundError(CacheableError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="SplitNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class SplitParquetSchemaMismatchError(CacheableError):
+    """The Parquet files have different schemas, they should have identical column names."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            code="SplitParquetSchemaMismatchError",
             cause=cause,
             disclose_cause=False,
         )

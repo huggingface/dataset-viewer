@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from pathlib import Path
+
 from pytest import fixture
 
 from libapi.config import ApiConfig
@@ -39,3 +41,10 @@ def hf_auth_path(api_config: ApiConfig) -> str:
 @fixture
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@fixture
+def image_path() -> str:
+    image_path = Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"
+    assert image_path.is_file()
+    return str(image_path)

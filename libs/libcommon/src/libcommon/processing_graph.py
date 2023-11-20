@@ -48,6 +48,7 @@ class ProcessingStepSpecification(TypedDict, total=False):
     enables_search: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
+    provides_dataset_info: bool
     provides_config_info: bool
     provides_config_split_names: bool
     provides_config_parquet: bool
@@ -150,6 +151,7 @@ class ProcessingGraph:
     _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
     _config_parquet_metadata_processing_steps: list[ProcessingStep] = field(init=False)
     _dataset_config_names_processing_steps: list[ProcessingStep] = field(init=False)
+    _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
 
@@ -175,6 +177,9 @@ class ProcessingGraph:
                 raise ValueError(
                     f"Processing step {name} provides dataset config names but its input type is {input_type}."
                 )
+            provides_dataset_info = specification.get("provides_dataset_info", False)
+            if provides_dataset_info and input_type != "dataset":
+                raise ValueError(f"Processing step {name} provides dataset info but its input type is {input_type}.")
             provides_config_split_names = specification.get("provides_config_split_names", False)
             if provides_config_split_names and input_type != "config":
                 raise ValueError(
@@ -201,6 +206,7 @@ class ProcessingGraph:
                 enables_search=specification.get("enables_search", False),
                 provides_config_info=provides_config_info,
                 provides_dataset_config_names=provides_dataset_config_names,
+                provides_dataset_info=provides_dataset_info,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
                 provides_config_parquet_metadata=provides_config_parquet_metadata,
@@ -278,6 +284,11 @@ class ProcessingGraph:
         self._dataset_config_names_processing_steps = [
             self.get_processing_step(processing_step_name)
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_config_names")
+            if provides
+        ]
+        self._dataset_info_processing_steps = [
+            self._processing_steps[processing_step_name]
+            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_info")
             if provides
         ]
         self._topologically_ordered_processing_steps = [
@@ -471,6 +482,18 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of processing steps that provide a config's parquet response
         """
         return copy_processing_steps_list(self._config_parquet_processing_steps)
+
+    def get_dataset_info_processing_steps(self) -> list[ProcessingStep]:
+        """
+        Get the processing steps that provide a dataset's info response.
+
+        The returned processing steps are copies of the original ones, so that they can be modified without affecting
+        the original ones.
+
+        Returns:
+            list[ProcessingStep]: The list of processing steps that provide a dataset's info response
+        """
+        return copy_processing_steps_list(self._dataset_info_processing_steps)
 
     def get_config_parquet_metadata_processing_steps(self) -> list[ProcessingStep]:
         """
