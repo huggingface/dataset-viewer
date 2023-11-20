@@ -80,7 +80,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                     {
                         "@type": "ml:Field",
                         "name": column,
-                        "description": f"Column '{column}' from Hugging Face parquet file.",
+                        "description": f"Column '{column}' from the Hugging Face parquet file.",
                         "dataType": HF_TO_CRROISSANT_VALUE_TYPE[feature.dtype],
                         "source": {"distribution": distribution_name, "extract": {"column": column}},
                     }
@@ -90,7 +90,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                     {
                         "@type": "ml:Field",
                         "name": column,
-                        "description": f"Image column '{column}' from Hugging Face parquet file.",
+                        "description": f"Image column '{column}' from the Hugging Face parquet file.",
                         "dataType": "sc:ImageObject",
                         "source": {
                             "distribution": distribution_name,
@@ -101,11 +101,11 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 )
             else:
                 skipped_columns.append(column)
-        description = f"'{config}' subset"
+        description = f"{dataset} ('{config}' subset)"
         if partial:
             description += " (first 5GB)"
         if skipped_columns:
-            description += f" ({len(skipped_columns)} skipped columns: {', '.join(skipped_columns)})"
+            description += f" ({len(skipped_columns)} skipped column{'s' if len(skipped_columns) > 1 else ''}: {', '.join(skipped_columns)})"
         record_set.append(
             {
                 "@type": "ml:RecordSet",
@@ -215,12 +215,10 @@ def create_croissant_endpoint(
                 error_code = info_result["error_code"]
                 revision = info_result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
-                    dataset_infos = list(islice(content["dataset_infos"].values(), MAX_CONFIGS))
+                    infos = list(islice(content["dataset_info"].values(), MAX_CONFIGS))
                     partial = content["partial"]
                     with StepProfiler(method="croissant_endpoint", step="generate croissant json", context=context):
-                        croissant = get_croissant_from_dataset_infos(
-                            dataset=dataset, infos=dataset_infos, partial=partial
-                        )
+                        croissant = get_croissant_from_dataset_infos(dataset=dataset, infos=infos, partial=partial)
                     with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)
                 else:
