@@ -176,6 +176,11 @@ class ProcessingGraph:
                 raise ValueError(
                     f"Processing step {name} provides dataset config names but its input type is {input_type}."
                 )
+            provides_dataset_info = specification.get("provides_dataset_info", False)
+            if provides_dataset_info and input_type != "dataset":
+                raise ValueError(
+                    f"Processing step {name} provides dataset info but its input type is {input_type}."
+                )
             provides_config_split_names = specification.get("provides_config_split_names", False)
             if provides_config_split_names and input_type != "config":
                 raise ValueError(
@@ -202,6 +207,7 @@ class ProcessingGraph:
                 enables_search=specification.get("enables_search", False),
                 provides_config_info=provides_config_info,
                 provides_dataset_config_names=provides_dataset_config_names,
+                provides_dataset_info=provides_dataset_info,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
                 provides_config_parquet_metadata=provides_config_parquet_metadata,
