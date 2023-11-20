@@ -329,6 +329,37 @@ def compute_categorical_statistics(
     )
 
 
+def compute_categorical_statistics_polars(
+    df: pl.dataframe.frame.DataFrame,
+    column_name: str,
+    class_label_feature: ClassLabel,
+    n_samples: int,
+) -> CategoricalStatisticsItem:
+    nan_count = df[column_name].null_count()
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+
+    ids2counts = dict(df[column_name].value_counts().rows())
+    no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
+    no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
+
+    num_classes = len(class_label_feature.names)
+    labels2counts: dict[str, int] = {
+        class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
+    }
+    # n_unique = df[column_name].n_unique()
+    # if not n_unique == num_classes + int(no_label_count > 0):
+    #     raise
+
+    return CategoricalStatisticsItem(
+        nan_count=nan_count,
+        nan_proportion=nan_proportion,
+        no_label_count=no_label_count,
+        no_label_proportion=no_label_proportion,
+        n_unique=num_classes,  # TODO: does it contain None?
+        frequencies=labels2counts,
+    )
+
+
 def compute_string_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
@@ -417,16 +448,19 @@ def compute_string_statistics_polars(
 def compute_descriptive_statistics_response_polars(
     path: Path,
     string_features: dict,
+    categorical_features: dict,
     numerical_features: dict,
     histogram_num_bins: int,
     num_examples: int,
 ):
-    df = pl.read_parquet(path)
+    # df = pl.read_parquet(path)  # we can read one column at time
     stats = []
+
     if string_features:
         logging.info(f"Compute statistics for string columns {string_features}")
     for feature_name, feature in tqdm(string_features.items()):
-        logging.info(f"Compute for string column {feature_name} POLARS")
+        logging.info(f"Compute for string column {feature_name} with POLARS")
+        df = pl.read_parquet(path, columns=[feature_name])
         string_column_stats = compute_string_statistics_polars(
             df,
             feature_name,
@@ -444,13 +478,33 @@ def compute_descriptive_statistics_response_polars(
             )
         )
 
+    # # compute for ClassLabels (we are sure that these are discrete categories)
+    if categorical_features:
+        logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        categorical_features = Features.from_dict(categorical_features)
+    for feature_name, feature in tqdm(categorical_features.items()):
+        logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}' with POLARS")
+        df = pl.read_parquet(path, columns=[feature_name])
+        cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics_polars(
+            df,
+            feature_name,
+            class_label_feature=feature,
+            n_samples=num_examples,
+        )
+        stats.append(
+            StatisticsPerColumnItem(
+                column_name=feature_name,
+                column_type=ColumnType.CLASS_LABEL,
+                column_statistics=cat_column_stats,
+            )
+        )
+
     if numerical_features:
         logging.info(f"Compute statistics for numerical columns {numerical_features}")
-
     for feature_name, feature in tqdm(numerical_features.items()):
-
-        logging.info(f"Compute for numerical column {feature_name} POLARS")
+        logging.info(f"Compute for numerical column {feature_name} with POLARS")
         column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
+        df = pl.read_parquet(path, columns=[feature_name])
         numerical_column_stats = compute_numerical_statistics_polars(
             df,
             column_name=feature_name,
@@ -585,7 +639,6 @@ def compute_descriptive_statistics_response(
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split_directory}/*.parquet"
 
-    stats: list[StatisticsPerColumnItem] = []
     num_examples = dataset_info["splits"][split]["num_examples"]
     categorical_features = {
         feature_name: feature
@@ -607,110 +660,116 @@ def compute_descriptive_statistics_response(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
+
+    if split_parquets_size > 1_000_000_000:
+        logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
+        response = compute_descriptive_statistics_response_polars(
+            path=local_parquet_glob_path,
+            string_features=string_features,
+            categorical_features=categorical_features,
+            numerical_features=numerical_features,
+            num_examples=num_examples,
+            histogram_num_bins=histogram_num_bins,
+
+        )
+        return response
+
+    stats: list[StatisticsPerColumnItem] = []
     all_feature_names = ",".join(
         f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
     )
 
-    response = compute_descriptive_statistics_response_polars(
-        path=local_parquet_glob_path,
-        string_features=string_features,
-        numerical_features=numerical_features,
-        num_examples=num_examples,
-        histogram_num_bins=histogram_num_bins,
+    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with DUCKDB")
+    con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
+    con.sql("SET enable_progress_bar=true;")
 
+    # DuckDB uses n_threads = num kubernetes cpu (limits)
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Number of threads={n_threads}")
+
+    # However DuckDB uses max_memory = memory of the entite kubernetes node so we lower it
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Original {max_memory=}")
+    con.sql(f"SET max_memory TO '{28 if n_threads >= 8 else 10}gb';")
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Current {max_memory=}")
+
+    logging.info("Loading data into in-memory table. ")
+    create_table_command = CREATE_TABLE_COMMAND.format(
+        table_name=DATA_TABLE_NAME,
+        column_names=all_feature_names,
+        select_from=f"read_parquet('{local_parquet_glob_path}')",
     )
-    return response
+    logging.info(create_table_command)
+    con.sql(create_table_command)
+    logging.info("Loading finished. ")
 
-    # con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
-    # con.sql("SET enable_progress_bar=true;")
-    #
-    # # DuckDB uses n_threads = num kubernetes cpu (limits)
-    # n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
-    # logging.info(f"Number of threads={n_threads}")
-    #
-    # # However DuckDB uses max_memory = memory of the entite kubernetes node so we lower it
-    # max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
-    # logging.info(f"Original {max_memory=}")
-    # con.sql(f"SET max_memory TO '{28 if n_threads >= 8 else 10}gb';")
-    # max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
-    # logging.info(f"Current {max_memory=}")
-    #
-    # logging.info("Loading data into in-memory table. ")
-    # create_table_command = CREATE_TABLE_COMMAND.format(
-    #     table_name=DATA_TABLE_NAME,
-    #     column_names=all_feature_names,
-    #     select_from=f"read_parquet('{local_parquet_glob_path}')",
-    # )
-    # logging.info(create_table_command)
-    # con.sql(create_table_command)
-    # logging.info("Loading finished. ")
-    #
-    # if string_features:
-    #     logging.info(f"Compute statistics for string columns {string_features}")
-    # for feature_name, feature in tqdm(string_features.items()):
-    #     logging.debug(f"Compute for string column {feature_name}")
-    #     string_column_stats = compute_string_statistics(
-    #         con,
-    #         feature_name,
-    #         n_bins=histogram_num_bins,
-    #         n_samples=num_examples,
-    #         table_name=DATA_TABLE_NAME,
-    #         dtype=feature.get("dtype"),
-    #     )
-    #     stats.append(
-    #         StatisticsPerColumnItem(
-    #             column_name=feature_name,
-    #             column_type=ColumnType.STRING_LABEL
-    #             if "frequencies" in string_column_stats
-    #             else ColumnType.STRING_TEXT,
-    #             column_statistics=string_column_stats,
-    #         )
-    #     )
-    # # compute for ClassLabels (we are sure that these are discrete categories)
-    # if categorical_features:
-    #     logging.info(f"Compute statistics for categorical columns {categorical_features}")
-    #     categorical_features = Features.from_dict(categorical_features)
-    # for feature_name, feature in tqdm(categorical_features.items()):
-    #     logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
-    #     cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
-    #         con,
-    #         feature_name,
-    #         class_label_feature=feature,
-    #         n_samples=num_examples,
-    #         table_name=DATA_TABLE_NAME,
-    #     )
-    #     stats.append(
-    #         StatisticsPerColumnItem(
-    #             column_name=feature_name,
-    #             column_type=ColumnType.CLASS_LABEL,
-    #             column_statistics=cat_column_stats,
-    #         )
-    #     )
-    #
-    # if numerical_features:
-    #     logging.info(f"Compute min, max, mean, median, std, histogram for numerical columns {numerical_features}. ")
-    # for feature_name, feature in tqdm(numerical_features.items()):
-    #     column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
-    #     num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
-    #         con,
-    #         feature_name,
-    #         table_name=DATA_TABLE_NAME,
-    #         n_bins=histogram_num_bins,
-    #         n_samples=num_examples,
-    #         column_type=column_type,
-    #     )
-    #     stats.append(
-    #         StatisticsPerColumnItem(
-    #             column_name=feature_name,
-    #             column_type=column_type,
-    #             column_statistics=num_column_stats,
-    #         )
-    #     )
-    # con.close()
-    #
-    # return SplitDescriptiveStatisticsResponse(
-    #     num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
-    # )
+    if string_features:
+        logging.info(f"Compute statistics for string columns {string_features}")
+    for feature_name, feature in tqdm(string_features.items()):
+        logging.debug(f"Compute for string column {feature_name}")
+        string_column_stats = compute_string_statistics(
+            con,
+            feature_name,
+            n_bins=histogram_num_bins,
+            n_samples=num_examples,
+            table_name=DATA_TABLE_NAME,
+            dtype=feature.get("dtype"),
+        )
+        stats.append(
+            StatisticsPerColumnItem(
+                column_name=feature_name,
+                column_type=ColumnType.STRING_LABEL
+                if "frequencies" in string_column_stats
+                else ColumnType.STRING_TEXT,
+                column_statistics=string_column_stats,
+            )
+        )
+    # compute for ClassLabels (we are sure that these are discrete categories)
+    if categorical_features:
+        logging.info(f"Compute statistics for categorical columns {categorical_features}")
+        categorical_features = Features.from_dict(categorical_features)
+    for feature_name, feature in tqdm(categorical_features.items()):
+        logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
+        cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
+            con,
+            feature_name,
+            class_label_feature=feature,
+            n_samples=num_examples,
+            table_name=DATA_TABLE_NAME,
+        )
+        stats.append(
+            StatisticsPerColumnItem(
+                column_name=feature_name,
+                column_type=ColumnType.CLASS_LABEL,
+                column_statistics=cat_column_stats,
+            )
+        )
+
+    if numerical_features:
+        logging.info(f"Compute min, max, mean, median, std, histogram for numerical columns {numerical_features}. ")
+    for feature_name, feature in tqdm(numerical_features.items()):
+        column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
+        num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
+            con,
+            feature_name,
+            table_name=DATA_TABLE_NAME,
+            n_bins=histogram_num_bins,
+            n_samples=num_examples,
+            column_type=column_type,
+        )
+        stats.append(
+            StatisticsPerColumnItem(
+                column_name=feature_name,
+                column_type=column_type,
+                column_statistics=num_column_stats,
+            )
+        )
+    con.close()
+
+    return SplitDescriptiveStatisticsResponse(
+        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
+    )
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
