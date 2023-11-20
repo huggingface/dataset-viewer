@@ -300,6 +300,7 @@ class ProcessingGraphConfig:
                 "input_type": "dataset",
                 "triggered_by": ["config-info", "dataset-config-names"],
                 "job_runner_version": PROCESSING_STEP_DATASET_INFO_VERSION,
+                "provides_dataset_info": True,
                 "difficulty": 20,
             },
             "config-split-names-from-info": {
