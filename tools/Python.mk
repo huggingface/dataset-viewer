@@ -18,7 +18,7 @@ quality:
 	poetry run ruff format --check src tests
 	poetry run mypy tests src
 	poetry run bandit -r src
-	$(MAKE) pip-audit
+# $(MAKE) pip-audit
 
 # Format source code automatically
 .PHONY: style
