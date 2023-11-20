@@ -162,7 +162,7 @@ services:
       dockerfile: services/sse-api/dev.Dockerfile
     extends:
       file: docker-compose-dev-base.yml
-      service: api
+      service: sse-api
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
