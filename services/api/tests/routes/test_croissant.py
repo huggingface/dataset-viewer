@@ -20,7 +20,7 @@ squad_info = {
     },
     "task_templates": [{"task": "question-answering-extractive"}],
     "builder_name": "squad",
-    "config_name": "plain_text",
+    "config_name": "config names can contain spaces",
     "version": {"version_str": "1.0.0", "description": "", "major": 1, "minor": 0, "patch": 0},
     "splits": {
         "train": {"name": "train", "num_bytes": 79346108, "num_examples": 87599, "dataset_name": "squad"},
@@ -48,14 +48,17 @@ squad_info = {
 
 
 def test_get_croissant_from_dataset_infos() -> None:
-    croissant = get_croissant_from_dataset_infos("squad", [squad_info], partial=False)
+    croissant = get_croissant_from_dataset_infos("user/squad", [squad_info], partial=False)
     assert "@context" in croissant
     assert "@type" in croissant
+    assert "name" in croissant
+    assert croissant["name"] == "user_squad"
     assert "distribution" in croissant
     assert "recordSet" in croissant
     # column "answers" is not supported (nested)
     assert isinstance(croissant["recordSet"], list)
     assert len(croissant["recordSet"]) == 1
+    assert croissant["recordSet"][0]["name"] == "config_names_can_contain_spaces"
     assert isinstance(croissant["recordSet"][0]["field"], list)
     assert isinstance(squad_info["features"], dict)
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
