@@ -9,12 +9,7 @@ import pandas as pd
 import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.utils import (
-    inputs_to_string,
-    is_image_url,
-    orjson_dumps,
-    raise_if_blocked,
-)
+from libcommon.utils import inputs_to_string, is_image_url, orjson_dumps, raise_if_blocked
 
 
 @pytest.mark.parametrize(

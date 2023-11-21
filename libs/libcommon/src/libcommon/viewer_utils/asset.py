@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TypedDict
+from urllib import parse
 
 from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
@@ -16,10 +17,6 @@ from libcommon.storage import StrPath, remove_dir
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
-
-
-def get_url_dir_path(dataset: str, revision: str, config: str, split: str, row_idx: int, column: str) -> str:
-    return f"{dataset}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{config}/{split}/{str(row_idx)}/{column}"
 
 
 def delete_asset_dir(dataset: str, directory: StrPath) -> None:
@@ -36,6 +33,13 @@ class ImageSource(TypedDict):
 class AudioSource(TypedDict):
     src: str
     type: str
+
+
+def generate_asset_src(
+    base_url: str, dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
+) -> tuple[str, str]:
+    dir_path = f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}"
+    return dir_path, f"{base_url}/{dir_path}/{filename}"
 
 
 def create_image_file(
@@ -55,11 +59,17 @@ def create_image_file(
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
-    url_dir_path = get_url_dir_path(
-        dataset=dataset, revision=revision, config=config, split=split, row_idx=row_idx, column=column
+    dir_path, src = generate_asset_src(
+        base_url=assets_base_url,
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
     )
-    src = f"{assets_base_url}/{url_dir_path}/{filename}"
-    object_key = f"{url_dir_path}/{filename}"
+    object_key = f"{dir_path}/{filename}"
     image_path = f"{storage_client.get_base_directory()}/{object_key}"
 
     if overwrite or not storage_client.exists(object_key=object_key):
@@ -85,11 +95,17 @@ def create_audio_file(
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
-    url_dir_path = get_url_dir_path(
-        revision=revision, dataset=dataset, config=config, split=split, row_idx=row_idx, column=column
+    dir_path, src = generate_asset_src(
+        base_url=assets_base_url,
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=column,
+        filename=filename,
     )
-    src = f"{assets_base_url}/{url_dir_path}/{filename}"
-    object_key = f"{url_dir_path}/{filename}"
+    object_key = f"{dir_path}/{filename}"
     audio_path = f"{storage_client.get_base_directory()}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
