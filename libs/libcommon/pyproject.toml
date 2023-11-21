@@ -10,7 +10,8 @@ python = "3.9.18"
 appdirs = "^1.4.4"
 datasets = {version = "^2.15.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.18.0"
+huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "8831137c275e19835dc10e85f6c550add4d5bb5e"}
+# ^ 20231121 - pin a commit until we upgrade to huggingface-hub@0.20
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
