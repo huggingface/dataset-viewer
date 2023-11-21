@@ -2,6 +2,7 @@ import logging
 from collections.abc import Mapping
 from http import HTTPStatus
 from itertools import islice
+import re
 from typing import Any, Optional
 
 from datasets import ClassLabel, Features, Image, Value
@@ -36,9 +37,11 @@ HF_TO_CROISSANT_VALUE_TYPE = {
     "bool": "sc:Boolean",
 }
 
+NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
+
 def _escape_name(name: str) -> str:
     """Escapes names in Croissant, as `/` are used in the syntax as delimiters."""
-    return name.replace("/", "_")
+    return re.sub(NAME_PATTERN_REGEX, "_", name)
 
 
 def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]], partial: bool) -> Mapping[str, Any]:
