@@ -127,10 +127,10 @@ def generate_bins(
     column_name: str,
     column_type: ColumnType,
     n_bins: int,
-) -> pd.DataFrame:
+) -> list[int]:
     """
     Returns:
-        pandas.DataFrame with bin edges to insert into database to perform histogram computation with duckdb
+        List of bin edges.
     """
     if column_type is ColumnType.FLOAT:
         bin_size = (max_value - min_value) / n_bins
@@ -148,10 +148,7 @@ def generate_bins(
             )
     else:
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}. ")
-    bin_max_edges = bin_edges[1:] + [max_value + 1]  # add 1 to include exact max values in the last bin
-    return pd.DataFrame.from_dict(
-        {"bin_id": list(range(len(bin_edges))), "bin_min": bin_edges, "bin_max": bin_max_edges}
-    )
+    return bin_edges + [max_value]
 
 
 def compute_histogram(
