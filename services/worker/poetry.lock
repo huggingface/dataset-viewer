@@ -1635,8 +1635,8 @@ typing = ["types-PyYAML", "types-requests", "types-simplejson", "types-toml", "t
 [package.source]
 type = "git"
 url = "https://github.com/huggingface/huggingface_hub.git"
-reference = "50e316bdb15cf53a2f85188872f2e0d4c9b84379"
-resolved_reference = "50e316bdb15cf53a2f85188872f2e0d4c9b84379"
+reference = "8831137c275e19835dc10e85f6c550add4d5bb5e"
+resolved_reference = "8831137c275e19835dc10e85f6c550add4d5bb5e"
 
 [[package]]
 name = "idna"
@@ -1941,7 +1941,7 @@ develop = true
 appdirs = "^1.4.4"
 datasets = {version = "^2.15.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "50e316bdb15cf53a2f85188872f2e0d4c9b84379"}
+huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "8831137c275e19835dc10e85f6c550add4d5bb5e"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
