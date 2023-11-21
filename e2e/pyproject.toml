@@ -11,8 +11,7 @@ openapi-spec-validator = "^0.5.5"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = {git = "https://github.com/huggingface/huggingface_hub.git", rev = "50e316bdb15cf53a2f85188872f2e0d4c9b84379"}
-# ^ 20231121 - pin a commit until we upgrade to huggingface-hub@0.20
+huggingface-hub = "^0.18.0"
 mypy = "^1.0.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"

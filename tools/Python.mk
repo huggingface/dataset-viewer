@@ -18,9 +18,7 @@ quality:
 	poetry run ruff format --check src tests
 	poetry run mypy tests src
 	poetry run bandit -r src
-
-#$(MAKE) pip-audit
-# ^ 20231121 - disabled until we upgrade to huggingface-hub@0.20
+	$(MAKE) pip-audit
 
 # Format source code automatically
 .PHONY: style
