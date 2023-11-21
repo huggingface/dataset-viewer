@@ -9,14 +9,10 @@ from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue import ActiveJobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponseDocument,
-    has_some_cache,
-    upsert_response_params,
-)
-from libcommon.utils import JobOutput, JobResult, Priority, Status
+from libcommon.simple_cache import CachedResponseDocument, has_some_cache, upsert_response_params
+from libcommon.utils import ActiveStatus, FinishedStatus, JobOutput, JobResult, Priority
 
 from .utils import (
     ARTIFACT_CA_1,
@@ -177,12 +173,12 @@ def test_finish_job(
     )
     dataset_orchestrator.finish_job(job_result=job_result)
 
-    assert JobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
+    assert ActiveJobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
 
-    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.SUCCESS)
+    done_job = ActiveJobDocument.objects(dataset=DATASET_NAME, status=FinishedStatus.SUCCESS)
     assert done_job.count() == 1
 
-    waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
+    waiting_jobs = ActiveJobDocument.objects(dataset=DATASET_NAME, status=ActiveStatus.WAITING)
     assert waiting_jobs.count() == len(artifacts_to_create)
     assert {job.type for job in waiting_jobs} == {Artifact.parse_id(artifact)[4] for artifact in artifacts_to_create}
 

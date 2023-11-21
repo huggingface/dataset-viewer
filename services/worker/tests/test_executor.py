@@ -3,7 +3,7 @@ import sys
 import time
 from collections.abc import Callable, Iterator
 from datetime import timedelta
-from http import HTTPStatus
+from http import HTTPActiveStatus
 from pathlib import Path
 from unittest.mock import patch
 
@@ -12,12 +12,12 @@ import pytest
 import pytz
 from filelock import FileLock
 from libcommon.processing_graph import ProcessingGraph
-from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
+from libcommon.queue import ActiveJobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, Priority, Status, get_datetime
+from libcommon.utils import ActiveStatus, JobInfo, Priority, get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
@@ -85,12 +85,12 @@ def start_worker_loop_with_long_job() -> None:
         print(app_config.worker.state_file_path, flush=True)
     current_job_info = get_job_info("long")
     with QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url):
-        current_job = JobDocument.objects(pk=current_job_info["job_id"]).get()
+        current_job = ActiveJobDocument.objects(pk=current_job_info["job_id"]).get()
         assert current_job.started_at is not None
         worker_state = WorkerState(
             current_job_info=current_job_info, last_updated=pytz.UTC.localize(current_job.started_at)
         )
-        if current_job.status == Status.STARTED:
+        if current_job.status == ActiveStatus.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
             time.sleep(20)
             Queue().finish_job(current_job_info["job_id"], is_success=True)
@@ -106,14 +106,14 @@ def set_worker_state(worker_state_file_path: str) -> Iterator[WorkerState]:
 
 
 @fixture
-def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
+def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[ActiveJobDocument]:
     job_info = get_job_info()
     try:
-        JobDocument.get(job_id=job_info["job_id"]).delete()
+        ActiveJobDocument.get(job_id=job_info["job_id"]).delete()
     except JobDoesNotExistError:
         pass
     created_at = get_datetime()
-    job = JobDocument(
+    job = ActiveJobDocument(
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
@@ -123,7 +123,7 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
-        status=Status.STARTED,
+        status=ActiveStatus.STARTED,
         created_at=created_at,
         started_at=created_at + timedelta(microseconds=1),
         difficulty=job_info["difficulty"],
@@ -136,15 +136,15 @@ def set_just_started_job_in_queue(queue_mongo_resource: QueueMongoResource) -> I
 @fixture
 def set_long_running_job_in_queue(
     app_config: AppConfig, queue_mongo_resource: QueueMongoResource
-) -> Iterator[JobDocument]:
+) -> Iterator[ActiveJobDocument]:
     job_info = get_job_info("long")
     try:
-        JobDocument.get(job_id=job_info["job_id"]).delete()
+        ActiveJobDocument.get(job_id=job_info["job_id"]).delete()
     except JobDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
     last_heartbeat = get_datetime() - timedelta(seconds=app_config.worker.heartbeat_interval_seconds)
-    job = JobDocument(
+    job = ActiveJobDocument(
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
@@ -154,7 +154,7 @@ def set_long_running_job_in_queue(
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
-        status=Status.STARTED,
+        status=ActiveStatus.STARTED,
         created_at=created_at,
         started_at=created_at + timedelta(milliseconds=1),
         last_heartbeat=last_heartbeat,
@@ -166,16 +166,16 @@ def set_long_running_job_in_queue(
 
 
 @fixture
-def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[JobDocument]:
+def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterator[ActiveJobDocument]:
     if not queue_mongo_resource.is_available():
         raise RuntimeError("Mongo resource is not available")
     job_info = get_job_info("zombie")
     try:
-        JobDocument.get(job_id=job_info["job_id"]).delete()
+        ActiveJobDocument.get(job_id=job_info["job_id"]).delete()
     except JobDoesNotExistError:
         pass
     created_at = get_datetime() - timedelta(days=1)
-    job = JobDocument(
+    job = ActiveJobDocument(
         pk=job_info["job_id"],
         type=job_info["type"],
         dataset=job_info["params"]["dataset"],
@@ -185,7 +185,7 @@ def set_zombie_job_in_queue(queue_mongo_resource: QueueMongoResource) -> Iterato
         unicity_id="unicity_id",
         namespace="user",
         priority=job_info["priority"],
-        status=Status.STARTED,
+        status=ActiveStatus.STARTED,
         created_at=created_at,
         started_at=created_at + timedelta(milliseconds=1),
         last_heartbeat=created_at + timedelta(milliseconds=2),
@@ -250,7 +250,7 @@ def test_executor_get_empty_state(
 
 def test_executor_heartbeat(
     executor: WorkerExecutor,
-    set_just_started_job_in_queue: JobDocument,
+    set_just_started_job_in_queue: ActiveJobDocument,
     set_worker_state: WorkerState,
 ) -> None:
     current_job = set_just_started_job_in_queue
@@ -264,22 +264,22 @@ def test_executor_heartbeat(
 
 def test_executor_kill_zombies(
     executor: WorkerExecutor,
-    set_just_started_job_in_queue: JobDocument,
-    set_long_running_job_in_queue: JobDocument,
-    set_zombie_job_in_queue: JobDocument,
+    set_just_started_job_in_queue: ActiveJobDocument,
+    set_long_running_job_in_queue: ActiveJobDocument,
+    set_zombie_job_in_queue: ActiveJobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
 ) -> None:
     zombie = set_zombie_job_in_queue
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
     executor.kill_zombies()
-    assert JobDocument.objects(pk=zombie.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
-    assert JobDocument.objects(pk=normal_job.pk).get().status == Status.STARTED
+    assert ActiveJobDocument.objects(pk=zombie.pk).get().status in [ActiveStatus.ERROR, ActiveStatus.CANCELLED, ActiveStatus.SUCCESS]
+    assert ActiveJobDocument.objects(pk=normal_job.pk).get().status == ActiveStatus.STARTED
     response = CachedResponseDocument.objects()[0]
     expected_error = {
         "error": "Job manager crashed while running this job (missing heartbeats).",
     }
-    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.http_status == HTTPActiveStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerCrashedError"
     assert response.dataset == zombie.dataset
     assert response.config == zombie.config
@@ -290,8 +290,8 @@ def test_executor_kill_zombies(
 
 def test_executor_start(
     executor: WorkerExecutor,
-    set_just_started_job_in_queue: JobDocument,
-    set_zombie_job_in_queue: JobDocument,
+    set_just_started_job_in_queue: ActiveJobDocument,
+    set_zombie_job_in_queue: ActiveJobDocument,
     tmp_dataset_repo_factory: Callable[[str], str],
 ) -> None:
     zombie = set_zombie_job_in_queue
@@ -307,12 +307,12 @@ def test_executor_start(
     assert current_job is not None
     assert str(current_job.pk) == get_job_info()["job_id"]
     assert heartbeat_mock.call_count > 0
-    assert JobDocument.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
+    assert ActiveJobDocument.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
     assert kill_zombies_mock.call_count > 0
-    assert JobDocument.objects(pk=set_zombie_job_in_queue.pk).get().status in [
-        Status.ERROR,
-        Status.CANCELLED,
-        Status.SUCCESS,
+    assert ActiveJobDocument.objects(pk=set_zombie_job_in_queue.pk).get().status in [
+        ActiveStatus.ERROR,
+        ActiveStatus.CANCELLED,
+        ActiveStatus.SUCCESS,
     ]
 
 
@@ -331,8 +331,8 @@ def test_executor_raises_on_bad_worker(executor: WorkerExecutor, bad_worker_loop
 def test_executor_stops_on_long_job(
     executor: WorkerExecutor,
     tmp_dataset_repo_factory: Callable[[str], str],
-    set_long_running_job_in_queue: JobDocument,
-    set_just_started_job_in_queue: JobDocument,
+    set_long_running_job_in_queue: ActiveJobDocument,
+    set_just_started_job_in_queue: ActiveJobDocument,
 ) -> None:
     long_job = set_long_running_job_in_queue
     tmp_dataset_repo_factory(long_job.dataset)
@@ -350,7 +350,7 @@ def test_executor_stops_on_long_job(
     assert str(long_job.pk) == get_job_info("long")["job_id"]
 
     long_job.reload()
-    assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
+    assert long_job.status in [ActiveStatus.ERROR, ActiveStatus.CANCELLED, ActiveStatus.SUCCESS], "must be finished because too long"
 
     responses = CachedResponseDocument.objects(error_code="JobManagerExceededMaximumDurationError")
     assert len(responses) == 1
@@ -358,7 +358,7 @@ def test_executor_stops_on_long_job(
     expected_error = {
         "error": "Job manager was killed while running this job (job exceeded maximum duration).",
     }
-    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.http_status == HTTPActiveStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerExceededMaximumDurationError"
     assert response.dataset == long_job.dataset
     assert response.config == long_job.config

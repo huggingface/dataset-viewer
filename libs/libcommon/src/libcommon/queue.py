@@ -20,33 +20,18 @@ import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import (
-    DateTimeField,
-    EnumField,
-    IntField,
-    ObjectIdField,
-    StringField,
-)
+from mongoengine.fields import (DateTimeField, EnumField, IntField,
+                                ObjectIdField, StringField)
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import (
-    DEFAULT_DIFFICULTY_MAX,
-    DEFAULT_DIFFICULTY_MIN,
-    LOCK_TTL_SECONDS,
-    QUEUE_COLLECTION_JOBS,
-    QUEUE_COLLECTION_LOCKS,
-    QUEUE_METRICS_COLLECTION,
-    QUEUE_MONGOENGINE_ALIAS,
-    QUEUE_TTL_SECONDS,
-)
-from libcommon.utils import (
-    FlatJobInfo,
-    JobInfo,
-    Priority,
-    Status,
-    get_datetime,
-    inputs_to_string,
-)
+from libcommon.constants import (DEFAULT_DIFFICULTY_MAX,
+                                 DEFAULT_DIFFICULTY_MIN, LOCK_TTL_SECONDS,
+                                 QUEUE_COLLECTION_FINISHED_JOBS,
+                                 QUEUE_COLLECTION_JOBS, QUEUE_COLLECTION_LOCKS,
+                                 QUEUE_METRICS_COLLECTION,
+                                 QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS)
+from libcommon.utils import (ActiveStatus, FinishedStatus, FlatJobInfo,
+                             JobInfo, Priority, get_datetime, inputs_to_string)
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -85,7 +70,6 @@ class JobDict(TypedDict):
     difficulty: int
     created_at: datetime
     started_at: Optional[datetime]
-    finished_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
 
 
@@ -129,13 +113,75 @@ class JobQueryFilters(TypedDict, total=False):
     difficulty__lte: int
 
 
+# started_at is not None and finished_at is not None
+# States:
+# - success
+# - error
+# - cancelled
+class FinishedJobDocument(Document):
+    """A finished job in the mongoDB database
+
+    Args:
+        type (`str`): The type of the job, identifies the queue
+        dataset (`str`): The dataset on which to apply the job.
+        revision (`str`): The git revision of the dataset.
+        config (`str`, optional): The config on which to apply the job.
+        split (`str`, optional): The split on which to apply the job.
+        unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
+          the started state. The revision is not part of the unicity_id.
+        namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
+        status (`Status`): The status of the job.
+        created_at (`datetime`): The creation date of the job.
+        started_at (`datetime`, optional): When the job has started.
+        finished_at (`datetime`, optional): When the job has finished.
+        last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
+    """
+
+    meta = {
+        "collection": QUEUE_COLLECTION_FINISHED_JOBS,
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
+        "indexes": [
+            ("type", "dataset", "status"),
+            ("status", "type"),
+            ("unicity_id", "-created_at", "status"),
+            {
+                "fields": ["finished_at"],
+                "expireAfterSeconds": QUEUE_TTL_SECONDS,
+                "partialFilterExpression": {
+                    "status": {"$in": [FinishedStatus.SUCCESS, FinishedStatus.ERROR, FinishedStatus.CANCELLED]}
+                },
+            },
+        ],
+    }
+    type = StringField(required=True)
+    dataset = StringField(required=True)
+    revision = StringField(required=True)
+    config = StringField()
+    split = StringField()
+    unicity_id = StringField(required=True)
+    namespace = StringField(required=True)
+    status = EnumField(FinishedStatus, required=True)
+    created_at = DateTimeField(required=True)
+    started_at = DateTimeField()
+    finished_at = DateTimeField()
+    last_heartbeat = DateTimeField()
+
+    objects = QuerySetManager["FinishedJobDocument"]()
+
+    @classmethod
+    def get(cls, job_id: str) -> "FinishedJobDocument":
+        try:
+            return cls.objects(pk=job_id).get()
+        except DoesNotExist as e:
+            raise JobDoesNotExistError(f"Job does not exist: {job_id=}") from e
+
+
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
-# - finished: started_at is not None and finished_at is not None: finished jobs
-# For a given set of arguments, only one job is allowed in the started state. No
-# restriction for the other states
-class JobDocument(Document):
+# For a given set of arguments, only one job is allowed in the started state.
+# No restriction for the other states
+class ActiveJobDocument(Document):
     """A job in the mongoDB database
 
     Args:
@@ -148,7 +194,7 @@ class JobDocument(Document):
           the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
-        status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
+        status (`ActiveStatus`, optional): The status of the job. Defaults to ActiveStatus.WAITING.
         difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
@@ -166,11 +212,6 @@ class JobDocument(Document):
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
             ("unicity_id", "-created_at", "status"),
-            {
-                "fields": ["finished_at"],
-                "expireAfterSeconds": QUEUE_TTL_SECONDS,
-                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
-            },
         ],
     }
     type = StringField(required=True)
@@ -181,11 +222,10 @@ class JobDocument(Document):
     unicity_id = StringField(required=True)
     namespace = StringField(required=True)
     priority = EnumField(Priority, default=Priority.LOW)
-    status = EnumField(Status, default=Status.WAITING)
+    status = EnumField(ActiveStatus, default=ActiveStatus.WAITING)
     difficulty = IntField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
-    finished_at = DateTimeField()
     last_heartbeat = DateTimeField()
 
     def to_dict(self) -> JobDict:
@@ -202,11 +242,10 @@ class JobDocument(Document):
             "difficulty": self.difficulty,
             "created_at": self.created_at,
             "started_at": self.started_at,
-            "finished_at": self.finished_at,
             "last_heartbeat": self.last_heartbeat,
         }
 
-    objects = QuerySetManager["JobDocument"]()
+    objects = QuerySetManager["ActiveJobDocument"]()
 
     def info(self) -> JobInfo:
         return JobInfo(
@@ -225,7 +264,7 @@ class JobDocument(Document):
         )
 
     @classmethod
-    def get(cls, job_id: str) -> "JobDocument":
+    def get(cls, job_id: str) -> "ActiveJobDocument":
         try:
             return cls.objects(pk=job_id).get()
         except DoesNotExist as e:
@@ -468,7 +507,7 @@ class Queue:
         config: Optional[str] = None,
         split: Optional[str] = None,
         priority: Priority = Priority.LOW,
-    ) -> JobDocument:
+    ) -> ActiveJobDocument:
         """Add a job to the queue in the waiting state.
 
         Note that the same "unicity_id" can have multiple jobs in the waiting state, with the same or different
@@ -485,8 +524,8 @@ class Queue:
 
         Returns: the job
         """
-        increase_metric(job_type=job_type, status=Status.WAITING)
-        return JobDocument(
+        increase_metric(job_type=job_type, status=ActiveStatus.WAITING)
+        return ActiveJobDocument(
             type=job_type,
             dataset=dataset,
             revision=revision,
@@ -498,8 +537,28 @@ class Queue:
             namespace=dataset.split("/")[0],
             priority=priority,
             created_at=get_datetime(),
-            status=Status.WAITING,
+            status=ActiveStatus.WAITING,
             difficulty=difficulty,
+        ).save()
+
+    def add_finished_job(
+        self,
+        activeJob: ActiveJobDocument,
+        finished_at: datetime,
+        status: FinishedStatus,
+    ) -> FinishedJobDocument:
+        increase_metric(job_type=activeJob.type, status=status)
+        return FinishedJobDocument(
+            type=activeJob.type,
+            dataset=activeJob.dataset,
+            revision=activeJob.revision,
+            config=activeJob.config,
+            split=activeJob.split,
+            unicity_id=activeJob.unicity_id,
+            namespace=activeJob.namespace,
+            created_at=activeJob.created_at,
+            status=status,
+            finished_at=finished_at,
         ).save()
 
     def create_jobs(self, job_infos: list[JobInfo]) -> int:
@@ -515,7 +574,7 @@ class Queue:
         """
         try:
             jobs = [
-                JobDocument(
+                ActiveJobDocument(
                     type=job_info["type"],
                     dataset=job_info["params"]["dataset"],
                     revision=job_info["params"]["revision"],
@@ -531,14 +590,14 @@ class Queue:
                     namespace=job_info["params"]["dataset"].split("/")[0],
                     priority=job_info["priority"],
                     created_at=get_datetime(),
-                    status=Status.WAITING,
+                    status=ActiveStatus.WAITING,
                     difficulty=job_info["difficulty"],
                 )
                 for job_info in job_infos
             ]
             for job in jobs:
-                increase_metric(job_type=job.type, status=Status.WAITING)
-            job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
+                increase_metric(job_type=job.type, status=ActiveStatus.WAITING)
+            job_ids = ActiveJobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
             return 0
@@ -555,12 +614,15 @@ class Queue:
             `int`: The number of canceled jobs
         """
         try:
-            existing = JobDocument.objects(pk__in=job_ids)
-            previous_status = [(job.type, job.status) for job in existing.all()]
-            existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            for job_type, status in previous_status:
-                update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
-            return existing.count()
+            existing = ActiveJobDocument.objects(pk__in=job_ids)
+            cancelled_jobs = existing.count()
+            for job in existing.all():
+                update_metrics_for_type(
+                    job_type=job.type, previous_status=job.status, new_status=FinishedStatus.CANCELLED
+                )
+                self.add_finished_job(job, finished_at=get_datetime(), status=FinishedStatus.CANCELLED)
+            existing.delete()
+            return cancelled_jobs
         except Exception:
             return 0
 
@@ -571,7 +633,7 @@ class Queue:
         difficulty_max: Optional[int] = None,
         job_types_blocked: Optional[list[str]] = None,
         job_types_only: Optional[list[str]] = None,
-    ) -> JobDocument:
+    ) -> ActiveJobDocument:
         """Get the next job in the queue for a given priority.
 
         For a given priority, get the waiting job with the oldest creation date:
@@ -604,14 +666,14 @@ class Queue:
             filters["difficulty__gte"] = difficulty_min
         if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
             filters["difficulty__lte"] = difficulty_max
-        started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
+        started_jobs = ActiveJobDocument.objects(status=ActiveStatus.STARTED, **filters)
         logging.debug(f"Number of started jobs: {started_jobs.count()}")
         started_job_namespaces = [job.namespace for job in started_jobs.only("namespace")]
         logging.debug(f"Started job namespaces: {started_job_namespaces}")
 
         next_waiting_job = (
-            JobDocument.objects(
-                status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
+            ActiveJobDocument.objects(
+                status=ActiveStatus.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
             .order_by("+created_at")
             .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
@@ -643,8 +705,8 @@ class Queue:
             least_common_namespaces_group = descending_frequency_namespace_groups.pop()
             logging.debug(f"Least common namespaces group: {least_common_namespaces_group}")
             next_waiting_job = (
-                JobDocument.objects(
-                    status=Status.WAITING,
+                ActiveJobDocument.objects(
+                    status=ActiveStatus.WAITING,
                     namespace__in=least_common_namespaces_group,
                     unicity_id__nin=started_unicity_ids,
                     priority=priority,
@@ -665,7 +727,7 @@ class Queue:
         difficulty_max: Optional[int] = None,
         job_types_blocked: Optional[list[str]] = None,
         job_types_only: Optional[list[str]] = None,
-    ) -> JobDocument:
+    ) -> ActiveJobDocument:
         """Get the next job in the queue.
 
         Get the waiting job with the oldest creation date with the following criteria:
@@ -696,7 +758,7 @@ class Queue:
                 )
         raise EmptyQueueError("no job available")
 
-    def _start_newest_job_and_cancel_others(self, job: JobDocument) -> JobDocument:
+    def _start_newest_job_and_cancel_others(self, job: ActiveJobDocument) -> ActiveJobDocument:
         """Start a job (the newest one for unicity_id) and cancel the other ones.
 
         A lock is used to ensure that the job is not started by another worker.
@@ -720,43 +782,39 @@ class Queue:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES, ttl=LOCK_TTL_SECONDS):
                 # get all the pending jobs for the same unicity_id
-                waiting_jobs = JobDocument.objects(
-                    unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
-                ).order_by("-created_at")
+                waiting_jobs = ActiveJobDocument.objects(unicity_id=job.unicity_id).order_by("-created_at")
                 datetime = get_datetime()
                 # raise if any job has already been started for unicity_id
-                num_started_jobs = waiting_jobs(status=Status.STARTED).count()
+                num_started_jobs = waiting_jobs(status=ActiveStatus.STARTED).count()
                 if num_started_jobs > 0:
                     if num_started_jobs > 1:
                         logging.critical(f"job {job.unicity_id} has been started {num_started_jobs} times. Max is 1.")
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 # get the most recent one
                 first_job = waiting_jobs.first()
+                first_job_info = first_job.info()
                 if not first_job:
                     raise NoWaitingJobError(f"no waiting job could be found for {job.unicity_id}")
                 # start it
-                if not JobDocument.objects(pk=str(first_job.pk), status=Status.WAITING).update(
+                if not ActiveJobDocument.objects(pk=str(first_job.pk), status=ActiveStatus.WAITING).update(
                     started_at=datetime,
-                    status=Status.STARTED,
+                    status=ActiveStatus.STARTED,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
                 ):
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 update_metrics_for_type(
-                    job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
+                    job_type=first_job.type, previous_status=ActiveStatus.WAITING, new_status=ActiveStatus.STARTED
                 )
-                # and cancel the other ones, if any
-                waiting_jobs(status=Status.WAITING).update(
-                    finished_at=datetime,
-                    status=Status.CANCELLED,
-                    write_concern={"w": "majority", "fsync": True},
-                    read_concern={"level": "majority"},
-                )
-                for waiting_job in waiting_jobs(status=Status.WAITING):
+                for job in waiting_jobs(status=ActiveStatus.WAITING):
+                    self.add_finished_job(job, status=FinishedStatus.CANCELLED, finished_at=datetime)
                     update_metrics_for_type(
-                        job_type=waiting_job.type, previous_status=Status.WAITING, new_status=Status.CANCELLED
+                        job_type=job.type,
+                        previous_status=ActiveStatus.WAITING,
+                        new_status=FinishedStatus.CANCELLED,
                     )
-                return first_job.reload()
+                waiting_jobs.delete()
+                return first_job_info
         except TimeoutError as err:
             raise LockTimeoutError(
                 f"could not acquire the lock for job {job.unicity_id} after {RETRIES} retries."
@@ -806,10 +864,9 @@ class Queue:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
-        started_job = self._start_newest_job_and_cancel_others(job=next_waiting_job)
-        return started_job.info()
+        return self._start_newest_job_and_cancel_others(job=next_waiting_job)
 
-    def get_job_with_id(self, job_id: str) -> JobDocument:
+    def get_job_with_id(self, job_id: str) -> ActiveJobDocument:
         """Get the job for a given job id.
 
         Args:
@@ -820,7 +877,7 @@ class Queue:
         Raises:
             DoesNotExist: if the job does not exist
         """
-        return JobDocument.objects(pk=job_id).get()
+        return ActiveJobDocument.objects(pk=job_id).get()
 
     def get_job_type(self, job_id: str) -> str:
         """Get the job type for a given job id.
@@ -836,7 +893,7 @@ class Queue:
         job = self.get_job_with_id(job_id=job_id)
         return job.type
 
-    def _get_started_job(self, job_id: str) -> JobDocument:
+    def _get_started_job(self, job_id: str) -> ActiveJobDocument:
         """Get a started job, and raise if it's not in the correct format
           (does not exist, not started, incorrect values for finished_at or started_at).
 
@@ -846,11 +903,9 @@ class Queue:
         Returns:
             `Job`: the started job
         """
-        job = JobDocument.objects(pk=job_id).get()
-        if job.status is not Status.STARTED:
+        job = ActiveJobDocument.objects(pk=job_id).get()
+        if job.status is not ActiveStatus.STARTED:
             raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
-        if job.finished_at is not None:
-            raise StartedJobError(f"job {job.unicity_id} has a non-empty finished_at field.")
         if job.started_at is None:
             raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
         return job
@@ -896,7 +951,7 @@ class Queue:
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
-        finished_status = Status.SUCCESS if is_success else Status.ERROR
+        finished_status = FinishedStatus.SUCCESS if is_success else FinishedStatus.ERROR
         previous_status = job.status
         job.update(finished_at=get_datetime(), status=finished_status)
         update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
@@ -914,13 +969,13 @@ class Queue:
         Returns:
             `int`: the number of canceled jobs
         """
-        jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
-        previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
-        jobs_to_cancel = len(previous_status)
-        jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
-        for job_type, status, unicity_id in previous_status:
-            update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
-            release_lock(key=unicity_id)
+        jobs = ActiveJobDocument.objects(dataset=dataset)
+        jobs_to_cancel = len(jobs)
+        for job in jobs.all():
+            update_metrics_for_type(job_type=job.type, previous_status=job.status, new_status=FinishedStatus.CANCELLED)
+            release_lock(key=job.unicity_id)
+            self.add_finished_job(job, finished_at=get_datetime(), status=FinishedStatus.CANCELLED)
+        jobs.delete()
         return jobs_to_cancel
 
     def is_job_in_process(
@@ -939,13 +994,12 @@ class Queue:
             `bool`: whether the job is in process (waiting or started)
         """
         return (
-            JobDocument.objects(
+            ActiveJobDocument.objects(
                 type=job_type,
                 dataset=dataset,
                 revision=revision,
                 config=config,
                 split=split,
-                status__in=[Status.WAITING, Status.STARTED],
             ).count()
             > 0
         )
@@ -968,11 +1022,8 @@ class Queue:
                     [job["status"] for job in jobs],
                     ordered=True,
                     categories=[
-                        Status.WAITING.value,
-                        Status.STARTED.value,
-                        Status.SUCCESS.value,
-                        Status.ERROR.value,
-                        Status.CANCELLED.value,
+                        ActiveStatus.WAITING.value,
+                        ActiveStatus.STARTED.value,
                     ],
                 ),
                 "created_at": pd.Series([job["created_at"] for job in jobs], dtype="datetime64[ns]"),
@@ -984,30 +1035,36 @@ class Queue:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return self._get_df(
-            [
-                job.flat_info()
-                for job in JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset)
-            ]
-        )
+        return self._get_df([job.flat_info() for job in ActiveJobDocument.objects(dataset=dataset, **filters)])
 
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset).count() > 0
+        return ActiveJobDocument.objects(dataset=dataset, **filters).count() > 0
 
     # special reports
-    def count_jobs(self, status: Status, job_type: str) -> int:
-        """Count the number of jobs with a given status and the given type.
+    def count_active_jobs(self, status: ActiveStatus, job_type: str) -> int:
+        """Count the number of active jobs with a given status and the given type.
 
         Args:
-            status (`Status`, required): status of the jobs
+            status (`ActiveStatus`, required): status of the jobs
             job_type (`str`, required): job type
 
         Returns: the number of jobs with the given status and the given type.
         """
-        return JobDocument.objects(type=job_type, status=status.value).count()
+        return ActiveJobDocument.objects(type=job_type, status=status.value).count()
+
+    def count_finished_jobs(self, status: FinishedStatus, job_type: str) -> int:
+        """Count the number of active jobs with a given status and the given type.
+
+        Args:
+            status (`ActiveStatus`, required): status of the jobs
+            job_type (`str`, required): job type
+
+        Returns: the number of jobs with the given status and the given type.
+        """
+        return FinishedJobDocument.objects(type=job_type, status=status.value).count()
 
     def get_jobs_count_by_status(self, job_type: str) -> CountByStatus:
         """Count the number of jobs by status for a given job type.
@@ -1020,23 +1077,23 @@ class Queue:
         # result: CountByStatus = {s.value: jobs(status=s.value).count() for s in Status} # <- doesn't work in mypy
         # see https://stackoverflow.com/a/67292548/7351594
         return {
-            "waiting": self.count_jobs(status=Status.WAITING, job_type=job_type),
-            "started": self.count_jobs(status=Status.STARTED, job_type=job_type),
-            "success": self.count_jobs(status=Status.SUCCESS, job_type=job_type),
-            "error": self.count_jobs(status=Status.ERROR, job_type=job_type),
-            "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
+            "waiting": self.count_active_jobs(status=ActiveStatus.WAITING, job_type=job_type),
+            "started": self.count_active_jobs(status=ActiveStatus.STARTED, job_type=job_type),
+            "success": self.count_finished_jobs(status=FinishedStatus.SUCCESS, job_type=job_type),
+            "error": self.count_finished_jobs(status=FinishedStatus.ERROR, job_type=job_type),
+            "cancelled": self.count_finished_jobs(status=FinishedStatus.CANCELLED, job_type=job_type),
         }
 
-    def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
+    def get_dump_with_status(self, status: ActiveStatus, job_type: str) -> list[JobDict]:
         """Get the dump of the jobs with a given status and a given type.
 
         Args:
-            status (`Status`, required): status of the jobs
+            status (`ActiveStatus`, required): status of the jobs
             job_type (`str`, required): job type
 
         Returns: a list of jobs with the given status and the given type
         """
-        return [d.to_dict() for d in JobDocument.objects(status=status.value, type=job_type)]
+        return [d.to_dict() for d in ActiveJobDocument.objects(status=status.value, type=job_type)]
 
     def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
         """Get the dump of the jobs by pending status for a given job type.
@@ -1044,8 +1101,8 @@ class Queue:
         Returns: a dictionary with the dump of the jobs for each pending status
         """
         return {
-            "waiting": self.get_dump_with_status(job_type=job_type, status=Status.WAITING),
-            "started": self.get_dump_with_status(job_type=job_type, status=Status.STARTED),
+            "waiting": self.get_dump_with_status(job_type=job_type, status=ActiveStatus.WAITING),
+            "started": self.get_dump_with_status(job_type=job_type, status=ActiveStatus.STARTED),
         }
 
     def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> list[JobDict]:
@@ -1053,12 +1110,7 @@ class Queue:
 
         Returns: an array of the pending jobs for the dataset and the given job type
         """
-        return [
-            d.to_dict()
-            for d in JobDocument.objects(
-                status__in=[Status.WAITING.value, Status.STARTED.value], type=job_type, dataset=dataset
-            )
-        ]
+        return [d.to_dict() for d in ActiveJobDocument.objects(type=job_type, dataset=dataset)]
 
     def heartbeat(self, job_id: str) -> None:
         """Update the job `last_heartbeat` field with the current date.
@@ -1080,7 +1132,7 @@ class Queue:
 
         Returns: an array of the zombie job infos.
         """
-        started_jobs = JobDocument.objects(status=Status.STARTED)
+        started_jobs = ActiveJobDocument.objects(status=ActiveStatus.STARTED)
         if max_seconds_without_heartbeat <= 0:
             return []
         zombies = [
@@ -1104,6 +1156,6 @@ class Queue:
 # only for the tests
 def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
-    JobDocument.drop_collection()  # type: ignore
+    ActiveJobDocument.drop_collection()  # type: ignore
     JobTotalMetricDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore

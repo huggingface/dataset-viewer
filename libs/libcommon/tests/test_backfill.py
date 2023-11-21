@@ -9,7 +9,7 @@ import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import Priority, Status, get_datetime
+from libcommon.utils import ActiveStatus, Priority, get_datetime
 
 from .utils import (
     ARTIFACT_CA_1,
@@ -724,24 +724,24 @@ def test_plan_incoherent_state(
     )
 
 
-JobSpec = tuple[Priority, Status, Optional[datetime]]
+JobSpec = tuple[Priority, ActiveStatus, Optional[datetime]]
 
 OLD = datetime.strptime("20000101", "%Y%m%d")
 NEW = datetime.strptime("20000102", "%Y%m%d")
-LOW_WAITING_OLD = (Priority.LOW, Status.WAITING, OLD)
-LOW_WAITING_NEW = (Priority.LOW, Status.WAITING, NEW)
-LOW_STARTED_OLD = (Priority.LOW, Status.STARTED, OLD)
-LOW_STARTED_NEW = (Priority.LOW, Status.STARTED, NEW)
-NORMAL_WAITING_OLD = (Priority.NORMAL, Status.WAITING, OLD)
-NORMAL_WAITING_NEW = (Priority.NORMAL, Status.WAITING, NEW)
-NORMAL_STARTED_OLD = (Priority.NORMAL, Status.STARTED, OLD)
-NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
+LOW_WAITING_OLD = (Priority.LOW, ActiveStatus.WAITING, OLD)
+LOW_WAITING_NEW = (Priority.LOW, ActiveStatus.WAITING, NEW)
+LOW_STARTED_OLD = (Priority.LOW, ActiveStatus.STARTED, OLD)
+LOW_STARTED_NEW = (Priority.LOW, ActiveStatus.STARTED, NEW)
+NORMAL_WAITING_OLD = (Priority.NORMAL, ActiveStatus.WAITING, OLD)
+NORMAL_WAITING_NEW = (Priority.NORMAL, ActiveStatus.WAITING, NEW)
+NORMAL_STARTED_OLD = (Priority.NORMAL, ActiveStatus.STARTED, OLD)
+NORMAL_STARTED_NEW = (Priority.NORMAL, ActiveStatus.STARTED, NEW)
 
 
 @pytest.mark.parametrize(
     "existing_jobs,expected_create_job,expected_delete_jobs,expected_jobs_after_backfill",
     [
-        ([], True, False, [(Priority.LOW, Status.WAITING, None)]),
+        ([], True, False, [(Priority.LOW, ActiveStatus.WAITING, None)]),
         (
             [
                 LOW_WAITING_OLD,
@@ -819,8 +819,8 @@ def test_delete_jobs(
         if created_at is not None:
             job.created_at = created_at
             job.save()
-        if status is Status.STARTED:
-            job.status = Status.STARTED
+        if status is ActiveStatus.STARTED:
+            job.status = ActiveStatus.STARTED
             job.started_at = datetime.now()
             job.save()
 

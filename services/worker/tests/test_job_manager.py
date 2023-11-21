@@ -1,15 +1,16 @@
 from dataclasses import dataclass
-from http import HTTPStatus
+from http import HTTPActiveStatus
 from typing import Optional
 
 import pytest
 from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
-from libcommon.queue import JobDocument, Queue
+from libcommon.queue import ActiveJobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
-from libcommon.utils import JobInfo, Priority, Status
+from libcommon.simple_cache import (CachedResponseDocument, get_response,
+                                    upsert_response)
+from libcommon.utils import ActiveStatus, JobInfo, Priority
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
@@ -129,7 +130,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
     root_step = graph.get_processing_step("dummy")
     queue = Queue()
-    assert JobDocument.objects().count() == 0
+    assert ActiveJobDocument.objects().count() == 0
     queue.add_job(
         job_type=root_step.job_type,
         dataset="dataset",
@@ -159,32 +160,32 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     job_manager.finish(job_result=job_result)
     # check that the job has been finished
     job = queue.get_job_with_id(job_id=job_info["job_id"])
-    assert job.status in [Status.SUCCESS, Status.ERROR, Status.CANCELLED]
+    assert job.status in [ActiveStatus.SUCCESS, ActiveStatus.ERROR, ActiveStatus.CANCELLED]
     assert job.priority == priority
 
     # check that the cache entry has have been created
     cached_response = get_response(kind=root_step.cache_kind, dataset="dataset", config=None, split=None)
     assert cached_response is not None
-    assert cached_response["http_status"] == HTTPStatus.OK
+    assert cached_response["http_status"] == HTTPActiveStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["content"] == {"key": "value"}
     assert cached_response["dataset_git_revision"] == "revision"
     assert cached_response["job_runner_version"] == 1
     assert cached_response["progress"] == 1.0
 
-    dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
+    dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=ActiveStatus.WAITING)
     assert len(dataset_child_jobs) == 1
     assert dataset_child_jobs[0]["dataset"] == "dataset"
     assert dataset_child_jobs[0]["revision"] == "revision"
     assert dataset_child_jobs[0]["config"] is None
     assert dataset_child_jobs[0]["split"] is None
     assert dataset_child_jobs[0]["priority"] is priority.value
-    dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
+    dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=ActiveStatus.WAITING)
     assert len(dataset_unrelated_jobs) == 0
     # ^ the dataset-unrelated job is not triggered by the dummy job, so it should not be created
 
     # check that no config level jobs have been created, because the config names are not known
-    config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=Status.WAITING)
+    config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=ActiveStatus.WAITING)
     assert len(config_child_jobs) == 0
 
 
@@ -200,7 +201,7 @@ def test_job_runner_set_crashed(
     message = "I'm crashed :("
 
     queue = Queue()
-    assert JobDocument.objects().count() == 0
+    assert ActiveJobDocument.objects().count() == 0
     queue.add_job(
         job_type=test_processing_step.job_type,
         dataset=dataset,
@@ -225,7 +226,7 @@ def test_job_runner_set_crashed(
     job_manager.set_crashed(message=message)
     response = CachedResponseDocument.objects()[0]
     expected_error = {"error": message}
-    assert response.http_status == HTTPStatus.NOT_IMPLEMENTED
+    assert response.http_status == HTTPActiveStatus.NOT_IMPLEMENTED
     assert response.error_code == "JobManagerCrashedError"
     assert response.dataset == dataset
     assert response.dataset_git_revision == revision
@@ -254,7 +255,7 @@ def test_raise_if_parallel_response_exists(
         dataset_git_revision=revision,
         job_runner_version=1,
         progress=1.0,
-        http_status=HTTPStatus.OK,
+        http_status=HTTPActiveStatus.OK,
     )
 
     job_info = JobInfo(
@@ -280,7 +281,7 @@ def test_raise_if_parallel_response_exists(
     )
     with pytest.raises(CustomError) as exc_info:
         job_manager.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
-    assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert exc_info.value.status_code == HTTPActiveStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
 
 

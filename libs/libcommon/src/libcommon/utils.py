@@ -16,9 +16,12 @@ import pandas as pd
 from libcommon.exceptions import DatasetInBlockListError
 
 
-class Status(str, enum.Enum):
+class ActiveStatus(str, enum.Enum):
     WAITING = "waiting"
     STARTED = "started"
+
+
+class FinishedStatus(str, enum.Enum):
     SUCCESS = "success"
     ERROR = "error"
     CANCELLED = "cancelled"

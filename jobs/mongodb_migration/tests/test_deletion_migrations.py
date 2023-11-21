@@ -1,27 +1,21 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import (
-    CACHE_COLLECTION_RESPONSES,
-    CACHE_METRICS_COLLECTION,
-    CACHE_MONGOENGINE_ALIAS,
-    METRICS_MONGOENGINE_ALIAS,
-    QUEUE_COLLECTION_JOBS,
-    QUEUE_METRICS_COLLECTION,
-    QUEUE_MONGOENGINE_ALIAS,
-)
-from libcommon.queue import JobDocument
+from libcommon.constants import (CACHE_COLLECTION_RESPONSES,
+                                 CACHE_METRICS_COLLECTION,
+                                 CACHE_MONGOENGINE_ALIAS,
+                                 METRICS_MONGOENGINE_ALIAS,
+                                 QUEUE_COLLECTION_JOBS,
+                                 QUEUE_METRICS_COLLECTION,
+                                 QUEUE_MONGOENGINE_ALIAS)
+from libcommon.queue import ActiveJobDocument
 from libcommon.resources import MongoResource
 from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
 
 from mongodb_migration.deletion_migrations import (
-    CacheDeletionMigration,
-    MetricsDeletionMigration,
-    MigrationQueueDeleteTTLIndex,
-    QueueDeletionMigration,
-    get_index_names,
-)
+    CacheDeletionMigration, MetricsDeletionMigration,
+    MigrationQueueDeleteTTLIndex, QueueDeletionMigration, get_index_names)
 
 
 def test_cache_deletion_migration(mongo_host: str) -> None:
@@ -114,7 +108,7 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
 
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
-        JobDocument(
+        ActiveJobDocument(
             type="test",
             dataset="test",
             revision="test",
