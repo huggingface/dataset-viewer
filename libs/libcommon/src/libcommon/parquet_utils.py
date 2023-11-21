@@ -13,6 +13,7 @@ from datasets.features.features import FeatureType
 from datasets.utils.py_utils import size_str
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
+from pyarrow.lib import ArrowInvalid
 
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -26,7 +27,7 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 PARTIAL_PREFIX = "partial-"
 
 
-class ParquetResponseEmptyError(Exception):
+class EmptyParquetMetadataError(Exception):
     pass
 
 
@@ -39,6 +40,10 @@ class FileSystemError(Exception):
 
 
 class TooBigRows(Exception):
+    pass
+
+
+class SchemaMismatchError(Exception):
     pass
 
 
@@ -208,12 +213,15 @@ class ParquetIndexWithMetadata:
                 )
 
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
-            pa_table = pa.concat_tables(
-                [
-                    row_group_readers[i].read(self.supported_columns)
-                    for i in range(first_row_group_id, last_row_group_id + 1)
-                ]
-            )
+            try:
+                pa_table = pa.concat_tables(
+                    [
+                        row_group_readers[i].read(self.supported_columns)
+                        for i in range(first_row_group_id, last_row_group_id + 1)
+                    ]
+                )
+            except ArrowInvalid as err:
+                raise SchemaMismatchError("Parquet files have different schema.", err)
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
             return pa_table.slice(parquet_offset - first_row_in_pa_table, length)
 
@@ -228,7 +236,7 @@ class ParquetIndexWithMetadata:
         unsupported_features: list[FeatureType] = [],
     ) -> "ParquetIndexWithMetadata":
         if not parquet_file_metadata_items:
-            raise ParquetResponseEmptyError("No parquet files found.")
+            raise EmptyParquetMetadataError("No parquet files found.")
 
         partial = parquet_export_is_partial(parquet_file_metadata_items[0]["url"])
 

@@ -6,11 +6,14 @@ from typing import Optional
 
 from environs import Env
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
+    CachedAssetsConfig,
     CommonConfig,
     LogConfig,
     ProcessingGraphConfig,
     QueueConfig,
+    S3Config,
 )
 
 CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY = None
@@ -91,6 +94,9 @@ class JobConfig:
     directory_cleaning: DirectoryCleaning = field(default_factory=DirectoryCleaning)
     discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
+    s3: S3Config = field(default_factory=S3Config)
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
+    cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
 
     @classmethod
     def from_env(cls) -> "JobConfig":
@@ -106,4 +112,7 @@ class JobConfig:
             directory_cleaning=DirectoryCleaning.from_env(),
             discussions=DiscussionsConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),
+            s3=S3Config.from_env(),
+            assets=AssetsConfig.from_env(),
+            cached_assets=CachedAssetsConfig.from_env(),
         )

@@ -6,12 +6,12 @@ version = "0.1.0"
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "3.9.15"
+python = "3.9.18"
 openapi-spec-validator = "^0.5.5"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = "^0.16.4"
+huggingface-hub = "^0.18.0"
 mypy = "^1.0.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"

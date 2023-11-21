@@ -111,11 +111,13 @@ CacheableErrorCode = Literal[
     "ParquetResponseEmptyError",
     "PreviousStepFormatError",
     "PreviousStepStatusError",
+    "PreviousStepStillProcessingError",
     "ResponseAlreadyComputedError",
     "RowsPostProcessingError",
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
     "SplitNotFoundError",
+    "SplitParquetSchemaMismatchError",
     "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
@@ -441,6 +443,13 @@ class PreviousStepStatusError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
 
 
+class PreviousStepStillProcessingError(CacheableError):
+    """The previous steps are still being processed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStillProcessingError", cause, False)
+
+
 class ResponseAlreadyComputedError(CacheableError):
     """The response has been already computed by another job runner."""
 
@@ -483,6 +492,19 @@ class SplitNotFoundError(CacheableError):
             message=message,
             status_code=HTTPStatus.NOT_FOUND,
             code="SplitNotFoundError",
+            cause=cause,
+            disclose_cause=False,
+        )
+
+
+class SplitParquetSchemaMismatchError(CacheableError):
+    """The Parquet files have different schemas, they should have identical column names."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.UNPROCESSABLE_ENTITY,
+            code="SplitParquetSchemaMismatchError",
             cause=cause,
             disclose_cause=False,
         )

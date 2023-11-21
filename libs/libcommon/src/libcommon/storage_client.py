@@ -33,6 +33,9 @@ class StorageClient:
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
         else:
             raise StorageClientInitializeError("unsupported protocol")
+        self._validate()
+
+    def _validate(self) -> None:
         try:
             self._fs.ls(self._storage_root)
         except Exception as e:

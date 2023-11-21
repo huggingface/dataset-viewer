@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TypedDict
@@ -123,6 +124,9 @@ def create_audio_file(
             with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
                 tmpfile.write(audio_file_bytes)
                 segment: AudioSegment = AudioSegment.from_file(tmpfile.name)
+                buffer = BytesIO()
+                segment.export(buffer, format=suffix[1:])
+                buffer.seek(0)
                 with storage_client._fs.open(audio_path, "wb") as f:
-                    segment.export(f, format=suffix[1:])
+                    f.write(buffer.read())
     return [AudioSource(src=src, type=media_type)]
