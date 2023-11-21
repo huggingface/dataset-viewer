@@ -48,9 +48,11 @@ squad_info = {
 
 
 def test_get_croissant_from_dataset_infos() -> None:
-    croissant = get_croissant_from_dataset_infos("squad", [squad_info], partial=False)
+    croissant = get_croissant_from_dataset_infos("user/squad", [squad_info], partial=False)
     assert "@context" in croissant
     assert "@type" in croissant
+    assert "name" in croissant
+    assert croissant["name"] == "user_squad"
     assert "distribution" in croissant
     assert "recordSet" in croissant
     # column "answers" is not supported (nested)

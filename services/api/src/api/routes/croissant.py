@@ -36,6 +36,10 @@ HF_TO_CROISSANT_VALUE_TYPE = {
     "bool": "sc:Boolean",
 }
 
+def _escape_name(name: str) -> str:
+    """Escapes names in Croissant, as `/` are used in the syntax as delimiters."""
+    return name.replace("/", "_")
+
 
 def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]], partial: bool) -> Mapping[str, Any]:
     distribution = [
@@ -58,7 +62,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         distribution.append(
             {
                 "@type": "sc:FileSet",
-                "name": distribution_name,
+                "name": _escape_name(distribution_name),
                 "containedIn": "repo",
                 "encodingFormat": "application/x-parquet",
                 "includes": f"{config}/*/*.parquet",
@@ -70,7 +74,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 fields.append(
                     {
                         "@type": "ml:Field",
-                        "name": column,
+                        "name": _escape_name(column),
                         "description": f"Column '{column}' from the Hugging Face parquet file.",
                         "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
                         "source": {"distribution": distribution_name, "extract": {"column": column}},
@@ -80,7 +84,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 fields.append(
                     {
                         "@type": "ml:Field",
-                        "name": column,
+                        "name": _escape_name(column),
                         "description": f"Image column '{column}' from the Hugging Face parquet file.",
                         "dataType": "sc:ImageObject",
                         "source": {
@@ -94,7 +98,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
                 fields.append(
                     {
                         "@type": "ml:Field",
-                        "name": column,
+                        "name": _escape_name(column),
                         "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
                         + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
                         "dataType": "sc:Integer",
@@ -117,7 +121,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         record_set.append(
             {
                 "@type": "ml:RecordSet",
-                "name": config,
+                "name": _escape_name(config),
                 "description": description,
                 "field": fields,
             }
@@ -157,7 +161,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
             "transform": "ml:transform",
         },
         "@type": "sc:Dataset",
-        "name": dataset,
+        "name": _escape_name(dataset),
         "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
         "url": f"https://huggingface.co/datasets/{dataset}",
         "distribution": distribution,
