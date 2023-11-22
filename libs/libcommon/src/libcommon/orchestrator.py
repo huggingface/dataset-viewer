@@ -10,21 +10,13 @@ import pandas as pd
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.processing_graph import (
-    ProcessingGraph,
-    ProcessingStep,
-    ProcessingStepDoesNotExist,
-)
+from libcommon.processing_graph import (ProcessingGraph, ProcessingStep,
+                                        ProcessingStepDoesNotExist)
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
-from libcommon.simple_cache import (
-    delete_dataset_responses,
-    fetch_names,
-    get_best_response,
-    get_cache_entries_df,
-    has_some_cache,
-    upsert_response_params,
-)
+from libcommon.simple_cache import (delete_dataset_responses, fetch_names,
+                                    get_best_response, get_cache_entries_df,
+                                    has_some_cache, upsert_response_params)
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
 
@@ -222,12 +214,14 @@ class AfterJobPlan(Plan):
     split: Optional[str] = field(init=False)
     revision: str = field(init=False)
     priority: Priority = field(init=False)
+    penalization: int = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self.dataset = self.job_info["params"]["dataset"]
         self.revision = self.job_info["params"]["revision"]
         self.priority = self.job_info["priority"]
+        self.penalization = self.job_info["penalization"]
 
         config = self.job_info["params"]["config"]
         split = self.job_info["params"]["split"]
@@ -290,7 +284,7 @@ class AfterJobPlan(Plan):
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
-                    self.update(next_processing_step, config_name, None)
+                    self.update(next_processing_step, config_name, None, len(config_names))
             elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
@@ -306,7 +300,7 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name)
+                    self.update(next_processing_step, config, split_name, len(split_names))
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"
@@ -325,6 +319,7 @@ class AfterJobPlan(Plan):
         next_processing_step: ProcessingStep,
         config: Optional[str],
         split: Optional[str],
+        extra_penalization: Optional[int] = None,
     ) -> None:
         # ignore unrelated jobs
         config_mask = (
@@ -366,6 +361,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
+                    "penalization": self.penalization + 0 if extra_penalization is None else extra_penalization, 
                 }
             )
 
@@ -635,7 +631,8 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": artifact_state.processing_step.difficulty,
+                        "difficulty": artifact_state.processing_step.difficulty, 
+                        "penalization": 1,
                     }
                 )
             else:

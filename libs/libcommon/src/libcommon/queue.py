@@ -20,33 +20,17 @@ import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import (
-    DateTimeField,
-    EnumField,
-    IntField,
-    ObjectIdField,
-    StringField,
-)
+from mongoengine.fields import (DateTimeField, EnumField, IntField,
+                                ObjectIdField, StringField)
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import (
-    DEFAULT_DIFFICULTY_MAX,
-    DEFAULT_DIFFICULTY_MIN,
-    LOCK_TTL_SECONDS,
-    QUEUE_COLLECTION_JOBS,
-    QUEUE_COLLECTION_LOCKS,
-    QUEUE_METRICS_COLLECTION,
-    QUEUE_MONGOENGINE_ALIAS,
-    QUEUE_TTL_SECONDS,
-)
-from libcommon.utils import (
-    FlatJobInfo,
-    JobInfo,
-    Priority,
-    Status,
-    get_datetime,
-    inputs_to_string,
-)
+from libcommon.constants import (DEFAULT_DIFFICULTY_MAX,
+                                 DEFAULT_DIFFICULTY_MIN, LOCK_TTL_SECONDS,
+                                 QUEUE_COLLECTION_JOBS, QUEUE_COLLECTION_LOCKS,
+                                 QUEUE_METRICS_COLLECTION,
+                                 QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS)
+from libcommon.utils import (FlatJobInfo, JobInfo, Priority, Status,
+                             get_datetime, inputs_to_string)
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -163,14 +147,9 @@ class JobDocument(Document):
             ("type", "dataset", "status"),
             ("type", "dataset", "revision", "config", "split", "status", "priority"),
             ("priority", "status", "created_at", "namespace"),
-            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
+            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty", "penalization"),
             ("status", "type"),
             ("unicity_id", "-created_at", "status"),
-            {
-                "fields": ["finished_at"],
-                "expireAfterSeconds": QUEUE_TTL_SECONDS,
-                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
-            },
         ],
     }
     type = StringField(required=True)
@@ -187,6 +166,7 @@ class JobDocument(Document):
     started_at = DateTimeField()
     finished_at = DateTimeField()
     last_heartbeat = DateTimeField()
+    penalization = IntField(default=0)
 
     def to_dict(self) -> JobDict:
         return {
@@ -221,6 +201,7 @@ class JobDocument(Document):
                 },
                 "priority": self.priority,
                 "difficulty": self.difficulty,
+                "penalization": self.penalization,
             }
         )
 
@@ -533,6 +514,7 @@ class Queue:
                     created_at=get_datetime(),
                     status=Status.WAITING,
                     difficulty=job_info["difficulty"],
+                    penalization=job_info["penalization"],
                 )
                 for job_info in job_infos
             ]
