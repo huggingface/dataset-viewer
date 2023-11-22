@@ -10,13 +10,17 @@ import pandas as pd
 
 from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.processing_graph import (ProcessingGraph, ProcessingStep,
-                                        ProcessingStepDoesNotExist)
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
-from libcommon.simple_cache import (delete_dataset_responses, fetch_names,
-                                    get_best_response, get_cache_entries_df,
-                                    has_some_cache, upsert_response_params)
+from libcommon.simple_cache import (
+    delete_dataset_responses,
+    fetch_names,
+    get_best_response,
+    get_cache_entries_df,
+    has_some_cache,
+    upsert_response_params,
+)
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
 
@@ -361,7 +365,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
-                    "penalization": self.penalization + 0 if extra_penalization is None else extra_penalization, 
+                    "penalization": self.penalization + 0 if extra_penalization is None else extra_penalization,
                 }
             )
 
@@ -631,8 +635,8 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": artifact_state.processing_step.difficulty, 
-                        "penalization": 1,
+                        "difficulty": artifact_state.processing_step.difficulty,
+                        "penalization": 0,
                     }
                 )
             else:
