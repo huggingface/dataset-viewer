@@ -20,17 +20,20 @@ import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import (DateTimeField, EnumField, IntField,
-                                ObjectIdField, StringField)
+from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
-from libcommon.constants import (DEFAULT_DIFFICULTY_MAX,
-                                 DEFAULT_DIFFICULTY_MIN, LOCK_TTL_SECONDS,
-                                 QUEUE_COLLECTION_JOBS, QUEUE_COLLECTION_LOCKS,
-                                 QUEUE_METRICS_COLLECTION,
-                                 QUEUE_MONGOENGINE_ALIAS, QUEUE_TTL_SECONDS)
-from libcommon.utils import (FlatJobInfo, JobInfo, Priority, Status,
-                             get_datetime, inputs_to_string)
+from libcommon.constants import (
+    DEFAULT_DIFFICULTY_MAX,
+    DEFAULT_DIFFICULTY_MIN,
+    LOCK_TTL_SECONDS,
+    QUEUE_COLLECTION_JOBS,
+    QUEUE_COLLECTION_LOCKS,
+    QUEUE_METRICS_COLLECTION,
+    QUEUE_MONGOENGINE_ALIAS,
+    QUEUE_TTL_SECONDS,
+)
+from libcommon.utils import FlatJobInfo, JobInfo, Priority, Status, get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
