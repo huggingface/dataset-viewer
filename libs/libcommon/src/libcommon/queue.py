@@ -147,12 +147,13 @@ class JobDocument(Document):
         "collection": QUEUE_COLLECTION_JOBS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
+            ("dataset", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "revision", "config", "split", "status", "priority"),
-            ("priority", "status", "created_at", "namespace"),
+            ("priority", "status", "created_at", "namespace", "difficulty", "unicity_id"),
+            ("priority", "status", "created_at", "difficulty", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
-            ("unicity_id", "-created_at", "status"),
+            ("unicity_id", "status", "-created_at"),
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,

@@ -116,6 +116,15 @@ class SearchFeatureNotAvailableError(ApiError):
         super().__init__(message, HTTPStatus.BAD_REQUEST, "SearchFeatureNotAvailableError", cause, True)
 
 
+class TooBigContentError(ApiError):
+    """The content size in bytes is bigger than the supported value."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "TransformRowsProcessingError", cause=cause, disclose_cause=True
+        )
+
+
 class TransformRowsProcessingError(ApiError):
     """There was an error when transforming rows to list."""
 
