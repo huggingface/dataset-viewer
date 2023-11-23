@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
-from libapi.exceptions import ApiError, UnexpectedApiError, TooBigContentError
+from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
 from libapi.request import (
     get_request_parameter,
     get_request_parameter_length,
