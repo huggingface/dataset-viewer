@@ -6,7 +6,7 @@ from typing import Literal, Optional, Union
 
 from fsspec.implementations.http import HTTPFileSystem
 from libapi.authentication import auth_check
-from libapi.exceptions import ApiError, UnexpectedApiError
+from libapi.exceptions import ApiError, TooBigContentError, UnexpectedApiError
 from libapi.request import (
     get_request_parameter,
     get_request_parameter_length,
@@ -20,7 +20,7 @@ from libapi.utils import (
     get_json_ok_response,
     try_backfill_dataset_then_raise,
 )
-from libcommon.parquet_utils import Indexer
+from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
@@ -96,7 +96,10 @@ def create_rows_endpoint(
                         )
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
-                        pa_table = rows_index.query(offset=offset, length=length)
+                        try:
+                            pa_table = rows_index.query(offset=offset, length=length)
+                        except TooBigRows as err:
+                            raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
                         response = await create_response(
                             dataset=dataset,
