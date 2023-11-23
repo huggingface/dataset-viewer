@@ -20,13 +20,7 @@ import pytz
 from bson import ObjectId
 from mongoengine import Document
 from mongoengine.errors import DoesNotExist, NotUniqueError
-from mongoengine.fields import (
-    DateTimeField,
-    EnumField,
-    IntField,
-    ObjectIdField,
-    StringField,
-)
+from mongoengine.fields import DateTimeField, EnumField, IntField, ObjectIdField, StringField
 from mongoengine.queryset.queryset import QuerySet
 
 from libcommon.constants import (
@@ -39,14 +33,7 @@ from libcommon.constants import (
     QUEUE_MONGOENGINE_ALIAS,
     QUEUE_TTL_SECONDS,
 )
-from libcommon.utils import (
-    FlatJobInfo,
-    JobInfo,
-    Priority,
-    Status,
-    get_datetime,
-    inputs_to_string,
-)
+from libcommon.utils import FlatJobInfo, JobInfo, Priority, Status, get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install
@@ -160,12 +147,13 @@ class JobDocument(Document):
         "collection": QUEUE_COLLECTION_JOBS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [
+            ("dataset", "status"),
             ("type", "dataset", "status"),
-            ("type", "dataset", "revision", "config", "split", "status", "priority"),
-            ("priority", "status", "created_at", "namespace"),
+            ("priority", "status", "created_at", "namespace", "difficulty", "unicity_id"),
+            ("priority", "status", "created_at", "difficulty", "namespace"),
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
-            ("unicity_id", "-created_at", "status"),
+            ("unicity_id", "status", "-created_at"),
             {
                 "fields": ["finished_at"],
                 "expireAfterSeconds": QUEUE_TTL_SECONDS,
