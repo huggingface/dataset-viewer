@@ -24,10 +24,7 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.dtos import ImageUrlColumnsResponse
-from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import (
-    SplitOptInOutUrlsScanJobRunner,
-    check_spawning,
-)
+from worker.job_runners.split.opt_in_out_urls_scan_from_streaming import SplitOptInOutUrlsScanJobRunner, check_spawning
 from worker.resources import LibrariesResource
 
 from ...constants import CI_SPAWNING_TOKEN
@@ -99,6 +96,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),

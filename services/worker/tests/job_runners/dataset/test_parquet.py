@@ -10,11 +10,7 @@ from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedArtifactError,
-    CachedArtifactNotFoundError,
-    upsert_response,
-)
+from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
@@ -65,6 +61,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),

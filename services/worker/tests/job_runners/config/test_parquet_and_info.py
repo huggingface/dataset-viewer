@@ -21,18 +21,12 @@ import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
 from datasets.load import dataset_module_factory
-from datasets.packaged_modules.generator.generator import (
-    Generator as ParametrizedGeneratorBasedBuilder,
-)
+from datasets.packaged_modules.generator.generator import Generator as ParametrizedGeneratorBasedBuilder
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
 from libcommon.config import ProcessingGraphConfig
 from libcommon.dataset import get_dataset_info_for_supported_datasets
-from libcommon.exceptions import (
-    CustomError,
-    DatasetManualDownloadError,
-    DatasetWithScriptNotSupportedError,
-)
+from libcommon.exceptions import CustomError, DatasetManualDownloadError, DatasetWithScriptNotSupportedError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -116,6 +110,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -600,6 +595,7 @@ def get_dataset_config_names_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
@@ -630,6 +626,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
             params=JobParams(dataset=dataset, revision=revision, config=config, split=None),
             priority=Priority.NORMAL,
             difficulty=50,
+            penalization=0,
         ),
         app_config=app_config,
         processing_step=ProcessingStep(
@@ -673,6 +670,7 @@ def test_concurrency(
         params=JobParams(dataset=repo_id, revision=revision, config=None, split=None),
         priority=Priority.NORMAL,
         difficulty=50,
+        penalization=0,
     )
     queue = Queue()
     queue.create_jobs([job_info])

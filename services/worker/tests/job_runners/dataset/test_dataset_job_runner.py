@@ -60,6 +60,7 @@ def test_success_creation(test_processing_step: ProcessingStep, app_config: AppC
                 },
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             processing_step=test_processing_step,
             app_config=app_config,

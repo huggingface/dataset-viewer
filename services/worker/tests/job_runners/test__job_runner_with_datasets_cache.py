@@ -14,9 +14,7 @@ from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
-from worker.job_runners._job_runner_with_datasets_cache import (
-    JobRunnerWithDatasetsCache,
-)
+from worker.job_runners._job_runner_with_datasets_cache import JobRunnerWithDatasetsCache
 from worker.resources import LibrariesResource
 
 from ..fixtures.hub import get_default_config_split
@@ -75,6 +73,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),

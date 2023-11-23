@@ -22,9 +22,7 @@ from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.split.first_rows_from_parquet import (
-    SplitFirstRowsFromParquetJobRunner,
-)
+from worker.job_runners.split.first_rows_from_parquet import SplitFirstRowsFromParquetJobRunner
 from worker.utils import get_json_size
 
 from ..utils import REVISION_NAME
@@ -93,6 +91,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),

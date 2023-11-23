@@ -73,6 +73,7 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        penalization=0,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -96,6 +97,7 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        penalization=0,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -268,6 +270,7 @@ def test_raise_if_parallel_response_exists(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        penalization=0,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -300,6 +303,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        penalization=0,
     )
     processing_step_name = "dummy"
     processing_graph = ProcessingGraph(

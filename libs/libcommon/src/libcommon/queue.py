@@ -149,9 +149,9 @@ class JobDocument(Document):
         "indexes": [
             ("dataset", "status"),
             ("type", "dataset", "status"),
-            ("priority", "status", "created_at", "namespace", "difficulty", "unicity_id"),
-            ("priority", "status", "created_at", "difficulty", "namespace"),
-            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
+            ("priority", "status", "created_at", "namespace", "difficulty", "unicity_id", "penalization"),
+            ("priority", "status", "created_at", "difficulty", "namespace", "penalization"),
+            ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty", "penalization"),
             ("status", "type"),
             ("unicity_id", "status", "-created_at"),
             {
@@ -604,7 +604,7 @@ class Queue:
             JobDocument.objects(
                 status=Status.WAITING, namespace__nin=set(started_job_namespaces), priority=priority, **filters
             )
-            .order_by("+created_at")
+            .order_by("+penalization", "+created_at")
             .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
             .no_cache()
             .first()
@@ -641,7 +641,7 @@ class Queue:
                     priority=priority,
                     **filters,
                 )
-                .order_by("+created_at")
+                .order_by("+penalization", "+created_at")
                 .only("type", "dataset", "revision", "config", "split", "priority", "unicity_id")
                 .no_cache()
                 .first()

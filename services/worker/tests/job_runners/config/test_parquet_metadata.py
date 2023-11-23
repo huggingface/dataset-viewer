@@ -24,11 +24,7 @@ from libcommon.storage import StrPath
 from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
-from worker.dtos import (
-    ConfigParquetMetadataResponse,
-    ConfigParquetResponse,
-    ParquetFileMetadataItem,
-)
+from worker.dtos import ConfigParquetMetadataResponse, ConfigParquetResponse, ParquetFileMetadataItem
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 
 from ...constants import CI_USER_TOKEN
@@ -93,6 +89,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),

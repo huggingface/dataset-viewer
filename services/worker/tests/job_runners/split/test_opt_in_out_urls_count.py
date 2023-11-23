@@ -13,9 +13,7 @@ from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
-from worker.job_runners.split.opt_in_out_urls_count import (
-    SplitOptInOutUrlsCountJobRunner,
-)
+from worker.job_runners.split.opt_in_out_urls_count import SplitOptInOutUrlsCountJobRunner
 
 from ..utils import REVISION_NAME
 
@@ -84,6 +82,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "penalization": 0,
             },
             app_config=app_config,
             processing_step=processing_graph.get_processing_step(processing_step_name),
