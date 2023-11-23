@@ -387,6 +387,7 @@ def artifact_id_to_job_info(artifact_id: str) -> JobInfo:
         type=processing_step_name,
         priority=Priority.NORMAL,
         difficulty=DIFFICULTY,
+        penalization=0,
     )
 
 

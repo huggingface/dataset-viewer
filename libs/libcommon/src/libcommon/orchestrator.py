@@ -225,7 +225,7 @@ class AfterJobPlan(Plan):
         self.dataset = self.job_info["params"]["dataset"]
         self.revision = self.job_info["params"]["revision"]
         self.priority = self.job_info["priority"]
-        self.penalization = self.job_info["penalization"]
+        self.penalization = 0 if self.job_info["penalization"] is None else self.job_info["penalization"]
 
         config = self.job_info["params"]["config"]
         split = self.job_info["params"]["split"]

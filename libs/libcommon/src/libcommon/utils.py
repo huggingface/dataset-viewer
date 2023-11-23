@@ -43,7 +43,7 @@ class JobInfo(TypedDict):
     params: JobParams
     priority: Priority
     difficulty: int
-    penalization: int
+    penalization: Optional[int]
 
 
 class FlatJobInfo(TypedDict):
