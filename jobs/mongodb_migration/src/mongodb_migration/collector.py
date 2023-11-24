@@ -64,6 +64,9 @@ from mongodb_migration.migrations._20230926095900_cache_add_has_fts_field_in_spl
 from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_split_duckdb_index import (
     MigrationAddPartialToSplitDuckdbIndexCacheResponse,
 )
+from mongodb_migration.migrations._20231124125800_queue_job_add_penalization import (
+    MigrationQueueAddPenalizationToJob,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -275,5 +278,8 @@ class MigrationsCollector:
             MigrationAddPartialToSplitDuckdbIndexCacheResponse(
                 version="20231106193200",
                 description="add 'partial', 'num_rows' and 'num_bytes' fields for 'split-duckdb-index' cache records",
+            ),
+            MigrationQueueAddPenalizationToJob(
+                version="20231124125800", description="add 'penalization' field to jobs"
             ),
         ]
