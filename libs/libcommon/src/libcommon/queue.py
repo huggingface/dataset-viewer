@@ -459,6 +459,7 @@ class Queue:
         config: Optional[str] = None,
         split: Optional[str] = None,
         priority: Priority = Priority.LOW,
+        penalization: int = 0,
     ) -> JobDocument:
         """Add a job to the queue in the waiting state.
 
@@ -491,6 +492,7 @@ class Queue:
             created_at=get_datetime(),
             status=Status.WAITING,
             difficulty=difficulty,
+            penalization=penalization,
         ).save()
 
     def create_jobs(self, job_infos: list[JobInfo]) -> int:

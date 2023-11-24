@@ -110,7 +110,7 @@ def test_after_job_plan(
 
 
 @pytest.mark.parametrize(
-    "artifact,step,parent_penalization,content,penalization",
+    "artifact,step,parent_penalization,content,children_penalization",
     [
         (ARTIFACT_DA, STEP_DA, 0, CONFIG_NAMES_CONTENT, 2),
         (ARTIFACT_DA, STEP_DA, 5, CONFIG_NAMES_CONTENT, 7),
@@ -119,7 +119,7 @@ def test_after_job_plan(
     ],
 )
 def test_after_job_plan_penalization(
-    artifact: str, step: str, parent_penalization: int, content: Any, penalization: int
+    artifact: str, step: str, parent_penalization: int, content: Any, children_penalization: int
 ) -> None:
     processing_graph = ProcessingGraph(
         ProcessingGraphConfig(
@@ -161,7 +161,7 @@ def test_after_job_plan_penalization(
     )
     after_job_plan.run()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert all(pending_jobs_df["penalization"] == penalization)
+    assert all(pending_jobs_df["penalization"] == children_penalization)
 
 
 def test_after_job_plan_delete() -> None:

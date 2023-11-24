@@ -15,14 +15,7 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
-from libcommon.queue import (
-    EmptyQueueError,
-    JobDocument,
-    JobTotalMetricDocument,
-    Lock,
-    Queue,
-    lock,
-)
+from libcommon.queue import EmptyQueueError, JobDocument, JobTotalMetricDocument, Lock, Queue, lock
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import Priority, Status, get_datetime
 
@@ -189,6 +182,39 @@ def test_priority_logic_creation_order() -> None:
     )
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split1", expected_priority=Priority.LOW)
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.LOW)
+    with pytest.raises(EmptyQueueError):
+        queue.start_job()
+
+
+def test_priority_logic_penalization_order() -> None:
+    queue = Queue()
+    dataset_with_few_configs = "dataset_with_few_configs"
+    dataset_with_many_configs = "dataset_with_many_configs"
+    queue.add_job(
+        job_type="type",
+        dataset=dataset_with_many_configs,
+        revision="revision",
+        config="config",
+        split="split",
+        difficulty=50,
+        penalization=10,
+    )
+    queue.add_job(
+        job_type="type",
+        dataset=dataset_with_few_configs,
+        revision="revision",
+        config="config",
+        split="split",
+        difficulty=50,
+        penalization=0,
+    )
+    # dataset with few configurations (less penalization) is prioritized
+    check_job(
+        queue=queue, expected_dataset=dataset_with_few_configs, expected_split="split", expected_priority=Priority.LOW
+    )
+    check_job(
+        queue=queue, expected_dataset=dataset_with_many_configs, expected_split="split", expected_priority=Priority.LOW
+    )
     with pytest.raises(EmptyQueueError):
         queue.start_job()
 
