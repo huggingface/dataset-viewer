@@ -288,7 +288,7 @@ class AfterJobPlan(Plan):
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for config_name in config_names:
-                    self.update(next_processing_step, config_name, None, len(config_names))
+                    self.update(next_processing_step, config_name, None, len(config_names) - 1)
             elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
@@ -304,7 +304,7 @@ class AfterJobPlan(Plan):
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name, len(split_names))
+                    self.update(next_processing_step, config, split_name, len(split_names) - 1)
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"

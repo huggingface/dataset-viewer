@@ -112,9 +112,14 @@ def test_after_job_plan(
 @pytest.mark.parametrize(
     "artifact,step,parent_penalization,content,children_penalization",
     [
-        (ARTIFACT_DA, STEP_DA, 0, CONFIG_NAMES_CONTENT, 2),
-        (ARTIFACT_DA, STEP_DA, 5, CONFIG_NAMES_CONTENT, 7),
-        (ARTIFACT_CA_1, STEP_CA, 10, SPLIT_NAMES_CONTENT, 12),
+        # penalization = parent_penalization + #configs/splits - 1
+        # 0 + 2 - 1
+        (ARTIFACT_DA, STEP_DA, 0, CONFIG_NAMES_CONTENT, 1),
+        # 5 + 2 - 1
+        (ARTIFACT_DA, STEP_DA, 5, CONFIG_NAMES_CONTENT, 6),
+        # 10 + 2 - 1
+        (ARTIFACT_CA_1, STEP_CA, 10, SPLIT_NAMES_CONTENT, 11),
+        # No penalization because empty configs/splits
         (ARTIFACT_CA_1, STEP_CA, 0, [], 0),
     ],
 )
