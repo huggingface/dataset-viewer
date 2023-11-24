@@ -57,6 +57,7 @@ class FlatJobInfo(TypedDict):
     status: str
     difficulty: int
     created_at: datetime
+    penalization: int
 
 
 class JobOutput(TypedDict):

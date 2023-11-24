@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 from http import HTTPStatus
+from typing import Any
 
 import pytest
 
@@ -11,11 +12,7 @@ from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import (
-    CachedResponseDocument,
-    has_some_cache,
-    upsert_response_params,
-)
+from libcommon.simple_cache import CachedResponseDocument, has_some_cache, upsert_response_params
 from libcommon.utils import JobOutput, JobResult, Priority, Status
 
 from .utils import (
@@ -37,10 +34,13 @@ from .utils import (
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
     REVISION_NAME,
+    SPLIT_NAMES_CONTENT,
+    STEP_CA,
     STEP_CB,
     STEP_DA,
     STEP_DC,
     STEP_DD,
+    STEP_SA,
     artifact_id_to_job_info,
 )
 
@@ -107,6 +107,61 @@ def test_after_job_plan(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(artifacts_to_create)
+
+
+@pytest.mark.parametrize(
+    "artifact,step,parent_penalization,content,penalization",
+    [
+        (ARTIFACT_DA, STEP_DA, 0, CONFIG_NAMES_CONTENT, 2),
+        (ARTIFACT_DA, STEP_DA, 5, CONFIG_NAMES_CONTENT, 7),
+        (ARTIFACT_CA_1, STEP_CA, 10, SPLIT_NAMES_CONTENT, 12),
+        (ARTIFACT_CA_1, STEP_CA, 0, [], 0),
+    ],
+)
+def test_after_job_plan_penalization(
+    artifact: str, step: str, parent_penalization: int, content: Any, penalization: int
+) -> None:
+    processing_graph = ProcessingGraph(
+        ProcessingGraphConfig(
+            {
+                STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+                STEP_CA: {
+                    "input_type": "config",
+                    "triggered_by": STEP_DA,
+                    "provides_config_split_names": True,
+                },
+                STEP_CB: {
+                    "input_type": "config",
+                    "triggered_by": STEP_DA,
+                    "provides_config_info": True,
+                },
+                STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},
+            },
+            min_bytes_for_bonus_difficulty=1000,
+        )
+    )
+
+    job_info = artifact_id_to_job_info(artifact)
+    job_info["penalization"] = parent_penalization
+    upsert_response_params(
+        # inputs
+        kind=step,
+        job_params=job_info["params"],
+        job_runner_version=JOB_RUNNER_VERSION,
+        # output
+        content=content,
+        http_status=HTTPStatus.OK,
+        error_code=None,
+        details=None,
+        progress=1.0,
+    )
+    after_job_plan = AfterJobPlan(
+        processing_graph=processing_graph,
+        job_info=job_info,
+    )
+    after_job_plan.run()
+    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
+    assert all(pending_jobs_df["penalization"] == penalization)
 
 
 def test_after_job_plan_delete() -> None:

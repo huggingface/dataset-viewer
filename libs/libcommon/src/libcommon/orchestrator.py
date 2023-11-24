@@ -365,7 +365,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
-                    "penalization": self.penalization + 0 if extra_penalization is None else extra_penalization,
+                    "penalization": self.penalization + (0 if extra_penalization is None else extra_penalization),
                 }
             )
 

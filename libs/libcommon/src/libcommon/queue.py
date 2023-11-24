@@ -234,6 +234,7 @@ class JobDocument(Document):
                 "status": self.status.value,
                 "difficulty": self.difficulty,
                 "created_at": self.created_at,
+                "penalization": self.penalization,
             }
         )
 
@@ -967,6 +968,7 @@ class Queue:
                     ],
                 ),
                 "created_at": pd.Series([job["created_at"] for job in jobs], dtype="datetime64[ns]"),
+                "penalization": pd.Series([job["penalization"] for job in jobs], dtype="int64"),
             }
         )
         # ^ does not seem optimal at all, but I get the types right
