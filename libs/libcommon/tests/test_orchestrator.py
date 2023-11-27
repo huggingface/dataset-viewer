@@ -3,9 +3,10 @@
 
 from http import HTTPStatus
 from typing import Any
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
+
 from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
@@ -127,7 +128,12 @@ def generate_content(key: str, type: str, samples: int) -> Any:
     ],
 )
 def test_after_job_plan_penalization(
-    artifact: str, step: str, parent_penalization: int, content: Any, penalization_factor: int, children_penalization: int
+    artifact: str,
+    step: str,
+    parent_penalization: int,
+    content: Any,
+    penalization_factor: int,
+    children_penalization: int,
 ) -> None:
     processing_graph = ProcessingGraph(
         ProcessingGraphConfig(
