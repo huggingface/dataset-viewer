@@ -195,3 +195,10 @@ def raise_if_blocked(
                 "This dataset has been disabled for now. Please open an issue in"
                 " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
             )
+
+
+PENALIZATION_FACTOR = 100
+
+
+def get_penalization(siblings: int) -> int:
+    return siblings // PENALIZATION_FACTOR

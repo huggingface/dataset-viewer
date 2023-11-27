@@ -22,7 +22,7 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
-from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
+from libcommon.utils import JobInfo, JobResult, Priority, get_penalization, raise_if_blocked
 
 # TODO: clean dangling cache entries
 
@@ -287,8 +287,9 @@ class AfterJobPlan(Plan):
                         names_field="config_names",
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+                extra_penalization = get_penalization(len(config_names))
                 for config_name in config_names:
-                    self.update(next_processing_step, config_name, None, len(config_names) - 1)
+                    self.update(next_processing_step, config_name, None, extra_penalization)
             elif processing_step.input_type == "config" and next_processing_step.input_type == "split":
                 # going to lower level (fan-out), one job is expected per split, we need the list of splits
                 # C -> S
@@ -303,8 +304,9 @@ class AfterJobPlan(Plan):
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+                extra_penalization = get_penalization(len(split_names))
                 for split_name in split_names:
-                    self.update(next_processing_step, config, split_name, len(split_names) - 1)
+                    self.update(next_processing_step, config, split_name, extra_penalization)
             else:
                 raise NotImplementedError(
                     f"Unsupported input types: {processing_step.input_type} -> {next_processing_step.input_type}"

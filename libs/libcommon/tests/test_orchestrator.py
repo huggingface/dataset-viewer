@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-
+from unittest.mock import patch
 from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
@@ -34,7 +34,6 @@ from .utils import (
     PROCESSING_GRAPH_ONE_STEP,
     PROCESSING_GRAPH_PARALLEL,
     REVISION_NAME,
-    SPLIT_NAMES_CONTENT,
     STEP_CA,
     STEP_CB,
     STEP_DA,
@@ -109,22 +108,26 @@ def test_after_job_plan(
     assert set(artifact_ids) == set(artifacts_to_create)
 
 
+def generate_content(key: str, type: str, samples: int) -> Any:
+    return {key: [{type: f"{type}-{i}"} for i in range(samples)]}
+
+
 @pytest.mark.parametrize(
-    "artifact,step,parent_penalization,content,children_penalization",
+    "artifact,step,parent_penalization,content,penalization_factor,children_penalization",
     [
-        # penalization = parent_penalization + #configs/splits - 1
-        # 0 + 2 - 1
-        (ARTIFACT_DA, STEP_DA, 0, CONFIG_NAMES_CONTENT, 1),
-        # 5 + 2 - 1
-        (ARTIFACT_DA, STEP_DA, 5, CONFIG_NAMES_CONTENT, 6),
-        # 10 + 2 - 1
-        (ARTIFACT_CA_1, STEP_CA, 10, SPLIT_NAMES_CONTENT, 11),
+        # penalization = parent_penalization + (#configs/splits)//penalization_factor
+        # 0 + 2//10 = 0
+        (ARTIFACT_DA, STEP_DA, 0, generate_content("config-names", "config", 2), 10, 0),
+        # 5 + 102//100 = 6
+        (ARTIFACT_DA, STEP_DA, 5, generate_content("config-names", "config", 102), 100, 6),
+        # 10 + 3//10 = 10
+        (ARTIFACT_CA_1, STEP_CA, 10, generate_content("splits", "split", 3), 10, 10),
         # No penalization because empty configs/splits
-        (ARTIFACT_CA_1, STEP_CA, 0, [], 0),
+        (ARTIFACT_CA_1, STEP_CA, 0, generate_content("splits", "split", 0), 10, 0),
     ],
 )
 def test_after_job_plan_penalization(
-    artifact: str, step: str, parent_penalization: int, content: Any, children_penalization: int
+    artifact: str, step: str, parent_penalization: int, content: Any, penalization_factor: int, children_penalization: int
 ) -> None:
     processing_graph = ProcessingGraph(
         ProcessingGraphConfig(
@@ -160,11 +163,12 @@ def test_after_job_plan_penalization(
         details=None,
         progress=1.0,
     )
-    after_job_plan = AfterJobPlan(
-        processing_graph=processing_graph,
-        job_info=job_info,
-    )
-    after_job_plan.run()
+    with patch("libcommon.utils.PENALIZATION_FACTOR", penalization_factor):
+        after_job_plan = AfterJobPlan(
+            processing_graph=processing_graph,
+            job_info=job_info,
+        )
+        after_job_plan.run()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert all(pending_jobs_df["penalization"] == children_penalization)
 
