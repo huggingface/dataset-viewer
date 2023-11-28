@@ -72,7 +72,6 @@ class JobDict(TypedDict):
     difficulty: int
     created_at: datetime
     started_at: Optional[datetime]
-    finished_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
 
 
@@ -119,7 +118,6 @@ class JobQueryFilters(TypedDict, total=False):
 # States:
 # - waiting: started_at is None and finished_at is None: waiting jobs
 # - started: started_at is not None and finished_at is None: started jobs
-# - finished: started_at is not None and finished_at is not None: finished jobs
 # For a given set of arguments, only one job is allowed in the started state. No
 # restriction for the other states
 class JobDocument(Document):
@@ -139,7 +137,6 @@ class JobDocument(Document):
         difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
-        finished_at (`datetime`, optional): When the job has finished.
         last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
     """
 
@@ -154,11 +151,6 @@ class JobDocument(Document):
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
             ("unicity_id", "status", "-created_at"),
-            {
-                "fields": ["finished_at"],
-                "expireAfterSeconds": QUEUE_TTL_SECONDS,
-                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
-            },
         ],
     }
     type = StringField(required=True)
@@ -173,7 +165,6 @@ class JobDocument(Document):
     difficulty = IntField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
-    finished_at = DateTimeField()
     last_heartbeat = DateTimeField()
 
     def to_dict(self) -> JobDict:
@@ -190,7 +181,6 @@ class JobDocument(Document):
             "difficulty": self.difficulty,
             "created_at": self.created_at,
             "started_at": self.started_at,
-            "finished_at": self.finished_at,
             "last_heartbeat": self.last_heartbeat,
         }
 
@@ -886,7 +876,7 @@ class Queue:
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
         previous_status = job.status
-        job.update(finished_at=get_datetime(), status=finished_status)
+        job.delete()
         update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
@@ -958,9 +948,6 @@ class Queue:
                     categories=[
                         Status.WAITING.value,
                         Status.STARTED.value,
-                        Status.SUCCESS.value,
-                        Status.ERROR.value,
-                        Status.CANCELLED.value,
                     ],
                 ),
                 "created_at": pd.Series([job["created_at"] for job in jobs], dtype="datetime64[ns]"),
@@ -1010,9 +997,6 @@ class Queue:
         return {
             "waiting": self.count_jobs(status=Status.WAITING, job_type=job_type),
             "started": self.count_jobs(status=Status.STARTED, job_type=job_type),
-            "success": self.count_jobs(status=Status.SUCCESS, job_type=job_type),
-            "error": self.count_jobs(status=Status.ERROR, job_type=job_type),
-            "cancelled": self.count_jobs(status=Status.CANCELLED, job_type=job_type),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
