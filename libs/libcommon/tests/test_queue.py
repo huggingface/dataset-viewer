@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 from multiprocessing import Pool
 from pathlib import Path
+from threading import Thread
 from typing import Optional
 from unittest.mock import patch
 
@@ -16,6 +17,7 @@ import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
 from libcommon.queue import (
+    AlreadyStartedJobError,
     EmptyQueueError,
     JobDocument,
     JobTotalMetricDocument,
@@ -191,6 +193,76 @@ def test_priority_logic_creation_order() -> None:
     check_job(queue=queue, expected_dataset="dataset1", expected_split="split2", expected_priority=Priority.LOW)
     with pytest.raises(EmptyQueueError):
         queue.start_job()
+
+
+def test_priority_logic_creation_big_small() -> None:
+    test_type = "test_type"
+    test_revision = "test_revision"
+    big_dataset, big_dataset_jobs = "big_dataset", 100
+    small_dataset, small_dataset_jobs = "small_dataset", 2
+    config = "config"
+    queue = Queue()
+    workers = 25
+
+    # add dataset with many jobs
+    for i in range(big_dataset_jobs):
+        queue.add_job(
+            job_type=test_type,
+            dataset=big_dataset,
+            revision=test_revision,
+            config=config,
+            split=f"split{i}",
+            difficulty=0,
+        )
+
+    # add dataset with few jobs
+    for i in range(small_dataset_jobs):
+        queue.add_job(
+            job_type=test_type,
+            dataset=small_dataset,
+            revision=test_revision,
+            config=config,
+            split=f"split{i}",
+            difficulty=0,
+        )
+
+    all_started_attemps = []
+
+    def run_worker_loop() -> None:
+        started_attemps_by_worker = 0
+        while True:
+            try:
+                job_info = queue.start_job()
+                time.sleep(random.random())  # simulate a delay while processing job
+                queue.finish_job(job_info["job_id"], is_success=True)
+            except AlreadyStartedJobError:
+                started_attemps_by_worker += 1
+                pass
+            except Exception:
+                break  # end loop, no more jobs to process
+        all_started_attemps.append(started_attemps_by_worker)
+
+    threads = []
+    for _ in range(workers):
+        t = Thread(target=run_worker_loop)
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+        assert not t.is_alive()
+
+    # at least one of the workers tried to start an already started job
+    assert any(i > 0 for i in all_started_attemps)
+
+    # ensure all jobs from small_dataset have been proceesed as part of the first 50%
+    half_jobs = (small_dataset_jobs + big_dataset_jobs) // 2
+    finished_jobs = JobDocument.objects().order_by("+finished_at").limit(half_jobs).all()
+
+    # for i in finished_jobs:
+    #     print(i.dataset, i.finished_at)
+    small_dataset_finished_jobs = [i for i in finished_jobs if i.dataset == small_dataset]
+    assert len(small_dataset_finished_jobs) == small_dataset_jobs
 
 
 def test_priority_logic_started_jobs_per_dataset_order() -> None:
