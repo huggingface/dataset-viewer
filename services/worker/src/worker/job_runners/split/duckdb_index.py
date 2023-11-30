@@ -56,7 +56,9 @@ DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
-CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}'; ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
+CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
+ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
+CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
@@ -189,7 +191,7 @@ def compute_index_rows(
         )
 
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
-    create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
+    create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
     logging.debug(create_command_sql)
     con.sql(create_command_sql)
 
