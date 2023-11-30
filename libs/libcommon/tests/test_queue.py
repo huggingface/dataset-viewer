@@ -230,17 +230,23 @@ def test_priority_logic_creation_big_small() -> None:
 
     def run_worker_loop() -> None:
         started_attemps_by_worker = 0
+        usefull_time = 0
+        useless_time = 0
         while True:
             try:
+                start_time = time.time()
                 job_info = queue.start_job()
+                usefull_time += time.time() - start_time
                 time.sleep(random.random())  # simulate a delay while processing job
                 queue.finish_job(job_info["job_id"], is_success=True)
+
             except AlreadyStartedJobError:
                 started_attemps_by_worker += 1
+                useless_time += time.time() - start_time
                 pass
             except Exception:
                 break  # end loop, no more jobs to process
-        all_started_attemps.append(started_attemps_by_worker)
+        all_started_attemps.append((started_attemps_by_worker, usefull_time, useless_time))
 
     threads = []
     for _ in range(workers):
@@ -253,14 +259,13 @@ def test_priority_logic_creation_big_small() -> None:
         assert not t.is_alive()
 
     # at least one of the workers tried to start an already started job
-    assert any(i > 0 for i in all_started_attemps)
+    delays_sum = [sum(tup) for tup in zip(*all_started_attemps)]
+    assert all(value > 0 for value in delays_sum)
 
     # ensure all jobs from small_dataset have been proceesed as part of the first 50%
     half_jobs = (small_dataset_jobs + big_dataset_jobs) // 2
     finished_jobs = JobDocument.objects().order_by("+finished_at").limit(half_jobs).all()
 
-    # for i in finished_jobs:
-    #     print(i.dataset, i.finished_at)
     small_dataset_finished_jobs = [i for i in finished_jobs if i.dataset == small_dataset]
     assert len(small_dataset_finished_jobs) == small_dataset_jobs
 
