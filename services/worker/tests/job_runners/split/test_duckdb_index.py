@@ -29,7 +29,6 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
-    CREATE_SEQUENCE_COMMAND,
     CREATE_TABLE_COMMANDS,
     SplitDuckDbIndexJobRunner,
     get_indexable_columns,
@@ -517,7 +516,6 @@ FTS_COMMAND = (
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
-    duckdb.sql(CREATE_SEQUENCE_COMMAND)
     duckdb.sql(CREATE_TABLE_COMMANDS.format(columns=columns, source="df"))
     duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
     result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
