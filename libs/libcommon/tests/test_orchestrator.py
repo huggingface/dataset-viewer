@@ -177,7 +177,7 @@ def test_finish_job(
     )
     dataset_orchestrator.finish_job(job_result=job_result)
 
-    assert JobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
+    assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
 
     done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED)
     assert done_job.count() == 0

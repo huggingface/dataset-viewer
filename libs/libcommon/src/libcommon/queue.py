@@ -693,9 +693,7 @@ class Queue:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES, ttl=LOCK_TTL_SECONDS):
                 # get all the pending jobs for the same unicity_id
-                waiting_jobs = JobDocument.objects(
-                    unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
-                ).order_by("-created_at")
+                waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-created_at")
                 datetime = get_datetime()
                 # raise if any job has already been started for unicity_id
                 num_started_jobs = waiting_jobs(status=Status.STARTED).count()
@@ -718,11 +716,8 @@ class Queue:
                 update_metrics_for_type(
                     job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
                 )
-                for waiting_job in waiting_jobs(status=Status.WAITING):
-                    decrease_metric(job_type=waiting_job.type, status=Status.WAITING)
-
                 # and delete the other ones, if any
-                self.delete_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs])
+                self.delete_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs if job.pk != first_job.pk])
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
@@ -877,7 +872,7 @@ class Queue:
         Returns:
             `int`: the number of canceled jobs
         """
-        jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
+        jobs = JobDocument.objects(dataset=dataset)
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
         jobs_to_cancel = len(previous_status)
         for job_type, status, unicity_id in previous_status:
@@ -908,7 +903,6 @@ class Queue:
                 revision=revision,
                 config=config,
                 split=split,
-                status__in=[Status.WAITING, Status.STARTED],
             ).count()
             > 0
         )
@@ -944,18 +938,13 @@ class Queue:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return self._get_df(
-            [
-                job.flat_info()
-                for job in JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset)
-            ]
-        )
+        return self._get_df([job.flat_info() for job in JobDocument.objects(**filters, dataset=dataset)])
 
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        return JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset).count() > 0
+        return JobDocument.objects(**filters, dataset=dataset).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:
