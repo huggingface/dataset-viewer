@@ -31,7 +31,6 @@ from libcommon.constants import (
     QUEUE_COLLECTION_LOCKS,
     QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
-    QUEUE_TTL_SECONDS,
 )
 from libcommon.utils import FlatJobInfo, JobInfo, Priority, Status, get_datetime, inputs_to_string
 
@@ -78,9 +77,6 @@ class JobDict(TypedDict):
 class CountByStatus(TypedDict):
     waiting: int
     started: int
-    success: int
-    error: int
-    cancelled: int
 
 
 class DumpByPendingStatus(TypedDict):
@@ -116,8 +112,8 @@ class JobQueryFilters(TypedDict, total=False):
 
 
 # States:
-# - waiting: started_at is None and finished_at is None: waiting jobs
-# - started: started_at is not None and finished_at is None: started jobs
+# - waiting: started_at is None
+# - started: started_at is not None
 # For a given set of arguments, only one job is allowed in the started state. No
 # restriction for the other states
 class JobDocument(Document):
@@ -521,8 +517,8 @@ class Queue:
         except Exception:
             return 0
 
-    def cancel_jobs_by_job_id(self, job_ids: list[str]) -> int:
-        """Cancel jobs from the queue.
+    def delete_jobs_by_job_id(self, job_ids: list[str]) -> int:
+        """Delete jobs from the queue.
 
         If the job ids are not valid, they are ignored.
 
@@ -534,11 +530,10 @@ class Queue:
         """
         try:
             existing = JobDocument.objects(pk__in=job_ids)
-            previous_status = [(job.type, job.status) for job in existing.all()]
-            existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
-            for job_type, status in previous_status:
-                update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
-            return existing.count()
+            for job in existing.all():
+                decrease_metric(job_type=job.type, status=job.status)
+            deleted_jobs = existing.delete()
+            return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
             return 0
 
@@ -723,17 +718,11 @@ class Queue:
                 update_metrics_for_type(
                     job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
                 )
-                # and cancel the other ones, if any
-                waiting_jobs(status=Status.WAITING).update(
-                    finished_at=datetime,
-                    status=Status.CANCELLED,
-                    write_concern={"w": "majority", "fsync": True},
-                    read_concern={"level": "majority"},
-                )
                 for waiting_job in waiting_jobs(status=Status.WAITING):
-                    update_metrics_for_type(
-                        job_type=waiting_job.type, previous_status=Status.WAITING, new_status=Status.CANCELLED
-                    )
+                    decrease_metric(job_type=waiting_job.type, status=Status.WAITING)
+
+                # and delete the other ones, if any
+                self.delete_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs])
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
@@ -816,7 +805,7 @@ class Queue:
 
     def _get_started_job(self, job_id: str) -> JobDocument:
         """Get a started job, and raise if it's not in the correct format
-          (does not exist, not started, incorrect values for finished_at or started_at).
+          (does not exist, not started, incorrect values for started_at).
 
         Args:
             job_id (`str`, required): id of the job
@@ -827,8 +816,6 @@ class Queue:
         job = JobDocument.objects(pk=job_id).get()
         if job.status is not Status.STARTED:
             raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
-        if job.finished_at is not None:
-            raise StartedJobError(f"job {job.unicity_id} has a non-empty finished_at field.")
         if job.started_at is None:
             raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
         return job
@@ -853,7 +840,7 @@ class Queue:
             return False
         return True
 
-    def finish_job(self, job_id: str, is_success: bool) -> bool:
+    def finish_job(self, job_id: str) -> bool:
         """Finish a job in the queue.
 
         The job is moved from the started state to the success or error state. The existing locks are released.
@@ -874,17 +861,15 @@ class Queue:
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
-        finished_status = Status.SUCCESS if is_success else Status.ERROR
-        previous_status = job.status
+        decrease_metric(job_type=job.type, status=job.status)
         job.delete()
-        update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
         return True
 
-    def cancel_dataset_jobs(self, dataset: str) -> int:
+    def delete_dataset_jobs(self, dataset: str) -> int:
         """
-        Cancel all the jobs for a given dataset.
+        Delete all the jobs for a given dataset.
 
         Args:
             dataset (`str`, required): dataset name
@@ -895,10 +880,10 @@ class Queue:
         jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
         jobs_to_cancel = len(previous_status)
-        jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
         for job_type, status, unicity_id in previous_status:
-            update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
+            decrease_metric(job_type=job_type, status=status)
             release_lock(key=unicity_id)
+        jobs.delete()
         return jobs_to_cancel
 
     def is_job_in_process(

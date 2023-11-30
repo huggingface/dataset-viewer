@@ -93,7 +93,7 @@ def start_worker_loop_with_long_job() -> None:
         if current_job.status == Status.STARTED:
             write_worker_state(worker_state, app_config.worker.state_file_path)
             time.sleep(20)
-            Queue().finish_job(current_job_info["job_id"], is_success=True)
+            Queue().finish_job(current_job_info["job_id"])
 
 
 @fixture
@@ -273,7 +273,7 @@ def test_executor_kill_zombies(
     normal_job = set_just_started_job_in_queue
     tmp_dataset_repo_factory(zombie.dataset)
     executor.kill_zombies()
-    assert JobDocument.objects(pk=zombie.pk).get().status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS]
+    assert JobDocument.objects(pk=zombie.pk).get() is None
     assert JobDocument.objects(pk=normal_job.pk).get().status == Status.STARTED
     response = CachedResponseDocument.objects()[0]
     expected_error = {
@@ -309,11 +309,7 @@ def test_executor_start(
     assert heartbeat_mock.call_count > 0
     assert JobDocument.objects(pk=set_just_started_job_in_queue.pk).get().last_heartbeat is not None
     assert kill_zombies_mock.call_count > 0
-    assert JobDocument.objects(pk=set_zombie_job_in_queue.pk).get().status in [
-        Status.ERROR,
-        Status.CANCELLED,
-        Status.SUCCESS,
-    ]
+    assert JobDocument.objects(pk=set_zombie_job_in_queue.pk).get() is None
 
 
 @pytest.mark.parametrize(
@@ -348,9 +344,7 @@ def test_executor_stops_on_long_job(
 
     assert long_job is not None
     assert str(long_job.pk) == get_job_info("long")["job_id"]
-
-    long_job.reload()
-    assert long_job.status in [Status.ERROR, Status.CANCELLED, Status.SUCCESS], "must be finished because too long"
+    assert JobDocument.objects(pk=long_job.pk).get() is None, "must be deleted because too long"
 
     responses = CachedResponseDocument.objects(error_code="JobManagerExceededMaximumDurationError")
     assert len(responses) == 1

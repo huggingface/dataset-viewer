@@ -179,8 +179,8 @@ def test_finish_job(
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == 1 + len(artifacts_to_create)
 
-    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.SUCCESS)
-    assert done_job.count() == 1
+    done_job = JobDocument.objects(dataset=DATASET_NAME, status=Status.STARTED)
+    assert done_job.count() == 0
 
     waiting_jobs = JobDocument.objects(dataset=DATASET_NAME, status=Status.WAITING)
     assert waiting_jobs.count() == len(artifacts_to_create)
