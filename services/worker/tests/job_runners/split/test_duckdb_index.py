@@ -6,6 +6,7 @@ from collections.abc import Callable
 from contextlib import ExitStack
 from dataclasses import replace
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
@@ -524,7 +525,7 @@ def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) ->
     assert list(result.__hf_index_id) == expected_ids
 
 
-def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path):
+def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> None:
     pa_table = pa.Table.from_pydict({"text": [f"text-{i}" for i in range(100)]})
     parquet_path = str(tmp_path / "0000.parquet")
     pq.write_table(pa_table, parquet_path, row_group_size=2)
