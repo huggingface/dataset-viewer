@@ -230,8 +230,8 @@ def test_priority_logic_creation_big_small() -> None:
 
     def run_worker_loop() -> None:
         started_attemps_by_worker = 0
-        usefull_time = 0
-        useless_time = 0
+        usefull_time = 0.0
+        useless_time = 0.0
         while True:
             try:
                 start_time = time.time()
