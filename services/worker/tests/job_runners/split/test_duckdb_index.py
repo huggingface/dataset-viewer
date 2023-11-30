@@ -536,3 +536,4 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()
     assert df["__hf_index_id"].is_monotonic_increasing
+    assert df["__hf_index_id"].is_unique
