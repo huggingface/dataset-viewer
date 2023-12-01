@@ -283,6 +283,11 @@ class MigrationsCollector:
                 version="20231201074900",
                 description="delete jobs with success, error and cancelled status",
             ),
+            MigrationQueueDeleteTTLIndex(
+                version="20231201112000",
+                description="delete the TTL index on the 'finished_at' field in the queue database",
+                field_name="finished_at",
+            ),
             MigrationRemoveFieldFromJob(
                 field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
             ),
