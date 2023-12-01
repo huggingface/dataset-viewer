@@ -848,7 +848,7 @@ class Queue:
             is_success (`bool`, required): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at) 
+            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
             before finishing
         """
         try:
