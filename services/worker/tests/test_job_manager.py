@@ -157,9 +157,9 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     assert job_result["output"]["content"] == {"key": "value"}
 
     job_manager.finish(job_result=job_result)
-    # check that the job has been finished
 
-    assert JobDocument.objects(pk=job_info["job_id"]).get() is None
+    # check that the job has been finished and deleted
+    assert JobDocument.objects(pk=job_info["job_id"]).count() == 0
 
     # check that the cache entry has have been created
     cached_response = get_response(kind=root_step.cache_kind, dataset="dataset", config=None, split=None)

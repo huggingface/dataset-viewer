@@ -424,7 +424,7 @@ class Queue:
 
     It's a FIFO queue, with the following properties:
     - a job is identified by its input arguments: unicity_id (type, dataset, config and split, NOT revision)
-    - a job can be in one of the following states: waiting, started, success, error, cancelled
+    - a job can be in one of the following states: waiting, started
     - a job can be in the queue only once (unicity_id) in the "started" state
     - a job can be in the queue multiple times in the other states
     - a job has a priority (three levels: HIGH, NORMAL and LOW)

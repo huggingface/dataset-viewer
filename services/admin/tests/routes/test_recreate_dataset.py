@@ -77,7 +77,7 @@ def test_recreate_dataset(tmp_path: Path, processing_graph: ProcessingGraph) -> 
         )
         assert recreate_dataset_report["status"] == "ok"
         assert recreate_dataset_report["dataset"] == dataset
-        assert recreate_dataset_report["cancelled_jobs"] == 1
+        assert recreate_dataset_report["deleted_jobs"] == 1
         assert recreate_dataset_report["deleted_cached_responses"] == 1
     assert not asset_file.is_file()
     assert not cached_asset_file.is_file()
