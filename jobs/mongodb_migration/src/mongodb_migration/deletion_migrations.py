@@ -5,8 +5,10 @@ import logging
 from collections.abc import Mapping
 from typing import Any, Optional
 
+from libcommon.queue import JobDocument
 from mongoengine.connection import get_db
 
+from mongodb_migration.check import check_documents
 from mongodb_migration.migration import (
     BaseQueueMigration,
     CacheMigration,
@@ -155,3 +157,22 @@ class MigrationDeleteJobsByStatus(BaseQueueMigration):
 
         if db[self.COLLECTION_JOBS].count_documents({"status": {"$in": self.status_list}}):
             raise ValueError(f"Found documents with status in {self.status_list}")
+
+
+class MigrationRemoveFieldFromJob(BaseQueueMigration):
+    def __init__(self, field_name: str, version: str, description: str):
+        super().__init__(version=version, description=description)
+        self.field_name = field_name
+
+    def up(self) -> None:
+        logging.info(f"Removing '{self.field_name}' field.")
+        db = get_db(self.MONGOENGINE_ALIAS)
+        db[self.COLLECTION_JOBS].update_many({}, {"$unset": {self.field_name: ""}})
+
+    def down(self) -> None:
+        raise IrreversibleMigrationError("This migration does not support rollback")
+
+    def validate(self) -> None:
+        logging.info(f"Ensure that a random selection of jobs don't have '{self.field_name}' field")
+
+        check_documents(DocCls=JobDocument, sample_size=10)

@@ -22,6 +22,7 @@ from mongodb_migration.deletion_migrations import (
     MetricsDeletionMigration,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
+    MigrationRemoveFieldFromJob,
     QueueDeletionMigration,
     get_index_names,
 )
@@ -193,4 +194,29 @@ def test_queue_delete_jobs_by_status(mongo_host: str) -> None:
         with raises(IrreversibleMigrationError):
             migration.down()
 
+        db[QUEUE_COLLECTION_JOBS].drop()
+
+
+def test_queue_remove_field(mongo_host: str) -> None:
+    with MongoResource(database="test_queue_remove_field", host=mongo_host, mongoengine_alias="queue"):
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        field_name = "finished_at"
+        db[QUEUE_COLLECTION_JOBS].insert_one(
+            {"type": "test", "dataset": "dataset", "force": True, field_name: get_datetime()}
+        )
+
+        result = db[QUEUE_COLLECTION_JOBS].find_one({"dataset": "dataset"})
+        assert result
+        assert field_name in result
+
+        migration = MigrationRemoveFieldFromJob(
+            field_name=field_name, version="20231201112600", description=f"remove '{field_name}' field from queue"
+        )
+        migration.up()
+        result = db[QUEUE_COLLECTION_JOBS].find_one({"dataset": "dataset"})
+        assert result
+        assert field_name not in result
+
+        with raises(IrreversibleMigrationError):
+            migration.down()
         db[QUEUE_COLLECTION_JOBS].drop()

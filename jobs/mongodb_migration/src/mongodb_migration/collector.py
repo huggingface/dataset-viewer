@@ -12,6 +12,7 @@ from mongodb_migration.deletion_migrations import (
     MetricsDeletionMigration,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
+    MigrationRemoveFieldFromJob,
     QueueDeletionMigration,
 )
 from mongodb_migration.drop_migrations import MigrationDropCollection
@@ -34,9 +35,6 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 )
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
-)
-from mongodb_migration.migrations._20230511100600_queue_remove_force import (
-    MigrationRemoveForceFromJob,
 )
 from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
     MigrationQueueDeleteIndexesWithForce,
@@ -176,7 +174,9 @@ class MigrationsCollector:
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504194600",
             ),
-            MigrationRemoveForceFromJob(version="20230511100600", description="remove 'force' field from queue"),
+            MigrationRemoveFieldFromJob(
+                field_name="force", version="20230511100600", description="remove 'force' field from queue"
+            ),
             MigrationQueueDeleteIndexesWithForce(
                 version="20230511100700", description="remove indexes with field 'force'"
             ),
@@ -282,5 +282,8 @@ class MigrationsCollector:
                 status_list=["success", "error", "cancelled"],
                 version="20231201074900",
                 description="delete jobs with success, error and cancelled status",
+            ),
+            MigrationRemoveFieldFromJob(
+                field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
             ),
         ]
