@@ -13,16 +13,19 @@ from libcommon.constants import (
 )
 from libcommon.queue import JobDocument
 from libcommon.resources import MongoResource
-from libcommon.utils import get_datetime
+from libcommon.utils import Status, get_datetime
 from mongoengine.connection import get_db
+from pytest import raises
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
     QueueDeletionMigration,
     get_index_names,
 )
+from mongodb_migration.migration import IrreversibleMigrationError
 
 
 def test_cache_deletion_migration(mongo_host: str) -> None:
@@ -140,5 +143,54 @@ def test_queue_delete_ttl_index(mongo_host: str) -> None:
         assert (
             len(get_index_names(db[QUEUE_COLLECTION_JOBS].index_information(), "finished_at")) == 0
         )  # Ensure the TTL index does not exist anymore
+
+        db[QUEUE_COLLECTION_JOBS].drop()
+
+
+def test_queue_delete_jobs_by_status(mongo_host: str) -> None:
+    job_type = "job_type"
+    with MongoResource(
+        database="test_queue_delete_jobs_by_status",
+        host=mongo_host,
+        mongoengine_alias=QUEUE_MONGOENGINE_ALIAS,
+    ):
+        db = get_db(QUEUE_MONGOENGINE_ALIAS)
+        status_list = ["SUCCESS", "ERROR", "CANCELLED"]
+        for status in status_list:
+            db[QUEUE_COLLECTION_JOBS].insert_one(
+                {
+                    "type": job_type,
+                    "unicity_id": f"{job_type},dataset,config,split",
+                    "dataset": "dataset",
+                    "revision": "revision",
+                    "http_status": 200,
+                    "status": status,
+                }
+            )
+        db[QUEUE_COLLECTION_JOBS].insert_one(
+            {
+                "type": job_type,
+                "unicity_id": f"{job_type},dataset,config,split",
+                "dataset": "dataset",
+                "revision": "revision",
+                "http_status": 200,
+                "status": Status.STARTED,
+            }
+        )
+        assert db[QUEUE_COLLECTION_JOBS].count_documents({"status": {"$in": status_list}}) == 3
+        assert db[QUEUE_COLLECTION_JOBS].count_documents({"status": Status.STARTED}) == 1
+
+        migration = MigrationDeleteJobsByStatus(
+            status_list=status_list,
+            version="20231201074900",
+            description=f"remove jobs with status '{status_list}'",
+        )
+        migration.up()
+
+        assert db[QUEUE_COLLECTION_JOBS].count_documents({"status": {"$in": status_list}}) == 0
+        assert db[QUEUE_COLLECTION_JOBS].count_documents({"status": Status.STARTED}) == 1
+
+        with raises(IrreversibleMigrationError):
+            migration.down()
 
         db[QUEUE_COLLECTION_JOBS].drop()

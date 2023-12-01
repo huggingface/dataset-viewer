@@ -819,14 +819,14 @@ class Queue:
         return job
 
     def is_job_started(self, job_id: str) -> bool:
-        """Check if a job is started, with the correct values for finished_at and started_at.
+        """Check if a job is started, with the correct values for started_at.
 
         Args:
             job_id (`str`, required): id of the job
 
         Returns:
             `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
-              started_at, empty finished_at)
+              started_at)
         """
         try:
             self._get_started_job(job_id=job_id)
@@ -848,8 +848,8 @@ class Queue:
             is_success (`bool`, required): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
-            finished_at) before finishing
+            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at) 
+            before finishing
         """
         try:
             job = self._get_started_job(job_id=job_id)

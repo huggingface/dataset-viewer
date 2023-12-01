@@ -278,8 +278,6 @@ with gr.Blocks() as demo:
             ])
             if "started_at" in pending_jobs_df.columns:
                 pending_jobs_df["started_at"] = pd.to_datetime(pending_jobs_df["started_at"], errors="coerce")
-            if "finished_at" in pending_jobs_df.columns:
-                pending_jobs_df["finished_at"] = pd.to_datetime(pending_jobs_df["finished_at"], errors="coerce")
             if "last_heartbeat" in pending_jobs_df.columns:
                 pending_jobs_df["last_heartbeat"] = pd.to_datetime(pending_jobs_df["last_heartbeat"], errors="coerce")
             if "created_at" in pending_jobs_df.columns:
@@ -333,7 +331,6 @@ with gr.Blocks() as demo:
                     "status": job["status"],
                     "created_at": job["created_at"],
                     "started_at": job["started_at"],
-                    "finished_at": job["finished_at"],
                     "last_heartbeat": job["last_heartbeat"]
                 }
                 for job_type, content in dataset_status.items()
