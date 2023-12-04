@@ -873,7 +873,7 @@ class Queue:
             dataset (`str`, required): dataset name
 
         Returns:
-            `int`: the number of canceled jobs
+            `int`: the number of deleted jobs
         """
         # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
         jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
