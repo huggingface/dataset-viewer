@@ -200,15 +200,27 @@ def test_priority_logic_creation_big_small() -> None:
     test_revision = "test_revision"
     big_dataset, big_dataset_jobs = "big_dataset", 100
     small_dataset, small_dataset_jobs = "small_dataset", 2
+    datasets = 30
     config = "config"
     queue = Queue()
     workers = 25
+
+    # add many datasets
+    for i in range(datasets):
+        queue.add_job(
+            job_type=test_type,
+            dataset=f"{i}/dataset",
+            revision=test_revision,
+            config=None,
+            split=None,
+            difficulty=0,
+        )
 
     # add dataset with many jobs
     for i in range(big_dataset_jobs):
         queue.add_job(
             job_type=test_type,
-            dataset=big_dataset,
+            dataset=f"{big_dataset}/dataset",
             revision=test_revision,
             config=config,
             split=f"split{i}",
@@ -219,7 +231,7 @@ def test_priority_logic_creation_big_small() -> None:
     for i in range(small_dataset_jobs):
         queue.add_job(
             job_type=test_type,
-            dataset=small_dataset,
+            dataset=f"{small_dataset}/dataset",
             revision=test_revision,
             config=config,
             split=f"split{i}",
@@ -266,7 +278,7 @@ def test_priority_logic_creation_big_small() -> None:
     half_jobs = (small_dataset_jobs + big_dataset_jobs) // 2
     finished_jobs = JobDocument.objects().order_by("+finished_at").limit(half_jobs).all()
 
-    small_dataset_finished_jobs = [i for i in finished_jobs if i.dataset == small_dataset]
+    small_dataset_finished_jobs = [i for i in finished_jobs if i.dataset == f"{small_dataset}/dataset"]
     assert len(small_dataset_finished_jobs) == small_dataset_jobs
 
 
