@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import pytest
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_METRICS_COLLECTION,
@@ -112,6 +113,7 @@ def test_metrics_deletion_migration(mongo_host: str) -> None:
         db[CACHE_METRICS_COLLECTION].drop()
 
 
+@pytest.mark.skip(reason="obsolete, queue collection does not have 'finished_at' field")
 def test_queue_delete_ttl_index(mongo_host: str) -> None:
     with MongoResource(database="test_queue_delete_ttl_index", host=mongo_host, mongoengine_alias="queue"):
         JobDocument(
