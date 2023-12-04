@@ -879,10 +879,10 @@ class Queue:
         jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
         jobs_to_cancel = len(previous_status)
+        jobs.delete()
         for job_type, status, unicity_id in previous_status:
             decrease_metric(job_type=job_type, status=status)
             release_lock(key=unicity_id)
-        jobs.delete()
         return jobs_to_cancel
 
     def is_job_in_process(
