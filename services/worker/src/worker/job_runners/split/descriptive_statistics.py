@@ -9,7 +9,6 @@ from typing import Optional, TypedDict, Union
 
 import duckdb
 import numpy as np
-import pandas as pd
 import polars as pl
 from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
@@ -192,6 +191,31 @@ def compute_histogram(
     return Histogram(hist=hist, bin_edges=bins)
 
 
+def compute_histogram_polars(
+    df: pl.dataframe.frame.DataFrame,
+    column_name: str,
+    column_type: ColumnType,
+    min_value: Union[int, float],
+    max_value: Union[int, float],
+    n_bins: int,
+    n_samples: int,
+) -> Histogram:
+    bins = generate_bins(
+        min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
+    )
+    hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
+        bins=[-1 * b for b in bins[::-1]]
+    )
+    hist_reverted = hist_df_reverted["reverse_count"].to_list()[::-1]
+    hist = hist_reverted[1:-2] + [hist_reverted[-2] + hist_df_reverted[-1]]
+    if n_samples and sum(hist) != n_samples:
+        raise StatisticsComputationError(
+            f"Got unexpected result during histogram computation for {column_name=}: "
+            f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
+        )
+    return Histogram(hist=hist, bin_edges=bins)
+
+
 def compute_numerical_statistics(
     con: duckdb.DuckDBPyConnection,
     column_name: str,
@@ -274,8 +298,15 @@ def compute_numerical_statistics_polars(
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
-    hist = df[column_name].hist(bin_count=n_bins).select(pl.col("break_point", f"{column_name}_count")).rows()
-    bin_edges, hist_counts = list(zip(*hist))
+    hist = compute_histogram_polars(
+        df,
+        column_name=column_name,
+        column_type=column_type,
+        min_value=minimum,
+        max_value=maximum,
+        n_bins=n_bins,
+        n_samples=n_samples,
+    )
 
     return NumericalStatisticsItem(
         nan_count=nan_count,
@@ -285,7 +316,7 @@ def compute_numerical_statistics_polars(
         mean=mean,
         median=median,
         std=std,
-        histogram=Histogram(hist=hist_counts, bin_edges=bin_edges),
+        histogram=hist,
     )
 
 

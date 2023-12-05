@@ -46,11 +46,12 @@ N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
         (0, 12, ColumnType.INT, [0, 2, 4, 6, 8, 10, 12, 12]),
         (-10, 15, ColumnType.INT, [-10, -7, -4, -1, 2, 5, 8, 11, 14, 15]),
         (-10, 9, ColumnType.INT, [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 9]),
-    ]
+    ],
 )
 def test_generate_bins(min_value, max_value, column_type, expected_bins):
-
-    bins = generate_bins(min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS)
+    bins = generate_bins(
+        min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
+    )
     assert bins == expected_bins
 
 
