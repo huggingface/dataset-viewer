@@ -6,12 +6,15 @@ from collections.abc import Callable
 from contextlib import ExitStack
 from dataclasses import replace
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 from unittest.mock import patch
 
 import datasets.config
 import duckdb
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
@@ -29,8 +32,7 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
-    CREATE_SEQUENCE_COMMAND,
-    CREATE_TABLE_COMMAND,
+    CREATE_TABLE_COMMANDS,
     SplitDuckDbIndexJobRunner,
     get_indexable_columns,
 )
@@ -517,8 +519,21 @@ FTS_COMMAND = (
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
-    duckdb.sql(CREATE_SEQUENCE_COMMAND)
-    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns) + " df;")
+    duckdb.sql(CREATE_TABLE_COMMANDS.format(columns=columns, source="df"))
     duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
     result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
+
+
+def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> None:
+    pa_table = pa.Table.from_pydict({"text": [f"text-{i}" for i in range(100)]})
+    parquet_path = str(tmp_path / "0000.parquet")
+    pq.write_table(pa_table, parquet_path, row_group_size=2)
+    db_path = str(tmp_path / "index.duckdb")
+    column_names = ",".join(f'"{column}"' for column in pa_table.column_names)
+    with duckdb.connect(db_path) as con:
+        con.sql(CREATE_TABLE_COMMANDS.format(columns=column_names, source=parquet_path))
+    with duckdb.connect(db_path) as con:
+        df = con.sql("SELECT * FROM data").to_df()
+    assert df["__hf_index_id"].is_monotonic_increasing
+    assert df["__hf_index_id"].is_unique

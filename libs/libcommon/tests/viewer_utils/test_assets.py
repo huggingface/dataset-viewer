@@ -1,9 +1,7 @@
 from collections.abc import Mapping
-from io import BytesIO
 from pathlib import Path
 
 import pytest
-import soundfile  # type: ignore
 import validators  # type: ignore
 from datasets import Dataset
 from PIL import Image as PILImage  # type: ignore
@@ -56,19 +54,18 @@ def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storag
     assert image is not None
 
 
-def test_create_audio_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
-    dataset = datasets["audio"]
-    value = dataset[0]["col"]
-    buffer = BytesIO()
-    soundfile.write(buffer, value["array"], value["sampling_rate"], format="wav")
-    audio_file_bytes = buffer.read()
+@pytest.mark.parametrize("audio_file_extension", [".wav", ""])  # also test audio files without extension
+def test_create_audio_file(
+    audio_file_extension: str, shared_datadir: Path, public_assets_storage: PublicAssetsStorage
+) -> None:
+    audio_file_bytes = (shared_datadir / "test_audio_44100.wav").read_bytes()
     value = create_audio_file(
         dataset="dataset",
         revision="revision",
         config="config",
         split="split",
         row_idx=7,
-        audio_file_extension=".wav",
+        audio_file_extension=audio_file_extension,
         audio_file_bytes=audio_file_bytes,
         column="col",
         filename="audio.wav",
