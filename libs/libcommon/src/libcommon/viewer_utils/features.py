@@ -118,19 +118,26 @@ def audio(
             "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
+    audio_file_extension = get_audio_file_extension(value)
+    audio_file_bytes = get_audio_file_bytes(value)
+    # convert to wav if the file is not wav or mp3 already
+    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+    # this function can raise, we don't catch it
+    return create_audio_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        audio_file_bytes=audio_file_bytes,
+        audio_file_extension=audio_file_extension,
+        public_assets_storage=public_assets_storage,
+        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
+    )
 
-    if "path" in value and isinstance(value["path"], str):
-        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-        # It might be "" for audio files downloaded from the Hub
-        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
-    elif ("path" in value and value["path"] is None) or "array" in value:
-        audio_file_extension = ".wav"
-    else:
-        raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {', '.join(value)}."
-        )
 
+def get_audio_file_bytes(value: Any) -> bytes:
     if "bytes" in value and isinstance(value["bytes"], bytes):
         audio_file_bytes = value["bytes"]
     elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
@@ -150,23 +157,22 @@ def audio(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
             f" {', '.join(value)}."
         )
+    return audio_file_bytes
 
-    # convert to wav if the file is not wav or mp3 already
-    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
 
-    # this function can raise, we don't catch it
-    return create_audio_file(
-        dataset=dataset,
-        revision=revision,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=featureName,
-        audio_file_bytes=audio_file_bytes,
-        audio_file_extension=audio_file_extension,
-        public_assets_storage=public_assets_storage,
-        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
-    )
+def get_audio_file_extension(value: Any) -> str:
+    if "path" in value and isinstance(value["path"], str):
+        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+        # It might be "" for audio files downloaded from the Hub
+        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
+    elif ("path" in value and value["path"] is None) or "array" in value:
+        audio_file_extension = ".wav"
+    else:
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {', '.join(value)}."
+        )
+    return audio_file_extension
 
 
 def get_cell_value(
