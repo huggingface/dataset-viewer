@@ -70,7 +70,7 @@ COMPUTE_HIST_COMMAND = """
         JOIN {bins_table_name} ON ("{column_name}" >= bin_min AND "{column_name}" < bin_max) GROUP BY bin_id;
 """
 CREATE_TABLE_COMMAND = """
-CREATE OR REPLACE TABLE {table_name} AS SELECT {column_names} FROM {select_from};
+CREATE OR REPLACE TABLE {table_name} AS SELECT {column_names} FROM '{select_from}';
 """
 CREATE_TEMPORARY_TABLE_COMMAND = """
 CREATE OR REPLACE TEMPORARY TABLE {table_name} AS SELECT {column_names} FROM {select_from};
@@ -703,7 +703,7 @@ def compute_descriptive_statistics_response(
     create_table_command = CREATE_TABLE_COMMAND.format(
         table_name=DATA_TABLE_NAME,
         column_names=all_feature_names,
-        select_from=f"read_parquet('{local_parquet_glob_path}')",
+        select_from=local_parquet_glob_path,
     )
     logging.info(create_table_command)
     con.sql(create_table_command)
