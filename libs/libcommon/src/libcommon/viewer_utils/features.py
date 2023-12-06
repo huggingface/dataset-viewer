@@ -31,6 +31,10 @@ from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 UNSUPPORTED_FEATURES = [Value("binary")]
+AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
+    ".wav": ((b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)),  # AND
+    ".mp3": (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2", b"\x49\x44\x33"),  # OR
+}
 
 
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
@@ -173,6 +177,17 @@ def get_audio_file_extension(value: Any) -> str:
             f" {', '.join(value)}."
         )
     return audio_file_extension
+
+
+def infer_audio_file_extension(audio_file_bytes: bytes) -> Optional[str]:
+    for audio_file_extension, magic_numbers in AUDIO_FILE_MAGIC_NUMBERS.items():
+        if isinstance(magic_numbers[0], tuple):
+            if all(audio_file_bytes.startswith(magic_number, start) for magic_number, start in magic_numbers):
+                return audio_file_extension
+        else:
+            if audio_file_bytes.startswith(magic_numbers):
+                return audio_file_extension
+    return None
 
 
 def get_cell_value(
