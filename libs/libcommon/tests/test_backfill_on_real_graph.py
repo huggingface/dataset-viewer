@@ -129,7 +129,7 @@ def test_plan_job_creation_and_termination() -> None:
         job_runner_version=PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
         dataset_git_revision=REVISION_NAME,
     )
-    Queue().finish_job(job_id=job_info["job_id"], is_success=True)
+    Queue().finish_job(job_id=job_info["job_id"])
 
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
     assert_dataset_backfill_plan(
