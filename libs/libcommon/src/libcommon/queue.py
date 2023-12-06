@@ -31,7 +31,6 @@ from libcommon.constants import (
     QUEUE_COLLECTION_LOCKS,
     QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
-    QUEUE_TTL_SECONDS,
 )
 from libcommon.utils import FlatJobInfo, JobInfo, Priority, Status, get_datetime, inputs_to_string
 
@@ -72,7 +71,6 @@ class JobDict(TypedDict):
     difficulty: int
     created_at: datetime
     started_at: Optional[datetime]
-    finished_at: Optional[datetime]
     last_heartbeat: Optional[datetime]
 
 
@@ -117,9 +115,9 @@ class JobQueryFilters(TypedDict, total=False):
 
 
 # States:
-# - waiting: started_at is None and finished_at is None: waiting jobs
-# - started: started_at is not None and finished_at is None: started jobs
-# - finished: started_at is not None and finished_at is not None: finished jobs
+# - waiting: started_at is None: waiting jobs
+# - started: started_at is not None: started jobs
+# - finished: started_at is not None: finished jobs
 # For a given set of arguments, only one job is allowed in the started state. No
 # restriction for the other states
 class JobDocument(Document):
@@ -139,7 +137,6 @@ class JobDocument(Document):
         difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, optional): When the job has started.
-        finished_at (`datetime`, optional): When the job has finished.
         last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
     """
 
@@ -154,11 +151,6 @@ class JobDocument(Document):
             ("priority", "status", "type", "namespace", "unicity_id", "created_at", "-difficulty"),
             ("status", "type"),
             ("unicity_id", "status", "-created_at"),
-            {
-                "fields": ["finished_at"],
-                "expireAfterSeconds": QUEUE_TTL_SECONDS,
-                "partialFilterExpression": {"status": {"$in": [Status.SUCCESS, Status.ERROR, Status.CANCELLED]}},
-            },
         ],
     }
     type = StringField(required=True)
@@ -173,7 +165,6 @@ class JobDocument(Document):
     difficulty = IntField(required=True)
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
-    finished_at = DateTimeField()
     last_heartbeat = DateTimeField()
 
     def to_dict(self) -> JobDict:
@@ -190,7 +181,6 @@ class JobDocument(Document):
             "difficulty": self.difficulty,
             "created_at": self.created_at,
             "started_at": self.started_at,
-            "finished_at": self.finished_at,
             "last_heartbeat": self.last_heartbeat,
         }
 
@@ -545,7 +535,7 @@ class Queue:
         try:
             existing = JobDocument.objects(pk__in=job_ids)
             previous_status = [(job.type, job.status) for job in existing.all()]
-            existing.update(finished_at=get_datetime(), status=Status.CANCELLED)
+            existing.update(status=Status.CANCELLED)
             for job_type, status in previous_status:
                 update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
             return existing.count()
@@ -735,7 +725,6 @@ class Queue:
                 )
                 # and cancel the other ones, if any
                 waiting_jobs(status=Status.WAITING).update(
-                    finished_at=datetime,
                     status=Status.CANCELLED,
                     write_concern={"w": "majority", "fsync": True},
                     read_concern={"level": "majority"},
@@ -826,7 +815,7 @@ class Queue:
 
     def _get_started_job(self, job_id: str) -> JobDocument:
         """Get a started job, and raise if it's not in the correct format
-          (does not exist, not started, incorrect values for finished_at or started_at).
+          (does not exist, not started, incorrect values for started_at).
 
         Args:
             job_id (`str`, required): id of the job
@@ -837,21 +826,19 @@ class Queue:
         job = JobDocument.objects(pk=job_id).get()
         if job.status is not Status.STARTED:
             raise StartedJobError(f"job {job.unicity_id} has a not the STARTED status ({job.status.value}).")
-        if job.finished_at is not None:
-            raise StartedJobError(f"job {job.unicity_id} has a non-empty finished_at field.")
         if job.started_at is None:
             raise StartedJobError(f"job {job.unicity_id} has an empty started_at field.")
         return job
 
     def is_job_started(self, job_id: str) -> bool:
-        """Check if a job is started, with the correct values for finished_at and started_at.
+        """Check if a job is started, with the correct values for started_at.
 
         Args:
             job_id (`str`, required): id of the job
 
         Returns:
             `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
-              started_at, empty finished_at)
+              started_at)
         """
         try:
             self._get_started_job(job_id=job_id)
@@ -873,8 +860,8 @@ class Queue:
             is_success (`bool`, required): whether the job succeeded or not
 
         Returns:
-            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at, empty
-            finished_at) before finishing
+            `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
+            before finishing
         """
         try:
             job = self._get_started_job(job_id=job_id)
@@ -886,7 +873,7 @@ class Queue:
             return False
         finished_status = Status.SUCCESS if is_success else Status.ERROR
         previous_status = job.status
-        job.update(finished_at=get_datetime(), status=finished_status)
+        job.update(status=finished_status)
         update_metrics_for_type(job_type=job.type, previous_status=previous_status, new_status=finished_status)
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
@@ -905,7 +892,7 @@ class Queue:
         jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
         jobs_to_cancel = len(previous_status)
-        jobs.update(finished_at=get_datetime(), status=Status.CANCELLED)
+        jobs.update(status=Status.CANCELLED)
         for job_type, status, unicity_id in previous_status:
             update_metrics_for_type(job_type=job_type, previous_status=status, new_status=Status.CANCELLED)
             release_lock(key=unicity_id)
