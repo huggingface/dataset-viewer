@@ -156,7 +156,10 @@ class MigrationDeleteJobsByStatus(BaseQueueMigration):
         db = get_db(self.MONGOENGINE_ALIAS)
 
         if db[self.COLLECTION_JOBS].count_documents({"status": {"$in": self.status_list}}):
-            raise ValueError(f"Found documents with status in {self.status_list}")
+            logging.warning(f"Found documents with status in {self.status_list}")
+            # TODO: Remove after deploy (There will be finished jobs until 
+            # https://github.com/huggingface/datasets-server/pull/2175 is merged)
+            # raise ValueError(f"Found documents with status in {self.status_list}")
 
 
 class MigrationRemoveFieldFromJob(BaseQueueMigration):
