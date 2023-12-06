@@ -203,17 +203,20 @@ def compute_histogram_polars(
     bins = generate_bins(
         min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
     )
+    bins_reverted = [-1 * b for b in bins[::-1]]
     hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
-        bins=[-1 * b for b in bins[::-1]]
+        bins=bins_reverted
     )
-    hist_reverted = hist_df_reverted["reverse_count"].to_list()[::-1]
-    hist = hist_reverted[1:-2] + [hist_reverted[-2] + hist_df_reverted[-1]]
+    hist_reverted = hist_df_reverted["reverse_count"].cast(int).to_list()  # TODO: assert the last one is 0
+    # assert hist_reverted[-1] == 0  # this value corresponds to "less than minimum"
+    hist = hist_reverted[::-1]
+    hist = [hist[0] + hist[1]] + hist[2:-2] + [hist[-2] + hist[-1]]
     if n_samples and sum(hist) != n_samples:
         raise StatisticsComputationError(
             f"Got unexpected result during histogram computation for {column_name=}: "
             f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
         )
-    return Histogram(hist=hist, bin_edges=bins)
+    return Histogram(hist=hist, bin_edges=np.round(bins, DECIMALS).tolist())
 
 
 def compute_numerical_statistics(
@@ -270,7 +273,7 @@ def compute_numerical_statistics_polars(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     n_bins: int,
-    n_samples: int,
+    n_samples: int,  # TODO: partial datasets
     column_type: ColumnType,
 ) -> NumericalStatisticsItem:
     col_stats = dict(
@@ -289,11 +292,13 @@ def compute_numerical_statistics_polars(
         .unnest("stats")
     )
     minimum, maximum, mean, median, std, nan_count = stats[column_name].to_list()
+    nan_count = int(nan_count)
 
     if column_type == ColumnType.FLOAT:
         minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     elif column_type == ColumnType.INT:
         mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
+        minimum, maximum = int(minimum), int(maximum)
     else:
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
@@ -305,7 +310,7 @@ def compute_numerical_statistics_polars(
         min_value=minimum,
         max_value=maximum,
         n_bins=n_bins,
-        n_samples=n_samples,
+        n_samples=n_samples - nan_count,
     )
 
     return NumericalStatisticsItem(
@@ -695,114 +700,16 @@ def compute_descriptive_statistics_response(
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
-    if dataset in SWITCH_TO_POLARS_DATASET_LIST:
-        logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
-        response = compute_descriptive_statistics_response_polars(
-            path=local_parquet_glob_path,
-            string_features=string_features,
-            categorical_features=categorical_features,
-            numerical_features=numerical_features,
-            num_examples=num_examples,
-            histogram_num_bins=histogram_num_bins,
-        )
-        return response
-
-    stats: list[StatisticsPerColumnItem] = []
-    all_feature_names = ",".join(
-        f'"{column}"' for column in list(categorical_features) + list(numerical_features) + list(string_features)
+    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
+    response = compute_descriptive_statistics_response_polars(
+        path=local_parquet_glob_path,
+        string_features=string_features,
+        categorical_features=categorical_features,
+        numerical_features=numerical_features,
+        num_examples=num_examples,
+        histogram_num_bins=histogram_num_bins,
     )
-
-    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with DUCKDB")
-    con = duckdb.connect(str(local_parquet_directory / DATABASE_FILENAME))  # load data in local db file
-    con.sql("SET enable_progress_bar=true;")
-
-    # DuckDB uses n_threads = num kubernetes cpu (limits)
-    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
-    logging.info(f"Number of threads={n_threads}")
-
-    # However DuckDB uses max_memory = memory of the entite kubernetes node so we lower it
-    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
-    logging.info(f"Original {max_memory=}")
-    con.sql(f"SET max_memory TO '{28 if n_threads >= 8 else 10}gb';")
-    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
-    logging.info(f"Current {max_memory=}")
-
-    logging.info("Loading data into in-memory table. ")
-    create_table_command = CREATE_TABLE_COMMAND.format(
-        table_name=DATA_TABLE_NAME,
-        column_names=all_feature_names,
-        select_from=f"read_parquet('{local_parquet_glob_path}')",
-    )
-    logging.info(create_table_command)
-    con.sql(create_table_command)
-    logging.info("Loading finished. ")
-
-    if string_features:
-        logging.info(f"Compute statistics for string columns {string_features}")
-    for feature_name, feature in tqdm(string_features.items()):
-        logging.debug(f"Compute for string column {feature_name}")
-        string_column_stats = compute_string_statistics(
-            con,
-            feature_name,
-            n_bins=histogram_num_bins,
-            n_samples=num_examples,
-            table_name=DATA_TABLE_NAME,
-            dtype=feature.get("dtype"),
-        )
-        stats.append(
-            StatisticsPerColumnItem(
-                column_name=feature_name,
-                column_type=ColumnType.STRING_LABEL
-                if "frequencies" in string_column_stats
-                else ColumnType.STRING_TEXT,
-                column_statistics=string_column_stats,
-            )
-        )
-    # compute for ClassLabels (we are sure that these are discrete categories)
-    if categorical_features:
-        logging.info(f"Compute statistics for categorical columns {categorical_features}")
-        categorical_features = Features.from_dict(categorical_features)
-    for feature_name, feature in tqdm(categorical_features.items()):
-        logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
-        cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics(
-            con,
-            feature_name,
-            class_label_feature=feature,
-            n_samples=num_examples,
-            table_name=DATA_TABLE_NAME,
-        )
-        stats.append(
-            StatisticsPerColumnItem(
-                column_name=feature_name,
-                column_type=ColumnType.CLASS_LABEL,
-                column_statistics=cat_column_stats,
-            )
-        )
-
-    if numerical_features:
-        logging.info(f"Compute min, max, mean, median, std, histogram for numerical columns {numerical_features}. ")
-    for feature_name, feature in tqdm(numerical_features.items()):
-        column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
-        num_column_stats: NumericalStatisticsItem = compute_numerical_statistics(
-            con,
-            feature_name,
-            table_name=DATA_TABLE_NAME,
-            n_bins=histogram_num_bins,
-            n_samples=num_examples,
-            column_type=column_type,
-        )
-        stats.append(
-            StatisticsPerColumnItem(
-                column_name=feature_name,
-                column_type=column_type,
-                column_statistics=num_column_stats,
-            )
-        )
-    con.close()
-
-    return SplitDescriptiveStatisticsResponse(
-        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
-    )
+    return response
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):

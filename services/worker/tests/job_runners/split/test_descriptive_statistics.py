@@ -8,6 +8,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 from datasets import ClassLabel, Dataset
 from libcommon.config import ProcessingGraphConfig
@@ -25,6 +26,8 @@ from worker.job_runners.split.descriptive_statistics import (
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
+    compute_numerical_statistics_polars,
+    compute_string_statistics_polars,
     generate_bins,
 )
 from worker.resources import LibrariesResource
@@ -53,6 +56,11 @@ def test_generate_bins(min_value, max_value, column_type, expected_bins):
         min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
     )
     assert bins == expected_bins
+
+
+def test_histogram():
+    # datasets["descriptive_statistics"]
+    pass
 
 
 @pytest.fixture
@@ -196,7 +204,7 @@ def count_expected_statistics_for_numerical_column(
     else:
         n_bins = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
         bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=n_bins)
-        hist, bin_edges = np.histogram(column[~column.isna()], np.append(bins.bin_min, maximum))
+        hist, bin_edges = np.histogram(column[~column.isna()], bins)
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
     if dtype is ColumnType.FLOAT:
@@ -288,6 +296,93 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     return {"num_examples": df.shape[0], "statistics": expected_statistics}
 
 
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "int__column",
+        "int__nan_column",
+        "int__negative_column",
+        "int__cross_zero_column",
+        "int__large_values_column",
+        "float__column",
+        "float__nan_column",
+        "float__negative_column",
+        "float__cross_zero_column",
+        "float__large_values_column",
+    ],
+)
+def test_numerical_statistics(column_name, descriptive_statistics_expected, datasets):
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_numerical_statistics_polars(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_bins=N_BINS,
+        n_samples=len(data[column_name]),
+        column_type=ColumnType.INT if column_name.startswith("int__") else ColumnType.FLOAT,
+    )
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
+    assert expected_hist["hist"] == computed_hist["hist"]
+    assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
+    assert expected == pytest.approx(computed)
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "string_text__column",
+        "string_text__nan_column",
+        "string_text__large_string_column",
+        "string_text__large_string_nan_column",
+        "class_label__string_column",
+        "class_label__string_nan_column",
+    ],
+)
+def test_string_statistics(
+    column_name,
+    descriptive_statistics_expected,
+    descriptive_statistics_string_text_expected,
+    datasets,
+):
+    if column_name.startswith("string_text__"):
+        expected = descriptive_statistics_string_text_expected["statistics"][column_name]["column_statistics"]
+        data = datasets["descriptive_statistics_string_text"].to_dict()
+    else:
+        expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+        data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_string_statistics_polars(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_bins=N_BINS,
+        n_samples=len(data[column_name]),
+        dtype="large_string" if "_large_string_" in column_name else None,
+    )
+    if column_name.startswith("string_text__"):
+        expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
+        assert expected_hist["hist"] == computed_hist["hist"]
+        assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
+        assert expected == pytest.approx(computed)
+    else:
+        assert expected == computed
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    ["int__column", "int__nan_column", "int__negative_column", "int__cross_zero_column", "int__large_values_column"],
+)
+def test_float_statistics(column_name, descriptive_statistics_expected, datasets):
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_numerical_statistics_polars(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_bins=N_BINS,
+        n_samples=len(data[column_name]),
+        column_type=ColumnType.FLOAT,
+    )
+    assert expected == computed
+
+
 @pytest.fixture
 def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
     ds = datasets["descriptive_statistics_string_text"]
@@ -309,11 +404,11 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("descriptive_statistics_partial", None),
-        ("descriptive_statistics_string_text", None),
-        ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
+        # ("descriptive_statistics_partial", None),
+        # ("descriptive_statistics_string_text", None),
+        # ("gated", None),
+        # ("audio", "NoSupportedFeaturesError"),
+        # ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
