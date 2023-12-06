@@ -10,7 +10,9 @@ from libcommon.constants import (
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
     MetricsDeletionMigration,
+    MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
+    MigrationRemoveFieldFromJob,
     QueueDeletionMigration,
 )
 from mongodb_migration.drop_migrations import MigrationDropCollection
@@ -34,14 +36,8 @@ from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version i
 from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
     MigrationRemoveWorkerVersionFromCachedResponse,
 )
-from mongodb_migration.migrations._20230511100600_queue_remove_force import (
-    MigrationRemoveForceFromJob,
-)
 from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
     MigrationQueueDeleteIndexesWithForce,
-)
-from mongodb_migration.migrations._20230511110700_queue_delete_skipped_jobs import (
-    MigrationDeleteSkippedJobs,
 )
 from mongodb_migration.migrations._20230516101500_queue_job_add_revision import (
     MigrationQueueAddRevisionToJob,
@@ -178,11 +174,17 @@ class MigrationsCollector:
                 cache_kind="dataset-split-names-from-dataset-info",
                 version="20230504194600",
             ),
-            MigrationRemoveForceFromJob(version="20230511100600", description="remove 'force' field from queue"),
+            MigrationRemoveFieldFromJob(
+                field_name="force", version="20230511100600", description="remove 'force' field from queue"
+            ),
             MigrationQueueDeleteIndexesWithForce(
                 version="20230511100700", description="remove indexes with field 'force'"
             ),
-            MigrationDeleteSkippedJobs(version="20230511110700", description="delete jobs with skipped status"),
+            MigrationDeleteJobsByStatus(
+                status_list=["skipped"],
+                version="20230511110700",
+                description="delete jobs with skipped status",
+            ),
             MigrationQueueAddRevisionToJob(
                 version="20230516101500", description="add 'revision' field to jobs in queue database"
             ),
@@ -275,5 +277,18 @@ class MigrationsCollector:
             MigrationAddPartialToSplitDuckdbIndexCacheResponse(
                 version="20231106193200",
                 description="add 'partial', 'num_rows' and 'num_bytes' fields for 'split-duckdb-index' cache records",
+            ),
+            MigrationDeleteJobsByStatus(
+                status_list=["success", "error", "cancelled"],
+                version="20231201074900",
+                description="delete jobs with success, error and cancelled status",
+            ),
+            MigrationQueueDeleteTTLIndex(
+                version="20231201112000",
+                description="delete the TTL index on the 'finished_at' field in the queue database",
+                field_name="finished_at",
+            ),
+            MigrationRemoveFieldFromJob(
+                field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
             ),
         ]
