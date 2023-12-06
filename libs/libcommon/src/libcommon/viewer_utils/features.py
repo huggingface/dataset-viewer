@@ -122,10 +122,10 @@ def audio(
             "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
-    audio_file_extension = get_audio_file_extension(value)
     audio_file_bytes = get_audio_file_bytes(value)
+    audio_file_extension = get_audio_file_extension(value, audio_file_bytes)
     # convert to wav if the file is not wav or mp3 already
-    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+    target_audio_file_extension = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
     # this function can raise, we don't catch it
     return create_audio_file(
         dataset=dataset,
@@ -137,7 +137,7 @@ def audio(
         audio_file_bytes=audio_file_bytes,
         audio_file_extension=audio_file_extension,
         public_assets_storage=public_assets_storage,
-        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
+        filename=f"{append_hash_suffix('audio', json_path)}{target_audio_file_extension}",
     )
 
 
@@ -164,11 +164,11 @@ def get_audio_file_bytes(value: Any) -> bytes:
     return audio_file_bytes
 
 
-def get_audio_file_extension(value: Any) -> str:
+def get_audio_file_extension(value: Any, audio_file_bytes: bytes) -> Optional[str]:
     if "path" in value and isinstance(value["path"], str):
         # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-        # It might be "" for audio files downloaded from the Hub
-        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
+        # It might be "" for audio files downloaded from the Hub: make it None
+        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
     elif ("path" in value and value["path"] is None) or "array" in value:
         audio_file_extension = ".wav"
     else:
@@ -176,6 +176,8 @@ def get_audio_file_extension(value: Any) -> str:
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
             f" {', '.join(value)}."
         )
+    if not audio_file_extension:
+        audio_file_extension = infer_audio_file_extension(audio_file_bytes)
     return audio_file_extension
 
 
