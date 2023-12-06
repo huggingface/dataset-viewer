@@ -2346,6 +2346,21 @@ toml = "*"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-datadir"
+version = "1.5.0"
+description = "pytest plugin for test data directories and files"
+category = "dev"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest-datadir-1.5.0.tar.gz", hash = "sha256:1617ed92f9afda0c877e4eac91904b5f779d24ba8f5e438752e3ae39d8d2ee3f"},
+    {file = "pytest_datadir-1.5.0-py3-none-any.whl", hash = "sha256:34adf361bcc7b37961bbc1dfa8d25a4829e778bab461703c38a5c50ca9c36dc8"},
+]
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -3299,4 +3314,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "7f3fc97f1b49231fe713cb7fe5dd0f38ceecf28fa374ef53688359dfe64a7124"
+content-hash = "7982dc1e305b78ae270a589a5d1bb12e3da3a4d38682c0dd2c0c975934efce83"

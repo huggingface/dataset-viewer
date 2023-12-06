@@ -80,11 +80,11 @@ images:
 common:
   # Comma-separated list of blocked datasets (e.g. if not supported by the Hub). No jobs will be processed for those datasets.
   # See https://observablehq.com/@huggingface/blocked-datasets
-  blockedDatasets: "open-llm-leaderboard/*,taesiri/arxiv_qa,enzostvs/stable-diffusion-tpu-generations"
+  blockedDatasets: "open-llm-leaderboard/*,taesiri/arxiv_qa,enzostvs/stable-diffusion-tpu-generations,lunaluan/*"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
   # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-V2,andreped/*,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT"
+  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,andreped/*,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
