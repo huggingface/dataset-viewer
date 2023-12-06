@@ -693,10 +693,7 @@ class Queue:
             # retry for 2 seconds
             with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES, ttl=LOCK_TTL_SECONDS):
                 # get all the pending jobs for the same unicity_id
-                # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
-                waiting_jobs = JobDocument.objects(
-                    unicity_id=job.unicity_id, status__in=[Status.WAITING, Status.STARTED]
-                ).order_by("-created_at")
+                waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-created_at")
                 datetime = get_datetime()
                 # raise if any job has already been started for unicity_id
                 num_started_jobs = waiting_jobs(status=Status.STARTED).count()
@@ -875,8 +872,7 @@ class Queue:
         Returns:
             `int`: the number of deleted jobs
         """
-        # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
-        jobs = JobDocument.objects(dataset=dataset, status__in=[Status.WAITING, Status.STARTED])
+        jobs = JobDocument.objects(dataset=dataset)
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
         jobs_to_cancel = len(previous_status)
         jobs.delete()
@@ -900,7 +896,6 @@ class Queue:
         Returns:
             `bool`: whether the job is in process (waiting or started)
         """
-        # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
         return (
             JobDocument.objects(
                 type=job_type,
@@ -908,7 +903,6 @@ class Queue:
                 revision=revision,
                 config=config,
                 split=split,
-                status__in=[Status.WAITING, Status.STARTED],
             ).count()
             > 0
         )
@@ -944,20 +938,13 @@ class Queue:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
-        return self._get_df(
-            [
-                job.flat_info()
-                for job in JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset)
-            ]
-        )
+        return self._get_df([job.flat_info() for job in JobDocument.objects(**filters, dataset=dataset)])
 
     def has_pending_jobs(self, dataset: str, job_types: Optional[list[str]] = None) -> bool:
         filters = {}
         if job_types:
             filters["type__in"] = job_types
-        # TODO: remove status__in=[Status.WAITING, Status.STARTED] filter
-        return JobDocument.objects(status__in=[Status.WAITING, Status.STARTED], **filters, dataset=dataset).count() > 0
+        return JobDocument.objects(**filters, dataset=dataset).count() > 0
 
     # special reports
     def count_jobs(self, status: Status, job_type: str) -> int:
@@ -1012,12 +999,7 @@ class Queue:
 
         Returns: an array of the pending jobs for the dataset and the given job type
         """
-        return [
-            d.to_dict()
-            for d in JobDocument.objects(
-                status__in=[Status.WAITING.value, Status.STARTED.value], type=job_type, dataset=dataset
-            )
-        ]
+        return [d.to_dict() for d in JobDocument.objects(type=job_type, dataset=dataset)]
 
     def heartbeat(self, job_id: str) -> None:
         """Update the job `last_heartbeat` field with the current date.
