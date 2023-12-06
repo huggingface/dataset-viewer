@@ -401,7 +401,7 @@ workers:
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 100
-    workerDifficultyMin: 0
+    workerDifficultyMin: 80
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -420,8 +420,8 @@ workers:
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
     uvicornPort: 8080
-    workerDifficultyMax: 70
-    workerDifficultyMin: 0
+    workerDifficultyMax: 80
+    workerDifficultyMin: 50
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -440,7 +440,7 @@ workers:
     uvicornHostname: "0.0.0.0"
     uvicornNumWorkers: "1"
     uvicornPort: 8080
-    workerDifficultyMax: 40
+    workerDifficultyMax: 50
     workerDifficultyMin: 0
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
