@@ -31,6 +31,10 @@ from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 UNSUPPORTED_FEATURES = [Value("binary")]
+AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
+    ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
+    ".mp3": (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2", b"\x49\x44\x33"),  # OR
+}
 
 
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
@@ -118,19 +122,28 @@ def audio(
             "Audio cell must be an encoded dict of an audio sample, "
             f"but got {str(value)[:300]}{'...' if len(str(value)) > 300 else ''}"
         )
+    audio_file_extension = get_audio_file_extension(value)
+    audio_file_bytes = get_audio_file_bytes(value)
+    if not audio_file_extension:
+        audio_file_extension = infer_audio_file_extension(audio_file_bytes)
+    # convert to wav if the file is not wav or mp3 already
+    target_audio_file_extension = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
+    # this function can raise, we don't catch it
+    return create_audio_file(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        row_idx=row_idx,
+        column=featureName,
+        audio_file_bytes=audio_file_bytes,
+        audio_file_extension=audio_file_extension,
+        public_assets_storage=public_assets_storage,
+        filename=f"{append_hash_suffix('audio', json_path)}{target_audio_file_extension}",
+    )
 
-    if "path" in value and isinstance(value["path"], str):
-        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
-        # It might be "" for audio files downloaded from the Hub
-        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1]
-    elif ("path" in value and value["path"] is None) or "array" in value:
-        audio_file_extension = ".wav"
-    else:
-        raise ValueError(
-            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
-            f" {', '.join(value)}."
-        )
 
+def get_audio_file_bytes(value: Any) -> bytes:
     if "bytes" in value and isinstance(value["bytes"], bytes):
         audio_file_bytes = value["bytes"]
     elif "path" in value and isinstance(value["path"], str) and os.path.exists(value["path"]):
@@ -150,23 +163,33 @@ def audio(
             "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
             f" {', '.join(value)}."
         )
+    return audio_file_bytes
 
-    # convert to wav if the file is not wav or mp3 already
-    ext = audio_file_extension if audio_file_extension in [".wav", ".mp3"] else ".wav"
 
-    # this function can raise, we don't catch it
-    return create_audio_file(
-        dataset=dataset,
-        revision=revision,
-        config=config,
-        split=split,
-        row_idx=row_idx,
-        column=featureName,
-        audio_file_bytes=audio_file_bytes,
-        audio_file_extension=audio_file_extension,
-        public_assets_storage=public_assets_storage,
-        filename=f"{append_hash_suffix('audio', json_path)}{ext}",
-    )
+def get_audio_file_extension(value: Any) -> Optional[str]:
+    if "path" in value and isinstance(value["path"], str):
+        # .split("::")[0] for chained URLs like zip://audio.wav::https://foo.bar/data.zip
+        # It might be "" for audio files downloaded from the Hub: make it None
+        audio_file_extension = os.path.splitext(value["path"].split("::")[0])[1] or None
+    elif ("path" in value and value["path"] is None) or "array" in value:
+        audio_file_extension = ".wav"
+    else:
+        raise ValueError(
+            "An audio sample should have 'path' and 'bytes' (or 'array' and 'sampling_rate') but got"
+            f" {', '.join(value)}."
+        )
+    return audio_file_extension
+
+
+def infer_audio_file_extension(audio_file_bytes: bytes) -> Optional[str]:
+    for audio_file_extension, magic_numbers in AUDIO_FILE_MAGIC_NUMBERS.items():
+        if isinstance(magic_numbers, list):
+            if all(audio_file_bytes.startswith(magic_number, start) for magic_number, start in magic_numbers):
+                return audio_file_extension
+        else:
+            if audio_file_bytes.startswith(magic_numbers):
+                return audio_file_extension
+    return None
 
 
 def get_cell_value(

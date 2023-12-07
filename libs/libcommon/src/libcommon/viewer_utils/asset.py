@@ -4,7 +4,7 @@
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TypedDict
+from typing import Optional, TypedDict
 from urllib import parse
 
 from PIL import Image  # type: ignore
@@ -86,7 +86,7 @@ def create_audio_file(
     row_idx: int,
     column: str,
     audio_file_bytes: bytes,
-    audio_file_extension: str,
+    audio_file_extension: Optional[str],
     filename: str,
     public_assets_storage: PublicAssetsStorage,
 ) -> list[AudioSource]:
@@ -121,7 +121,7 @@ def create_audio_file(
                 f.write(audio_file_bytes)
         else:  # we need to convert
             # might spawn a process to convert the audio file using ffmpeg
-            with NamedTemporaryFile("wb", suffix=audio_file_extension or None) as tmpfile:
+            with NamedTemporaryFile("wb", suffix=audio_file_extension) as tmpfile:
                 tmpfile.write(audio_file_bytes)
                 segment: AudioSegment = AudioSegment.from_file(
                     tmpfile.name, audio_file_extension[1:] if audio_file_extension else None
