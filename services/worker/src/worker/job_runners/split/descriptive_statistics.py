@@ -248,12 +248,13 @@ def compute_string_statistics_polars(
 
         if n_unique <= MAX_NUM_STRING_LABELS:
             labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+            labels2counts.pop(None, None)
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,
                 no_label_count=0,
                 no_label_proportion=0.0,
-                n_unique=len(labels2counts),  # TODO: does it contain None?
+                n_unique=len(labels2counts),
                 frequencies=labels2counts,
             )
 

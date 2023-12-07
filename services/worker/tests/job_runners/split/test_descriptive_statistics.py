@@ -329,8 +329,8 @@ def test_numerical_statistics(column_name, descriptive_statistics_expected, data
         "string_text__nan_column",
         "string_text__large_string_column",
         "string_text__large_string_nan_column",
-        "class_label__string_column",
-        "class_label__string_nan_column",
+        "string_label__column",
+        "string_label__nan_column",
     ],
 )
 def test_string_statistics(
@@ -359,23 +359,6 @@ def test_string_statistics(
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
-
-
-@pytest.mark.parametrize(
-    "column_name",
-    ["int__column", "int__nan_column", "int__negative_column", "int__cross_zero_column", "int__large_values_column"],
-)
-def test_float_statistics(column_name, descriptive_statistics_expected, datasets):
-    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
-    data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_numerical_statistics_polars(
-        df=pl.from_dict(data),
-        column_name=column_name,
-        n_bins=N_BINS,
-        n_samples=len(data[column_name]),
-        column_type=ColumnType.FLOAT,
-    )
-    assert expected == computed
 
 
 @pytest.fixture
