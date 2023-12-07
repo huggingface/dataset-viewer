@@ -55,7 +55,7 @@ class ColumnType(str, enum.Enum):
 
 class Histogram(TypedDict):
     hist: list[int]
-    bin_edges: list[float]
+    bin_edges: list[Union[int, float]]
 
 
 class NumericalStatisticsItem(TypedDict):
@@ -95,7 +95,7 @@ def generate_bins(
     column_type: ColumnType,
     n_bins: int,
     column_name: Optional[str] = None,
-) -> list[int]:
+) -> list[Union[int, float]]:
     """
     Compute bin edges for float and int. Note that for int data returned number of edges (= number of bins)
     might be *less* than provided `n_bins` + 1 since (`max_value` - `min_value` + 1) might be not divisible by `n_bins`,
@@ -145,7 +145,7 @@ def compute_histogram_polars(
                 f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
                 f" len({bin_edges=}) is 2 but {bin_edges[0]=} != {bin_edges[1]=}. "
             )
-        hist = [df[column_name].is_not_null().sum()]
+        hist = [int(df[column_name].is_not_null().sum())]
     elif len(bin_edges) > 2:
         bins_edges_reverted = [-1 * b for b in bin_edges[::-1]]
         hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
@@ -171,7 +171,9 @@ def compute_histogram_polars(
             f" hist counts sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
         )
 
-    return Histogram(hist=hist, bin_edges=np.round(bin_edges, DECIMALS).tolist())
+    return Histogram(
+        hist=hist, bin_edges=np.round(bin_edges, DECIMALS).tolist() if column_type is column_type.FLOAT else bin_edges
+    )
 
 
 def compute_numerical_statistics_polars(
@@ -275,7 +277,8 @@ def compute_string_statistics_polars(
 
         if n_unique <= MAX_NUM_STRING_LABELS:
             labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
-            labels2counts.pop(None, None)  # exclude counts of None values from frequencies
+            # exclude counts of None values from frequencies:
+            labels2counts.pop(None, None)  # type: ignore
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,

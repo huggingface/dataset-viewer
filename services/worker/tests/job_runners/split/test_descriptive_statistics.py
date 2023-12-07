@@ -4,7 +4,7 @@ import os
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -57,7 +57,7 @@ N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
         (0.0, 0.0, ColumnType.INT, [0.0, 0.0]),
     ],
 )
-def test_generate_bins(min_value, max_value, column_type, expected_bins):
+def test_generate_bins(min_value: Union[int,float], max_value: Union[int,float], column_type: ColumnType, expected_bins: list[Union[int,float]]) -> None:
     bins = generate_bins(
         min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
     )
@@ -318,7 +318,11 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
         "float__only_one_value_nan_column",
     ],
 )
-def test_numerical_statistics(column_name, descriptive_statistics_expected, datasets):
+def test_numerical_statistics(
+    column_name: str,
+    descriptive_statistics_expected: dict, # type: ignore
+    datasets: Mapping[str, Dataset]
+) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
     computed = compute_numerical_statistics_polars(
@@ -328,7 +332,7 @@ def test_numerical_statistics(column_name, descriptive_statistics_expected, data
         n_samples=len(data[column_name]),
         column_type=ColumnType.INT if column_name.startswith("int__") else ColumnType.FLOAT,
     )
-    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
     assert computed_hist["hist"] == expected_hist["hist"]
     assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
     assert pytest.approx(computed) == expected
@@ -346,11 +350,11 @@ def test_numerical_statistics(column_name, descriptive_statistics_expected, data
     ],
 )
 def test_string_statistics(
-    column_name,
-    descriptive_statistics_expected,
-    descriptive_statistics_string_text_expected,
-    datasets,
-):
+    column_name: str,
+    descriptive_statistics_expected: dict,  # type: ignore
+    descriptive_statistics_string_text_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+) -> None:
     if column_name.startswith("string_text__"):
         expected = descriptive_statistics_string_text_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics_string_text"].to_dict()
@@ -365,7 +369,7 @@ def test_string_statistics(
         dtype="large_string" if "_large_string_" in column_name else None,
     )
     if column_name.startswith("string_text__"):
-        expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
+        expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
         assert expected_hist["hist"] == computed_hist["hist"]
         assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
         assert expected == pytest.approx(computed)
@@ -383,10 +387,10 @@ def test_string_statistics(
     ],
 )
 def test_categorical_statistics(
-    column_name,
-    descriptive_statistics_expected,
-    datasets,
-):
+    column_name: str,
+    descriptive_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
