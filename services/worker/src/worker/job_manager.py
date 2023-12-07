@@ -249,7 +249,7 @@ class JobManager:
             }
 
     def set_crashed(self, message: str, cause: Optional[BaseException] = None) -> None:
-        self.debug(
+        self.info(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
             " had an error (crashed)"
@@ -271,7 +271,7 @@ class JobManager:
         )
 
     def set_exceeded_maximum_duration(self, message: str, cause: Optional[BaseException] = None) -> None:
-        self.debug(
+        self.info(
             "response for"
             f" dataset={self.job_params['dataset']} revision={self.job_params['revision']} job_info={self.job_info}"
             " had an error (exceeded maximum duration)"

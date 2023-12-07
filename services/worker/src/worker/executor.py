@@ -156,7 +156,12 @@ class WorkerExecutor:
     def heartbeat(self) -> None:
         worker_state = self.get_state()
         if worker_state and worker_state["current_job_info"]:
-            Queue().heartbeat(job_id=worker_state["current_job_info"]["job_id"])
+            job_id = worker_state["current_job_info"]["job_id"]
+            try:
+                Queue().heartbeat(job_id=job_id)
+            except Exception as error:
+                logging.warning(f"Heartbeat failed for job {job_id}.", error)
+                self.stop()
 
     def kill_zombies(self) -> None:
         queue = Queue()
