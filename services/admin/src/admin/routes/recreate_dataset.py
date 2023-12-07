@@ -24,7 +24,7 @@ from admin.authentication import auth_check
 class RecreateDatasetReport(TypedDict):
     status: str
     dataset: str
-    cancelled_jobs: int
+    deleted_jobs: int
     deleted_cached_responses: int
 
 
@@ -41,7 +41,7 @@ def recreate_dataset(
     # try to get the revision of the dataset (before deleting the jobs and the cache, in case it fails)
     revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     # delete all the jobs and all the cache entries for the dataset (for all the revisions)
-    cancelled_jobs = Queue().cancel_dataset_jobs(dataset=dataset)
+    deleted_jobs = Queue().delete_dataset_jobs(dataset=dataset)
     deleted_cached_responses = delete_dataset_responses(dataset=dataset)
     if deleted_cached_responses is not None and deleted_cached_responses > 0:
         # delete assets
@@ -59,7 +59,7 @@ def recreate_dataset(
     return RecreateDatasetReport(
         status="ok",
         dataset=dataset,
-        cancelled_jobs=cancelled_jobs,
+        deleted_jobs=deleted_jobs,
         deleted_cached_responses=deleted_cached_responses or 0,
     )
 

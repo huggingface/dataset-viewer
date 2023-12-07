@@ -19,9 +19,6 @@ from libcommon.exceptions import DatasetInBlockListError
 class Status(str, enum.Enum):
     WAITING = "waiting"
     STARTED = "started"
-    SUCCESS = "success"
-    ERROR = "error"
-    CANCELLED = "cancelled"
 
 
 class Priority(str, enum.Enum):

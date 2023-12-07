@@ -22,6 +22,7 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import (
     get_cell_value,
     get_supported_unsupported_columns,
+    infer_audio_file_extension,
 )
 
 ASSETS_FOLDER = "assets"
@@ -456,3 +457,18 @@ def test_ogg_audio_with_s3(
                     "type": "audio/wav",
                 },
             ]
+
+
+@pytest.mark.parametrize(
+    "audio_file_name, expected_audio_file_extension",
+    [("test_audio_44100.wav", ".wav"), ("test_audio_16000.mp3", ".mp3")],
+)
+def test_infer_audio_file_extension(
+    audio_file_name: str,
+    expected_audio_file_extension: str,
+    shared_datadir: Path,
+    public_assets_storage: PublicAssetsStorage,
+) -> None:
+    audio_file_bytes = (shared_datadir / audio_file_name).read_bytes()
+    audio_file_extension = infer_audio_file_extension(audio_file_bytes)
+    assert audio_file_extension == expected_audio_file_extension

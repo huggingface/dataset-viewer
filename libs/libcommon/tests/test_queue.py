@@ -65,48 +65,45 @@ def test_add_job() -> None:
     assert job_info["params"]["revision"] == test_revision
     assert job_info["params"]["config"] is None
     assert job_info["params"]["split"] is None
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    # it should have deleted the other waiting jobs for the same unicity_id
+    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
 
-    # and the first job should have been cancelled
-    assert job1.reload().status == Status.CANCELLED
+    # and the first job should have been deleted
+    assert JobDocument.objects(pk=job1.pk).count() == 0
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     # adding the job while the first one has not finished yet adds another waiting job
     # (there are no limits to the number of waiting jobs)
     job3 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert job3.status == Status.WAITING
-    assert_metric(job_type=test_type, status=Status.WAITING, total=2)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
 
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
         queue.start_job()
     # finish the first job
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
+    queue.finish_job(job_id=job_info["job_id"])
     # the queue is not empty
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=2)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=0)
-    assert_metric(job_type=test_type, status=Status.SUCCESS, total=1)
 
     # process the third job
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_metric(job_type=test_type, status=Status.SUCCESS, total=1)
 
     # trying to finish another job fails silently (with a log)
-    queue.finish_job(job_id=other_job_id, is_success=True)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    queue.finish_job(job_id=other_job_id)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    assert_metric(job_type=test_type, status=Status.SUCCESS, total=1)
 
     # finish it
-    queue.finish_job(job_id=job_info["job_id"], is_success=True)
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    queue.finish_job(job_id=job_info["job_id"])
+    assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=0)
-    assert_metric(job_type=test_type, status=Status.SUCCESS, total=2)
 
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
@@ -123,7 +120,7 @@ def test_add_job() -> None:
         (["a"], ["a", "b"], 1),
     ],
 )
-def test_cancel_jobs_by_job_id(
+def test_delete_jobs_by_job_id(
     jobs_ids: list[str], job_ids_to_cancel: list[str], expected_canceled_number: int
 ) -> None:
     test_type = "test_type"
@@ -147,15 +144,14 @@ def test_cancel_jobs_by_job_id(
     queue.start_job()
     assert_metric(job_type=test_type, status=Status.WAITING, total=1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    canceled_number = queue.cancel_jobs_by_job_id(job_ids=real_job_ids_to_cancel)
+    canceled_number = queue.delete_jobs_by_job_id(job_ids=real_job_ids_to_cancel)
     assert canceled_number == expected_canceled_number
-    assert_metric(job_type=test_type, status=Status.CANCELLED, total=expected_canceled_number)
 
 
-def test_cancel_jobs_by_job_id_wrong_format() -> None:
+def test_delete_jobs_by_job_id_wrong_format() -> None:
     queue = Queue()
 
-    assert queue.cancel_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
+    assert queue.delete_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
     assert JobTotalMetricDocument.objects().count() == 0
 
 
@@ -407,8 +403,8 @@ def test_count_by_status() -> None:
     test_difficulty = 50
     queue = Queue()
 
-    expected_empty = {"waiting": 0, "started": 0, "success": 0, "error": 0, "cancelled": 0}
-    expected_one_waiting = {"waiting": 1, "started": 0, "success": 0, "error": 0, "cancelled": 0}
+    expected_empty = {"waiting": 0, "started": 0}
+    expected_one_waiting = {"waiting": 1, "started": 0}
 
     assert queue.get_jobs_count_by_status(job_type=test_type) == expected_empty
     assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
@@ -447,7 +443,7 @@ def test_get_dataset_pending_jobs_for_type() -> None:
                     difficulty=test_difficulty,
                 )
                 job_info = queue.start_job()
-                queue.finish_job(job_info["job_id"], is_success=True)
+                queue.finish_job(job_info["job_id"])
     for config in test_configs_started:
         for dataset in [test_dataset, test_another_dataset]:
             for job_type in [test_type, test_another_type]:
@@ -529,18 +525,6 @@ def test_queue_get_zombies() -> None:
     assert queue.get_zombies(max_seconds_without_heartbeat=9999999) == []
 
 
-def test_has_ttl_index_on_finished_at_field() -> None:
-    ttl_index_names = [
-        name
-        for name, value in JobDocument._get_collection().index_information().items()
-        if "expireAfterSeconds" in value and "key" in value and value["key"] == [("finished_at", 1)]
-    ]
-    assert len(ttl_index_names) == 1
-    ttl_index_name = ttl_index_names[0]
-    assert ttl_index_name == "finished_at_1"
-    assert JobDocument._get_collection().index_information()[ttl_index_name]["expireAfterSeconds"] == QUEUE_TTL_SECONDS
-
-
 def random_sleep() -> None:
     MAX_SLEEP_MS = 40
     time.sleep(MAX_SLEEP_MS / 1000 * random.random())
@@ -603,12 +587,12 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
     Lock.objects().delete()
 
 
-def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     """
-    Test that cancel_dataset_jobs cancels all jobs for a dataset
+    Test that delete_dataset_jobs deletes all jobs for a dataset
 
-    -> cancels at several levels (dataset, config, split)
-    -> cancels started and waiting jobs
+    -> deletes at several levels (dataset, config, split)
+    -> deletes started and waiting jobs
     -> remove locks
     -> does not cancel, and does not remove locks, for other datasets
     """
@@ -676,11 +660,10 @@ def test_cancel_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert started_job_info_2["params"]["dataset"] == other_dataset
     assert started_job_info_2["type"] == job_type_1
 
-    assert queue.cancel_dataset_jobs(dataset=dataset) == 4
+    assert queue.delete_dataset_jobs(dataset=dataset) == 4
 
-    assert JobDocument.objects().count() == 6
-    assert JobDocument.objects(dataset=dataset).count() == 4
-    assert JobDocument.objects(dataset=dataset, status=Status.CANCELLED).count() == 4
+    assert JobDocument.objects().count() == 2
+    assert JobDocument.objects(dataset=dataset).count() == 0
     assert JobDocument.objects(dataset=other_dataset).count() == 2
     assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 1
     assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
