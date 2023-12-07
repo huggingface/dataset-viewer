@@ -92,21 +92,29 @@ class SplitDescriptiveStatisticsResponse(TypedDict):
 def generate_bins(
     min_value: Union[int, float],
     max_value: Union[int, float],
-    column_name: str,
     column_type: ColumnType,
     n_bins: int,
+    column_name: Optional[str] = None,
 ) -> list[int]:
     """
+    Compute bin edges for float and int. Note that for int data returned number of edges (= number of bins)
+    might be *less* than provided `n_bins` + 1 since (`max_value` - `min_value` + 1) might be not divisible by `n_bins`,
+    therefore, we adjust the number of bins so that bin_size is always a natural number.
+    bin_size for int data is calculated as np.ceil((max_value - min_value + 1) / n_bins)
+
     Returns:
-        List of bin edges.
+        List of bin edges of lengths <= n_bins + 1 and > 2.
     """
     if column_type is ColumnType.FLOAT:
-        bin_size = (max_value - min_value) / n_bins
-        bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
-        if len(bin_edges) != n_bins:
-            raise StatisticsComputationError(
-                f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
-            )
+        if min_value == max_value:
+            bin_edges = [min_value]
+        else:
+            bin_size = (max_value - min_value) / n_bins
+            bin_edges = np.arange(min_value, max_value, bin_size).astype(float).tolist()
+            if len(bin_edges) != n_bins:
+                raise StatisticsComputationError(
+                    f"Incorrect number of bins generated for {column_name=}, expected {n_bins}, got {len(bin_edges)}."
+                )
     elif column_type is ColumnType.INT:
         bin_size = np.ceil((max_value - min_value + 1) / n_bins)
         bin_edges = np.arange(min_value, max_value + 1, bin_size).astype(int).tolist()
@@ -128,23 +136,42 @@ def compute_histogram_polars(
     n_bins: int,
     n_samples: int,
 ) -> Histogram:
-    bins = generate_bins(
+    bin_edges = generate_bins(
         min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
     )
-    bins_reverted = [-1 * b for b in bins[::-1]]
-    hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
-        bins=bins_reverted
-    )
-    hist_reverted = hist_df_reverted["reverse_count"].cast(int).to_list()  # TODO: assert the last one is 0
-    # assert hist_reverted[-1] == 0  # this value corresponds to "less than minimum"
-    hist = hist_reverted[::-1]
-    hist = [hist[0] + hist[1]] + hist[2:-2] + [hist[-2] + hist[-1]]
+    if len(bin_edges) == 2:  # possible if min == max (=data has only one value)
+        if bin_edges[0] != bin_edges[1]:
+            raise StatisticsComputationError(
+                f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
+                f" len({bin_edges=}) is 2 but {bin_edges[0]=} != {bin_edges[1]=}. "
+            )
+        hist = [df[column_name].is_not_null().sum()]
+    elif len(bin_edges) > 2:
+        bins_edges_reverted = [-1 * b for b in bin_edges[::-1]]
+        hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
+            bins=bins_edges_reverted
+        )
+        hist_reverted = hist_df_reverted["reverse_count"].cast(int).to_list()
+        hist = hist_reverted[::-1]
+        hist = [hist[0] + hist[1]] + hist[2:-2] + [hist[-2] + hist[-1]]
+    else:
+        raise StatisticsComputationError(
+            f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
+            f" unexpected {bin_edges=}"
+        )
+
+    if len(hist) != len(bin_edges) - 1:
+        raise StatisticsComputationError(
+            f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
+            f" number of bins in hist counts and bin edges don't match {hist=}, {bin_edges=}"
+        )
     if n_samples and sum(hist) != n_samples:
         raise StatisticsComputationError(
-            f"Got unexpected result during histogram computation for {column_name=}: "
-            f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
+            f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
+            f" hist counts sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
         )
-    return Histogram(hist=hist, bin_edges=np.round(bins, DECIMALS).tolist())
+
+    return Histogram(hist=hist, bin_edges=np.round(bin_edges, DECIMALS).tolist())
 
 
 def compute_numerical_statistics_polars(
@@ -220,7 +247,7 @@ def compute_categorical_statistics_polars(
     labels2counts: dict[str, int] = {
         class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
     }
-    # n_unique = df[column_name].n_unique()
+    # n_unique = df[column_name].n_unique()  # TODO
     # if not n_unique == num_classes + int(no_label_count > 0):
     #     raise
 
@@ -248,7 +275,7 @@ def compute_string_statistics_polars(
 
         if n_unique <= MAX_NUM_STRING_LABELS:
             labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
-            labels2counts.pop(None, None)
+            labels2counts.pop(None, None)  # exclude counts of None values from frequencies
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,

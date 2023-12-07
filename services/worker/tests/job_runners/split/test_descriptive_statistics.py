@@ -26,9 +26,10 @@ from worker.job_runners.split.descriptive_statistics import (
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
+    compute_categorical_statistics_polars,
     compute_numerical_statistics_polars,
     compute_string_statistics_polars,
-    generate_bins, compute_categorical_statistics_polars,
+    generate_bins,
 )
 from worker.resources import LibrariesResource
 
@@ -45,10 +46,15 @@ N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
 @pytest.mark.parametrize(
     "min_value,max_value,column_type,expected_bins",
     [
-        (0, 2, ColumnType.INT, [0, 1, 2, 2]),
+        (0, 1, ColumnType.INT, [0, 1, 1]),
         (0, 12, ColumnType.INT, [0, 2, 4, 6, 8, 10, 12, 12]),
         (-10, 15, ColumnType.INT, [-10, -7, -4, -1, 2, 5, 8, 11, 14, 15]),
-        (-10, 9, ColumnType.INT, [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 9]),
+        (0, 9, ColumnType.INT, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9]),
+        (0, 10, ColumnType.INT, [0, 2, 4, 6, 8, 10, 10]),
+        (0.0, 10.0, ColumnType.FLOAT, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]),
+        (0.0, 0.1, ColumnType.FLOAT, [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]),
+        (0, 0, ColumnType.INT, [0, 0]),
+        (0.0, 0.0, ColumnType.INT, [0.0, 0.0]),
     ],
 )
 def test_generate_bins(min_value, max_value, column_type, expected_bins):
@@ -194,11 +200,13 @@ def count_expected_statistics_for_numerical_column(
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
     if dtype is ColumnType.FLOAT:
-        hist, bin_edges = np.histogram(column[~column.isna()])
+        if minimum == maximum:
+            hist, bin_edges = np.array([column[~column.isna()].count()]), np.array([minimum, maximum])
+        else:
+            hist, bin_edges = np.histogram(column[~column.isna()], bins=N_BINS)
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
-        n_bins = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
-        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=n_bins)
+        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=N_BINS)
         hist, bin_edges = np.histogram(column[~column.isna()], bins)
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
@@ -299,11 +307,15 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
         "int__negative_column",
         "int__cross_zero_column",
         "int__large_values_column",
+        "int__only_one_value_column",
+        "int__only_one_value_nan_column",
         "float__column",
         "float__nan_column",
         "float__negative_column",
         "float__cross_zero_column",
         "float__large_values_column",
+        "float__only_one_value_column",
+        "float__only_one_value_nan_column",
     ],
 )
 def test_numerical_statistics(column_name, descriptive_statistics_expected, datasets):
@@ -317,9 +329,9 @@ def test_numerical_statistics(column_name, descriptive_statistics_expected, data
         column_type=ColumnType.INT if column_name.startswith("int__") else ColumnType.FLOAT,
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
-    assert expected_hist["hist"] == computed_hist["hist"]
-    assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
-    assert expected == pytest.approx(computed)
+    assert computed_hist["hist"] == expected_hist["hist"]
+    assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
+    assert pytest.approx(computed) == expected
 
 
 @pytest.mark.parametrize(
