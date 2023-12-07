@@ -32,7 +32,7 @@ from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 UNSUPPORTED_FEATURES = [Value("binary")]
 AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
-    ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND
+    ".wav": [(b"\x52\x49\x46\x46", 0), (b"\x57\x41\x56\x45", 8)],  # AND: (magic_number, start)
     ".mp3": (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2", b"\x49\x44\x33"),  # OR
 }
 
