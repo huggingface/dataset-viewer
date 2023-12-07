@@ -127,7 +127,7 @@ def generate_bins(
     return bin_edges + [max_value]
 
 
-def compute_histogram_polars(
+def compute_histogram(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     column_type: ColumnType,
@@ -176,7 +176,7 @@ def compute_histogram_polars(
     )
 
 
-def compute_numerical_statistics_polars(
+def compute_numerical_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     n_bins: int,
@@ -210,7 +210,7 @@ def compute_numerical_statistics_polars(
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
-    hist = compute_histogram_polars(
+    hist = compute_histogram(
         df,
         column_name=column_name,
         column_type=column_type,
@@ -232,7 +232,7 @@ def compute_numerical_statistics_polars(
     )
 
 
-def compute_categorical_statistics_polars(
+def compute_class_label_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     class_label_feature: ClassLabel,
@@ -291,7 +291,7 @@ def compute_string_statistics_polars(
     lengths_df = df.select(pl.col(column_name)).with_columns(
         pl.col(column_name).str.len_chars().alias(f"{column_name}_len")
     )
-    return compute_numerical_statistics_polars(
+    return compute_numerical_statistics(
         df=lengths_df,
         column_name=f"{column_name}_len",
         n_bins=n_bins,
@@ -339,7 +339,7 @@ def compute_descriptive_statistics_response_polars(
         for feature_name, feature in tqdm(categorical_features.items()):  # type: ignore
             logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
             df = pl.read_parquet(path, columns=[feature_name])
-            cat_column_stats: CategoricalStatisticsItem = compute_categorical_statistics_polars(
+            cat_column_stats: CategoricalStatisticsItem = compute_class_label_statistics(
                 df,
                 feature_name,
                 class_label_feature=feature,
@@ -359,7 +359,7 @@ def compute_descriptive_statistics_response_polars(
             logging.info(f"Compute for numerical column '{feature_name}'")
             column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
             df = pl.read_parquet(path, columns=[feature_name])
-            numerical_column_stats = compute_numerical_statistics_polars(
+            numerical_column_stats = compute_numerical_statistics(
                 df,
                 column_name=feature_name,
                 n_bins=histogram_num_bins,

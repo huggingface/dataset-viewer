@@ -26,8 +26,8 @@ from worker.job_runners.split.descriptive_statistics import (
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
-    compute_categorical_statistics_polars,
-    compute_numerical_statistics_polars,
+    compute_class_label_statistics,
+    compute_numerical_statistics,
     compute_string_statistics_polars,
     generate_bins,
 )
@@ -57,7 +57,12 @@ N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
         (0.0, 0.0, ColumnType.INT, [0.0, 0.0]),
     ],
 )
-def test_generate_bins(min_value: Union[int,float], max_value: Union[int,float], column_type: ColumnType, expected_bins: list[Union[int,float]]) -> None:
+def test_generate_bins(
+    min_value: Union[int, float],
+    max_value: Union[int, float],
+    column_type: ColumnType,
+    expected_bins: list[Union[int, float]],
+) -> None:
     bins = generate_bins(
         min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
     )
@@ -320,12 +325,12 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
 )
 def test_numerical_statistics(
     column_name: str,
-    descriptive_statistics_expected: dict, # type: ignore
-    datasets: Mapping[str, Dataset]
+    descriptive_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_numerical_statistics_polars(
+    computed = compute_numerical_statistics(
         df=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -394,7 +399,7 @@ def test_categorical_statistics(
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_categorical_statistics_polars(
+    computed = compute_class_label_statistics(
         df=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
