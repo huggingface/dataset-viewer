@@ -28,7 +28,7 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
     compute_numerical_statistics_polars,
     compute_string_statistics_polars,
-    generate_bins,
+    generate_bins, compute_categorical_statistics_polars,
 )
 from worker.resources import LibrariesResource
 
@@ -359,6 +359,32 @@ def test_string_statistics(
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "class_label__nan_column",
+        "class_label__less_classes_column",
+        "class_label__string_column",
+        "class_label__string_nan_column",
+    ],
+)
+def test_categorical_statistics(
+    column_name,
+    descriptive_statistics_expected,
+    datasets,
+):
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    class_label_feature = datasets["descriptive_statistics"].features[column_name]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_categorical_statistics_polars(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_samples=len(data[column_name]),
+        class_label_feature=class_label_feature,
+    )
+    assert expected == computed
 
 
 @pytest.fixture
