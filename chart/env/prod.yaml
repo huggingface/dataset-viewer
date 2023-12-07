@@ -346,7 +346,7 @@ rows:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-rows: "true"
-  replicas: 12
+  replicas: 16
   service:
     type: NodePort
   resources:
