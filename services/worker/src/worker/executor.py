@@ -160,7 +160,7 @@ class WorkerExecutor:
             try:
                 Queue().heartbeat(job_id=job_id)
             except Exception as error:
-                logging.warning(f"Heartbeat failed for job {job_id}.", error)
+                logging.warning(f"Heartbeat failed for job {job_id}: {error}")
                 self.stop()
 
     def kill_zombies(self) -> None:
