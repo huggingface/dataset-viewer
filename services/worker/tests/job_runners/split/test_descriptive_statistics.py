@@ -58,11 +58,6 @@ def test_generate_bins(min_value, max_value, column_type, expected_bins):
     assert bins == expected_bins
 
 
-def test_histogram():
-    # datasets["descriptive_statistics"]
-    pass
-
-
 @pytest.fixture
 def get_job_runner(
     statistics_cache_directory: StrPath,
@@ -404,11 +399,11 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        # ("descriptive_statistics_partial", None),
-        # ("descriptive_statistics_string_text", None),
-        # ("gated", None),
-        # ("audio", "NoSupportedFeaturesError"),
-        # ("big", "SplitWithTooBigParquetError"),
+        ("descriptive_statistics_partial", None),
+        ("descriptive_statistics_string_text", None),
+        ("gated", None),
+        ("audio", "NoSupportedFeaturesError"),
+        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(

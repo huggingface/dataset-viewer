@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 from typing import Optional, TypedDict, Union
 
-import duckdb
 import numpy as np
 import polars as pl
 from datasets import ClassLabel, Features
@@ -44,36 +43,6 @@ INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32"
 FLOAT_DTYPES = ["float16", "float32", "float64"]
 NUMERICAL_DTYPES = INTEGER_DTYPES + FLOAT_DTYPES
 STRING_DTYPES = ["string", "large_string"]
-
-DATA_TABLE_NAME = "data"
-BINS_TABLE_NAME = "bins"  # name of a table with bin edges data used to compute histogram
-STRING_LENGTHS_TABLE_NAME = "string_lengths"
-
-DATABASE_FILENAME = "db.duckdb"
-
-SWITCH_TO_POLARS_DATASET_LIST = ["Open-Orca/OpenOrca", "vivym/midjourney-messages", "HuggingFaceH4/ultrachat_200k"]
-
-
-COMPUTE_NAN_COUNTS_COMMAND = """
-    SELECT COUNT(*) FROM {data_table_name} WHERE "{column_name}" IS NULL;
-"""
-COMPUTE_CATEGORIES_COUNTS_COMMAND = """
-    SELECT "{column_name}", COUNT(*) FROM {data_table_name} GROUP BY "{column_name}";
-"""
-COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND = """
-    SELECT min("{column_name}"), max("{column_name}"), mean("{column_name}"),
-    median("{column_name}"), stddev_samp("{column_name}") FROM {data_table_name};
-"""
-COMPUTE_HIST_COMMAND = """
-    SELECT bin_id, COUNT(*) as count FROM {data_table_name}
-        JOIN {bins_table_name} ON ("{column_name}" >= bin_min AND "{column_name}" < bin_max) GROUP BY bin_id;
-"""
-CREATE_TABLE_COMMAND = """
-CREATE OR REPLACE TABLE {table_name} AS SELECT {column_names} FROM {select_from};
-"""
-CREATE_TEMPORARY_TABLE_COMMAND = """
-CREATE OR REPLACE TEMPORARY TABLE {table_name} AS SELECT {column_names} FROM {select_from};
-"""
 
 
 class ColumnType(str, enum.Enum):
@@ -150,47 +119,6 @@ def generate_bins(
     return bin_edges + [max_value]
 
 
-def compute_histogram(
-    con: duckdb.DuckDBPyConnection,
-    column_name: str,
-    table_name: str,
-    column_type: ColumnType,
-    min_value: Union[int, float],
-    max_value: Union[int, float],
-    n_bins: int,
-    n_samples: Optional[int] = None,
-) -> Histogram:
-    bins_df = generate_bins(
-        min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
-    )
-    n_bins = bins_df.shape[0]
-    # create auxiliary table with bin edges
-    con.sql(CREATE_TEMPORARY_TABLE_COMMAND.format(table_name=BINS_TABLE_NAME, column_names="*", select_from="bins_df"))
-    compute_hist_command = COMPUTE_HIST_COMMAND.format(
-        data_table_name=table_name, bins_table_name=BINS_TABLE_NAME, column_name=column_name
-    )
-    logging.debug(f"Compute histogram for {column_name=}.\n{compute_hist_command}")
-    # query returns list of tuples (bin_id, bin_max, n_count):
-    hist_query_result = dict(con.sql(compute_hist_command).fetchall())  # dict bin_id -> n_samples
-    if len(hist_query_result) > n_bins + 1:
-        raise StatisticsComputationError(
-            f"Got unexpected result during histogram computation for {column_name=}: returned more bins than"
-            f" requested. {n_bins=} {hist_query_result=}. "
-        )
-    hist = []
-    for bin_idx in range(n_bins):
-        # no key in query result = no examples in this range, so we put 0
-        hist.append(hist_query_result.get(bin_idx, 0))
-    if n_samples and sum(hist) != n_samples:
-        raise StatisticsComputationError(
-            f"Got unexpected result during histogram computation for {column_name=}: "
-            f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
-        )
-    bins = bins_df["bin_min"].round(DECIMALS).tolist()
-    bins = bins + [np.round(max_value, DECIMALS).item()]  # put exact max value back to bins
-    return Histogram(hist=hist, bin_edges=bins)
-
-
 def compute_histogram_polars(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
@@ -217,56 +145,6 @@ def compute_histogram_polars(
             f" histogram sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
         )
     return Histogram(hist=hist, bin_edges=np.round(bins, DECIMALS).tolist())
-
-
-def compute_numerical_statistics(
-    con: duckdb.DuckDBPyConnection,
-    column_name: str,
-    table_name: str,
-    n_bins: int,
-    n_samples: int,
-    column_type: ColumnType,
-) -> NumericalStatisticsItem:
-    min_max_mean_median_std_command = COMPUTE_MIN_MAX_MEAN_MEDIAN_STD_COMMAND.format(
-        column_name=column_name, data_table_name=table_name
-    )
-    logging.debug(
-        f"Compute min, max, mean, median, std and proportion of null values for {column_name=}. "
-        f"{min_max_mean_median_std_command}"
-    )
-    minimum, maximum, mean, median, std = con.sql(min_max_mean_median_std_command).fetchall()[0]
-    logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}")
-
-    nan_count_command = COMPUTE_NAN_COUNTS_COMMAND.format(column_name=column_name, data_table_name=table_name)
-    nan_count = con.sql(nan_count_command).fetchall()[0][0]
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
-    logging.debug(f"{nan_count=} {nan_proportion=}")
-    histogram = compute_histogram(
-        con,
-        column_name,
-        table_name,
-        min_value=minimum,
-        max_value=maximum,
-        column_type=column_type,
-        n_bins=n_bins,
-        n_samples=n_samples - nan_count,
-    )
-    if column_type == ColumnType.FLOAT:
-        minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
-    elif column_type == ColumnType.INT:
-        mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
-    else:
-        raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
-    return NumericalStatisticsItem(
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-        min=minimum,
-        max=maximum,
-        mean=mean,
-        median=median,
-        std=std,
-        histogram=histogram,
-    )
 
 
 def compute_numerical_statistics_polars(
@@ -325,49 +203,6 @@ def compute_numerical_statistics_polars(
     )
 
 
-def compute_categorical_statistics(
-    con: duckdb.DuckDBPyConnection,
-    column_name: str,
-    table_name: str,
-    class_label_feature: ClassLabel,
-    n_samples: int,
-) -> CategoricalStatisticsItem:
-    categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
-        column_name=column_name, data_table_name=table_name
-    )
-    logging.debug(f"Compute categories counts for {column_name}.\n{categorical_counts_query}")
-    ids2counts: dict[Optional[int], int] = dict(
-        con.sql(categorical_counts_query).fetchall()
-    )  # dict {idx: num_samples}; idx might be also None for null values and -1 for `no label`
-    nan_count = ids2counts.pop(None, 0)
-    no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
-    num_classes = len(class_label_feature.names)
-    labels2counts: dict[str, int] = {
-        class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
-    }
-    n_unique_computed = len(ids2counts)
-    if n_unique_computed > num_classes:
-        raise StatisticsComputationError(
-            f"Got unexpected result during classes distribution computation for {column_name=}: computed number of"
-            f" classes don't match with feature's num_classes. {n_unique_computed=} {num_classes=}. "
-        )
-    no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    logging.debug(
-        f"{nan_count=}, {nan_proportion=}, {n_unique_computed}, {no_label_count=}, {no_label_proportion=},"
-        f" frequencies={labels2counts}."
-    )
-
-    return CategoricalStatisticsItem(
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-        no_label_count=no_label_count,
-        no_label_proportion=no_label_proportion,
-        n_unique=num_classes,
-        frequencies=labels2counts,
-    )
-
-
 def compute_categorical_statistics_polars(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
@@ -396,57 +231,6 @@ def compute_categorical_statistics_polars(
         no_label_proportion=no_label_proportion,
         n_unique=num_classes,  # TODO: does it contain None?
         frequencies=labels2counts,
-    )
-
-
-def compute_string_statistics(
-    con: duckdb.DuckDBPyConnection,
-    column_name: str,
-    n_bins: int,
-    n_samples: int,
-    table_name: str,
-    dtype: Optional[str],
-) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-    if dtype != "large_string":
-        categorical_counts_query = COMPUTE_CATEGORIES_COUNTS_COMMAND.format(
-            column_name=column_name, data_table_name=table_name
-        )
-        logging.debug(f"Compute categories counts for {column_name=}.\n{categorical_counts_query}")
-        labels2counts: dict[str, int] = dict(con.sql(categorical_counts_query).fetchall())
-        n_unique = len(labels2counts)
-        if n_unique <= MAX_NUM_STRING_LABELS:
-            # consider string as categories
-            nan_count = labels2counts.pop(None, 0)  # type: ignore
-            nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-            logging.debug(
-                "Treat column as category. "
-                f"{nan_count=}, {nan_proportion=}, {n_unique=}, frequencies={labels2counts}. "
-            )
-            return CategoricalStatisticsItem(
-                nan_count=nan_count,
-                nan_proportion=nan_proportion,
-                no_label_count=0,
-                no_label_proportion=0.0,
-                n_unique=len(labels2counts),
-                frequencies=labels2counts,
-            )
-    # compute numerical stats over string lengths (min, max, ..., hist)
-    string_lengths_column_name = f"{column_name}__lengths"
-    logging.debug(f"Treat {column_name=} as string and compute numerical stats over its lengths.")
-    con.sql(
-        CREATE_TEMPORARY_TABLE_COMMAND.format(
-            table_name=STRING_LENGTHS_TABLE_NAME,
-            column_names=f'length("{column_name}") AS "{string_lengths_column_name}"',
-            select_from=table_name,
-        )
-    )
-    return compute_numerical_statistics(
-        con=con,
-        column_name=string_lengths_column_name,
-        table_name=STRING_LENGTHS_TABLE_NAME,
-        n_bins=n_bins,
-        n_samples=n_samples,
-        column_type=ColumnType.INT,
     )
 
 
