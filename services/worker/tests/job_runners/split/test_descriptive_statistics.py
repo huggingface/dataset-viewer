@@ -28,7 +28,7 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
     compute_class_label_statistics,
     compute_numerical_statistics,
-    compute_string_statistics_polars,
+    compute_string_statistics,
     generate_bins,
 )
 from worker.resources import LibrariesResource
@@ -304,6 +304,23 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     return {"num_examples": df.shape[0], "statistics": expected_statistics}
 
 
+@pytest.fixture
+def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+    ds = datasets["descriptive_statistics_string_text"]
+    df = ds.to_pandas()
+    expected_statistics = {}
+    for column_name in df.columns:
+        column_stats = count_expected_statistics_for_string_column(df[column_name])
+        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+            raise ValueError(column_name, column_stats)
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": ColumnType.STRING_TEXT,
+            "column_statistics": column_stats,
+        }
+    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -341,6 +358,10 @@ def test_numerical_statistics(
     assert computed_hist["hist"] == expected_hist["hist"]
     assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
     assert pytest.approx(computed) == expected
+    assert computed["nan_count"] == expected["nan_count"]
+    if column_name.startswith("int__"):
+        assert computed["min"] == expected["min"]
+        assert computed["max"] == expected["max"]
 
 
 @pytest.mark.parametrize(
@@ -366,7 +387,7 @@ def test_string_statistics(
     else:
         expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_string_statistics_polars(
+    computed = compute_string_statistics(
         df=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -391,7 +412,7 @@ def test_string_statistics(
         "class_label__string_nan_column",
     ],
 )
-def test_categorical_statistics(
+def test_class_label_statistics(
     column_name: str,
     descriptive_statistics_expected: dict,  # type: ignore
     datasets: Mapping[str, Dataset],
@@ -406,23 +427,6 @@ def test_categorical_statistics(
         class_label_feature=class_label_feature,
     )
     assert expected == computed
-
-
-@pytest.fixture
-def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
-    ds = datasets["descriptive_statistics_string_text"]
-    df = ds.to_pandas()
-    expected_statistics = {}
-    for column_name in df.columns:
-        column_stats = count_expected_statistics_for_string_column(df[column_name])
-        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
-            raise ValueError(column_name, column_stats)
-        expected_statistics[column_name] = {
-            "column_name": column_name,
-            "column_type": ColumnType.STRING_TEXT,
-            "column_statistics": column_stats,
-        }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics}
 
 
 @pytest.mark.parametrize(
@@ -506,66 +510,33 @@ def test_compute(
         response = job_runner.compute()
         assert sorted(response.content.keys()) == ["num_examples", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
-        response_statistics = response.content["statistics"]
-        expected_statistics = expected_response["statistics"]  # type: ignore
-        assert len(response_statistics) == len(expected_statistics)
-        assert set([column_response["column_name"] for column_response in response_statistics]) == set(
-            expected_statistics
-        )  # assert returned features are as expected
-        for column_response_statistics in response_statistics:
-            assert_statistics_equal(
-                column_response_statistics, expected_statistics[column_response_statistics["column_name"]]
-            )
+        response = response.content["statistics"]
+        expected = expected_response["statistics"]  # type: ignore
+        assert len(response) == len(expected)  # type: ignore
+        assert set([column_response["column_name"] for column_response in response]) == set(  # type: ignore
+            expected
+        )  # assert returned feature names are as expected
 
-
-def assert_statistics_equal(response: dict, expected: dict) -> None:  # type: ignore
-    """
-    Check that all values are equal or in case of float - almost equal.
-    We use np.isclose because of small possible mismatches
-    between numpy (which is used for counting expected values) and python float rounding.
-    """
-    assert response["column_name"] == expected["column_name"]
-    assert response["column_type"] == expected["column_type"]
-    response_stats, expected_stats = response["column_statistics"], expected["column_statistics"]
-    assert response_stats.keys() == expected_stats.keys()
-
-    assert response_stats["nan_count"] == expected_stats["nan_count"]
-    assert np.isclose(response_stats["nan_proportion"], expected_stats["nan_proportion"], 1e-3)
-
-    if response["column_type"] is ColumnType.FLOAT:
-        assert np.isclose(
-            response_stats["histogram"]["bin_edges"], expected_stats["histogram"]["bin_edges"], 1e-3
-        ).all()
-        assert np.isclose(response_stats["min"], expected_stats["min"], 1e-3)
-        assert np.isclose(response_stats["max"], expected_stats["max"], 1e-3)
-        assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
-        assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
-        assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
-        assert response_stats["histogram"]["hist"] == expected_stats["histogram"]["hist"]
-
-    elif response["column_type"] is ColumnType.INT:
-        assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
-        assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
-        assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
-        assert response_stats["min"] == expected_stats["min"]
-        assert response_stats["max"] == expected_stats["max"]
-        assert response_stats["histogram"] == expected_stats["histogram"]
-
-    elif response["column_type"] is ColumnType.CLASS_LABEL:
-        assert response_stats["n_unique"] == expected_stats["n_unique"]
-        assert response_stats["frequencies"] == expected_stats["frequencies"]
-
-    elif response["column_type"] is ColumnType.STRING_LABEL:
-        assert response_stats["n_unique"] == expected_stats["n_unique"]
-        assert response_stats["frequencies"] == expected_stats["frequencies"]
-
-    elif response["column_type"] is ColumnType.STRING_TEXT:
-        assert np.isclose(response_stats["mean"], expected_stats["mean"], 1e-3)
-        assert np.isclose(response_stats["median"], expected_stats["median"], 1e-3)
-        assert np.isclose(response_stats["std"], expected_stats["std"], 1e-3)
-        assert response_stats["min"] == expected_stats["min"]
-        assert response_stats["max"] == expected_stats["max"]
-        assert response_stats["histogram"] == expected_stats["histogram"]
-
-    else:
-        raise ValueError("Incorrect data type")
+        for column_response in response:  # type: ignore
+            expected_column_response = expected[column_response["column_name"]]
+            assert column_response["column_name"] == expected_column_response["column_name"]
+            assert column_response["column_type"] == expected_column_response["column_type"]
+            column_response_stats = column_response["column_statistics"]
+            expected_column_response_stats = expected_column_response["column_statistics"]
+            assert column_response_stats.keys() == expected_column_response_stats.keys()
+            if column_response["column_type"] in [ColumnType.FLOAT, ColumnType.INT, ColumnType.STRING_TEXT]:
+                hist, expected_hist = (
+                    column_response_stats.pop("histogram"),
+                    expected_column_response_stats.pop("histogram"),
+                )
+                assert hist["hist"] == expected_hist["hist"]
+                assert pytest.approx(hist["bin_edges"]) == expected_hist["bin_edges"]
+                assert column_response_stats["nan_count"] == expected_column_response_stats["nan_count"]
+                assert pytest.approx(column_response_stats) == expected_column_response_stats
+                if column_response["column_type"] is ColumnType.INT:
+                    assert column_response_stats["min"] == expected_column_response_stats["min"]
+                    assert column_response_stats["max"] == expected_column_response_stats["max"]
+            elif column_response["column_type"] in [ColumnType.STRING_LABEL, ColumnType.CLASS_LABEL]:
+                assert column_response_stats == expected_column_response_stats
+            else:
+                raise ValueError("Incorrect data type")
