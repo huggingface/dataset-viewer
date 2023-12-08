@@ -48,6 +48,7 @@ STRING_DTYPES = ["string", "large_string"]
 class ColumnType(str, enum.Enum):
     FLOAT = "float"
     INT = "int"
+    BOOL = "bool"
     CLASS_LABEL = "class_label"
     STRING_LABEL = "string_label"
     STRING_TEXT = "string_text"
@@ -78,10 +79,16 @@ class CategoricalStatisticsItem(TypedDict):
     frequencies: dict[str, int]
 
 
+class BoolStatisticsItem(TypedDict):
+    nan_count: int
+    nan_proportion: float
+    frequencies: dict[str, int]
+
+
 class StatisticsPerColumnItem(TypedDict):
     column_name: str
     column_type: ColumnType
-    column_statistics: Union[NumericalStatisticsItem, CategoricalStatisticsItem]
+    column_statistics: Union[NumericalStatisticsItem, CategoricalStatisticsItem, BoolStatisticsItem]
 
 
 class SplitDescriptiveStatisticsResponse(TypedDict):
@@ -277,6 +284,24 @@ def compute_class_label_statistics(
     )
 
 
+def compute_bool_statistics(
+    df: pl.dataframe.frame.DataFrame,
+    column_name: str,
+    n_samples: int,
+) -> BoolStatisticsItem:
+    nan_count = df[column_name].null_count()
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+    # exclude counts of None values from frequencies if exist:
+    values2counts.pop(None, None)  # type: ignore
+
+    return BoolStatisticsItem(
+        nan_count=nan_count,
+        nan_proportion=nan_proportion,
+        frequencies=values2counts,
+    )
+
+
 def compute_string_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
@@ -320,6 +345,7 @@ def compute_descriptive_statistics_for_features(
     string_features: Optional[dict[str, dict[str, Any]]],
     class_label_features: Optional[dict[str, dict[str, Any]]],
     numerical_features: Optional[dict[str, dict[str, Any]]],
+    bool_features: Optional[dict[str, dict[str, Any]]],
     histogram_num_bins: int,
     num_examples: int,
 ) -> list[StatisticsPerColumnItem]:
@@ -387,6 +413,24 @@ def compute_descriptive_statistics_for_features(
                     column_statistics=numerical_column_stats,
                 )
             )
+
+    if bool_features:
+        logging.info(f"Compute statistics for boolean columns {bool_features} with polars. ")
+        for feature_name, feature in tqdm(bool_features.items()):
+            df = pl.read_parquet(path, columns=[feature_name])
+            bool_column_stats = compute_bool_statistics(
+                df,
+                column_name=feature_name,
+                n_samples=num_examples,
+            )
+            stats.append(
+                StatisticsPerColumnItem(
+                    column_name=feature_name,
+                    column_type=ColumnType.BOOL,
+                    column_statistics=bool_column_stats,
+                )
+            )
+
     return stats
 
 
@@ -530,6 +574,11 @@ def compute_descriptive_statistics_response(
         for feature_name, feature in features.items()
         if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES
     }
+    bool_features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") == "bool"
+    }
     if not class_label_features and not numerical_features and not string_features:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
@@ -543,6 +592,7 @@ def compute_descriptive_statistics_response(
         string_features=string_features,
         class_label_features=class_label_features,
         numerical_features=numerical_features,
+        bool_features=bool_features,
         num_examples=num_examples,
         histogram_num_bins=histogram_num_bins,
     )

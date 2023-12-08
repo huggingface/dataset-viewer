@@ -26,6 +26,7 @@ from worker.job_runners.split.descriptive_statistics import (
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
+    compute_bool_statistics,
     compute_class_label_statistics,
     compute_numerical_statistics,
     compute_string_statistics,
@@ -285,6 +286,17 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # t
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
+def count_expected_statistics_for_bool_column(column: pd.Series) -> dict:  # type: ignore
+    n_samples = column.shape[0]
+    nan_count = column.isna().sum()
+    value_counts = column.value_counts(dropna=True).to_dict()
+    return {
+        "nan_count": nan_count,
+        "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
+        "frequencies": value_counts,
+    }
+
+
 @pytest.fixture
 def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
     ds = datasets["descriptive_statistics"]
@@ -302,6 +314,8 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             column_stats = count_expected_statistics_for_categorical_column(
                 df[column_name], class_label_feature=ds.features[column_name]
             )
+        elif column_type is ColumnType.BOOL:
+            column_stats = count_expected_statistics_for_bool_column(df[column_name])
         expected_statistics[column_name] = {
             "column_name": column_name,
             "column_type": column_type,
@@ -412,6 +426,7 @@ def test_string_statistics(
 @pytest.mark.parametrize(
     "column_name",
     [
+        "class_label__column",
         "class_label__nan_column",
         "class_label__less_classes_column",
         "class_label__string_column",
@@ -433,6 +448,28 @@ def test_class_label_statistics(
         class_label_feature=class_label_feature,
     )
     assert expected == computed
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "bool__column",
+        "bool__nan_column",
+    ],
+)
+def test_bool_statistics(
+    column_name: str,
+    descriptive_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+) -> None:
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_bool_statistics(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_samples=len(data[column_name]),
+    )
+    assert computed == expected
 
 
 @pytest.mark.parametrize(
@@ -543,6 +580,11 @@ def test_compute(
                     assert column_response_stats["min"] == expected_column_response_stats["min"]
                     assert column_response_stats["max"] == expected_column_response_stats["max"]
             elif column_response["column_type"] in [ColumnType.STRING_LABEL, ColumnType.CLASS_LABEL]:
+                assert column_response_stats == expected_column_response_stats
+            elif column_response["column_type"] is ColumnType.BOOL:
+                assert pytest.approx(
+                    column_response_stats.pop("nan_proportion")
+                ) == expected_column_response_stats.pop("nan_proportion")
                 assert column_response_stats == expected_column_response_stats
             else:
                 raise ValueError("Incorrect data type")
