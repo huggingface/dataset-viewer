@@ -101,9 +101,11 @@ def generate_bins(
     might be *less* than provided `n_bins` + 1 since (`max_value` - `min_value` + 1) might be not divisible by `n_bins`,
     therefore, we adjust the number of bins so that bin_size is always a natural number.
     bin_size for int data is calculated as np.ceil((max_value - min_value + 1) / n_bins)
+    For float numbers, length of returned bin edges list is always equal to `n_bins` except for the cases
+    when min = max (only one value observed in data). In this case, bin edges are [min, max].
 
     Returns:
-        List of bin edges of lengths <= n_bins + 1 and > 2.
+        List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
     if column_type is ColumnType.FLOAT:
         if min_value == max_value:
@@ -136,6 +138,7 @@ def compute_histogram(
     n_bins: int,
     n_samples: int,
 ) -> Histogram:
+    logging.debug(f"Compute histogram for {column_name=}")
     bin_edges = generate_bins(
         min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
     )
@@ -159,13 +162,14 @@ def compute_histogram(
             f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
             f" unexpected {bin_edges=}"
         )
+    logging.debug(f"{hist=} {bin_edges=}")
 
     if len(hist) != len(bin_edges) - 1:
         raise StatisticsComputationError(
             f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
             f" number of bins in hist counts and bin edges don't match {hist=}, {bin_edges=}"
         )
-    if n_samples and sum(hist) != n_samples:
+    if sum(hist) != n_samples:
         raise StatisticsComputationError(
             f"Got unexpected result during histogram computation for {column_name=}, {column_type=}: "
             f" hist counts sum and number of non-null samples don't match, histogram sum={sum(hist)}, {n_samples=}"
@@ -180,9 +184,10 @@ def compute_numerical_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     n_bins: int,
-    n_samples: int,  # TODO: partial datasets
+    n_samples: int,
     column_type: ColumnType,
 ) -> NumericalStatisticsItem:
+    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name=}. ")
     col_stats = dict(
         min=pl.all().min(),
         max=pl.all().max(),
@@ -209,6 +214,7 @@ def compute_numerical_statistics(
     else:
         raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+    logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
     hist = compute_histogram(
         df,
@@ -249,9 +255,17 @@ def compute_class_label_statistics(
     labels2counts: dict[str, int] = {
         class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
     }
-    # n_unique = df[column_name].n_unique()  # TODO
-    # if not n_unique == num_classes + int(no_label_count > 0):
-    #     raise
+    n_unique = df[column_name].n_unique()
+    logging.debug(
+        f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=} " f"{n_unique=} {labels2counts=}"
+    )
+
+    if n_unique > num_classes + int(no_label_count > 0) + int(nan_count > 0):
+        raise StatisticsComputationError(
+            f"Got unexpected result for ClassLabel {column_name=}: "
+            f" number of unique values is greater than provided by feature metadata. "
+            f" {n_unique=}, {class_label_feature=}, {no_label_count=}, {nan_count=}. "
+        )
 
     return CategoricalStatisticsItem(
         nan_count=nan_count,
@@ -277,6 +291,7 @@ def compute_string_statistics(
 
         if n_unique <= MAX_NUM_STRING_LABELS:
             labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+            logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
             return CategoricalStatisticsItem(
@@ -336,7 +351,7 @@ def compute_descriptive_statistics_for_features(
         logging.info(f"Compute statistics for categorical columns {class_label_features} with polars. ")
         class_label_features = Features.from_dict(class_label_features)
         for feature_name, feature in tqdm(class_label_features.items()):  # type: ignore
-            logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
+            logging.info(f"Compute statistics for ClassLabel feature '{feature_name}'")
             df = pl.read_parquet(path, columns=[feature_name])
             cat_column_stats: CategoricalStatisticsItem = compute_class_label_statistics(
                 df,
@@ -491,6 +506,15 @@ def compute_descriptive_statistics_response(
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split_directory}/*.parquet"
 
     num_examples = dataset_info["splits"][split]["num_examples"]
+    num_rows = pl.read_parquet(
+        local_parquet_glob_path, columns=[pl.scan_parquet(local_parquet_glob_path).columns[0]]
+    ).shape[0]
+    if num_rows != num_examples:
+        raise StatisticsComputationError(
+            f"Number of rows in parquet file(s) is not equal to num_examples from DatasetInfo: "
+            f" {num_rows=}, {num_examples=}. "
+        )
+
     class_label_features = {
         feature_name: feature
         for feature_name, feature in features.items()
@@ -512,7 +536,7 @@ def compute_descriptive_statistics_response(
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
-    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
+    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with polars. ")
 
     stats = compute_descriptive_statistics_for_features(
         path=local_parquet_glob_path,

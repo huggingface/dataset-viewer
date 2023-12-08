@@ -68,11 +68,11 @@ def test_generate_bins(
     bins = generate_bins(
         min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
     )
+    assert 2 <= len(bins) <= N_BINS + 1
     if column_type is column_type.FLOAT:
         assert pytest.approx(bins) == expected_bins
     else:
         assert bins == expected_bins
-    assert len(bins) <= N_BINS + 1
 
 
 @pytest.fixture
