@@ -1006,11 +1006,7 @@ class Queue:
         This is used to keep track of running jobs.
         If a job doesn't have recent heartbeats, it means it crashed at one point and is considered a zombie.
         """
-        try:
-            job = self.get_job_with_id(job_id)
-        except DoesNotExist:
-            logging.warning(f"Heartbeat skipped because job {job_id} doesn't exist in the queue.")
-            return
+        job = self.get_job_with_id(job_id)
         # no need to update metrics since it is just the last_heartbeat
         job.update(last_heartbeat=get_datetime())
 
