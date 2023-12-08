@@ -55,6 +55,8 @@ N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
         (0.0, 0.1, ColumnType.FLOAT, [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]),
         (0, 0, ColumnType.INT, [0, 0]),
         (0.0, 0.0, ColumnType.INT, [0.0, 0.0]),
+        (-0.5, 0.5, ColumnType.FLOAT, [-0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5]),
+        (-100.0, 100.0, ColumnType.FLOAT, [-100.0, -80.0, -60.0, -40.0, -20.0, 0.0, 20.0, 40.0, 60.0, 80.0, 100.0]),
     ],
 )
 def test_generate_bins(
@@ -66,7 +68,11 @@ def test_generate_bins(
     bins = generate_bins(
         min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
     )
-    assert bins == expected_bins
+    if column_type is column_type.FLOAT:
+        assert pytest.approx(bins) == expected_bins
+    else:
+        assert bins == expected_bins
+    assert len(bins) <= N_BINS + 1
 
 
 @pytest.fixture
