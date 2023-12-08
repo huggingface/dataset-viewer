@@ -5,7 +5,7 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Optional, TypedDict, Union
+from typing import Any, Optional, TypedDict, Union
 
 import numpy as np
 import polars as pl
@@ -258,12 +258,12 @@ def compute_class_label_statistics(
         nan_proportion=nan_proportion,
         no_label_count=no_label_count,
         no_label_proportion=no_label_proportion,
-        n_unique=num_classes,  # TODO: does it contain None?
+        n_unique=num_classes,
         frequencies=labels2counts,
     )
 
 
-def compute_string_statistics_polars(
+def compute_string_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
     n_bins: int,
@@ -277,7 +277,7 @@ def compute_string_statistics_polars(
 
         if n_unique <= MAX_NUM_STRING_LABELS:
             labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
-            # exclude counts of None values from frequencies:
+            # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
             return CategoricalStatisticsItem(
                 nan_count=nan_count,
@@ -300,22 +300,22 @@ def compute_string_statistics_polars(
     )
 
 
-def compute_descriptive_statistics_response_polars(
+def compute_descriptive_statistics_for_features(
     path: Path,
-    string_features: Optional[dict[str, dict]],  # type: ignore
-    categorical_features: Optional[dict[str, dict]],  # type: ignore
-    numerical_features: Optional[dict[str, dict]],  # type: ignore
+    string_features: Optional[dict[str, dict[str, Any]]],
+    class_label_features: Optional[dict[str, dict[str, Any]]],
+    numerical_features: Optional[dict[str, dict[str, Any]]],
     histogram_num_bins: int,
     num_examples: int,
-) -> SplitDescriptiveStatisticsResponse:
+) -> list[StatisticsPerColumnItem]:
     stats = []
 
     if string_features:
-        logging.info(f"Compute statistics for string columns {string_features} with POLARS")
+        logging.info(f"Compute statistics for string columns {string_features} with polars. ")
         for feature_name, feature in tqdm(string_features.items()):
             logging.info(f"Compute for string column '{feature_name}'")
             df = pl.read_parquet(path, columns=[feature_name])
-            string_column_stats = compute_string_statistics_polars(
+            string_column_stats = compute_string_statistics(
                 df,
                 feature_name,
                 n_bins=histogram_num_bins,
@@ -332,11 +332,10 @@ def compute_descriptive_statistics_response_polars(
                 )
             )
 
-    # # compute for ClassLabels (we are sure that these are discrete categories)
-    if categorical_features:
-        logging.info(f"Compute statistics for categorical columns {categorical_features}  with POLARS")
-        categorical_features = Features.from_dict(categorical_features)
-        for feature_name, feature in tqdm(categorical_features.items()):  # type: ignore
+    if class_label_features:
+        logging.info(f"Compute statistics for categorical columns {class_label_features} with polars. ")
+        class_label_features = Features.from_dict(class_label_features)
+        for feature_name, feature in tqdm(class_label_features.items()):  # type: ignore
             logging.debug(f"Compute statistics for ClassLabel feature '{feature_name}'")
             df = pl.read_parquet(path, columns=[feature_name])
             cat_column_stats: CategoricalStatisticsItem = compute_class_label_statistics(
@@ -354,7 +353,7 @@ def compute_descriptive_statistics_response_polars(
             )
 
     if numerical_features:
-        logging.info(f"Compute statistics for numerical columns {numerical_features} with POLARS")
+        logging.info(f"Compute statistics for numerical columns {numerical_features} with polars. ")
         for feature_name, feature in tqdm(numerical_features.items()):
             logging.info(f"Compute for numerical column '{feature_name}'")
             column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
@@ -373,9 +372,7 @@ def compute_descriptive_statistics_response_polars(
                     column_statistics=numerical_column_stats,
                 )
             )
-    return SplitDescriptiveStatisticsResponse(
-        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
-    )
+    return stats
 
 
 def compute_descriptive_statistics_response(
@@ -494,7 +491,7 @@ def compute_descriptive_statistics_response(
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split_directory}/*.parquet"
 
     num_examples = dataset_info["splits"][split]["num_examples"]
-    categorical_features = {
+    class_label_features = {
         feature_name: feature
         for feature_name, feature in features.items()
         if isinstance(feature, dict) and feature.get("_type") == "ClassLabel"
@@ -509,22 +506,26 @@ def compute_descriptive_statistics_response(
         for feature_name, feature in features.items()
         if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES
     }
-    if not categorical_features and not numerical_features and not string_features:
+    if not class_label_features and not numerical_features and not string_features:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
         )
 
     logging.info(f"Compute statistics for {dataset=} {config=} {split=} with POLARS")
-    response = compute_descriptive_statistics_response_polars(
+
+    stats = compute_descriptive_statistics_for_features(
         path=local_parquet_glob_path,
         string_features=string_features,
-        categorical_features=categorical_features,
+        class_label_features=class_label_features,
         numerical_features=numerical_features,
         num_examples=num_examples,
         histogram_num_bins=histogram_num_bins,
     )
-    return response
+
+    return SplitDescriptiveStatisticsResponse(
+        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
+    )
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
