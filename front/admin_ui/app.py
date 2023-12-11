@@ -434,7 +434,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
         response = requests.post(f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}", headers=headers, timeout=60)
         if response.status_code == 200:
             counts = response.json()
-            result = f"[{delete_and_recreate_dataset_name}] ✅ {counts['deleted_cached_responses']} cached responses, {counts['cancelled_jobs']} pending jobs, and all the assets have been deleted. A new job has been created to generate the cache again."
+            result = f"[{delete_and_recreate_dataset_name}] ✅ {counts['deleted_cached_responses']} cached responses, {counts['deleted_jobs']} pending jobs, and all the assets have been deleted. A new job has been created to generate the cache again."
         else:
             result = f"[{refresh_dataset_name}] ❌ Failed to delete and recreate the dataset. Error {response.status_code}"
             try:
