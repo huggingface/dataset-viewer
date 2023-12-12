@@ -122,8 +122,9 @@ Response has two fields: `num_examples` and `statistics`. `statistics` field is 
 * `int` - for integer dtypes ("int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64")
 * `string_label` - for string dtypes ("string", "large_string") - if there are less than or equal to `MAX_NUM_STRING_LABELS` unique values (hardcoded in worker's code, for now it's 30)
 * `string_text` - for string dtypes ("string", "large_string") - if there are more than `MAX_NUM_STRING_LABELS` unique values
+* `bool` - for boolean dtype ("bool")
 
-`column_statistics` content depends on the feature type. 
+`column_statistics` content depends on the feature type, see examples below.
 ##### class_label
 
 <details><summary>example: </summary>
@@ -431,6 +432,30 @@ If the number of unique values in a column (within requested split) is > `MAX_NU
 ```
 </p>
 </details>
+
+##### bool
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    'column_name': 'bool__nan_column', 
+    'column_type': 'bool', 
+    'column_statistics': 
+        {
+            'nan_count': 3, 
+            'nan_proportion': 0.15, 
+            'frequencies': {
+                'False': 7, 
+                'True': 10
+            }
+        }
+}
+```
+</p>
+</details>
+
 
 
 ### Splits worker
