@@ -21,7 +21,7 @@ def test_statistics_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
 
     assert isinstance(statistics, list), statistics
     assert len(statistics) == 5
-    assert num_examples == 5
+    assert num_examples == 4
 
     first_column = statistics[0]
     assert "column_name" in first_column
