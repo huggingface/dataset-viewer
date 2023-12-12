@@ -397,7 +397,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
             branch (`str`): the branch to lock
             owner (`str`): the current job id that holds the lock
             sleeps (`Sequence[float]`, optional): the time in seconds to sleep between each attempt to acquire the lock
-            sleeps (`integer`, optional): either lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB or lock.TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
+            ttl (`integer`, optional): either lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB or lock.TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, owner=owner, sleeps=sleeps, ttl=ttl)
