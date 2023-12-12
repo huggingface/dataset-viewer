@@ -111,6 +111,7 @@ def test_rows_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
             "col_2": 1,
             "col_3": 1.0,
             "col_4": "B",
+            "col_5": False,
         },
         "truncated_cells": [],
     }, rows[0]
@@ -119,4 +120,5 @@ def test_rows_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
         {"feature_idx": 1, "name": "col_2", "type": {"dtype": "int64", "_type": "Value"}},
         {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
         {"feature_idx": 3, "name": "col_4", "type": {"dtype": "string", "_type": "Value"}},
+        {"feature_idx": 4, "name": "col_5", "type": {"dtype": "bool", "_type": "Value"}},
     ], features
