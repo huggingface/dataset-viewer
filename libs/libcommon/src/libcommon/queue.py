@@ -397,7 +397,6 @@ class lock(contextlib.AbstractContextManager["lock"]):
         branch: str,
         owner: str,
         sleeps: Sequence[float] = _default_sleeps,
-        ttl: Optional[_TTL] = None,
     ) -> "lock":
         """
         Lock a git branch of a dataset on the hub for read/write
@@ -407,10 +406,9 @@ class lock(contextlib.AbstractContextManager["lock"]):
             branch (`str`): the branch to lock
             owner (`str`): the current job id that holds the lock
             sleeps (`Sequence[float]`, optional): the time in seconds to sleep between each attempt to acquire the lock
-            ttl (`integer`, optional): either lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB or lock.TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, owner=owner, sleeps=sleeps, ttl=ttl)
+        return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
 
 
 def release_locks(owner: str) -> None:

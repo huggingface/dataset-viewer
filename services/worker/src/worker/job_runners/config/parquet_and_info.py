@@ -1213,7 +1213,6 @@ def compute_config_parquet_and_info_response(
             branch=target_revision,
             owner=job_id,
             sleeps=LOCK_GIT_BRANCH_RETRY_SLEEPS,
-            ttl=lock.TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
         ):
             # create the target revision if we managed to get the parquet files and it does not exist yet
             # (clone from initial commit to avoid cloning all repo's files)
