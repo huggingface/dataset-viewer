@@ -145,6 +145,15 @@ def compute_histogram(
     n_bins: int,
     n_samples: int,
 ) -> Histogram:
+    """
+    Compute histogram over numerical (int and float) data using `polars`.
+    `polars` histogram implementation uses left half-open intervals in bins, while more standard approach
+    (implemented in `numpy`, for example) would be to use right half-open intervals
+    (except for the last bin, which is closed to include the maximum value).
+    In order to be aligned with this, this function first multiplies all values in column and bin edges by -1,
+    computes histogram with `polars` using these inverted numbers, and then reverses everything back.
+    """
+
     logging.debug(f"Compute histogram for {column_name=}")
     bin_edges = generate_bins(
         min_value=min_value, max_value=max_value, column_name=column_name, column_type=column_type, n_bins=n_bins
