@@ -307,7 +307,7 @@ def compute_bool_statistics(
     return BoolStatisticsItem(
         nan_count=nan_count,
         nan_proportion=nan_proportion,
-        frequencies=values2counts,
+        frequencies={str(key): freq for key, freq in values2counts.items()},
     )
 
 

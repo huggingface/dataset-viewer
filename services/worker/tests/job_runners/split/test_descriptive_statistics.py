@@ -293,7 +293,7 @@ def count_expected_statistics_for_bool_column(column: pd.Series) -> dict:  # typ
     return {
         "nan_count": nan_count,
         "nan_proportion": np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0,
-        "frequencies": value_counts,
+        "frequencies": {str(key): freq for key, freq in value_counts.items()},
     }
 
 
