@@ -170,6 +170,7 @@ Currently, statistics are supported for strings, float and integer numbers, and 
 * `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
 * `float` - for float dtypes
 * `int` - for integer dtypes
+* `bool` - for boolean dtype
 * `string_label` - for string dtypes, if there are less than or equal to 30 unique values in a string column in a given split
 * `string_text` - for string dtypes, if there are more than 30 unique values in a string column in a given split
 
@@ -296,6 +297,35 @@ The following measures are returned for integer data types:
                 1,
                 1
             ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
+### bool
+
+The following measures are returned for bool data type:
+
+* number and proportion of `null` values
+* value counts for `'True'` and `'False'` values
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+  "column_name": "penalty",
+  "column_type": "bool",
+  "column_statistics":
+    {
+        "nan_count": 3,
+        "nan_proportion": 0.15,
+        "frequencies": {
+            'False': 7,
+            'True': 10
         }
     }
 }
