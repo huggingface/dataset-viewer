@@ -20,7 +20,7 @@ def test_statistics_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
     num_examples = content["num_examples"]
 
     assert isinstance(statistics, list), statistics
-    assert len(statistics) == 4
+    assert len(statistics) == 5
     assert num_examples == 4
 
     first_column = statistics[0]
@@ -99,5 +99,21 @@ def test_statistics_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
         "frequencies": {
             "A": 1,
             "B": 3,
+        },
+    }
+
+    fifth_column = statistics[4]
+    assert "column_name" in fifth_column
+    assert "column_statistics" in fifth_column
+    assert "column_type" in fifth_column
+    assert fifth_column["column_name"] == "col_5"
+    assert fifth_column["column_type"] == "bool"
+    assert isinstance(fifth_column["column_statistics"], dict)
+    assert fifth_column["column_statistics"] == {
+        "nan_count": 1,
+        "nan_proportion": 0.25,
+        "frequencies": {
+            "True": 2,
+            "False": 1,
         },
     }
