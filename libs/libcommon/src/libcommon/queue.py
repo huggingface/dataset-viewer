@@ -288,6 +288,7 @@ class Lock(Document):
         "indexes": [
             ("key", "owner"),
             {
+                "name": "LOCK_TTL_SECONDS_NO_OWNER",
                 "fields": ["updated_at"],
                 "expireAfterSeconds": LOCK_TTL_SECONDS_NO_OWNER,
                 "partialFilterExpression": {"owner": None},
@@ -295,6 +296,7 @@ class Lock(Document):
         ]
         + [
             {
+                "name": ttl.name,
                 "fields": ["updated_at"],
                 "expireAfterSeconds": ttl,
                 "partialFilterExpression": {"ttl": ttl},
