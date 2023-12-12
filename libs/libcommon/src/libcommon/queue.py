@@ -27,6 +27,7 @@ from mongoengine.queryset.queryset import QuerySet
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
+    LOCK_TTL_SECONDS_NO_OWNER,
     LOCK_TTL_SECONDS_TO_START_JOB,
     LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
     QUEUE_COLLECTION_JOBS,
@@ -284,12 +285,19 @@ class Lock(Document):
     meta = {
         "collection": QUEUE_COLLECTION_LOCKS,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("key", "owner")]
+        "indexes": [
+            ("key", "owner"),
+            {
+                "fields": ["updated_at"],
+                "expireAfterSeconds": LOCK_TTL_SECONDS_NO_OWNER,
+                "partialFilterExpression": {"owner": None},
+            },
+        ]
         + [
             {
                 "fields": ["updated_at"],
                 "expireAfterSeconds": ttl,
-                "partialFilterExpression": {"$or": [{"owner": None}, {"ttl": ttl}]},
+                "partialFilterExpression": {"ttl": ttl},
             }
             for ttl in _TTL
         ],
