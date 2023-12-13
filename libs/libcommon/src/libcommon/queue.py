@@ -9,6 +9,7 @@ import types
 from collections import Counter
 from collections.abc import Sequence
 from datetime import datetime, timedelta
+from enum import IntEnum
 from itertools import groupby
 from operator import itemgetter
 from types import TracebackType
@@ -26,7 +27,9 @@ from mongoengine.queryset.queryset import QuerySet
 from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DEFAULT_DIFFICULTY_MIN,
-    LOCK_TTL_SECONDS,
+    LOCK_TTL_SECONDS_NO_OWNER,
+    LOCK_TTL_SECONDS_TO_START_JOB,
+    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
     QUEUE_METRICS_COLLECTION,
@@ -273,6 +276,11 @@ def update_metrics_for_type(job_type: str, previous_status: str, new_status: str
         increase_metric(job_type=job_type, status=new_status)
 
 
+class _TTL(IntEnum):
+    LOCK_TTL_SECONDS_TO_START_JOB = LOCK_TTL_SECONDS_TO_START_JOB
+    LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH = LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH
+
+
 class Lock(Document):
     meta = {
         "collection": QUEUE_COLLECTION_LOCKS,
@@ -280,10 +288,20 @@ class Lock(Document):
         "indexes": [
             ("key", "owner"),
             {
+                "name": "LOCK_TTL_SECONDS_NO_OWNER",
                 "fields": ["updated_at"],
-                "expireAfterSeconds": LOCK_TTL_SECONDS,
-                "partialFilterExpression": {"$or": [{"owner": None}, {"ttl": LOCK_TTL_SECONDS}]},
+                "expireAfterSeconds": LOCK_TTL_SECONDS_NO_OWNER,
+                "partialFilterExpression": {"owner": None},
             },
+        ]
+        + [
+            {
+                "name": ttl.name,
+                "fields": ["updated_at"],
+                "expireAfterSeconds": ttl,
+                "partialFilterExpression": {"ttl": ttl},
+            }
+            for ttl in _TTL
         ],
     }
 
@@ -324,17 +342,18 @@ class lock(contextlib.AbstractContextManager["lock"]):
     ```
     """
 
+    TTL = _TTL
     _default_sleeps = (0.05, 0.05, 0.05, 1, 1, 1, 5)
 
     def __init__(
-        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[int] = None
+        self, key: str, owner: str, sleeps: Sequence[float] = _default_sleeps, ttl: Optional[_TTL] = None
     ) -> None:
         self.key = key
         self.owner = owner
         self.sleeps = sleeps
         self.ttl = ttl
-        if ttl is not None and ttl != LOCK_TTL_SECONDS:
-            raise ValueError(f"Only TTL of LOCK_TTL_SECONDS={LOCK_TTL_SECONDS} is supported by the TTL index.")
+        if ttl is not None and ttl not in list(self.TTL):
+            raise ValueError(f"The TTL value is not supported by the TTL index. It should be one of {list(self.TTL)}")
 
     def acquire(self) -> None:
         for sleep in self.sleeps:
@@ -372,7 +391,13 @@ class lock(contextlib.AbstractContextManager["lock"]):
         return False
 
     @classmethod
-    def git_branch(cls, dataset: str, branch: str, owner: str, sleeps: Sequence[float] = _default_sleeps) -> "lock":
+    def git_branch(
+        cls,
+        dataset: str,
+        branch: str,
+        owner: str,
+        sleeps: Sequence[float] = _default_sleeps,
+    ) -> "lock":
         """
         Lock a git branch of a dataset on the hub for read/write
 
@@ -380,10 +405,10 @@ class lock(contextlib.AbstractContextManager["lock"]):
             dataset (`str`): the dataset repository
             branch (`str`): the branch to lock
             owner (`str`): the current job id that holds the lock
-            sleeps (`Sequence[float]`): the time in seconds to sleep between each attempt to acquire the lock
+            sleeps (`Sequence[float]`, optional): the time in seconds to sleep between each attempt to acquire the lock
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
-        return cls(key=key, owner=owner, sleeps=sleeps)
+        return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
 
 
 def release_locks(owner: str) -> None:
@@ -691,7 +716,12 @@ class Queue:
         lock_owner = str(uuid4())
         try:
             # retry for 2 seconds
-            with lock(key=job.unicity_id, owner=lock_owner, sleeps=[0.1] * RETRIES, ttl=LOCK_TTL_SECONDS):
+            with lock(
+                key=job.unicity_id,
+                owner=lock_owner,
+                sleeps=[0.1] * RETRIES,
+                ttl=lock.TTL.LOCK_TTL_SECONDS_TO_START_JOB,
+            ):
                 # get all the pending jobs for the same unicity_id
                 waiting_jobs = JobDocument.objects(unicity_id=job.unicity_id).order_by("-created_at")
                 datetime = get_datetime()
