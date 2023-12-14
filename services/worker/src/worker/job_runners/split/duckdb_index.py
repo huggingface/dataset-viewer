@@ -63,7 +63,6 @@ INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
 LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
-HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -160,17 +159,6 @@ def compute_index_rows(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
-    # index all columns
-    db_path = duckdb_index_file_directory.resolve() / index_filename
-    con = duckdb.connect(str(db_path.resolve()))
-
-    # configure duckdb extensions
-    if extensions_directory is not None:
-        con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-    con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-    con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
-
     # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     for parquet_file in parquet_file_names:
@@ -189,18 +177,43 @@ def compute_index_rows(
 
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
-    logging.info(create_command_sql)
-    con.sql(create_command_sql)
 
-    is_indexable = len(indexable_columns) > 0
-    if is_indexable:
-        # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
-        # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-        create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
-        logging.info(create_index_sql)
-        con.sql(create_index_sql)
-    con.close()
+    # index all columns
+    db_path = duckdb_index_file_directory.resolve() / index_filename
+    con = duckdb.connect(str(db_path.resolve()))
+    con.sql("SET enable_progress_bar=true;")
 
+    # DuckDB uses n_threads = num kubernetes cpu (limits)
+    n_threads = con.sql("SELECT current_setting('threads')").fetchall()[0][0]
+    logging.info(f"Number of threads={n_threads}")
+
+    # However DuckDB uses max_memory = memory of the entite kubernetes node so we lower it
+    max_memory = con.sql("SELECT current_setting('max_memory');").fetchall()[0][0]
+    logging.info(f"Original {max_memory=}")
+    con.sql(f"SET max_memory TO '{28 if n_threads >= 8 else 10}gb';")
+
+    try:
+        # configure duckdb extensions
+        if extensions_directory is not None:
+            con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
+        con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
+        con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
+
+        logging.info(create_command_sql)
+        con.sql(create_command_sql)
+
+        is_indexable = len(indexable_columns) > 0
+        if is_indexable:
+            # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
+            # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
+            create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
+            logging.info(create_index_sql)
+            con.sql(create_index_sql)
+    finally:
+        con.close()
+
+    logging.info(f"about to push index file to {target_revision}")
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
     index_file_location = f"{config}/{split_directory}/{index_filename}"
