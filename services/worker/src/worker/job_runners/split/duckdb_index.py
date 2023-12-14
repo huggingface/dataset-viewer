@@ -189,7 +189,7 @@ def compute_index_rows(
 
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
-    logging.debug(create_command_sql)
+    logging.info(create_command_sql)
     con.sql(create_command_sql)
 
     is_indexable = len(indexable_columns) > 0
@@ -197,7 +197,7 @@ def compute_index_rows(
         # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
         # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
         create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
-        logging.debug(create_index_sql)
+        logging.info(create_index_sql)
         con.sql(create_index_sql)
     con.close()
 
