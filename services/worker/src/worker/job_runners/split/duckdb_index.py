@@ -184,7 +184,7 @@ def compute_index_rows(
     con.sql("SET enable_progress_bar=true;")
 
     # try https://duckdb.org/docs/guides/performance/how-to-tune-workloads
-    con.sql(f"SET preserve_insertion_order = false;")
+    con.sql("SET preserve_insertion_order = false;")
 
     try:
         # configure duckdb extensions
