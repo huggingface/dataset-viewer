@@ -181,10 +181,6 @@ def compute_index_rows(
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
     con = duckdb.connect(str(db_path.resolve()))
-    con.sql("SET enable_progress_bar=true;")
-
-    # try https://duckdb.org/docs/guides/performance/how-to-tune-workloads
-    con.sql("SET preserve_insertion_order = false;")
 
     try:
         # configure duckdb extensions
