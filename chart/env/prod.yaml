@@ -412,7 +412,7 @@ workers:
         memory: "34Gi"
       limits:
         cpu: 8
-        memory: "34Gi"
+        memory: "44Gi"
     tolerations: []
   - deployName: "medium"
     prometheusMultiprocDirectory: "/tmp"
