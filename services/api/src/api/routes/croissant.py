@@ -209,7 +209,6 @@ def create_croissant_endpoint(
         endpoint_name = "croissant"
         context = f"endpoint: {endpoint_name}"
         revision: Optional[str] = None
-        processing_steps = processing_graph.get_dataset_info_processing_steps()
         with StepProfiler(method="croissant_endpoint", step="all", context=context):
             try:
                 with StepProfiler(
@@ -234,7 +233,7 @@ def create_croissant_endpoint(
                 # getting result based on processing steps
                 with StepProfiler(method="croissant_endpoint", step="get info cache entry", context=context):
                     info_result = get_cache_entry_from_steps(
-                        processing_steps=processing_steps,
+                        processing_steps=[processing_graph.get_processing_step_by_job_type("dataset-info")],
                         dataset=dataset,
                         config=None,
                         split=None,
