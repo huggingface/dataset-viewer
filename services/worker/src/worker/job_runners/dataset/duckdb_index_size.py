@@ -4,7 +4,6 @@
 import logging
 from http import HTTPStatus
 
-from libcommon.constants import PROCESSING_STEP_DATASET_DUCKDB_INDEX_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
@@ -131,10 +130,6 @@ class DatasetDuckdbIndexSizeJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-duckdb-index-size"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_DUCKDB_INDEX_SIZE_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_dataset_duckdb_index_size_response(dataset=self.dataset)

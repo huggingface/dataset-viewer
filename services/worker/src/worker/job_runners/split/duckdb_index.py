@@ -20,7 +20,6 @@ from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
-    PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
 )
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -329,10 +328,6 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
     @staticmethod
     def get_job_type() -> str:
         return "split-duckdb-index"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.cache_subdirectory is None:

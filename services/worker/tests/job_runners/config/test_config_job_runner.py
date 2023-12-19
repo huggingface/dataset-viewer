@@ -25,10 +25,6 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 
 class DummyConfigJobRunner(ConfigJobRunner):
     @staticmethod
-    def get_job_runner_version() -> int:
-        return 1
-
-    @staticmethod
     def get_job_type() -> str:
         return "/dummy"
 

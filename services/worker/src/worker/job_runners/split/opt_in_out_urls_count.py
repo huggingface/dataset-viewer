@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
@@ -43,10 +42,6 @@ class SplitOptInOutUrlsCountJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-opt-in-out-urls-count"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_COUNT_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

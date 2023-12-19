@@ -17,10 +17,6 @@ class DummyJobRunner(JobRunner):
     def get_job_type() -> str:
         return "dummy"
 
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return 1
-
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
 

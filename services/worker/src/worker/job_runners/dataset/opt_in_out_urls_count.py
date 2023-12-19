@@ -4,7 +4,6 @@
 import logging
 from http import HTTPStatus
 
-from libcommon.constants import PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
@@ -83,10 +82,6 @@ class DatasetOptInOutUrlsCountJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-opt-in-out-urls-count"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_OPT_IN_OUT_URLS_COUNT_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset)

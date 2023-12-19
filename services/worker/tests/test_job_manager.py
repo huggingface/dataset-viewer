@@ -30,10 +30,6 @@ def prepare_and_clean_mongo(
 
 class DummyJobRunner(DatasetJobRunner):
     @staticmethod
-    def get_job_runner_version() -> int:
-        return 1
-
-    @staticmethod
     def get_job_type() -> str:
         return "dummy"
 
@@ -307,7 +303,7 @@ def test_doesnotexist(app_config: AppConfig) -> None:
                 "dataset-level": {"input_type": "dataset"},
                 processing_step_name: {
                     "input_type": "dataset",
-                    "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                    "job_runner_version": 1,
                     "triggered_by": "dataset-level",
                 },
             }

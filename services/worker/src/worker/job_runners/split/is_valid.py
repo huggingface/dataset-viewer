@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.constants import PROCESSING_STEP_SPLIT_IS_VALID_VERSION
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -73,10 +72,6 @@ class SplitIsValidJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-is-valid"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_IS_VALID_VERSION
 
     def __init__(
         self,

@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.constants import PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import is_image_url
@@ -107,10 +106,6 @@ class SplitImageUrlColumnsJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-image-url-columns"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

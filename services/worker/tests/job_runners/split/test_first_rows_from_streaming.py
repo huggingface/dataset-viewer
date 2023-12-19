@@ -50,7 +50,7 @@ def get_job_runner(
                     "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": SplitFirstRowsFromStreamingJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "config-level",
                     },
                 }

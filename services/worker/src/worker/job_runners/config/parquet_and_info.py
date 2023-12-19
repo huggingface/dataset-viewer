@@ -48,7 +48,6 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
-    PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION,
 )
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
@@ -1274,10 +1273,6 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
         return "config-parquet-and-info"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_VERSION
 
     def __init__(
         self,

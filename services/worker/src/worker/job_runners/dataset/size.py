@@ -5,7 +5,6 @@ import logging
 from http import HTTPStatus
 from typing import Optional
 
-from libcommon.constants import PROCESSING_STEP_DATASET_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
@@ -131,10 +130,6 @@ class DatasetSizeJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-size"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_SIZE_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_sizes_response(dataset=self.dataset)

@@ -6,7 +6,6 @@ import logging
 from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.constants import PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
 from libcommon.exceptions import (
     FileSystemError,
     ParquetResponseEmptyError,
@@ -130,10 +129,6 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-parquet-metadata"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION
 
     def __init__(
         self,

@@ -4,7 +4,6 @@
 import logging
 from http import HTTPStatus
 
-from libcommon.constants import PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_best_response, get_previous_step_or_raise
 
@@ -100,10 +99,6 @@ class DatasetSplitNamesJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-split-names"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_SPLIT_NAMES_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_dataset_split_names_response(dataset=self.dataset)

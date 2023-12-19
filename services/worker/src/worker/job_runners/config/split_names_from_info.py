@@ -4,7 +4,6 @@
 import logging
 
 from libcommon.constants import (
-    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
     PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
 )
 from libcommon.exceptions import PreviousStepFormatError
@@ -55,10 +54,6 @@ class ConfigSplitNamesFromInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-info"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION
 
     @staticmethod
     def get_parallel_job_runner() -> JobRunnerInfo:

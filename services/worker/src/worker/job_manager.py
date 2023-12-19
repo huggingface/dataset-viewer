@@ -55,6 +55,7 @@ class JobManager:
     processing_step: ProcessingStep
     processing_graph: ProcessingGraph
     job_runner: JobRunner
+    job_runner_version: int
 
     def __init__(
         self,
@@ -73,6 +74,7 @@ class JobManager:
         self.job_runner = job_runner
         self.processing_graph = processing_graph
         self.processing_step = self.job_runner.processing_step
+        self.job_runner_version = self.job_runner.processing_step.job_runner_version
         self.setup()
 
     def setup(self) -> None:
@@ -115,7 +117,7 @@ class JobManager:
         except Exception:
             job_result = {
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": None,
             }
@@ -189,7 +191,7 @@ class JobManager:
             )
             return {
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": True,
                 "output": {
                     "content": content,
@@ -204,7 +206,7 @@ class JobManager:
             self.debug(f"the dataset={self.job_params['dataset']} could not be found, don't update the cache")
             return {
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": None,
             }
@@ -216,7 +218,7 @@ class JobManager:
             self.debug(f"response for job_info={self.job_info} had an error from a previous step")
             return {
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": {
                     "content": err.cache_entry_with_details["content"],
@@ -237,7 +239,7 @@ class JobManager:
             self.debug(f"response for job_info={self.job_info} had an error")
             return {
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": {
                     "content": dict(e.as_response()),
@@ -258,7 +260,7 @@ class JobManager:
         self.finish(
             job_result={
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": {
                     "content": dict(error.as_response()),
@@ -280,7 +282,7 @@ class JobManager:
         self.finish(
             job_result={
                 "job_info": self.job_info,
-                "job_runner_version": self.job_runner.get_job_runner_version(),
+                "job_runner_version": self.job_runner_version,
                 "is_success": False,
                 "output": {
                     "content": dict(error.as_response()),

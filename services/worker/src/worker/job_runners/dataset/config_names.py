@@ -6,7 +6,6 @@ from typing import Optional
 
 from datasets import get_dataset_config_names
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
@@ -86,10 +85,6 @@ class DatasetConfigNamesJobRunner(DatasetJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-config-names"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
