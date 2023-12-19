@@ -7,7 +7,7 @@ from typing import Optional
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
-from worker.dtos import JobResult, JobRunnerInfo
+from worker.dtos import JobResult
 
 
 class JobRunner(ABC):
@@ -20,7 +20,7 @@ class JobRunner(ABC):
         pass
 
     @staticmethod
-    def get_parallel_job_runner() -> Optional[JobRunnerInfo]:  # In the future it could be a list
+    def get_parallel_step_name() -> Optional[str]:  # In the future it could be a list
         return None
 
     def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:

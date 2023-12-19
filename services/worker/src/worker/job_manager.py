@@ -132,10 +132,13 @@ class JobManager:
         except DatasetInBlockListError:
             self.debug("The dataset is blocked and has been deleted from the Datasets Server.")
 
-    def raise_if_parallel_response_exists(self, parallel_cache_kind: str, parallel_job_version: int) -> None:
+    def raise_if_parallel_response_exists(self, parallel_step_name: str) -> None:
         try:
+            parallel_job_version = self.processing_graph.get_processing_step_by_job_type(
+                parallel_step_name
+            ).job_runner_version
             existing_response = get_response_without_content_params(
-                kind=parallel_cache_kind,
+                kind=parallel_step_name,
                 job_params=self.job_params,
             )
 
@@ -146,11 +149,11 @@ class JobManager:
                 and existing_response["dataset_git_revision"] == self.job_params["revision"]
             ):
                 raise ResponseAlreadyComputedError(
-                    f"Response has already been computed and stored in cache kind: {parallel_cache_kind}. Compute will"
+                    f"Response has already been computed and stored in cache kind: {parallel_step_name}. Compute will"
                     " be skipped."
                 )
         except CacheEntryDoesNotExistError:
-            logging.debug(f"no cache found for {parallel_cache_kind}.")
+            logging.debug(f"no cache found for {parallel_step_name}.")
 
     def process(
         self,
@@ -159,12 +162,9 @@ class JobManager:
         try:
             try:
                 self.job_runner.pre_compute()
-                parallel_job_runner = self.job_runner.get_parallel_job_runner()
-                if parallel_job_runner:
-                    self.raise_if_parallel_response_exists(
-                        parallel_cache_kind=parallel_job_runner["job_type"],
-                        parallel_job_version=parallel_job_runner["job_runner_version"],
-                    )
+                parallel_step_name = self.job_runner.get_parallel_step_name()
+                if parallel_step_name:
+                    self.raise_if_parallel_response_exists(parallel_step_name=parallel_step_name)
 
                 job_result = self.job_runner.compute()
                 content = job_result.content

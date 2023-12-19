@@ -7,16 +7,13 @@ from typing import Optional
 from datasets import get_dataset_split_names
 from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
-from libcommon.constants import (
-    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
-)
 from libcommon.exceptions import (
     DatasetManualDownloadError,
     EmptyDatasetError,
     SplitNamesFromStreamingError,
 )
 
-from worker.dtos import CompleteJobResult, FullSplitItem, JobRunnerInfo, SplitsList
+from worker.dtos import CompleteJobResult, FullSplitItem, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import disable_dataset_scripts_support
 
@@ -90,11 +87,8 @@ class ConfigSplitNamesFromStreamingJobRunner(ConfigJobRunnerWithDatasetsCache):
         return "config-split-names-from-streaming"
 
     @staticmethod
-    def get_parallel_job_runner() -> JobRunnerInfo:
-        return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
-            job_type="config-split-names-from-info",
-        )
+    def get_parallel_step_name() -> str:
+        return "config-split-names-from-info"
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

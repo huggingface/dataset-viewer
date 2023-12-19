@@ -5,9 +5,6 @@ import logging
 
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-)
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
@@ -23,7 +20,7 @@ from libcommon.utils import JobInfo, Row, RowItem
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import create_truncated_row_items, get_json_size
 
@@ -173,11 +170,8 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         return "split-first-rows-from-parquet"
 
     @staticmethod
-    def get_parallel_job_runner() -> JobRunnerInfo:
-        return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-            job_type="split-first-rows-from-streaming",
-        )
+    def get_parallel_step_name() -> str:
+        return "split-first-rows-from-streaming"
 
     def __init__(
         self,
