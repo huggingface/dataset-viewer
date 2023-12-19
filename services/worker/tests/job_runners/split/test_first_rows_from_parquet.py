@@ -142,7 +142,7 @@ def test_compute(
     }
 
     upsert_response(
-        kind="config-level",
+        kind="config-parquet-metadata",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,
@@ -255,7 +255,7 @@ def test_from_parquet_truncation(
     }
 
     upsert_response(
-        kind="config-level",
+        kind="config-parquet-metadata",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,
