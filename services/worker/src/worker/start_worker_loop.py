@@ -63,7 +63,6 @@ if __name__ == "__main__":
 
         job_runner_factory = JobRunnerFactory(
             app_config=app_config,
-            processing_graph=processing_graph,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             parquet_metadata_directory=parquet_metadata_directory,
             duckdb_index_cache_directory=duckdb_index_cache_directory,

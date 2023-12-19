@@ -272,7 +272,6 @@ class ProcessingGraphConfig:
                 "input_type": "config",
                 "triggered_by": "config-parquet",
                 "job_runner_version": PROCESSING_STEP_CONFIG_PARQUET_METADATA_VERSION,
-                "provides_config_parquet_metadata": True,
                 "difficulty": 50,
             },
             "split-first-rows-from-parquet": {

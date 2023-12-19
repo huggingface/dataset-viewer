@@ -16,7 +16,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
@@ -184,7 +183,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
         storage_client: StorageClient,
     ) -> None:
@@ -196,7 +194,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
-            processing_graph=processing_graph,
             hf_token=self.app_config.common.hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
             httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),

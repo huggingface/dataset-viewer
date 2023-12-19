@@ -15,7 +15,6 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -288,7 +287,6 @@ class RowsIndex:
         dataset: str,
         config: str,
         split: str,
-        processing_graph: ProcessingGraph,
         httpfs: HfFileSystem,
         hf_token: Optional[str],
         parquet_metadata_directory: StrPath,
@@ -298,7 +296,6 @@ class RowsIndex:
         self.dataset = dataset
         self.config = config
         self.split = split
-        self.processing_graph = processing_graph
         self.httpfs = httpfs
         self.parquet_index = self._init_parquet_index(
             hf_token=hf_token,
@@ -317,12 +314,8 @@ class RowsIndex:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                config_parquet_metadata_processing_steps = (
-                    self.processing_graph.get_config_parquet_metadata_processing_steps()
-                )
-                cache_kinds = [step.cache_kind for step in config_parquet_metadata_processing_steps]
                 result = get_previous_step_or_raise(
-                    kinds=cache_kinds,
+                    kinds=["config-parquet-metadata"],
                     dataset=self.dataset,
                     config=self.config,
                     split=None,
@@ -375,7 +368,6 @@ class RowsIndex:
 class Indexer:
     def __init__(
         self,
-        processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
         httpfs: HTTPFileSystem,
         max_arrow_data_in_memory: int,
@@ -383,7 +375,6 @@ class Indexer:
         all_columns_supported_datasets_allow_list: Union[Literal["all"], list[str]] = "all",
         hf_token: Optional[str] = None,
     ):
-        self.processing_graph = processing_graph
         self.parquet_metadata_directory = parquet_metadata_directory
         self.httpfs = httpfs
         self.hf_token = hf_token
@@ -407,7 +398,6 @@ class Indexer:
             dataset=dataset,
             config=config,
             split=split,
-            processing_graph=self.processing_graph,
             httpfs=self.httpfs,
             hf_token=self.hf_token,
             parquet_metadata_directory=self.parquet_metadata_directory,

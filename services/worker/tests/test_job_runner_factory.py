@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -23,11 +22,6 @@ from .job_runners.utils import REVISION_NAME
 @pytest.fixture(autouse=True)
 def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> CacheMongoResource:
     return cache_mongo_resource
-
-
-@pytest.fixture()
-def processing_graph(app_config: AppConfig) -> ProcessingGraph:
-    return ProcessingGraph(app_config.processing_graph)
 
 
 @pytest.mark.parametrize(
@@ -47,7 +41,6 @@ def processing_graph(app_config: AppConfig) -> ProcessingGraph:
 )
 def test_create_job_runner(
     app_config: AppConfig,
-    processing_graph: ProcessingGraph,
     libraries_resource: LibrariesResource,
     parquet_metadata_directory: StrPath,
     duckdb_index_cache_directory: StrPath,
@@ -64,7 +57,6 @@ def test_create_job_runner(
     )
     factory = JobRunnerFactory(
         app_config=app_config,
-        processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         parquet_metadata_directory=parquet_metadata_directory,
         duckdb_index_cache_directory=duckdb_index_cache_directory,
