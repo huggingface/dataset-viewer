@@ -54,7 +54,6 @@ def create_rows_endpoint(
     max_age_short: int = 0,
 ) -> Endpoint:
     indexer = Indexer(
-        processing_graph=processing_graph,
         hf_token=hf_token,
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {hf_token}"}),
@@ -116,14 +115,12 @@ def create_rows_endpoint(
                             num_rows_total=rows_index.parquet_index.num_rows_total,
                         )
                 except CachedArtifactNotFoundError:
-                    config_parquet_processing_steps = processing_graph.get_config_parquet_processing_steps()
-                    config_parquet_metadata_processing_steps = (
-                        processing_graph.get_config_parquet_metadata_processing_steps()
-                    )
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset_then_raise(
-                            processing_steps=config_parquet_metadata_processing_steps
-                            + config_parquet_processing_steps,
+                            processing_steps=[
+                                processing_graph.get_processing_step_by_job_type("config-parquet"),
+                                processing_graph.get_processing_step_by_job_type("config-parquet-metadata"),
+                            ],
                             processing_graph=processing_graph,
                             dataset=dataset,
                             hf_endpoint=hf_endpoint,
