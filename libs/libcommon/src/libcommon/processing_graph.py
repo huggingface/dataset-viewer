@@ -151,11 +151,6 @@ class ProcessingGraph:
         for name, specification in self.processing_graph_specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
-            provides_config_parquet_metadata = specification.get("provides_config_parquet_metadata", False)
-            if provides_config_parquet_metadata and input_type != "config":
-                raise ValueError(
-                    f"Processing step {name} provides config parquet metadata but its input type is {input_type}."
-                )
             if (
                 _nx_graph.has_node(name)
                 or name in _processing_steps
