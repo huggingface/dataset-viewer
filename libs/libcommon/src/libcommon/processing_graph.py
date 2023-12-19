@@ -134,7 +134,6 @@ class ProcessingGraph:
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, list[str]] = field(init=False)
     _first_processing_steps: list[ProcessingStep] = field(init=False)
-    _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
 
