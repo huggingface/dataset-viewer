@@ -55,10 +55,9 @@ def test_check_type(
     config = "config"
     split = "split"
 
-    job_type = "not-dummy"
     job_info = JobInfo(
         job_id=job_id,
-        type=job_type,
+        type="dummy2",
         params={
             "dataset": dataset,
             "revision": revision,
@@ -73,7 +72,6 @@ def test_check_type(
             job_info=job_info,
             app_config=app_config,
         )
-
         JobManager(
             job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
         )
@@ -90,15 +88,11 @@ def test_check_type(
         priority=Priority.NORMAL,
         difficulty=50,
     )
-    with pytest.raises(ValueError):
-        job_runner = DummyJobRunner(
-            job_info=job_info,
-            app_config=app_config,
-        )
-
-        JobManager(
-            job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
-        )
+    job_runner = DummyJobRunner(
+        job_info=job_info,
+        app_config=app_config,
+    )
+    JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph)
 
 
 @pytest.mark.parametrize(
