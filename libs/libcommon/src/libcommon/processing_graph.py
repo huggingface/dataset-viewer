@@ -45,7 +45,6 @@ class ProcessingStepSpecification(TypedDict, total=False):
     triggered_by: Union[list[str], str, None]
     job_runner_version: int
     provides_config_split_names: bool
-    provides_config_parquet: bool
     difficulty: int
     bonus_difficulty_if_dataset_is_big: int
 
@@ -137,7 +136,6 @@ class ProcessingGraph:
     _processing_step_names_by_input_type: Mapping[InputType, list[str]] = field(init=False)
     _first_processing_steps: list[ProcessingStep] = field(init=False)
     _config_split_names_processing_steps: list[ProcessingStep] = field(init=False)
-    _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
     _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
@@ -161,9 +159,6 @@ class ProcessingGraph:
                 raise ValueError(
                     f"Processing step {name} provides config split names but its input type is {input_type}."
                 )
-            provides_config_parquet = specification.get("provides_config_parquet", False)
-            if provides_config_parquet and input_type != "config":
-                raise ValueError(f"Processing step {name} provides config parquet but its input type is {input_type}.")
             provides_config_parquet_metadata = specification.get("provides_config_parquet_metadata", False)
             if provides_config_parquet_metadata and input_type != "config":
                 raise ValueError(
@@ -178,8 +173,6 @@ class ProcessingGraph:
             _nx_graph.add_node(
                 name,
                 provides_config_split_names=provides_config_split_names,
-                provides_config_parquet=provides_config_parquet,
-                provides_config_parquet_metadata=provides_config_parquet_metadata,
             )
             _processing_steps[name] = ProcessingStep(
                 name=name,
@@ -216,11 +209,6 @@ class ProcessingGraph:
         ]
         if any(processing_step.input_type != "dataset" for processing_step in self._first_processing_steps):
             raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
-        self._config_parquet_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_parquet")
-            if provides
-        ]
         self._config_split_names_processing_steps = [
             self._processing_steps[processing_step_name]
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_split_names")
@@ -357,18 +345,6 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
-
-    def get_config_parquet_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's parquet response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's parquet response
-        """
-        return copy_processing_steps_list(self._config_parquet_processing_steps)
 
     def get_config_split_names_processing_steps(self) -> list[ProcessingStep]:
         """
