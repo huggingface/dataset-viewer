@@ -44,7 +44,6 @@ class ProcessingStepSpecification(TypedDict, total=False):
     input_type: InputType
     triggered_by: Union[list[str], str, None]
     job_runner_version: int
-    provides_config_info: bool
     provides_config_split_names: bool
     provides_config_parquet: bool
     difficulty: int
@@ -137,7 +136,6 @@ class ProcessingGraph:
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, list[str]] = field(init=False)
     _first_processing_steps: list[ProcessingStep] = field(init=False)
-    _config_info_processing_steps: list[ProcessingStep] = field(init=False)
     _config_split_names_processing_steps: list[ProcessingStep] = field(init=False)
     _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
     _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
@@ -158,9 +156,6 @@ class ProcessingGraph:
         for name, specification in self.processing_graph_specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
-            provides_config_info = specification.get("provides_config_info", False)
-            if provides_config_info and input_type != "config":
-                raise ValueError(f"Processing step {name} provides config info but its input type is {input_type}.")
             provides_config_split_names = specification.get("provides_config_split_names", False)
             if provides_config_split_names and input_type != "config":
                 raise ValueError(
@@ -182,7 +177,6 @@ class ProcessingGraph:
                 raise ValueError(f"Processing step {name} is defined twice.")
             _nx_graph.add_node(
                 name,
-                provides_config_info=provides_config_info,
                 provides_config_split_names=provides_config_split_names,
                 provides_config_parquet=provides_config_parquet,
                 provides_config_parquet_metadata=provides_config_parquet_metadata,
@@ -225,11 +219,6 @@ class ProcessingGraph:
         self._config_parquet_processing_steps = [
             self._processing_steps[processing_step_name]
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_parquet")
-            if provides
-        ]
-        self._config_info_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_info")
             if provides
         ]
         self._config_split_names_processing_steps = [
@@ -368,18 +357,6 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
-
-    def get_config_info_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's info response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's parquet response
-        """
-        return copy_processing_steps_list(self._config_info_processing_steps)
 
     def get_config_parquet_processing_steps(self) -> list[ProcessingStep]:
         """

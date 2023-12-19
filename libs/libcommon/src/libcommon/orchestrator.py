@@ -183,11 +183,8 @@ class Plan:
         return sorted(task.id for task in self.tasks)
 
 
-def get_num_bytes_from_config_infos(
-    processing_graph: ProcessingGraph, dataset: str, config: str, split: Optional[str] = None
-) -> Optional[int]:
-    kinds = [processing_step.cache_kind for processing_step in processing_graph.get_config_info_processing_steps()]
-    resp = get_best_response(kinds=kinds, dataset=dataset, config=config).response
+def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
+    resp = get_best_response(kinds=["config-info"], dataset=dataset, config=config).response
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
@@ -244,9 +241,7 @@ class AfterJobPlan(Plan):
 
         # get the dataset infos to estimate difficulty
         if config is not None:
-            self.num_bytes = get_num_bytes_from_config_infos(
-                processing_graph=self.processing_graph, dataset=self.dataset, config=config, split=split
-            )
+            self.num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config, split=split)
         else:
             self.num_bytes = None
 

@@ -290,7 +290,6 @@ class ProcessingGraphConfig:
                 "triggered_by": "config-parquet-and-info",
                 "job_runner_version": PROCESSING_STEP_CONFIG_INFO_VERSION,
                 "difficulty": 20,
-                "provides_config_info": True,
             },
             "dataset-info": {
                 "input_type": "dataset",
