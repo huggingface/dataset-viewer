@@ -238,7 +238,6 @@ class ProcessingGraphConfig:
         default_factory=lambda: {
             "dataset-config-names": {
                 "input_type": "dataset",
-                "provides_dataset_config_names": True,
                 "job_runner_version": PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
                 "difficulty": 50,
             },

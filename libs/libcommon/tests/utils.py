@@ -44,13 +44,13 @@ CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
 DIFFICULTY = 50
 
-STEP_DATASET_A = "dataset-a"
+STEP_DATASET_A = "dataset-config-names"
 STEP_CONFIG_B = "config-b"
 STEP_SPLIT_C = "split-c"
 PROCESSING_GRAPH = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DATASET_A: {"input_type": "dataset"},
             STEP_CONFIG_B: {
                 "input_type": "config",
                 "provides_config_split_names": True,
@@ -77,7 +77,7 @@ SPLIT_NAMES_CONTENT = {
 }
 
 
-STEP_DA = "dataset-a"
+STEP_DA = "dataset-config-names"
 STEP_DB = "dataset-b"
 STEP_DC = "dataset-c"
 STEP_DD = "dataset-d"
@@ -149,7 +149,7 @@ PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
 PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_DB: {"input_type": "dataset"},  # sibling
             STEP_DC: {"input_type": "dataset", "triggered_by": [STEP_DA, STEP_DB]},  # child
             STEP_DD: {"input_type": "dataset", "triggered_by": [STEP_DB, STEP_DC]},  # grandchild
@@ -183,7 +183,7 @@ PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
 PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_CA: {
                 "input_type": "config",
                 "triggered_by": STEP_DA,
@@ -219,7 +219,7 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
 PROCESSING_GRAPH_PARALLEL = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_DG: {"input_type": "dataset", "triggered_by": STEP_DA},
             STEP_DH: {"input_type": "dataset", "triggered_by": STEP_DA},
             STEP_DI: {"input_type": "dataset", "triggered_by": [STEP_DG, STEP_DH]},

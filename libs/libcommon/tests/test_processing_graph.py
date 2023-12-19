@@ -399,10 +399,6 @@ def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_first_processing_steps(), roots)
 
 
-def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
-    assert_lists_are_equal(graph.get_dataset_config_names_processing_steps(), ["dataset-config-names"])
-
-
 def test_default_graph_provide_config_split_names(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(
         graph.get_config_split_names_processing_steps(),

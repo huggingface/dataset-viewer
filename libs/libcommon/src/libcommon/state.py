@@ -305,9 +305,7 @@ class DatasetState:
                 self.config_names = fetch_names(
                     dataset=self.dataset,
                     config=None,
-                    cache_kinds=[
-                        step.cache_kind for step in self.processing_graph.get_dataset_config_names_processing_steps()
-                    ],
+                    cache_kinds=["dataset-config-names"],
                     names_field="config_names",
                     name_field="config",
                 )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
