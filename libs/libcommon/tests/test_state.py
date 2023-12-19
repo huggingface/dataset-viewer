@@ -33,6 +33,7 @@ from .utils import (
     SPLIT_NAME_1,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
+    STEP_CONFIG_B,
 )
 
 
@@ -209,7 +210,7 @@ def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
     config = CONFIG_NAME_1
-    expected_config_processing_step_name = "config-b"
+    expected_config_processing_step_name = STEP_CONFIG_B
     processing_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
 
     upsert_response(
