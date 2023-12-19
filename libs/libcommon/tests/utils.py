@@ -78,14 +78,14 @@ SPLIT_NAMES_CONTENT = {
 
 
 STEP_DA = "dataset-config-names"
-STEP_DB = "dataset-b"
-STEP_DC = "dataset-c"
-STEP_DD = "dataset-d"
-STEP_DE = "dataset-e"
-STEP_DF = "dataset-f"
-STEP_DG = "dataset-g"
-STEP_DH = "dataset-h"
-STEP_DI = "dataset-i"
+STEP_DB = "dataset-zb"
+STEP_DC = "dataset-zc"
+STEP_DD = "dataset-zd"
+STEP_DE = "dataset-ze"
+STEP_DF = "dataset-zf"
+STEP_DG = "dataset-zg"
+STEP_DH = "dataset-zh"
+STEP_DI = "dataset-zi"
 
 ARTIFACT_DA = f"{STEP_DA},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DA_OTHER_REVISION = f"{STEP_DA},{DATASET_NAME},{OTHER_REVISION_NAME}"
