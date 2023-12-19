@@ -252,7 +252,6 @@ class ProcessingGraphConfig:
             "split-first-rows-from-streaming": {
                 "input_type": "split",
                 "triggered_by": ["config-split-names-from-streaming", "config-split-names-from-info"],
-                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
                 "difficulty": 70,
             },
@@ -279,7 +278,6 @@ class ProcessingGraphConfig:
             "split-first-rows-from-parquet": {
                 "input_type": "split",
                 "triggered_by": "config-parquet-metadata",
-                "enables_preview": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
                 "difficulty": 40,
             },
@@ -313,7 +311,6 @@ class ProcessingGraphConfig:
             "config-size": {
                 "input_type": "config",
                 "triggered_by": "config-parquet-and-info",
-                "enables_viewer": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SIZE_VERSION,
                 "difficulty": 20,
             },
@@ -345,7 +342,6 @@ class ProcessingGraphConfig:
             },
             "split-is-valid": {
                 "input_type": "split",
-                # special case: triggered by all the steps that have enables_preview/enables_viewer/enables_search
                 "triggered_by": [
                     "config-size",
                     "split-first-rows-from-parquet",
@@ -415,7 +411,6 @@ class ProcessingGraphConfig:
                     "config-split-names-from-streaming",
                     "config-parquet-metadata",
                 ],
-                "enables_search": True,
                 "job_runner_version": PROCESSING_STEP_SPLIT_DUCKDB_INDEX_VERSION,
                 "difficulty": 70,
                 "bonus_difficulty_if_dataset_is_big": 20,

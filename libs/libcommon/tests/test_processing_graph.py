@@ -399,21 +399,6 @@ def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_first_processing_steps(), roots)
 
 
-def test_default_graph_enables_preview(graph: ProcessingGraph) -> None:
-    enables_preview = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
-    assert_lists_are_equal(graph.get_processing_steps_enables_preview(), enables_preview)
-
-
-def test_default_graph_enables_viewer(graph: ProcessingGraph) -> None:
-    enables_viewer = ["config-size"]
-    assert_lists_are_equal(graph.get_processing_steps_enables_viewer(), enables_viewer)
-
-
-def test_default_graph_enables_search(graph: ProcessingGraph) -> None:
-    enables_search = ["split-duckdb-index"]
-    assert_lists_are_equal(graph.get_processing_steps_enables_search(), enables_search)
-
-
 def test_default_graph_provide_dataset_config_names(graph: ProcessingGraph) -> None:
     assert_lists_are_equal(graph.get_dataset_config_names_processing_steps(), ["dataset-config-names"])
 

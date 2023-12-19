@@ -6,7 +6,6 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -141,8 +140,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitIsValidJobRunner:
-        processing_graph = ProcessingGraph(app_config.processing_graph)
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -174,7 +171,6 @@ def get_job_runner(
                 "difficulty": 20,
             },
             app_config=app_config,
-            processing_graph=processing_graph,
         )
 
     return _get_job_runner

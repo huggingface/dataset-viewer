@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
     has_any_successful_response,
@@ -15,9 +14,7 @@ from worker.dtos import CompleteJobResult, IsValidResponse, JobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 
 
-def compute_is_valid_response(
-    dataset: str, config: str, split: str, processing_graph: ProcessingGraph
-) -> IsValidResponse:
+def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidResponse:
     """
     Get the response of /is-valid for one specific dataset split on huggingface.co.
 
@@ -32,9 +29,6 @@ def compute_is_valid_response(
             A configuration name.
         split (`str`):
             A split name.
-        processing_graph (`ProcessingGraph`):
-            The processing graph. In particular, it must provide the list of
-            processing steps that enable the viewer and the preview.
     Returns:
         `IsValidResponse`: The response (viewer, preview, search).
     """
@@ -44,13 +38,13 @@ def compute_is_valid_response(
         dataset=dataset,
         config=config,
         split=None,
-        kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_viewer()],
+        kinds=["config-size"],
     )
     preview = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=split,
-        kinds=[step.cache_kind for step in processing_graph.get_processing_steps_enables_preview()],
+        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
     )
 
     try:
@@ -77,17 +71,11 @@ class SplitIsValidJobRunner(SplitJobRunner):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_graph: ProcessingGraph,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
         )
-        self.processing_graph = processing_graph
 
     def compute(self) -> JobResult:
-        return CompleteJobResult(
-            compute_is_valid_response(
-                dataset=self.dataset, config=self.config, split=self.split, processing_graph=self.processing_graph
-            )
-        )
+        return CompleteJobResult(compute_is_valid_response(dataset=self.dataset, config=self.config, split=self.split))

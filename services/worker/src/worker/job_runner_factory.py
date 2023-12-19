@@ -174,7 +174,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == SplitIsValidJobRunner.get_job_type():
             return SplitIsValidJobRunner(
                 job_info=job_info,
-                processing_graph=self.processing_graph,
                 app_config=self.app_config,
             )
         if job_type == ConfigIsValidJobRunner.get_job_type():

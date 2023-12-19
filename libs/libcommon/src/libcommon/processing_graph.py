@@ -43,9 +43,6 @@ def guard_int(x: Any) -> int:
 class ProcessingStepSpecification(TypedDict, total=False):
     input_type: InputType
     triggered_by: Union[list[str], str, None]
-    enables_preview: Literal[True]
-    enables_viewer: Literal[True]
-    enables_search: Literal[True]
     job_runner_version: int
     provides_dataset_config_names: bool
     provides_dataset_info: bool
@@ -143,9 +140,6 @@ class ProcessingGraph:
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, list[str]] = field(init=False)
     _first_processing_steps: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_preview: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_viewer: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_search: list[ProcessingStep] = field(init=False)
     _config_info_processing_steps: list[ProcessingStep] = field(init=False)
     _config_split_names_processing_steps: list[ProcessingStep] = field(init=False)
     _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
@@ -201,9 +195,6 @@ class ProcessingGraph:
                 raise ValueError(f"Processing step {name} is defined twice.")
             _nx_graph.add_node(
                 name,
-                enables_preview=specification.get("enables_preview", False),
-                enables_viewer=specification.get("enables_viewer", False),
-                enables_search=specification.get("enables_search", False),
                 provides_config_info=provides_config_info,
                 provides_dataset_config_names=provides_dataset_config_names,
                 provides_dataset_info=provides_dataset_info,
@@ -246,21 +237,6 @@ class ProcessingGraph:
         ]
         if any(processing_step.input_type != "dataset" for processing_step in self._first_processing_steps):
             raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
-        self._processing_steps_enables_preview = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_preview")
-            if required
-        ]
-        self._processing_steps_enables_viewer = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_viewer")
-            if required
-        ]
-        self._processing_steps_enables_search = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_search")
-            if required
-        ]
         self._config_parquet_processing_steps = [
             self._processing_steps[processing_step_name]
             for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_parquet")
@@ -422,42 +398,6 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
-
-    def get_processing_steps_enables_preview(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset preview (first rows).
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset preview
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_preview)
-
-    def get_processing_steps_enables_viewer(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset viewer (all rows).
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset viewer
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_viewer)
-
-    def get_processing_steps_enables_search(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset split search.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset viewer
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_search)
 
     def get_config_info_processing_steps(self) -> list[ProcessingStep]:
         """
