@@ -253,7 +253,7 @@ def test_dataset_state_as_dict() -> None:
     revision = REVISION_NAME
     expected_dataset_processing_step_name = "dataset-config-names"
     dataset_step = PROCESSING_GRAPH.get_processing_step(expected_dataset_processing_step_name)
-    expected_config_processing_step_name = "config-b"
+    expected_config_processing_step_name = "config-split-names-from-streaming"
     config_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
     upsert_response(
         kind=dataset_step.cache_kind,

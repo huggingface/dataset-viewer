@@ -244,7 +244,6 @@ class ProcessingGraphConfig:
             "config-split-names-from-streaming": {
                 "input_type": "config",
                 "triggered_by": "dataset-config-names",
-                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
                 "difficulty": 60,
             },
@@ -299,7 +298,6 @@ class ProcessingGraphConfig:
             "config-split-names-from-info": {
                 "input_type": "config",
                 "triggered_by": "config-info",
-                "provides_config_split_names": True,
                 "job_runner_version": PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_INFO_VERSION,
                 "difficulty": 20,
             },

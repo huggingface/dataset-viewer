@@ -45,7 +45,7 @@ JOB_TYPE = "job_type"
 DIFFICULTY = 50
 
 STEP_DATASET_A = "dataset-config-names"
-STEP_CONFIG_B = "config-b"
+STEP_CONFIG_B = "config-split-names-from-streaming"
 STEP_SPLIT_C = "split-c"
 PROCESSING_GRAPH = ProcessingGraph(
     ProcessingGraphConfig(
@@ -53,7 +53,6 @@ PROCESSING_GRAPH = ProcessingGraph(
             STEP_DATASET_A: {"input_type": "dataset"},
             STEP_CONFIG_B: {
                 "input_type": "config",
-                "provides_config_split_names": True,
                 "triggered_by": STEP_DATASET_A,
             },
             STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
@@ -98,8 +97,8 @@ ARTIFACT_DG = f"{STEP_DG},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DH = f"{STEP_DH},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DI = f"{STEP_DI},{DATASET_NAME},{REVISION_NAME}"
 
-STEP_CA = "config-a"
-STEP_CB = "config-b"
+STEP_CA = "config-split-names-from-streaming"
+STEP_CB = "config-zb"
 
 ARTIFACT_CA_1 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1}"
 ARTIFACT_CA_2 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2}"
@@ -187,7 +186,6 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
             STEP_CA: {
                 "input_type": "config",
                 "triggered_by": STEP_DA,
-                "provides_config_split_names": True,
             },  # fan-out (D->C)
             STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},  # fan-out (C -> S)
             # is fan-out (D -> S) possible? (we need the list of split names anyway)

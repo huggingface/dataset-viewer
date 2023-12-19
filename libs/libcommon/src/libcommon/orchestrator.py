@@ -291,8 +291,8 @@ class AfterJobPlan(Plan):
                         dataset=self.dataset,
                         config=config,
                         cache_kinds=[
-                            processing_step.cache_kind
-                            for processing_step in self.processing_graph.get_config_split_names_processing_steps()
+                            "config-split-names-from-info",
+                            "config-split-names-from-streaming",
                         ],
                         names_field="splits",
                         name_field="split",
