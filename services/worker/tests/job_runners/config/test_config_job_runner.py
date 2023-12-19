@@ -6,7 +6,6 @@ from typing import Optional
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -32,12 +31,12 @@ class DummyConfigJobRunner(ConfigJobRunner):
         return CompleteJobResult({"key": "value"})
 
 
-def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
+def test_failed_creation(app_config: AppConfig) -> None:
     with pytest.raises(CustomError) as exc_info:
         DummyConfigJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": "dataset",
                     "revision": REVISION_NAME,
@@ -47,7 +46,6 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         ).validate()
     assert exc_info.value.code == "ParameterMissingError"
@@ -61,7 +59,6 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
     ],
 )
 def test_creation(
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
     upsert_config: str,
     exception_name: Optional[str],
@@ -80,7 +77,7 @@ def test_creation(
         DummyConfigJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": dataset,
                     "revision": REVISION_NAME,
@@ -90,7 +87,6 @@ def test_creation(
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         ).validate()
     else:
@@ -98,7 +94,7 @@ def test_creation(
             DummyConfigJobRunner(
                 job_info={
                     "job_id": "job_id",
-                    "type": test_processing_step.job_type,
+                    "type": "dummy",
                     "params": {
                         "dataset": dataset,
                         "revision": REVISION_NAME,
@@ -108,7 +104,6 @@ def test_creation(
                     "priority": Priority.NORMAL,
                     "difficulty": 50,
                 },
-                processing_step=test_processing_step,
                 app_config=app_config,
             ).validate()
         assert exc_info.value.code == exception_name

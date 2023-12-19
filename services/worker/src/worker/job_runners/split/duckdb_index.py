@@ -31,7 +31,6 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
 )
 from libcommon.parquet_utils import parquet_export_is_partial
-from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -312,14 +311,12 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         duckdb_index_cache_directory: StrPath,
         parquet_metadata_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
             cache_directory=Path(duckdb_index_cache_directory) / DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
         )
         self.duckdb_index_config = app_config.duckdb_index

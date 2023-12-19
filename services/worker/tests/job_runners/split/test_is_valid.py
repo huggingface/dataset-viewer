@@ -141,7 +141,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitIsValidJobRunner:
-        processing_step_name = SplitIsValidJobRunner.get_job_type()
         processing_graph = ProcessingGraph(app_config.processing_graph)
 
         upsert_response(
@@ -175,7 +174,6 @@ def get_job_runner(
                 "difficulty": 20,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
         )
 

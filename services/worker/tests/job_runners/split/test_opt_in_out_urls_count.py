@@ -6,8 +6,6 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactNotFoundError, upsert_response
 from libcommon.utils import Priority
@@ -40,21 +38,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitOptInOutUrlsCountJobRunner:
-        processing_step_name = SplitOptInOutUrlsCountJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-level": {"input_type": "dataset"},
-                    "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
-                    processing_step_name: {
-                        "input_type": "split",
-                        "job_runner_version": 1,
-                        "triggered_by": "config-level",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -86,7 +69,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
         )
 
     return _get_job_runner

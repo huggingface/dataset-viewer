@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
-from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -20,13 +19,11 @@ class JobRunnerWithDatasetsCache(JobRunnerWithCache):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
             cache_directory=hf_datasets_cache,
         )
 

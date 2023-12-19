@@ -11,13 +11,11 @@ from unittest.mock import patch
 import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
-from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import (
     PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
     PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
 )
 from libcommon.exceptions import ExternalServerError
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -55,21 +53,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitOptInOutUrlsScanJobRunner:
-        processing_step_name = SplitOptInOutUrlsScanJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-level": {"input_type": "dataset"},
-                    "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                        "triggered_by": "config-level",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -101,7 +84,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

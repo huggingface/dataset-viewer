@@ -3,7 +3,7 @@
 
 import logging
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
     has_any_successful_response,
@@ -77,13 +77,11 @@ class SplitIsValidJobRunner(SplitJobRunner):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         processing_graph: ProcessingGraph,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
         )
         self.processing_graph = processing_graph
 

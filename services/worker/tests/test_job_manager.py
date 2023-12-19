@@ -5,7 +5,7 @@ from typing import Optional
 import pytest
 from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
@@ -47,8 +47,6 @@ class CacheEntry:
 
 def test_check_type(
     test_processing_graph: ProcessingGraph,
-    another_processing_step: ProcessingStep,
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
@@ -57,10 +55,9 @@ def test_check_type(
     config = "config"
     split = "split"
 
-    job_type = f"not-{test_processing_step.job_type}"
     job_info = JobInfo(
         job_id=job_id,
-        type=job_type,
+        type="dummy2",
         params={
             "dataset": dataset,
             "revision": revision,
@@ -73,17 +70,15 @@ def test_check_type(
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
             job_info=job_info,
-            processing_step=test_processing_step,
             app_config=app_config,
         )
-
         JobManager(
             job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
         )
 
     job_info = JobInfo(
         job_id=job_id,
-        type=test_processing_step.job_type,
+        type="dummy",
         params={
             "dataset": dataset,
             "revision": revision,
@@ -93,16 +88,11 @@ def test_check_type(
         priority=Priority.NORMAL,
         difficulty=50,
     )
-    with pytest.raises(ValueError):
-        job_runner = DummyJobRunner(
-            job_info=job_info,
-            processing_step=another_processing_step,
-            app_config=app_config,
-        )
-
-        JobManager(
-            job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
-        )
+    job_runner = DummyJobRunner(
+        job_info=job_info,
+        app_config=app_config,
+    )
+    JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph)
 
 
 @pytest.mark.parametrize(
@@ -140,7 +130,6 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
 
     job_runner = DummyJobRunner(
         job_info=job_info,
-        processing_step=root_step,
         app_config=app_config,
     )
 
@@ -185,7 +174,6 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
 
 def test_job_runner_set_crashed(
     test_processing_graph: ProcessingGraph,
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
 ) -> None:
     dataset = "dataset"
@@ -197,7 +185,7 @@ def test_job_runner_set_crashed(
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
-        job_type=test_processing_step.job_type,
+        job_type="dummy",
         dataset=dataset,
         revision=revision,
         config=config,
@@ -209,7 +197,6 @@ def test_job_runner_set_crashed(
 
     job_runner = DummyJobRunner(
         job_info=job_info,
-        processing_step=test_processing_step,
         app_config=app_config,
     )
 
@@ -233,7 +220,6 @@ def test_job_runner_set_crashed(
 
 def test_raise_if_parallel_response_exists(
     test_processing_graph: ProcessingGraph,
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
 ) -> None:
     dataset = "dataset"
@@ -266,7 +252,6 @@ def test_raise_if_parallel_response_exists(
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
-        processing_step=test_processing_step,
         app_config=app_config,
     )
 
@@ -309,11 +294,9 @@ def test_doesnotexist(app_config: AppConfig) -> None:
             }
         )
     )
-    processing_step = processing_graph.get_processing_step(processing_step_name)
 
     job_runner = DummyJobRunner(
         job_info=job_info,
-        processing_step=processing_step,
         app_config=app_config,
     )
 

@@ -3,7 +3,6 @@
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import Priority
 
 from worker.config import AppConfig
@@ -20,12 +19,12 @@ class DummyDatasetJobRunner(DatasetJobRunner):
         return CompleteJobResult({"key": "value"})
 
 
-def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
+def test_failed_creation(app_config: AppConfig) -> None:
     with pytest.raises(CustomError) as exc_info:
         DummyDatasetJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": None,  # type: ignore
                     # ^ Needed to raise error
@@ -36,18 +35,17 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         )
     assert exc_info.value.code == "ParameterMissingError"
 
 
-def test_success_creation(test_processing_step: ProcessingStep, app_config: AppConfig) -> None:
+def test_success_creation(app_config: AppConfig) -> None:
     assert (
         DummyDatasetJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": "dataset",
                     "revision": "revision",
@@ -57,7 +55,6 @@ def test_success_creation(test_processing_step: ProcessingStep, app_config: AppC
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         )
         is not None

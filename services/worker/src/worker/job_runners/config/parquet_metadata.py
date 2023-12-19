@@ -11,7 +11,6 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo, SplitHubFile
@@ -134,13 +133,11 @@ class ConfigParquetMetadataJobRunner(ConfigJobRunner):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         parquet_metadata_directory: StrPath,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
         )
         self.parquet_metadata_directory = parquet_metadata_directory
 

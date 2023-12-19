@@ -33,7 +33,7 @@ from libcommon.exceptions import (
     DatasetManualDownloadError,
     DatasetWithScriptNotSupportedError,
 )
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -82,20 +82,6 @@ def get_job_runner(
         config: str,
         app_config: AppConfig,
     ) -> ConfigParquetAndInfoJobRunner:
-        processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-level": {"input_type": "dataset"},
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                        "triggered_by": "dataset-level",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -118,7 +104,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -577,17 +562,6 @@ def get_dataset_config_names_job_runner(
         dataset: str,
         app_config: AppConfig,
     ) -> DatasetConfigNamesJobRunner:
-        processing_step_name = DatasetConfigNamesJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                    }
-                }
-            )
-        )
         return DatasetConfigNamesJobRunner(
             job_info={
                 "type": DatasetConfigNamesJobRunner.get_job_type(),
@@ -602,7 +576,6 @@ def get_dataset_config_names_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
@@ -632,13 +605,6 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
             difficulty=50,
         ),
         app_config=app_config,
-        processing_step=ProcessingStep(
-            name="config-parquet-and-info",
-            input_type="config",
-            job_runner_version=1,
-            difficulty=50,
-            bonus_difficulty_if_dataset_is_big=0,
-        ),
         hf_datasets_cache=tmp_path,
     )
     return job_runner.compute()

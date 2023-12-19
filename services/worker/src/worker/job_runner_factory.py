@@ -92,32 +92,22 @@ class JobRunnerFactory(BaseJobRunnerFactory):
 
     def _create_job_runner(self, job_info: JobInfo) -> JobRunner:
         job_type = job_info["type"]
-        try:
-            processing_step = self.processing_graph.get_processing_step_by_job_type(job_type)
-        except ValueError as e:
-            raise ValueError(
-                f"Unsupported job type: '{job_type}'. The job types declared in the processing graph are:"
-                f" {[processing_step.job_type for processing_step in self.processing_graph.get_processing_steps()]}"
-            ) from e
         if job_type == DatasetConfigNamesJobRunner.get_job_type():
             return DatasetConfigNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigSplitNamesFromStreamingJobRunner.get_job_type():
             return ConfigSplitNamesFromStreamingJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == SplitFirstRowsFromStreamingJobRunner.get_job_type():
             return SplitFirstRowsFromStreamingJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
                 storage_client=self.storage_client,
             )
@@ -125,69 +115,58 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return ConfigParquetAndInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigParquetJobRunner.get_job_type():
             return ConfigParquetJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == ConfigParquetMetadataJobRunner.get_job_type():
             return ConfigParquetMetadataJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
         if job_type == DatasetParquetJobRunner.get_job_type():
             return DatasetParquetJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == DatasetInfoJobRunner.get_job_type():
             return DatasetInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == ConfigInfoJobRunner.get_job_type():
             return ConfigInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == DatasetSizeJobRunner.get_job_type():
             return DatasetSizeJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == ConfigSizeJobRunner.get_job_type():
             return ConfigSizeJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == ConfigSplitNamesFromInfoJobRunner.get_job_type():
             return ConfigSplitNamesFromInfoJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == DatasetSplitNamesJobRunner.get_job_type():
             return DatasetSplitNamesJobRunner(
                 job_info=job_info,
-                processing_step=processing_step,
                 app_config=self.app_config,
             )
         if job_type == SplitFirstRowsFromParquetJobRunner.get_job_type():
             return SplitFirstRowsFromParquetJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 processing_graph=self.processing_graph,
                 parquet_metadata_directory=self.parquet_metadata_directory,
                 storage_client=self.storage_client,
@@ -195,59 +174,50 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         if job_type == SplitIsValidJobRunner.get_job_type():
             return SplitIsValidJobRunner(
                 job_info=job_info,
-                processing_step=processing_step,
                 processing_graph=self.processing_graph,
                 app_config=self.app_config,
             )
         if job_type == ConfigIsValidJobRunner.get_job_type():
             return ConfigIsValidJobRunner(
                 job_info=job_info,
-                processing_step=processing_step,
                 app_config=self.app_config,
             )
         if job_type == DatasetIsValidJobRunner.get_job_type():
             return DatasetIsValidJobRunner(
                 job_info=job_info,
-                processing_step=processing_step,
                 app_config=self.app_config,
             )
         if job_type == SplitImageUrlColumnsJobRunner.get_job_type():
             return SplitImageUrlColumnsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == SplitOptInOutUrlsScanJobRunner.get_job_type():
             return SplitOptInOutUrlsScanJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
         if job_type == ConfigOptInOutUrlsCountJobRunner.get_job_type():
             return ConfigOptInOutUrlsCountJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == DatasetOptInOutUrlsCountJobRunner.get_job_type():
             return DatasetOptInOutUrlsCountJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
 
         if job_type == SplitOptInOutUrlsCountJobRunner.get_job_type():
             return SplitOptInOutUrlsCountJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
         if job_type == SplitDescriptiveStatisticsJobRunner.get_job_type():
             return SplitDescriptiveStatisticsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 statistics_cache_directory=self.statistics_cache_directory,
             )
 
@@ -255,7 +225,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return SplitDuckDbIndexJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
                 duckdb_index_cache_directory=self.duckdb_index_cache_directory,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
@@ -264,21 +233,18 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return ConfigDuckdbIndexSizeJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
 
         if job_type == DatasetDuckdbIndexSizeJobRunner.get_job_type():
             return DatasetDuckdbIndexSizeJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
 
         if job_type == DatasetHubCacheJobRunner.get_job_type():
             return DatasetHubCacheJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_step=processing_step,
             )
 
         supported_job_types = [
@@ -308,4 +274,4 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetDuckdbIndexSizeJobRunner.get_job_type(),
             DatasetHubCacheJobRunner.get_job_type(),
         ]
-        raise ValueError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
+        raise KeyError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

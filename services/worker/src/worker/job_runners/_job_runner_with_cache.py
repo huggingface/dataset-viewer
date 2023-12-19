@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 from libcommon.exceptions import DiskError
-from libcommon.processing_graph import ProcessingStep
 from libcommon.storage import init_dir, remove_dir
 from libcommon.utils import JobInfo
 
@@ -27,13 +26,11 @@ class JobRunnerWithCache(JobRunner):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         cache_directory: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
         )
         self.base_cache_directory = cache_directory
 
