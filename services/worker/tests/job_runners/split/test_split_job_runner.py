@@ -6,7 +6,6 @@ from typing import Optional
 
 import pytest
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingStep
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -33,7 +32,7 @@ class DummySplitJobRunner(SplitJobRunner):
 
 
 @pytest.mark.parametrize("config,split", [(None, None), (None, "split"), ("config", None)])
-def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppConfig, config: str, split: str) -> None:
+def test_failed_creation(app_config: AppConfig, config: str, split: str) -> None:
     upsert_response(
         kind="dataset-config-names",
         dataset="dataset",
@@ -46,7 +45,7 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
         DummySplitJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": "dataset",
                     "revision": REVISION_NAME,
@@ -56,7 +55,6 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         ).validate()
     assert exc_info.value.code == "ParameterMissingError"
@@ -71,7 +69,6 @@ def test_failed_creation(test_processing_step: ProcessingStep, app_config: AppCo
     ],
 )
 def test_creation(
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
     upsert_config: str,
     upsert_split: str,
@@ -100,7 +97,7 @@ def test_creation(
         DummySplitJobRunner(
             job_info={
                 "job_id": "job_id",
-                "type": test_processing_step.job_type,
+                "type": "dummy",
                 "params": {
                     "dataset": dataset,
                     "revision": REVISION_NAME,
@@ -110,7 +107,6 @@ def test_creation(
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
             },
-            processing_step=test_processing_step,
             app_config=app_config,
         ).validate()
     else:
@@ -118,7 +114,7 @@ def test_creation(
             DummySplitJobRunner(
                 job_info={
                     "job_id": "job_id",
-                    "type": test_processing_step.job_type,
+                    "type": "dummy",
                     "params": {
                         "dataset": dataset,
                         "revision": REVISION_NAME,
@@ -128,7 +124,6 @@ def test_creation(
                     "priority": Priority.NORMAL,
                     "difficulty": 50,
                 },
-                processing_step=test_processing_step,
                 app_config=app_config,
             ).validate()
         assert exc_info.value.code == exception_name

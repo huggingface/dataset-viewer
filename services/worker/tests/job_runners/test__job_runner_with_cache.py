@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
@@ -44,17 +42,6 @@ def get_job_runner(
         split: Optional[str],
         app_config: AppConfig,
     ) -> DummyJobRunner:
-        processing_step_name = DummyJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                    }
-                }
-            )
-        )
         return DummyJobRunner(
             job_info={
                 "type": DummyJobRunner.get_job_type(),
@@ -69,7 +56,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             cache_directory=libraries_resource.hf_datasets_cache,
         )
 

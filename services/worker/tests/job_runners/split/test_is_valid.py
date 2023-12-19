@@ -175,7 +175,6 @@ def get_job_runner(
                 "difficulty": 20,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             processing_graph=processing_graph,
         )
 

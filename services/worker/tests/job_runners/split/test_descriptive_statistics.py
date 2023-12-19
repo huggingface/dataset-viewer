@@ -11,8 +11,6 @@ import pandas as pd
 import polars as pl
 import pytest
 from datasets import ClassLabel, Dataset
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -88,24 +86,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitDescriptiveStatisticsJobRunner:
-        processing_step_name = SplitDescriptiveStatisticsJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-config-names": {"input_type": "dataset"},
-                    "config-split-names-from-info": {
-                        "input_type": "config",
-                        "triggered_by": "dataset-config-names",
-                    },
-                    processing_step_name: {
-                        "input_type": "split",
-                        "job_runner_version": 1,
-                        "triggered_by": ["config-split-names-from-info"],
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -137,7 +117,6 @@ def get_job_runner(
                 "difficulty": 100,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             statistics_cache_directory=statistics_cache_directory,
         )
 
@@ -155,20 +134,6 @@ def get_parquet_and_info_job_runner(
         config: str,
         app_config: AppConfig,
     ) -> ConfigParquetAndInfoJobRunner:
-        processing_step_name = ConfigParquetAndInfoJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-config-names": {"input_type": "dataset"},
-                    processing_step_name: {
-                        "input_type": "config",
-                        "job_runner_version": 1,
-                        "triggered_by": "dataset-config-names",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -191,7 +156,6 @@ def get_parquet_and_info_job_runner(
                 "difficulty": 100,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

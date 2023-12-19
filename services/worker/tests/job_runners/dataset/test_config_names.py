@@ -6,9 +6,7 @@ from dataclasses import replace
 from unittest.mock import patch
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import Priority
 
@@ -32,17 +30,6 @@ def get_job_runner(
         dataset: str,
         app_config: AppConfig,
     ) -> DatasetConfigNamesJobRunner:
-        processing_step_name = DatasetConfigNamesJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                    }
-                }
-            )
-        )
         return DatasetConfigNamesJobRunner(
             job_info={
                 "type": DatasetConfigNamesJobRunner.get_job_type(),
@@ -57,7 +44,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 

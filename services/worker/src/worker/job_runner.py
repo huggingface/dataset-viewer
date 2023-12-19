@@ -4,7 +4,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from libcommon.processing_graph import ProcessingStep
 from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
@@ -14,7 +13,6 @@ from worker.dtos import JobResult, JobRunnerInfo
 class JobRunner(ABC):
     job_info: JobInfo
     app_config: AppConfig
-    processing_step: ProcessingStep
 
     @staticmethod
     @abstractmethod
@@ -25,10 +23,9 @@ class JobRunner(ABC):
     def get_parallel_job_runner() -> Optional[JobRunnerInfo]:  # In the future it could be a list
         return None
 
-    def __init__(self, job_info: JobInfo, app_config: AppConfig, processing_step: ProcessingStep) -> None:
+    def __init__(self, job_info: JobInfo, app_config: AppConfig) -> None:
         self.job_info = job_info
         self.app_config = app_config
-        self.processing_step = processing_step
 
     def pre_compute(self) -> None:
         """Hook method called before the compute method."""

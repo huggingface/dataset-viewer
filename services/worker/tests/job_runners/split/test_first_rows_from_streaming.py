@@ -8,9 +8,7 @@ from pathlib import Path
 
 import pytest
 from datasets.packaged_modules import csv
-from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage_client import StorageClient
@@ -42,21 +40,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitFirstRowsFromStreamingJobRunner:
-        processing_step_name = SplitFirstRowsFromStreamingJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-level": {"input_type": "dataset"},
-                    "config-level": {"input_type": "dataset", "triggered_by": "dataset-level"},
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                        "triggered_by": "config-level",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -88,7 +71,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             storage_client=StorageClient(
                 protocol="file",

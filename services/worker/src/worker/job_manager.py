@@ -19,7 +19,7 @@ from libcommon.exceptions import (
     UnexpectedError,
 )
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
@@ -41,10 +41,12 @@ class JobManager:
         job_info (:obj:`JobInfo`):
             The job to process. It contains the job_id, the job type, the dataset, the revision, the config,
             the split and the priority level.
-        common_config (:obj:`CommonConfig`):
-            The common config.
-        processing_step (:obj:`ProcessingStep`):
-            The processing step to process.
+        app_config (:obj:`AppConfig`):
+            The app config.
+        job_runner (:obj:`JobRunner`):
+            The job runner to use.
+        processing_graph (:obj:`ProcessingGraph`):
+            The processing graph.
     """
 
     job_id: str
@@ -52,7 +54,6 @@ class JobManager:
     priority: Priority
     worker_config: WorkerConfig
     common_config: CommonConfig
-    processing_step: ProcessingStep
     processing_graph: ProcessingGraph
     job_runner: JobRunner
     job_runner_version: int
@@ -73,17 +74,13 @@ class JobManager:
         self.worker_config = app_config.worker
         self.job_runner = job_runner
         self.processing_graph = processing_graph
-        self.processing_step = self.job_runner.processing_step
-        self.job_runner_version = self.job_runner.processing_step.job_runner_version
+        self.job_runner_version = self.processing_graph.get_processing_step_by_job_type(
+            self.job_type
+        ).job_runner_version
         self.setup()
 
     def setup(self) -> None:
         job_type = self.job_runner.get_job_type()
-        if self.processing_step.job_type != job_type:
-            raise ValueError(
-                f"The processing step's job type is {self.processing_step.job_type}, but the job manager only"
-                f" processes {job_type}"
-            )
         if self.job_type != job_type:
             raise ValueError(
                 f"The submitted job type is {self.job_type}, but the job manager only processes {job_type}"
@@ -93,7 +90,7 @@ class JobManager:
         return f"JobManager(job_id={self.job_id} dataset={self.job_params['dataset']} job_info={self.job_info}"
 
     def log(self, level: int, msg: str) -> None:
-        logging.log(level=level, msg=f"[{self.processing_step.job_type}] {msg}")
+        logging.log(level=level, msg=f"[{self.job_type}] {msg}")
 
     def debug(self, msg: str) -> None:
         self.log(level=logging.DEBUG, msg=msg)

@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import JobInfo
 
@@ -22,10 +22,7 @@ class DummyJobRunner(JobRunner):
 
 
 class DummyJobRunnerFactory(BaseJobRunnerFactory):
-    def __init__(
-        self, processing_graph: ProcessingGraph, processing_step: ProcessingStep, app_config: AppConfig
-    ) -> None:
-        self.processing_step = processing_step
+    def __init__(self, processing_graph: ProcessingGraph, app_config: AppConfig) -> None:
         self.processing_graph = processing_graph
         self.app_config = app_config
 
@@ -33,25 +30,21 @@ class DummyJobRunnerFactory(BaseJobRunnerFactory):
         return DummyJobRunner(
             job_info=job_info,
             app_config=self.app_config,
-            processing_step=self.processing_step,
         )
 
 
 def test_process_next_job(
     test_processing_graph: ProcessingGraph,
-    test_processing_step: ProcessingStep,
     app_config: AppConfig,
     libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
     worker_state_file_path: str,
 ) -> None:
-    job_type = test_processing_step.job_type
+    job_type = "dummy"
     app_config = replace(app_config, worker=replace(app_config.worker, job_types_only=[job_type]))
 
-    factory = DummyJobRunnerFactory(
-        processing_step=test_processing_step, processing_graph=test_processing_graph, app_config=app_config
-    )
+    factory = DummyJobRunnerFactory(processing_graph=test_processing_graph, app_config=app_config)
 
     loop = Loop(
         job_runner_factory=factory,

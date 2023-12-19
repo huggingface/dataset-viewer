@@ -67,7 +67,6 @@ from libcommon.exceptions import (
     UnsupportedExternalFilesError,
 )
 from libcommon.parquet_utils import PARTIAL_PREFIX
-from libcommon.processing_graph import ProcessingStep
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import JobInfo, SplitHubFile
@@ -1278,13 +1277,11 @@ class ConfigParquetAndInfoJobRunner(ConfigJobRunnerWithDatasetsCache):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         hf_datasets_cache: Path,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.parquet_and_info_config = app_config.parquet_and_info

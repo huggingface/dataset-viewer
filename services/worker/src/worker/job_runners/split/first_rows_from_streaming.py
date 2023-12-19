@@ -23,7 +23,6 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.processing_graph import ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, Row
@@ -279,14 +278,12 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         hf_datasets_cache: Path,
         storage_client: StorageClient,
     ) -> None:
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows

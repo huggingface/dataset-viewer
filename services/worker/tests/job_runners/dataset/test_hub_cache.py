@@ -6,7 +6,6 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.utils import Priority
@@ -78,8 +77,6 @@ def get_job_runner(
         dataset: str,
         app_config: AppConfig,
     ) -> DatasetHubCacheJobRunner:
-        processing_step_name = DatasetHubCacheJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(app_config.processing_graph)
         return DatasetHubCacheJobRunner(
             job_info={
                 "type": DatasetHubCacheJobRunner.get_job_type(),
@@ -94,7 +91,6 @@ def get_job_runner(
                 "difficulty": 20,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
         )
 
     return _get_job_runner

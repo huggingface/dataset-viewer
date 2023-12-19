@@ -19,7 +19,6 @@ from libcommon.exceptions import (
     SplitWithTooBigParquetError,
     StatisticsComputationError,
 )
-from libcommon.processing_graph import ProcessingStep
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
@@ -617,13 +616,11 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_step: ProcessingStep,
         statistics_cache_directory: StrPath,
     ):
         super().__init__(
             job_info=job_info,
             app_config=app_config,
-            processing_step=processing_step,
             cache_directory=Path(statistics_cache_directory),
         )
         self.descriptive_statistics_config = app_config.descriptive_statistics

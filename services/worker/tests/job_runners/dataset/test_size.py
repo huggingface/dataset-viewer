@@ -6,9 +6,7 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -41,17 +39,6 @@ def get_job_runner(
         dataset: str,
         app_config: AppConfig,
     ) -> DatasetSizeJobRunner:
-        processing_step_name = DatasetSizeJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                    }
-                }
-            )
-        )
         return DatasetSizeJobRunner(
             job_info={
                 "type": DatasetSizeJobRunner.get_job_type(),
@@ -66,7 +53,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_step=processing_graph.get_processing_step(processing_step_name),
         )
 
     return _get_job_runner

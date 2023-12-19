@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
+from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -160,16 +160,6 @@ def test_processing_graph() -> ProcessingGraph:
             }
         )
     )
-
-
-@fixture
-def test_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
-    return test_processing_graph.get_processing_step("dummy")
-
-
-@fixture
-def another_processing_step(test_processing_graph: ProcessingGraph) -> ProcessingStep:
-    return test_processing_graph.get_processing_step("dummy2")
 
 
 # Import fixture modules as plugins
