@@ -1,6 +1,5 @@
 import logging
 
-from libcommon.constants import PROCESSING_STEP_CONFIG_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
@@ -50,10 +49,6 @@ class ConfigInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-info"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_INFO_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_config_info_response(dataset=self.dataset, config=self.config))

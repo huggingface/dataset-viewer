@@ -77,7 +77,7 @@ def get_job_runner(
                     },
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": SplitDuckDbIndexJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": ["config-parquet", "config-split-names-from-streaming"],
                     },
                 }
@@ -141,7 +141,7 @@ def get_parquet_and_info_job_runner(
                     "dataset-level": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "config",
-                        "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-level",
                     },
                 }
@@ -195,7 +195,7 @@ def get_parquet_job_runner(
                     "dataset-level": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "config",
-                        "job_runner_version": ConfigParquetJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-level",
                     },
                 }
@@ -249,7 +249,7 @@ def get_parquet_metadata_job_runner(
                     "dataset-level": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "config",
-                        "job_runner_version": ConfigParquetMetadataJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-level",
                     },
                 }

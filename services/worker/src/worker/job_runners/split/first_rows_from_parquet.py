@@ -6,7 +6,6 @@ import logging
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
     PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
 )
 from libcommon.exceptions import (
@@ -173,10 +172,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "split-first-rows-from-parquet"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION
 
     @staticmethod
     def get_parallel_job_runner() -> JobRunnerInfo:

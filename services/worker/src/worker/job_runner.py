@@ -22,11 +22,6 @@ class JobRunner(ABC):
         pass
 
     @staticmethod
-    @abstractmethod
-    def get_job_runner_version() -> int:
-        pass
-
-    @staticmethod
     def get_parallel_job_runner() -> Optional[JobRunnerInfo]:  # In the future it could be a list
         return None
 

@@ -89,7 +89,7 @@ def get_job_runner(
                     "dataset-level": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-level",
                     },
                 }
@@ -583,7 +583,7 @@ def get_dataset_config_names_job_runner(
                 {
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                     }
                 }
             )
@@ -635,7 +635,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
         processing_step=ProcessingStep(
             name="config-parquet-and-info",
             input_type="config",
-            job_runner_version=ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+            job_runner_version=1,
             difficulty=50,
             bonus_difficulty_if_dataset_is_big=0,
         ),
@@ -686,7 +686,7 @@ def test_concurrency(
                     "dataset-config-names": {
                         "input_type": "dataset",
                         "provides_dataset_config_names": True,
-                        "job_runner_version": DatasetConfigNamesJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                     }
                 }
             )

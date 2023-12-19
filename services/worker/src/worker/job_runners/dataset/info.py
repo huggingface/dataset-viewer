@@ -5,7 +5,6 @@ import logging
 from http import HTTPStatus
 from typing import Any
 
-from libcommon.constants import PROCESSING_STEP_DATASET_INFO_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
@@ -89,10 +88,6 @@ class DatasetInfoJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-info"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_INFO_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_dataset_info_response(dataset=self.dataset)

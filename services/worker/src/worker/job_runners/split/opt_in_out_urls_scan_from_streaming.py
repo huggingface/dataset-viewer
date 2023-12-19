@@ -9,7 +9,6 @@ from typing import Any, Optional
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
-from libcommon.constants import PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 from libcommon.exceptions import (
     ExternalServerError,
     InfoError,
@@ -274,10 +273,6 @@ class SplitOptInOutUrlsScanJobRunner(SplitJobRunnerWithDatasetsCache):
         return "split-opt-in-out-urls-scan"
 
     # ^ TODO: Change step name referring to image URLs scan specifically.
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION
 
     def __init__(
         self,

@@ -130,7 +130,7 @@ def get_job_runner(
                 {
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": DatasetInfoJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                     }
                 }
             )

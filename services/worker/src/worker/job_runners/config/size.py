@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.constants import PROCESSING_STEP_CONFIG_SIZE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
@@ -91,10 +90,6 @@ class ConfigSizeJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-size"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_CONFIG_SIZE_VERSION
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_config_size_response(dataset=self.dataset, config=self.config))

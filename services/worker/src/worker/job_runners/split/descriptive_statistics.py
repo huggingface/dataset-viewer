@@ -11,7 +11,6 @@ import numpy as np
 import polars as pl
 from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
-from libcommon.constants import PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     NoSupportedFeaturesError,
@@ -632,10 +631,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
     @staticmethod
     def get_job_type() -> str:
         return "split-descriptive-statistics"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_SPLIT_DESCRIPTIVE_STATISTICS_VERSION
 
     def compute(self) -> CompleteJobResult:
         if self.cache_subdirectory is None:

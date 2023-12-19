@@ -3,7 +3,6 @@
 
 import logging
 
-from libcommon.constants import PROCESSING_STEP_DATASET_HUB_CACHE_VERSION
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
@@ -79,10 +78,6 @@ class DatasetHubCacheJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-hub-cache"
-
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return PROCESSING_STEP_DATASET_HUB_CACHE_VERSION
 
     def compute(self) -> JobResult:
         response_content, progress = compute_hub_cache_response(dataset=self.dataset)

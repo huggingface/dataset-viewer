@@ -13,10 +13,6 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 class DummyDatasetJobRunner(DatasetJobRunner):
     @staticmethod
-    def get_job_runner_version() -> int:
-        return 1
-
-    @staticmethod
     def get_job_type() -> str:
         return "/dummy"
 

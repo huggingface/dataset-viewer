@@ -25,10 +25,6 @@ class DummyJobRunner(JobRunnerWithCache):
     def get_job_type() -> str:
         return "dummy-job-runner"
 
-    @staticmethod
-    def get_job_runner_version() -> int:
-        return 1
-
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"col1": "a" * 200})
 
@@ -54,7 +50,7 @@ def get_job_runner(
                 {
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": DummyJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                     }
                 }
             )

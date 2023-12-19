@@ -49,7 +49,7 @@ def get_job_runner(
                     "dataset-level": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "dataset",
-                        "job_runner_version": ConfigDuckdbIndexSizeJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-level",
                     },
                 }

@@ -99,7 +99,7 @@ def get_job_runner(
                     },
                     processing_step_name: {
                         "input_type": "split",
-                        "job_runner_version": SplitDescriptiveStatisticsJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": ["config-split-names-from-info"],
                     },
                 }
@@ -162,7 +162,7 @@ def get_parquet_and_info_job_runner(
                     "dataset-config-names": {"input_type": "dataset"},
                     processing_step_name: {
                         "input_type": "config",
-                        "job_runner_version": ConfigParquetAndInfoJobRunner.get_job_runner_version(),
+                        "job_runner_version": 1,
                         "triggered_by": "dataset-config-names",
                     },
                 }
