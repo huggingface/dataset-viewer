@@ -8,7 +8,6 @@ from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import exists, init_duckdb_index_cache_dir
 from libcommon.storage_client import StorageClient
@@ -37,7 +36,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     if not exists(duckdb_index_cache_directory):
         raise RuntimeError("The duckdb_index cache directory could not be accessed. Exiting.")
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,
         public_key_url=app_config.api.hf_jwt_public_key_url,
@@ -93,7 +91,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
-                processing_graph=processing_graph,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
             ),
@@ -101,7 +98,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         Route(
             "/filter",
             endpoint=create_filter_endpoint(
-                processing_graph=processing_graph,
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_base_url=app_config.cached_assets.base_url,

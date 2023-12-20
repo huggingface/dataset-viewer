@@ -3,18 +3,17 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional, TypedDict, Union, get_args
 
 import networkx as nx
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import (
     DEFAULT_DIFFICULTY,
     DEFAULT_INPUT_TYPE,
     DEFAULT_JOB_RUNNER_VERSION,
+    MIN_BYTES_FOR_BONUS_DIFFICULTY,
 )
 from libcommon.utils import inputs_to_string
 
@@ -116,7 +115,7 @@ class ProcessingGraph:
     The graph can have multiple roots.
 
     Args:
-        processing_graph_specification (ProcessingGraphSpecification): The specification of the graph.
+        specification (ProcessingGraphSpecification): The specification of the graph.
 
     Raises:
         ValueError: If the graph is not a DAG.
@@ -125,10 +124,8 @@ class ProcessingGraph:
         ValueError: If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
     """
 
-    config: ProcessingGraphConfig
-
-    processing_graph_specification: ProcessingGraphSpecification = field(init=False)
-    min_bytes_for_bonus_difficulty: int = field(init=False)
+    specification: ProcessingGraphSpecification
+    min_bytes_for_bonus_difficulty: int = MIN_BYTES_FOR_BONUS_DIFFICULTY
 
     _nx_graph: nx.DiGraph = field(init=False)
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
@@ -138,9 +135,6 @@ class ProcessingGraph:
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
 
     def __post_init__(self) -> None:
-        self.processing_graph_specification = copy.deepcopy(self.config.specification)
-        self.min_bytes_for_bonus_difficulty = self.config.min_bytes_for_bonus_difficulty
-
         _nx_graph = nx.DiGraph()
         _processing_steps: dict[str, ProcessingStep] = {}
         _processing_step_names_by_input_type: dict[InputType, list[str]] = {
@@ -148,7 +142,7 @@ class ProcessingGraph:
             "config": [],
             "split": [],
         }
-        for name, specification in self.processing_graph_specification.items():
+        for name, specification in self.specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
             if (
@@ -171,7 +165,7 @@ class ProcessingGraph:
                     "this field is not supported for dataset-level steps."
                 )
             _processing_step_names_by_input_type[input_type].append(name)
-        for name, specification in self.processing_graph_specification.items():
+        for name, specification in self.specification.items():
             triggered_by = get_triggered_by_as_list(specification.get("triggered_by"))
             for processing_step_name in triggered_by:
                 if not _nx_graph.has_node(processing_step_name):
@@ -455,3 +449,200 @@ class Artifact:
             if len(parts) > 1:
                 split = parts[1]
         return dataset, revision, config, split, prefix
+
+
+specification: ProcessingGraphSpecification = {
+    "dataset-config-names": {
+        "input_type": "dataset",
+        "job_runner_version": 1,
+        "difficulty": 50,
+    },
+    "config-split-names-from-streaming": {
+        "input_type": "config",
+        "triggered_by": "dataset-config-names",
+        "job_runner_version": 3,
+        "difficulty": 60,
+    },
+    "split-first-rows-from-streaming": {
+        "input_type": "split",
+        "triggered_by": ["config-split-names-from-streaming", "config-split-names-from-info"],
+        "job_runner_version": 4,
+        "difficulty": 70,
+    },
+    "config-parquet-and-info": {
+        "input_type": "config",
+        "triggered_by": "dataset-config-names",
+        "job_runner_version": 4,
+        "difficulty": 70,
+    },
+    "config-parquet": {
+        "input_type": "config",
+        "triggered_by": "config-parquet-and-info",
+        "job_runner_version": 6,
+        "difficulty": 20,
+    },
+    "config-parquet-metadata": {
+        "input_type": "config",
+        "triggered_by": "config-parquet",
+        "job_runner_version": 2,
+        "difficulty": 50,
+    },
+    "split-first-rows-from-parquet": {
+        "input_type": "split",
+        "triggered_by": "config-parquet-metadata",
+        "job_runner_version": 3,
+        "difficulty": 40,
+    },
+    "dataset-parquet": {
+        "input_type": "dataset",
+        "triggered_by": ["config-parquet", "dataset-config-names"],
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "config-info": {
+        "input_type": "config",
+        "triggered_by": "config-parquet-and-info",
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "dataset-info": {
+        "input_type": "dataset",
+        "triggered_by": ["config-info", "dataset-config-names"],
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "config-split-names-from-info": {
+        "input_type": "config",
+        "triggered_by": "config-info",
+        "job_runner_version": 3,
+        "difficulty": 20,
+    },
+    "config-size": {
+        "input_type": "config",
+        "triggered_by": "config-parquet-and-info",
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "dataset-size": {
+        "input_type": "dataset",
+        "triggered_by": ["config-size", "dataset-config-names"],
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "dataset-split-names": {
+        "input_type": "dataset",
+        "triggered_by": [
+            "config-split-names-from-info",
+            "config-split-names-from-streaming",
+            "dataset-config-names",
+        ],
+        "job_runner_version": 3,
+        "difficulty": 20,
+    },
+    "split-descriptive-statistics": {
+        "input_type": "split",
+        "triggered_by": [
+            "config-split-names-from-info",
+            "config-split-names-from-streaming",
+        ],
+        "job_runner_version": 3,
+        "difficulty": 70,
+        "bonus_difficulty_if_dataset_is_big": 20,
+    },
+    "split-is-valid": {
+        "input_type": "split",
+        "triggered_by": [
+            "config-size",
+            "split-first-rows-from-parquet",
+            "split-first-rows-from-streaming",
+            "split-duckdb-index",
+        ],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+    "config-is-valid": {
+        "input_type": "config",
+        "triggered_by": [
+            "config-split-names-from-streaming",
+            "config-split-names-from-info",
+            "split-is-valid",
+        ],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+    "dataset-is-valid": {
+        "input_type": "dataset",
+        "triggered_by": [
+            "dataset-config-names",
+            "config-is-valid",
+        ],
+        "job_runner_version": 5,
+        "difficulty": 20,
+    },
+    "split-image-url-columns": {
+        "input_type": "split",
+        "triggered_by": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
+        "job_runner_version": 1,
+        "difficulty": 40,
+    },
+    "split-opt-in-out-urls-scan": {
+        "input_type": "split",
+        "triggered_by": ["split-image-url-columns"],
+        "job_runner_version": 4,
+        "difficulty": 70,
+    },
+    "split-opt-in-out-urls-count": {
+        "input_type": "split",
+        "triggered_by": ["split-opt-in-out-urls-scan"],
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "config-opt-in-out-urls-count": {
+        "input_type": "config",
+        "triggered_by": [
+            "config-split-names-from-streaming",
+            "config-split-names-from-info",
+            "split-opt-in-out-urls-count",
+        ],
+        "job_runner_version": 3,
+        "difficulty": 20,
+    },
+    "dataset-opt-in-out-urls-count": {
+        "input_type": "dataset",
+        "triggered_by": ["dataset-config-names", "config-opt-in-out-urls-count"],
+        "job_runner_version": 2,
+        "difficulty": 20,
+    },
+    "split-duckdb-index": {
+        "input_type": "split",
+        "triggered_by": [
+            "config-split-names-from-info",
+            "config-split-names-from-streaming",
+            "config-parquet-metadata",
+        ],
+        "job_runner_version": 2,
+        "difficulty": 70,
+        "bonus_difficulty_if_dataset_is_big": 20,
+    },
+    "config-duckdb-index-size": {
+        "input_type": "config",
+        "triggered_by": ["split-duckdb-index"],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+    "dataset-duckdb-index-size": {
+        "input_type": "dataset",
+        "triggered_by": ["config-duckdb-index-size"],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+    "dataset-hub-cache": {
+        "input_type": "dataset",
+        "triggered_by": ["dataset-is-valid", "dataset-size"],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+}
+
+# global variable
+processing_graph = ProcessingGraph(specification=specification)

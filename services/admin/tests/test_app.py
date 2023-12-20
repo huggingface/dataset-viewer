@@ -4,7 +4,7 @@
 from typing import Optional
 
 import pytest
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from starlette.testclient import TestClient
 
 from admin.app import create_app
@@ -63,7 +63,7 @@ def test_metrics(client: TestClient) -> None:
     assert metrics[name] > 0, metrics
 
 
-def test_pending_jobs(client: TestClient, processing_graph: ProcessingGraph) -> None:
+def test_pending_jobs(client: TestClient) -> None:
     response = client.request("get", "/pending-jobs")
     assert response.status_code == 200
     json = response.json()
@@ -71,7 +71,7 @@ def test_pending_jobs(client: TestClient, processing_graph: ProcessingGraph) -> 
         assert json[processing_step.job_type] == {"waiting": [], "started": []}
 
 
-def test_dataset_status(client: TestClient, processing_graph: ProcessingGraph) -> None:
+def test_dataset_status(client: TestClient) -> None:
     response = client.request("get", "/dataset-status")
     assert response.status_code == 422
     response = client.request("get", "/dataset-status", params={"dataset": "test-dataset"})
@@ -92,7 +92,6 @@ def test_dataset_status(client: TestClient, processing_graph: ProcessingGraph) -
 )
 def test_cache_reports(
     client: TestClient,
-    processing_graph: ProcessingGraph,
     cursor: Optional[str],
     http_status: int,
     error_code: Optional[str],
@@ -120,7 +119,6 @@ def test_cache_reports(
 )
 def test_cache_reports_with_content(
     client: TestClient,
-    processing_graph: ProcessingGraph,
     cursor: Optional[str],
     http_status: int,
     error_code: Optional[str],

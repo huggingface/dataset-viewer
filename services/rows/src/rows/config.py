@@ -10,7 +10,6 @@ from libcommon.config import (
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
-    ProcessingGraphConfig,
     QueueConfig,
     RowsIndexConfig,
     S3Config,
@@ -25,7 +24,6 @@ class AppConfig:
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
     s3: S3Config = field(default_factory=S3Config)
@@ -40,7 +38,6 @@ class AppConfig:
             common=common_config,
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
-            processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             rows_index=RowsIndexConfig.from_env(),
             s3=S3Config.from_env(),

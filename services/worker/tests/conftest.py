@@ -4,8 +4,6 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -148,18 +146,6 @@ def parquet_metadata_directory(app_config: AppConfig) -> StrPath:
 @fixture
 def duckdb_index_cache_directory(app_config: AppConfig) -> StrPath:
     return init_duckdb_index_cache_dir(app_config.duckdb_index.cache_directory)
-
-
-@fixture
-def test_processing_graph() -> ProcessingGraph:
-    return ProcessingGraph(
-        ProcessingGraphConfig(
-            {
-                "dummy": {"input_type": "dataset"},
-                "dummy2": {"input_type": "dataset"},
-            }
-        )
-    )
 
 
 # Import fixture modules as plugins

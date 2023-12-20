@@ -22,7 +22,6 @@ from libapi.utils import (
 )
 from libcommon.constants import CONFIG_PARQUET_AND_METADATA_KINDS
 from libcommon.parquet_utils import Indexer, TooBigRows
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
 from libcommon.storage import StrPath
@@ -38,7 +37,6 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 
 
 def create_rows_endpoint(
-    processing_graph: ProcessingGraph,
     cached_assets_base_url: str,
     storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
@@ -118,11 +116,7 @@ def create_rows_endpoint(
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset_then_raise(
-                            processing_steps=[
-                                processing_graph.get_processing_step_by_job_type(kind)
-                                for kind in CONFIG_PARQUET_AND_METADATA_KINDS
-                            ],
-                            processing_graph=processing_graph,
+                            processing_step_names=CONFIG_PARQUET_AND_METADATA_KINDS,
                             dataset=dataset,
                             hf_endpoint=hf_endpoint,
                             hf_timeout_seconds=hf_timeout_seconds,

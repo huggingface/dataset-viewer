@@ -10,7 +10,6 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import (
     AlreadyStartedJobError,
@@ -55,7 +54,6 @@ class Loop:
     job_runner_factory: BaseJobRunnerFactory
     library_cache_paths: set[str]
     app_config: AppConfig
-    processing_graph: ProcessingGraph
     state_file_path: str
     storage_paths: set[str] = field(init=False)
 
@@ -144,12 +142,7 @@ class Loop:
 
         with StepProfiler("loop", "run_job", job_info["type"]):
             job_runner = self.job_runner_factory.create_job_runner(job_info)
-            job_manager = JobManager(
-                job_info=job_info,
-                app_config=self.app_config,
-                job_runner=job_runner,
-                processing_graph=self.processing_graph,
-            )
+            job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
             job_result = job_manager.run_job()
 
         with StepProfiler("loop", "finish_job"):

@@ -95,7 +95,6 @@ def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> list[I
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -148,11 +147,10 @@ def create_endpoint(
                         )
 
                     result = get_cache_entry_from_steps(
-                        processing_steps=processing_steps,
+                        processing_step_names=[processing_steps.name for processing_steps in processing_steps],
                         dataset=dataset,
                         config=config,
                         split=split,
-                        processing_graph=processing_graph,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         blocked_datasets=blocked_datasets,

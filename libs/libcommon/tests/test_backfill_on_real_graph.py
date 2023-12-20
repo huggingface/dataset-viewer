@@ -5,8 +5,7 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -18,8 +17,6 @@ from .utils import (
     assert_dataset_backfill_plan,
     get_dataset_backfill_plan,
 )
-
-PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig())
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +31,7 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
 
 def test_plan_job_creation_and_termination() -> None:
     # we launch all the backfill tasks
-    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
         # The config names are not yet known
@@ -71,7 +68,7 @@ def test_plan_job_creation_and_termination() -> None:
 
     dataset_backfill_plan.run()
 
-    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
         # The config names are not yet known
@@ -130,7 +127,7 @@ def test_plan_job_creation_and_termination() -> None:
     )
     Queue().finish_job(job_id=job_info["job_id"])
 
-    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=PROCESSING_GRAPH)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
         # The config names are now known

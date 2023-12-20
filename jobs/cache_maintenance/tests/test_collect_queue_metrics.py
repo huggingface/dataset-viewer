@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.config import ProcessingGraphConfig
+from unittest.mock import patch
+
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.utils import Status
@@ -11,8 +12,7 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 
 def test_collect_queue_metrics() -> None:
     processing_step_name = "test_type"
-    graph_config = ProcessingGraphConfig({processing_step_name: {"input_type": "dataset", "job_runner_version": 1}})
-    processing_graph = ProcessingGraph(graph_config)
+    processing_graph = ProcessingGraph({processing_step_name: {"input_type": "dataset", "job_runner_version": 1}})
     processing_step = processing_graph.get_processing_step(processing_step_name)
     queue = Queue()
     queue.add_job(
@@ -25,7 +25,8 @@ def test_collect_queue_metrics() -> None:
     )
     assert JobTotalMetricDocument.objects().count() == 1
 
-    collect_queue_metrics(processing_graph=processing_graph)
+    with patch("cache_maintenance.queue_metrics.processing_graph", processing_graph):
+        collect_queue_metrics()
 
     job_metrics = JobTotalMetricDocument.objects().all()
     assert job_metrics

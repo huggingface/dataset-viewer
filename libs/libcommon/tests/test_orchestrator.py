@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
 from libcommon.processing_graph import Artifact, ProcessingGraph
@@ -352,30 +351,28 @@ def test_remove_dataset() -> None:
 def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
     bonus_difficulty_if_dataset_is_big = 10
     processing_graph = ProcessingGraph(
-        ProcessingGraphConfig(
-            {
-                "dataset_step": {"input_type": "dataset"},
-                "config-split-names-from-streaming": {
-                    "input_type": "config",
-                    "triggered_by": "dataset_step",
-                },
-                "config-info": {
-                    "input_type": "config",
-                    "triggered_by": "dataset_step",
-                },
-                "config_step_with_bonus": {
-                    "input_type": "config",
-                    "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
-                    "triggered_by": "config-info",
-                },
-                "split_step_with_bonus": {
-                    "input_type": "split",
-                    "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
-                    "triggered_by": "config-info",
-                },
+        {
+            "dataset_step": {"input_type": "dataset"},
+            "config-split-names-from-streaming": {
+                "input_type": "config",
+                "triggered_by": "dataset_step",
             },
-            min_bytes_for_bonus_difficulty=1000,
-        )
+            "config-info": {
+                "input_type": "config",
+                "triggered_by": "dataset_step",
+            },
+            "config_step_with_bonus": {
+                "input_type": "config",
+                "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
+                "triggered_by": "config-info",
+            },
+            "split_step_with_bonus": {
+                "input_type": "split",
+                "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
+                "triggered_by": "config-info",
+            },
+        },
+        min_bytes_for_bonus_difficulty=1000,
     )
     job_info = artifact_id_to_job_info("config-split-names-from-streaming,dataset_name,revision_hash,config_name")
     upsert_response_params(

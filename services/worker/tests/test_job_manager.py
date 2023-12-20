@@ -3,9 +3,9 @@ from http import HTTPStatus
 from typing import Optional
 
 import pytest
-from libcommon.config import ProcessingGraphConfig
+from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
@@ -16,7 +16,8 @@ from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
-from .fixtures.hub import get_default_config_split
+JOB_TYPE = "dataset-config-names"
+JOB_TYPE_2 = "dataset-info"
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +32,7 @@ def prepare_and_clean_mongo(
 class DummyJobRunner(DatasetJobRunner):
     @staticmethod
     def get_job_type() -> str:
-        return "dummy"
+        return JOB_TYPE
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
@@ -46,18 +47,17 @@ class CacheEntry:
 
 
 def test_check_type(
-    test_processing_graph: ProcessingGraph,
     app_config: AppConfig,
 ) -> None:
     job_id = "job_id"
     dataset = "dataset"
     revision = "revision"
-    config = "config"
-    split = "split"
+    config = None
+    split = None
 
     job_info = JobInfo(
         job_id=job_id,
-        type="dummy2",
+        type=JOB_TYPE_2,
         params={
             "dataset": dataset,
             "revision": revision,
@@ -72,13 +72,11 @@ def test_check_type(
             job_info=job_info,
             app_config=app_config,
         )
-        JobManager(
-            job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
-        )
+        JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
     job_info = JobInfo(
         job_id=job_id,
-        type="dummy",
+        type=JOB_TYPE,
         params={
             "dataset": dataset,
             "revision": revision,
@@ -92,7 +90,7 @@ def test_check_type(
         job_info=job_info,
         app_config=app_config,
     )
-    JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph)
+    JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
 
 @pytest.mark.parametrize(
@@ -103,21 +101,10 @@ def test_check_type(
     ],
 )
 def test_backfill(priority: Priority, app_config: AppConfig) -> None:
-    graph = ProcessingGraph(
-        ProcessingGraphConfig(
-            {
-                "dummy": {"input_type": "dataset"},
-                "dataset-child": {"input_type": "dataset", "triggered_by": "dummy"},
-                "config-child": {"input_type": "config", "triggered_by": "dummy"},
-                "dataset-unrelated": {"input_type": "dataset"},
-            }
-        )
-    )
-    root_step = graph.get_processing_step("dummy")
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
-        job_type=root_step.job_type,
+        job_type="dataset-config-names",
         dataset="dataset",
         revision="revision",
         config=None,
@@ -133,7 +120,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         app_config=app_config,
     )
 
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=graph)
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
     assert job_manager.priority == priority
 
     job_result = job_manager.run_job()
@@ -147,49 +134,37 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     assert JobDocument.objects(pk=job_info["job_id"]).count() == 0
 
     # check that the cache entry has have been created
-    cached_response = get_response(kind=root_step.cache_kind, dataset="dataset", config=None, split=None)
+    cached_response = get_response(kind="dataset-config-names", dataset="dataset", config=None, split=None)
     assert cached_response is not None
     assert cached_response["http_status"] == HTTPStatus.OK
     assert cached_response["error_code"] is None
     assert cached_response["content"] == {"key": "value"}
     assert cached_response["dataset_git_revision"] == "revision"
-    assert cached_response["job_runner_version"] == 1
+    assert (
+        cached_response["job_runner_version"]
+        == processing_graph.get_processing_step("dataset-config-names").job_runner_version
+    )
     assert cached_response["progress"] == 1.0
 
-    dataset_child_jobs = queue.get_dump_with_status(job_type="dataset-child", status=Status.WAITING)
+    child = processing_graph.get_children("dataset-config-names").pop()
+    dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
     assert len(dataset_child_jobs) == 1
     assert dataset_child_jobs[0]["dataset"] == "dataset"
     assert dataset_child_jobs[0]["revision"] == "revision"
-    assert dataset_child_jobs[0]["config"] is None
-    assert dataset_child_jobs[0]["split"] is None
     assert dataset_child_jobs[0]["priority"] is priority.value
-    dataset_unrelated_jobs = queue.get_dump_with_status(job_type="dataset-unrelated", status=Status.WAITING)
-    assert len(dataset_unrelated_jobs) == 0
-    # ^ the dataset-unrelated job is not triggered by the dummy job, so it should not be created
-
-    # check that no config level jobs have been created, because the config names are not known
-    config_child_jobs = queue.get_dump_with_status(job_type="config-child", status=Status.WAITING)
-    assert len(config_child_jobs) == 0
 
 
-def test_job_runner_set_crashed(
-    test_processing_graph: ProcessingGraph,
-    app_config: AppConfig,
-) -> None:
+def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     dataset = "dataset"
     revision = "revision"
-    config = "config"
-    split = "split"
     message = "I'm crashed :("
 
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
-        job_type="dummy",
+        job_type="dataset-config-names",
         dataset=dataset,
         revision=revision,
-        config=config,
-        split=split,
         priority=Priority.NORMAL,
         difficulty=50,
     )
@@ -200,9 +175,7 @@ def test_job_runner_set_crashed(
         app_config=app_config,
     )
 
-    job_manager = JobManager(
-        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
-    )
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
 
     job_manager.set_crashed(message=message)
     response = CachedResponseDocument.objects()[0]
@@ -211,36 +184,32 @@ def test_job_runner_set_crashed(
     assert response.error_code == "JobManagerCrashedError"
     assert response.dataset == dataset
     assert response.dataset_git_revision == revision
-    assert response.config == config
-    assert response.split == split
     assert response.content == expected_error
     assert response.details == expected_error
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 
-def test_raise_if_parallel_response_exists(
-    test_processing_graph: ProcessingGraph,
-    app_config: AppConfig,
-) -> None:
+def test_raise_if_parallel_response_exists(app_config: AppConfig) -> None:
+    [stepA, stepB] = CONFIG_SPLIT_NAMES_KINDS
     dataset = "dataset"
     revision = "revision"
     config = "config"
-    split = "split"
+    split = None
     upsert_response(
-        kind="dummy2",
+        kind=stepA,
         dataset=dataset,
         config=config,
         split=split,
         content={},
         dataset_git_revision=revision,
-        job_runner_version=1,
+        job_runner_version=processing_graph.get_processing_step(stepA).job_runner_version,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
 
     job_info = JobInfo(
         job_id="job_id",
-        type="dummy",
+        type=stepB,
         params={
             "dataset": dataset,
             "revision": revision,
@@ -250,61 +219,22 @@ def test_raise_if_parallel_response_exists(
         priority=Priority.NORMAL,
         difficulty=50,
     )
-    job_runner = DummyJobRunner(
+
+    class DummyConfigJobRunner(DatasetJobRunner):
+        @staticmethod
+        def get_job_type() -> str:
+            return stepB
+
+        def compute(self) -> CompleteJobResult:
+            return CompleteJobResult({})
+
+    job_runner = DummyConfigJobRunner(
         job_info=job_info,
         app_config=app_config,
     )
 
-    job_manager = JobManager(
-        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
-    )
+    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
     with pytest.raises(CustomError) as exc_info:
-        job_manager.raise_if_parallel_response_exists(parallel_step_name="dummy2")
+        job_manager.raise_if_parallel_response_exists(parallel_step_name=stepA)
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
-
-
-def test_doesnotexist(app_config: AppConfig) -> None:
-    dataset = "doesnotexist"
-    revision = "revision"
-    config, split = get_default_config_split()
-
-    job_info = JobInfo(
-        job_id="job_id",
-        type="dummy",
-        params={
-            "dataset": dataset,
-            "revision": revision,
-            "config": config,
-            "split": split,
-        },
-        priority=Priority.NORMAL,
-        difficulty=50,
-    )
-    processing_step_name = "dummy"
-    processing_graph = ProcessingGraph(
-        ProcessingGraphConfig(
-            {
-                "dataset-level": {"input_type": "dataset"},
-                processing_step_name: {
-                    "input_type": "dataset",
-                    "job_runner_version": 1,
-                    "triggered_by": "dataset-level",
-                },
-            }
-        )
-    )
-
-    job_runner = DummyJobRunner(
-        job_info=job_info,
-        app_config=app_config,
-    )
-
-    job_manager = JobManager(
-        job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=processing_graph
-    )
-
-    job_result = job_manager.process()
-    # ^ the job is processed, since we don't contact the Hub to check if the dataset exists
-    assert job_result["output"] is not None
-    assert job_result["output"]["content"] == {"key": "value"}

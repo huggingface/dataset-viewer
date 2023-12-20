@@ -8,7 +8,7 @@ from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -33,7 +33,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,
@@ -69,7 +68,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             endpoint=create_endpoint(
                 endpoint_name=endpoint_name,
                 steps_by_input_type=steps_by_input_type,
-                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
@@ -87,7 +85,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/croissant",
             endpoint=create_croissant_endpoint(
-                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
@@ -106,7 +103,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Route(
             "/webhook",
             endpoint=create_webhook_endpoint(
-                processing_graph=processing_graph,
                 hf_webhook_secret=app_config.api.hf_webhook_secret,
                 cache_max_days=app_config.cache.max_days,
                 blocked_datasets=app_config.common.blocked_datasets,

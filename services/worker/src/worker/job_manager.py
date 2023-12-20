@@ -19,7 +19,7 @@ from libcommon.exceptions import (
     UnexpectedError,
 )
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
@@ -45,8 +45,6 @@ class JobManager:
             The app config.
         job_runner (:obj:`JobRunner`):
             The job runner to use.
-        processing_graph (:obj:`ProcessingGraph`):
-            The processing graph.
     """
 
     job_id: str
@@ -54,7 +52,6 @@ class JobManager:
     priority: Priority
     worker_config: WorkerConfig
     common_config: CommonConfig
-    processing_graph: ProcessingGraph
     job_runner: JobRunner
     job_runner_version: int
 
@@ -63,7 +60,6 @@ class JobManager:
         job_info: JobInfo,
         app_config: AppConfig,
         job_runner: JobRunner,
-        processing_graph: ProcessingGraph,
     ) -> None:
         self.job_info = job_info
         self.job_type = job_info["type"]
@@ -73,10 +69,7 @@ class JobManager:
         self.common_config = app_config.common
         self.worker_config = app_config.worker
         self.job_runner = job_runner
-        self.processing_graph = processing_graph
-        self.job_runner_version = self.processing_graph.get_processing_step_by_job_type(
-            self.job_type
-        ).job_runner_version
+        self.job_runner_version = processing_graph.get_processing_step_by_job_type(self.job_type).job_runner_version
         self.setup()
 
     def setup(self) -> None:
@@ -126,7 +119,6 @@ class JobManager:
         try:
             DatasetOrchestrator(
                 dataset=self.job_params["dataset"],
-                processing_graph=self.processing_graph,
                 blocked_datasets=self.common_config.blocked_datasets,
             ).finish_job(job_result=job_result)
         except DatasetInBlockListError:
@@ -134,7 +126,7 @@ class JobManager:
 
     def raise_if_parallel_response_exists(self, parallel_step_name: str) -> None:
         try:
-            parallel_job_version = self.processing_graph.get_processing_step_by_job_type(
+            parallel_job_version = processing_graph.get_processing_step_by_job_type(
                 parallel_step_name
             ).job_runner_version
             existing_response = get_response_without_content_params(

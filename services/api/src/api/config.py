@@ -9,7 +9,6 @@ from libcommon.config import (
     CacheConfig,
     CommonConfig,
     LogConfig,
-    ProcessingGraphConfig,
     QueueConfig,
 )
 from libcommon.processing_graph import InputType
@@ -22,7 +21,6 @@ class AppConfig:
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
-    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -31,7 +29,6 @@ class AppConfig:
             common=common_config,
             cache=CacheConfig.from_env(),
             log=LogConfig.from_env(),
-            processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
         )

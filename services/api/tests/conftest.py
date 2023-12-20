@@ -4,7 +4,7 @@
 from collections.abc import Iterator
 
 from libapi.config import UvicornConfig
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
@@ -53,14 +53,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
 
 
 @fixture(scope="session")
-def processing_graph(app_config: AppConfig) -> ProcessingGraph:
-    return ProcessingGraph(app_config.processing_graph)
-
-
-@fixture(scope="session")
-def endpoint_definition(
-    endpoint_config: EndpointConfig, processing_graph: ProcessingGraph
-) -> StepsByInputTypeAndEndpoint:
+def endpoint_definition(endpoint_config: EndpointConfig) -> StepsByInputTypeAndEndpoint:
     return EndpointsDefinition(processing_graph, endpoint_config=endpoint_config).steps_by_input_type_and_endpoint
 
 

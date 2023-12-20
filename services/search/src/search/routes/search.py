@@ -32,7 +32,6 @@ from libapi.utils import (
     to_rows_list,
 )
 from libcommon.duckdb_utils import duckdb_index_is_partial
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
@@ -122,7 +121,6 @@ async def create_response(
 
 
 def create_search_endpoint(
-    processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
     storage_client: StorageClient,
@@ -167,7 +165,6 @@ def create_search_endpoint(
                     # no cache data is needed to download the index file
                     # but will help to validate if indexing was done
                     duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
-                        processing_graph=processing_graph,
                         dataset=dataset,
                         config=config,
                         split=split,
