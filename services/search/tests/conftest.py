@@ -9,15 +9,17 @@ from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_duckdb_index_cache_dir
-from pytest import MonkeyPatch, fixture
+from pytest import MonkeyPatch, TempPathFactory, fixture
 
 from search.config import AppConfig
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="session")
-def monkeypatch_session() -> Iterator[MonkeyPatch]:
+def monkeypatch_session(tmp_path_factory: TempPathFactory) -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
+    assets_root = str(tmp_path_factory.mktemp("assets_root"))
+    monkeypatch_session.setenv("CACHED_ASSETS_STORAGE_ROOT", assets_root)
     monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
     monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     monkeypatch_session.setenv("CACHED_ASSETS_BASE_URL", "http://localhost/cached-assets")
