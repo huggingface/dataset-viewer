@@ -102,7 +102,7 @@ def get_cache_entry_from_duckdb_index_job(
     blocked_datasets: list[str],
 ) -> CacheEntry:
     return get_cache_entry_from_steps(
-        processing_steps=SPLIT_DUCKDB_INDEX_KINDS,
+        processing_step_names=SPLIT_DUCKDB_INDEX_KINDS,
         dataset=dataset,
         config=config,
         split=split,
