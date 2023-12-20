@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from libcommon.constants import ERROR_CODES_TO_RETRY
+from libcommon.constants import DEFAULT_DIFFICULTY_MAX, ERROR_CODES_TO_RETRY
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import (
     ProcessingGraph,
@@ -366,6 +366,7 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
+                    "attempts": 0,
                 }
             )
 
@@ -443,7 +444,8 @@ class DatasetBackfillPlan(Plan):
                     dataset=self.dataset,
                     cache_kinds=cache_kinds,
                 )
-
+                print("df result")
+                print(self.cache_entries_df)
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_dataset_state",
@@ -624,6 +626,12 @@ class DatasetBackfillPlan(Plan):
         for artifact_state in artifact_states:
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
+                attempts = (
+                    0
+                    if not artifact_state.cache_state.cache_entry_metadata
+                    else artifact_state.cache_state.cache_entry_metadata["attempts"]
+                )
+                difficulty = artifact_state.processing_step.difficulty + min(attempts * 20, DEFAULT_DIFFICULTY_MAX)
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -635,7 +643,8 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": artifact_state.processing_step.difficulty,
+                        "difficulty": difficulty,
+                        "attempts": attempts + 1,
                     }
                 )
             else:
@@ -803,6 +812,7 @@ class DatasetOrchestrator:
             error_code=output["error_code"],
             details=output["details"],
             progress=output["progress"],
+            attempts=output["attempts"],
         )
         logging.debug("the job output has been written to the cache.")
         # finish the job

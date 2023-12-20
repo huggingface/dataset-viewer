@@ -165,6 +165,7 @@ class JobDocument(Document):
     created_at = DateTimeField(required=True)
     started_at = DateTimeField()
     last_heartbeat = DateTimeField()
+    attempts = IntField(default=0)
 
     def to_dict(self) -> JobDict:
         return {
@@ -198,6 +199,7 @@ class JobDocument(Document):
                 },
                 "priority": self.priority,
                 "difficulty": self.difficulty,
+                "attempts": self.attempts,
             }
         )
 

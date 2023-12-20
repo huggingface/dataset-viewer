@@ -170,6 +170,7 @@ def test_finish_job(
             error_code=None,
             details=None,
             progress=1.0,
+            attempts=0,
         ),
     )
     dataset_orchestrator = DatasetOrchestrator(

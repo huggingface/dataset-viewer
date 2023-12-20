@@ -196,6 +196,7 @@ class JobManager:
                     "error_code": None,
                     "details": None,
                     "progress": job_result.progress,
+                    "attempts": self.job_info["attempts"] + 1,
                 },
             }
         except DatasetNotFoundError:
@@ -223,6 +224,7 @@ class JobManager:
                     "error_code": err.cache_entry_with_details["error_code"],
                     "details": err.enhanced_details,
                     "progress": None,
+                    "attempts": self.job_info["attempts"] + 1,
                 },
             }
         except Exception as err:
@@ -244,6 +246,7 @@ class JobManager:
                     "error_code": e.code,
                     "details": dict(e.as_response_with_cause()),
                     "progress": None,
+                    "attempts": self.job_info["attempts"] + 1,
                 },
             }
 
@@ -265,6 +268,7 @@ class JobManager:
                     "error_code": error.code,
                     "details": dict(error.as_response_with_cause()),
                     "progress": None,
+                    "attempts": self.job_info["attempts"] + 1,
                 },
             }
         )
@@ -287,6 +291,7 @@ class JobManager:
                     "error_code": error.code,
                     "details": dict(error.as_response_with_cause()),
                     "progress": None,
+                    "attempts": self.job_info["attempts"],
                 },
             }
         )
