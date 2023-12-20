@@ -16,7 +16,6 @@ from datasets.table import embed_table_storage
 from fsspec import AbstractFileSystem
 from fsspec.implementations.http import HTTPFileSystem
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.parquet_utils import (
     Indexer,
     ParquetIndexWithMetadata,
@@ -25,7 +24,6 @@ from libcommon.parquet_utils import (
     TooBigRows,
     parquet_export_is_partial,
 )
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -34,8 +32,6 @@ REVISION_NAME = "revision"
 CACHED_ASSETS_FOLDER = "cached-assets"
 
 pytestmark = pytest.mark.anyio
-
-PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig())
 
 
 @pytest.fixture(autouse=True)
@@ -380,7 +376,6 @@ def rows_index_with_too_big_rows(
     dataset_sharded_with_config_parquet_metadata: dict[str, Any],
 ) -> Generator[RowsIndex, None, None]:
     indexer = Indexer(
-        processing_graph=PROCESSING_GRAPH,
         hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),
@@ -396,7 +391,6 @@ def indexer(
     parquet_metadata_directory: StrPath,
 ) -> Indexer:
     return Indexer(
-        processing_graph=PROCESSING_GRAPH,
         hf_token="token",
         parquet_metadata_directory=parquet_metadata_directory,
         httpfs=HTTPFileSystem(),

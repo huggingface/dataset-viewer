@@ -6,7 +6,6 @@ from http import HTTPStatus
 import pytest
 
 from libcommon.config import ProcessingGraphConfig
-from libcommon.constants import PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -126,7 +125,7 @@ def test_plan_job_creation_and_termination() -> None:
         split=job_info["params"]["split"],
         content=CONFIG_NAMES_CONTENT,
         http_status=HTTPStatus.OK,
-        job_runner_version=PROCESSING_STEP_DATASET_CONFIG_NAMES_VERSION,
+        job_runner_version=1,
         dataset_git_revision=REVISION_NAME,
     )
     Queue().finish_job(job_id=job_info["job_id"])

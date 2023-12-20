@@ -11,7 +11,6 @@ import orjson
 import pytest
 import pytz
 from filelock import FileLock
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
@@ -205,7 +204,6 @@ def job_runner_factory(
     statistics_cache_directory: StrPath,
     tmp_path: Path,
 ) -> JobRunnerFactory:
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     storage_client = StorageClient(
         protocol="file",
         root=str(tmp_path),
@@ -213,7 +211,6 @@ def job_runner_factory(
     )
     return JobRunnerFactory(
         app_config=app_config,
-        processing_graph=processing_graph,
         hf_datasets_cache=libraries_resource.hf_datasets_cache,
         parquet_metadata_directory=parquet_metadata_directory,
         duckdb_index_cache_directory=duckdb_index_cache_directory,

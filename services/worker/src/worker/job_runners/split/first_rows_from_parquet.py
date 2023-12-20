@@ -5,9 +5,6 @@ import logging
 
 from datasets import Audio, Features, Image
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-)
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
@@ -16,7 +13,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
@@ -24,7 +20,7 @@ from libcommon.utils import JobInfo, Row, RowItem
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import create_truncated_row_items, get_json_size
 
@@ -173,18 +169,10 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     def get_job_type() -> str:
         return "split-first-rows-from-parquet"
 
-    @staticmethod
-    def get_parallel_job_runner() -> JobRunnerInfo:
-        return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-            job_type="split-first-rows-from-streaming",
-        )
-
     def __init__(
         self,
         job_info: JobInfo,
         app_config: AppConfig,
-        processing_graph: ProcessingGraph,
         parquet_metadata_directory: StrPath,
         storage_client: StorageClient,
     ) -> None:
@@ -196,7 +184,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
         self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
-            processing_graph=processing_graph,
             hf_token=self.app_config.common.hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
             httpfs=HTTPFileSystem(headers={"authorization": f"Bearer {self.app_config.common.hf_token}"}),

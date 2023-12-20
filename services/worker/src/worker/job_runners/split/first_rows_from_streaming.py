@@ -13,9 +13,6 @@ from datasets import (
     get_dataset_config_info,
     load_dataset,
 )
-from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
-)
 from libcommon.exceptions import (
     FeaturesError,
     InfoError,
@@ -29,7 +26,7 @@ from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, JobRunnerInfo, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
     create_truncated_row_items,
@@ -266,13 +263,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
         return "split-first-rows-from-streaming"
-
-    @staticmethod
-    def get_parallel_job_runner() -> JobRunnerInfo:
-        return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_PARQUET_VERSION,
-            job_type="split-first-rows-from-parquet",
-        )
 
     def __init__(
         self,

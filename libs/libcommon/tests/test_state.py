@@ -33,6 +33,7 @@ from .utils import (
     SPLIT_NAME_1,
     SPLIT_NAMES,
     SPLIT_NAMES_CONTENT,
+    STEP_CONFIG_B,
 )
 
 
@@ -158,7 +159,7 @@ def test_artifact_state() -> None:
     revision = REVISION_NAME
     config = None
     split = None
-    processing_step_name = "dataset-a"
+    processing_step_name = "dataset-config-names"
     processing_step = PROCESSING_GRAPH.get_processing_step(processing_step_name)
     artifact_state = ArtifactState(
         dataset=dataset,
@@ -209,7 +210,7 @@ def test_config_state_as_dict() -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
     config = CONFIG_NAME_1
-    expected_config_processing_step_name = "config-b"
+    expected_config_processing_step_name = STEP_CONFIG_B
     processing_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
 
     upsert_response(
@@ -251,9 +252,9 @@ def test_config_state_as_dict() -> None:
 def test_dataset_state_as_dict() -> None:
     dataset = DATASET_NAME
     revision = REVISION_NAME
-    expected_dataset_processing_step_name = "dataset-a"
+    expected_dataset_processing_step_name = "dataset-config-names"
     dataset_step = PROCESSING_GRAPH.get_processing_step(expected_dataset_processing_step_name)
-    expected_config_processing_step_name = "config-b"
+    expected_config_processing_step_name = "config-split-names-from-streaming"
     config_step = PROCESSING_GRAPH.get_processing_step(expected_config_processing_step_name)
     upsert_response(
         kind=dataset_step.cache_kind,

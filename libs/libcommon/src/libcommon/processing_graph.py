@@ -43,16 +43,7 @@ def guard_int(x: Any) -> int:
 class ProcessingStepSpecification(TypedDict, total=False):
     input_type: InputType
     triggered_by: Union[list[str], str, None]
-    enables_preview: Literal[True]
-    enables_viewer: Literal[True]
-    enables_search: Literal[True]
     job_runner_version: int
-    provides_dataset_config_names: bool
-    provides_dataset_info: bool
-    provides_config_info: bool
-    provides_config_split_names: bool
-    provides_config_parquet: bool
-    provides_config_parquet_metadata: bool
     difficulty: int
     bonus_difficulty_if_dataset_is_big: int
 
@@ -143,15 +134,6 @@ class ProcessingGraph:
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
     _processing_step_names_by_input_type: Mapping[InputType, list[str]] = field(init=False)
     _first_processing_steps: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_preview: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_viewer: list[ProcessingStep] = field(init=False)
-    _processing_steps_enables_search: list[ProcessingStep] = field(init=False)
-    _config_info_processing_steps: list[ProcessingStep] = field(init=False)
-    _config_split_names_processing_steps: list[ProcessingStep] = field(init=False)
-    _config_parquet_processing_steps: list[ProcessingStep] = field(init=False)
-    _config_parquet_metadata_processing_steps: list[ProcessingStep] = field(init=False)
-    _dataset_config_names_processing_steps: list[ProcessingStep] = field(init=False)
-    _dataset_info_processing_steps: list[ProcessingStep] = field(init=False)
     _topologically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
     _alphabetically_ordered_processing_steps: list[ProcessingStep] = field(init=False)
 
@@ -169,48 +151,13 @@ class ProcessingGraph:
         for name, specification in self.processing_graph_specification.items():
             # check that the step is consistent with its specification
             input_type = guard_input_type(specification.get("input_type", DEFAULT_INPUT_TYPE))
-            provides_config_info = specification.get("provides_config_info", False)
-            if provides_config_info and input_type != "config":
-                raise ValueError(f"Processing step {name} provides config info but its input type is {input_type}.")
-            provides_dataset_config_names = specification.get("provides_dataset_config_names", False)
-            if provides_dataset_config_names and input_type != "dataset":
-                raise ValueError(
-                    f"Processing step {name} provides dataset config names but its input type is {input_type}."
-                )
-            provides_dataset_info = specification.get("provides_dataset_info", False)
-            if provides_dataset_info and input_type != "dataset":
-                raise ValueError(f"Processing step {name} provides dataset info but its input type is {input_type}.")
-            provides_config_split_names = specification.get("provides_config_split_names", False)
-            if provides_config_split_names and input_type != "config":
-                raise ValueError(
-                    f"Processing step {name} provides config split names but its input type is {input_type}."
-                )
-            provides_config_parquet = specification.get("provides_config_parquet", False)
-            if provides_config_parquet and input_type != "config":
-                raise ValueError(f"Processing step {name} provides config parquet but its input type is {input_type}.")
-            provides_config_parquet_metadata = specification.get("provides_config_parquet_metadata", False)
-            if provides_config_parquet_metadata and input_type != "config":
-                raise ValueError(
-                    f"Processing step {name} provides config parquet metadata but its input type is {input_type}."
-                )
             if (
                 _nx_graph.has_node(name)
                 or name in _processing_steps
                 or name in _processing_step_names_by_input_type[input_type]
             ):
                 raise ValueError(f"Processing step {name} is defined twice.")
-            _nx_graph.add_node(
-                name,
-                enables_preview=specification.get("enables_preview", False),
-                enables_viewer=specification.get("enables_viewer", False),
-                enables_search=specification.get("enables_search", False),
-                provides_config_info=provides_config_info,
-                provides_dataset_config_names=provides_dataset_config_names,
-                provides_dataset_info=provides_dataset_info,
-                provides_config_split_names=provides_config_split_names,
-                provides_config_parquet=provides_config_parquet,
-                provides_config_parquet_metadata=provides_config_parquet_metadata,
-            )
+            _nx_graph.add_node(name)
             _processing_steps[name] = ProcessingStep(
                 name=name,
                 input_type=input_type,
@@ -246,51 +193,6 @@ class ProcessingGraph:
         ]
         if any(processing_step.input_type != "dataset" for processing_step in self._first_processing_steps):
             raise ValueError("The first processing steps must be dataset-level. The graph state is incoherent.")
-        self._processing_steps_enables_preview = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_preview")
-            if required
-        ]
-        self._processing_steps_enables_viewer = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_viewer")
-            if required
-        ]
-        self._processing_steps_enables_search = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, required) in _nx_graph.nodes(data="enables_search")
-            if required
-        ]
-        self._config_parquet_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_parquet")
-            if provides
-        ]
-        self._config_info_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_info")
-            if provides
-        ]
-        self._config_parquet_metadata_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_parquet_metadata")
-            if provides
-        ]
-        self._config_split_names_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_config_split_names")
-            if provides
-        ]
-        self._dataset_config_names_processing_steps = [
-            self.get_processing_step(processing_step_name)
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_config_names")
-            if provides
-        ]
-        self._dataset_info_processing_steps = [
-            self._processing_steps[processing_step_name]
-            for (processing_step_name, provides) in _nx_graph.nodes(data="provides_dataset_info")
-            if provides
-        ]
         self._topologically_ordered_processing_steps = [
             self.get_processing_step(processing_step_name) for processing_step_name in nx.topological_sort(_nx_graph)
         ]
@@ -422,114 +324,6 @@ class ProcessingGraph:
             list[ProcessingStep]: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
-
-    def get_processing_steps_enables_preview(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset preview (first rows).
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset preview
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_preview)
-
-    def get_processing_steps_enables_viewer(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset viewer (all rows).
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset viewer
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_viewer)
-
-    def get_processing_steps_enables_search(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that enable the dataset split search.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that enable the dataset viewer
-        """
-        return copy_processing_steps_list(self._processing_steps_enables_search)
-
-    def get_config_info_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's info response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's parquet response
-        """
-        return copy_processing_steps_list(self._config_info_processing_steps)
-
-    def get_config_parquet_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's parquet response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's parquet response
-        """
-        return copy_processing_steps_list(self._config_parquet_processing_steps)
-
-    def get_dataset_info_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a dataset's info response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a dataset's info response
-        """
-        return copy_processing_steps_list(self._dataset_info_processing_steps)
-
-    def get_config_parquet_metadata_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's parquet metadata response.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's parquet response
-        """
-        return copy_processing_steps_list(self._config_parquet_metadata_processing_steps)
-
-    def get_config_split_names_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a config's split names.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a config's split names
-        """
-        return copy_processing_steps_list(self._config_split_names_processing_steps)
-
-    def get_dataset_config_names_processing_steps(self) -> list[ProcessingStep]:
-        """
-        Get the processing steps that provide a dataset's config names.
-
-        The returned processing steps are copies of the original ones, so that they can be modified without affecting
-        the original ones.
-
-        Returns:
-            list[ProcessingStep]: The list of processing steps that provide a dataset's config names
-        """
-        return copy_processing_steps_list(self._dataset_config_names_processing_steps)
 
     def get_topologically_ordered_processing_steps(self) -> list[ProcessingStep]:
         """

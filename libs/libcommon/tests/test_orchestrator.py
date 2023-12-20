@@ -356,31 +356,29 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
         ProcessingGraphConfig(
             {
                 "dataset_step": {"input_type": "dataset"},
-                "config_with_split_names_step": {
+                "config-split-names-from-streaming": {
                     "input_type": "config",
-                    "provides_config_split_names": True,
                     "triggered_by": "dataset_step",
                 },
-                "config_info_step": {
+                "config-info": {
                     "input_type": "config",
-                    "provides_config_info": True,
                     "triggered_by": "dataset_step",
                 },
                 "config_step_with_bonus": {
                     "input_type": "config",
                     "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
-                    "triggered_by": "config_info_step",
+                    "triggered_by": "config-info",
                 },
                 "split_step_with_bonus": {
                     "input_type": "split",
                     "bonus_difficulty_if_dataset_is_big": bonus_difficulty_if_dataset_is_big,
-                    "triggered_by": "config_info_step",
+                    "triggered_by": "config-info",
                 },
             },
             min_bytes_for_bonus_difficulty=1000,
         )
     )
-    job_info = artifact_id_to_job_info("config_with_split_names_step,dataset_name,revision_hash,config_name")
+    job_info = artifact_id_to_job_info("config-split-names-from-streaming,dataset_name,revision_hash,config_name")
     upsert_response_params(
         # inputs
         kind=job_info["type"],
@@ -393,7 +391,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
         details=None,
         progress=1.0,
     )
-    job_info = artifact_id_to_job_info("config_info_step,dataset_name,revision_hash,config_name")
+    job_info = artifact_id_to_job_info("config-info,dataset_name,revision_hash,config_name")
     upsert_response_params(
         # inputs
         kind=job_info["type"],
