@@ -11,10 +11,6 @@ from unittest.mock import patch
 import pytest
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
-from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
-    PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
-)
 from libcommon.exceptions import ExternalServerError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -204,7 +200,7 @@ def test_compute(
         config=config,
         split=split,
         content=upstream_content,
-        job_runner_version=PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
+        job_runner_version=1,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
@@ -269,7 +265,7 @@ def test_compute_failed(
             split=split,
             content=upstream_content,
             dataset_git_revision=REVISION_NAME,
-            job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+            job_runner_version=1,
             progress=1.0,
             http_status=upstream_status,
         )
@@ -298,7 +294,7 @@ def test_compute_error_from_spawning(
         split=split,
         content=IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
         dataset_git_revision=REVISION_NAME,
-        job_runner_version=PROCESSING_STEP_SPLIT_OPT_IN_OUT_URLS_SCAN_VERSION,
+        job_runner_version=1,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )

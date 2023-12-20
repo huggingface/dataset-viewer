@@ -12,9 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from fsspec import AbstractFileSystem
-from libcommon.config import ProcessingGraphConfig
 from libcommon.exceptions import CustomError
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -45,25 +43,6 @@ def get_job_runner(
         split: str,
         app_config: AppConfig,
     ) -> SplitFirstRowsFromParquetJobRunner:
-        processing_step_name = SplitFirstRowsFromParquetJobRunner.get_job_type()
-        processing_graph = ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-level": {"input_type": "dataset"},
-                    "config-level": {
-                        "input_type": "config",
-                        "triggered_by": "dataset-level",
-                        "provides_config_parquet_metadata": True,
-                    },
-                    processing_step_name: {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                        "triggered_by": "config-level",
-                    },
-                }
-            )
-        )
-
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -95,7 +74,6 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
-            processing_graph=processing_graph,
             parquet_metadata_directory=parquet_metadata_directory,
             storage_client=StorageClient(
                 protocol="file",
@@ -164,7 +142,7 @@ def test_compute(
     }
 
     upsert_response(
-        kind="config-level",
+        kind="config-parquet-metadata",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,
@@ -277,7 +255,7 @@ def test_from_parquet_truncation(
     }
 
     upsert_response(
-        kind="config-level",
+        kind="config-parquet-metadata",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,

@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo
@@ -83,7 +82,6 @@ class BaseJobRunnerFactory(ABC):
 @dataclass
 class JobRunnerFactory(BaseJobRunnerFactory):
     app_config: AppConfig
-    processing_graph: ProcessingGraph
     hf_datasets_cache: Path
     parquet_metadata_directory: StrPath
     duckdb_index_cache_directory: StrPath
@@ -167,14 +165,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return SplitFirstRowsFromParquetJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-                processing_graph=self.processing_graph,
                 parquet_metadata_directory=self.parquet_metadata_directory,
                 storage_client=self.storage_client,
             )
         if job_type == SplitIsValidJobRunner.get_job_type():
             return SplitIsValidJobRunner(
                 job_info=job_info,
-                processing_graph=self.processing_graph,
                 app_config=self.app_config,
             )
         if job_type == ConfigIsValidJobRunner.get_job_type():

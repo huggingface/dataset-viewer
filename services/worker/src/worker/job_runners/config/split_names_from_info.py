@@ -3,13 +3,10 @@
 
 import logging
 
-from libcommon.constants import (
-    PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
-)
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
-from worker.dtos import CompleteJobResult, FullSplitItem, JobRunnerInfo, SplitsList
+from worker.dtos import CompleteJobResult, FullSplitItem, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 
@@ -54,13 +51,6 @@ class ConfigSplitNamesFromInfoJobRunner(ConfigJobRunner):
     @staticmethod
     def get_job_type() -> str:
         return "config-split-names-from-info"
-
-    @staticmethod
-    def get_parallel_job_runner() -> JobRunnerInfo:
-        return JobRunnerInfo(
-            job_runner_version=PROCESSING_STEP_CONFIG_SPLIT_NAMES_FROM_STREAMING_VERSION,
-            job_type="config-split-names-from-streaming",
-        )
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(compute_split_names_from_info_response(dataset=self.dataset, config=self.config))

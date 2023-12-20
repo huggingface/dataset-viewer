@@ -6,10 +6,6 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
-from libcommon.constants import (
-    PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
-    PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
-)
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.utils import Priority
@@ -204,7 +200,7 @@ def test_compute(
         split=split,
         content=upstream_content,
         dataset_git_revision=REVISION_NAME,
-        job_runner_version=PROCESSING_STEP_SPLIT_FIRST_ROWS_FROM_STREAMING_VERSION,
+        job_runner_version=1,
         progress=1.0,
         http_status=HTTPStatus.OK,
     )
@@ -249,7 +245,7 @@ def test_compute_failed(
             split=split,
             content=upstream_content,
             dataset_git_revision=REVISION_NAME,
-            job_runner_version=PROCESSING_STEP_SPLIT_IMAGE_URL_COLUMNS_VERSION,
+            job_runner_version=1,
             progress=1.0,
             http_status=upstream_status,
         )

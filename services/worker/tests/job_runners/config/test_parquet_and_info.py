@@ -651,7 +651,6 @@ def test_concurrency(
                 {
                     "dataset-config-names": {
                         "input_type": "dataset",
-                        "provides_dataset_config_names": True,
                         "job_runner_version": 1,
                     }
                 }

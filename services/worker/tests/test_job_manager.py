@@ -227,7 +227,7 @@ def test_raise_if_parallel_response_exists(
     config = "config"
     split = "split"
     upsert_response(
-        kind="dummy-parallel",
+        kind="dummy2",
         dataset=dataset,
         config=config,
         split=split,
@@ -259,7 +259,7 @@ def test_raise_if_parallel_response_exists(
         job_info=job_info, app_config=app_config, job_runner=job_runner, processing_graph=test_processing_graph
     )
     with pytest.raises(CustomError) as exc_info:
-        job_manager.raise_if_parallel_response_exists(parallel_cache_kind="dummy-parallel", parallel_job_version=1)
+        job_manager.raise_if_parallel_response_exists(parallel_step_name="dummy2")
     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
     assert exc_info.value.code == "ResponseAlreadyComputedError"
 

@@ -44,16 +44,15 @@ CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
 DIFFICULTY = 50
 
-STEP_DATASET_A = "dataset-a"
-STEP_CONFIG_B = "config-b"
+STEP_DATASET_A = "dataset-config-names"
+STEP_CONFIG_B = "config-split-names-from-streaming"
 STEP_SPLIT_C = "split-c"
 PROCESSING_GRAPH = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DATASET_A: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DATASET_A: {"input_type": "dataset"},
             STEP_CONFIG_B: {
                 "input_type": "config",
-                "provides_config_split_names": True,
                 "triggered_by": STEP_DATASET_A,
             },
             STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
@@ -77,15 +76,15 @@ SPLIT_NAMES_CONTENT = {
 }
 
 
-STEP_DA = "dataset-a"
-STEP_DB = "dataset-b"
-STEP_DC = "dataset-c"
-STEP_DD = "dataset-d"
-STEP_DE = "dataset-e"
-STEP_DF = "dataset-f"
-STEP_DG = "dataset-g"
-STEP_DH = "dataset-h"
-STEP_DI = "dataset-i"
+STEP_DA = "dataset-config-names"
+STEP_DB = "dataset-zb"
+STEP_DC = "dataset-zc"
+STEP_DD = "dataset-zd"
+STEP_DE = "dataset-ze"
+STEP_DF = "dataset-zf"
+STEP_DG = "dataset-zg"
+STEP_DH = "dataset-zh"
+STEP_DI = "dataset-zi"
 
 ARTIFACT_DA = f"{STEP_DA},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DA_OTHER_REVISION = f"{STEP_DA},{DATASET_NAME},{OTHER_REVISION_NAME}"
@@ -98,8 +97,8 @@ ARTIFACT_DG = f"{STEP_DG},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DH = f"{STEP_DH},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DI = f"{STEP_DI},{DATASET_NAME},{REVISION_NAME}"
 
-STEP_CA = "config-a"
-STEP_CB = "config-b"
+STEP_CA = "config-split-names-from-streaming"
+STEP_CB = "config-zb"
 
 ARTIFACT_CA_1 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1}"
 ARTIFACT_CA_2 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2}"
@@ -149,7 +148,7 @@ PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
 PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_DB: {"input_type": "dataset"},  # sibling
             STEP_DC: {"input_type": "dataset", "triggered_by": [STEP_DA, STEP_DB]},  # child
             STEP_DD: {"input_type": "dataset", "triggered_by": [STEP_DB, STEP_DC]},  # grandchild
@@ -183,11 +182,10 @@ PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
 PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_CA: {
                 "input_type": "config",
                 "triggered_by": STEP_DA,
-                "provides_config_split_names": True,
             },  # fan-out (D->C)
             STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},  # fan-out (C -> S)
             # is fan-out (D -> S) possible? (we need the list of split names anyway)
@@ -219,7 +217,7 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
 PROCESSING_GRAPH_PARALLEL = ProcessingGraph(
     ProcessingGraphConfig(
         {
-            STEP_DA: {"input_type": "dataset", "provides_dataset_config_names": True},
+            STEP_DA: {"input_type": "dataset"},
             STEP_DG: {"input_type": "dataset", "triggered_by": STEP_DA},
             STEP_DH: {"input_type": "dataset", "triggered_by": STEP_DA},
             STEP_DI: {"input_type": "dataset", "triggered_by": [STEP_DG, STEP_DH]},
