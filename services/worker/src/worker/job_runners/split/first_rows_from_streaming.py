@@ -264,10 +264,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "split-first-rows-from-streaming"
 
-    @staticmethod
-    def get_parallel_step_name() -> str:
-        return "split-first-rows-from-parquet"
-
     def __init__(
         self,
         job_info: JobInfo,

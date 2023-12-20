@@ -86,10 +86,6 @@ class ConfigSplitNamesFromStreamingJobRunner(ConfigJobRunnerWithDatasetsCache):
     def get_job_type() -> str:
         return "config-split-names-from-streaming"
 
-    @staticmethod
-    def get_parallel_step_name() -> str:
-        return "config-split-names-from-info"
-
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
             compute_split_names_from_streaming_response(

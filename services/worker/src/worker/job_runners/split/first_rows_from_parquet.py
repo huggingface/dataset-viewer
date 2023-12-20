@@ -169,10 +169,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
     def get_job_type() -> str:
         return "split-first-rows-from-parquet"
 
-    @staticmethod
-    def get_parallel_step_name() -> str:
-        return "split-first-rows-from-streaming"
-
     def __init__(
         self,
         job_info: JobInfo,

@@ -162,8 +162,7 @@ class JobManager:
         try:
             try:
                 self.job_runner.pre_compute()
-                parallel_step_name = self.job_runner.get_parallel_step_name()
-                if parallel_step_name:
+                for parallel_step_name in self.job_runner.parallel_step_names:
                     self.raise_if_parallel_response_exists(parallel_step_name=parallel_step_name)
 
                 job_result = self.job_runner.compute()
