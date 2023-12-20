@@ -167,6 +167,7 @@ def get_job_runner(
                 "job_id": "job_id",
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "attempts": 0,
             },
             app_config=app_config,
         )

@@ -54,6 +54,7 @@ def test_success_creation(app_config: AppConfig) -> None:
                 },
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
+                "attempts": 0,
             },
             app_config=app_config,
         )

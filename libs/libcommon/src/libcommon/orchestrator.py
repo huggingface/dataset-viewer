@@ -9,10 +9,10 @@ from typing import Optional, Union
 import pandas as pd
 
 from libcommon.constants import (
-    DEFAULT_DIFFICULTY_MAX,
     CONFIG_INFO_KINDS,
     CONFIG_SPLIT_NAMES_KINDS,
     DATASET_CONFIG_NAMES_KINDS,
+    DEFAULT_DIFFICULTY_MAX,
     ERROR_CODES_TO_RETRY,
 )
 from libcommon.exceptions import DatasetInBlockListError
@@ -439,8 +439,6 @@ class DatasetBackfillPlan(Plan):
                     dataset=self.dataset,
                     cache_kinds=cache_kinds,
                 )
-                print("df result")
-                print(self.cache_entries_df)
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_dataset_state",

@@ -101,22 +101,19 @@ def test_initial_state(
     "processing_graph,cache_is_empty",
     [
         (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DB, ARTIFACT_DC, ARTIFACT_DD]),
-        # (
-        #     PROCESSING_GRAPH_FAN_IN_OUT,
-        #     [ARTIFACT_CA_1, ARTIFACT_CA_2, ARTIFACT_CB_1, ARTIFACT_CB_2, ARTIFACT_DE, ARTIFACT_DF],
-        # ),
-        # (PROCESSING_GRAPH_PARALLEL, [ARTIFACT_DG, ARTIFACT_DH, ARTIFACT_DI]),
+        (
+            PROCESSING_GRAPH_FAN_IN_OUT,
+            [ARTIFACT_CA_1, ARTIFACT_CA_2, ARTIFACT_CB_1, ARTIFACT_CB_2, ARTIFACT_DE, ARTIFACT_DF],
+        ),
+        (PROCESSING_GRAPH_PARALLEL, [ARTIFACT_DG, ARTIFACT_DH, ARTIFACT_DI]),
     ],
 )
 def test_da_is_computed(
     processing_graph: ProcessingGraph,
     cache_is_empty: list[str],
 ) -> None:
-    print("a")
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
-    print("b")
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
-    print("c")
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
         config_names=CONFIG_NAMES,
@@ -133,7 +130,6 @@ def test_da_is_computed(
         queue_status={"in_process": []},
         tasks=[f"CreateJobs,{len(cache_is_empty)}"],
     )
-    print("d")
 
 
 @pytest.mark.parametrize(

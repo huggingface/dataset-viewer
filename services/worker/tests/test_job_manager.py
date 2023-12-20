@@ -252,6 +252,7 @@ def test_raise_if_parallel_response_exists(
         },
         priority=Priority.NORMAL,
         difficulty=50,
+        attempts=0,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
