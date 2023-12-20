@@ -4,7 +4,6 @@
 import sys
 
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import (
     init_duckdb_index_cache_dir,
@@ -33,7 +32,6 @@ if __name__ == "__main__":
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         root=app_config.assets.storage_root,
@@ -74,6 +72,5 @@ if __name__ == "__main__":
             job_runner_factory=job_runner_factory,
             state_file_path=state_file_path,
             app_config=app_config,
-            processing_graph=processing_graph,
         )
         loop.run()

@@ -11,8 +11,7 @@ from typing import Optional
 import anyio
 from anyio import Path
 from huggingface_hub import hf_hub_download
-from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KINDS
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
@@ -93,7 +92,6 @@ def download_index_file(
 
 
 def get_cache_entry_from_duckdb_index_job(
-    processing_graph: ProcessingGraph,
     dataset: str,
     config: str,
     split: str,
@@ -103,13 +101,11 @@ def get_cache_entry_from_duckdb_index_job(
     cache_max_days: int,
     blocked_datasets: list[str],
 ) -> CacheEntry:
-    processing_steps = processing_graph.get_processing_step_by_job_type("split-duckdb-index")
     return get_cache_entry_from_steps(
-        processing_steps=[processing_steps],
+        processing_step_names=SPLIT_DUCKDB_INDEX_KINDS,
         dataset=dataset,
         config=config,
         split=split,
-        processing_graph=processing_graph,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,

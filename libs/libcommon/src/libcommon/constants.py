@@ -46,6 +46,7 @@ CONFIG_PARQUET_AND_METADATA_KINDS = ["config-parquet", "config-parquet-metadata"
 CONFIG_SPLIT_NAMES_KINDS = ["config-split-names-from-info", "config-split-names-from-streaming"]
 DATASET_CONFIG_NAMES_KINDS = ["dataset-config-names"]
 DATASET_INFO_KINDS = ["dataset-info"]
+SPLIT_DUCKDB_INDEX_KINDS = ["split-duckdb-index"]
 SPLIT_HAS_PREVIEW_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
 SPLIT_HAS_SEARCH_KINDS = ["split-duckdb-index"]
 PARALLEL_STEPS_LISTS = [

@@ -26,14 +26,12 @@ from datasets.packaged_modules.generator.generator import (
 )
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
-from libcommon.config import ProcessingGraphConfig
 from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     CustomError,
     DatasetManualDownloadError,
     DatasetWithScriptNotSupportedError,
 )
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -646,16 +644,6 @@ def test_concurrency(
     job_manager = JobManager(
         job_info=job_info,
         app_config=app_config,
-        processing_graph=ProcessingGraph(
-            ProcessingGraphConfig(
-                {
-                    "dataset-config-names": {
-                        "input_type": "dataset",
-                        "job_runner_version": 1,
-                    }
-                }
-            )
-        ),
         job_runner=get_dataset_config_names_job_runner(repo_id, app_config),
     )
     job_result = job_manager.run_job()

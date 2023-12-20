@@ -6,8 +6,7 @@ from unittest.mock import patch
 
 from libapi.exceptions import ResponseNotReadyError
 from libapi.utils import get_cache_entry_from_steps
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
 from pytest import raises
@@ -19,11 +18,9 @@ CACHE_MAX_DAYS = 90
 
 
 def test_endpoints_definition() -> None:
-    config = ProcessingGraphConfig()
-    graph = ProcessingGraph(config)
     endpoint_config = EndpointConfig.from_env()
 
-    endpoints_definition = EndpointsDefinition(graph, endpoint_config)
+    endpoints_definition = EndpointsDefinition(processing_graph, endpoint_config)
     assert endpoints_definition
 
     definition = endpoints_definition.steps_by_input_type_and_endpoint
@@ -102,14 +99,9 @@ def test_get_cache_entry_from_steps() -> None:
     config = "config"
 
     app_config = AppConfig.from_env()
-    graph_config = ProcessingGraphConfig()
-    processing_graph = ProcessingGraph(graph_config)
 
     cache_with_error = "config-split-names-from-streaming"
     cache_without_error = "config-split-names-from-info"
-
-    step_with_error = processing_graph.get_processing_step(cache_with_error)
-    step_without_error = processing_graph.get_processing_step(cache_without_error)
 
     upsert_response(
         kind=cache_without_error,
@@ -131,11 +123,10 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned
     result = get_cache_entry_from_steps(
-        processing_steps=[step_without_error, step_with_error],
+        processing_step_names=[cache_without_error, cache_with_error],
         dataset=dataset,
         config=config,
         split=None,
-        processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
@@ -145,11 +136,10 @@ def test_get_cache_entry_from_steps() -> None:
 
     # succeeded result is returned even if first step failed
     result = get_cache_entry_from_steps(
-        processing_steps=[step_with_error, step_without_error],
+        processing_step_names=[cache_with_error, cache_without_error],
         dataset=dataset,
         config=config,
         split=None,
-        processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
@@ -159,11 +149,10 @@ def test_get_cache_entry_from_steps() -> None:
 
     # error result is returned if all steps failed
     result = get_cache_entry_from_steps(
-        processing_steps=[step_with_error, step_with_error],
+        processing_step_names=[cache_with_error, cache_with_error],
         dataset=dataset,
         config=config,
         split=None,
-        processing_graph=processing_graph,
         hf_endpoint=app_config.common.hf_endpoint,
         cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
@@ -174,16 +163,14 @@ def test_get_cache_entry_from_steps() -> None:
     # pending job throws exception
     queue = Queue()
     queue.add_job(job_type="dataset-split-names", dataset=dataset, revision=revision, config=config, difficulty=50)
-    non_existent_step = processing_graph.get_processing_step("dataset-split-names")
     with patch("libcommon.dataset.get_dataset_git_revision", return_value=revision):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
         with raises(ResponseNotReadyError):
             get_cache_entry_from_steps(
-                processing_steps=[non_existent_step],
+                processing_step_names=["dataset-split-names"],
                 dataset=dataset,
                 config=None,
                 split=None,
-                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],

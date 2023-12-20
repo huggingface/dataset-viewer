@@ -5,7 +5,6 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
@@ -48,16 +47,14 @@ STEP_DATASET_A = "dataset-config-names"
 STEP_CONFIG_B = "config-split-names-from-streaming"
 STEP_SPLIT_C = "split-c"
 PROCESSING_GRAPH = ProcessingGraph(
-    ProcessingGraphConfig(
-        {
-            STEP_DATASET_A: {"input_type": "dataset"},
-            STEP_CONFIG_B: {
-                "input_type": "config",
-                "triggered_by": STEP_DATASET_A,
-            },
-            STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
-        }
-    )
+    {
+        STEP_DATASET_A: {"input_type": "dataset"},
+        STEP_CONFIG_B: {
+            "input_type": "config",
+            "triggered_by": STEP_DATASET_A,
+        },
+        STEP_SPLIT_C: {"input_type": "split", "triggered_by": STEP_CONFIG_B},
+    }
 )
 
 
@@ -120,11 +117,9 @@ ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SP
 #    +-------+
 #
 PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
-    ProcessingGraphConfig(
-        {
-            STEP_DA: {"input_type": "dataset"},
-        }
-    )
+    {
+        STEP_DA: {"input_type": "dataset"},
+    }
 )
 
 # Graph to test siblings, children, grand-children, multiple parents
@@ -146,14 +141,12 @@ PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
 #    +-------+
 #
 PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
-    ProcessingGraphConfig(
-        {
-            STEP_DA: {"input_type": "dataset"},
-            STEP_DB: {"input_type": "dataset"},  # sibling
-            STEP_DC: {"input_type": "dataset", "triggered_by": [STEP_DA, STEP_DB]},  # child
-            STEP_DD: {"input_type": "dataset", "triggered_by": [STEP_DB, STEP_DC]},  # grandchild
-        }
-    )
+    {
+        STEP_DA: {"input_type": "dataset"},
+        STEP_DB: {"input_type": "dataset"},  # sibling
+        STEP_DC: {"input_type": "dataset", "triggered_by": [STEP_DA, STEP_DB]},  # child
+        STEP_DD: {"input_type": "dataset", "triggered_by": [STEP_DB, STEP_DC]},  # grandchild
+    }
 )
 
 # Graph to test fan-in, fan-out
@@ -180,20 +173,18 @@ PROCESSING_GRAPH_GENEALOGY = ProcessingGraph(
 #    +-------+ +-------+
 #
 PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
-    ProcessingGraphConfig(
-        {
-            STEP_DA: {"input_type": "dataset"},
-            STEP_CA: {
-                "input_type": "config",
-                "triggered_by": STEP_DA,
-            },  # fan-out (D->C)
-            STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},  # fan-out (C -> S)
-            # is fan-out (D -> S) possible? (we need the list of split names anyway)
-            STEP_DE: {"input_type": "dataset", "triggered_by": STEP_CA},  # fan-in (C -> D)
-            STEP_CB: {"input_type": "config", "triggered_by": STEP_SA},  # fan-in (S -> C)
-            STEP_DF: {"input_type": "dataset", "triggered_by": STEP_SA},  # fan-in (S -> D)
-        }
-    )
+    {
+        STEP_DA: {"input_type": "dataset"},
+        STEP_CA: {
+            "input_type": "config",
+            "triggered_by": STEP_DA,
+        },  # fan-out (D->C)
+        STEP_SA: {"input_type": "split", "triggered_by": STEP_CA},  # fan-out (C -> S)
+        # is fan-out (D -> S) possible? (we need the list of split names anyway)
+        STEP_DE: {"input_type": "dataset", "triggered_by": STEP_CA},  # fan-in (C -> D)
+        STEP_CB: {"input_type": "config", "triggered_by": STEP_SA},  # fan-in (S -> C)
+        STEP_DF: {"input_type": "dataset", "triggered_by": STEP_SA},  # fan-in (S -> D)
+    }
 )
 
 # Graph to test parallel steps (ie. two steps that compute the same thing, and abort if the other already exists)
@@ -215,14 +206,12 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
 #    +-------+
 #
 PROCESSING_GRAPH_PARALLEL = ProcessingGraph(
-    ProcessingGraphConfig(
-        {
-            STEP_DA: {"input_type": "dataset"},
-            STEP_DG: {"input_type": "dataset", "triggered_by": STEP_DA},
-            STEP_DH: {"input_type": "dataset", "triggered_by": STEP_DA},
-            STEP_DI: {"input_type": "dataset", "triggered_by": [STEP_DG, STEP_DH]},
-        }
-    )
+    {
+        STEP_DA: {"input_type": "dataset"},
+        STEP_DG: {"input_type": "dataset", "triggered_by": STEP_DA},
+        STEP_DH: {"input_type": "dataset", "triggered_by": STEP_DA},
+        STEP_DI: {"input_type": "dataset", "triggered_by": [STEP_DG, STEP_DH]},
+    }
 )
 
 

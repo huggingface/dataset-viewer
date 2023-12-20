@@ -15,11 +15,7 @@ from libcommon.constants import (
     ERROR_CODES_TO_RETRY,
 )
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.processing_graph import (
-    ProcessingGraph,
-    ProcessingStep,
-    ProcessingStepDoesNotExist,
-)
+from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
@@ -373,21 +369,21 @@ class DatasetBackfillPlan(Plan):
 
     Args:
         dataset: dataset name
-        processing_graph: processing graph
         revision: revision to backfill
         cache_max_days: maximum number of days to keep the cache
         error_codes_to_retry: list of error codes to retry
         priority: priority of the jobs to create
         only_first_processing_steps: if True, only the first processing steps are backfilled
+        processing_graph: processing graph
     """
 
     dataset: str
-    processing_graph: ProcessingGraph
     revision: str
     cache_max_days: int
     error_codes_to_retry: Optional[list[str]] = None
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
+    processing_graph: ProcessingGraph = field(default=processing_graph)
 
     pending_jobs_df: pd.DataFrame = field(init=False)
     cache_entries_df: pd.DataFrame = field(init=False)
@@ -679,8 +675,8 @@ class DatasetOrchestrator:
     """
 
     dataset: str
-    processing_graph: ProcessingGraph
     blocked_datasets: list[str]
+    processing_graph: ProcessingGraph = field(default=processing_graph)
 
     def _raise_and_remove_if_blocked(self) -> None:
         try:

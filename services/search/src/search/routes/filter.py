@@ -29,7 +29,6 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.duckdb_utils import duckdb_index_is_partial
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
@@ -58,7 +57,6 @@ logger = logging.getLogger(__name__)
 
 
 def create_filter_endpoint(
-    processing_graph: ProcessingGraph,
     duckdb_index_file_directory: StrPath,
     target_revision: str,
     cached_assets_base_url: str,
@@ -104,7 +102,6 @@ def create_filter_endpoint(
                     # no cache data is needed to download the index file
                     # but will help to validate if indexing was done
                     duckdb_index_cache_entry = get_cache_entry_from_duckdb_index_job(
-                        processing_graph=processing_graph,
                         dataset=dataset,
                         config=config,
                         split=split,

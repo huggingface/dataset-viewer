@@ -9,7 +9,6 @@ from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.orchestrator import DatasetBackfillPlan
-from libcommon.processing_graph import ProcessingGraph
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -17,7 +16,6 @@ from admin.authentication import auth_check
 
 
 def create_dataset_backfill_plan_endpoint(
-    processing_graph: ProcessingGraph,
     max_age: int,
     hf_endpoint: str,
     cache_max_days: int,
@@ -43,10 +41,7 @@ def create_dataset_backfill_plan_endpoint(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
             )
             dataset_backfill_plan = DatasetBackfillPlan(
-                dataset=dataset,
-                processing_graph=processing_graph,
-                revision=dataset_git_revision,
-                cache_max_days=cache_max_days,
+                dataset=dataset, revision=dataset_git_revision, cache_max_days=cache_max_days
             )
             return get_json_ok_response(dataset_backfill_plan.as_response(), max_age=max_age)
         except ApiError as e:

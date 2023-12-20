@@ -10,7 +10,6 @@ from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_resp
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -19,7 +18,6 @@ from admin.authentication import auth_check
 
 
 def create_dataset_backfill_endpoint(
-    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     cache_max_days: int,
     blocked_datasets: list[str],
@@ -44,9 +42,7 @@ def create_dataset_backfill_endpoint(
             dataset_git_revision = get_dataset_git_revision(
                 dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
             )
-            dataset_orchestrator = DatasetOrchestrator(
-                dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
-            )
+            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
             dataset_orchestrator.backfill(
                 revision=dataset_git_revision, priority=Priority.LOW, cache_max_days=cache_max_days
             )

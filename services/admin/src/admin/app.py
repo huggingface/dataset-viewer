@@ -4,7 +4,7 @@
 import uvicorn
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import (
     init_duckdb_index_cache_dir,
@@ -52,7 +52,6 @@ def create_app() -> Starlette:
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
     statistics_cache_directory = init_statistics_cache_dir(app_config.descriptive_statistics.cache_directory)
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         root=app_config.cached_assets.storage_root,
@@ -106,7 +105,6 @@ def create_app() -> Starlette:
         Route(
             "/pending-jobs",
             endpoint=create_pending_jobs_endpoint(
-                processing_graph=processing_graph,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
@@ -116,7 +114,6 @@ def create_app() -> Starlette:
         Route(
             "/dataset-backfill",
             endpoint=create_dataset_backfill_endpoint(
-                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 cache_max_days=app_config.cache.max_days,
@@ -130,7 +127,6 @@ def create_app() -> Starlette:
         Route(
             "/dataset-backfill-plan",
             endpoint=create_dataset_backfill_plan_endpoint(
-                processing_graph=processing_graph,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 cache_max_days=app_config.cache.max_days,
@@ -143,7 +139,6 @@ def create_app() -> Starlette:
         Route(
             "/dataset-status",
             endpoint=create_dataset_status_endpoint(
-                processing_graph=processing_graph,
                 max_age=app_config.admin.max_age,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
@@ -187,7 +182,6 @@ def create_app() -> Starlette:
         Route(
             "/recreate-dataset",
             endpoint=create_recreate_dataset_endpoint(
-                processing_graph=processing_graph,
                 cached_assets_storage_client=cached_assets_storage_client,
                 assets_storage_client=assets_storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,

@@ -11,7 +11,6 @@ from libcommon.config import (
     CachedAssetsConfig,
     CommonConfig,
     LogConfig,
-    ProcessingGraphConfig,
     QueueConfig,
     S3Config,
 )
@@ -89,7 +88,6 @@ class JobConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
-    graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     backfill: BackfillConfig = field(default_factory=BackfillConfig)
     directory_cleaning: DirectoryCleaning = field(default_factory=DirectoryCleaning)
     discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
@@ -107,7 +105,6 @@ class JobConfig:
             cache=CacheConfig.from_env(),
             queue=QueueConfig.from_env(),
             common=CommonConfig.from_env(),
-            graph=ProcessingGraphConfig.from_env(),
             backfill=BackfillConfig.from_env(),
             directory_cleaning=DirectoryCleaning.from_env(),
             discussions=DiscussionsConfig.from_env(),

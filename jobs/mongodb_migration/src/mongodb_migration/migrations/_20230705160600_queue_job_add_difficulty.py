@@ -3,12 +3,12 @@
 
 import logging
 
-from libcommon.config import ProcessingGraphConfig
 from libcommon.constants import (
     DEFAULT_DIFFICULTY,
     QUEUE_COLLECTION_JOBS,
     QUEUE_MONGOENGINE_ALIAS,
 )
+from libcommon.processing_graph import specification
 from libcommon.queue import JobDocument
 from mongoengine.connection import get_db
 
@@ -21,8 +21,7 @@ class MigrationQueueAddDifficultyToJob(Migration):
     def up(self) -> None:
         logging.info("If missing, add the difficulty with a value that depends on the job type, else 50")
         db = get_db(QUEUE_MONGOENGINE_ALIAS)
-        processing_graph_config = ProcessingGraphConfig()
-        for job_type, spec in processing_graph_config.specification.items():
+        for job_type, spec in specification.items():
             difficulty = spec.get("difficulty", DEFAULT_DIFFICULTY)
             db[QUEUE_COLLECTION_JOBS].update_many(
                 {"type": job_type, "difficulty": {"$exists": False}},
