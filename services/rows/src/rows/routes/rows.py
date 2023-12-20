@@ -20,6 +20,7 @@ from libapi.utils import (
     get_json_ok_response,
     try_backfill_dataset_then_raise,
 )
+from libcommon.constants import CONFIG_PARQUET_AND_METADATA_KINDS
 from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -118,8 +119,8 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset_then_raise(
                             processing_steps=[
-                                processing_graph.get_processing_step_by_job_type("config-parquet"),
-                                processing_graph.get_processing_step_by_job_type("config-parquet-metadata"),
+                                processing_graph.get_processing_step_by_job_type(kind)
+                                for kind in CONFIG_PARQUET_AND_METADATA_KINDS
                             ],
                             processing_graph=processing_graph,
                             dataset=dataset,

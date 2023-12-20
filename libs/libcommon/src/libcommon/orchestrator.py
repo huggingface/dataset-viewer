@@ -8,7 +8,12 @@ from typing import Optional, Union
 
 import pandas as pd
 
-from libcommon.constants import ERROR_CODES_TO_RETRY
+from libcommon.constants import (
+    CONFIG_INFO_KINDS,
+    CONFIG_SPLIT_NAMES_KINDS,
+    DATASET_CONFIG_NAMES_KINDS,
+    ERROR_CODES_TO_RETRY,
+)
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import (
     ProcessingGraph,
@@ -184,7 +189,7 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_best_response(kinds=["config-info"], dataset=dataset, config=config).response
+    resp = get_best_response(kinds=CONFIG_INFO_KINDS, dataset=dataset, config=config).response
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
@@ -277,7 +282,7 @@ class AfterJobPlan(Plan):
                     config_names = fetch_names(
                         dataset=self.dataset,
                         config=None,
-                        cache_kinds=["dataset-config-names"],
+                        cache_kinds=DATASET_CONFIG_NAMES_KINDS,
                         names_field="config_names",
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -290,10 +295,7 @@ class AfterJobPlan(Plan):
                     split_names = fetch_names(
                         dataset=self.dataset,
                         config=config,
-                        cache_kinds=[
-                            "config-split-names-from-info",
-                            "config-split-names-from-streaming",
-                        ],
+                        cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)

@@ -7,6 +7,7 @@ from typing import Optional
 
 import pandas as pd
 
+from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, DATASET_CONFIG_NAMES_KINDS
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntryMetadata, fetch_names
@@ -225,10 +226,7 @@ class ConfigState:
             self.split_names = fetch_names(
                 dataset=self.dataset,
                 config=self.config,
-                cache_kinds=[
-                    "config-split-names-from-info",
-                    "config-split-names-from-streaming",
-                ],
+                cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
                 names_field="splits",
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -305,7 +303,7 @@ class DatasetState:
                 self.config_names = fetch_names(
                     dataset=self.dataset,
                     config=None,
-                    cache_kinds=["dataset-config-names"],
+                    cache_kinds=DATASET_CONFIG_NAMES_KINDS,
                     names_field="config_names",
                     name_field="config",
                 )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)

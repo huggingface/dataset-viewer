@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_HAS_PREVIEW_KINDS, SPLIT_HAS_SEARCH_KINDS
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
     has_any_successful_response,
@@ -38,18 +39,18 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         dataset=dataset,
         config=config,
         split=None,
-        kinds=["config-size"],
+        kinds=CONFIG_HAS_VIEWER_KINDS,
     )
     preview = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=split,
-        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
+        kinds=SPLIT_HAS_PREVIEW_KINDS,
     )
 
     try:
         duckdb_response = get_previous_step_or_raise(
-            kinds=["split-duckdb-index"],
+            kinds=SPLIT_HAS_SEARCH_KINDS,
             dataset=dataset,
             config=config,
             split=split,
