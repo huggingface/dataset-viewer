@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 from huggingface_hub.hf_api import DatasetInfo, HfApi
-from huggingface_hub.utils import get_session, hf_raise_for_status, raise_if_blocked, validate_hf_hub_args
+from huggingface_hub.utils import get_session, hf_raise_for_status, validate_hf_hub_args
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.utils import Priority, SupportStatus
+from libcommon.utils import Priority, SupportStatus, raise_if_blocked
 
 
 @dataclass
