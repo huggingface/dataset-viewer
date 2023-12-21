@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 from huggingface_hub.hf_api import DatasetInfo, HfApi
-from huggingface_hub.utils import get_session, hf_raise_for_status, validate_hf_hub_args
+from huggingface_hub.utils import get_session, hf_raise_for_status, raise_if_blocked, validate_hf_hub_args
 
+from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.simple_cache import delete_dataset_responses
 from libcommon.utils import Priority, SupportStatus
 
 
@@ -83,13 +83,34 @@ class CustomHfApi(HfApi):  # type: ignore
         return EntityInfo(**data)
 
 
+def is_blocked(
+    dataset: str,
+    blocked_datasets: list[str],
+) -> None:
+    try:
+        raise_if_blocked(dataset, blocked_datasets)
+        return False
+    except DatasetInBlockListError:
+        return True
+
+
 def get_support_status(
     dataset_info: DatasetInfo,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    blocked_datasets: list[str] = list,
 ) -> SupportStatus:
-    if dataset_info.disabled or (dataset_info.cardData and not dataset_info.cardData.get("viewer", True)):
+    """
+      blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
+    name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
+    are not allowed in the namespace name.
+    """
+    if (
+        is_blocked(dataset_info.id, blocked_datasets)
+        or dataset_info.disabled
+        or (dataset_info.cardData and not dataset_info.cardData.get("viewer", True))
+    ):
         return SupportStatus.UNSUPPORTED
     if not dataset_info.private:
         return SupportStatus.PUBLIC
@@ -106,6 +127,71 @@ def get_support_status(
     if entity_info["is_enterprise"]:
         return SupportStatus.ENTERPRISE_ORG
     return SupportStatus.UNSUPPORTED
+
+
+def get_dataset_status(
+    dataset: str,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+    revision: Optional[str] = None,
+    blocked_datasets: list[str] = list,
+) -> DatasetStatus:
+    # let's the exceptions bubble up if any
+    dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
+        repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, files_metadata=False, revision=revision
+    )
+    revision = dataset_info.sha
+    if not revision:
+        raise ValueError(f"Cannot get the git revision of dataset {dataset}. Let's do nothing.")
+    support_status = get_support_status(
+        dataset_info=dataset_info,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        blocked_datasets=blocked_datasets,
+    )
+    return DatasetStatus(dataset=dataset, revision=revision, support_status=support_status)
+
+
+def backfill_dataset(
+    dataset: str,
+    revision: str,
+    cache_max_days: int,
+    priority: Priority = Priority.LOW,
+) -> None:
+    """
+    Update a dataset
+
+    Args:
+        dataset (str): the dataset
+        revision (str): The revision of the dataset.
+        cache_max_days (int): the number of days to keep the cache
+        priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
+
+    Returns: None.
+
+    Raises the following errors:
+        - [`libcommon.exceptions.DatasetInBlockListError`]
+          If the dataset is in the list of blocked datasets.
+    """
+    logging.debug(f"backfill {dataset=} {revision=} {priority=}")
+    DatasetOrchestrator(dataset=dataset).set_revision(
+        revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days
+    )
+
+
+def delete_dataset(dataset: str) -> None:
+    """
+    Delete a dataset
+
+    Args:
+        dataset (str): the dataset
+
+    Returns: None.
+    """
+    logging.debug(f"delete cache for dataset='{dataset}'")
+    DatasetOrchestrator(dataset=dataset).remove_dataset()
 
 
 def check_support_and_act(
@@ -125,6 +211,7 @@ def check_support_and_act(
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
         revision=revision,
+        blocked_datasets=blocked_datasets,
     )
     if dataset_status.support_status == SupportStatus.UNSUPPORTED:
         logging.warning(f"Dataset {dataset} is not supported. Let's delete the dataset.")
@@ -134,68 +221,6 @@ def check_support_and_act(
         dataset=dataset,
         revision=dataset_status.revision,
         cache_max_days=cache_max_days,
-        blocked_datasets=blocked_datasets,
         priority=priority,
     )
     return True
-
-
-def get_dataset_status(
-    dataset: str,
-    hf_endpoint: str,
-    hf_token: Optional[str] = None,
-    hf_timeout_seconds: Optional[float] = None,
-    revision: Optional[str] = None,
-) -> DatasetStatus:
-    # let's the exceptions bubble up if any
-    dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
-        repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, files_metadata=False, revision=revision
-    )
-    revision = dataset_info.sha
-    if not revision:
-        raise ValueError(f"Cannot get the git revision of dataset {dataset}. Let's do nothing.")
-    support_status = get_support_status(dataset_info, hf_endpoint, hf_token, hf_timeout_seconds)
-    return DatasetStatus(dataset=dataset, revision=revision, support_status=support_status)
-
-
-def backfill_dataset(
-    dataset: str,
-    revision: str,
-    cache_max_days: int,
-    blocked_datasets: list[str],
-    priority: Priority = Priority.LOW,
-) -> None:
-    """
-    Update a dataset
-
-    Args:
-        dataset (str): the dataset
-        revision (str): The revision of the dataset.
-        cache_max_days (int): the number of days to keep the cache
-        priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
-
-    Returns: None.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
-    """
-    logging.debug(f"backfill {dataset=} {revision=} {priority=}")
-    DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets).set_revision(
-        revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days
-    )
-
-
-def delete_dataset(dataset: str) -> None:
-    """
-    Delete a dataset
-
-    Args:
-        dataset (str): the dataset
-
-    Returns: None.
-    """
-    logging.debug(f"delete cache for dataset='{dataset}'")
-    delete_dataset_responses(dataset=dataset)
-    # TODO: delete the pending jobs, and also delete the files (metadata parquet, parquet, duckdb index, etc)
-    # (see recreate_dataset in services/admin and do the same. It means that every caller must have access to the storage)

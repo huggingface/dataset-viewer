@@ -14,7 +14,6 @@ from libcommon.constants import (
     DATASET_CONFIG_NAMES_KINDS,
     ERROR_CODES_TO_RETRY,
 )
-from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
@@ -27,7 +26,7 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
-from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
+from libcommon.utils import JobInfo, JobResult, Priority
 
 # TODO: clean dangling cache entries
 
@@ -665,26 +664,10 @@ class DatasetOrchestrator:
     Args:
         dataset (str): The name of the dataset.
         processing_graph (ProcessingGraph): The processing graph.
-        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
-          name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
-          are not allowed in the namespace name.
-
-    Raises:
-        libcommon.exceptions.DatasetInBlockListError: If the dataset is in the block list. As a side-effect, the
-          dataset is deleted from the Datasets Server.
     """
 
     dataset: str
-    blocked_datasets: list[str]
     processing_graph: ProcessingGraph = field(default=processing_graph)
-
-    def _raise_and_remove_if_blocked(self) -> None:
-        try:
-            raise_if_blocked(dataset=self.dataset, blocked_datasets=self.blocked_datasets)
-        except DatasetInBlockListError:
-            logging.warning(f"The dataset {self.dataset} is in the block list, we delete it from the Datasets Server.")
-            self.remove_dataset()
-            raise
 
     def remove_dataset(self) -> None:
         """
@@ -692,6 +675,8 @@ class DatasetOrchestrator:
         """
         plan = DatasetRemovalPlan(dataset=self.dataset)
         plan.run()
+        # TODO: delete the files (metadata parquet, parquet, duckdb index, assets, etc)
+        # (see recreate_dataset in services/admin and do the same. It means that every caller must have access to the storage)
 
     def set_revision(
         self, revision: str, priority: Priority, error_codes_to_retry: list[str], cache_max_days: int
@@ -715,7 +700,6 @@ class DatasetOrchestrator:
             ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
               step.
         """
-        self._raise_and_remove_if_blocked()
         first_processing_steps = self.processing_graph.get_first_processing_steps()
         if len(first_processing_steps) < 1:
             raise ValueError("Processing graph has no first step")
@@ -764,7 +748,6 @@ class DatasetOrchestrator:
         Raises:
             ValueError: If the job is not found, or if the processing step is not found.
         """
-        self._raise_and_remove_if_blocked()
         # check if the job is still in started status
         job_info = job_result["job_info"]
         if not Queue().is_job_started(job_id=job_info["job_id"]):
@@ -870,12 +853,6 @@ class DatasetOrchestrator:
             context=f"dataset={self.dataset}",
         ):
             logging.info(f"Analyzing {self.dataset}")
-            with StepProfiler(
-                method="DatasetOrchestrator.raise_and_remove_if_blocked",
-                step="plan",
-                context=f"dataset={self.dataset}",
-            ):
-                self._raise_and_remove_if_blocked()
             with StepProfiler(
                 method="DatasetOrchestrator.backfill",
                 step="plan",

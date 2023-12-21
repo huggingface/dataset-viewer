@@ -117,10 +117,7 @@ class JobManager:
 
     def finish(self, job_result: JobResult) -> None:
         try:
-            DatasetOrchestrator(
-                dataset=self.job_params["dataset"],
-                blocked_datasets=self.common_config.blocked_datasets,
-            ).finish_job(job_result=job_result)
+            DatasetOrchestrator(dataset=self.job_params["dataset"]).finish_job(job_result=job_result)
         except DatasetInBlockListError:
             self.debug("The dataset is blocked and has been deleted from the Datasets Server.")
 

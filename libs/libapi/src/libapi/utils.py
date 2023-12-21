@@ -115,7 +115,7 @@ def try_backfill_dataset_then_raise(
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
-    dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
+    dataset_orchestrator = DatasetOrchestrator(dataset=dataset)
     if not dataset_orchestrator.has_some_cache():
         # We have to check if the dataset exists and is supported
         try:
