@@ -20,6 +20,7 @@ def create_dataset_backfill_plan_endpoint(
     max_age: int,
     hf_endpoint: str,
     cache_max_days: int,
+    blocked_datasets: list[str],
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
     hf_token: Optional[str] = None,
@@ -42,6 +43,7 @@ def create_dataset_backfill_plan_endpoint(
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 hf_timeout_seconds=hf_timeout_seconds,
+                blocked_datasets=blocked_datasets,
             )
             if dataset_status.support_status == SupportStatus.UNSUPPORTED:
                 raise ValueError(f"Dataset {dataset} is not supported.")

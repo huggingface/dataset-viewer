@@ -83,7 +83,6 @@ def process_payload(
     if event in ["add", "update"]:
         check_support_and_act(
             dataset=dataset,
-            # revision=revision,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
@@ -97,7 +96,6 @@ def process_payload(
             delete_dataset(dataset=dataset)
             check_support_and_act(
                 dataset=moved_to,
-                # revision=revision,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,
                 blocked_datasets=blocked_datasets,

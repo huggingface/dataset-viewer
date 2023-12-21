@@ -34,6 +34,7 @@ def create_force_refresh_endpoint(
     job_type: str,
     difficulty: int,
     bonus_difficulty_if_dataset_is_big: int,
+    blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -82,6 +83,7 @@ def create_force_refresh_endpoint(
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 hf_timeout_seconds=hf_timeout_seconds,
+                blocked_datasets=blocked_datasets,
             )
             if dataset_status.support_status == SupportStatus.UNSUPPORTED:
                 raise ValueError(f"Dataset {dataset} is not supported.")

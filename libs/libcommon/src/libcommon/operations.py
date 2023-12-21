@@ -50,7 +50,7 @@ class CustomHfApi(HfApi):  # type: ignore
     @validate_hf_hub_args  # type: ignore
     def whoisthis(
         self,
-        entity: str,
+        name: str,
         *,
         timeout: Optional[float] = None,
         token: Optional[Union[bool, str]] = None,
@@ -61,8 +61,8 @@ class CustomHfApi(HfApi):  # type: ignore
         You have to pass an acceptable token.
 
         Args:
-            entity (`str`):
-                An entity (user or an organization).
+            name (`str`):
+                Name of a user or an organization.
             timeout (`float`, *optional*):
                 Whether to set a timeout for the request to the Hub.
             token (`bool` or `str`, *optional*):
@@ -75,9 +75,10 @@ class CustomHfApi(HfApi):  # type: ignore
             [`hf_api.EntityInfo`]: The entity information.
         """
         headers = self._build_hf_headers(token=token)
-        path = f"{self.endpoint}/api/whoisthis/{entity}"
+        path = f"{self.endpoint}/api/whoisthis"
+        params = {"name": name}
 
-        r = get_session().get(path, headers=headers, timeout=timeout)
+        r = get_session().get(path, headers=headers, timeout=timeout, params=params)
         hf_raise_for_status(r)
         data = r.json()
         return EntityInfo(**data)
@@ -85,8 +86,10 @@ class CustomHfApi(HfApi):  # type: ignore
 
 def is_blocked(
     dataset: str,
-    blocked_datasets: list[str],
+    blocked_datasets: Optional[list[str]] = None,
 ) -> None:
+    if not blocked_datasets:
+        return False
     try:
         raise_if_blocked(dataset, blocked_datasets)
         return False
@@ -99,7 +102,7 @@ def get_support_status(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-    blocked_datasets: list[str] = list,
+    blocked_datasets: Optional[list[str]] = None,
 ) -> SupportStatus:
     """
       blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
@@ -108,6 +111,12 @@ def get_support_status(
     """
     if (
         is_blocked(dataset_info.id, blocked_datasets)
+        # ^ TODO: should we check here?
+        # As we don't keep the track of unsupported datasets,
+        # we lose the ability to send a meaningful error message to the user, as previously done:
+        #   "This dataset has been disabled for now. Please open an issue in"
+        #   " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+        # A solution is to double-check if the dataset is blocked in the API routes.
         or dataset_info.disabled
         or (dataset_info.cardData and not dataset_info.cardData.get("viewer", True))
     ):
@@ -118,13 +127,13 @@ def get_support_status(
     if not author:
         return SupportStatus.UNSUPPORTED
     entity_info = CustomHfApi(endpoint=hf_endpoint).whoisthis(
-        entity=author,
+        name=author,
         token=hf_token,
         timeout=hf_timeout_seconds,
     )
-    if entity_info["is_pro"]:
+    if entity_info.is_pro:
         return SupportStatus.PRO_USER
-    if entity_info["is_enterprise"]:
+    if entity_info.is_enterprise:
         return SupportStatus.ENTERPRISE_ORG
     return SupportStatus.UNSUPPORTED
 
@@ -134,12 +143,11 @@ def get_dataset_status(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-    revision: Optional[str] = None,
-    blocked_datasets: list[str] = list,
+    blocked_datasets: Optional[list[str]] = None,
 ) -> DatasetStatus:
     # let's the exceptions bubble up if any
     dataset_info = HfApi(endpoint=hf_endpoint).dataset_info(
-        repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, files_metadata=False, revision=revision
+        repo_id=dataset, token=hf_token, timeout=hf_timeout_seconds, files_metadata=False
     )
     revision = dataset_info.sha
     if not revision:
@@ -170,10 +178,6 @@ def backfill_dataset(
         priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
 
     Returns: None.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
     """
     logging.debug(f"backfill {dataset=} {revision=} {priority=}")
     DatasetOrchestrator(dataset=dataset).set_revision(
@@ -197,12 +201,11 @@ def delete_dataset(dataset: str) -> None:
 def check_support_and_act(
     dataset: str,
     cache_max_days: int,
-    blocked_datasets: list[str],
     hf_endpoint: str,
+    blocked_datasets: Optional[list[str]] = None,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
-    revision: Optional[str] = None,
 ) -> bool:
     # let's the exceptions bubble up if any
     dataset_status = get_dataset_status(
@@ -210,7 +213,6 @@ def check_support_and_act(
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
-        revision=revision,
         blocked_datasets=blocked_datasets,
     )
     if dataset_status.support_status == SupportStatus.UNSUPPORTED:
