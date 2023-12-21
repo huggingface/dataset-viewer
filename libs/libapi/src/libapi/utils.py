@@ -10,6 +10,7 @@ import pyarrow as pa
 from datasets import Features
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
+from libcommon.operations import backfill_dataset
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import (
@@ -129,11 +130,15 @@ def try_backfill_dataset_then_raise(
         except Exception as e:
             # The dataset is not supported
             raise ResponseNotFoundError("Not found.") from e
-        # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
+        # The dataset is supported, and the revision is known. We backfill the dataset (it will create the jobs)
         # and tell the user to retry.
-        logging.info(f"Set orchestrator revision for dataset={dataset}, revision={revision}")
-        dataset_orchestrator.set_revision(
-            revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=cache_max_days
+        logging.info(f"Backfill the dataset for dataset={dataset}, revision={revision}")
+        backfill_dataset(
+            dataset=dataset,
+            revision=revision,
+            priority=Priority.NORMAL,
+            blocked_datasets=blocked_datasets,
+            cache_max_days=cache_max_days,
         )
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
