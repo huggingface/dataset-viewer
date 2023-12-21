@@ -87,7 +87,7 @@ class CustomHfApi(HfApi):  # type: ignore
 def is_blocked(
     dataset: str,
     blocked_datasets: Optional[list[str]] = None,
-) -> None:
+) -> bool:
     if not blocked_datasets:
         return False
     try:

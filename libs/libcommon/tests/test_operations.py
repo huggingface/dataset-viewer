@@ -2,6 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Optional
 
@@ -78,7 +79,7 @@ def test_get_dataset_status_blocked_datasets(blocked_datasets: list[str], expect
 
 
 @contextmanager
-def tmp_dataset(namespace: str, token: str, private: bool) -> None:
+def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
     dataset = f"{namespace}/private-dataset-{int(time.time() * 10e3)}"
