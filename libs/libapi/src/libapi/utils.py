@@ -1,16 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import logging
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from typing import Any, Optional
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.operations import backfill_dataset
+from libcommon.operations import check_support_and_act
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import (
@@ -121,28 +119,25 @@ def try_backfill_dataset_then_raise(
     if not dataset_orchestrator.has_some_cache():
         # We have to check if the dataset exists and is supported
         try:
-            revision = get_dataset_git_revision(
+            if check_support_and_act(
                 dataset=dataset,
+                cache_max_days=cache_max_days,
+                blocked_datasets=blocked_datasets,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 hf_timeout_seconds=hf_timeout_seconds,
-            )
+                priority=Priority.NORMAL,
+            ):
+                # The dataset is supported and the cache entry is created
+                raise ResponseNotReadyError(
+                    "The server is busier than usual and the response is not ready yet. Please retry later."
+                )
+            else:
+                # The dataset is not supported
+                raise ResponseNotFoundError("Not found.")
         except Exception as e:
-            # The dataset is not supported
+            # We could not check if the dataset is supported
             raise ResponseNotFoundError("Not found.") from e
-        # The dataset is supported, and the revision is known. We backfill the dataset (it will create the jobs)
-        # and tell the user to retry.
-        logging.info(f"Backfill the dataset for dataset={dataset}, revision={revision}")
-        backfill_dataset(
-            dataset=dataset,
-            revision=revision,
-            priority=Priority.NORMAL,
-            blocked_datasets=blocked_datasets,
-            cache_max_days=cache_max_days,
-        )
-        raise ResponseNotReadyError(
-            "The server is busier than usual and the response is not ready yet. Please retry later."
-        )
     elif dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names=processing_step_names):
         # some jobs are still in progress, the cache entries could exist in the future
         raise ResponseNotReadyError(

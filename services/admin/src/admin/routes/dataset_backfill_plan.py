@@ -7,8 +7,9 @@ from typing import Optional
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.dataset import get_dataset_git_revision
+from libcommon.operations import get_dataset_status
 from libcommon.orchestrator import DatasetBackfillPlan
+from libcommon.utils import SupportStatus
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -36,12 +37,16 @@ def create_dataset_backfill_plan_endpoint(
                 organization=organization,
                 hf_timeout_seconds=hf_timeout_seconds,
             )
-
-            dataset_git_revision = get_dataset_git_revision(
-                dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+            dataset_status = get_dataset_status(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
+            if dataset_status.support_status == SupportStatus.UNSUPPORTED:
+                raise ValueError(f"Dataset {dataset} is not supported.")
             dataset_backfill_plan = DatasetBackfillPlan(
-                dataset=dataset, revision=dataset_git_revision, cache_max_days=cache_max_days
+                dataset=dataset, revision=dataset_status.revision, cache_max_days=cache_max_days
             )
             return get_json_ok_response(dataset_backfill_plan.as_response(), max_age=max_age)
         except ApiError as e:

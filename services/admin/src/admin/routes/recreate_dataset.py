@@ -7,9 +7,8 @@ from typing import Optional, TypedDict
 from libapi.exceptions import InvalidParameterError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.operations import backfill_dataset
+from libcommon.operations import check_support_and_act
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.storage_client import StorageClient
@@ -36,8 +35,6 @@ def recreate_dataset(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
 ) -> RecreateDatasetReport:
-    # try to get the revision of the dataset (before deleting the jobs and the cache, in case it fails)
-    revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
     # delete all the jobs and all the cache entries for the dataset (for all the revisions)
     deleted_jobs = Queue().delete_dataset_jobs(dataset=dataset)
     deleted_cached_responses = delete_dataset_responses(dataset=dataset)
@@ -45,13 +42,14 @@ def recreate_dataset(
         # delete assets
         cached_assets_storage_client.delete_dataset_directory(dataset)
         assets_storage_client.delete_dataset_directory(dataset)
-    # create the jobs to backfill the dataset
-    backfill_dataset(
+    # create the jobs to backfill the dataset, if supported
+    check_support_and_act(
         dataset=dataset,
-        revision=revision,
-        priority=priority,
-        cache_max_days=1,
+        cache_max_days=1,  # cache_max_days=1?
         blocked_datasets=blocked_datasets,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        priority=priority,
     )
     return RecreateDatasetReport(
         status="ok",

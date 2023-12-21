@@ -4,7 +4,6 @@
 import logging
 from typing import Optional
 
-from libcommon.dataset import get_supported_dataset_infos
 from libcommon.orchestrator import DatasetOrchestrator
 from libcommon.utils import Priority
 
@@ -17,7 +16,9 @@ def backfill_cache(
     error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
     logging.info("backfill supported datasets")
-    supported_dataset_infos = get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
+    supported_dataset_infos = {}
+    # get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
+    # TODO: restore this
     logging.info(f"analyzing {len(supported_dataset_infos)} supported datasets")
     analyzed_datasets = 0
     backfilled_datasets = 0

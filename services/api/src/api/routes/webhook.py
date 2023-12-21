@@ -6,8 +6,8 @@ from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
-from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
-from libcommon.operations import backfill_dataset, delete_dataset
+from libcommon.exceptions import CustomError
+from libcommon.operations import check_support_and_act, delete_dataset
 from libcommon.prometheus import StepProfiler
 from libcommon.utils import Priority
 from starlette.requests import Request
@@ -62,6 +62,9 @@ def process_payload(
     payload: MoonWebhookV2Payload,
     cache_max_days: int,
     blocked_datasets: list[str],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
     trust_sender: bool = False,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
@@ -75,33 +78,41 @@ def process_payload(
         if trust_sender:
             delete_dataset(dataset=dataset)
         return
-    revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
-    if revision is None:
-        raise DatasetRevisionEmptyError(message=f"Dataset {dataset} has no revision")
+    # revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
+    # ^ no need, we get it again below
     if event in ["add", "update"]:
-        backfill_dataset(
+        check_support_and_act(
             dataset=dataset,
-            revision=revision,
+            # revision=revision,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
         )
     elif event == "move" and (moved_to := payload["movedTo"]):
         # destructive actions (delete, move) require a trusted sender
         if trust_sender:
             delete_dataset(dataset=dataset)
-            backfill_dataset(
+            check_support_and_act(
                 dataset=moved_to,
-                revision=revision,
+                # revision=revision,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,
                 blocked_datasets=blocked_datasets,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
             )
 
 
 def create_webhook_endpoint(
     cache_max_days: int,
     blocked_datasets: list[str],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
     hf_webhook_secret: Optional[str] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
@@ -143,6 +154,9 @@ def create_webhook_endpoint(
                         trust_sender=trust_sender,
                         cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
                     )
                 except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}
