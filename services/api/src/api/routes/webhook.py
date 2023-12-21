@@ -89,6 +89,7 @@ def process_payload(
     elif event == "move" and (moved_to := payload["movedTo"]):
         # destructive actions (delete, move) require a trusted sender
         if trust_sender:
+            delete_dataset(dataset=dataset)
             backfill_dataset(
                 dataset=moved_to,
                 revision=revision,
@@ -96,7 +97,6 @@ def process_payload(
                 cache_max_days=cache_max_days,
                 blocked_datasets=blocked_datasets,
             )
-            delete_dataset(dataset=dataset)
 
 
 def create_webhook_endpoint(
