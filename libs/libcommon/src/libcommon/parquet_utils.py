@@ -71,7 +71,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
 
             You can also pass the URL of any file in the directory since
             this function only checks the name of the parent directory.
-            For example it also works for DuckDB index files in the same
+            For example, it also works for DuckDB index files in the same
             directory as the Parquet files.
 
     Returns:

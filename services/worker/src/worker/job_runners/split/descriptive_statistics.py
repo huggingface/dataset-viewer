@@ -16,9 +16,9 @@ from libcommon.exceptions import (
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
-    SplitWithTooBigParquetError,
     StatisticsComputationError,
 )
+from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
@@ -92,6 +92,7 @@ class StatisticsPerColumnItem(TypedDict):
 class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
     statistics: list[StatisticsPerColumnItem]
+    partial: Optional[bool]
 
 
 def generate_bins(
@@ -449,7 +450,7 @@ def compute_descriptive_statistics_response(
     hf_token: Optional[str],
     parquet_revision: str,
     histogram_num_bins: int,
-    max_parquet_size_bytes: int,
+    max_dataset_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
     Compute statistics and get response for the `split-descriptive-statistics` step.
@@ -471,21 +472,19 @@ def compute_descriptive_statistics_response(
         histogram_num_bins (`int`):
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
-        max_parquet_size_bytes (`int`):
+        max_dataset_size_bytes (`int`):
             The maximum size in bytes of the dataset's parquet files to compute statistics.
-            Datasets with bigger size are ignored.
+            For partial datasets that means that only data up to this size is counted.
 
     Returns:
         `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
-        numerical (int and float) or ClassLabel feature.
+        numerical (int and float), boolean or ClassLabel feature.
 
     Raises the following errors:
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step does not have the expected format.
         - [`libcommon.exceptions.ParquetResponseEmptyError`]
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        - [`libcommon.exceptions.SplitWithTooBigParquetError`]
-            If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
         - [`libcommon.exceptions.NoSupportedFeaturesError`]
             If requested dataset doesn't have any supported for statistics computation features.
             Currently, floats, integers and ClassLabels are supported.
@@ -527,19 +526,24 @@ def compute_descriptive_statistics_response(
             "no features found in 'dataset_info'. "
         )
 
-    split_parquets_size = sum(parquet_file["size"] for parquet_file in split_parquet_files)
-    if split_parquets_size > max_parquet_size_bytes:
-        raise SplitWithTooBigParquetError(
-            f"Statistics computation is limited to split parquets under {max_parquet_size_bytes} bytes. "
-            f"Current size of sum of split parquets is {split_parquets_size} bytes."
-        )
+    num_parquet_files_to_index = 0
+    total_bytes = 0
+    split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+    partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
+    for parquet_file_id, parquet_file in enumerate(split_parquet_files):
+        num_parquet_files_to_index += 1
+        parquet_file_size_bytes = parquet_file["size"]
+        total_bytes += parquet_file_size_bytes
+        if total_bytes > max_dataset_size_bytes:
+            break
+    partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
+    split_parquet_files = split_parquet_files[: parquet_file_id + 1]
 
     # store data as local parquet files for fast querying
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-    split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
     for parquet_file in split_parquet_files:
         hf_hub_download(
             repo_type=REPO_TYPE,
@@ -556,15 +560,9 @@ def compute_descriptive_statistics_response(
 
     local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split_directory}/*.parquet"
 
-    num_examples = dataset_info["splits"][split]["num_examples"]
-    num_rows = pl.read_parquet(
+    num_examples = pl.read_parquet(
         local_parquet_glob_path, columns=[pl.scan_parquet(local_parquet_glob_path).columns[0]]
     ).shape[0]
-    if num_rows != num_examples:
-        raise StatisticsComputationError(
-            f"Number of rows in parquet file(s) is not equal to num_examples from DatasetInfo: "
-            f" {num_rows=}, {num_examples=}. "
-        )
 
     class_label_features = {
         feature_name: feature
@@ -605,7 +603,9 @@ def compute_descriptive_statistics_response(
     )
 
     return SplitDescriptiveStatisticsResponse(
-        num_examples=num_examples, statistics=sorted(stats, key=lambda x: x["column_name"])
+        num_examples=num_examples,
+        statistics=sorted(stats, key=lambda x: x["column_name"]),
+        partial=partial,
     )
 
 
@@ -641,6 +641,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
-                max_parquet_size_bytes=self.descriptive_statistics_config.max_parquet_size_bytes,
+                max_dataset_size_bytes=self.descriptive_statistics_config.max_dataset_size_bytes,
             )
         )

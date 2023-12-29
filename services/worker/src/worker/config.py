@@ -305,7 +305,7 @@ class DuckDbIndexConfig:
 
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
 DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS = 10
-DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES = 100_000_000
+DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES = 100_000_000
 
 
 @dataclass(frozen=True)
@@ -313,7 +313,7 @@ class DescriptiveStatisticsConfig:
     cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
     parquet_revision: str = PARQUET_AND_INFO_TARGET_REVISION
     histogram_num_bins: int = DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
-    max_parquet_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
+    max_dataset_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES
 
     @classmethod
     def from_env(cls) -> "DescriptiveStatisticsConfig":
@@ -327,8 +327,8 @@ class DescriptiveStatisticsConfig:
                     name="HISTOGRAM_NUM_BINS",
                     default=DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS,
                 ),
-                max_parquet_size_bytes=env.int(
-                    name="MAX_PARQUET_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
+                max_dataset_size_bytes=env.int(
+                    name="MAX_DATASET_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES
                 ),
             )
 
