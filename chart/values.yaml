@@ -286,7 +286,7 @@ descriptiveStatistics:
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.
-  maxParquetSizeBytes: "100_000_000"
+  maxDatasetSizeBytes: "1_000_000_000"
 
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored

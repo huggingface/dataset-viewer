@@ -114,8 +114,8 @@
 # specific to 'split-descriptive-statistics'
 - name: DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStatistics.histogramNumBins | quote }}
-- name: DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
-  value: {{ .Values.descriptiveStatistics.maxParquetSizeBytes | quote }}
+- name: DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES
+  value: {{ .Values.descriptiveStatistics.maxDatasetSizeBytes | quote }}
 - name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
   value: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
 {{- end -}}

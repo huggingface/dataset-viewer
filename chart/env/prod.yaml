@@ -163,7 +163,7 @@ rowsIndex:
   maxArrowDataInMemory: "300_000_000"
 
 descriptiveStatistics:
-  maxParquetSizeBytes: "5_000_000_000"
+  maxDatasetSizeBytes: "10_000_000_000"
 
 # --- jobs (pre-install/upgrade hooks) ---
 
