@@ -6,15 +6,25 @@ from typing import Literal
 
 import pytest
 
-from .constants import NORMAL_USER, NORMAL_USER_API_TOKEN, NORMAL_USER_SESSION_TOKEN
+from .constants import (
+    ENTERPRISE_ORG,
+    ENTERPRISE_USER,
+    ENTERPRISE_USER_TOKEN,
+    NORMAL_ORG,
+    NORMAL_USER,
+    NORMAL_USER_COOKIE,
+    NORMAL_USER_TOKEN,
+    PRO_USER,
+    PRO_USER_TOKEN,
+)
 from .utils import get_default_config_split, poll_until_ready_and_assert, tmp_dataset
 
 
 def get_auth_headers(auth_type: str) -> dict[str, str]:
     return (
-        {"Authorization": f"Bearer {NORMAL_USER_API_TOKEN}"}
+        {"Authorization": f"Bearer {NORMAL_USER_TOKEN}"}
         if auth_type == "token"
-        else {"Cookie": f"token={NORMAL_USER_SESSION_TOKEN}"}
+        else {"Cookie": f"token={NORMAL_USER_COOKIE}"}
         if auth_type == "cookie"
         else {}
     )
@@ -49,7 +59,7 @@ def test_auth_public(
 def normal_user_gated_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
         namespace=NORMAL_USER,
-        token=NORMAL_USER_API_TOKEN,
+        token=NORMAL_USER_TOKEN,
         private=False,
         gated="auto",
         csv_path=csv_path,
@@ -86,7 +96,7 @@ def test_auth_gated(
 def normal_user_private_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
         namespace=NORMAL_USER,
-        token=NORMAL_USER_API_TOKEN,
+        token=NORMAL_USER_TOKEN,
         private=True,
         gated=None,
         csv_path=csv_path,
@@ -115,7 +125,83 @@ def test_auth_private(
         expected_error_code=expected_error_code,
         headers=get_auth_headers(auth_type),
         check_x_revision=False,
+        dataset=normal_user_private_dataset,
     )
+
+
+# TODO: test private gated?
+
+
+def test_normal_org_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_ORG,
+        token=NORMAL_USER_TOKEN,
+        private=True,
+        gated=None,
+        csv_path=csv_path,
+    ) as dataset:
+        poll_until_ready_and_assert(
+            relative_url=f"/splits?dataset={dataset}",
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
+            headers=get_auth_headers("token"),
+            check_x_revision=False,
+            dataset=dataset,
+        )
+
+
+def test_pro_user_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=PRO_USER,
+        token=PRO_USER_TOKEN,
+        private=True,
+        gated=None,
+        csv_path=csv_path,
+    ) as dataset:
+        poll_until_ready_and_assert(
+            relative_url=f"/splits?dataset={dataset}",
+            expected_status_code=200,
+            expected_error_code=None,
+            headers=get_auth_headers("token"),
+            check_x_revision=False,
+            dataset=dataset,
+        )
+
+
+def test_enterprise_user_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=ENTERPRISE_USER,
+        token=ENTERPRISE_USER_TOKEN,
+        private=True,
+        gated=None,
+        csv_path=csv_path,
+    ) as dataset:
+        poll_until_ready_and_assert(
+            relative_url=f"/splits?dataset={dataset}",
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
+            headers=get_auth_headers("token"),
+            check_x_revision=False,
+            dataset=dataset,
+        )
+
+
+def test_enterprise_org_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=ENTERPRISE_ORG,
+        token=ENTERPRISE_USER_TOKEN,
+        private=True,
+        gated=None,
+        csv_path=csv_path,
+    ) as dataset:
+        poll_until_ready_and_assert(
+            relative_url=f"/splits?dataset={dataset}",
+            expected_status_code=200,
+            expected_error_code=None,
+            headers=get_auth_headers("token"),
+            check_x_revision=False,
+            dataset=dataset,
+        )
 
 
 @pytest.mark.parametrize(

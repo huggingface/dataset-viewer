@@ -154,7 +154,7 @@ def poll_until_ready_and_assert(
     headers: Optional[Headers] = None,
     url: str = URL,
     check_x_revision: bool = False,
-    dataset: str = None,
+    dataset: Optional[str] = None,
 ) -> Any:
     interval = INTERVAL
     timeout = MAX_DURATION

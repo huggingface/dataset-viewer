@@ -7,7 +7,7 @@ from collections.abc import Iterator
 import pytest
 from pytest import TempPathFactory
 
-from .constants import DATA, NORMAL_USER, NORMAL_USER_API_TOKEN
+from .constants import DATA, NORMAL_USER, NORMAL_USER_TOKEN
 from .utils import poll, tmp_dataset
 
 
@@ -31,7 +31,7 @@ def csv_path(tmp_path_factory: TempPathFactory) -> str:
 def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
         namespace=NORMAL_USER,
-        token=NORMAL_USER_API_TOKEN,
+        token=NORMAL_USER_TOKEN,
         private=False,
         gated=None,
         csv_path=csv_path,
