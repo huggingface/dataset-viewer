@@ -118,26 +118,22 @@ def try_backfill_dataset_then_raise(
     dataset_orchestrator = DatasetOrchestrator(dataset=dataset)
     if not dataset_orchestrator.has_some_cache():
         # We have to check if the dataset exists and is supported
-        try:
-            if check_support_and_act(
-                dataset=dataset,
-                cache_max_days=cache_max_days,
-                blocked_datasets=blocked_datasets,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
-                priority=Priority.NORMAL,
-            ):
-                # The dataset is supported and the cache entry is created
-                raise ResponseNotReadyError(
-                    "The server is busier than usual and the response is not ready yet. Please retry later."
-                )
-            else:
-                # The dataset is not supported
-                raise ResponseNotFoundError("Not found.")
-        except Exception as e:
-            # We could not check if the dataset is supported
-            raise ResponseNotFoundError("Not found.") from e
+        if check_support_and_act(
+            dataset=dataset,
+            cache_max_days=cache_max_days,
+            blocked_datasets=blocked_datasets,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
+            priority=Priority.NORMAL,
+        ):
+            # The dataset is supported and the cache entry is created
+            raise ResponseNotReadyError(
+                "The server is busier than usual and the response is not ready yet. Please retry later."
+            )
+        else:
+            # The dataset is not supported
+            raise ResponseNotFoundError("Not found.")
     elif dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names=processing_step_names):
         # some jobs are still in progress, the cache entries could exist in the future
         raise ResponseNotReadyError(
