@@ -176,6 +176,7 @@ def compute_first_rows_response(
             iterable_dataset = iterable_dataset._resolve_features()
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
+            features = iterable_dataset.features
         except Exception as err:
             if isinstance(err, ValueError) and "trust_remote_code" in str(err):
                 raise DatasetWithScriptNotSupportedError(
