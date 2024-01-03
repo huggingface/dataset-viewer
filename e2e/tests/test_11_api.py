@@ -1,46 +1,118 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+from collections.abc import Iterator
 from typing import Literal
 
 import pytest
 
-from .fixtures.hub import AuthHeaders, AuthType, DatasetRepos, DatasetReposType
-from .utils import get_default_config_split, poll_until_ready_and_assert
+from .constants import NORMAL_USER, NORMAL_USER_API_TOKEN, NORMAL_USER_SESSION_TOKEN
+from .utils import get_default_config_split, poll_until_ready_and_assert, tmp_dataset
+
+
+def get_auth_headers(auth_type: str) -> dict[str, str]:
+    return (
+        {"Authorization": f"Bearer {NORMAL_USER_API_TOKEN}"}
+        if auth_type == "token"
+        else {"Cookie": f"token={NORMAL_USER_SESSION_TOKEN}"}
+        if auth_type == "cookie"
+        else {}
+    )
 
 
 @pytest.mark.parametrize(
-    "type,auth,expected_status_code,expected_error_code",
+    "auth_type,expected_status_code,expected_error_code",
     [
-        ("public", "none", 200, None),
-        ("public", "token", 200, None),
-        ("public", "cookie", 200, None),
-        ("gated", "none", 401, "ExternalUnauthenticatedError"),
-        ("gated", "token", 200, None),
-        ("gated", "cookie", 200, None),
-        ("private", "none", 401, "ExternalUnauthenticatedError"),
-        ("private", "token", 404, "ResponseNotFound"),
-        ("private", "cookie", 404, "ResponseNotFound"),
+        (None, 200, None),
+        ("token", 200, None),
+        ("cookie", 200, None),
     ],
 )
-def test_auth_e2e(
-    auth_headers: AuthHeaders,
-    hf_dataset_repos_csv_data: DatasetRepos,
-    type: DatasetReposType,
-    auth: AuthType,
+def test_auth_public(
+    normal_user_public_dataset: str,
+    auth_type: str,
     expected_status_code: int,
     expected_error_code: str,
 ) -> None:
-    # TODO: add dataset with various splits, or various configs
-    dataset = hf_dataset_repos_csv_data[type]
-    headers = auth_headers[auth]
-
     # asking for the dataset will launch the jobs, without the need of a webhook
     poll_until_ready_and_assert(
-        relative_url=f"/splits?dataset={dataset}",
+        relative_url=f"/splits?dataset={normal_user_public_dataset}",
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
-        headers=headers,
+        headers=get_auth_headers(auth_type),
+        check_x_revision=False,
+        dataset=normal_user_public_dataset,
+    )
+
+
+@pytest.fixture(scope="module")
+def normal_user_gated_dataset(csv_path: str) -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_API_TOKEN,
+        private=True,
+        gated="auto",
+        csv_path=csv_path,
+    ) as dataset:
+        yield dataset
+
+
+@pytest.mark.parametrize(
+    "auth_type,expected_status_code,expected_error_code",
+    [
+        (None, 401, "ExternalUnauthenticatedError"),
+        ("token", 200, None),
+        ("cookie", 200, None),
+    ],
+)
+def test_auth_gated(
+    normal_user_gated_dataset: str,
+    auth_type: str,
+    expected_status_code: int,
+    expected_error_code: str,
+) -> None:
+    # asking for the dataset will launch the jobs, without the need of a webhook
+    poll_until_ready_and_assert(
+        relative_url=f"/splits?dataset={normal_user_gated_dataset}",
+        expected_status_code=expected_status_code,
+        expected_error_code=expected_error_code,
+        headers=get_auth_headers(auth_type),
+        check_x_revision=False,
+    )
+
+
+@pytest.fixture(scope="module")
+def normal_user_private_dataset(csv_path: str) -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_API_TOKEN,
+        private=True,
+        gated=None,
+        csv_path=csv_path,
+    ) as dataset:
+        yield dataset
+
+
+@pytest.mark.parametrize(
+    "auth_type,expected_status_code,expected_error_code",
+    [
+        (None, 401, "ExternalUnauthenticatedError"),
+        ("token", 404, "ResponseNotFound"),
+        ("cookie", 404, "ResponseNotFound"),
+    ],
+)
+def test_auth_private(
+    normal_user_private_dataset: str,
+    auth_type: str,
+    expected_status_code: int,
+    expected_error_code: str,
+) -> None:
+    # asking for the dataset will launch the jobs, without the need of a webhook
+    poll_until_ready_and_assert(
+        relative_url=f"/splits?dataset={normal_user_private_dataset}",
+        expected_status_code=expected_status_code,
+        expected_error_code=expected_error_code,
+        headers=get_auth_headers(auth_type),
         check_x_revision=False,
     )
 
@@ -62,12 +134,12 @@ def test_auth_e2e(
     ],
 )
 def test_endpoint(
-    hf_public_dataset_repo_csv_data: str,
+    normal_user_public_dataset: str,
     endpoint: str,
     input_type: Literal["all", "dataset", "config", "split"],
 ) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = hf_public_dataset_repo_csv_data
+    dataset = normal_user_public_dataset
     config, split = get_default_config_split()
 
     # asking for the dataset will launch the jobs, without the need of a webhook
@@ -79,15 +151,12 @@ def test_endpoint(
             if input_type != "config":
                 relative_url += f"&split={split}"
 
-    poll_until_ready_and_assert(
-        relative_url=relative_url,
-        check_x_revision=input_type != "all",
-    )
+    poll_until_ready_and_assert(relative_url=relative_url, check_x_revision=input_type != "all", dataset=dataset)
 
 
-def test_rows_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
+def test_rows_endpoint(normal_user_public_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = hf_public_dataset_repo_csv_data
+    dataset = normal_user_public_dataset
     config, split = get_default_config_split()
     # ensure the /rows endpoint works as well
     offset = 1
@@ -95,6 +164,7 @@ def test_rows_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
         check_x_revision=True,
+        dataset=dataset,
     )
     content = rows_response.json()
     assert "rows" in content, rows_response

@@ -4,13 +4,14 @@
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_statistics_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
+def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = hf_public_dataset_repo_csv_data
+    dataset = normal_user_public_dataset
     config, split = get_default_config_split()
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
         check_x_revision=True,
+        dataset=dataset,
     )
 
     content = statistics_response.json()

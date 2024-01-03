@@ -27,6 +27,10 @@ export WORKER_SLEEP_SECONDS := 1
 export WORKER_UVICORN_NUM_WORKERS := 2
 export WORKER_UVICORN_PORT := 9086
 
+# see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
+export ADMIN_HF_ORGANIZATION := valid_org
+export E2E_ADMIN_USER_TOKEN := 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
+
 export COMPOSE_PROJECT_NAME := e2e
 
 # makefile variables
