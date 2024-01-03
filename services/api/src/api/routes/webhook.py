@@ -7,7 +7,7 @@ from typing import Any, Literal, Optional, TypedDict
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
 from libcommon.exceptions import CustomError
-from libcommon.operations import check_support_and_act, delete_dataset
+from libcommon.operations import delete_dataset, update_dataset
 from libcommon.prometheus import StepProfiler
 from libcommon.utils import Priority
 from starlette.requests import Request
@@ -78,10 +78,8 @@ def process_payload(
         if trust_sender:
             delete_dataset(dataset=dataset)
         return
-    # revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
-    # ^ no need, we get it again below
     if event in ["add", "update"]:
-        check_support_and_act(
+        update_dataset(
             dataset=dataset,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
@@ -94,7 +92,7 @@ def process_payload(
         # destructive actions (delete, move) require a trusted sender
         if trust_sender:
             delete_dataset(dataset=dataset)
-            check_support_and_act(
+            update_dataset(
                 dataset=moved_to,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,

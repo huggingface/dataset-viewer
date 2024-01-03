@@ -9,7 +9,7 @@ from typing import Optional
 import pytest
 from huggingface_hub import HfApi
 
-from libcommon.operations import CustomHfApi, check_support_and_act, get_dataset_status
+from libcommon.operations import CustomHfApi, get_dataset_status, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.utils import SupportStatus
@@ -133,15 +133,13 @@ def test_check_support_and_act(
 ) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=private) as dataset:
         assert (
-            check_support_and_act(
-                dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
-            )
+            update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
             == expected_creation
         )
         if expected_creation:
             assert Queue().has_pending_jobs(dataset=dataset)
             # delete the dataset by adding it to the blocked list
-            assert not check_support_and_act(
+            assert not update_dataset(
                 dataset=dataset,
                 blocked_datasets=[dataset],
                 cache_max_days=1,

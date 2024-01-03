@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.orchestrator import backfill
 from libcommon.utils import Priority
 
 
@@ -44,13 +44,14 @@ def backfill_cache(
             logging.warning(f"dataset revision not found for {dataset_info}")
             # should not occur
             continue
+        # try:
+        #     dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
+        # except Exception as e:
+        #     logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
+        #     continue
         try:
-            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
-        except Exception as e:
-            logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
-            continue
-        try:
-            created_jobs = dataset_orchestrator.backfill(
+            created_jobs = backfill(
+                dataset=dataset,
                 revision=str(dataset_info.sha),
                 priority=Priority.LOW,
                 error_codes_to_retry=error_codes_to_retry,

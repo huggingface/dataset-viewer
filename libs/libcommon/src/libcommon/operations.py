@@ -9,7 +9,7 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import get_session, hf_raise_for_status, validate_hf_hub_args
 
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.orchestrator import remove_dataset, set_revision
 from libcommon.utils import Priority, SupportStatus, raise_if_blocked
 
 
@@ -162,29 +162,6 @@ def get_dataset_status(
     return DatasetStatus(dataset=dataset, revision=revision, support_status=support_status)
 
 
-def backfill_dataset(
-    dataset: str,
-    revision: str,
-    cache_max_days: int,
-    priority: Priority = Priority.LOW,
-) -> None:
-    """
-    Update a dataset
-
-    Args:
-        dataset (str): the dataset
-        revision (str): The revision of the dataset.
-        cache_max_days (int): the number of days to keep the cache
-        priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
-
-    Returns: None.
-    """
-    logging.debug(f"backfill {dataset=} {revision=} {priority=}")
-    DatasetOrchestrator(dataset=dataset).set_revision(
-        revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days
-    )
-
-
 def delete_dataset(dataset: str) -> None:
     """
     Delete a dataset
@@ -195,10 +172,10 @@ def delete_dataset(dataset: str) -> None:
     Returns: None.
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
-    DatasetOrchestrator(dataset=dataset).remove_dataset()
+    remove_dataset(dataset=dataset)
 
 
-def check_support_and_act(
+def update_dataset(
     dataset: str,
     cache_max_days: int,
     hf_endpoint: str,
@@ -219,10 +196,11 @@ def check_support_and_act(
         logging.warning(f"Dataset {dataset} is not supported. Let's delete the dataset.")
         delete_dataset(dataset=dataset)
         return False
-    backfill_dataset(
+    set_revision(
         dataset=dataset,
         revision=dataset_status.revision,
-        cache_max_days=cache_max_days,
         priority=priority,
+        error_codes_to_retry=[],
+        cache_max_days=cache_max_days,
     )
     return True

@@ -8,7 +8,7 @@ from libapi.exceptions import InvalidParameterError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
 from libcommon.exceptions import CustomError
-from libcommon.operations import check_support_and_act
+from libcommon.operations import update_dataset
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.storage_client import StorageClient
@@ -43,7 +43,7 @@ def recreate_dataset(
         cached_assets_storage_client.delete_dataset_directory(dataset)
         assets_storage_client.delete_dataset_directory(dataset)
     # create the jobs to backfill the dataset, if supported
-    check_support_and_act(
+    update_dataset(
         dataset=dataset,
         cache_max_days=1,  # cache_max_days=1?
         blocked_datasets=blocked_datasets,

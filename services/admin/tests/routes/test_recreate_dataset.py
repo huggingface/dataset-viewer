@@ -65,7 +65,7 @@ def test_recreate_dataset(tmp_path: Path) -> None:
     assert has_some_cache(dataset=dataset)
 
     with patch(
-        "admin.routes.recreate_dataset.check_support_and_act",
+        "admin.routes.recreate_dataset.update_dataset",
         return_value=DatasetStatus(dataset=dataset, revision=REVISION_NAME, support_status=SupportStatus.PUBLIC),
     ):
         recreate_dataset_report = recreate_dataset(

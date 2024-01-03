@@ -8,14 +8,10 @@ from typing import Any, Optional
 import pyarrow as pa
 from datasets import Features
 from libcommon.exceptions import CustomError
-from libcommon.operations import check_support_and_act
-from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.operations import update_dataset
+from libcommon.orchestrator import has_pending_ancestor_jobs
 from libcommon.public_assets_storage import PublicAssetsStorage
-from libcommon.simple_cache import (
-    CACHED_RESPONSE_NOT_FOUND,
-    CacheEntry,
-    get_best_response,
-)
+from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response, has_some_cache
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -115,10 +111,9 @@ def try_backfill_dataset_then_raise(
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
-    dataset_orchestrator = DatasetOrchestrator(dataset=dataset)
-    if not dataset_orchestrator.has_some_cache():
+    if not has_some_cache(dataset=dataset):
         # We have to check if the dataset exists and is supported
-        if check_support_and_act(
+        if update_dataset(
             dataset=dataset,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
@@ -134,14 +129,13 @@ def try_backfill_dataset_then_raise(
         else:
             # The dataset is not supported
             raise ResponseNotFoundError("Not found.")
-    elif dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names=processing_step_names):
+    elif has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
         # some jobs are still in progress, the cache entries could exist in the future
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )
-    else:
-        # no pending job: the cache entry will not be created
-        raise ResponseNotFoundError("Not found.")
+    # no pending job: the cache entry will not be created
+    raise ResponseNotFoundError("Not found.")
 
 
 def get_cache_entry_from_steps(
