@@ -3,12 +3,7 @@
 
 import pytest
 
-from libcommon.config import ProcessingGraphConfig
-from libcommon.processing_graph import (
-    ProcessingGraph,
-    ProcessingGraphSpecification,
-    ProcessingStep,
-)
+from libcommon.processing_graph import ProcessingGraph, ProcessingGraphSpecification, ProcessingStep, processing_graph
 
 
 def assert_lists_are_equal(a: list[ProcessingStep], b: list[str]) -> None:
@@ -42,7 +37,7 @@ def test_graph() -> None:
         e: {"input_type": "dataset", "triggered_by": [c], "job_runner_version": 1},
         f: {"input_type": "dataset", "triggered_by": [a, b], "job_runner_version": 1},
     }
-    graph = ProcessingGraph(ProcessingGraphConfig(specification))
+    graph = ProcessingGraph(specification)
 
     assert_step(graph, a, children=[c, d, f], parents=[], ancestors=[])
     assert_step(graph, b, children=[f], parents=[], ancestors=[])
@@ -50,12 +45,6 @@ def test_graph() -> None:
     assert_step(graph, d, children=[], parents=[a, c], ancestors=[a, c])
     assert_step(graph, e, children=[], parents=[c], ancestors=[a, c])
     assert_step(graph, f, children=[], parents=[a, b], ancestors=[a, b])
-
-
-@pytest.fixture(scope="module")
-def graph() -> ProcessingGraph:
-    config = ProcessingGraphConfig()
-    return ProcessingGraph(ProcessingGraphConfig(config.specification))
 
 
 @pytest.mark.parametrize(
@@ -389,11 +378,11 @@ def graph() -> ProcessingGraph:
     ],
 )
 def test_default_graph_steps(
-    graph: ProcessingGraph, processing_step_name: str, children: list[str], parents: list[str], ancestors: list[str]
+    processing_step_name: str, children: list[str], parents: list[str], ancestors: list[str]
 ) -> None:
-    assert_step(graph, processing_step_name, children=children, parents=parents, ancestors=ancestors)
+    assert_step(processing_graph, processing_step_name, children=children, parents=parents, ancestors=ancestors)
 
 
-def test_default_graph_first_steps(graph: ProcessingGraph) -> None:
+def test_default_graph_first_steps() -> None:
     roots = ["dataset-config-names"]
-    assert_lists_are_equal(graph.get_first_processing_steps(), roots)
+    assert_lists_are_equal(processing_graph.get_first_processing_steps(), roots)

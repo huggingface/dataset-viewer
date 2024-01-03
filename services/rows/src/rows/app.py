@@ -8,7 +8,6 @@ from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import exists, init_parquet_metadata_dir
 from libcommon.storage_client import StorageClient
@@ -35,7 +34,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     if not exists(parquet_metadata_directory):
         raise RuntimeError("The parquet metadata storage directory could not be accessed. Exiting.")
 
-    processing_graph = ProcessingGraph(app_config.processing_graph)
     hf_jwt_public_keys = get_jwt_public_keys(
         algorithm_name=app_config.api.hf_jwt_algorithm,
         public_key_url=app_config.api.hf_jwt_public_key_url,
@@ -80,7 +78,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         Route(
             "/rows",
             endpoint=create_rows_endpoint(
-                processing_graph=processing_graph,
                 cached_assets_base_url=app_config.cached_assets.base_url,
                 storage_client=storage_client,
                 parquet_metadata_directory=parquet_metadata_directory,

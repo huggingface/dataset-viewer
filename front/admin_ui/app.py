@@ -5,8 +5,7 @@ from itertools import product
 import pandas as pd
 import requests
 import gradio as gr
-from libcommon.processing_graph import ProcessingGraph
-from libcommon.config import ProcessingGraphConfig
+from libcommon.processing_graph import processing_graph
 import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -26,7 +25,6 @@ HF_TOKEN = os.environ.get("HF_TOKEN")
 
 DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
-PROCESSING_GRAPH = ProcessingGraph(ProcessingGraphConfig())
 
 pending_jobs_df = None
 
@@ -43,7 +41,7 @@ def healthcheck():
 
 
 def draw_graph(width, height):
-    graph = PROCESSING_GRAPH._nx_graph
+    graph = processing_graph._nx_graph
 
     pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
     fig = plt.figure(figsize=(width, height))
@@ -87,7 +85,7 @@ with gr.Blocks() as demo:
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
             with gr.Tab("Refresh dataset"):
-                job_types = [processing_step.job_type for processing_step in PROCESSING_GRAPH.get_topologically_ordered_processing_steps()]
+                job_types = [processing_step.job_type for processing_step in processing_graph.get_topologically_ordered_processing_steps()]
                 refresh_type = gr.Dropdown(job_types, multiselect=False, label="job type", value=job_types[0])
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")

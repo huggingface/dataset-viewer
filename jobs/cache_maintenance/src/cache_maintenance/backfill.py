@@ -6,12 +6,10 @@ from typing import Optional
 
 from libcommon.dataset import get_supported_dataset_infos
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.utils import Priority
 
 
 def backfill_cache(
-    processing_graph: ProcessingGraph,
     hf_endpoint: str,
     cache_max_days: int,
     blocked_datasets: list[str],
@@ -46,9 +44,7 @@ def backfill_cache(
             # should not occur
             continue
         try:
-            dataset_orchestrator = DatasetOrchestrator(
-                dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
-            )
+            dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
         except Exception as e:
             logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
             continue

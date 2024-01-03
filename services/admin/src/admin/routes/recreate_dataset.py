@@ -10,7 +10,6 @@ from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_resp
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.operations import backfill_dataset
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.storage_client import StorageClient
@@ -31,7 +30,6 @@ class RecreateDatasetReport(TypedDict):
 def recreate_dataset(
     dataset: str,
     priority: Priority,
-    processing_graph: ProcessingGraph,
     cached_assets_storage_client: StorageClient,
     assets_storage_client: StorageClient,
     hf_endpoint: str,
@@ -51,7 +49,6 @@ def recreate_dataset(
     backfill_dataset(
         dataset=dataset,
         revision=revision,
-        processing_graph=processing_graph,
         priority=priority,
         cache_max_days=1,
         blocked_datasets=blocked_datasets,
@@ -65,7 +62,6 @@ def recreate_dataset(
 
 
 def create_recreate_dataset_endpoint(
-    processing_graph: ProcessingGraph,
     cached_assets_storage_client: StorageClient,
     assets_storage_client: StorageClient,
     hf_endpoint: str,
@@ -102,7 +98,6 @@ def create_recreate_dataset_endpoint(
                     blocked_datasets=blocked_datasets,
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
-                    processing_graph=processing_graph,
                 ),
                 max_age=0,
             )

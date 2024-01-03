@@ -22,7 +22,6 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import DATASET_INFO_KINDS
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from starlette.requests import Request
 from starlette.responses import Response
@@ -194,7 +193,6 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
 
 
 def create_croissant_endpoint(
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -234,13 +232,10 @@ def create_croissant_endpoint(
                 # getting result based on processing steps
                 with StepProfiler(method="croissant_endpoint", step="get info cache entry", context=context):
                     info_result = get_cache_entry_from_steps(
-                        processing_steps=[
-                            processing_graph.get_processing_step_by_job_type(kind) for kind in DATASET_INFO_KINDS
-                        ],
+                        processing_step_names=DATASET_INFO_KINDS,
                         dataset=dataset,
                         config=None,
                         split=None,
-                        processing_graph=processing_graph,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         blocked_datasets=blocked_datasets,

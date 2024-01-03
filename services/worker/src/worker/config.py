@@ -11,7 +11,6 @@ from libcommon.config import (
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
-    ProcessingGraphConfig,
     QueueConfig,
     RowsIndexConfig,
     S3Config,
@@ -345,7 +344,6 @@ class AppConfig:
     log: LogConfig = field(default_factory=LogConfig)
     numba: NumbaConfig = field(default_factory=NumbaConfig)
     parquet_and_info: ParquetAndInfoConfig = field(default_factory=ParquetAndInfoConfig)
-    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
     s3: S3Config = field(default_factory=S3Config)
@@ -367,7 +365,6 @@ class AppConfig:
             log=LogConfig.from_env(),
             numba=NumbaConfig.from_env(),
             parquet_and_info=ParquetAndInfoConfig.from_env(),
-            processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             s3=S3Config.from_env(),
             worker=WorkerConfig.from_env(),

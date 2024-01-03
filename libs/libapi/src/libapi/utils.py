@@ -11,7 +11,6 @@ from datasets import Features
 from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph, ProcessingStep
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import (
     CACHED_RESPONSE_NOT_FOUND,
@@ -102,9 +101,8 @@ def are_valid_parameters(parameters: list[Any]) -> bool:
 
 
 def try_backfill_dataset_then_raise(
-    processing_steps: list[ProcessingStep],
+    processing_step_names: list[str],
     dataset: str,
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -118,9 +116,7 @@ def try_backfill_dataset_then_raise(
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
-    )
+    dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
     if not dataset_orchestrator.has_some_cache():
         # We have to check if the dataset exists and is supported
         try:
@@ -142,9 +138,7 @@ def try_backfill_dataset_then_raise(
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )
-    elif dataset_orchestrator.has_pending_ancestor_jobs(
-        processing_step_names=[processing_step.name for processing_step in processing_steps]
-    ):
+    elif dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names=processing_step_names):
         # some jobs are still in progress, the cache entries could exist in the future
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
@@ -155,11 +149,10 @@ def try_backfill_dataset_then_raise(
 
 
 def get_cache_entry_from_steps(
-    processing_steps: list[ProcessingStep],
+    processing_step_names: list[str],
     dataset: str,
     config: Optional[str],
     split: Optional[str],
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -179,12 +172,10 @@ def get_cache_entry_from_steps(
 
     Returns: the cached record
     """
-    kinds = [processing_step.cache_kind for processing_step in processing_steps]
-    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    best_response = get_best_response(kinds=processing_step_names, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         try_backfill_dataset_then_raise(
-            processing_steps=processing_steps,
-            processing_graph=processing_graph,
+            processing_step_names=processing_step_names,
             dataset=dataset,
             hf_endpoint=hf_endpoint,
             blocked_datasets=blocked_datasets,

@@ -7,7 +7,7 @@ from typing import Optional
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.simple_cache import get_dataset_responses_without_content_for_kind
 from starlette.requests import Request
@@ -17,7 +17,6 @@ from admin.authentication import auth_check
 
 
 def create_dataset_status_endpoint(
-    processing_graph: ProcessingGraph,
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,

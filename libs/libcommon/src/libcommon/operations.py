@@ -4,7 +4,6 @@
 import logging
 
 from libcommon.orchestrator import DatasetOrchestrator
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.simple_cache import delete_dataset_responses
 from libcommon.utils import Priority
 
@@ -12,7 +11,6 @@ from libcommon.utils import Priority
 def backfill_dataset(
     dataset: str,
     revision: str,
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     blocked_datasets: list[str],
     priority: Priority = Priority.LOW,
@@ -23,7 +21,6 @@ def backfill_dataset(
     Args:
         dataset (str): the dataset
         revision (str): The revision of the dataset.
-        processing_graph (ProcessingGraph): the processing graph
         cache_max_days (int): the number of days to keep the cache
         priority (Priority, optional): The priority of the job. Defaults to Priority.LOW.
 
@@ -34,9 +31,9 @@ def backfill_dataset(
           If the dataset is in the list of blocked datasets.
     """
     logging.debug(f"backfill {dataset=} {revision=} {priority=}")
-    DatasetOrchestrator(
-        dataset=dataset, processing_graph=processing_graph, blocked_datasets=blocked_datasets
-    ).set_revision(revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days)
+    DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets).set_revision(
+        revision=revision, priority=priority, error_codes_to_retry=[], cache_max_days=cache_max_days
+    )
 
 
 def delete_dataset(dataset: str) -> None:

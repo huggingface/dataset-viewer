@@ -8,7 +8,6 @@ from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
 from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
 from libcommon.operations import backfill_dataset, delete_dataset
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.utils import Priority
 from starlette.requests import Request
@@ -60,7 +59,6 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
 
 
 def process_payload(
-    processing_graph: ProcessingGraph,
     payload: MoonWebhookV2Payload,
     cache_max_days: int,
     blocked_datasets: list[str],
@@ -84,7 +82,6 @@ def process_payload(
         backfill_dataset(
             dataset=dataset,
             revision=revision,
-            processing_graph=processing_graph,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
@@ -95,7 +92,6 @@ def process_payload(
             backfill_dataset(
                 dataset=moved_to,
                 revision=revision,
-                processing_graph=processing_graph,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,
                 blocked_datasets=blocked_datasets,
@@ -104,7 +100,6 @@ def process_payload(
 
 
 def create_webhook_endpoint(
-    processing_graph: ProcessingGraph,
     cache_max_days: int,
     blocked_datasets: list[str],
     hf_webhook_secret: Optional[str] = None,
@@ -144,7 +139,6 @@ def create_webhook_endpoint(
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(
-                        processing_graph=processing_graph,
                         payload=payload,
                         trust_sender=trust_sender,
                         cache_max_days=cache_max_days,

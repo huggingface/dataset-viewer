@@ -12,7 +12,6 @@ from libcommon.config import (
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
-    ProcessingGraphConfig,
     QueueConfig,
     S3Config,
 )
@@ -139,7 +138,6 @@ class AppConfig:
     duckdb_index: DuckDBIndexConfig = field(default_factory=DuckDBIndexConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
-    processing_graph: ProcessingGraphConfig = field(default_factory=ProcessingGraphConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
     s3: S3Config = field(default_factory=S3Config)
 
@@ -156,7 +154,6 @@ class AppConfig:
             duckdb_index=DuckDBIndexConfig.from_env(),
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
-            processing_graph=ProcessingGraphConfig.from_env(),
             queue=QueueConfig.from_env(),
             admin=AdminConfig.from_env(common_config),
             s3=S3Config.from_env(),

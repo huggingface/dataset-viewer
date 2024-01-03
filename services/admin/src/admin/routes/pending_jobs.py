@@ -6,7 +6,7 @@ from typing import Optional
 
 from libapi.exceptions import ApiError, UnexpectedApiError
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -15,7 +15,6 @@ from admin.authentication import auth_check
 
 
 def create_pending_jobs_endpoint(
-    processing_graph: ProcessingGraph,
     max_age: int,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,

@@ -7,7 +7,6 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.obsolete_cache import delete_obsolete_cache
-from libcommon.processing_graph import ProcessingGraph
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_dir
 from libcommon.storage_client import StorageClient
@@ -37,7 +36,6 @@ def run_job() -> None:
             database=job_config.queue.mongo_database, host=job_config.queue.mongo_url
         ) as queue_resource,
     ):
-        processing_graph = ProcessingGraph(job_config.graph)
         start_time = datetime.now()
         if action == "backfill":
             if not cache_resource.is_available():
@@ -51,7 +49,6 @@ def run_job() -> None:
                 )
                 return
             backfill_cache(
-                processing_graph=processing_graph,
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
                 blocked_datasets=job_config.common.blocked_datasets,
@@ -71,7 +68,7 @@ def run_job() -> None:
                     "The connection to the queue database could not be established. The action is skipped."
                 )
                 return
-            collect_queue_metrics(processing_graph=processing_graph)
+            collect_queue_metrics()
         elif action == "collect-cache-metrics":
             if not cache_resource.is_available():
                 logging.warning(
