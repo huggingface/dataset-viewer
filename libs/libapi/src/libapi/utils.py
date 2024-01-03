@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import logging
 from collections.abc import Callable, Coroutine
 from http import HTTPStatus
 from typing import Any, Optional
@@ -106,12 +107,9 @@ def try_backfill_dataset_then_raise(
 ) -> None:
     """
     Tries to backfill the dataset, and then raises an error.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
     """
     if not has_some_cache(dataset=dataset):
+        logging.debug("No cache entry found")
         # We have to check if the dataset exists and is supported
         if update_dataset(
             dataset=dataset,
@@ -122,19 +120,18 @@ def try_backfill_dataset_then_raise(
             hf_timeout_seconds=hf_timeout_seconds,
             priority=Priority.NORMAL,
         ):
-            # The dataset is supported and the cache entry is created
+            logging.debug("The dataset is supported and it's being backfilled")
             raise ResponseNotReadyError(
                 "The server is busier than usual and the response is not ready yet. Please retry later."
             )
-        else:
-            # The dataset is not supported
-            raise ResponseNotFoundError("Not found.")
-    elif has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
-        # some jobs are still in progress, the cache entries could exist in the future
+        logging.debug("The dataset is not supported")
+        raise ResponseNotFoundError("Not found.")
+    if has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
+        logging.debug("Cache entry not found but some jobs are still in progress, so it could exist in the future")
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )
-    # no pending job: the cache entry will not be created
+    logging.debug("Cache entry found but no pending job")
     raise ResponseNotFoundError("Not found.")
 
 
