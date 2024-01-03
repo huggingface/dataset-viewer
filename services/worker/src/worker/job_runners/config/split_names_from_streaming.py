@@ -9,13 +9,14 @@ from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import (
     DatasetManualDownloadError,
+    DatasetWithScriptNotSupportedError,
     EmptyDatasetError,
     SplitNamesFromStreamingError,
 )
 
 from worker.dtos import CompleteJobResult, FullSplitItem, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
-from worker.utils import disable_dataset_scripts_support
+from worker.utils import resolve_trust_remote_code
 
 
 def compute_split_names_from_streaming_response(
@@ -64,15 +65,26 @@ def compute_split_names_from_streaming_response(
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:
-        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
-            split_name_items: list[FullSplitItem] = [
-                {"dataset": dataset, "config": config, "split": str(split)}
-                for split in get_dataset_split_names(path=dataset, config_name=config, token=hf_token)
-            ]
+        split_name_items: list[FullSplitItem] = [
+            {"dataset": dataset, "config": config, "split": str(split)}
+            for split in get_dataset_split_names(
+                path=dataset,
+                config_name=config,
+                token=hf_token,
+                trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
+            )
+        ]
     except ManualDownloadError as err:
         raise DatasetManualDownloadError(f"{dataset=} requires manual download.", cause=err) from err
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
+    except ValueError as err:
+        if "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
     except Exception as err:
         raise SplitNamesFromStreamingError(
             f"Cannot get the split names for the config '{config}' of the dataset.",
