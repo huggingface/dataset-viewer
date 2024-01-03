@@ -3,6 +3,7 @@
 
 from datetime import datetime
 from typing import Optional
+from unittest.mock import patch
 
 import pytest
 
@@ -360,6 +361,37 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
         queue_status={"in_process": []},
         tasks=[],
     )
+
+
+@pytest.mark.parametrize(
+    "attempts,max_attempts,should_create",
+    [
+        (0, 1, True),
+        (3, 1, False),
+        (2, 2, True),
+    ],
+)
+def test_plan_retry_error_max_attempts(attempts: int, max_attempts: int, should_create: bool) -> None:
+    with patch("libcommon.state.MAX_RETRY_ATTEMPTS", max_attempts):
+        processing_graph = PROCESSING_GRAPH_GENEALOGY
+        error_code = "ERROR_CODE_TO_RETRY"
+        error_codes_to_retry = [error_code]
+        compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
+
+        put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, attempts=attempts)
+        dataset_backfill_plan = get_dataset_backfill_plan(
+            processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
+        )
+        cache_is_error_to_retry = [ARTIFACT_DA] if should_create else []
+        assert_dataset_backfill_plan(
+            dataset_backfill_plan=dataset_backfill_plan,
+            config_names=[],
+            cache_status={
+                "cache_is_error_to_retry": cache_is_error_to_retry,
+            },
+            queue_status={"in_process": []},
+            tasks=[f"CreateJobs,{1 + len(cache_is_error_to_retry)}"],
+        )
 
 
 @pytest.mark.parametrize(

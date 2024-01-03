@@ -8,7 +8,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
+from libcommon.simple_cache import CachedResponseDocument, get_response, get_response_metadata, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
@@ -148,6 +148,12 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
     assert cached_response["progress"] == 1.0
 
+    cached_entry_metadata = get_response_metadata(
+        kind="dataset-config-names", dataset="dataset", config=None, split=None
+    )
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["attempts"] == 1
+
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
     assert len(dataset_child_jobs) == 1
@@ -160,6 +166,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     dataset = "dataset"
     revision = "revision"
     message = "I'm crashed :("
+    attempts = 2
 
     queue = Queue()
     assert JobDocument.objects().count() == 0
@@ -169,6 +176,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
         revision=revision,
         priority=Priority.NORMAL,
         difficulty=50,
+        attempts=attempts,
     )
     job_info = queue.start_job()
 
@@ -188,6 +196,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     assert response.dataset_git_revision == revision
     assert response.content == expected_error
     assert response.details == expected_error
+    assert response.attempts == attempts + 1
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 

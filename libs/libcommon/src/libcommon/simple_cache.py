@@ -371,7 +371,7 @@ def get_response_metadata(
     try:
         response = (
             CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-            .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
+            .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at", "attempts")
             .get()
         )
     except DoesNotExist as e:
