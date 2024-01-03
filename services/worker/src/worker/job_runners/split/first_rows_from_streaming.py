@@ -147,10 +147,7 @@ def compute_first_rows_response(
     # get the features
     try:
         info = get_dataset_config_info(
-            path=dataset,
-            config_name=config,
-            token=hf_token,
-            trust_remote_code=trust_remote_code
+            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
         )
     except ValueError as err:
         if "trust_remote_code" in str(err):
@@ -173,7 +170,7 @@ def compute_first_rows_response(
                 split=split,
                 streaming=True,
                 token=hf_token,
-                trust_remote_code=trust_remote_code
+                trust_remote_code=trust_remote_code,
             )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
@@ -234,7 +231,7 @@ def compute_first_rows_response(
             max_size_fallback=max_size_fallback,
             rows_max_number=rows_max_number,
             token=hf_token,
-            trust_remote_code=trust_remote_code
+            trust_remote_code=trust_remote_code,
         )
     except ValueError as err:
         if "trust_remote_code" in str(err):

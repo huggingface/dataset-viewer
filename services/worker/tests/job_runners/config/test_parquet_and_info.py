@@ -20,7 +20,6 @@ import pyarrow.parquet as pq
 import pytest
 import requests
 from datasets import Audio, Features, Image, Value, load_dataset_builder
-from datasets.load import dataset_module_factory
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -853,8 +852,16 @@ def test_get_writer_batch_size_from_row_group_size(
 def test_resolve_trust_remote_code() -> None:
     assert resolve_trust_remote_code("lhoestq/demo1", allow_list=[]) is False
     assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is False
-    assert resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]) is True
+    assert (
+        resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"])
+        is True
+    )
     assert resolve_trust_remote_code("squad", allow_list=[]) is False
     assert resolve_trust_remote_code("squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is True
     assert resolve_trust_remote_code("squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]) is True
-    assert resolve_trust_remote_code("lhoestq/custom_squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]) is False
+    assert (
+        resolve_trust_remote_code(
+            "lhoestq/custom_squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]
+        )
+        is False
+    )

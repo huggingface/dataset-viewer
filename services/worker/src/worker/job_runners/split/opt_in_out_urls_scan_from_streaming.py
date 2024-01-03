@@ -23,7 +23,7 @@ from libcommon.utils import JobInfo
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import resolve_trust_remote_code, get_rows_or_raise
+from worker.utils import get_rows_or_raise, resolve_trust_remote_code
 
 
 async def check_spawning(
@@ -176,10 +176,7 @@ def compute_opt_in_out_urls_scan_response(
     # get the info
     try:
         info = get_dataset_config_info(
-            path=dataset,
-            config_name=config,
-            token=hf_token,
-            trust_remote_code=trust_remote_code
+            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
         )
     except ValueError as err:
         if "trust_remote_code" in str(err):
@@ -222,7 +219,7 @@ def compute_opt_in_out_urls_scan_response(
         rows_max_number=rows_max_number,
         token=hf_token,
         column_names=image_url_columns,
-        trust_remote_code=trust_remote_code
+        trust_remote_code=trust_remote_code,
     )
     rows = rows_content["rows"]
 

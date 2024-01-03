@@ -1156,7 +1156,7 @@ def compute_config_parquet_and_info_response(
             revision=source_revision,
             token=hf_token,
             download_config=download_config,
-            trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
+            trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
         )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err

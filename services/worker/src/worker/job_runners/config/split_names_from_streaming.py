@@ -71,7 +71,7 @@ def compute_split_names_from_streaming_response(
                 path=dataset,
                 config_name=config,
                 token=hf_token,
-                trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
+                trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
             )
         ]
     except ManualDownloadError as err:

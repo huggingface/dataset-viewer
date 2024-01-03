@@ -9,8 +9,8 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
-    DatasetWithTooManyConfigsError,
     DatasetWithScriptNotSupportedError,
+    DatasetWithTooManyConfigsError,
     EmptyDatasetError,
 )
 
@@ -61,11 +61,15 @@ def compute_config_names_response(
     try:
         config_name_items: list[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
-            for config in sorted(get_dataset_config_names(
-                path=dataset,
-                token=hf_token,
-                trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
-            ))
+            for config in sorted(
+                get_dataset_config_names(
+                    path=dataset,
+                    token=hf_token,
+                    trust_remote_code=resolve_trust_remote_code(
+                        dataset=dataset, allow_list=dataset_scripts_allow_list
+                    ),
+                )
+            )
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
