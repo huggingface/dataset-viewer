@@ -178,14 +178,13 @@ def compute_opt_in_out_urls_scan_response(
         info = get_dataset_config_info(
             path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
         )
-    except ValueError as err:
-        if "trust_remote_code" in str(err):
+    except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError(
                 "The dataset viewer doesn't support this dataset because it runs "
                 "arbitrary python code. Please open a discussion in the discussion tab "
                 "if you think this is an error and tag @lhoestq and @severo."
             ) from err
-    except Exception as err:
         raise InfoError(
             f"The info cannot be fetched for the config '{config}' of the dataset.",
             cause=err,

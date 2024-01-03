@@ -270,14 +270,13 @@ def get_rows_or_raise(
             column_names=column_names,
             trust_remote_code=trust_remote_code,
         )
-    except ValueError as err:
-        if "trust_remote_code" in str(err):
+    except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError(
                 "The dataset viewer doesn't support this dataset because it runs "
                 "arbitrary python code. Please open a discussion in the discussion tab "
                 "if you think this is an error and tag @lhoestq and @severo."
             ) from err
-    except Exception as err:
         MAX_SIZE_FALLBACK = 100_000_000
         if max_size_fallback:
             warnings.warn(
@@ -301,14 +300,13 @@ def get_rows_or_raise(
                 rows_max_number=rows_max_number,
                 token=token,
             )
-        except ValueError as err:
-            if "trust_remote_code" in str(err):
+        except Exception as err:
+            if isinstance(err, ValueError) and "trust_remote_code" in str(err):
                 raise DatasetWithScriptNotSupportedError(
                     "The dataset viewer doesn't support this dataset because it runs "
                     "arbitrary python code. Please open a discussion in the discussion tab "
                     "if you think this is an error and tag @lhoestq and @severo."
                 ) from err
-        except Exception as err:
             raise NormalRowsError(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
