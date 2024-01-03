@@ -12,7 +12,6 @@ from libcommon.constants import (
     CONFIG_INFO_KINDS,
     CONFIG_SPLIT_NAMES_KINDS,
     DATASET_CONFIG_NAMES_KINDS,
-    DEFAULT_DIFFICULTY_MAX,
     ERROR_CODES_TO_RETRY,
 )
 from libcommon.exceptions import DatasetInBlockListError
@@ -435,6 +434,7 @@ class DatasetBackfillPlan(Plan):
                     dataset=self.dataset,
                     cache_kinds=cache_kinds,
                 )
+
             with StepProfiler(
                 method="DatasetBackfillPlan.__post_init__",
                 step="get_dataset_state",
@@ -620,7 +620,6 @@ class DatasetBackfillPlan(Plan):
                     if not artifact_state.cache_state.cache_entry_metadata
                     else artifact_state.cache_state.cache_entry_metadata["attempts"]
                 )
-                difficulty = artifact_state.processing_step.difficulty + min(attempts * 20, DEFAULT_DIFFICULTY_MAX)
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -632,8 +631,8 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": difficulty,
-                        "attempts": attempts + 1,
+                        "difficulty": artifact_state.processing_step.difficulty,
+                        "attempts": attempts,
                     }
                 )
             else:

@@ -65,7 +65,6 @@ class CacheState:
             self.cache_entry_metadata = None
         else:
             entry = self.cache_entries_df.iloc[0]
-            print(entry)
             self.cache_entry_metadata = CacheEntryMetadata(
                 http_status=entry["http_status"],
                 error_code=None if entry["error_code"] is pd.NA else entry["error_code"],

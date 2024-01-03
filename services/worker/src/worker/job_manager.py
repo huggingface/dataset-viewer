@@ -282,7 +282,7 @@ class JobManager:
                     "error_code": error.code,
                     "details": dict(error.as_response_with_cause()),
                     "progress": None,
-                    "attempts": self.job_info["attempts"],
+                    "attempts": self.job_info["attempts"] + 1,
                 },
             }
         )

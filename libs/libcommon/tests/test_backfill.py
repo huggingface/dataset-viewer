@@ -113,6 +113,7 @@ def test_da_is_computed(
     cache_is_empty: list[str],
 ) -> None:
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME)
+
     dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
