@@ -6,10 +6,7 @@ CI_APP_TOKEN = "hf_app_datasets-server_token"
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
 NORMAL_USER = "__DUMMY_DATASETS_SERVER_USER__"
 NORMAL_USER_API_TOKEN = "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"
-NORMAL_USER_SESSION_TOKEN = (
-    "ePTgRpKDHjwQZylcViCgFywZqECKWIutEsEercqQPAeADPKGt"
-    "CLuLEvMpNIGhruoHbnIbDhGLlpTpTlZhOygCpHzbfTHboxEwuPdlHjNlfcxFuYHvfSivfoBXQxWUUek"
-)
+NORMAL_USER_SESSION_TOKEN = "oMidckPVQYumfKrAHNYKqnbacRoLaMppHRRlfNbupNahzAHCzInBVbhgGosDneYXHVTKkkWygoMDxBfFUkFPIPiVWBtZtSTYIYTScnEKAJYkyGBAcbVTbokAygCCTWvH"
 NORMAL_ORG = "__NORMAL_ORG__"
 PRO_USER = "__PRO_USER__"
 PRO_USER_TOKEN = "hf_pro_user_token"

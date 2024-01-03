@@ -50,7 +50,7 @@ def normal_user_gated_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
         namespace=NORMAL_USER,
         token=NORMAL_USER_API_TOKEN,
-        private=True,
+        private=False,
         gated="auto",
         csv_path=csv_path,
     ) as dataset:
@@ -78,6 +78,7 @@ def test_auth_gated(
         expected_error_code=expected_error_code,
         headers=get_auth_headers(auth_type),
         check_x_revision=False,
+        dataset=normal_user_gated_dataset,
     )
 
 

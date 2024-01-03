@@ -189,7 +189,6 @@ def update_repo_settings(
     *,
     private: Optional[bool] = None,
     gated: Optional[str] = None,
-    token: Optional[str] = None,
     organization: Optional[str] = None,
     repo_type: Optional[str] = None,
     name: Optional[str] = None,
@@ -207,8 +206,6 @@ def update_repo_settings(
         gated (`str`, *optional*, defaults to `None`):
             Whether the repo should request user access.
             Possible values are 'auto' and 'manual'
-        token (`str`, *optional*):
-            An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
             space, `None` or `"model"` if uploading to a model. Default is
@@ -228,7 +225,7 @@ def update_repo_settings(
     organization, name = repo_id.split("/") if "/" in repo_id else (None, repo_id)
 
     if organization is None:
-        namespace = hf_api.whoami(token=token)["name"]
+        namespace = hf_api.whoami()["name"]
     else:
         namespace = organization
 
@@ -246,7 +243,7 @@ def update_repo_settings(
 
     r = requests.put(
         path,
-        headers={"authorization": f"Bearer {token}"},
+        headers=hf_api._build_hf_headers(),
         json=json,
     )
     hf_raise_for_status(r)

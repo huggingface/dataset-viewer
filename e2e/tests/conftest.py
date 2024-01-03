@@ -36,5 +36,4 @@ def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
         gated=None,
         csv_path=csv_path,
     ) as dataset:
-        pytest.set_trace()
         yield dataset
