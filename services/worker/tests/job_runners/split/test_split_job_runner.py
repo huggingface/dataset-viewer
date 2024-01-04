@@ -54,7 +54,6 @@ def test_failed_creation(app_config: AppConfig, config: str, split: str) -> None
                 },
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
-                "attempts": 0,
             },
             app_config=app_config,
         ).validate()
@@ -107,7 +106,6 @@ def test_creation(
                 },
                 "priority": Priority.NORMAL,
                 "difficulty": 50,
-                "attempts": 0,
             },
             app_config=app_config,
         ).validate()
@@ -125,7 +123,6 @@ def test_creation(
                     },
                     "priority": Priority.NORMAL,
                     "difficulty": 50,
-                    "attempts": 0,
                 },
                 app_config=app_config,
             ).validate()

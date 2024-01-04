@@ -66,7 +66,6 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
-        attempts=0,
     )
     with pytest.raises(ValueError):
         job_runner = DummyJobRunner(
@@ -86,7 +85,6 @@ def test_check_type(
         },
         priority=Priority.NORMAL,
         difficulty=50,
-        attempts=0,
     )
     job_runner = DummyJobRunner(
         job_info=job_info,
@@ -168,6 +166,20 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     message = "I'm crashed :("
     attempts = 2
 
+    for _ in range(attempts):
+        # simulate previous attempts
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            config=None,
+            split=None,
+            content={},
+            dataset_git_revision=revision,
+            job_runner_version=processing_graph.get_processing_step("dataset-config-names").job_runner_version,
+            progress=1.0,
+            http_status=HTTPStatus.OK,
+        )
+
     queue = Queue()
     assert JobDocument.objects().count() == 0
     queue.add_job(
@@ -176,7 +188,6 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
         revision=revision,
         priority=Priority.NORMAL,
         difficulty=50,
-        attempts=attempts,
     )
     job_info = queue.start_job()
 
@@ -216,7 +227,6 @@ def test_raise_if_parallel_response_exists(app_config: AppConfig) -> None:
         job_runner_version=processing_graph.get_processing_step(stepA).job_runner_version,
         progress=1.0,
         http_status=HTTPStatus.OK,
-        attempts=0,
     )
 
     job_info = JobInfo(
@@ -230,7 +240,6 @@ def test_raise_if_parallel_response_exists(app_config: AppConfig) -> None:
         },
         priority=Priority.NORMAL,
         difficulty=50,
-        attempts=0,
     )
 
     class DummyConfigJobRunner(DatasetJobRunner):

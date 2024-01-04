@@ -40,7 +40,6 @@ class JobInfo(TypedDict):
     params: JobParams
     priority: Priority
     difficulty: int
-    attempts: int
 
 
 class FlatJobInfo(TypedDict):
@@ -62,7 +61,6 @@ class JobOutput(TypedDict):
     error_code: Optional[str]
     details: Optional[Mapping[str, Any]]
     progress: Optional[float]
-    attempts: Optional[int]
 
 
 class JobResult(TypedDict):

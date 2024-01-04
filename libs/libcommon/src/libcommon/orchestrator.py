@@ -356,7 +356,6 @@ class AfterJobPlan(Plan):
                     },
                     "priority": self.priority,
                     "difficulty": difficulty,
-                    "attempts": 0,
                 }
             )
 
@@ -615,11 +614,6 @@ class DatasetBackfillPlan(Plan):
         for artifact_state in artifact_states:
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
-                attempts = (
-                    0
-                    if not artifact_state.cache_state.cache_entry_metadata
-                    else artifact_state.cache_state.cache_entry_metadata["attempts"]
-                )
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -632,7 +626,6 @@ class DatasetBackfillPlan(Plan):
                         },
                         "priority": self.priority,
                         "difficulty": artifact_state.processing_step.difficulty,
-                        "attempts": attempts,
                     }
                 )
             else:
@@ -800,7 +793,6 @@ class DatasetOrchestrator:
             error_code=output["error_code"],
             details=output["details"],
             progress=output["progress"],
-            attempts=output["attempts"],
         )
         logging.debug("the job output has been written to the cache.")
         # finish the job

@@ -234,7 +234,6 @@ def upsert_response(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
-    attempts: Optional[int] = None,
 ) -> None:
     decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
     CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
@@ -246,7 +245,7 @@ def upsert_response(
         progress=progress,
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
-        attempts=attempts,
+        inc__attempts=1,
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
 
@@ -261,7 +260,6 @@ def upsert_response_params(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
-    attempts: Optional[int] = None,
 ) -> None:
     upsert_response(
         kind=kind,
@@ -276,7 +274,6 @@ def upsert_response_params(
         job_runner_version=job_runner_version,
         progress=progress,
         updated_at=updated_at,
-        attempts=attempts,
     )
 
 
