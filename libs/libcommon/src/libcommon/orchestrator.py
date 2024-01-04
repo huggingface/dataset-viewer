@@ -672,8 +672,8 @@ def set_revision(
     dataset: str,
     revision: str,
     priority: Priority,
-    error_codes_to_retry: list[str],
     cache_max_days: int,
+    error_codes_to_retry: Optional[list[str]] = None,
     processing_graph: ProcessingGraph = processing_graph,
 ) -> None:
     """
@@ -686,8 +686,8 @@ def set_revision(
         dataset (str): The name of the dataset.
         revision (str): The new revision of the dataset.
         priority (Priority): The priority of the jobs to create.
-        error_codes_to_retry (list[str]): The error codes for which the jobs should be retried.
         cache_max_days (int): The maximum number of days for which the cache is considered valid.
+        error_codes_to_retry (list[str], optional): The error codes for which the jobs should be retried.
         processing_graph (ProcessingGraph, optional): The processing graph.
 
     Returns:

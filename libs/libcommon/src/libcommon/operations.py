@@ -186,6 +186,7 @@ def update_dataset(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
+    error_codes_to_retry: Optional[list[str]] = None,
 ) -> bool:
     # let's the exceptions bubble up if any
     dataset_status = get_dataset_status(
@@ -203,7 +204,7 @@ def update_dataset(
         dataset=dataset,
         revision=dataset_status.revision,
         priority=priority,
-        error_codes_to_retry=[],
+        error_codes_to_retry=error_codes_to_retry,
         cache_max_days=cache_max_days,
     )
     return True

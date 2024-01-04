@@ -4,7 +4,8 @@
 import logging
 from typing import Optional
 
-from libcommon.orchestrator import backfill
+from libcommon.operations import update_dataset
+from libcommon.simple_cache import get_all_datasets
 from libcommon.utils import Priority
 
 
@@ -15,53 +16,43 @@ def backfill_cache(
     hf_token: Optional[str] = None,
     error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
-    logging.info("backfill supported datasets")
-    supported_dataset_infos = {}
+    logging.info("backfill datasets in the database and delete non-supported ones")
+    datasets_in_database = get_all_datasets()
     # get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
     # TODO: restore this
-    logging.info(f"analyzing {len(supported_dataset_infos)} supported datasets")
+    logging.info(f"analyzing {len(datasets_in_database)} datasets in the database")
     analyzed_datasets = 0
-    backfilled_datasets = 0
-    total_created_jobs = 0
+    supported_datasets = 0
+    deleted_datasets = 0
+    error_datasets = 0
     log_batch = 100
 
     def get_log() -> str:
         return (
-            f"{analyzed_datasets} analyzed datasets (total: {len(supported_dataset_infos)} datasets):"
-            f" {backfilled_datasets} backfilled datasets ({100 * backfilled_datasets / analyzed_datasets:.2f}%), with"
-            f" {total_created_jobs} created jobs."
+            f"{analyzed_datasets} analyzed datasets (total: {len(datasets_in_database)} datasets):"
+            f" {deleted_datasets} datasets have been deleted ({100 * deleted_datasets / analyzed_datasets:.2f}%),"
+            f" {error_datasets} datasets raised an exception ({100 * error_datasets / analyzed_datasets:.2f}%)"
         )
 
-    for dataset_info in supported_dataset_infos:
+    for dataset in datasets_in_database:
         analyzed_datasets += 1
-
-        dataset = dataset_info.id
-        if not dataset:
-            logging.warning(f"dataset id not found for {dataset_info}")
-            # should not occur
-            continue
-        if dataset_info.sha is None:
-            logging.warning(f"dataset revision not found for {dataset_info}")
-            # should not occur
-            continue
-        # try:
-        #     dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
-        # except Exception as e:
-        #     logging.warning(f"failed to create DatasetOrchestrator for {dataset_info}: {e}")
-        #     continue
         try:
-            created_jobs = backfill(
+            if update_dataset(
                 dataset=dataset,
-                revision=str(dataset_info.sha),
+                cache_max_days=cache_max_days,
+                hf_endpoint=hf_endpoint,
+                blocked_datasets=blocked_datasets,
+                hf_token=hf_token,
                 priority=Priority.LOW,
                 error_codes_to_retry=error_codes_to_retry,
-                cache_max_days=cache_max_days,
-            )
-            if created_jobs > 0:
-                backfilled_datasets += 1
-            total_created_jobs += created_jobs
+                hf_timeout_seconds=None,
+            ):
+                supported_datasets += 1
+            else:
+                deleted_datasets += 1
         except Exception as e:
-            logging.warning(f"failed to backfill {dataset_info}: {e}")
+            logging.warning(f"failed to update_dataset {dataset}: {e}")
+            error_datasets += 1
             continue
 
         logging.debug(get_log())
