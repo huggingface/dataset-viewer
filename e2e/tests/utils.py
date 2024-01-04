@@ -8,10 +8,9 @@ import time
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import requests
-from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 from requests import Response
@@ -183,91 +182,36 @@ def has_metric(name: str, labels: Mapping[str, str], metric_names: set[str]) -> 
     return any(re.match(s, metric_name) is not None for metric_name in metric_names)
 
 
-def update_repo_settings(
-    hf_api: HfApi,
-    repo_id: str,
-    *,
-    private: Optional[bool] = None,
-    gated: Optional[str] = None,
-    organization: Optional[str] = None,
-    repo_type: Optional[str] = None,
-    name: Optional[str] = None,
-) -> Any:
-    """Update the settings of a repository.
-    Args:
-        repo_id (`str`, *optional*):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-            <Tip>
-            Version added: 0.5
-            </Tip>
-        private (`bool`, *optional*, defaults to `None`):
-            Whether the repo should be private.
-        gated (`str`, *optional*, defaults to `None`):
-            Whether the repo should request user access.
-            Possible values are 'auto' and 'manual'
-        repo_type (`str`, *optional*):
-            Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model. Default is
-            `None`.
-    Returns:
-        The HTTP response in json.
-    <Tip>
-    Raises the following errors:
-        - [`~huggingface_hub.utils.RepositoryNotFoundError`]
-            If the repository to download from cannot be found. This may be because it doesn't exist,
-            or because it is set to `private` and you do not have access.
-    </Tip>
-    """
-    if repo_type not in REPO_TYPES:
-        raise ValueError("Invalid repo type")
-
-    organization, name = repo_id.split("/") if "/" in repo_id else (None, repo_id)
-
-    if organization is None:
-        namespace = hf_api.whoami()["name"]
-    else:
-        namespace = organization
-
-    path_prefix = f"{hf_api.endpoint}/api/"
-    if repo_type in REPO_TYPES_URL_PREFIXES:
-        path_prefix += REPO_TYPES_URL_PREFIXES[repo_type]
-
-    path = f"{path_prefix}{namespace}/{name}/settings"
-
-    json: dict[str, Union[bool, str]] = {}
-    if private is not None:
-        json["private"] = private
-    if gated is not None:
-        json["gated"] = gated
-
-    r = requests.put(
-        path,
-        headers=hf_api._build_hf_headers(),
-        json=json,
-    )
-    hf_raise_for_status(r)
-    return r.json()
-
-
 @contextmanager
-def tmp_dataset(namespace: str, token: str, csv_path: str, private: bool, gated: Optional[str]) -> Iterator[str]:
+def tmp_dataset(
+    namespace: str,
+    token: str,
+    files: dict[str, str],
+    repo_settings: Optional[dict[str, str]] = None,
+    dataset_prefix: str = "",
+) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
-    dataset = f"{namespace}/tmp-dataset-{int(time.time() * 10e3)}"
+    dataset = f"{namespace}/{dataset_prefix}tmp-dataset-{int(time.time() * 10e3)}"
     hf_api.create_repo(
         repo_id=dataset,
-        private=private,
         repo_type="dataset",
     )
-    hf_api.upload_file(
-        path_or_fileobj=csv_path,
-        path_in_repo="data/csv_data.csv",
-        repo_id=dataset,
-        repo_type="dataset",
-    )
-    if gated:
-        update_repo_settings(hf_api, dataset, gated=gated, repo_type="dataset")
+    for path_in_repo, path in files.items():
+        hf_api.upload_file(
+            path_or_fileobj=path,
+            path_in_repo=path_in_repo,
+            repo_id=dataset,
+            repo_type="dataset",
+        )
+    if repo_settings:
+        path = f"{hf_api.endpoint}/api/datasets/{dataset}/settings"
+        r = requests.put(
+            path,
+            headers=hf_api._build_hf_headers(),
+            json=repo_settings,
+        )
+        hf_raise_for_status(r)
     try:
         yield dataset
     finally:

@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from collections.abc import Iterator
-from typing import Literal
+from typing import Literal, Optional
 
 import pytest
 
@@ -19,6 +19,8 @@ from .constants import (
 )
 from .utils import get_default_config_split, poll_until_ready_and_assert, tmp_dataset
 
+# TODO: test disabled repo (no way of changing that from the API)
+
 
 def get_auth_headers(auth_type: str) -> dict[str, str]:
     return (
@@ -30,11 +32,27 @@ def get_auth_headers(auth_type: str) -> dict[str, str]:
     )
 
 
-# TODO: reduce the load on the worker for these tests. We only want to compute jobs until /splits?dataset=... is available, then throw everything away
-# TODO: test private gated?
-# TODO: test blocked datasets list
-# TODO: test disabled repo
-# TODO: test disabled viewer
+def poll_parquet_until_ready_and_assert(
+    dataset: str,
+    expected_status_code: Optional[int] = 200,
+    expected_error_code: Optional[str] = None,
+    headers: Optional[dict[str, str]] = None,
+) -> None:
+    # /parquet being successful means that:
+    # - the dataset is supported
+    # - both tokens worked: hf_token to read the datasets, and the parquet_converter token to write the parquet files
+    response = poll_until_ready_and_assert(
+        relative_url=f"/parquet?dataset={dataset}&config=default",
+        expected_status_code=expected_status_code,
+        expected_error_code=expected_error_code,
+        headers=headers,
+        check_x_revision=False,
+        dataset=dataset,
+    )
+    if expected_status_code == 200:
+        body = response.json()
+        assert "parquet_files" in body, body
+        assert len(body["parquet_files"]) == 1, body
 
 
 @pytest.mark.parametrize(
@@ -52,24 +70,18 @@ def test_auth_public(
     expected_error_code: str,
 ) -> None:
     # asking for the dataset will launch the jobs, without the need of a webhook
-    poll_until_ready_and_assert(
-        relative_url=f"/splits?dataset={normal_user_public_dataset}",
+    poll_parquet_until_ready_and_assert(
+        dataset=normal_user_public_dataset,
+        headers=get_auth_headers(auth_type),
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
-        headers=get_auth_headers(auth_type),
-        check_x_revision=False,
-        dataset=normal_user_public_dataset,
     )
 
 
 @pytest.fixture(scope="module")
 def normal_user_gated_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
-        namespace=NORMAL_USER,
-        token=NORMAL_USER_TOKEN,
-        private=False,
-        gated="auto",
-        csv_path=csv_path,
+        namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data.csv": csv_path}, repo_settings={"gated": "auto"}
     ) as dataset:
         yield dataset
 
@@ -88,25 +100,18 @@ def test_auth_gated(
     expected_status_code: int,
     expected_error_code: str,
 ) -> None:
-    # asking for the dataset will launch the jobs, without the need of a webhook
-    poll_until_ready_and_assert(
-        relative_url=f"/splits?dataset={normal_user_gated_dataset}",
+    poll_parquet_until_ready_and_assert(
+        dataset=normal_user_gated_dataset,
+        headers=get_auth_headers(auth_type),
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
-        headers=get_auth_headers(auth_type),
-        check_x_revision=False,
-        dataset=normal_user_gated_dataset,
     )
 
 
 @pytest.fixture(scope="module")
 def normal_user_private_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(
-        namespace=NORMAL_USER,
-        token=NORMAL_USER_TOKEN,
-        private=True,
-        gated=None,
-        csv_path=csv_path,
+        namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data.csv": csv_path}, repo_settings={"private": True}
     ) as dataset:
         yield dataset
 
@@ -125,50 +130,33 @@ def test_auth_private(
     expected_status_code: int,
     expected_error_code: str,
 ) -> None:
-    # asking for the dataset will launch the jobs, without the need of a webhook
-    poll_until_ready_and_assert(
-        relative_url=f"/splits?dataset={normal_user_private_dataset}",
+    poll_parquet_until_ready_and_assert(
+        dataset=normal_user_private_dataset,
+        headers=get_auth_headers(auth_type),
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
-        headers=get_auth_headers(auth_type),
-        check_x_revision=False,
-        dataset=normal_user_private_dataset,
     )
 
 
 def test_normal_org_private(csv_path: str) -> None:
     with tmp_dataset(
-        namespace=NORMAL_ORG,
-        token=NORMAL_USER_TOKEN,
-        private=True,
-        gated=None,
-        csv_path=csv_path,
+        namespace=NORMAL_ORG, token=NORMAL_USER_TOKEN, files={"data.csv": csv_path}, repo_settings={"private": True}
     ) as dataset:
-        poll_until_ready_and_assert(
-            relative_url=f"/splits?dataset={dataset}",
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset,
+            headers=get_auth_headers("token"),
             expected_status_code=404,
             expected_error_code="ResponseNotFound",
-            headers=get_auth_headers("token"),
-            check_x_revision=False,
-            dataset=dataset,
         )
 
 
 def test_pro_user_private(csv_path: str) -> None:
     with tmp_dataset(
-        namespace=PRO_USER,
-        token=PRO_USER_TOKEN,
-        private=True,
-        gated=None,
-        csv_path=csv_path,
+        namespace=PRO_USER, token=PRO_USER_TOKEN, files={"data.csv": csv_path}, repo_settings={"private": True}
     ) as dataset:
-        poll_until_ready_and_assert(
-            relative_url=f"/splits?dataset={dataset}",
-            expected_status_code=200,
-            expected_error_code=None,
-            headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
-            check_x_revision=False,
+        poll_parquet_until_ready_and_assert(
             dataset=dataset,
+            headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
         )
 
 
@@ -176,17 +164,14 @@ def test_enterprise_user_private(csv_path: str) -> None:
     with tmp_dataset(
         namespace=ENTERPRISE_USER,
         token=ENTERPRISE_USER_TOKEN,
-        private=True,
-        gated=None,
-        csv_path=csv_path,
+        files={"data.csv": csv_path},
+        repo_settings={"private": True},
     ) as dataset:
-        poll_until_ready_and_assert(
-            relative_url=f"/splits?dataset={dataset}",
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset,
+            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
             expected_status_code=404,
             expected_error_code="ResponseNotFound",
-            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
-            check_x_revision=False,
-            dataset=dataset,
         )
 
 
@@ -194,18 +179,92 @@ def test_enterprise_org_private(csv_path: str) -> None:
     with tmp_dataset(
         namespace=ENTERPRISE_ORG,
         token=ENTERPRISE_USER_TOKEN,
-        private=True,
-        gated=None,
-        csv_path=csv_path,
+        files={"data.csv": csv_path},
+        repo_settings={"private": True},
     ) as dataset:
-        poll_until_ready_and_assert(
-            relative_url=f"/splits?dataset={dataset}",
-            expected_status_code=200,
-            expected_error_code=None,
-            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
-            check_x_revision=False,
+        poll_parquet_until_ready_and_assert(
             dataset=dataset,
+            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
         )
+
+
+def test_normal_user_private_gated(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path},
+        repo_settings={"private": True, "gated": "auto"},
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset,
+            headers={"Authorization": f"Bearer {NORMAL_USER_TOKEN}"},
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
+        )
+
+
+def test_pro_user_private_gated(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=PRO_USER,
+        token=PRO_USER_TOKEN,
+        files={"data.csv": csv_path},
+        repo_settings={"private": True, "gated": "auto"},
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset,
+            headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
+        )
+
+
+def test_normal_user_blocked(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path},
+        dataset_prefix="blocked-",
+        # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+        )
+
+
+@pytest.fixture
+def disabled_viewer_readme_path(tmp_path_factory: pytest.TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "README.md")
+    with open(path, "w", newline="") as f:
+        f.writelines(
+            [
+                "---\n",
+                "viewer: false\n",
+                "---\n",
+                "\n",
+                "# Dataset\n",
+            ]
+        )
+    return path
+
+
+def test_normal_user_disabled_viewer(csv_path: str, disabled_viewer_readme_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path, "README.md": disabled_viewer_readme_path},
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+        )
+
+
+def test_normal_user_disabled_discussions(csv_path: str) -> None:
+    # it should have no effect, but we saw a strange bug once where disabling discussions prevented the dataset from being read
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path},
+        repo_settings={"discussionsDisabled": True},
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(dataset=dataset)
 
 
 @pytest.mark.parametrize(

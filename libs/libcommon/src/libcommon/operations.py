@@ -89,11 +89,14 @@ def is_blocked(
     blocked_datasets: Optional[list[str]] = None,
 ) -> bool:
     if not blocked_datasets:
+        logging.debug("No datasets block list.")
         return False
     try:
         raise_if_blocked(dataset, blocked_datasets)
+        logging.debug(f"Dataset is not blocked. Block list is: {blocked_datasets}, dataset is: {dataset}")
         return False
     except DatasetInBlockListError:
+        logging.debug(f"Dataset is blocked. Block list is: {blocked_datasets}, dataset is: {dataset}")
         return True
 
 

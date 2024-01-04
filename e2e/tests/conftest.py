@@ -29,11 +29,5 @@ def csv_path(tmp_path_factory: TempPathFactory) -> str:
 
 @pytest.fixture(scope="session")
 def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
-    with tmp_dataset(
-        namespace=NORMAL_USER,
-        token=NORMAL_USER_TOKEN,
-        private=False,
-        gated=None,
-        csv_path=csv_path,
-    ) as dataset:
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/csv_data.csv": csv_path}) as dataset:
         yield dataset

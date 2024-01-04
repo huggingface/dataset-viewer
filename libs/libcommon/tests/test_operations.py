@@ -28,7 +28,9 @@ from .constants import (
     PROD_HUB_ENDPOINT,
 )
 
-PROD_PUBLIC_DATASET = "glue"
+PROD_PUBLIC_USER = "severo"
+PROD_PUBLIC_REPO = "glue"
+PROD_PUBLIC_DATASET = f"{PROD_PUBLIC_USER}/{PROD_PUBLIC_REPO}"
 
 
 @pytest.mark.real_dataset
@@ -64,7 +66,10 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
     [
         ([], SupportStatus.PUBLIC),
         (["dummy"], SupportStatus.PUBLIC),
+        ([f"{PROD_PUBLIC_DATASET}-other*"], SupportStatus.PUBLIC),
         ([PROD_PUBLIC_DATASET], SupportStatus.UNSUPPORTED),
+        ([f"{PROD_PUBLIC_USER}/*"], SupportStatus.UNSUPPORTED),
+        ([f"{PROD_PUBLIC_USER}/{PROD_PUBLIC_REPO[:2]}*"], SupportStatus.UNSUPPORTED),
         ([PROD_PUBLIC_DATASET, "dummy"], SupportStatus.UNSUPPORTED),
         (["dummy", PROD_PUBLIC_DATASET], SupportStatus.UNSUPPORTED),
     ],
