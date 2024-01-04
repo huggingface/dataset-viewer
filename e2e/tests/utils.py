@@ -187,7 +187,7 @@ def tmp_dataset(
     namespace: str,
     token: str,
     files: dict[str, str],
-    repo_settings: Optional[dict[str, str]] = None,
+    repo_settings: Optional[dict[str, Any]] = None,
     dataset_prefix: str = "",
 ) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it

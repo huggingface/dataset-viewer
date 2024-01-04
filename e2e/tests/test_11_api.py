@@ -34,7 +34,7 @@ def get_auth_headers(auth_type: str) -> dict[str, str]:
 
 def poll_parquet_until_ready_and_assert(
     dataset: str,
-    expected_status_code: Optional[int] = 200,
+    expected_status_code: int = 200,
     expected_error_code: Optional[str] = None,
     headers: Optional[dict[str, str]] = None,
 ) -> None:
