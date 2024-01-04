@@ -6,6 +6,7 @@ from typing import Optional
 
 from libcommon.operations import update_dataset
 from libcommon.simple_cache import get_all_datasets
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 
 
@@ -15,6 +16,7 @@ def backfill_cache(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     error_codes_to_retry: Optional[list[str]] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     logging.info("backfill datasets in the database and delete non-supported ones")
     datasets_in_database = get_all_datasets()
@@ -46,6 +48,7 @@ def backfill_cache(
                 priority=Priority.LOW,
                 error_codes_to_retry=error_codes_to_retry,
                 hf_timeout_seconds=None,
+                storage_clients=storage_clients,
             ):
                 supported_datasets += 1
             else:

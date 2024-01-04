@@ -25,6 +25,7 @@ from libcommon.simple_cache import (
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
+from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, JobResult, Priority
 
 # TODO: clean dangling cache entries
@@ -154,7 +155,28 @@ class DeleteDatasetCacheEntriesTask(Task):
             delete_dataset_responses(dataset=self.dataset)
 
 
-SupportedTask = Union[CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask]
+@dataclass
+class DeleteDatasetStorageTask(Task):
+    dataset: str
+    storage_client: StorageClient
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetStorageTask,{self.dataset},{self.storage_client}"
+        self.long_id = self.id
+
+    def run(self) -> None:
+        with StepProfiler(
+            method="DeleteDatasetStorageTask.run",
+            step="all",
+            context=f"dataset={self.dataset},storage_client={self.storage_client}",
+        ):
+            self.storage_client.delete_dataset_directory(self.dataset)
+
+
+SupportedTask = Union[
+    CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask, DeleteDatasetStorageTask
+]
 
 
 @dataclass
@@ -645,27 +667,38 @@ class DatasetRemovalPlan(Plan):
 
     Args:
         dataset: dataset name
+        storage_clients (list[StorageClient], optional): The storage clients.
     """
 
     dataset: str
+    storage_clients: Optional[list[StorageClient]]
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self.add_task(DeleteDatasetJobsTask(dataset=self.dataset))
         self.add_task(DeleteDatasetCacheEntriesTask(dataset=self.dataset))
+        if self.storage_clients:
+            for storage_client in self.storage_clients:
+                self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
 
 
-def remove_dataset(dataset: str) -> None:
+def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
     """
     Remove the dataset from the Datasets Server
 
     Args:
         dataset (str): The name of the dataset.
+        storage_clients (list[StorageClient], optional): The storage clients.
     """
-    plan = DatasetRemovalPlan(dataset=dataset)
+    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
     plan.run()
-    # TODO: delete the files (metadata parquet, parquet, duckdb index, assets, etc)
-    # (see recreate_dataset in services/admin and do the same. It means that every caller must have access to the storage)
+    # assets and cached_assets are deleted by the storage clients
+    # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
+    # note that it's not as important as the assets, because generally, we want to delete a dataset
+    # in datasets-server because the repository does not exist anymore on the Hub, so: the other files
+    # don't exist anymore either (they were in refs/convert/parquet).
+    # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
+    # and the user is not pro anymore, etc.)
 
 
 def set_revision(
@@ -827,54 +860,3 @@ def has_pending_ancestor_jobs(
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
     # is good enough.
     return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
-
-
-def backfill(
-    dataset: str,
-    revision: str,
-    priority: Priority,
-    cache_max_days: int,
-    error_codes_to_retry: Optional[list[str]] = None,
-    processing_graph: ProcessingGraph = processing_graph,
-) -> int:
-    """
-    Backfill the cache for a given revision.
-
-    Args:
-        dataset (str): The name of the dataset.
-        revision (str): The revision.
-        priority (Priority): The priority of the jobs.
-        cache_max_days (int): The maximum number of days to keep the cache.
-        error_codes_to_retry (Optional[list[str]]): The error codes for which the jobs should be retried.
-        processing_graph (ProcessingGraph, optional): The processing graph.
-
-    Returns:
-        int: The number of jobs created.
-    """
-    with StepProfiler(
-        method="backfill",
-        step="all",
-        context=f"dataset={dataset}",
-    ):
-        logging.info(f"Analyzing {dataset}")
-        with StepProfiler(
-            method="backfill",
-            step="plan",
-            context=f"dataset={dataset}",
-        ):
-            plan = DatasetBackfillPlan(
-                dataset=dataset,
-                revision=revision,
-                priority=priority,
-                processing_graph=processing_graph,
-                error_codes_to_retry=error_codes_to_retry,
-                only_first_processing_steps=False,
-                cache_max_days=cache_max_days,
-            )
-        logging.info(f"Analyzing {dataset}")
-        with StepProfiler(
-            method="backfill",
-            step="run",
-            context=f"dataset={dataset}",
-        ):
-            return plan.run()

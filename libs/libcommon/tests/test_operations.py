@@ -4,14 +4,18 @@
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 
 import pytest
 from huggingface_hub import HfApi
 
-from libcommon.operations import CustomHfApi, get_dataset_status, update_dataset
+from libcommon.operations import CustomHfApi, delete_dataset, get_dataset_status, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
+from libcommon.simple_cache import has_some_cache, upsert_response
+from libcommon.storage_client import StorageClient
 from libcommon.utils import SupportStatus
 
 from .constants import (
@@ -27,6 +31,7 @@ from .constants import (
     PRO_USER_TOKEN,
     PROD_HUB_ENDPOINT,
 )
+from .utils import REVISION_NAME
 
 PROD_PUBLIC_USER = "severo"
 PROD_PUBLIC_REPO = "glue"
@@ -128,7 +133,7 @@ def test_get_dataset_status_private(token: str, namespace: str, expected_status:
         (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, True, True),
     ],
 )
-def test_check_support_and_act(
+def test_update(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
     token: str,
@@ -152,3 +157,71 @@ def test_check_support_and_act(
                 hf_token=CI_APP_TOKEN,
             )
             assert not Queue().has_pending_jobs(dataset=dataset)
+
+
+@pytest.mark.parametrize(
+    "create_assets,create_cached_assets",
+    [
+        (True, True),  # delete dataset with assets and cached assets
+        (False, True),  # delete dataset with assets
+        (True, False),  # delete dataset with cached assets
+        (False, False),  # delete dataset without assets or cached assets
+    ],
+)
+def test_delete_obsolete_cache(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    create_assets: bool,
+    create_cached_assets: bool,
+    tmp_path: Path,
+) -> None:
+    dataset = "dataset"
+    image_key = f"{dataset}/image.jpg"
+
+    assets_storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder="assets",
+    )
+    cached_assets_storage_client = StorageClient(
+        protocol="file",
+        root=str(tmp_path),
+        folder="cached-assets",
+    )
+
+    if create_assets:
+        assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
+        assets_storage_client._fs.touch(f"{assets_storage_client.get_base_directory()}/{image_key}")
+        assert assets_storage_client.exists(image_key)
+
+    if create_cached_assets:
+        cached_assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
+        cached_assets_storage_client._fs.touch(f"{cached_assets_storage_client.get_base_directory()}/{image_key}")
+        assert cached_assets_storage_client.exists(image_key)
+
+    upsert_response(
+        kind="kind_1",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        content={"config_names": [{"dataset": dataset, "config": "config"}]},
+        http_status=HTTPStatus.OK,
+    )
+    upsert_response(
+        kind="kind_2",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config="config",
+        content={"splits": [{"dataset": dataset, "config": "config", "split": "split"}]},
+        http_status=HTTPStatus.OK,
+    )
+    Queue().add_job(job_type="type_3", dataset=dataset, revision=REVISION_NAME, difficulty=50)
+
+    assert has_some_cache(dataset=dataset)
+    assert Queue().has_pending_jobs(dataset=dataset)
+
+    delete_dataset(dataset=dataset, storage_clients=[cached_assets_storage_client, assets_storage_client])
+
+    assert not assets_storage_client.exists(image_key)
+    assert not cached_assets_storage_client.exists(image_key)
+    assert not has_some_cache(dataset=dataset)
+    assert not Queue().has_pending_jobs(dataset=dataset)

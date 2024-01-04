@@ -25,18 +25,12 @@ from admin.routes.cache_reports import create_cache_reports_endpoint
 from admin.routes.cache_reports_with_content import (
     create_cache_reports_with_content_endpoint,
 )
-from admin.routes.dataset_backfill import create_dataset_backfill_endpoint
-from admin.routes.dataset_backfill_plan import create_dataset_backfill_plan_endpoint
 from admin.routes.dataset_status import create_dataset_status_endpoint
 from admin.routes.force_refresh import create_force_refresh_endpoint
 from admin.routes.healthcheck import healthcheck_endpoint
 from admin.routes.metrics import create_metrics_endpoint
 from admin.routes.num_dataset_infos_by_builder_name import (
     create_num_dataset_infos_by_builder_name_endpoint,
-)
-from admin.routes.obsolete_cache import (
-    create_delete_obsolete_cache_endpoint,
-    create_get_obsolete_cache_endpoint,
 )
 from admin.routes.pending_jobs import create_pending_jobs_endpoint
 from admin.routes.recreate_dataset import create_recreate_dataset_endpoint
@@ -60,7 +54,6 @@ def create_app() -> Starlette:
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
     )
-
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         root=app_config.assets.storage_root,
@@ -69,6 +62,7 @@ def create_app() -> Starlette:
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
     )
+    storage_clients = [cached_assets_storage_client, assets_storage_client]
 
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
@@ -112,32 +106,6 @@ def create_app() -> Starlette:
             ),
         ),
         Route(
-            "/dataset-backfill",
-            endpoint=create_dataset_backfill_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                cache_max_days=app_config.cache.max_days,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                blocked_datasets=app_config.common.blocked_datasets,
-            ),
-            methods=["POST"],
-        ),
-        Route(
-            "/dataset-backfill-plan",
-            endpoint=create_dataset_backfill_plan_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                hf_token=app_config.common.hf_token,
-                cache_max_days=app_config.cache.max_days,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                blocked_datasets=app_config.common.blocked_datasets,
-            ),
-        ),
-        Route(
             "/dataset-status",
             endpoint=create_dataset_status_endpoint(
                 max_age=app_config.admin.max_age,
@@ -145,31 +113,6 @@ def create_app() -> Starlette:
                 organization=app_config.admin.hf_organization,
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
             ),
-        ),
-        Route(
-            "/obsolete-cache",
-            endpoint=create_get_obsolete_cache_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                max_age=app_config.admin.max_age,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                hf_token=app_config.common.hf_token,
-            ),
-        ),
-        Route(
-            "/obsolete-cache",
-            endpoint=create_delete_obsolete_cache_endpoint(
-                hf_endpoint=app_config.common.hf_endpoint,
-                max_age=app_config.admin.max_age,
-                cached_assets_storage_client=cached_assets_storage_client,
-                assets_storage_client=assets_storage_client,
-                external_auth_url=app_config.admin.external_auth_url,
-                organization=app_config.admin.hf_organization,
-                hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
-                hf_token=app_config.common.hf_token,
-            ),
-            methods=["DELETE"],
         ),
         Route(
             "/num-dataset-infos-by-builder-name",
@@ -183,14 +126,13 @@ def create_app() -> Starlette:
         Route(
             "/recreate-dataset",
             endpoint=create_recreate_dataset_endpoint(
-                cached_assets_storage_client=cached_assets_storage_client,
-                assets_storage_client=assets_storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 external_auth_url=app_config.admin.external_auth_url,
                 organization=app_config.admin.hf_organization,
                 hf_timeout_seconds=app_config.admin.hf_timeout_seconds,
                 blocked_datasets=app_config.common.blocked_datasets,
+                storage_clients=storage_clients,
             ),
             methods=["POST"],
         ),

@@ -10,6 +10,7 @@ from huggingface_hub.utils import get_session, hf_raise_for_status, validate_hf_
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.orchestrator import remove_dataset, set_revision
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, SupportStatus, raise_if_blocked
 
 
@@ -165,7 +166,7 @@ def get_dataset_status(
     return DatasetStatus(dataset=dataset, revision=revision, support_status=support_status)
 
 
-def delete_dataset(dataset: str) -> None:
+def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
     """
     Delete a dataset
 
@@ -175,7 +176,7 @@ def delete_dataset(dataset: str) -> None:
     Returns: None.
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
-    remove_dataset(dataset=dataset)
+    remove_dataset(dataset=dataset, storage_clients=storage_clients)
 
 
 def update_dataset(
@@ -187,6 +188,7 @@ def update_dataset(
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
     error_codes_to_retry: Optional[list[str]] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> bool:
     # let's the exceptions bubble up if any
     dataset_status = get_dataset_status(
@@ -198,7 +200,7 @@ def update_dataset(
     )
     if dataset_status.support_status == SupportStatus.UNSUPPORTED:
         logging.warning(f"Dataset {dataset} is not supported. Let's delete the dataset.")
-        delete_dataset(dataset=dataset)
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
         return False
     set_revision(
         dataset=dataset,

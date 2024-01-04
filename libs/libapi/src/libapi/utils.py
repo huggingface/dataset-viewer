@@ -13,6 +13,7 @@ from libcommon.operations import update_dataset
 from libcommon.orchestrator import has_pending_ancestor_jobs
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response, has_some_cache
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -104,6 +105,7 @@ def try_backfill_dataset_then_raise(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     """
     Tries to backfill the dataset, and then raises an error.
@@ -128,6 +130,7 @@ def try_backfill_dataset_then_raise(
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
         priority=Priority.NORMAL,
+        storage_clients=storage_clients,
     ):
         logging.debug("The dataset is supported and it's being backfilled")
         raise ResponseNotReadyError(
@@ -147,6 +150,7 @@ def get_cache_entry_from_steps(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
     """Gets the cache from the first successful step in the processing steps list.
     If no successful result is found, it will return the last one even if it's an error,
@@ -169,6 +173,7 @@ def get_cache_entry_from_steps(
             hf_timeout_seconds=hf_timeout_seconds,
             hf_token=hf_token,
             cache_max_days=cache_max_days,
+            storage_clients=storage_clients,
         )
     return best_response.response
 

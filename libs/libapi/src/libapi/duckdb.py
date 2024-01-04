@@ -15,6 +15,7 @@ from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKD
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
+from libcommon.storage_client import StorageClient
 
 from libapi.utils import get_cache_entry_from_steps
 
@@ -100,6 +101,7 @@ def get_cache_entry_from_duckdb_index_job(
     hf_timeout_seconds: Optional[float],
     cache_max_days: int,
     blocked_datasets: list[str],
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
     return get_cache_entry_from_steps(
         processing_step_names=SPLIT_DUCKDB_INDEX_KINDS,
@@ -111,4 +113,5 @@ def get_cache_entry_from_duckdb_index_job(
         hf_timeout_seconds=hf_timeout_seconds,
         cache_max_days=cache_max_days,
         blocked_datasets=blocked_datasets,
+        storage_clients=storage_clients,
     )
