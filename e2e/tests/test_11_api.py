@@ -30,6 +30,13 @@ def get_auth_headers(auth_type: str) -> dict[str, str]:
     )
 
 
+# TODO: reduce the load on the worker for these tests. We only want to compute jobs until /splits?dataset=... is available, then throw everything away
+# TODO: test private gated?
+# TODO: test blocked datasets list
+# TODO: test disabled repo
+# TODO: test disabled viewer
+
+
 @pytest.mark.parametrize(
     "auth_type,expected_status_code,expected_error_code",
     [
@@ -127,12 +134,6 @@ def test_auth_private(
         check_x_revision=False,
         dataset=normal_user_private_dataset,
     )
-
-
-# TODO: test private gated?
-# TODO: test blocked datasets list
-# TODO: test disabled repo
-# TODO: test disabled viewer
 
 
 def test_normal_org_private(csv_path: str) -> None:
