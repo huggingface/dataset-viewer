@@ -130,6 +130,9 @@ def test_auth_private(
 
 
 # TODO: test private gated?
+# TODO: test blocked datasets list
+# TODO: test disabled repo
+# TODO: test disabled viewer
 
 
 def test_normal_org_private(csv_path: str) -> None:
@@ -162,7 +165,7 @@ def test_pro_user_private(csv_path: str) -> None:
             relative_url=f"/splits?dataset={dataset}",
             expected_status_code=200,
             expected_error_code=None,
-            headers=get_auth_headers("token"),
+            headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
             check_x_revision=False,
             dataset=dataset,
         )
@@ -180,7 +183,7 @@ def test_enterprise_user_private(csv_path: str) -> None:
             relative_url=f"/splits?dataset={dataset}",
             expected_status_code=404,
             expected_error_code="ResponseNotFound",
-            headers=get_auth_headers("token"),
+            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
             check_x_revision=False,
             dataset=dataset,
         )
@@ -198,7 +201,7 @@ def test_enterprise_org_private(csv_path: str) -> None:
             relative_url=f"/splits?dataset={dataset}",
             expected_status_code=200,
             expected_error_code=None,
-            headers=get_auth_headers("token"),
+            headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
             check_x_revision=False,
             dataset=dataset,
         )

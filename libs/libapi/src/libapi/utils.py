@@ -108,30 +108,32 @@ def try_backfill_dataset_then_raise(
     """
     Tries to backfill the dataset, and then raises an error.
     """
-    if not has_some_cache(dataset=dataset):
-        logging.debug("No cache entry found")
-        # We have to check if the dataset exists and is supported
-        if update_dataset(
-            dataset=dataset,
-            cache_max_days=cache_max_days,
-            blocked_datasets=blocked_datasets,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            hf_timeout_seconds=hf_timeout_seconds,
-            priority=Priority.NORMAL,
-        ):
-            logging.debug("The dataset is supported and it's being backfilled")
-            raise ResponseNotReadyError(
-                "The server is busier than usual and the response is not ready yet. Please retry later."
-            )
-        logging.debug("The dataset is not supported")
-        raise ResponseNotFoundError("Not found.")
     if has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
         logging.debug("Cache entry not found but some jobs are still in progress, so it could exist in the future")
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )
-    logging.debug("Cache entry found but no pending job")
+    logging.debug("No pending job that could create the expected cache entry")
+    if has_some_cache(dataset=dataset):
+        logging.debug(
+            "Some cache entries exist, so the dataset is supported, but that cache entry will never be created"
+        )
+        raise ResponseNotFoundError("Not found.")
+    logging.debug("No cache entry found")
+    if update_dataset(
+        dataset=dataset,
+        cache_max_days=cache_max_days,
+        blocked_datasets=blocked_datasets,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        priority=Priority.NORMAL,
+    ):
+        logging.debug("The dataset is supported and it's being backfilled")
+        raise ResponseNotReadyError(
+            "The server is busier than usual and the response is not ready yet. Please retry later."
+        )
+    logging.debug("The dataset is not supported")
     raise ResponseNotFoundError("Not found.")
 
 
@@ -154,8 +156,6 @@ def get_cache_entry_from_steps(
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
           if the response is not ready yet.
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
 
     Returns: the cached record
     """

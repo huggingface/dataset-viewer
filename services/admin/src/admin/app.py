@@ -12,7 +12,6 @@ from libcommon.storage import (
     init_parquet_metadata_dir,
     init_statistics_cache_dir,
 )
-from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware

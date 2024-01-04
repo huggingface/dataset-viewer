@@ -813,17 +813,15 @@ def has_pending_ancestor_jobs(
         bool: True if any of the artifact could exist, False otherwise.
 
     Raises:
-        ValueError: If any of the processing step does not exist.
+        ProcessingStepDoesNotExist: If any of the processing step does not exist.
     """
     job_types: set[str] = set()
     for processing_step_name in processing_step_names:
-        try:
-            processing_step = processing_graph.get_processing_step(processing_step_name)
-        except ProcessingStepDoesNotExist as e:
-            raise ValueError(f"Processing step {processing_step_name} does not exist") from e
+        processing_step = processing_graph.get_processing_step(processing_step_name)
         ancestors = processing_graph.get_ancestors(processing_step_name)
         job_types.add(processing_step.job_type)
         job_types.update(ancestor.job_type for ancestor in ancestors)
+    logging.debug(f"looking at ancestor jobs of {processing_step_names}: {list(job_types)}")
     # check if a pending job exists for the artifact or one of its ancestors
     # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
