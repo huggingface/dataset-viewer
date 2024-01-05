@@ -31,7 +31,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         split (`str`):
             A split name.
     Returns:
-        `IsValidResponse`: The response (viewer, preview, search).
+        `IsValidResponse`: The response (viewer, preview, search, filter).
     """
     logging.info(f"get is-valid response for dataset={dataset}")
 
@@ -56,11 +56,13 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
             split=split,
         )
         search_content = duckdb_response.response["content"]
+        filter = True
         search = search_content["has_fts"]
     except Exception:
+        filter = False
         search = False
 
-    return IsValidResponse(viewer=viewer, preview=preview, search=search)
+    return IsValidResponse(viewer=viewer, preview=preview, search=search, filter=filter)
 
 
 class SplitIsValidJobRunner(SplitJobRunner):

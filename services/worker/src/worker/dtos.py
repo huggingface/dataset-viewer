@@ -245,6 +245,7 @@ class IsValidResponse(TypedDict):
     preview: bool
     viewer: bool
     search: bool
+    filter: bool
 
 
 class DatasetHubCacheResponse(TypedDict):
