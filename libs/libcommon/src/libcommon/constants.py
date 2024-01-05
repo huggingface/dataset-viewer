@@ -34,7 +34,7 @@ PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS = 100
 PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS = 100
 PARQUET_REVISION = "refs/convert/parquet"
 
-ERROR_CODES_TO_RETRY = "CreateCommitError,LockedDatasetTimeoutError,StreamingRowsError"
+ERROR_CODES_TO_RETRY = "CreateCommitError,LockedDatasetTimeoutError,StreamingRowsError,JobManagerCrashedError"
 
 EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 
