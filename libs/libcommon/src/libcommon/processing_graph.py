@@ -557,7 +557,7 @@ specification: ProcessingGraphSpecification = {
             "split-first-rows-from-streaming",
             "split-duckdb-index",
         ],
-        "job_runner_version": 1,
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "config-is-valid": {
@@ -567,7 +567,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names-from-info",
             "split-is-valid",
         ],
-        "job_runner_version": 1,
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-is-valid": {
@@ -576,7 +576,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-config-names",
             "config-is-valid",
         ],
-        "job_runner_version": 5,
+        "job_runner_version": 6,
         "difficulty": 20,
     },
     "split-image-url-columns": {
