@@ -269,14 +269,18 @@ def upsert_response_params(
         job_params["revision"],
     )
     try:
-        previous_response = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    except Exception:
+        previous_response = (
+            CachedResponseDocument.objects(
+                kind=kind, dataset=dataset, config=config, split=split, dataset_git_revision=revision
+            )
+            .only("retries", "dataset_git_revision")
+            .get()
+        )
+    except DoesNotExist:
         previous_response = None
     retries = (
         0
-        if previous_response is None
-        else 0
-        if previous_response["dataset_git_revision"] != revision
+        if previous_response is None or previous_response["dataset_git_revision"] != revision
         else previous_response["retries"] + 1
     )
     upsert_response(

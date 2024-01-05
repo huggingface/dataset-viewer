@@ -368,6 +368,7 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
     [
         (0, 1, True),
         (3, 1, False),
+        (3, 3, False),
         (2, 4, True),
     ],
 )

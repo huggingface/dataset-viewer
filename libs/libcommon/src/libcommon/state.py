@@ -89,7 +89,7 @@ class CacheState:
             and (
                 self.cache_entry_metadata["http_status"] >= 400
                 and self.cache_entry_metadata["error_code"] in self.error_codes_to_retry
-                and self.cache_entry_metadata["retries"] <= MAX_RETRY_ATTEMPTS
+                and self.cache_entry_metadata["retries"] < MAX_RETRY_ATTEMPTS
             )
         )
 
