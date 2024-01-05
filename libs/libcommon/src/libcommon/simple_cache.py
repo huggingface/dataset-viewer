@@ -280,8 +280,8 @@ def upsert_response_params(
         previous_response = None
     retries = (
         0
-        if previous_response is None or previous_response["dataset_git_revision"] != revision
-        else previous_response["retries"] + 1
+        if previous_response is None or previous_response.dataset_git_revision != revision
+        else previous_response.retries + 1
     )
     upsert_response(
         kind=kind,
