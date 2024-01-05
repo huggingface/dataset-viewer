@@ -6,5 +6,7 @@
 # note that the /tmp directory is not shared among the pods
 - name: HF_MODULES_CACHE
   value: "/tmp/modules-cache"
+- name: HF_DATASETS_TRUST_REMOTE_CODE
+  value: "0"
 {{- end -}}
 
