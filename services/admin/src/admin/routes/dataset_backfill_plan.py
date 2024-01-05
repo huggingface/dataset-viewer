@@ -27,7 +27,7 @@ def create_dataset_backfill_plan_endpoint(
     async def dataset_state_endpoint(request: Request) -> Response:
         try:
             dataset = get_request_parameter(request, "dataset", required=True)
-            logging.info(f"/dataset-state, dataset={dataset}")
+            logging.info(f"/dataset-backfill-plan, dataset={dataset}")
 
             # if auth_check fails, it will raise an exception that will be caught below
             await auth_check(
