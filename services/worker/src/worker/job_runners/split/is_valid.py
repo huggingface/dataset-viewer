@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-import contextlib
 import logging
 
 from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_HAS_PREVIEW_KINDS, SPLIT_HAS_SEARCH_KINDS
@@ -49,9 +48,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         kinds=SPLIT_HAS_PREVIEW_KINDS,
     )
 
-    filter = False
-    search = False
-    with contextlib.suppress(Exception):
+    try:
         duckdb_response = get_previous_step_or_raise(
             kinds=SPLIT_HAS_SEARCH_KINDS,
             dataset=dataset,
@@ -61,6 +58,9 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         search_content = duckdb_response.response["content"]
         filter = True
         search = search_content["has_fts"]
+    except Exception:
+        filter = False
+        search = False
 
     return IsValidResponse(viewer=viewer, preview=preview, search=search, filter=filter)
 
