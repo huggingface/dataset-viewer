@@ -150,7 +150,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         kind="dataset-config-names", dataset="dataset", config=None, split=None
     )
     assert cached_entry_metadata is not None
-    assert cached_entry_metadata["attempts"] == 1
+    assert cached_entry_metadata["attempts"] == 0
 
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
@@ -166,9 +166,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     message = "I'm crashed :("
     attempts = 2
 
-    for _ in range(attempts):
-        # simulate previous attempts
-        upsert_response(
+    upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
             config=None,
@@ -178,7 +176,8 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
             job_runner_version=processing_graph.get_processing_step("dataset-config-names").job_runner_version,
             progress=1.0,
             http_status=HTTPStatus.OK,
-        )
+            attempts=attempts
+    )
 
     queue = Queue()
     assert JobDocument.objects().count() == 0

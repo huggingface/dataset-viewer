@@ -366,7 +366,7 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
 @pytest.mark.parametrize(
     "attempts,max_attempts,should_create",
     [
-        (0, 2, True),
+        (0, 1, True),
         (3, 1, False),
         (2, 4, True),
     ],
@@ -378,9 +378,7 @@ def test_plan_retry_error_max_attempts(attempts: int, max_attempts: int, should_
         error_codes_to_retry = [error_code]
         compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
 
-        for _ in range(max(attempts, 1)):
-            # simulate putting cache by number of attempts to increase field
-            put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
+        put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, attempts=attempts)
         dataset_backfill_plan = get_dataset_backfill_plan(
             processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
         )
