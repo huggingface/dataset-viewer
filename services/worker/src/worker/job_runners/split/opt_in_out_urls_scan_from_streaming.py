@@ -10,6 +10,7 @@ from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
 from libcommon.exceptions import (
+    DatasetWithScriptNotSupportedError,
     ExternalServerError,
     InfoError,
     MissingSpawningTokenError,
@@ -22,7 +23,7 @@ from libcommon.utils import JobInfo
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
-from worker.utils import disable_dataset_scripts_support, get_rows_or_raise
+from worker.utils import get_rows_or_raise, resolve_trust_remote_code
 
 
 async def check_spawning(
@@ -154,6 +155,7 @@ def compute_opt_in_out_urls_scan_response(
             If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
+    trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     if not spawning_token:
         raise MissingSpawningTokenError("OPT_IN_OUT_URLS_SCAN_SPAWNING_TOKEN is not set")
@@ -173,13 +175,16 @@ def compute_opt_in_out_urls_scan_response(
 
     # get the info
     try:
-        with disable_dataset_scripts_support(dataset_scripts_allow_list):
-            info = get_dataset_config_info(
-                path=dataset,
-                config_name=config,
-                token=hf_token,
-            )
+        info = get_dataset_config_info(
+            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
+        )
     except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
         raise InfoError(
             f"The info cannot be fetched for the config '{config}' of the dataset.",
             cause=err,
@@ -205,16 +210,16 @@ def compute_opt_in_out_urls_scan_response(
         )
 
     # get the rows
-    with disable_dataset_scripts_support(dataset_scripts_allow_list):
-        rows_content = get_rows_or_raise(
-            dataset=dataset,
-            config=config,
-            split=split,
-            info=info,
-            rows_max_number=rows_max_number,
-            token=hf_token,
-            column_names=image_url_columns,
-        )
+    rows_content = get_rows_or_raise(
+        dataset=dataset,
+        config=config,
+        split=split,
+        info=info,
+        rows_max_number=rows_max_number,
+        token=hf_token,
+        column_names=image_url_columns,
+        trust_remote_code=trust_remote_code,
+    )
     rows = rows_content["rows"]
 
     # get the urls
