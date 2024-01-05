@@ -5,11 +5,11 @@ from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_AL
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20240104085000_cache_add_attempts import MigrationAddAttemptsToCacheResponse
+from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 
 
-def test_cache_add_attempts_to_jobs(mongo_host: str) -> None:
-    with MongoResource(database="test_cache_add_attempts_to_jobs", host=mongo_host, mongoengine_alias="cache"):
+def test_cache_add_retries_to_jobs(mongo_host: str) -> None:
+    with MongoResource(database="test_cache_add_retries_to_jobs", host=mongo_host, mongoengine_alias="cache"):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].insert_one(
             {
@@ -20,18 +20,18 @@ def test_cache_add_attempts_to_jobs(mongo_host: str) -> None:
             }
         )
 
-        migration = MigrationAddAttemptsToCacheResponse(
-            version="20240104085000", description="add 'attempts' field to cache records"
+        migration = MigrationAddRetriesToCacheResponse(
+            version="20240104085000", description="add 'retries' field to cache records"
         )
         migration.up()
 
         result = list(db[CACHE_COLLECTION_RESPONSES].find({"dataset": "test"}))
         assert len(result) == 1
-        assert result[0]["attempts"] == 0
+        assert result[0]["retries"] == 0
 
         migration.down()
         result = list(db[CACHE_COLLECTION_RESPONSES].find({"dataset": "test"}))
         assert len(result) == 1
-        assert "attempts" not in result[0]
+        assert "retries" not in result[0]
 
         db[CACHE_COLLECTION_RESPONSES].drop()

@@ -72,7 +72,7 @@ class CacheState:
                 dataset_git_revision=entry["dataset_git_revision"],
                 updated_at=entry["updated_at"],
                 progress=None if entry["progress"] is pd.NA else entry["progress"],
-                attempts=entry["attempts"],
+                retries=entry["retries"],
             )
 
         """Whether the cache entry exists."""
@@ -89,7 +89,7 @@ class CacheState:
             and (
                 self.cache_entry_metadata["http_status"] >= 400
                 and self.cache_entry_metadata["error_code"] in self.error_codes_to_retry
-                and self.cache_entry_metadata["attempts"] <= MAX_RETRY_ATTEMPTS
+                and self.cache_entry_metadata["retries"] <= MAX_RETRY_ATTEMPTS
             )
         )
 

@@ -364,21 +364,21 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
 
 
 @pytest.mark.parametrize(
-    "attempts,max_attempts,should_create",
+    "retries,max_retries,should_create",
     [
         (0, 1, True),
         (3, 1, False),
         (2, 4, True),
     ],
 )
-def test_plan_retry_error_max_attempts(attempts: int, max_attempts: int, should_create: bool) -> None:
-    with patch("libcommon.state.MAX_RETRY_ATTEMPTS", max_attempts):
+def test_plan_retry_error_max_retries(retries: int, max_retries: int, should_create: bool) -> None:
+    with patch("libcommon.state.MAX_RETRY_ATTEMPTS", max_retries):
         processing_graph = PROCESSING_GRAPH_GENEALOGY
         error_code = "ERROR_CODE_TO_RETRY"
         error_codes_to_retry = [error_code]
         compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
 
-        put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, attempts=attempts)
+        put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, retries=retries)
         dataset_backfill_plan = get_dataset_backfill_plan(
             processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
         )

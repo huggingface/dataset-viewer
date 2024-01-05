@@ -127,7 +127,7 @@ def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str,
     assert metric.total == total
 
 
-def test_upsert_response_attempts() -> None:
+def test_upsert_response_retries() -> None:
     kind = CACHE_KIND
     dataset = DATASET_NAME
     dataset_git_revision = REVISION_NAME
@@ -145,7 +145,7 @@ def test_upsert_response_attempts() -> None:
     )
     cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_entry_metadata is not None
-    assert cached_entry_metadata["attempts"] == 0
+    assert cached_entry_metadata["retries"] == 0
     assert CacheTotalMetricDocument.objects().count() == 1
     # insert for the second time
     upsert_response_params(
@@ -157,7 +157,7 @@ def test_upsert_response_attempts() -> None:
     assert CacheTotalMetricDocument.objects().count() == 1
     cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_entry_metadata is not None
-    assert cached_entry_metadata["attempts"] == 1
+    assert cached_entry_metadata["retries"] == 1
 
     # insert for the third time but for a new revision
     job_params["revision"] = "new_revision"
@@ -170,7 +170,7 @@ def test_upsert_response_attempts() -> None:
     assert CacheTotalMetricDocument.objects().count() == 1
     cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
     assert cached_entry_metadata is not None
-    assert cached_entry_metadata["attempts"] == 0
+    assert cached_entry_metadata["retries"] == 0
 
 
 @pytest.mark.parametrize(

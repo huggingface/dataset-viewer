@@ -60,7 +60,7 @@ from mongodb_migration.migrations._20230926095900_cache_add_has_fts_field_in_spl
 from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_split_duckdb_index import (
     MigrationAddPartialToSplitDuckdbIndexCacheResponse,
 )
-from mongodb_migration.migrations._20240104085000_cache_add_attempts import MigrationAddAttemptsToCacheResponse
+from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -292,7 +292,7 @@ class MigrationsCollector:
             MigrationRemoveFieldFromJob(
                 field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
             ),
-            MigrationAddAttemptsToCacheResponse(
-                version="20240104085000", description="add 'attempts' field to cache records"
+            MigrationAddRetriesToCacheResponse(
+                version="20240104085000", description="add 'retries' field to cache records"
             ),
         ]
