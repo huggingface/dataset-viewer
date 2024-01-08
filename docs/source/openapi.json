@@ -769,7 +769,7 @@
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["preview", "viewer", "search"],
+        "required": ["preview", "viewer", "search", "filter"],
         "properties": {
           "viewer": {
             "type": "boolean"
@@ -778,6 +778,9 @@
             "type": "boolean"
           },
           "search": {
+            "type": "boolean"
+          },
+          "filter": {
             "type": "boolean"
           }
         }
