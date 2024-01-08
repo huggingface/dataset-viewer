@@ -14,6 +14,7 @@ from datasets import (
     load_dataset,
 )
 from libcommon.exceptions import (
+    DatasetWithScriptNotSupportedError,
     FeaturesError,
     InfoError,
     RowsPostProcessingError,
@@ -30,9 +31,9 @@ from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
     create_truncated_row_items,
-    disable_dataset_scripts_support,
     get_json_size,
     get_rows_or_raise,
+    resolve_trust_remote_code,
 )
 
 
@@ -142,15 +143,19 @@ def compute_first_rows_response(
             If the dataset has a dataset script and is not in the allow list.
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
+    trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
     # get the features
     try:
-        with disable_dataset_scripts_support(dataset_scripts_allow_list):
-            info = get_dataset_config_info(
-                path=dataset,
-                config_name=config,
-                token=hf_token,
-            )
+        info = get_dataset_config_info(
+            path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
+        )
     except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
         raise InfoError(
             f"The info cannot be fetched for the config '{config}' of the dataset.",
             cause=err,
@@ -158,14 +163,14 @@ def compute_first_rows_response(
     if not info.features:
         try:
             # https://github.com/huggingface/datasets/blob/f5826eff9b06ab10dba1adfa52543341ef1e6009/src/datasets/iterable_dataset.py#L1255
-            with disable_dataset_scripts_support(dataset_scripts_allow_list):
-                iterable_dataset = load_dataset(
-                    path=dataset,
-                    name=config,
-                    split=split,
-                    streaming=True,
-                    token=hf_token,
-                )
+            iterable_dataset = load_dataset(
+                path=dataset,
+                name=config,
+                split=split,
+                streaming=True,
+                token=hf_token,
+                trust_remote_code=trust_remote_code,
+            )
             if not isinstance(iterable_dataset, IterableDataset):
                 raise TypeError("load_dataset should return an IterableDataset.")
             iterable_dataset = iterable_dataset._resolve_features()
@@ -173,6 +178,12 @@ def compute_first_rows_response(
                 raise TypeError("load_dataset should return an IterableDataset.")
             features = iterable_dataset.features
         except Exception as err:
+            if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+                raise DatasetWithScriptNotSupportedError(
+                    "The dataset viewer doesn't support this dataset because it runs "
+                    "arbitrary python code. Please open a discussion in the discussion tab "
+                    "if you think this is an error and tag @lhoestq and @severo."
+                ) from err
             raise FeaturesError(
                 (
                     f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
@@ -209,7 +220,7 @@ def compute_first_rows_response(
         )
 
     # get the rows
-    with disable_dataset_scripts_support(dataset_scripts_allow_list):
+    try:
         rows_content = get_rows_or_raise(
             dataset=dataset,
             config=config,
@@ -218,7 +229,16 @@ def compute_first_rows_response(
             max_size_fallback=max_size_fallback,
             rows_max_number=rows_max_number,
             token=hf_token,
+            trust_remote_code=trust_remote_code,
         )
+    except ValueError as err:
+        if "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
+        raise
     rows = rows_content["rows"]
     all_fetched = rows_content["all_fetched"]
 

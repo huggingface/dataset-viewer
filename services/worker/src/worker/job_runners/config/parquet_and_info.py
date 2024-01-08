@@ -54,6 +54,7 @@ from libcommon.exceptions import (
     CreateCommitError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
+    DatasetWithScriptNotSupportedError,
     DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
@@ -78,8 +79,8 @@ from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
-    disable_dataset_scripts_support,
     hf_hub_url,
+    resolve_trust_remote_code,
     retry,
 )
 
@@ -1146,16 +1147,24 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
-        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
-            builder = load_dataset_builder(
-                path=dataset,
-                name=config,
-                revision=source_revision,
-                token=hf_token,
-                download_config=download_config,
-            )
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            token=hf_token,
+            download_config=download_config,
+            trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
+        )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
+    except ValueError as err:
+        if "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
+        raise
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 

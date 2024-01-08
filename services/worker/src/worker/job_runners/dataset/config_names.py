@@ -9,6 +9,7 @@ from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
+    DatasetWithScriptNotSupportedError,
     DatasetWithTooManyConfigsError,
     EmptyDatasetError,
 )
@@ -17,7 +18,7 @@ from worker.dtos import CompleteJobResult, ConfigNameItem, DatasetConfigNamesRes
 from worker.job_runners.dataset.dataset_job_runner import (
     DatasetJobRunnerWithDatasetsCache,
 )
-from worker.utils import disable_dataset_scripts_support
+from worker.utils import resolve_trust_remote_code
 
 
 def compute_config_names_response(
@@ -58,11 +59,18 @@ def compute_config_names_response(
     logging.info(f"get config names for dataset={dataset}")
     # get the list of splits in streaming mode
     try:
-        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
-            config_name_items: list[ConfigNameItem] = [
-                {"dataset": dataset, "config": str(config)}
-                for config in sorted(get_dataset_config_names(path=dataset, token=hf_token))
-            ]
+        config_name_items: list[ConfigNameItem] = [
+            {"dataset": dataset, "config": str(config)}
+            for config in sorted(
+                get_dataset_config_names(
+                    path=dataset,
+                    token=hf_token,
+                    trust_remote_code=resolve_trust_remote_code(
+                        dataset=dataset, allow_list=dataset_scripts_allow_list
+                    ),
+                )
+            )
+        ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
     except ImportError as err:
@@ -70,6 +78,12 @@ def compute_config_names_response(
             "The dataset tries to import a module that is not installed.", cause=err
         ) from err
     except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     number_of_configs = len(config_name_items)

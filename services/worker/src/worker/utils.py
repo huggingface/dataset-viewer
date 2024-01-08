@@ -9,17 +9,13 @@ import time
 import traceback
 import warnings
 from collections.abc import Callable, Sequence
-from contextlib import AbstractContextManager
 from fnmatch import fnmatch
 from typing import Any, Optional, TypeVar, Union, cast
-from unittest.mock import patch
 from urllib.parse import quote
 
-import datasets
 import PIL
 import requests
 from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
-from datasets.load import HubDatasetModuleFactoryWithScript
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
@@ -221,6 +217,7 @@ def get_rows(
     rows_max_number: int,
     token: Union[bool, str, None] = False,
     column_names: Optional[list[str]] = None,
+    trust_remote_code: bool = False,
 ) -> RowsContent:
     download_config = DownloadConfig(delete_extracted=True)
     PIL.Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
@@ -231,6 +228,7 @@ def get_rows(
         streaming=streaming,
         token=token,
         download_config=download_config,
+        trust_remote_code=trust_remote_code,
     )
     if streaming:
         if not isinstance(ds, IterableDataset):
@@ -259,6 +257,7 @@ def get_rows_or_raise(
     info: DatasetInfo,
     max_size_fallback: Optional[int] = None,
     column_names: Optional[list[str]] = [],
+    trust_remote_code: bool = False,
 ) -> RowsContent:
     try:
         return get_rows(
@@ -269,8 +268,15 @@ def get_rows_or_raise(
             rows_max_number=rows_max_number,
             token=token,
             column_names=column_names,
+            trust_remote_code=trust_remote_code,
         )
     except Exception as err:
+        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
         MAX_SIZE_FALLBACK = 100_000_000
         if max_size_fallback:
             warnings.warn(
@@ -295,6 +301,12 @@ def get_rows_or_raise(
                 token=token,
             )
         except Exception as err:
+            if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+                raise DatasetWithScriptNotSupportedError(
+                    "The dataset viewer doesn't support this dataset because it runs "
+                    "arbitrary python code. Please open a discussion in the discussion tab "
+                    "if you think this is an error and tag @lhoestq and @severo."
+                ) from err
             raise NormalRowsError(
                 "Cannot load the dataset split (in normal download mode) to extract the first rows.",
                 cause=err,
@@ -380,35 +392,10 @@ def is_dataset_script_error() -> bool:
     return any(EXTERNAL_DATASET_SCRIPT_PATTERN in cause for cause in cause_traceback)
 
 
-def disable_dataset_scripts_support(allow_list: list[str]) -> AbstractContextManager[Any]:
-    original_init = HubDatasetModuleFactoryWithScript.__init__
-
-    def raise_unsupported_dataset_with_script_or_init(
-        self: HubDatasetModuleFactoryWithScript,
-        name: str,
-        revision: Optional[Union[str, datasets.Version]] = None,
-        download_config: Optional[DownloadConfig] = None,
-        download_mode: Optional[Union[datasets.DownloadMode, str]] = None,
-        dynamic_modules_path: Optional[str] = None,
-    ) -> None:
-        for allowed_pattern in allow_list:
-            if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in name) or fnmatch(
-                name, allowed_pattern
-            ):
-                break
-        else:
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            )
-        original_init(
-            self=self,
-            name=name,
-            revision=revision,
-            download_config=download_config,
-            download_mode=download_mode,
-            dynamic_modules_path=dynamic_modules_path,
-        )
-
-    return patch.object(HubDatasetModuleFactoryWithScript, "__init__", raise_unsupported_dataset_with_script_or_init)
+def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
+    for allowed_pattern in allow_list:
+        if (allowed_pattern == "{{ALL_DATASETS_WITH_NO_NAMESPACE}}" and "/" not in dataset) or fnmatch(
+            dataset, allowed_pattern
+        ):
+            return True
+    return False

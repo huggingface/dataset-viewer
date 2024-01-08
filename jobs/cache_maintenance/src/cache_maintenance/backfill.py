@@ -20,8 +20,6 @@ def backfill_cache(
 ) -> None:
     logging.info("backfill datasets in the database and delete non-supported ones")
     datasets_in_database = get_all_datasets()
-    # get_supported_dataset_infos(hf_endpoint=hf_endpoint, hf_token=hf_token)
-    # TODO: restore this
     logging.info(f"analyzing {len(datasets_in_database)} datasets in the database")
     analyzed_datasets = 0
     supported_datasets = 0

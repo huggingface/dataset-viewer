@@ -733,7 +733,7 @@
             },
             "type": {
               "type": "string",
-              "enum": ["audio/wav", "audio/mpeg"]
+              "enum": ["audio/wav", "audio/mpeg", "audio/ogg"]
             }
           }
         }
@@ -769,7 +769,7 @@
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["preview", "viewer", "search"],
+        "required": ["preview", "viewer", "search", "filter"],
         "properties": {
           "viewer": {
             "type": "boolean"
@@ -778,6 +778,9 @@
             "type": "boolean"
           },
           "search": {
+            "type": "boolean"
+          },
+          "filter": {
             "type": "boolean"
           }
         }
@@ -4655,7 +4658,8 @@
                     "value": {
                       "preview": true,
                       "viewer": true,
-                      "search": true
+                      "search": true,
+                      "filter": true
                     }
                   },
                   "only preview": {
@@ -4664,7 +4668,8 @@
                     "value": {
                       "preview": true,
                       "viewer": false,
-                      "search": false
+                      "search": false,
+                      "filter": false
                     }
                   },
                   "no capabilities": {
@@ -4673,7 +4678,8 @@
                     "value": {
                       "preview": false,
                       "viewer": false,
-                      "search": false
+                      "search": false,
+                      "filter": false
                     }
                   },
                   "all the capabilities, for a config": {
@@ -4682,7 +4688,8 @@
                     "value": {
                       "preview": true,
                       "viewer": true,
-                      "search": true
+                      "search": true,
+                      "filter": true
                     }
                   },
                   "all the capabilities, for a split": {
@@ -4691,7 +4698,8 @@
                     "value": {
                       "preview": true,
                       "viewer": true,
-                      "search": true
+                      "search": true,
+                      "filter": true
                     }
                   }
                 }

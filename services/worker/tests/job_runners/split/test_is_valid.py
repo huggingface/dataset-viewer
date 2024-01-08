@@ -108,23 +108,27 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
 )
 EXPECTED_ERROR = (
-    {"viewer": False, "preview": False, "search": False},
+    {"viewer": False, "preview": False, "search": False, "filter": False},
     1.0,
 )
 EXPECTED_VIEWER_OK = (
-    {"viewer": True, "preview": False, "search": False},
+    {"viewer": True, "preview": False, "search": False, "filter": False},
     1.0,
 )
 EXPECTED_PREVIEW_OK = (
-    {"viewer": False, "preview": True, "search": False},
+    {"viewer": False, "preview": True, "search": False, "filter": False},
+    1.0,
+)
+EXPECTED_FILTER_OK = (
+    {"viewer": False, "preview": False, "search": False, "filter": True},
     1.0,
 )
 EXPECTED_SEARCH_OK = (
-    {"viewer": False, "preview": False, "search": True},
+    {"viewer": False, "preview": False, "search": True, "filter": True},
     1.0,
 )
 EXPECTED_ALL_OK = (
-    {"viewer": True, "preview": True, "search": True},
+    {"viewer": True, "preview": True, "search": True, "filter": True},
     1.0,
 )
 
@@ -236,7 +240,7 @@ def get_job_runner(
             [
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA,
             ],
-            EXPECTED_ERROR,
+            EXPECTED_FILTER_OK,
         ),
         (
             [
@@ -272,4 +276,4 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset, config, split = "doesnotexist", "doesnotexist", "doesnotexist"
     job_runner = get_job_runner(dataset, config, split, app_config)
     compute_result = job_runner.compute()
-    assert compute_result.content == {"viewer": False, "preview": False, "search": False}
+    assert compute_result.content == {"viewer": False, "preview": False, "search": False, "filter": False}
