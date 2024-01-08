@@ -222,7 +222,21 @@ def test_pro_user_private_gated(csv_path: str) -> None:
         )
 
 
-def test_normal_user_blocked(csv_path: str) -> None:
+def test_normal_user_blocked_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path},
+        dataset_prefix="blocked-",
+        # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+        private=True,
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+        )
+
+
+def test_normal_user_blocked_public(csv_path: str) -> None:
     with tmp_dataset(
         namespace=NORMAL_USER,
         token=NORMAL_USER_TOKEN,
