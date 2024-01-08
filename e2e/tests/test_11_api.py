@@ -157,6 +157,8 @@ def test_pro_user_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
         )
 
 
@@ -185,6 +187,8 @@ def test_enterprise_org_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
         )
 
 
@@ -213,6 +217,8 @@ def test_pro_user_private_gated(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
         )
 
 

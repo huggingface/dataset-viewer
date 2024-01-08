@@ -6,12 +6,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
 
 import pytest
 from huggingface_hub import HfApi
 
-from libcommon.operations import CustomHfApi, delete_dataset, get_dataset_status, update_dataset
+from libcommon.operations import delete_dataset, get_dataset_status, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import has_some_cache, upsert_response
@@ -47,21 +46,6 @@ def test_get_dataset_status() -> None:
 def test_get_dataset_status_timeout() -> None:
     with pytest.raises(Exception):
         get_dataset_status(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT, hf_timeout_seconds=0.01)
-
-
-@pytest.mark.parametrize(
-    "name, expected_pro, expected_enterprise",
-    [
-        (NORMAL_USER, False, None),
-        (PRO_USER, True, None),
-        (NORMAL_ORG, None, False),
-        (ENTERPRISE_ORG, None, True),
-    ],
-)
-def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise: Optional[bool]) -> None:
-    entity_info = CustomHfApi(endpoint=CI_HUB_ENDPOINT).whoisthis(name=name, token=CI_APP_TOKEN)
-    assert entity_info.is_pro == expected_pro
-    assert entity_info.is_enterprise == expected_enterprise
 
 
 # TODO: use a CI dataset instead of a prod dataset
@@ -109,9 +93,9 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     [
         (NORMAL_USER_TOKEN, NORMAL_USER, SupportStatus.UNSUPPORTED),
         (NORMAL_USER_TOKEN, NORMAL_ORG, SupportStatus.UNSUPPORTED),
-        (PRO_USER_TOKEN, PRO_USER, SupportStatus.PRO_USER),
+        (PRO_USER_TOKEN, PRO_USER, SupportStatus.UNSUPPORTED),
         (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER, SupportStatus.UNSUPPORTED),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, SupportStatus.ENTERPRISE_ORG),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, SupportStatus.UNSUPPORTED),
     ],
 )
 def test_get_dataset_status_private(token: str, namespace: str, expected_status: SupportStatus) -> None:
@@ -128,9 +112,9 @@ def test_get_dataset_status_private(token: str, namespace: str, expected_status:
         (NORMAL_USER_TOKEN, NORMAL_USER, False, True),
         (NORMAL_USER_TOKEN, NORMAL_USER, True, False),
         (NORMAL_USER_TOKEN, NORMAL_ORG, True, False),
-        (PRO_USER_TOKEN, PRO_USER, True, True),
+        (PRO_USER_TOKEN, PRO_USER, True, False),
         (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER, True, False),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, True, True),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, True, False),
     ],
 )
 def test_update(
