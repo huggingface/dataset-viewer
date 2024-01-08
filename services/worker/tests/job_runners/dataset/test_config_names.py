@@ -95,9 +95,9 @@ def test_compute_too_many_configs(
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
-        ("does_not_exist", False, "ConfigNamesError", "FileNotFoundError"),
-        ("gated", False, "ConfigNamesError", "FileNotFoundError"),
-        ("private", False, "ConfigNamesError", "FileNotFoundError"),
+        ("does_not_exist", False, "ConfigNamesError", "DatasetNotFoundError"),
+        ("gated", False, "ConfigNamesError", "DatasetNotFoundError"),
+        ("private", False, "ConfigNamesError", "DatasetNotFoundError"),
     ],
 )
 def test_compute_splits_response_simple_csv(
