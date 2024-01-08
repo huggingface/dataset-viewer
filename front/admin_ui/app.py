@@ -67,8 +67,8 @@ with gr.Blocks() as demo:
                 gr.Markdown("### Dataset infos")
                 home_dashboard_trending_datasets_infos_by_builder_name_table = gr.DataFrame(pd.DataFrame({"Builder name": [], "Count": [], r"% of all datasets with infos": [], r"% of all public datasets": []}))
                 gr.Markdown("### Trending datasets coverage (is-valid)")
-                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
-                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
+                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
+                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
             with gr.Tab("View pending jobs"):
                 fetch_pending_jobs_button = gr.Button("Fetch pending jobs")
                 gr.Markdown("### Pending jobs summary")
@@ -228,33 +228,26 @@ with gr.Blocks() as demo:
             trending_datasets_coverage = {"All trending datasets": []}
             error_datasets = []
             for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
-                if is_valid_response.status_code in (200, 500, 501):
+                if is_valid_response.status_code == 200:
                     response_json = is_valid_response.json()
-                    if "error" not in response_json:
-                        trending_datasets_coverage["All trending datasets"].append(dataset)
-                        for is_valid_field in response_json:
-                            pretty_field = is_valid_field.replace("_", " ").capitalize()
-                            if pretty_field not in trending_datasets_coverage:
-                                trending_datasets_coverage[pretty_field] = []
-                            trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
-                    else:
-                        error_datasets.append(dataset)
+                    trending_datasets_coverage["All trending datasets"].append(dataset)
+                    for is_valid_field in response_json:
+                        pretty_field = is_valid_field.replace("_", " ").capitalize()
+                        if pretty_field not in trending_datasets_coverage:
+                            trending_datasets_coverage[pretty_field] = []
+                        trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
                 else:
-                    out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
-                        "Error": [f"❌ Failed to fetch coverage for {dataset} from {DSS_ENDPOINT} (error {is_valid_response.status_code})"]
-                    }))
-                    break
-            else:
-                trending_datasets_coverage["All trending datasets"] += error_datasets
-                for pretty_field in trending_datasets_coverage:
-                    trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
-                out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
-                trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
-                    is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
-                    for is_valid_field in trending_datasets_coverage
-                    if is_valid_field != "All trending datasets"
-                }}
-                out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
+                    error_datasets.append(dataset)
+            trending_datasets_coverage["All trending datasets"] += error_datasets
+            for pretty_field in trending_datasets_coverage:
+                trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
+            out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
+            trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
+                is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
+                for is_valid_field in trending_datasets_coverage
+                if is_valid_field != "All trending datasets"
+            }}
+            out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
         else:
             out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
                 "Error": [f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"]
