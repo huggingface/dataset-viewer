@@ -231,7 +231,7 @@ def test_normal_user_blocked(csv_path: str) -> None:
         # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
     ) as dataset:
         poll_parquet_until_ready_and_assert(
-            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+            dataset=dataset, expected_status_code=501, expected_error_code="DatasetInBlockListError"
         )
 
 
