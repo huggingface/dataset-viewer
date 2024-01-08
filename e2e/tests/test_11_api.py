@@ -229,10 +229,13 @@ def test_normal_user_blocked_private(csv_path: str) -> None:
         files={"data.csv": csv_path},
         dataset_prefix="blocked-",
         # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
-        private=True,
+        repo_settings={"private": True},
     ) as dataset:
         poll_parquet_until_ready_and_assert(
-            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+            dataset=dataset,
+            headers=get_auth_headers("token"),
+            expected_status_code=404,
+            expected_error_code="ResponseNotFound",
         )
 
 
