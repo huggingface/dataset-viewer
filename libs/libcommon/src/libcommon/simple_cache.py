@@ -278,11 +278,17 @@ def upsert_response_params(
         )
     except DoesNotExist:
         previous_response = None
-    retries = (
-        0
-        if previous_response is None or previous_response.dataset_git_revision != revision
-        else previous_response.retries + 1
+
+    is_error = http_status != HTTPStatus.OK
+    is_completed = progress == 1.0 and http_status == HTTPStatus.OK
+    previous_retries = 0 if previous_response is None else previous_response.retries
+    increase_retries = (
+        previous_response is not None  # there already exists an old record for the same cache
+        and previous_response.dataset_git_revision == revision  # the old cache has the same revision
+        and (is_error or is_completed)  # cache is in final state error or completed (progress=1.0)
     )
+    retries = previous_retries + 1 if increase_retries else 0
+
     upsert_response(
         kind=kind,
         dataset=dataset,
