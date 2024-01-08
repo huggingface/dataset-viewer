@@ -41,7 +41,6 @@ def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
 def test_webhook(
     real_client: TestClient,
 ) -> None:
-    dataset = "glue"
-    payload = {"event": "add", "repo": {"type": "dataset", "name": dataset, "gitalyUid": "123", "headSha": "revision"}}
+    payload = {"event": "add", "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"}}
     response = real_client.post("/webhook", json=payload)
     assert response.status_code == 200, response.text

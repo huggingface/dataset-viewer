@@ -6,9 +6,10 @@ from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
-from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
-from libcommon.operations import backfill_dataset, delete_dataset
+from libcommon.exceptions import CustomError
+from libcommon.operations import delete_dataset, update_dataset
 from libcommon.prometheus import StepProfiler
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -62,7 +63,11 @@ def process_payload(
     payload: MoonWebhookV2Payload,
     cache_max_days: int,
     blocked_datasets: list[str],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
     trust_sender: bool = False,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
         return
@@ -73,36 +78,43 @@ def process_payload(
     if event == "remove":
         # destructive actions (delete, move) require a trusted sender
         if trust_sender:
-            delete_dataset(dataset=dataset)
+            delete_dataset(dataset=dataset, storage_clients=storage_clients)
         return
-    revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
-    if revision is None:
-        raise DatasetRevisionEmptyError(message=f"Dataset {dataset} has no revision")
     if event in ["add", "update"]:
-        backfill_dataset(
+        update_dataset(
             dataset=dataset,
-            revision=revision,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
+            storage_clients=storage_clients,
         )
     elif event == "move" and (moved_to := payload["movedTo"]):
         # destructive actions (delete, move) require a trusted sender
         if trust_sender:
-            backfill_dataset(
+            delete_dataset(dataset=dataset, storage_clients=storage_clients)
+            update_dataset(
                 dataset=moved_to,
-                revision=revision,
                 priority=Priority.NORMAL,
                 cache_max_days=cache_max_days,
                 blocked_datasets=blocked_datasets,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
+                storage_clients=storage_clients,
             )
-            delete_dataset(dataset=dataset)
 
 
 def create_webhook_endpoint(
     cache_max_days: int,
     blocked_datasets: list[str],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
     hf_webhook_secret: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         with StepProfiler(method="webhook_endpoint", step="all"):
@@ -143,6 +155,10 @@ def create_webhook_endpoint(
                         trust_sender=trust_sender,
                         cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                        storage_clients=storage_clients,
                     )
                 except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}

@@ -163,7 +163,7 @@ def test_get_cache_entry_from_steps() -> None:
     # pending job throws exception
     queue = Queue()
     queue.add_job(job_type="dataset-split-names", dataset=dataset, revision=revision, config=config, difficulty=50)
-    with patch("libcommon.dataset.get_dataset_git_revision", return_value=revision):
+    with patch("libcommon.operations.update_dataset", return_value=True):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
         with raises(ResponseNotReadyError):
             get_cache_entry_from_steps(

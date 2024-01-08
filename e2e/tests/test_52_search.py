@@ -4,9 +4,9 @@
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_search_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
+def test_search_endpoint(normal_user_public_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = hf_public_dataset_repo_csv_data
+    dataset = normal_user_public_dataset
     config, split = get_default_config_split()
     # ensure the /search endpoint works as well
     offset = 1
@@ -17,6 +17,7 @@ def test_search_endpoint(hf_public_dataset_repo_csv_data: str) -> None:
             f"/search?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&query={query}"
         ),
         check_x_revision=True,
+        dataset=dataset,
     )
     content = search_response.json()
     assert "rows" in content, search_response

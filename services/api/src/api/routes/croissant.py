@@ -23,6 +23,7 @@ from libapi.utils import (
 )
 from libcommon.constants import DATASET_INFO_KINDS
 from libcommon.prometheus import StepProfiler
+from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -203,6 +204,7 @@ def create_croissant_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def croissant_endpoint(request: Request) -> Response:
         endpoint_name = "croissant"
@@ -241,6 +243,7 @@ def create_croissant_endpoint(
                         blocked_datasets=blocked_datasets,
                         hf_timeout_seconds=hf_timeout_seconds,
                         cache_max_days=cache_max_days,
+                        storage_clients=storage_clients,
                     )
                 content = info_result["content"]
                 http_status = info_result["http_status"]

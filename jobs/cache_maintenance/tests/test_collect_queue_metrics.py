@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from unittest.mock import patch
-
-from libcommon.processing_graph import ProcessingGraph
+from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.utils import Status
 
@@ -11,12 +9,9 @@ from cache_maintenance.queue_metrics import collect_queue_metrics
 
 
 def test_collect_queue_metrics() -> None:
-    processing_step_name = "test_type"
-    processing_graph = ProcessingGraph({processing_step_name: {"input_type": "dataset", "job_runner_version": 1}})
-    processing_step = processing_graph.get_processing_step(processing_step_name)
     queue = Queue()
     queue.add_job(
-        job_type=processing_step.job_type,
+        job_type="dataset-config-names",
         dataset="dataset",
         revision="revision",
         config="config",
@@ -25,12 +20,13 @@ def test_collect_queue_metrics() -> None:
     )
     assert JobTotalMetricDocument.objects().count() == 1
 
-    with patch("cache_maintenance.queue_metrics.processing_graph", processing_graph):
-        collect_queue_metrics()
+    collect_queue_metrics()
 
     job_metrics = JobTotalMetricDocument.objects().all()
     assert job_metrics
-    assert len(job_metrics) == len(Status)  # One by each job state, see libcommon.queue.get_jobs_count_by_status
+    assert len(job_metrics) == len(Status) * len(
+        processing_graph.get_processing_steps()
+    )  # One per job status and per step, see libcommon.queue.get_jobs_count_by_status
     waiting_job = next((job for job in job_metrics if job.status == "waiting"), None)
     assert waiting_job
     assert waiting_job.total == 1

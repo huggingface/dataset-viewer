@@ -49,7 +49,6 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
 )
-from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
@@ -1092,8 +1091,6 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
-          If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
@@ -1196,9 +1193,7 @@ def compute_config_parquet_and_info_response(
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
         )
-        dataset_info = get_dataset_info_for_supported_datasets(
-            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
-        )
+        dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
         if is_dataset_too_big(
             dataset_info=dataset_info,
             builder=builder,

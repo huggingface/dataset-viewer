@@ -16,6 +16,7 @@ export SEARCH_UVICORN_PORT := 9083
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
+export COMMON_BLOCKED_DATASETS := __DUMMY_DATASETS_SERVER_USER__/blocked-*
 export LOG_LEVEL := DEBUG
 export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
@@ -26,6 +27,10 @@ export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1
 export WORKER_UVICORN_NUM_WORKERS := 2
 export WORKER_UVICORN_PORT := 9086
+
+# see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
+export ADMIN_HF_ORGANIZATION := valid_org
+export E2E_ADMIN_USER_TOKEN := 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
 
 export COMPOSE_PROJECT_NAME := e2e
 

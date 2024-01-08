@@ -7,10 +7,11 @@ from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
+from libcommon.operations import DatasetStatus
 from libcommon.queue import Queue
 from libcommon.simple_cache import has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority, Status
+from libcommon.utils import Priority, Status, SupportStatus
 
 from admin.routes.recreate_dataset import recreate_dataset
 
@@ -63,20 +64,20 @@ def test_recreate_dataset(tmp_path: Path) -> None:
 
     assert has_some_cache(dataset=dataset)
 
-    with patch("admin.routes.recreate_dataset.get_dataset_git_revision", return_value=REVISION_NAME):
+    with patch(
+        "admin.routes.recreate_dataset.update_dataset",
+        return_value=DatasetStatus(dataset=dataset, revision=REVISION_NAME, support_status=SupportStatus.PUBLIC),
+    ):
         recreate_dataset_report = recreate_dataset(
             hf_endpoint="hf_endpoint",
             hf_token="hf_token",
-            assets_storage_client=assets_storage_client,
-            cached_assets_storage_client=cached_assets_storage_client,
             dataset=dataset,
             priority=Priority.HIGH,
             blocked_datasets=[],
+            storage_clients=[assets_storage_client, cached_assets_storage_client],
         )
         assert recreate_dataset_report["status"] == "ok"
         assert recreate_dataset_report["dataset"] == dataset
-        assert recreate_dataset_report["deleted_jobs"] == 1
-        assert recreate_dataset_report["deleted_cached_responses"] == 1
     assert not asset_file.is_file()
     assert not cached_asset_file.is_file()
     assert not has_some_cache(dataset=dataset)
