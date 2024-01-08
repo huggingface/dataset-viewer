@@ -10,12 +10,17 @@ from pathlib import Path
 import pytest
 from huggingface_hub import HfApi
 
-from libcommon.operations import delete_dataset, get_dataset_status, update_dataset
+from libcommon.exceptions import DatasetInBlockListError, DatasetNotFoundError
+from libcommon.operations import (
+    NotSupportedError,
+    delete_dataset,
+    get_dataset_revision_if_supported_or_raise,
+    update_dataset,
+)
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import SupportStatus
 
 from .constants import (
     CI_APP_TOKEN,
@@ -38,38 +43,16 @@ PROD_PUBLIC_DATASET = f"{PROD_PUBLIC_USER}/{PROD_PUBLIC_REPO}"
 
 
 @pytest.mark.real_dataset
-def test_get_dataset_status() -> None:
-    get_dataset_status(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT)
+def test_get_revision() -> None:
+    get_dataset_revision_if_supported_or_raise(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT)
 
 
 @pytest.mark.real_dataset
-def test_get_dataset_status_timeout() -> None:
+def test_get_revision_timeout() -> None:
     with pytest.raises(Exception):
-        get_dataset_status(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT, hf_timeout_seconds=0.01)
-
-
-# TODO: use a CI dataset instead of a prod dataset
-@pytest.mark.real_dataset
-@pytest.mark.parametrize(
-    "blocked_datasets,expected_status",
-    [
-        ([], SupportStatus.PUBLIC),
-        (["dummy"], SupportStatus.PUBLIC),
-        ([f"{PROD_PUBLIC_DATASET}-other*"], SupportStatus.PUBLIC),
-        ([PROD_PUBLIC_DATASET], SupportStatus.UNSUPPORTED),
-        ([f"{PROD_PUBLIC_USER}/*"], SupportStatus.UNSUPPORTED),
-        ([f"{PROD_PUBLIC_USER}/{PROD_PUBLIC_REPO[:2]}*"], SupportStatus.UNSUPPORTED),
-        ([PROD_PUBLIC_DATASET, "dummy"], SupportStatus.UNSUPPORTED),
-        (["dummy", PROD_PUBLIC_DATASET], SupportStatus.UNSUPPORTED),
-    ],
-)
-def test_get_dataset_status_blocked_datasets(blocked_datasets: list[str], expected_status: SupportStatus) -> None:
-    assert (
-        get_dataset_status(
-            dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT, blocked_datasets=blocked_datasets
-        ).support_status
-        == expected_status
-    )
+        get_dataset_revision_if_supported_or_raise(
+            dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT, hf_timeout_seconds=0.01
+        )
 
 
 @contextmanager
@@ -89,58 +72,78 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
 
 
 @pytest.mark.parametrize(
-    "token,namespace,expected_status",
+    "token,namespace",
     [
-        (NORMAL_USER_TOKEN, NORMAL_USER, SupportStatus.UNSUPPORTED),
-        (NORMAL_USER_TOKEN, NORMAL_ORG, SupportStatus.UNSUPPORTED),
-        (PRO_USER_TOKEN, PRO_USER, SupportStatus.UNSUPPORTED),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER, SupportStatus.UNSUPPORTED),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, SupportStatus.UNSUPPORTED),
+        (NORMAL_USER_TOKEN, NORMAL_USER),
+        (NORMAL_USER_TOKEN, NORMAL_ORG),
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
     ],
 )
-def test_get_dataset_status_private(token: str, namespace: str, expected_status: SupportStatus) -> None:
+def test_get_revision_private(token: str, namespace: str) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
-        assert (
-            get_dataset_status(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN).support_status
-            == expected_status
-        )
+        with pytest.raises(NotSupportedError):
+            get_dataset_revision_if_supported_or_raise(
+                dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
+            )
 
 
 @pytest.mark.parametrize(
-    "token,namespace,private,expected_creation",
+    "token,namespace",
     [
-        (NORMAL_USER_TOKEN, NORMAL_USER, False, True),
-        (NORMAL_USER_TOKEN, NORMAL_USER, True, False),
-        (NORMAL_USER_TOKEN, NORMAL_ORG, True, False),
-        (PRO_USER_TOKEN, PRO_USER, True, False),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER, True, False),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG, True, False),
+        (NORMAL_USER_TOKEN, NORMAL_USER),
+        (NORMAL_USER_TOKEN, NORMAL_ORG),
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
     ],
 )
-def test_update(
+def test_update_private_raises(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
     token: str,
     namespace: str,
-    private: bool,
-    expected_creation: bool,
 ) -> None:
-    with tmp_dataset(namespace=namespace, token=token, private=private) as dataset:
-        assert (
+    with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
+        with pytest.raises(DatasetNotFoundError):
             update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-            == expected_creation
-        )
-        if expected_creation:
-            assert Queue().has_pending_jobs(dataset=dataset)
-            # delete the dataset by adding it to the blocked list
-            assert not update_dataset(
+
+
+@pytest.mark.parametrize(
+    "token,namespace",
+    [
+        (NORMAL_USER_TOKEN, NORMAL_USER),
+    ],
+)
+def test_update_public_does_not_raise(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    token: str,
+    namespace: str,
+) -> None:
+    with tmp_dataset(namespace=namespace, token=token, private=False) as dataset:
+        update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        assert Queue().has_pending_jobs(dataset=dataset)
+        # delete the dataset by adding it to the blocked list
+        with pytest.raises(DatasetNotFoundError):
+            update_dataset(
                 dataset=dataset,
                 blocked_datasets=[dataset],
                 cache_max_days=1,
                 hf_endpoint=CI_HUB_ENDPOINT,
                 hf_token=CI_APP_TOKEN,
             )
-            assert not Queue().has_pending_jobs(dataset=dataset)
+        with pytest.raises(DatasetInBlockListError):
+            update_dataset(
+                dataset=dataset,
+                blocked_datasets=[dataset],
+                cache_max_days=1,
+                hf_endpoint=CI_HUB_ENDPOINT,
+                hf_token=CI_APP_TOKEN,
+                let_raise_if_blocked=True,
+            )
+        assert not Queue().has_pending_jobs(dataset=dataset)
 
 
 @pytest.mark.parametrize(

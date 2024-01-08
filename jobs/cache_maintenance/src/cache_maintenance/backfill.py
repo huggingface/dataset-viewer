@@ -4,6 +4,7 @@
 import logging
 from typing import Optional
 
+from libcommon.exceptions import DatasetNotFoundError
 from libcommon.operations import update_dataset
 from libcommon.simple_cache import get_all_datasets
 from libcommon.storage_client import StorageClient
@@ -37,7 +38,7 @@ def backfill_cache(
     for dataset in datasets_in_database:
         analyzed_datasets += 1
         try:
-            if update_dataset(
+            update_dataset(
                 dataset=dataset,
                 cache_max_days=cache_max_days,
                 hf_endpoint=hf_endpoint,
@@ -47,15 +48,13 @@ def backfill_cache(
                 error_codes_to_retry=error_codes_to_retry,
                 hf_timeout_seconds=None,
                 storage_clients=storage_clients,
-            ):
-                supported_datasets += 1
-            else:
-                deleted_datasets += 1
+            )
+            supported_datasets += 1
+        except DatasetNotFoundError:
+            deleted_datasets += 1
         except Exception as e:
             logging.warning(f"failed to update_dataset {dataset}: {e}")
             error_datasets += 1
-            continue
-
         logging.debug(get_log())
         if analyzed_datasets % log_batch == 0:
             logging.info(get_log())

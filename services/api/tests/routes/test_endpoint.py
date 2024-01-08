@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from libapi.exceptions import ResponseNotReadyError
 from libapi.utils import get_cache_entry_from_steps
+from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
@@ -159,11 +160,12 @@ def test_get_cache_entry_from_steps() -> None:
     )
     assert result
     assert result["http_status"] == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert result["error_code"] is None
 
     # pending job throws exception
     queue = Queue()
     queue.add_job(job_type="dataset-split-names", dataset=dataset, revision=revision, config=config, difficulty=50)
-    with patch("libcommon.operations.update_dataset", return_value=True):
+    with patch("libcommon.operations.update_dataset", return_value=None):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
         with raises(ResponseNotReadyError):
             get_cache_entry_from_steps(
@@ -174,4 +176,54 @@ def test_get_cache_entry_from_steps() -> None:
                 hf_endpoint=app_config.common.hf_endpoint,
                 cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch("libcommon.operations.get_dataset_revision_if_supported_or_raise", return_value=revision):
+        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
+
+        # if the dataset is not blocked and no cache exists, ResponseNotReadyError is raised
+        with raises(ResponseNotReadyError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_blocked() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch("libcommon.operations.get_dataset_revision_if_supported_or_raise", return_value=revision):
+        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
+
+        # error result is returned if the dataset is blocked and no cache exists
+        with raises(DatasetInBlockListError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[dataset],
             )

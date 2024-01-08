@@ -18,11 +18,11 @@ from libapi.utils import (
 )
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.exceptions import CustomError
-from libcommon.operations import get_dataset_status
+from libcommon.operations import get_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
-from libcommon.utils import Priority, SupportStatus
+from libcommon.utils import Priority, raise_if_blocked
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -78,21 +78,19 @@ def create_force_refresh_endpoint(
                 organization=organization,
                 hf_timeout_seconds=hf_timeout_seconds,
             )
-            dataset_status = get_dataset_status(
+            revision = get_dataset_revision_if_supported_or_raise(
                 dataset=dataset,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 hf_timeout_seconds=hf_timeout_seconds,
-                blocked_datasets=blocked_datasets,
             )
-            if dataset_status.support_status == SupportStatus.UNSUPPORTED:
-                raise ValueError(f"Dataset {dataset} is not supported.")
-            # we directly create a job, without even checking if the dataset is blocked.
+            if blocked_datasets:
+                raise_if_blocked(dataset, blocked_datasets)
             Queue().add_job(
                 job_type=job_type,
                 difficulty=total_difficulty,
                 dataset=dataset,
-                revision=dataset_status.revision,
+                revision=revision,
                 config=config,
                 split=split,
                 priority=priority,
