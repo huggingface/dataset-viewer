@@ -7,11 +7,8 @@ from typing import Optional, TypedDict
 from libapi.exceptions import InvalidParameterError, UnexpectedApiError
 from libapi.request import get_request_parameter
 from libapi.utils import Endpoint, get_json_api_error_response, get_json_ok_response
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.operations import backfill_dataset
-from libcommon.queue import Queue
-from libcommon.simple_cache import delete_dataset_responses
+from libcommon.operations import delete_dataset, update_dataset
 from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 from starlette.requests import Request
@@ -23,53 +20,38 @@ from admin.authentication import auth_check
 class RecreateDatasetReport(TypedDict):
     status: str
     dataset: str
-    deleted_jobs: int
-    deleted_cached_responses: int
 
 
 def recreate_dataset(
     dataset: str,
     priority: Priority,
-    cached_assets_storage_client: StorageClient,
-    assets_storage_client: StorageClient,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> RecreateDatasetReport:
-    # try to get the revision of the dataset (before deleting the jobs and the cache, in case it fails)
-    revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-    # delete all the jobs and all the cache entries for the dataset (for all the revisions)
-    deleted_jobs = Queue().delete_dataset_jobs(dataset=dataset)
-    deleted_cached_responses = delete_dataset_responses(dataset=dataset)
-    if deleted_cached_responses is not None and deleted_cached_responses > 0:
-        # delete assets
-        cached_assets_storage_client.delete_dataset_directory(dataset)
-        assets_storage_client.delete_dataset_directory(dataset)
-    # create the jobs to backfill the dataset
-    backfill_dataset(
+    delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    # create the jobs to backfill the dataset, if supported
+    update_dataset(
         dataset=dataset,
-        revision=revision,
-        priority=priority,
-        cache_max_days=1,
+        cache_max_days=1,  # cache_max_days=1?
         blocked_datasets=blocked_datasets,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        priority=priority,
+        storage_clients=storage_clients,
     )
-    return RecreateDatasetReport(
-        status="ok",
-        dataset=dataset,
-        deleted_jobs=deleted_jobs,
-        deleted_cached_responses=deleted_cached_responses or 0,
-    )
+    return RecreateDatasetReport(status="ok", dataset=dataset)
 
 
 def create_recreate_dataset_endpoint(
-    cached_assets_storage_client: StorageClient,
-    assets_storage_client: StorageClient,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
     organization: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def recreate_dataset_endpoint(request: Request) -> Response:
         try:
@@ -93,11 +75,10 @@ def create_recreate_dataset_endpoint(
                 recreate_dataset(
                     dataset=dataset,
                     priority=priority,
-                    cached_assets_storage_client=cached_assets_storage_client,
-                    assets_storage_client=assets_storage_client,
                     blocked_datasets=blocked_datasets,
                     hf_endpoint=hf_endpoint,
                     hf_token=hf_token,
+                    storage_clients=storage_clients,
                 ),
                 max_age=0,
             )

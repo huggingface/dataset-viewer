@@ -5,8 +5,7 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.exceptions import DatasetInBlockListError
-from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
+from libcommon.orchestrator import AfterJobPlan, finish_job, has_pending_ancestor_jobs, remove_dataset, set_revision
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -171,10 +170,7 @@ def test_finish_job(
             progress=1.0,
         ),
     )
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-    dataset_orchestrator.finish_job(job_result=job_result)
+    finish_job(job_result=job_result, processing_graph=processing_graph)
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
 
@@ -196,16 +192,6 @@ def test_finish_job(
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
 
-    # check for blocked dataset
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[DATASET_NAME]
-    )
-    with pytest.raises(DatasetInBlockListError):
-        dataset_orchestrator.finish_job(job_result=job_result)
-    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
-    assert has_some_cache(dataset=DATASET_NAME) is False
-
 
 @pytest.mark.parametrize(
     "processing_graph,first_artifacts",
@@ -220,12 +206,13 @@ def test_set_revision(
     processing_graph: ProcessingGraph,
     first_artifacts: list[str],
 ) -> None:
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-
-    dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    set_revision(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        priority=Priority.NORMAL,
+        error_codes_to_retry=[],
+        cache_max_days=CACHE_MAX_DAYS,
+        processing_graph=processing_graph,
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -241,18 +228,6 @@ def test_set_revision(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(first_artifacts)
-
-    # check for blocked dataset
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[DATASET_NAME]
-    )
-    with pytest.raises(DatasetInBlockListError):
-        dataset_orchestrator.set_revision(
-            revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
-        )
-    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
-    assert has_some_cache(dataset=DATASET_NAME) is False
 
 
 @pytest.mark.parametrize(
@@ -270,11 +245,13 @@ def test_set_revision_handle_existing_jobs(
 ) -> None:
     # create two pending jobs for DA
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-    dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    set_revision(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        priority=Priority.NORMAL,
+        error_codes_to_retry=[],
+        cache_max_days=CACHE_MAX_DAYS,
+        processing_graph=processing_graph,
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -310,10 +287,12 @@ def test_has_pending_ancestor_jobs(
     expected_has_pending_ancestor_jobs: bool,
 ) -> None:
     Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
+    assert (
+        has_pending_ancestor_jobs(
+            dataset=DATASET_NAME, processing_step_names=processing_step_names, processing_graph=processing_graph
+        )
+        == expected_has_pending_ancestor_jobs
     )
-    assert dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names) == expected_has_pending_ancestor_jobs
 
 
 def test_remove_dataset() -> None:
@@ -337,10 +316,7 @@ def test_remove_dataset() -> None:
     assert len(pending_jobs_df) > 0
     assert has_some_cache(dataset=DATASET_NAME) is True
 
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH_GENEALOGY, blocked_datasets=[]
-    )
-    dataset_orchestrator.remove_dataset()
+    remove_dataset(dataset=DATASET_NAME)
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == 0

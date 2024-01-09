@@ -16,6 +16,11 @@ import pandas as pd
 from libcommon.exceptions import DatasetInBlockListError
 
 
+class SupportStatus(str, enum.Enum):
+    PUBLIC = "public"
+    UNSUPPORTED = "unsupported"
+
+
 class Status(str, enum.Enum):
     WAITING = "waiting"
     STARTED = "started"

@@ -18,7 +18,7 @@ from libcommon.exceptions import (
     TooBigContentError,
     UnexpectedError,
 )
-from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.orchestrator import finish_job
 from libcommon.processing_graph import processing_graph
 from libcommon.simple_cache import (
     CachedArtifactError,
@@ -117,10 +117,7 @@ class JobManager:
 
     def finish(self, job_result: JobResult) -> None:
         try:
-            DatasetOrchestrator(
-                dataset=self.job_params["dataset"],
-                blocked_datasets=self.common_config.blocked_datasets,
-            ).finish_job(job_result=job_result)
+            finish_job(job_result=job_result)
         except DatasetInBlockListError:
             self.debug("The dataset is blocked and has been deleted from the Datasets Server.")
 

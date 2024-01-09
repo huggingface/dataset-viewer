@@ -8,15 +8,12 @@ from typing import Any, Optional
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
-from libcommon.orchestrator import DatasetOrchestrator
+from libcommon.operations import update_dataset
+from libcommon.orchestrator import has_pending_ancestor_jobs
 from libcommon.public_assets_storage import PublicAssetsStorage
-from libcommon.simple_cache import (
-    CACHED_RESPONSE_NOT_FOUND,
-    CacheEntry,
-    get_best_response,
-)
+from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response, has_some_cache
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, RowItem, orjson_dumps
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -108,44 +105,39 @@ def try_backfill_dataset_then_raise(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     """
     Tries to backfill the dataset, and then raises an error.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
     """
-    dataset_orchestrator = DatasetOrchestrator(dataset=dataset, blocked_datasets=blocked_datasets)
-    if not dataset_orchestrator.has_some_cache():
-        # We have to check if the dataset exists and is supported
-        try:
-            revision = get_dataset_git_revision(
-                dataset=dataset,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
-            )
-        except Exception as e:
-            # The dataset is not supported
-            raise ResponseNotFoundError("Not found.") from e
-        # The dataset is supported, and the revision is known. We set the revision (it will create the jobs)
-        # and tell the user to retry.
-        logging.info(f"Set orchestrator revision for dataset={dataset}, revision={revision}")
-        dataset_orchestrator.set_revision(
-            revision=revision, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=cache_max_days
-        )
+    if has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
+        logging.debug("Cache entry not found but some jobs are still in progress, so it could exist in the future")
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
         )
-    elif dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names=processing_step_names):
-        # some jobs are still in progress, the cache entries could exist in the future
-        raise ResponseNotReadyError(
-            "The server is busier than usual and the response is not ready yet. Please retry later."
+    logging.debug("No pending job that could create the expected cache entry")
+    if has_some_cache(dataset=dataset):
+        logging.debug(
+            "Some cache entries exist, so the dataset is supported, but that cache entry will never be created"
         )
-    else:
-        # no pending job: the cache entry will not be created
         raise ResponseNotFoundError("Not found.")
+    logging.debug("No cache entry found")
+    if update_dataset(
+        dataset=dataset,
+        cache_max_days=cache_max_days,
+        blocked_datasets=blocked_datasets,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        priority=Priority.NORMAL,
+        storage_clients=storage_clients,
+    ):
+        logging.debug("The dataset is supported and it's being backfilled")
+        raise ResponseNotReadyError(
+            "The server is busier than usual and the response is not ready yet. Please retry later."
+        )
+    logging.debug("The dataset is not supported")
+    raise ResponseNotFoundError("Not found.")
 
 
 def get_cache_entry_from_steps(
@@ -158,6 +150,7 @@ def get_cache_entry_from_steps(
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
     """Gets the cache from the first successful step in the processing steps list.
     If no successful result is found, it will return the last one even if it's an error,
@@ -167,8 +160,6 @@ def get_cache_entry_from_steps(
           if no result is found.
         - [`~utils.ResponseNotReadyError`]
           if the response is not ready yet.
-        - [`libcommon.exceptions.DatasetInBlockListError`]
-          If the dataset is in the list of blocked datasets.
 
     Returns: the cached record
     """
@@ -182,6 +173,7 @@ def get_cache_entry_from_steps(
             hf_timeout_seconds=hf_timeout_seconds,
             hf_token=hf_token,
             cache_max_days=cache_max_days,
+            storage_clients=storage_clients,
         )
     return best_response.response
 

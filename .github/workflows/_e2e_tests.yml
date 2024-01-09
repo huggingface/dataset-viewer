@@ -52,6 +52,9 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
+          COMMON_BLOCKED_DATASETS: "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+          ADMIN_HF_ORGANIZATION: "valid_org"
+          E2E_ADMIN_USER_TOKEN: "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"
         run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry
@@ -95,5 +98,8 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
+          COMMON_BLOCKED_DATASETS: "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+          ADMIN_HF_ORGANIZATION: "valid_org"
+          E2E_ADMIN_USER_TOKEN: "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"
         run: |
           poetry run python -m pytest -vv -s tests

@@ -25,9 +25,7 @@ from datasets.packaged_modules.generator.generator import (
 )
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
-from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
-    CustomError,
     DatasetManualDownloadError,
 )
 from libcommon.queue import Queue
@@ -222,12 +220,8 @@ def test__is_too_big_from_hub(
     app_config: AppConfig,
 ) -> None:
     dataset = hub_public_csv if name == "public" else hub_public_big
-    dataset_info = get_dataset_info_for_supported_datasets(
-        dataset=dataset,
-        hf_endpoint=app_config.common.hf_endpoint,
-        hf_token=app_config.common.hf_token,
-        revision="main",
-        files_metadata=True,
+    dataset_info = HfApi(endpoint=app_config.common.hf_endpoint, token=app_config.common.hf_token).dataset_info(
+        repo_id=dataset, revision="main", files_metadata=True
     )
     assert (
         _is_too_big_from_hub(
@@ -374,18 +368,25 @@ def test_supported_if_gated(
 
 @pytest.mark.parametrize(
     "name",
-    ["public", "audio", "gated"],
+    ["public", "audio", "gated", "private"],
 )
 def test_compute_splits_response_simple_csv_ok(
     hub_responses_public: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_responses_gated: HubDatasetTest,
+    hub_responses_private: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     app_config: AppConfig,
     data_df: pd.DataFrame,
 ) -> None:
-    hub_datasets = {"public": hub_responses_public, "audio": hub_responses_audio, "gated": hub_responses_gated}
+    hub_datasets = {
+        "public": hub_responses_public,
+        "audio": hub_responses_audio,
+        "gated": hub_responses_gated,
+        "private": hub_responses_private,
+        # ^ private dataset can now be accessed as well. The control is not done in the workers anymore.
+    }
     dataset = hub_datasets[name]["name"]
     config = hub_datasets[name]["config_names_response"]["config_names"][0]["config"]
     expected_parquet_and_info_response = hub_datasets[name]["parquet_and_info_response"]
@@ -409,38 +410,6 @@ def test_compute_splits_response_simple_csv_ok(
         assert r.status_code == HTTPStatus.OK, r.text
         df = pd.read_parquet(io.BytesIO(r.content), engine="auto")
     assert df.equals(data_df), df
-
-
-@pytest.mark.parametrize(
-    "name,error_code,cause",
-    [
-        ("private", "DatasetNotFoundError", None),
-    ],
-)
-def test_compute_splits_response_simple_csv_error(
-    hub_responses_private: HubDatasetTest,
-    get_job_runner: GetJobRunner,
-    name: str,
-    error_code: str,
-    cause: str,
-    app_config: AppConfig,
-) -> None:
-    dataset = hub_responses_private["name"]
-    config_names_response = hub_responses_private["config_names_response"]
-    config = config_names_response["config_names"][0]["config"] if config_names_response else None
-    job_runner = get_job_runner(dataset, config, app_config)
-    with pytest.raises(CustomError) as exc_info:
-        job_runner.compute()
-    assert exc_info.value.code == error_code
-    assert exc_info.value.cause_exception == cause
-    if exc_info.value.disclose_cause:
-        response = exc_info.value.as_response()
-        assert set(response.keys()) == {"error", "cause_exception", "cause_message", "cause_traceback"}
-        response_dict = dict(response)
-        # ^ to remove mypy warnings
-        assert response_dict["cause_exception"] == cause
-        assert isinstance(response_dict["cause_traceback"], list)
-        assert response_dict["cause_traceback"][0] == "Traceback (most recent call last):\n"
 
 
 @pytest.mark.parametrize(
