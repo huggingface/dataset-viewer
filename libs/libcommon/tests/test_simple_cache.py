@@ -31,15 +31,13 @@ from libcommon.simple_cache import (
     get_datasets_with_last_updated_kind,
     get_outdated_split_full_names_for_step,
     get_response,
-    get_response_metadata,
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     has_any_successful_response,
     upsert_response,
-    upsert_response_params,
 )
-from libcommon.utils import JobParams, get_datetime
+from libcommon.utils import get_datetime
 
 from .utils import (
     CACHE_KIND,
@@ -125,61 +123,6 @@ def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str,
     metric = CacheTotalMetricDocument.objects(http_status=http_status, error_code=error_code, kind=kind).first()
     assert metric is not None
     assert metric.total == total
-
-
-def assert_failed_runs(kind: str, dataset: str, config: Optional[str], split: Optional[str], failed_runs: int) -> None:
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["failed_runs"] == failed_runs
-    assert CachedResponseDocument.objects().count() == 1
-
-
-@pytest.mark.parametrize(
-    "progress,http_status,failed_runs",
-    [
-        (None, HTTPStatus.INTERNAL_SERVER_ERROR, 1),
-        (0.8, HTTPStatus.OK, 0),
-        (0.2, HTTPStatus.INTERNAL_SERVER_ERROR, 1),
-    ],
-)
-def test_upsert_response_failed_runs(progress: float, http_status: HTTPStatus, failed_runs: int) -> None:
-    kind = CACHE_KIND
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config = None
-    split = None
-    content = {"some": "content"}
-    job_params: JobParams = {"dataset": dataset, "config": config, "split": split, "revision": dataset_git_revision}
-    assert CachedResponseDocument.objects().count() == 0
-    # insert for the first time
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=http_status,
-        progress=progress,
-    )
-    assert_failed_runs(kind, dataset, config, split, failed_runs)
-    # insert for the second time for the same revision
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-        progress=progress,
-    )
-    assert_failed_runs(kind, dataset, config, split, failed_runs + 1)
-
-    # insert for the third time but for a new revision
-    job_params["revision"] = "new_revision"
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=HTTPStatus.OK,
-        progress=1.0,
-    )
-    assert_failed_runs(kind, dataset, config, split, 0)
 
 
 @pytest.mark.parametrize(

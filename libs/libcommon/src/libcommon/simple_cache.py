@@ -261,6 +261,7 @@ def upsert_response_params(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
+    failed_runs: int = 0,
 ) -> None:
     dataset, config, split, revision = (
         job_params["dataset"],
@@ -268,20 +269,6 @@ def upsert_response_params(
         job_params["split"],
         job_params["revision"],
     )
-    try:
-        previous_response = (
-            CachedResponseDocument.objects(
-                kind=kind, dataset=dataset, config=config, split=split, dataset_git_revision=revision
-            )
-            .only("failed_runs", "dataset_git_revision")
-            .get()
-        )
-    except DoesNotExist:
-        previous_response = None
-
-    previous_failed_runs = 0 if previous_response is None else previous_response.failed_runs
-    failed_runs = previous_failed_runs + 1 if http_status != HTTPStatus.OK else 0
-
     upsert_response(
         kind=kind,
         dataset=dataset,
