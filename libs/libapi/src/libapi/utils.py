@@ -132,7 +132,7 @@ def try_backfill_dataset_then_raise(
         priority=Priority.NORMAL,
         storage_clients=storage_clients,
     )
-    # ^ raises with NotSupportedError if the dataset is not supported
+    # ^ raises with NotSupportedError if the dataset is not supported - in which case it's deleted from the cache
     logging.debug("The dataset is supported and it's being backfilled")
     raise ResponseNotReadyError(
         "The server is busier than usual and the response is not ready yet. Please retry later."
