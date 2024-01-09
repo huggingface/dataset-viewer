@@ -66,7 +66,6 @@ def process_payload(
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
-    trust_sender: bool = False,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     if payload["repo"]["type"] != "dataset":
@@ -76,13 +75,13 @@ def process_payload(
         return
     event = payload["event"]
     if event == "remove":
-        # destructive actions (delete, move) require a trusted sender
-        if trust_sender:
-            delete_dataset(dataset=dataset, storage_clients=storage_clients)
-        return
-    if event in ["add", "update"]:
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    elif event in ["add", "update", "move"]:
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
+        new_dataset = (event == "move" and payload["movedTo"]) or dataset
         update_dataset(
-            dataset=dataset,
+            dataset=new_dataset,
             priority=Priority.NORMAL,
             cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
@@ -91,20 +90,6 @@ def process_payload(
             hf_timeout_seconds=hf_timeout_seconds,
             storage_clients=storage_clients,
         )
-    elif event == "move" and (moved_to := payload["movedTo"]):
-        # destructive actions (delete, move) require a trusted sender
-        if trust_sender:
-            delete_dataset(dataset=dataset, storage_clients=storage_clients)
-            update_dataset(
-                dataset=moved_to,
-                priority=Priority.NORMAL,
-                cache_max_days=cache_max_days,
-                blocked_datasets=blocked_datasets,
-                hf_endpoint=hf_endpoint,
-                hf_token=hf_token,
-                hf_timeout_seconds=hf_timeout_seconds,
-                storage_clients=storage_clients,
-            )
 
 
 def create_webhook_endpoint(
@@ -147,12 +132,14 @@ def create_webhook_endpoint(
                 )
                 if not trust_sender:
                     logging.info(f"/webhook: the sender is not trusted. JSON: {json}")
+                    return get_response(
+                        {"status": "error", "error": "The sender is not trusted. Retry with a valid secret."}, 400
+                    )
 
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(
                         payload=payload,
-                        trust_sender=trust_sender,
                         cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
                         hf_endpoint=hf_endpoint,
