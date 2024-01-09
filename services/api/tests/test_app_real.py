@@ -18,6 +18,7 @@ def real_monkeypatch() -> Iterator[MonkeyPatch]:
     monkeypatch.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     monkeypatch.setenv("COMMON_HF_ENDPOINT", "https://huggingface.co")
     monkeypatch.setenv("COMMON_HF_TOKEN", "")
+    monkeypatch.setenv("API_HF_WEBHOOK_SECRET", "some secret")
     yield monkeypatch
     monkeypatch.undo()
 
@@ -38,9 +39,21 @@ def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
 
 
 @mark.real_dataset
-def test_webhook(
+def test_webhook_untrusted(
     real_client: TestClient,
 ) -> None:
     payload = {"event": "add", "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"}}
     response = real_client.post("/webhook", json=payload)
+    assert response.status_code == 400, response.text
+
+
+@mark.real_dataset
+def test_webhook_trusted(
+    real_app_config: AppConfig,
+    real_client: TestClient,
+) -> None:
+    payload = {"event": "add", "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"}}
+    response = real_client.post(
+        "/webhook", json=payload, headers={"x-webhook-secret": real_app_config.api.hf_webhook_secret}
+    )
     assert response.status_code == 200, response.text
