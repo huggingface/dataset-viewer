@@ -127,6 +127,62 @@ def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str,
     assert metric.total == total
 
 
+def assert_retries(kind: str, dataset: str, config: Optional[str], split: Optional[str], retries: int) -> None:
+    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["retries"] == retries
+    assert CachedResponseDocument.objects().count() == 1
+
+
+def test_upsert_response_retries_aggregated_cache() -> None:
+    kind = CACHE_KIND
+    dataset = DATASET_NAME
+    config = None
+    split = None
+    content = {"some": "content"}
+    job_params: JobParams = {"dataset": dataset, "config": config, "split": split, "revision": "first_revision"}
+    assert CachedResponseDocument.objects().count() == 0
+
+    # simulate aggregated success responses (multiple updates)
+    number_of_configs = 4
+    increment = 1.0 / number_of_configs
+    for index in range(1, number_of_configs + 1):
+        print(f"increment {index} == {index * increment}")
+        upsert_response_params(
+            kind=kind,
+            job_params=job_params,
+            content=content,
+            http_status=HTTPStatus.OK,
+            progress=index * increment,
+        )
+        if index < number_of_configs:
+            # number of retries should not be increased since progress is less tha 1.0
+            assert_retries(kind, dataset, config, split, 0)
+    # caveat: when cache is complete, it increases the number of retries
+    assert_retries(kind, dataset, config, split, 1)
+
+    # update for the same revision but with error, number of retries should increase
+    upsert_response_params(
+        kind=kind,
+        job_params=job_params,
+        content=content,
+        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        progress=None,
+    )
+    assert_retries(kind, dataset, config, split, 2)
+
+    # update for a new revision, number of retries is reset to 0
+    job_params["revision"] = "second_revision"
+    upsert_response_params(
+        kind=kind,
+        job_params=job_params,
+        content=content,
+        http_status=HTTPStatus.OK,
+        progress=1.0,
+    )
+    assert_retries(kind, dataset, config, split, 0)
+
+
 @pytest.mark.parametrize(
     "progress,http_status,retries",
     [
@@ -144,7 +200,7 @@ def test_upsert_response_retries(progress: float, http_status: HTTPStatus, retri
     split = None
     content = {"some": "content"}
     job_params: JobParams = {"dataset": dataset, "config": config, "split": split, "revision": dataset_git_revision}
-    assert CacheTotalMetricDocument.objects().count() == 0
+    assert CachedResponseDocument.objects().count() == 0
     # insert for the first time
     upsert_response_params(
         kind=kind,
@@ -153,10 +209,7 @@ def test_upsert_response_retries(progress: float, http_status: HTTPStatus, retri
         http_status=http_status,
         progress=progress,
     )
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 0
-    assert CachedResponseDocument.objects().count() == 1
+    assert_retries(kind, dataset, config, split, 0)
     # insert for the second time for the same revision
     upsert_response_params(
         kind=kind,
@@ -165,10 +218,7 @@ def test_upsert_response_retries(progress: float, http_status: HTTPStatus, retri
         http_status=http_status,
         progress=progress,
     )
-    assert CachedResponseDocument.objects().count() == 1
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == retries
+    assert_retries(kind, dataset, config, split, retries)
 
     # insert for the third time but for a new revision
     job_params["revision"] = "new_revision"
@@ -179,11 +229,7 @@ def test_upsert_response_retries(progress: float, http_status: HTTPStatus, retri
         http_status=HTTPStatus.OK,
         progress=1.0,
     )
-    assert CachedResponseDocument.objects().count() == 1
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 0
-
+    assert_retries(kind, dataset, config, split, 0)
 
 @pytest.mark.parametrize(
     "config,split",
