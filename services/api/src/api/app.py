@@ -97,7 +97,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
                 storage_clients=storage_clients,
             ),
         )
@@ -115,7 +114,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
                 storage_clients=storage_clients,
             ),
         ),
@@ -126,7 +124,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             "/webhook",
             endpoint=create_webhook_endpoint(
                 hf_webhook_secret=app_config.api.hf_webhook_secret,
-                cache_max_days=app_config.cache.max_days,
                 blocked_datasets=app_config.common.blocked_datasets,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,

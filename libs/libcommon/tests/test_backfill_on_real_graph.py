@@ -43,7 +43,6 @@ def test_plan_job_creation_and_termination() -> None:
         # names are not yet known.
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
@@ -78,7 +77,6 @@ def test_plan_job_creation_and_termination() -> None:
         # the cache has not changed
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "dataset-config-names,dataset,revision",
@@ -139,7 +137,6 @@ def test_plan_job_creation_and_termination() -> None:
         # The split-level artifacts are still missing, because the splits names are not yet known, for any config.
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [
                 "config-duckdb-index-size,dataset,revision,config1",

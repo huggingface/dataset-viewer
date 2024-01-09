@@ -34,7 +34,6 @@ def recreate_dataset(
     # create the jobs to backfill the dataset, if supported
     update_dataset(
         dataset=dataset,
-        cache_max_days=1,  # cache_max_days=1?
         blocked_datasets=blocked_datasets,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,

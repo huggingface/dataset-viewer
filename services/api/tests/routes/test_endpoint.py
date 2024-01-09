@@ -21,8 +21,6 @@ from pytest import raises
 from api.config import AppConfig, EndpointConfig
 from api.routes.endpoint import EndpointsDefinition
 
-CACHE_MAX_DAYS = 90
-
 
 def test_endpoints_definition() -> None:
     endpoint_config = EndpointConfig.from_env()
@@ -135,7 +133,6 @@ def test_get_cache_entry_from_steps() -> None:
         config=config,
         split=None,
         hf_endpoint=app_config.common.hf_endpoint,
-        cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
     )
     assert result
@@ -148,7 +145,6 @@ def test_get_cache_entry_from_steps() -> None:
         config=config,
         split=None,
         hf_endpoint=app_config.common.hf_endpoint,
-        cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
     )
     assert result
@@ -161,7 +157,6 @@ def test_get_cache_entry_from_steps() -> None:
         config=config,
         split=None,
         hf_endpoint=app_config.common.hf_endpoint,
-        cache_max_days=CACHE_MAX_DAYS,
         blocked_datasets=[],
     )
     assert result
@@ -180,7 +175,6 @@ def test_get_cache_entry_from_steps() -> None:
                 config=None,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
             )
 
@@ -208,7 +202,6 @@ def test_get_cache_entry_from_steps_no_cache() -> None:
                 config=config,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
             )
 
@@ -238,7 +231,6 @@ def test_get_cache_entry_from_steps_no_cache_disabled_viewer() -> None:
                 config=config,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
             )
 
@@ -268,7 +260,6 @@ def test_get_cache_entry_from_steps_no_cache_disabled() -> None:
                 config=config,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
             )
 
@@ -296,7 +287,6 @@ def test_get_cache_entry_from_steps_no_cache_private() -> None:
                 config=config,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[],
             )
 
@@ -324,6 +314,5 @@ def test_get_cache_entry_from_steps_no_cache_blocked() -> None:
                 config=config,
                 split=None,
                 hf_endpoint=app_config.common.hf_endpoint,
-                cache_max_days=CACHE_MAX_DAYS,
                 blocked_datasets=[dataset],
             )

@@ -102,7 +102,7 @@ def test_update_private_raises(
 ) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
         with pytest.raises(NotSupportedPrivateRepositoryError):
-            update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 @pytest.mark.parametrize(
@@ -118,14 +118,13 @@ def test_update_public_does_not_raise(
     namespace: str,
 ) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=False) as dataset:
-        update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
         assert Queue().has_pending_jobs(dataset=dataset)
         # delete the dataset by adding it to the blocked list
         with pytest.raises(DatasetInBlockListError):
             update_dataset(
                 dataset=dataset,
                 blocked_datasets=[dataset],
-                cache_max_days=1,
                 hf_endpoint=CI_HUB_ENDPOINT,
                 hf_token=CI_APP_TOKEN,
             )

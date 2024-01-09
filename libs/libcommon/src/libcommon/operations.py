@@ -68,7 +68,6 @@ def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
 
 def update_dataset(
     dataset: str,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: Optional[list[str]] = None,
     hf_token: Optional[str] = None,
@@ -100,5 +99,4 @@ def update_dataset(
         revision=revision,
         priority=priority,
         error_codes_to_retry=error_codes_to_retry,
-        cache_max_days=cache_max_days,
     )
