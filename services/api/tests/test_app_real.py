@@ -50,10 +50,7 @@ def test_webhook_untrusted(
 
 
 @mark.real_dataset
-def test_webhook_trusted(
-    real_app_config: AppConfig,
-    real_client: TestClient,
-) -> None:
+def test_webhook_trusted(real_client: TestClient) -> None:
     payload = {"event": "add", "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"}}
     response = real_client.post("/webhook", json=payload, headers={"x-webhook-secret": API_HF_WEBHOOK_SECRET})
     assert response.status_code == 200, response.text
