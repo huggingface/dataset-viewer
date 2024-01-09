@@ -95,6 +95,20 @@ def get_dataset_info(
     )
 
 
+def get_entity_info(
+    author: str,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+) -> EntityInfo:
+    # let's the exceptions bubble up if any
+    return CustomHfApi(endpoint=hf_endpoint).whoisthis(
+        name=author,
+        token=hf_token,
+        timeout=hf_timeout_seconds,
+    )
+
+
 def get_dataset_revision_if_supported_or_raise(
     dataset: str,
     hf_endpoint: str,
@@ -114,10 +128,8 @@ def get_dataset_revision_if_supported_or_raise(
         author = dataset_info.author
         if not author:
             raise ValueError(f"Cannot get the author of dataset {dataset}.")
-        entity_info = CustomHfApi(endpoint=hf_endpoint).whoisthis(
-            name=author,
-            token=hf_token,
-            timeout=hf_timeout_seconds,
+        entity_info = get_entity_info(
+            author=author, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
         )
         if (not entity_info.is_pro) and (not entity_info.is_enterprise):
             raise NotSupportedPrivateRepositoryError(
