@@ -21,6 +21,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+from libcommon.exceptions import NotSupportedError
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
@@ -177,7 +178,9 @@ def create_endpoint(
                         revision=revision,
                     )
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
+                error = (
+                    e if isinstance(e, (ApiError, NotSupportedError)) else UnexpectedApiError("Unexpected error.", e)
+                )
                 with StepProfiler(
                     method="processing_step_endpoint", step="generate API error response", context=context
                 ):

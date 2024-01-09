@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from libcommon.exceptions import DatasetNotFoundError
+from libcommon.exceptions import NotSupportedError
 from libcommon.operations import update_dataset
 from libcommon.simple_cache import get_all_datasets
 from libcommon.storage_client import StorageClient
@@ -50,7 +50,7 @@ def backfill_cache(
                 storage_clients=storage_clients,
             )
             supported_datasets += 1
-        except DatasetNotFoundError:
+        except NotSupportedError:
             deleted_datasets += 1
         except Exception as e:
             logging.warning(f"failed to update_dataset {dataset}: {e}")

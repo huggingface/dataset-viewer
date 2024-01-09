@@ -10,13 +10,8 @@ from pathlib import Path
 import pytest
 from huggingface_hub import HfApi
 
-from libcommon.exceptions import DatasetInBlockListError, DatasetNotFoundError
-from libcommon.operations import (
-    NotSupportedError,
-    delete_dataset,
-    get_dataset_revision_if_supported_or_raise,
-    update_dataset,
-)
+from libcommon.exceptions import DatasetInBlockListError, NotSupportedPrivateRepositoryError
+from libcommon.operations import delete_dataset, get_dataset_revision_if_supported_or_raise, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import has_some_cache, upsert_response
@@ -83,7 +78,7 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
 )
 def test_get_revision_private(token: str, namespace: str) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
-        with pytest.raises(NotSupportedError):
+        with pytest.raises(NotSupportedPrivateRepositoryError):
             get_dataset_revision_if_supported_or_raise(
                 dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
             )
@@ -106,7 +101,7 @@ def test_update_private_raises(
     namespace: str,
 ) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
-        with pytest.raises(DatasetNotFoundError):
+        with pytest.raises(NotSupportedPrivateRepositoryError):
             update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
@@ -126,14 +121,6 @@ def test_update_public_does_not_raise(
         update_dataset(dataset=dataset, cache_max_days=1, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
         assert Queue().has_pending_jobs(dataset=dataset)
         # delete the dataset by adding it to the blocked list
-        with pytest.raises(DatasetNotFoundError):
-            update_dataset(
-                dataset=dataset,
-                blocked_datasets=[dataset],
-                cache_max_days=1,
-                hf_endpoint=CI_HUB_ENDPOINT,
-                hf_token=CI_APP_TOKEN,
-            )
         with pytest.raises(DatasetInBlockListError):
             update_dataset(
                 dataset=dataset,
@@ -141,7 +128,6 @@ def test_update_public_does_not_raise(
                 cache_max_days=1,
                 hf_endpoint=CI_HUB_ENDPOINT,
                 hf_token=CI_APP_TOKEN,
-                let_raise_if_blocked=True,
             )
         assert not Queue().has_pending_jobs(dataset=dataset)
 

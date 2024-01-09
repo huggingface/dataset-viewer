@@ -4,9 +4,15 @@
 from http import HTTPStatus
 from unittest.mock import patch
 
+from huggingface_hub.hf_api import DatasetInfo
 from libapi.exceptions import ResponseNotReadyError
 from libapi.utils import get_cache_entry_from_steps
-from libcommon.exceptions import DatasetInBlockListError
+from libcommon.exceptions import (
+    DatasetInBlockListError,
+    NotSupportedDisabledRepositoryError,
+    NotSupportedDisabledViewerError,
+    NotSupportedPrivateRepositoryError,
+)
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
@@ -188,11 +194,102 @@ def test_get_cache_entry_from_steps_no_cache() -> None:
 
     no_cache = "config-is-valid"
 
-    with patch("libcommon.operations.get_dataset_revision_if_supported_or_raise", return_value=revision):
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(id=dataset, sha=revision, private=False, downloads=0, likes=0, tags=[]),
+    ):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
 
         # if the dataset is not blocked and no cache exists, ResponseNotReadyError is raised
         with raises(ResponseNotReadyError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_disabled_viewer() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(
+            id=dataset, sha=revision, private=False, downloads=0, likes=0, tags=[], card_data={"viewer": False}
+        ),
+    ):
+        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
+        # we set the dataset as disabled
+
+        with raises(NotSupportedDisabledViewerError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_disabled() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(
+            id=dataset, sha=revision, private=False, downloads=0, likes=0, tags=[], disabled=True
+        ),
+    ):
+        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
+        # we set the dataset as disabled
+
+        with raises(NotSupportedDisabledRepositoryError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                cache_max_days=CACHE_MAX_DAYS,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_private() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[]),
+    ):
+        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
+        # we set the dataset as disabled
+
+        with raises(NotSupportedPrivateRepositoryError):
             get_cache_entry_from_steps(
                 processing_step_names=[no_cache],
                 dataset=dataset,
@@ -213,7 +310,10 @@ def test_get_cache_entry_from_steps_no_cache_blocked() -> None:
 
     no_cache = "config-is-valid"
 
-    with patch("libcommon.operations.get_dataset_revision_if_supported_or_raise", return_value=revision):
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(id=dataset, sha=revision, private=False, downloads=0, likes=0, tags=[]),
+    ):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
 
         # error result is returned if the dataset is blocked and no cache exists

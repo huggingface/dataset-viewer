@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.exceptions import CustomError, DatasetNotFoundError
+from libcommon.exceptions import CustomError
 from libcommon.operations import update_dataset
 from libcommon.orchestrator import has_pending_ancestor_jobs
 from libcommon.public_assets_storage import PublicAssetsStorage
@@ -122,25 +122,21 @@ def try_backfill_dataset_then_raise(
         )
         raise ResponseNotFoundError("Not found.")
     logging.debug("No cache entry found")
-    try:
-        update_dataset(
-            dataset=dataset,
-            cache_max_days=cache_max_days,
-            blocked_datasets=blocked_datasets,
-            hf_endpoint=hf_endpoint,
-            hf_token=hf_token,
-            hf_timeout_seconds=hf_timeout_seconds,
-            priority=Priority.NORMAL,
-            storage_clients=storage_clients,
-            let_raise_if_blocked=True,
-        )
-        logging.debug("The dataset is supported and it's being backfilled")
-        raise ResponseNotReadyError(
-            "The server is busier than usual and the response is not ready yet. Please retry later."
-        )
-    except DatasetNotFoundError:
-        logging.debug("The dataset is not supported")
-        raise ResponseNotFoundError("Not found.")
+    update_dataset(
+        dataset=dataset,
+        cache_max_days=cache_max_days,
+        blocked_datasets=blocked_datasets,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
+        hf_timeout_seconds=hf_timeout_seconds,
+        priority=Priority.NORMAL,
+        storage_clients=storage_clients,
+    )
+    # ^ raises with NotSupportedError if the dataset is not supported
+    logging.debug("The dataset is supported and it's being backfilled")
+    raise ResponseNotReadyError(
+        "The server is busier than usual and the response is not ready yet. Please retry later."
+    )
 
 
 def get_cache_entry_from_steps(

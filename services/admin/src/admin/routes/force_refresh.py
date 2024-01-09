@@ -22,7 +22,7 @@ from libcommon.operations import get_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
-from libcommon.utils import Priority, raise_if_blocked
+from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -83,9 +83,8 @@ def create_force_refresh_endpoint(
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
                 hf_timeout_seconds=hf_timeout_seconds,
+                blocked_datasets=blocked_datasets,
             )
-            if blocked_datasets:
-                raise_if_blocked(dataset, blocked_datasets)
             Queue().add_job(
                 job_type=job_type,
                 difficulty=total_difficulty,
