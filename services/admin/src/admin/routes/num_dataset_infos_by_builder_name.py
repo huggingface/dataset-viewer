@@ -52,6 +52,9 @@ def create_num_dataset_infos_by_builder_name_endpoint(
             num_arrow_datasets_infos = CachedResponseDocument.objects(
                 http_status=200, kind="dataset-info", content__dataset_info__default__builder_name="arrow"
             ).count()
+            num_webdataset_datasets_infos = CachedResponseDocument.objects(
+                http_status=200, kind="dataset-info", content__dataset_info__default__builder_name="webdataset"
+            ).count()
             num_other_dataset_infos = num_datasets_infos - (
                 num_parquet_datasets_infos
                 + num_csv_datasets_infos
@@ -59,6 +62,8 @@ def create_num_dataset_infos_by_builder_name_endpoint(
                 + num_imagefolder_datasets_infos
                 + num_audiofolder_datasets_infos
                 + num_json_datasets_infos
+                + num_arrow_datasets_infos
+                + num_webdataset_datasets_infos
             )
             return get_json_ok_response(
                 {
@@ -69,6 +74,7 @@ def create_num_dataset_infos_by_builder_name_endpoint(
                     "audiofolder": num_audiofolder_datasets_infos,
                     "json": num_json_datasets_infos,
                     "arrow": num_arrow_datasets_infos,
+                    "webdataset": num_webdataset_datasets_infos,
                     "other": num_other_dataset_infos,
                 },
                 max_age=max_age,
