@@ -231,6 +231,7 @@ def test_upsert_response_retries(progress: float, http_status: HTTPStatus, retri
     )
     assert_retries(kind, dataset, config, split, 0)
 
+
 @pytest.mark.parametrize(
     "config,split",
     [
