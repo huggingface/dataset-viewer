@@ -36,8 +36,6 @@ SPLIT_NAMES_CONTENT = {
     "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
 }
 
-CACHE_MAX_DAYS = 90
-
 CACHE_KIND = "cache_kind"
 CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
@@ -223,14 +221,12 @@ def get_dataset_backfill_plan(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
     error_codes_to_retry: Optional[list[str]] = None,
-    cache_max_days: Optional[int] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
         error_codes_to_retry=error_codes_to_retry,
-        cache_max_days=CACHE_MAX_DAYS if cache_max_days is None else cache_max_days,
     )
 
 

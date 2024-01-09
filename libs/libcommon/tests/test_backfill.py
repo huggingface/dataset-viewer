@@ -10,7 +10,7 @@ import pytest
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import Priority, Status, get_datetime
+from libcommon.utils import Priority, Status
 
 from .utils import (
     ARTIFACT_CA_1,
@@ -86,7 +86,6 @@ def test_initial_state(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": cache_is_empty,
             "cache_is_error_to_retry": [],
@@ -122,7 +121,6 @@ def test_da_is_computed(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": cache_is_empty,
             "cache_is_error_to_retry": [],
@@ -157,7 +155,6 @@ def test_ca_1_is_computed(
         split_names_in_first_config=SPLIT_NAMES,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": cache_is_empty,
             "cache_is_error_to_retry": [],
@@ -202,7 +199,6 @@ def test_plan_one_job_creation_and_termination(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": new_1,
             "cache_is_error_to_retry": [],
@@ -222,7 +218,6 @@ def test_plan_one_job_creation_and_termination(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": new_1,
             "cache_is_error_to_retry": [],
@@ -242,7 +237,6 @@ def test_plan_one_job_creation_and_termination(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": sorted(in_process_2 + new_2),
             "cache_is_error_to_retry": [],
@@ -288,7 +282,6 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
             dataset_backfill_plan=dataset_backfill_plan,
             cache_status={
                 "cache_has_different_git_revision": [],
-                "cache_is_old": [],
                 "cache_is_outdated_by_parent": is_outdated_by_parent,
                 "cache_is_empty": is_empty,
                 "cache_is_error_to_retry": [],
@@ -306,7 +299,6 @@ def test_plan_all_job_creation_and_termination(processing_graph: ProcessingGraph
             dataset_backfill_plan=dataset_backfill_plan,
             cache_status={
                 "cache_has_different_git_revision": [],
-                "cache_is_old": [],
                 "cache_is_outdated_by_parent": is_outdated_by_parent,
                 "cache_is_empty": is_empty,
                 "cache_is_error_to_retry": [],
@@ -351,7 +343,6 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -426,7 +417,6 @@ def test_plan_retry_error_and_outdated_by_parent(
         config_names=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
             "cache_is_empty": [],
             "cache_is_error_to_retry": [ARTIFACT_DA],
@@ -435,35 +425,6 @@ def test_plan_retry_error_and_outdated_by_parent(
         },
         queue_status={"in_process": []},
         tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
-    )
-
-
-@pytest.mark.parametrize(
-    "days_ago,is_old",
-    [(10, False), (30, True)],
-)
-def test_plan_old(days_ago: int, is_old: bool) -> None:
-    compute_all(processing_graph=PROCESSING_GRAPH_ONE_STEP)
-
-    CACHE_MAX_DAYS = 20
-    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, updated_at=get_datetime(days_ago))
-
-    dataset_backfill_plan = get_dataset_backfill_plan(
-        processing_graph=PROCESSING_GRAPH_ONE_STEP, cache_max_days=CACHE_MAX_DAYS
-    )
-    assert_dataset_backfill_plan(
-        dataset_backfill_plan=dataset_backfill_plan,
-        cache_status={
-            "cache_has_different_git_revision": [],
-            "cache_is_old": [ARTIFACT_DA] if is_old else [],
-            "cache_is_outdated_by_parent": [],
-            "cache_is_empty": [],
-            "cache_is_error_to_retry": [],
-            "cache_is_job_runner_obsolete": [],
-            "up_to_date": [] if is_old else [ARTIFACT_DA],
-        },
-        queue_status={"in_process": []},
-        tasks=["CreateJobs,1"] if is_old else [],
     )
 
 
@@ -501,7 +462,6 @@ def test_plan_outdated_by_parent(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -546,7 +506,6 @@ def test_plan_job_runner_version_and_outdated_by_parent(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -591,7 +550,6 @@ def test_plan_git_revision_and_outdated_by_parent(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [ARTIFACT_DA],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -638,7 +596,6 @@ def test_plan_fan_in_updated(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": is_outdated_by_parent,
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -729,7 +686,6 @@ def test_plan_incoherent_state(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": is_empty,
             "cache_is_error_to_retry": [],
@@ -747,7 +703,6 @@ def test_plan_incoherent_state(
         dataset_backfill_plan=dataset_backfill_plan,
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [],
             "cache_is_error_to_retry": [],
@@ -876,7 +831,6 @@ def test_delete_jobs(
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [ARTIFACT_DA],
             "cache_is_error_to_retry": [],
@@ -909,7 +863,6 @@ def test_multiple_revisions() -> None:
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [ARTIFACT_DA],
             "cache_is_error_to_retry": [],
@@ -931,7 +884,6 @@ def test_multiple_revisions() -> None:
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [ARTIFACT_DA],
             "cache_is_error_to_retry": [],
@@ -950,7 +902,6 @@ def test_multiple_revisions() -> None:
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
             "cache_is_error_to_retry": [],
@@ -969,7 +920,6 @@ def test_multiple_revisions() -> None:
         split_names_in_first_config=[],
         cache_status={
             "cache_has_different_git_revision": [],
-            "cache_is_old": [],
             "cache_is_outdated_by_parent": [],
             "cache_is_empty": [ARTIFACT_DA_OTHER_REVISION],
             "cache_is_error_to_retry": [],

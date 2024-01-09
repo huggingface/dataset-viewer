@@ -101,7 +101,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
                 storage_clients=storage_clients,
             ),
         ),

@@ -40,7 +40,6 @@ def create_rows_endpoint(
     cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
-    cache_max_days: int,
     max_arrow_data_in_memory: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -122,7 +121,6 @@ def create_rows_endpoint(
                             hf_endpoint=hf_endpoint,
                             hf_timeout_seconds=hf_timeout_seconds,
                             hf_token=hf_token,
-                            cache_max_days=cache_max_days,
                             blocked_datasets=blocked_datasets,
                             storage_clients=storage_clients,
                         )
