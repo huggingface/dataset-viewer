@@ -194,7 +194,6 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
 
 
 def create_croissant_endpoint(
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -242,7 +241,6 @@ def create_croissant_endpoint(
                         hf_token=hf_token,
                         blocked_datasets=blocked_datasets,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         storage_clients=storage_clients,
                     )
                 content = info_result["content"]

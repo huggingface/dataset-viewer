@@ -102,6 +102,9 @@ CacheableErrorCode = Literal[
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NoSupportedFeaturesError",
+    "NotSupportedDisabledRepositoryError",
+    "NotSupportedDisabledViewerError",
+    "NotSupportedPrivateRepositoryError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -171,13 +174,6 @@ class CreateCommitError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
-
-
-class DatasetInBlockListError(CacheableError):
-    """The dataset is in the list of blocked datasets."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
 
 
 class DatasetManualDownloadError(CacheableError):
@@ -533,3 +529,35 @@ class DatasetWithScriptNotSupportedError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithScriptNotSupportedError", cause, True)
+
+
+class NotSupportedError(CacheableError):
+    pass
+
+
+class NotSupportedDisabledRepositoryError(NotSupportedError):
+    """The repository is disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedDisabledRepositoryError", cause, False)
+
+
+class NotSupportedDisabledViewerError(NotSupportedError):
+    """The dataset viewer is disabled in the dataset configuration."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedDisabledViewerError", cause, False)
+
+
+class NotSupportedPrivateRepositoryError(NotSupportedError):
+    """The repository is private."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedPrivateRepositoryError", cause, False)
+
+
+class DatasetInBlockListError(NotSupportedError):
+    """The dataset is in the list of blocked datasets."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)

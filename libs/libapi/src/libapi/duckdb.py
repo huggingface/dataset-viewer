@@ -99,7 +99,6 @@ def get_cache_entry_from_duckdb_index_job(
     hf_endpoint: str,
     hf_token: Optional[str],
     hf_timeout_seconds: Optional[float],
-    cache_max_days: int,
     blocked_datasets: list[str],
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
@@ -111,7 +110,6 @@ def get_cache_entry_from_duckdb_index_job(
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
         hf_timeout_seconds=hf_timeout_seconds,
-        cache_max_days=cache_max_days,
         blocked_datasets=blocked_datasets,
         storage_clients=storage_clients,
     )

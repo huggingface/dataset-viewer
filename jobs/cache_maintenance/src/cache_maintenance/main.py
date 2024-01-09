@@ -68,7 +68,6 @@ def run_job() -> None:
                 hf_token=job_config.common.hf_token,
                 blocked_datasets=job_config.common.blocked_datasets,
                 error_codes_to_retry=job_config.backfill.error_codes_to_retry,
-                cache_max_days=job_config.cache.max_days,
                 storage_clients=[cached_assets_storage_client, assets_storage_client],
             )
         elif action == "clean-directory":

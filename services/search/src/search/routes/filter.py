@@ -61,7 +61,6 @@ def create_filter_endpoint(
     target_revision: str,
     cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
-    cache_max_days: int,
     blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -109,7 +108,6 @@ def create_filter_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
                         storage_clients=storage_clients,
                     )

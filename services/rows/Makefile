@@ -22,6 +22,7 @@ watch:
 # we cannot set the env var with pytest.MonkeyPatch, it's too late
 .PHONY: test
 test:
+	$(MAKE) down
 	$(MAKE) up
 	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/rows.prometheus
@@ -32,6 +33,7 @@ test:
 
 .PHONY: coverage
 coverage:
+	$(MAKE) down
 	$(MAKE) up
 	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
 	$(MAKE) down
