@@ -61,7 +61,6 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
 
 def process_payload(
     payload: MoonWebhookV2Payload,
-    cache_max_days: int,
     blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -83,7 +82,6 @@ def process_payload(
         update_dataset(
             dataset=new_dataset,
             priority=Priority.NORMAL,
-            cache_max_days=cache_max_days,
             blocked_datasets=blocked_datasets,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
@@ -93,7 +91,6 @@ def process_payload(
 
 
 def create_webhook_endpoint(
-    cache_max_days: int,
     blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -140,7 +137,6 @@ def create_webhook_endpoint(
                 try:
                     process_payload(
                         payload=payload,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,

@@ -13,7 +13,6 @@ from libcommon.utils import Priority
 
 def backfill_cache(
     hf_endpoint: str,
-    cache_max_days: int,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     error_codes_to_retry: Optional[list[str]] = None,
@@ -40,7 +39,6 @@ def backfill_cache(
         try:
             update_dataset(
                 dataset=dataset,
-                cache_max_days=cache_max_days,
                 hf_endpoint=hf_endpoint,
                 blocked_datasets=blocked_datasets,
                 hf_token=hf_token,

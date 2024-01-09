@@ -100,7 +100,6 @@ def are_valid_parameters(parameters: list[Any]) -> bool:
 def try_backfill_dataset_then_raise(
     processing_step_names: list[str],
     dataset: str,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -124,7 +123,6 @@ def try_backfill_dataset_then_raise(
     logging.debug("No cache entry found")
     update_dataset(
         dataset=dataset,
-        cache_max_days=cache_max_days,
         blocked_datasets=blocked_datasets,
         hf_endpoint=hf_endpoint,
         hf_token=hf_token,
@@ -144,7 +142,6 @@ def get_cache_entry_from_steps(
     dataset: str,
     config: Optional[str],
     split: Optional[str],
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -171,7 +168,6 @@ def get_cache_entry_from_steps(
             blocked_datasets=blocked_datasets,
             hf_timeout_seconds=hf_timeout_seconds,
             hf_token=hf_token,
-            cache_max_days=cache_max_days,
             storage_clients=storage_clients,
         )
     return best_response.response

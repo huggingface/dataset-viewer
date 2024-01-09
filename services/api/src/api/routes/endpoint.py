@@ -97,7 +97,6 @@ def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> list[I
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -158,7 +157,6 @@ def create_endpoint(
                         hf_token=hf_token,
                         blocked_datasets=blocked_datasets,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         storage_clients=storage_clients,
                     )
                 content = result["content"]

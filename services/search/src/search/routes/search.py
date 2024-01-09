@@ -125,7 +125,6 @@ def create_search_endpoint(
     cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
     target_revision: str,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     external_auth_url: Optional[str] = None,
@@ -172,7 +171,6 @@ def create_search_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
                         storage_clients=storage_clients,
                     )

@@ -42,8 +42,6 @@ from .utils import (
     artifact_id_to_job_info,
 )
 
-CACHE_MAX_DAYS = 90
-
 
 @pytest.fixture(autouse=True)
 def queue_mongo_resource_autouse(queue_mongo_resource: QueueMongoResource) -> QueueMongoResource:
@@ -211,7 +209,6 @@ def test_set_revision(
         revision=REVISION_NAME,
         priority=Priority.NORMAL,
         error_codes_to_retry=[],
-        cache_max_days=CACHE_MAX_DAYS,
         processing_graph=processing_graph,
     )
 
@@ -250,7 +247,6 @@ def test_set_revision_handle_existing_jobs(
         revision=REVISION_NAME,
         priority=Priority.NORMAL,
         error_codes_to_retry=[],
-        cache_max_days=CACHE_MAX_DAYS,
         processing_graph=processing_graph,
     )
 
