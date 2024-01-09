@@ -122,7 +122,7 @@ def try_backfill_dataset_then_raise(
         )
         raise ResponseNotFoundError("Not found.")
     logging.debug("No cache entry found")
-    if update_dataset(
+    update_dataset(
         dataset=dataset,
         cache_max_days=cache_max_days,
         blocked_datasets=blocked_datasets,
@@ -131,13 +131,12 @@ def try_backfill_dataset_then_raise(
         hf_timeout_seconds=hf_timeout_seconds,
         priority=Priority.NORMAL,
         storage_clients=storage_clients,
-    ):
-        logging.debug("The dataset is supported and it's being backfilled")
-        raise ResponseNotReadyError(
-            "The server is busier than usual and the response is not ready yet. Please retry later."
-        )
-    logging.debug("The dataset is not supported")
-    raise ResponseNotFoundError("Not found.")
+    )
+    # ^ raises with NotSupportedError if the dataset is not supported - in which case it's deleted from the cache
+    logging.debug("The dataset is supported and it's being backfilled")
+    raise ResponseNotReadyError(
+        "The server is busier than usual and the response is not ready yet. Please retry later."
+    )
 
 
 def get_cache_entry_from_steps(

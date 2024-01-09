@@ -120,8 +120,8 @@ def normal_user_private_dataset(csv_path: str) -> Iterator[str]:
     "auth_type,expected_status_code,expected_error_code",
     [
         (None, 401, "ExternalUnauthenticatedError"),
-        ("token", 404, "ResponseNotFound"),
-        ("cookie", 404, "ResponseNotFound"),
+        ("token", 501, "NotSupportedPrivateRepositoryError"),
+        ("cookie", 501, "NotSupportedPrivateRepositoryError"),
     ],
 )
 def test_auth_private(
@@ -145,8 +145,8 @@ def test_normal_org_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers=get_auth_headers("token"),
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
@@ -157,8 +157,8 @@ def test_pro_user_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
@@ -172,8 +172,8 @@ def test_enterprise_user_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
@@ -187,8 +187,8 @@ def test_enterprise_org_private(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {ENTERPRISE_USER_TOKEN}"},
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
@@ -202,8 +202,8 @@ def test_normal_user_private_gated(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {NORMAL_USER_TOKEN}"},
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
@@ -217,12 +217,29 @@ def test_pro_user_private_gated(csv_path: str) -> None:
         poll_parquet_until_ready_and_assert(
             dataset=dataset,
             headers={"Authorization": f"Bearer {PRO_USER_TOKEN}"},
-            expected_status_code=404,
-            expected_error_code="ResponseNotFound",
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
         )
 
 
-def test_normal_user_blocked(csv_path: str) -> None:
+def test_normal_user_blocked_private(csv_path: str) -> None:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={"data.csv": csv_path},
+        dataset_prefix="blocked-",
+        # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+        repo_settings={"private": True},
+    ) as dataset:
+        poll_parquet_until_ready_and_assert(
+            dataset=dataset,
+            headers=get_auth_headers("token"),
+            expected_status_code=501,
+            expected_error_code="NotSupportedPrivateRepositoryError",
+        )
+
+
+def test_normal_user_blocked_public(csv_path: str) -> None:
     with tmp_dataset(
         namespace=NORMAL_USER,
         token=NORMAL_USER_TOKEN,
@@ -231,7 +248,7 @@ def test_normal_user_blocked(csv_path: str) -> None:
         # ^ should be caught by COMMON_BLOCKED_DATASETS := "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
     ) as dataset:
         poll_parquet_until_ready_and_assert(
-            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+            dataset=dataset, expected_status_code=501, expected_error_code="DatasetInBlockListError"
         )
 
 
@@ -258,7 +275,7 @@ def test_normal_user_disabled_viewer(csv_path: str, disabled_viewer_readme_path:
         files={"data.csv": csv_path, "README.md": disabled_viewer_readme_path},
     ) as dataset:
         poll_parquet_until_ready_and_assert(
-            dataset=dataset, expected_status_code=404, expected_error_code="ResponseNotFound"
+            dataset=dataset, expected_status_code=501, expected_error_code="NotSupportedDisabledViewerError"
         )
 
 

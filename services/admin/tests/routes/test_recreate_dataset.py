@@ -7,11 +7,10 @@ from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
-from libcommon.operations import DatasetStatus
 from libcommon.queue import Queue
 from libcommon.simple_cache import has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority, Status, SupportStatus
+from libcommon.utils import Priority, Status
 
 from admin.routes.recreate_dataset import recreate_dataset
 
@@ -64,10 +63,7 @@ def test_recreate_dataset(tmp_path: Path) -> None:
 
     assert has_some_cache(dataset=dataset)
 
-    with patch(
-        "admin.routes.recreate_dataset.update_dataset",
-        return_value=DatasetStatus(dataset=dataset, revision=REVISION_NAME, support_status=SupportStatus.PUBLIC),
-    ):
+    with patch("admin.routes.recreate_dataset.update_dataset", return_value=None):
         recreate_dataset_report = recreate_dataset(
             hf_endpoint="hf_endpoint",
             hf_token="hf_token",
