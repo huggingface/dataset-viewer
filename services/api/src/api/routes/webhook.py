@@ -25,14 +25,14 @@ schema = {
             "properties": {
                 "headSha": {"type": "string"},
                 "name": {"type": "string"},
-                "type": {
-                    "type": "string",
-                    "enum": ["repo", "repo.content", "repo.config", "discussion", "discussion.comment"],
-                },
+                "type": {"type": "string", "enum": ["dataset", "model", "space"]},
             },
             "required": ["type", "name"],
         },
-        "scope": {"type": "string", "enum": ["add", "remove", "update", "move"]},
+        "scope": {
+            "type": "string",
+            "enum": ["repo", "repo.content", "repo.config", "discussion", "discussion.comment"],
+        },
     },
     "required": ["event", "repo", "scope"],
 }
