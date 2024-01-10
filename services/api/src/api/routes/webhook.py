@@ -7,7 +7,7 @@ from typing import Any, Literal, Optional, TypedDict
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
 from libcommon.exceptions import CustomError
-from libcommon.operations import delete_dataset, get_current_revison, update_dataset
+from libcommon.operations import delete_dataset, get_current_revision, update_dataset
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
@@ -77,9 +77,10 @@ def process_payload(
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        if event == "update" and get_current_revison(dataset) == revision:
+        if event == "update" and get_current_revision(dataset) == revision:
+            # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
             logging.warning(
-                f"Webhook revison for {dataset} is the same as the current revison in the db - skipping update."
+                f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
             return
         delete_dataset(dataset=dataset, storage_clients=storage_clients)

@@ -12,7 +12,7 @@ from libcommon.exceptions import (
     NotSupportedError,
     NotSupportedPrivateRepositoryError,
 )
-from libcommon.orchestrator import get_revison, remove_dataset, set_revision
+from libcommon.orchestrator import get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, raise_if_blocked
 
@@ -53,11 +53,11 @@ def get_latest_dataset_revision_if_supported_or_raise(
     return str(revision)
 
 
-def get_current_revison(
+def get_current_revision(
     dataset: str,
 ) -> Optional[str]:
-    logging.debug(f"get current revison for dataset='{dataset}'")
-    return get_revison(dataset=dataset)
+    logging.debug(f"get current revision for dataset='{dataset}'")
+    return get_revision(dataset=dataset)
 
 
 def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
