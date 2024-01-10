@@ -26,11 +26,12 @@ from api.routes.webhook import MoonWebhookV2Payload, parse_payload, process_payl
             },
             False,
         ),
-        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test", "scope": "repo"}}, False),
+        ({"event": "add", "repo": {"type": "dataset", "name": "webhook-test"}, "scope": "repo"}, False),
         (
             {
                 "event": "doesnotexist",
-                "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123", "scope": "repo"},
+                "repo": {"type": "dataset", "name": "webhook-test", "gitalyUid": "123"},
+                "scope": "repo",
             },
             True,
         ),
