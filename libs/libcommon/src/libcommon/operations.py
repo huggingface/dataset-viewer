@@ -102,7 +102,7 @@ def get_entity_info(
     hf_timeout_seconds: Optional[float] = None,
 ) -> EntityInfo:
     # let's the exceptions bubble up if any
-    return CustomHfApi(endpoint=hf_endpoint).whoisthis(
+    return CustomHfApi(endpoint=hf_endpoint).whoisthis(  # type: ignore
         name=author,
         token=hf_token,
         timeout=hf_timeout_seconds,

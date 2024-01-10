@@ -112,7 +112,9 @@ def test_get_revision_private_raises(token: str, namespace: str) -> None:
 )
 def test_get_revision_private(token: str, namespace: str) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
-        get_dataset_revision_if_supported_or_raise(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
+        )
 
 
 @pytest.mark.parametrize(
