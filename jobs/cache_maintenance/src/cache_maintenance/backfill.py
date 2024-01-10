@@ -15,7 +15,6 @@ def backfill_cache(
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
-    error_codes_to_retry: Optional[list[str]] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     logging.info("backfill datasets in the database and delete non-supported ones")
@@ -43,7 +42,6 @@ def backfill_cache(
                 blocked_datasets=blocked_datasets,
                 hf_token=hf_token,
                 priority=Priority.LOW,
-                error_codes_to_retry=error_codes_to_retry,
                 hf_timeout_seconds=None,
                 storage_clients=storage_clients,
             )

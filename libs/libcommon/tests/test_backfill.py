@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from libcommon.constants import ERROR_CODES_TO_RETRY
 from libcommon.processing_graph import ProcessingGraph
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -366,16 +367,13 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
 def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int, should_create: bool) -> None:
     with patch("libcommon.state.MAX_FAILED_RUNS", max_failed_runs):
         processing_graph = PROCESSING_GRAPH_GENEALOGY
-        error_code = "ERROR_CODE_TO_RETRY"
-        error_codes_to_retry = [error_code]
-        compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
+        error_code = list(ERROR_CODES_TO_RETRY)[0]
+        compute_all(processing_graph=processing_graph)
 
         put_cache(
             step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, failed_runs=failed_runs
         )
-        dataset_backfill_plan = get_dataset_backfill_plan(
-            processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
-        )
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
         cache_is_error_to_retry = [ARTIFACT_DA] if should_create else []
         assert_dataset_backfill_plan(
             dataset_backfill_plan=dataset_backfill_plan,
@@ -399,9 +397,9 @@ def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int
 def test_plan_retry_error_and_outdated_by_parent(
     processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
-    error_code = "ERROR_CODE_TO_RETRY"
-    error_codes_to_retry = [error_code]
-    compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
+    error_code = list(ERROR_CODES_TO_RETRY)[0]
+
+    compute_all(processing_graph=processing_graph)
 
     put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
     # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
@@ -409,9 +407,7 @@ def test_plan_retry_error_and_outdated_by_parent(
     # they are still here, and haunting the database
     # TODO: Not supported yet
 
-    dataset_backfill_plan = get_dataset_backfill_plan(
-        processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
-    )
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
     assert_dataset_backfill_plan(
         dataset_backfill_plan=dataset_backfill_plan,
         config_names=[],

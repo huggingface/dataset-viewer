@@ -7,7 +7,12 @@ from typing import Optional
 
 import pandas as pd
 
-from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, DATASET_CONFIG_NAMES_KINDS, MAX_FAILED_RUNS
+from libcommon.constants import (
+    CONFIG_SPLIT_NAMES_KINDS,
+    DATASET_CONFIG_NAMES_KINDS,
+    ERROR_CODES_TO_RETRY,
+    MAX_FAILED_RUNS,
+)
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntryMetadata, fetch_names
@@ -49,7 +54,6 @@ class CacheState:
     cache_kind: str
     cache_entries_df: pd.DataFrame
     job_runner_version: int
-    error_codes_to_retry: Optional[list[str]] = None
 
     cache_entry_metadata: Optional[CacheEntryMetadata] = field(init=False)
     exists: bool = field(init=False)
@@ -82,14 +86,10 @@ class CacheState:
         return self.cache_entry_metadata is None
 
     def is_error_to_retry(self) -> bool:
-        return (
-            self.error_codes_to_retry is not None
-            and self.cache_entry_metadata is not None
-            and (
-                self.cache_entry_metadata["http_status"] >= 400
-                and self.cache_entry_metadata["error_code"] in self.error_codes_to_retry
-                and self.cache_entry_metadata["failed_runs"] < MAX_FAILED_RUNS
-            )
+        return self.cache_entry_metadata is not None and (
+            self.cache_entry_metadata["http_status"] >= 400
+            and self.cache_entry_metadata["error_code"] in ERROR_CODES_TO_RETRY
+            and self.cache_entry_metadata["failed_runs"] < MAX_FAILED_RUNS
         )
 
     def is_older_than(self, other: "CacheState") -> bool:
@@ -114,7 +114,6 @@ class ArtifactState(Artifact):
 
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[list[str]] = None
 
     job_state: JobState = field(init=False)
     cache_state: CacheState = field(init=False)
@@ -135,7 +134,6 @@ class ArtifactState(Artifact):
             config=self.config,
             split=self.split,
             job_runner_version=self.processing_step.job_runner_version,
-            error_codes_to_retry=self.error_codes_to_retry,
             cache_entries_df=self.cache_entries_df,
         )
 
@@ -151,7 +149,6 @@ class SplitState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[list[str]] = None
 
     artifact_state_by_step: dict[str, ArtifactState] = field(init=False)
 
@@ -163,7 +160,6 @@ class SplitState:
                 revision=self.revision,
                 config=self.config,
                 split=self.split,
-                error_codes_to_retry=self.error_codes_to_retry,
                 pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["type"] == processing_step.job_type],
                 cache_entries_df=self.cache_entries_df[self.cache_entries_df["kind"] == processing_step.cache_kind],
             )
@@ -181,7 +177,6 @@ class ConfigState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[list[str]] = None
 
     split_names: list[str] = field(init=False)
     split_states: list[SplitState] = field(init=False)
@@ -200,7 +195,6 @@ class ConfigState:
                     revision=self.revision,
                     config=self.config,
                     split=None,
-                    error_codes_to_retry=self.error_codes_to_retry,
                     pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["split"].isnull())
                         & (self.pending_jobs_df["type"] == processing_step.job_type)
@@ -237,7 +231,6 @@ class ConfigState:
                     self.config,
                     split_name,
                     processing_graph=self.processing_graph,
-                    error_codes_to_retry=self.error_codes_to_retry,
                     pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name],
                     cache_entries_df=self.cache_entries_df[self.cache_entries_df["split"] == split_name],
                 )
@@ -254,7 +247,6 @@ class DatasetState:
     processing_graph: ProcessingGraph
     pending_jobs_df: pd.DataFrame
     cache_entries_df: pd.DataFrame
-    error_codes_to_retry: Optional[list[str]] = None
 
     config_names: list[str] = field(init=False)
     config_states: list[ConfigState] = field(init=False)
@@ -273,7 +265,6 @@ class DatasetState:
                     revision=self.revision,
                     config=None,
                     split=None,
-                    error_codes_to_retry=self.error_codes_to_retry,
                     pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["revision"] == self.revision)
                         & (self.pending_jobs_df["config"].isnull())
@@ -313,7 +304,6 @@ class DatasetState:
                         revision=self.revision,
                         config=config_name,
                         processing_graph=self.processing_graph,
-                        error_codes_to_retry=self.error_codes_to_retry,
                         pending_jobs_df=self.pending_jobs_df[
                             (self.pending_jobs_df["revision"] == self.revision)
                             & (self.pending_jobs_df["config"] == config_name)
@@ -341,7 +331,6 @@ class FirstStepsDatasetState(DatasetState):
                     revision=self.revision,
                     config=None,
                     split=None,
-                    error_codes_to_retry=self.error_codes_to_retry,
                     pending_jobs_df=self.pending_jobs_df[
                         (self.pending_jobs_df["revision"] == self.revision)
                         & (self.pending_jobs_df["config"].isnull())

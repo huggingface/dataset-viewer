@@ -220,13 +220,11 @@ def get_dataset_backfill_plan(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[list[str]] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
-        error_codes_to_retry=error_codes_to_retry,
     )
 
 
@@ -341,9 +339,8 @@ def compute_all(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
-    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision)
     max_runs = 100
     while len(dataset_backfill_plan.tasks) > 0 and max_runs >= 0:
         if max_runs == 0:
@@ -356,7 +353,7 @@ def compute_all(
                 raise ValueError(f"Unexpected task id {task.id}: should contain a comma")
             if task_type == "CreateJobs":
                 process_all_jobs()
-        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision)
 
 
 def artifact_id_to_job_info(artifact_id: str) -> JobInfo:

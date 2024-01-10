@@ -182,7 +182,6 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  errorCodesToRetry: "CreateCommitError,LockedDatasetTimeoutError,ExternalServerError,JobManagerCrashedError"
   schedule: "20 21 * * *"
   # every four hours
   nodeSelector:
