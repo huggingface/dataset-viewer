@@ -11,6 +11,7 @@ from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponseDocument,
+    get_response_metadata,
     has_some_cache,
     upsert_response_params,
 )
@@ -390,3 +391,67 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
     else:
         assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
         assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
+
+
+def assert_failed_runs(failed_runs: int) -> None:
+    cached_entry_metadata = get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["failed_runs"] == failed_runs
+    assert CachedResponseDocument.objects().count() == 1
+
+
+def run_job(revision: str, http_status: HTTPStatus) -> None:
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=revision,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    job_info = Queue().start_job()
+    job_result = JobResult(
+        job_info=job_info,
+        job_runner_version=JOB_RUNNER_VERSION,
+        is_success=True,
+        output=JobOutput(
+            content=CONFIG_NAMES_CONTENT,
+            http_status=http_status,
+            error_code=None,
+            details=None,
+            progress=1.0,
+        ),
+    )
+    finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+    # clear generated jobs when finishing jobs
+    Queue().delete_dataset_jobs(DATASET_NAME)
+
+
+def test_upsert_response_failed_runs() -> None:
+    first_revision = "revision"
+    second_revision = "new_revision"
+
+    # new cache record with success result
+    run_job(first_revision, HTTPStatus.OK)
+    assert_failed_runs(0)
+
+    # overwrite cache record with success result and same revision
+    run_job(first_revision, HTTPStatus.OK)
+    assert_failed_runs(0)
+
+    # overwrite cache record with failed result and same revision
+    run_job(first_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(1)
+
+    # overwrite cache record with failed result and same revision
+    run_job(first_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(2)
+
+    # overwrite cache record with failed result and new revision
+    run_job(second_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(0)
+
+    # overwrite cache record with success result and new revision
+    run_job(second_revision, HTTPStatus.OK)
+    assert_failed_runs(0)

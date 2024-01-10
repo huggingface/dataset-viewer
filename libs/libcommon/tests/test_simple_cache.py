@@ -31,15 +31,13 @@ from libcommon.simple_cache import (
     get_datasets_with_last_updated_kind,
     get_outdated_split_full_names_for_step,
     get_response,
-    get_response_metadata,
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
     has_any_successful_response,
     upsert_response,
-    upsert_response_params,
 )
-from libcommon.utils import JobParams, get_datetime
+from libcommon.utils import get_datetime
 
 from .utils import (
     CACHE_KIND,
@@ -125,52 +123,6 @@ def assert_metric(http_status: HTTPStatus, error_code: Optional[str], kind: str,
     metric = CacheTotalMetricDocument.objects(http_status=http_status, error_code=error_code, kind=kind).first()
     assert metric is not None
     assert metric.total == total
-
-
-def test_upsert_response_retries() -> None:
-    kind = CACHE_KIND
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config = None
-    split = None
-    content = {"some": "content"}
-    job_params: JobParams = {"dataset": dataset, "config": config, "split": split, "revision": dataset_git_revision}
-    assert CacheTotalMetricDocument.objects().count() == 0
-    # insert for the first time
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=HTTPStatus.OK,
-    )
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 0
-    assert CacheTotalMetricDocument.objects().count() == 1
-    # insert for the second time
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=HTTPStatus.OK,
-    )
-    assert CacheTotalMetricDocument.objects().count() == 1
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 1
-
-    # insert for the third time but for a new revision
-    job_params["revision"] = "new_revision"
-    upsert_response_params(
-        kind=kind,
-        job_params=job_params,
-        content=content,
-        http_status=HTTPStatus.OK,
-    )
-    assert CacheTotalMetricDocument.objects().count() == 1
-    cached_entry_metadata = get_response_metadata(kind=kind, dataset=dataset, config=config, split=split)
-    assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 0
 
 
 @pytest.mark.parametrize(

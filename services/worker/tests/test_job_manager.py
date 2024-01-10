@@ -150,7 +150,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
         kind="dataset-config-names", dataset="dataset", config=None, split=None
     )
     assert cached_entry_metadata is not None
-    assert cached_entry_metadata["retries"] == 0
+    assert cached_entry_metadata["failed_runs"] == 0
 
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
@@ -164,7 +164,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     dataset = "dataset"
     revision = "revision"
     message = "I'm crashed :("
-    retries = 2
+    failed_runs = 2
 
     upsert_response(
         kind="dataset-config-names",
@@ -176,7 +176,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
         job_runner_version=processing_graph.get_processing_step("dataset-config-names").job_runner_version,
         progress=1.0,
         http_status=HTTPStatus.OK,
-        retries=retries,
+        failed_runs=failed_runs,
     )
 
     queue = Queue()
@@ -206,7 +206,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     assert response.dataset_git_revision == revision
     assert response.content == expected_error
     assert response.details == expected_error
-    assert response.retries == retries + 1
+    assert response.failed_runs == failed_runs + 1
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 

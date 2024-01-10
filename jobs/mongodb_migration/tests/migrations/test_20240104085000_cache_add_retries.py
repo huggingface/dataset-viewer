@@ -8,8 +8,8 @@ from mongoengine.connection import get_db
 from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 
 
-def test_cache_add_retries_to_jobs(mongo_host: str) -> None:
-    with MongoResource(database="test_cache_add_retries_to_jobs", host=mongo_host, mongoengine_alias="cache"):
+def test_cache_add_retries_to_cache(mongo_host: str) -> None:
+    with MongoResource(database="test_cache_add_retries_to_cache", host=mongo_host, mongoengine_alias="cache"):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         db[CACHE_COLLECTION_RESPONSES].insert_one(
             {

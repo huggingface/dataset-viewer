@@ -22,6 +22,7 @@ from mongodb_migration.deletion_migrations import (
     MetricsDeletionMigration,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
+    MigrationRemoveFieldFromCache,
     MigrationRemoveFieldFromJob,
     QueueDeletionMigration,
     get_index_names,
@@ -220,3 +221,35 @@ def test_queue_remove_field(mongo_host: str) -> None:
         with raises(IrreversibleMigrationError):
             migration.down()
         db[QUEUE_COLLECTION_JOBS].drop()
+
+
+def test_cache_remove_field(mongo_host: str) -> None:
+    with MongoResource(database="test_cache_remove_field", host=mongo_host, mongoengine_alias="cache"):
+        field_name = "retries"
+        db = get_db(CACHE_MONGOENGINE_ALIAS)
+        db[CACHE_COLLECTION_RESPONSES].insert_many(
+            [
+                {
+                    "kind": "/splits",
+                    "dataset": "dataset",
+                    "http_status": 501,
+                    field_name: 2,
+                }
+            ]
+        )
+
+        result = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": "dataset"})
+        assert result
+        assert field_name in result
+
+        migration = MigrationRemoveFieldFromCache(
+            version="20240109155600", description="remove 'retries' field from cache", field_name=field_name
+        )
+        migration.up()
+        result = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": "dataset"})
+        assert result
+        assert field_name not in result
+
+        with raises(IrreversibleMigrationError):
+            migration.down()
+        db[CACHE_COLLECTION_RESPONSES].drop()

@@ -14,7 +14,7 @@ from libcommon.exceptions import (
     NotSupportedError,
     NotSupportedPrivateRepositoryError,
 )
-from libcommon.orchestrator import remove_dataset, set_revision
+from libcommon.orchestrator import get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, raise_if_blocked
 
@@ -109,7 +109,7 @@ def get_entity_info(
     )
 
 
-def get_dataset_revision_if_supported_or_raise(
+def get_latest_dataset_revision_if_supported_or_raise(
     dataset: str,
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -142,6 +142,13 @@ def get_dataset_revision_if_supported_or_raise(
     return str(revision)
 
 
+def get_current_revision(
+    dataset: str,
+) -> Optional[str]:
+    logging.debug(f"get current revision for dataset='{dataset}'")
+    return get_revision(dataset=dataset)
+
+
 def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
     """
     Delete a dataset
@@ -172,7 +179,7 @@ def update_dataset(
     """
     # let's the exceptions bubble up if any
     try:
-        revision = get_dataset_revision_if_supported_or_raise(
+        revision = get_latest_dataset_revision_if_supported_or_raise(
             dataset=dataset,
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,

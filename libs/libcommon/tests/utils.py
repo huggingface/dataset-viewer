@@ -276,7 +276,7 @@ def put_cache(
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
     updated_at: Optional[datetime] = None,
-    retries: int = 0,
+    failed_runs: int = 0,
 ) -> None:
     if not config:
         if not step.startswith("dataset-"):
@@ -311,7 +311,7 @@ def put_cache(
         dataset_git_revision=revision,
         error_code=error_code,
         updated_at=updated_at,
-        retries=retries,
+        failed_runs=failed_runs,
     )
 
 

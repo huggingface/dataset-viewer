@@ -18,7 +18,7 @@ from libapi.utils import (
 )
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.exceptions import CustomError
-from libcommon.operations import get_dataset_revision_if_supported_or_raise
+from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
@@ -78,7 +78,7 @@ def create_force_refresh_endpoint(
                 organization=organization,
                 hf_timeout_seconds=hf_timeout_seconds,
             )
-            revision = get_dataset_revision_if_supported_or_raise(
+            revision = get_latest_dataset_revision_if_supported_or_raise(
                 dataset=dataset,
                 hf_endpoint=hf_endpoint,
                 hf_token=hf_token,
