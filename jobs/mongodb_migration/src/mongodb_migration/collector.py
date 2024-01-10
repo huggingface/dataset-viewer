@@ -12,6 +12,7 @@ from mongodb_migration.deletion_migrations import (
     MetricsDeletionMigration,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
+    MigrationRemoveFieldFromCache,
     MigrationRemoveFieldFromJob,
     QueueDeletionMigration,
 )
@@ -32,9 +33,6 @@ from mongodb_migration.migrations._20230309123100_cache_add_progress import (
 )
 from mongodb_migration.migrations._20230309141600_cache_add_job_runner_version import (
     MigrationAddJobRunnerVersionToCacheResponse,
-)
-from mongodb_migration.migrations._20230313164200_cache_remove_worker_version import (
-    MigrationRemoveWorkerVersionFromCachedResponse,
 )
 from mongodb_migration.migrations._20230511100700_queue_delete_indexes_with_force import (
     MigrationQueueDeleteIndexesWithForce,
@@ -61,6 +59,7 @@ from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_spl
     MigrationAddPartialToSplitDuckdbIndexCacheResponse,
 )
 from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
+from mongodb_migration.migrations._20240109160700_cache_add_failed_runs import MigrationAddFailedRunsToCacheResponse
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -100,8 +99,10 @@ class MigrationsCollector:
             MigrationAddJobRunnerVersionToCacheResponse(
                 version="20230309141600", description="add 'job_runner_version' field based on 'worker_version' value"
             ),
-            MigrationRemoveWorkerVersionFromCachedResponse(
-                version="20230313164200", description="remove 'worker_version' field from cache"
+            MigrationRemoveFieldFromCache(
+                version="20230313164200",
+                description="remove 'worker_version' field from cache",
+                field_name="worker_version",
             ),
             CacheRenamingMigration(
                 cache_kind="/first-rows",
@@ -294,5 +295,11 @@ class MigrationsCollector:
             ),
             MigrationAddRetriesToCacheResponse(
                 version="20240104085000", description="add 'retries' field to cache records"
+            ),
+            MigrationRemoveFieldFromCache(
+                version="20240109155600", description="remove 'retries' field from cache", field_name="retries"
+            ),
+            MigrationAddFailedRunsToCacheResponse(
+                version="20240109160700", description="add 'failed_runs' filed to cache records"
             ),
         ]

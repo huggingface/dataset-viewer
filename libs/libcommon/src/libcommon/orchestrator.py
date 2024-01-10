@@ -4,6 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
@@ -18,10 +19,12 @@ from libcommon.processing_graph import ProcessingGraph, ProcessingStep, Processi
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
+    CacheEntryDoesNotExistError,
     delete_dataset_responses,
     fetch_names,
     get_best_response,
     get_cache_entries_df,
+    get_response_metadata,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
@@ -787,6 +790,20 @@ def finish_job(
         processing_step = processing_graph.get_processing_step_by_job_type(job_info["type"])
     except ProcessingStepDoesNotExist as e:
         raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
+
+    try:
+        previous_response = get_response_metadata(
+            kind=processing_step.cache_kind, dataset=params["dataset"], config=params["config"], split=params["split"]
+        )
+        failed_runs = (
+            previous_response["failed_runs"] + 1
+            if output["http_status"] != HTTPStatus.OK
+            and previous_response["dataset_git_revision"] == params["revision"]
+            else 0
+        )
+    except CacheEntryDoesNotExistError:
+        failed_runs = 0
+
     upsert_response_params(
         # inputs
         kind=processing_step.cache_kind,
@@ -798,6 +815,7 @@ def finish_job(
         error_code=output["error_code"],
         details=output["details"],
         progress=output["progress"],
+        failed_runs=failed_runs,
     )
     logging.debug("the job output has been written to the cache.")
     # finish the job
