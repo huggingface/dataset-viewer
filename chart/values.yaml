@@ -314,7 +314,6 @@ backfill:
   log:
     level: "info"
   action: "backfill"
-  errorCodesToRetry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}

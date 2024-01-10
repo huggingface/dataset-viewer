@@ -182,7 +182,6 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  errorCodesToRetry: "CreateCommitError,LockedDatasetTimeoutError,ExternalServerError,JobManagerCrashedError"
   schedule: "20 21 * * *"
   # every four hours
   nodeSelector:
@@ -425,7 +424,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker: "true"
-    replicas: 25
+    replicas: 10
     resources:
       requests:
         cpu: 2
@@ -445,7 +444,7 @@ workers:
     workerJobTypesOnly: ""
     nodeSelector:
       role-datasets-server-worker-light: "true"
-    replicas: 10
+    replicas: 4
     resources:
       requests:
         cpu: 200m

@@ -169,7 +169,6 @@ def update_dataset(
     hf_token: Optional[str] = None,
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
-    error_codes_to_retry: Optional[list[str]] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     """
@@ -194,5 +193,4 @@ def update_dataset(
         dataset=dataset,
         revision=revision,
         priority=priority,
-        error_codes_to_retry=error_codes_to_retry,
     )
