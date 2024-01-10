@@ -67,7 +67,7 @@ def process_payload(
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
-    if payload["repo"]["type"] != "dataset":
+    if payload["repo"]["type"] != "dataset" or payload["repo"]["scope"] != "repo.content":
         return
     dataset = payload["repo"]["name"]
     if dataset is None:
