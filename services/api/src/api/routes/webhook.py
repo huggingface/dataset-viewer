@@ -31,7 +31,6 @@ schema = {
         },
         "scope": {
             "type": "string",
-            "enum": ["repo", "repo.content", "repo.config", "discussion", "discussion.comment"],
         },
     },
     "required": ["event", "repo", "scope"],
@@ -55,7 +54,7 @@ class MoonWebhookV2Payload(TypedDict):
     event: Literal["add", "remove", "update", "move"]
     movedTo: Optional[str]
     repo: MoonWebhookV2PayloadRepo
-    scope: Literal["repo", "repo.content", "repo.config", "discussion", "discussion.comment"]
+    scope: str
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
