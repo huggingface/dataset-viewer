@@ -25,12 +25,16 @@ schema = {
             "properties": {
                 "headSha": {"type": "string"},
                 "name": {"type": "string"},
-                "type": {"type": "string", "enum": ["dataset", "model", "space"]},
+                "type": {
+                    "type": "string",
+                    "enum": ["repo", "repo.content", "repo.config", "discussion", "discussion.comment"],
+                },
             },
             "required": ["type", "name"],
         },
+        "scope": {"type": "string", "enum": ["add", "remove", "update", "move"]},
     },
-    "required": ["event", "repo"],
+    "required": ["event", "repo", "scope"],
 }
 
 
@@ -51,6 +55,7 @@ class MoonWebhookV2Payload(TypedDict):
     event: Literal["add", "remove", "update", "move"]
     movedTo: Optional[str]
     repo: MoonWebhookV2PayloadRepo
+    scope: Literal["repo", "repo.content", "repo.config", "discussion", "discussion.comment"]
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -67,17 +72,17 @@ def process_payload(
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
-    if payload["repo"]["type"] != "dataset" or payload["repo"]["scope"] != "repo.content":
+    if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content"):
+        # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
         return
     dataset = payload["repo"]["name"]
     if dataset is None:
         return
     event = payload["event"]
-    revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        if event == "update" and get_current_revision(dataset) == revision:
+        if event == "update" and get_current_revision(dataset) == payload["repo"]["headSha"]:
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
