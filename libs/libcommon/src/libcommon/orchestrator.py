@@ -795,9 +795,8 @@ def finish_job(
         previous_response = get_response_metadata(
             kind=processing_step.cache_kind, dataset=params["dataset"], config=params["config"], split=params["split"]
         )
-        previous_failed_runs = 0 if previous_response is None else previous_response["failed_runs"]
         failed_runs = (
-            previous_failed_runs + 1
+            previous_response["failed_runs"] + 1
             if output["http_status"] != HTTPStatus.OK
             and previous_response["dataset_git_revision"] == params["revision"]
             else 0
