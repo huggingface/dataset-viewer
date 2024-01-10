@@ -78,7 +78,9 @@ def process_payload(
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
         if event == "update" and get_current_revison(dataset) == revision:
-            logging.warning(f"Webhook revison for {dataset} is the same as the current revison in the db - skipping update.")
+            logging.warning(
+                f"Webhook revison for {dataset} is the same as the current revison in the db - skipping update."
+            )
             return
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
