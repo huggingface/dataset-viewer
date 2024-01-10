@@ -13,7 +13,6 @@ from libcommon.constants import (
     CONFIG_INFO_KINDS,
     CONFIG_SPLIT_NAMES_KINDS,
     DATASET_CONFIG_NAMES_KINDS,
-    ERROR_CODES_TO_RETRY,
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
@@ -391,7 +390,6 @@ class DatasetBackfillPlan(Plan):
     Args:
         dataset: dataset name
         revision: revision to backfill
-        error_codes_to_retry: list of error codes to retry
         priority: priority of the jobs to create
         only_first_processing_steps: if True, only the first processing steps are backfilled
         processing_graph: processing graph
@@ -399,7 +397,6 @@ class DatasetBackfillPlan(Plan):
 
     dataset: str
     revision: str
-    error_codes_to_retry: Optional[list[str]] = None
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
     processing_graph: ProcessingGraph = field(default=processing_graph)
@@ -411,8 +408,6 @@ class DatasetBackfillPlan(Plan):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if self.error_codes_to_retry is None:
-            self.error_codes_to_retry = ERROR_CODES_TO_RETRY.split(",")
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",
@@ -465,7 +460,6 @@ class DatasetBackfillPlan(Plan):
                         revision=self.revision,
                         pending_jobs_df=self.pending_jobs_df,
                         cache_entries_df=self.cache_entries_df,
-                        error_codes_to_retry=self.error_codes_to_retry,
                     )
                     if self.only_first_processing_steps
                     else DatasetState(
@@ -474,7 +468,6 @@ class DatasetBackfillPlan(Plan):
                         revision=self.revision,
                         pending_jobs_df=self.pending_jobs_df,
                         cache_entries_df=self.cache_entries_df,
-                        error_codes_to_retry=self.error_codes_to_retry,
                     )
                 )
             with StepProfiler(
@@ -698,7 +691,6 @@ def set_revision(
     dataset: str,
     revision: str,
     priority: Priority,
-    error_codes_to_retry: Optional[list[str]] = None,
     processing_graph: ProcessingGraph = processing_graph,
 ) -> None:
     """
@@ -711,7 +703,6 @@ def set_revision(
         dataset (str): The name of the dataset.
         revision (str): The new revision of the dataset.
         priority (Priority): The priority of the jobs to create.
-        error_codes_to_retry (list[str], optional): The error codes for which the jobs should be retried.
         processing_graph (ProcessingGraph, optional): The processing graph.
 
     Returns:
@@ -742,7 +733,6 @@ def set_revision(
                 revision=revision,
                 priority=priority,
                 processing_graph=processing_graph,
-                error_codes_to_retry=error_codes_to_retry,
                 only_first_processing_steps=True,
             )
         logging.info(f"Setting new revision to {dataset}")

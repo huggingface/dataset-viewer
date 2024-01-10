@@ -364,18 +364,17 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
     ],
 )
 def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int, should_create: bool) -> None:
-    with patch("libcommon.state.MAX_FAILED_RUNS", max_failed_runs):
+    error_code = "ERROR_CODE_TO_RETRY"
+    with patch("libcommon.state.MAX_FAILED_RUNS", max_failed_runs), patch(
+        "libcommon.constants.ERROR_CODES_TO_RETRY", {error_code}
+    ):
         processing_graph = PROCESSING_GRAPH_GENEALOGY
-        error_code = "ERROR_CODE_TO_RETRY"
-        error_codes_to_retry = [error_code]
-        compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
+        compute_all(processing_graph=processing_graph)
 
         put_cache(
             step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code, failed_runs=failed_runs
         )
-        dataset_backfill_plan = get_dataset_backfill_plan(
-            processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
-        )
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
         cache_is_error_to_retry = [ARTIFACT_DA] if should_create else []
         assert_dataset_backfill_plan(
             dataset_backfill_plan=dataset_backfill_plan,
@@ -400,32 +399,30 @@ def test_plan_retry_error_and_outdated_by_parent(
     processing_graph: ProcessingGraph, up_to_date: list[str], is_outdated_by_parent: list[str]
 ) -> None:
     error_code = "ERROR_CODE_TO_RETRY"
-    error_codes_to_retry = [error_code]
-    compute_all(processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry)
+    with patch("libcommon.constants.ERROR_CODES_TO_RETRY", {error_code}):
+        compute_all(processing_graph=processing_graph)
 
-    put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
-    # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
-    # the cache entries (also the jobs, if any - not here) should be deleted.
-    # they are still here, and haunting the database
-    # TODO: Not supported yet
+        put_cache(step=STEP_DA, dataset=DATASET_NAME, revision=REVISION_NAME, error_code=error_code)
+        # in the case of PROCESSING_GRAPH_FAN_IN_OUT: the config names do not exist anymore:
+        # the cache entries (also the jobs, if any - not here) should be deleted.
+        # they are still here, and haunting the database
+        # TODO: Not supported yet
 
-    dataset_backfill_plan = get_dataset_backfill_plan(
-        processing_graph=processing_graph, error_codes_to_retry=error_codes_to_retry
-    )
-    assert_dataset_backfill_plan(
-        dataset_backfill_plan=dataset_backfill_plan,
-        config_names=[],
-        cache_status={
-            "cache_has_different_git_revision": [],
-            "cache_is_outdated_by_parent": is_outdated_by_parent,
-            "cache_is_empty": [],
-            "cache_is_error_to_retry": [ARTIFACT_DA],
-            "cache_is_job_runner_obsolete": [],
-            "up_to_date": up_to_date,
-        },
-        queue_status={"in_process": []},
-        tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
-    )
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph=processing_graph)
+        assert_dataset_backfill_plan(
+            dataset_backfill_plan=dataset_backfill_plan,
+            config_names=[],
+            cache_status={
+                "cache_has_different_git_revision": [],
+                "cache_is_outdated_by_parent": is_outdated_by_parent,
+                "cache_is_empty": [],
+                "cache_is_error_to_retry": [ARTIFACT_DA],
+                "cache_is_job_runner_obsolete": [],
+                "up_to_date": up_to_date,
+            },
+            queue_status={"in_process": []},
+            tasks=[f"CreateJobs,{len(is_outdated_by_parent) + 1}"],
+        )
 
 
 @pytest.mark.parametrize(

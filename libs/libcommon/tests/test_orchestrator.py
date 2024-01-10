@@ -209,7 +209,6 @@ def test_set_revision(
         dataset=DATASET_NAME,
         revision=REVISION_NAME,
         priority=Priority.NORMAL,
-        error_codes_to_retry=[],
         processing_graph=processing_graph,
     )
 
@@ -247,7 +246,6 @@ def test_set_revision_handle_existing_jobs(
         dataset=DATASET_NAME,
         revision=REVISION_NAME,
         priority=Priority.NORMAL,
-        error_codes_to_retry=[],
         processing_graph=processing_graph,
     )
 
