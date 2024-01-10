@@ -847,3 +847,27 @@ def has_pending_ancestor_jobs(
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
     # is good enough.
     return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
+
+
+def get_revison(dataset: str) -> Optional[str]:
+    cache_kinds = [processing_step.cache_kind for processing_step in processing_graph.get_first_processing_steps()]
+    cache_entries = get_cache_entries_df(
+        dataset=dataset,
+        cache_kinds=cache_kinds,
+    ).to_dict(orient="list")
+    if cache_entries.get("dataset_git_revision") and isinstance(
+        revison := cache_entries["dataset_git_revision"][0], str
+    ):
+        return revison
+    job_types = [processing_step.job_type for processing_step in processing_graph.get_first_processing_steps()]
+    pending_jobs = (
+        Queue()
+        .get_pending_jobs_df(
+            dataset=dataset,
+            job_types=job_types,
+        )
+        .to_dict(orient="list")
+    )
+    if pending_jobs.get("revision") and isinstance(revison := pending_jobs["revision"][0], str):
+        return revison
+    return None

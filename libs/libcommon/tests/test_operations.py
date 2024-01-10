@@ -11,7 +11,7 @@ import pytest
 from huggingface_hub import HfApi
 
 from libcommon.exceptions import DatasetInBlockListError, NotSupportedPrivateRepositoryError
-from libcommon.operations import delete_dataset, get_dataset_revision_if_supported_or_raise, update_dataset
+from libcommon.operations import delete_dataset, get_latest_dataset_revision_if_supported_or_raise, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import has_some_cache, upsert_response
@@ -39,13 +39,13 @@ PROD_PUBLIC_DATASET = f"{PROD_PUBLIC_USER}/{PROD_PUBLIC_REPO}"
 
 @pytest.mark.real_dataset
 def test_get_revision() -> None:
-    get_dataset_revision_if_supported_or_raise(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT)
+    get_latest_dataset_revision_if_supported_or_raise(dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT)
 
 
 @pytest.mark.real_dataset
 def test_get_revision_timeout() -> None:
     with pytest.raises(Exception):
-        get_dataset_revision_if_supported_or_raise(
+        get_latest_dataset_revision_if_supported_or_raise(
             dataset=PROD_PUBLIC_DATASET, hf_endpoint=PROD_HUB_ENDPOINT, hf_timeout_seconds=0.01
         )
 
@@ -79,7 +79,7 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
 def test_get_revision_private(token: str, namespace: str) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
         with pytest.raises(NotSupportedPrivateRepositoryError):
-            get_dataset_revision_if_supported_or_raise(
+            get_latest_dataset_revision_if_supported_or_raise(
                 dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
             )
 
