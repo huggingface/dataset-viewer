@@ -222,7 +222,6 @@ def test_get_cache_entry_from_steps_no_cache_disabled_viewer() -> None:
         ),
     ):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
-        # we set the dataset as disabled
 
         with raises(NotSupportedDisabledViewerError):
             get_cache_entry_from_steps(
@@ -278,7 +277,6 @@ def test_get_cache_entry_from_steps_no_cache_private() -> None:
         return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[]),
     ):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
-        # we set the dataset as disabled
 
         with raises(NotSupportedPrivateRepositoryError):
             get_cache_entry_from_steps(

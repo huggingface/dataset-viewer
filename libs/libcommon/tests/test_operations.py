@@ -6,11 +6,19 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from huggingface_hub import HfApi
+from huggingface_hub.hf_api import DatasetInfo, HfApi
+from huggingface_hub.utils import HfHubHTTPError
+from requests import Response
 
-from libcommon.exceptions import DatasetInBlockListError, NotSupportedPrivateRepositoryError
+from libcommon.exceptions import (
+    DatasetInBlockListError,
+    NotSupportedDisabledRepositoryError,
+    NotSupportedPrivateRepositoryError,
+    NotSupportedRepositoryNotFoundError,
+)
 from libcommon.operations import delete_dataset, get_latest_dataset_revision_if_supported_or_raise, update_dataset
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -102,6 +110,50 @@ def test_update_private_raises(
 ) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
         with pytest.raises(NotSupportedPrivateRepositoryError):
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+def test_update_non_existent_raises(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    with pytest.raises(NotSupportedRepositoryNotFoundError):
+        update_dataset(dataset="this-dataset-does-not-exists", hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+def test_update_disabled_dataset_raises_way_1(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    dataset = "this-dataset-is-disabled"
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(
+            id=dataset, sha="not-important", private=False, downloads=0, likes=0, tags=[], disabled=True
+        ),
+    ):
+        # ^ we have no programmatical way to disable a dataset, so we mock the response of the API
+        # possibly, the API can raise a 403 error code instead of returning a disabled field
+        # see following test
+        with pytest.raises(NotSupportedDisabledRepositoryError):
+            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+def test_update_disabled_dataset_raises_way_2(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    dataset = "this-dataset-is-disabled"
+
+    response = Response()
+    response.status_code = 403
+    response.headers["X-Error-Message"] = "Access to this resource is disabled."
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        raise_exception=HfHubHTTPError("some message", response=response),
+    ):
+        # ^ we have no programmatical way to disable a dataset, so we mock the response of the API
+        with pytest.raises(NotSupportedDisabledRepositoryError):
             update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
