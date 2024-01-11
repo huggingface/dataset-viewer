@@ -105,6 +105,7 @@ CacheableErrorCode = Literal[
     "NotSupportedDisabledRepositoryError",
     "NotSupportedDisabledViewerError",
     "NotSupportedPrivateRepositoryError",
+    "NotSupportedRepositoryNotFoundError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -540,6 +541,13 @@ class NotSupportedDisabledRepositoryError(NotSupportedError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedDisabledRepositoryError", cause, False)
+
+
+class NotSupportedRepositoryNotFoundError(NotSupportedError):
+    """The repository has not been found."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedRepositoryNotFoundError", cause, False)
 
 
 class NotSupportedDisabledViewerError(NotSupportedError):

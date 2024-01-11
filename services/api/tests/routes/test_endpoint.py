@@ -223,7 +223,6 @@ def test_get_cache_entry_from_steps_no_cache_disabled_viewer() -> None:
         ),
     ):
         # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
-        # we set the dataset as disabled
 
         with raises(NotSupportedDisabledViewerError):
             get_cache_entry_from_steps(

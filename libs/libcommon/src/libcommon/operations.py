@@ -6,13 +6,20 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 from huggingface_hub.hf_api import DatasetInfo, HfApi
-from huggingface_hub.utils import get_session, hf_raise_for_status, validate_hf_hub_args
+from huggingface_hub.utils import (
+    HfHubHTTPError,
+    RepositoryNotFoundError,
+    get_session,
+    hf_raise_for_status,
+    validate_hf_hub_args,
+)
 
 from libcommon.exceptions import (
     NotSupportedDisabledRepositoryError,
     NotSupportedDisabledViewerError,
     NotSupportedError,
     NotSupportedPrivateRepositoryError,
+    NotSupportedRepositoryNotFoundError,
 )
 from libcommon.orchestrator import get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
@@ -116,13 +123,25 @@ def get_latest_dataset_revision_if_supported_or_raise(
     hf_timeout_seconds: Optional[float] = None,
     blocked_datasets: Optional[list[str]] = None,
 ) -> str:
-    dataset_info = get_dataset_info(
-        dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
-    )
+    try:
+        dataset_info = get_dataset_info(
+            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, hf_timeout_seconds=hf_timeout_seconds
+        )
+    except RepositoryNotFoundError as e:
+        raise NotSupportedRepositoryNotFoundError(f"Repository {dataset} is not found.", e) from e
+    except HfHubHTTPError as e:
+        response = e.response
+        if response.headers.get("X-Error-Message") == "Access to this resource is disabled.":
+            # ^ huggingface_hub does not yet provide a specific exception for this error
+            # Let's catch DisabledRepoError instead once https://github.com/huggingface/huggingface_hub/pull/1965
+            # is released.
+            raise NotSupportedDisabledRepositoryError(f"Repository {dataset} is disabled.", e) from e
+        raise
     revision = dataset_info.sha
     if not revision:
         raise ValueError(f"Cannot get the git revision of dataset {dataset}.")
     if dataset_info.disabled:
+        # ^ in most cases, get_dataset_info should already have raised. Anyway, we double-check here.
         raise NotSupportedDisabledRepositoryError(f"Not supported: dataset repository {dataset} is disabled.")
     if dataset_info.private:
         author = dataset_info.author
@@ -185,8 +204,8 @@ def update_dataset(
             hf_timeout_seconds=hf_timeout_seconds,
             blocked_datasets=blocked_datasets,
         )
-    except NotSupportedError:
-        logging.warning(f"Dataset {dataset} is not supported. Let's delete the dataset.")
+    except NotSupportedError as e:
+        logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
     set_revision(
