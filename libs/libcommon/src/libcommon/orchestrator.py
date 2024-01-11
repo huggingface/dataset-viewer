@@ -13,6 +13,8 @@ from libcommon.constants import (
     CONFIG_INFO_KINDS,
     CONFIG_SPLIT_NAMES_KINDS,
     DATASET_CONFIG_NAMES_KINDS,
+    DEFAULT_DIFFICULTY_MAX,
+    DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
@@ -234,6 +236,7 @@ class AfterJobPlan(Plan):
 
     job_info: JobInfo
     processing_graph: ProcessingGraph
+    failed_runs: int
 
     dataset: str = field(init=False)
     config: Optional[str] = field(init=False)
@@ -364,6 +367,8 @@ class AfterJobPlan(Plan):
             difficulty = next_processing_step.difficulty
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
+            # increase difficulty according to number of failed runs
+            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + self.failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
@@ -812,7 +817,7 @@ def finish_job(
     Queue().finish_job(job_id=job_info["job_id"])
     logging.debug("the job has been finished.")
     # trigger the next steps
-    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph)
+    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
     plan.run()
     logging.debug("jobs have been created for the next steps.")
 
