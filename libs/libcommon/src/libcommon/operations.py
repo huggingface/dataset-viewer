@@ -31,10 +31,6 @@ def get_dataset_info(
     )
 
 
-class DisabledRepoError(HfHubHTTPError):  # type: ignore
-    pass
-
-
 def get_latest_dataset_revision_if_supported_or_raise(
     dataset: str,
     hf_endpoint: str,
