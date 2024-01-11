@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
-from requests import Response
+from requests import Response  # type: ignore
 
 from libcommon.exceptions import (
     DatasetInBlockListError,

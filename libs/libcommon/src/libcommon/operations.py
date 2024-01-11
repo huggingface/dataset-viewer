@@ -31,7 +31,7 @@ def get_dataset_info(
     )
 
 
-class DisabledRepoError(HfHubHTTPError):
+class DisabledRepoError(HfHubHTTPError):  # type: ignore
     pass
 
 
