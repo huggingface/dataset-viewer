@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Optional
 
 import pytest
 from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
@@ -36,14 +34,6 @@ class DummyJobRunner(DatasetJobRunner):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
-
-
-@dataclass
-class CacheEntry:
-    error_code: Optional[str]
-    job_runner_version: Optional[int]
-    dataset_git_revision: Optional[str]
-    progress: Optional[float] = None
 
 
 def test_check_type(
