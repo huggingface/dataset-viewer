@@ -60,6 +60,9 @@ from mongodb_migration.migrations._20230926095900_cache_add_has_fts_field_in_spl
 from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_split_duckdb_index import (
     MigrationAddPartialToSplitDuckdbIndexCacheResponse,
 )
+from mongodb_migration.migrations._20240112164500_cache_add_partial_field_in_split_descriptive_statistics import (
+    MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -290,5 +293,9 @@ class MigrationsCollector:
             ),
             MigrationRemoveFieldFromJob(
                 field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
+            ),
+            MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(
+                version="20240112164500",
+                description="add 'partial' fields for 'split-descriptive-statistics' cache records. ",
             ),
         ]
