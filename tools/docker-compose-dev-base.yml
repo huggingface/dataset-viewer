@@ -19,11 +19,11 @@ services:
       # metrics
       METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
       METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # volumes to local source directory for development
     volumes:
       - ../libs/libcommon/src:/src/libs/libcommon/src
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     network_mode: ${DEV_NETWORK_MODE}
   libapi:
     extends:
