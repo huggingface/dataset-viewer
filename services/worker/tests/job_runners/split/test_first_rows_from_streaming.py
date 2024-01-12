@@ -74,8 +74,7 @@ def get_job_runner(
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             storage_client=StorageClient(
                 protocol="file",
-                root=str(tmp_path),
-                folder="assets",
+                storage_root=str(tmp_path / "assets"),
             ),
         )
 

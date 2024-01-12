@@ -245,17 +245,15 @@ s3:
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
-  # Directory on the shared storage (audio files and images)
-  storageRoot: "/storage"
-  folderName: "assets"
+  # name of the folder where assets are stored.
+  storageRoot: "/storage/assets"
   storageProtocol: "file"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
   # baseUrl: "not used for now"
-  # Directory on the cached shared storage (audio files and images)
-  storageRoot: "/storage"
-  folderName: "cached-assets"
+  # name of the folder where cached assets are stored.
+  storageRoot: "/storage/cached-assets"
   storageProtocol: "file"
 
 parquetMetadata:

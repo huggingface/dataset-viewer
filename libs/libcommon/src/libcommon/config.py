@@ -9,15 +9,13 @@ from typing import Optional
 from environs import Env
 
 ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_FOLDER_NAME = "assets"
-ASSETS_STORAGE_ROOT = "/storage"
+ASSETS_STORAGE_ROOT = "/storage/assets"
 ASSETS_STORAGE_PROTOCOL = "file"
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    folder_name: str = ASSETS_FOLDER_NAME
     storage_protocol: str = ASSETS_STORAGE_PROTOCOL
     storage_root: str = ASSETS_STORAGE_ROOT
 
@@ -27,7 +25,6 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                folder_name=env.str(name="FOLDER_NAME", default=ASSETS_FOLDER_NAME),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=ASSETS_STORAGE_PROTOCOL),
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
@@ -56,15 +53,13 @@ class S3Config:
 
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_FOLDER_NAME = "cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "/storage"
+CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 CACHED_ASSETS_STORAGE_PROTOCOL = "file"
 
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
     base_url: str = CACHED_ASSETS_BASE_URL
-    folder_name: str = CACHED_ASSETS_FOLDER_NAME
     storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
     storage_root: str = CACHED_ASSETS_STORAGE_ROOT
 
@@ -74,7 +69,6 @@ class CachedAssetsConfig:
         with env.prefixed("CACHED_ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                folder_name=env.str(name="FOLDER_NAME", default=CACHED_ASSETS_FOLDER_NAME),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )

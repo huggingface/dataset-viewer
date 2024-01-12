@@ -149,11 +149,11 @@ optInOutUrlsScan:
   urlsNumberPerBatch: 1000
 
 assets:
-  storageRoot: "hf-datasets-server-statics"
+  storageRoot: "hf-datasets-server-statics/assets"
   storageProtocol: "s3"
 
 cachedAssets:
-  storageRoot: "hf-datasets-server-statics"
+  storageRoot: "hf-datasets-server-statics/cached-assets"
   storageProtocol: "s3"
 
 duckDBIndex:

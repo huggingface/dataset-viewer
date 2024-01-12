@@ -204,23 +204,21 @@ def test_delete_obsolete_cache(
 
     assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(tmp_path / "assets"),
     )
     cached_assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="cached-assets",
+        storage_root=str(tmp_path / "cached-assets"),
     )
 
     if create_assets:
         assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
-        assets_storage_client._fs.touch(f"{assets_storage_client.get_base_directory()}/{image_key}")
+        assets_storage_client._fs.touch(assets_storage_client.get_full_path(image_key))
         assert assets_storage_client.exists(image_key)
 
     if create_cached_assets:
         cached_assets_storage_client._fs.mkdirs(dataset, exist_ok=True)
-        cached_assets_storage_client._fs.touch(f"{cached_assets_storage_client.get_base_directory()}/{image_key}")
+        cached_assets_storage_client._fs.touch(cached_assets_storage_client.get_full_path(image_key))
         assert cached_assets_storage_client.exists(image_key)
 
     upsert_response(

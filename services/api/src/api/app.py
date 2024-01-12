@@ -57,8 +57,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
 
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
-        root=app_config.cached_assets.storage_root,
-        folder=app_config.cached_assets.folder_name,
+        storage_root=app_config.cached_assets.storage_root,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
@@ -66,8 +65,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
 
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
-        root=app_config.assets.storage_root,
-        folder=app_config.assets.folder_name,
+        storage_root=app_config.assets.storage_root,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
