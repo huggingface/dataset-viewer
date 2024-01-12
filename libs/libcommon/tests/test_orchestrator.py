@@ -5,6 +5,7 @@ from http import HTTPStatus
 
 import pytest
 
+from libcommon.constants import DEFAULT_DIFFICULTY_MAX, DIFFICULTY_BONUS_BY_FAILED_RUNS
 from libcommon.orchestrator import AfterJobPlan, finish_job, has_pending_ancestor_jobs, remove_dataset, set_revision
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
@@ -84,6 +85,7 @@ def test_after_job_plan(
     after_job_plan = AfterJobPlan(
         processing_graph=processing_graph,
         job_info=job_info,
+        failed_runs=0,
     )
     if len(artifacts_to_create):
         assert after_job_plan.as_response() == [f"CreateJobs,{len(artifacts_to_create)}"]
@@ -115,6 +117,7 @@ def test_after_job_plan_delete() -> None:
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
         job_info=job_info,
+        failed_runs=0,
     )
     assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteJobs,1"]
 
@@ -318,8 +321,8 @@ def test_remove_dataset() -> None:
     assert has_some_cache(dataset=DATASET_NAME) is False
 
 
-@pytest.mark.parametrize("is_big", [False, True])
-def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
+@pytest.mark.parametrize("is_big,failed_runs", [(False, 0), (True, 0), (False, 1), (True, 3)])
+def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -> None:
     bonus_difficulty_if_dataset_is_big = 10
     processing_graph = ProcessingGraph(
         {
@@ -372,7 +375,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
         progress=1.0,
     )
 
-    after_job_plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph)
+    after_job_plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
     assert len(after_job_plan.job_infos_to_create) == 2
     config_jobs_with_bonus = [
         job for job in after_job_plan.job_infos_to_create if job["type"] == "config_step_with_bonus"
@@ -383,12 +386,14 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
     ]
     assert len(split_jobs_with_bonus) == 1
 
-    if is_big:
-        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
-        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
-    else:
-        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
-        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
+    expected_difficulty = min(
+        DEFAULT_DIFFICULTY_MAX,
+        DIFFICULTY
+        + (0 if not is_big else bonus_difficulty_if_dataset_is_big)
+        + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS,
+    )
+    assert config_jobs_with_bonus[0]["difficulty"] == expected_difficulty
+    assert split_jobs_with_bonus[0]["difficulty"] == expected_difficulty
 
 
 def assert_failed_runs(failed_runs: int) -> None:
