@@ -67,7 +67,6 @@ if __name__ == "__main__":
             storage_client=storage_client,
         )
         loop = Loop(
-            library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
             state_file_path=state_file_path,
             app_config=app_config,
