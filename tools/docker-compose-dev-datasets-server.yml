@@ -39,7 +39,7 @@ services:
       # volumes to local source directory for development
       - ../services/admin/src:/src/services/admin/src
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libapi
     environment:
       # service
@@ -78,7 +78,7 @@ services:
       # volumes to local source directory for development
       - ../services/api/src:/src/services/api/src
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libapi
     environment:
       # prometheus
@@ -103,7 +103,7 @@ services:
       context: ..
       dockerfile: services/rows/dev.Dockerfile
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
@@ -137,7 +137,7 @@ services:
       context: ..
       dockerfile: services/search/dev.Dockerfile
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
@@ -170,7 +170,7 @@ services:
       context: ..
       dockerfile: services/sse-api/dev.Dockerfile
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libapi
     volumes:
       # volumes to local source directory for development
@@ -203,7 +203,7 @@ services:
       # volumes to local source directory for development
       - ../services/worker/src:/src/services/worker/src
     extends:
-      file: docker-compose-base.yml
+      file: docker-compose-dev-base.yml
       service: libcommon
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
