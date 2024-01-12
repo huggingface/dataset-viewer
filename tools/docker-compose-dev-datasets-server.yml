@@ -1,4 +1,46 @@
 services:
+  libcommon:
+    environment:
+      # common
+      COMMON_BLOCKED_DATASETS: ${COMMON_BLOCKED_DATASETS-}
+      COMMON_DATASET_SCRIPTS_ALLOW_LIST: ${COMMON_DATASET_SCRIPTS_ALLOW_LIST-}
+      COMMON_HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co}
+      COMMON_HF_TOKEN: ${COMMON_HF_TOKEN-hf_app_datasets-server_token}
+      # log
+      LOG_LEVEL: ${LOG_LEVEL-INFO}
+      # huggingface_hub
+      HF_ENDPOINT: ${COMMON_HF_ENDPOINT-https://hub-ci.huggingface.co} # see https://github.com/huggingface/datasets/pull/5196#issuecomment-1322191411
+      # cache
+      CACHE_MONGO_URL: ${CACHE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
+      CACHE_MONGO_DATABASE: ${CACHE_MONGO_DATABASE-datasets_server_cache}
+      # queue
+      QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
+      QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
+      # metrics
+      METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
+      METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
+    # volumes to local source directory for development
+    volumes:
+      - ../libs/libcommon/src:/src/libs/libcommon/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    network_mode: ${DEV_NETWORK_MODE}
+  libapi:
+    extends:
+      service: libcommon
+    environment:
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+      # service
+      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
+      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL}
+      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: ${API_HF_JWT_ADDITIONAL_PUBLIC_KEYS}
+      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
+      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-10.0}
+      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
+      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
+    # volumes to local source directory for development
+    volumes:
+      - ../libs/libcommon/src:/src/libs/libapi/src
   reverse-proxy:
     image: docker.io/nginx:1.25.3
     # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
@@ -18,8 +60,6 @@ services:
       URL_ROWS: http://host.docker.internal:${ROWS_UVICORN_PORT-8082}
       URL_SEARCH: http://host.docker.internal:${SEARCH_UVICORN_PORT-8083}
       URL_SSE_API: http://host.docker.internal:${SSE_API_UVICORN_PORT-8085}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       admin:
         condition: service_started
@@ -38,9 +78,10 @@ services:
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
+      # volumes to local source directory for development
+      - ../services/admin/src:/src/services/admin/src
     extends:
-      file: docker-compose-dev-base.yml
-      service: admin
+      service: libapi
     environment:
       # service
       ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-__DUMMY_DATASETS_SERVER_ADMINS_ORG__}
@@ -67,7 +108,6 @@ services:
       mongodb:
         condition: service_healthy
     restart: always
-    network_mode: ${DEV_NETWORK_MODE}
     ports:
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
@@ -76,9 +116,10 @@ services:
       dockerfile: services/api/dev.Dockerfile
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
+      # volumes to local source directory for development
+      - ../services/api/src:/src/services/api/src
     extends:
-      file: docker-compose-dev-base.yml
-      service: api
+      service: libapi
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -91,7 +132,6 @@ services:
       ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
       CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
       CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
-    network_mode: ${DEV_NETWORK_MODE}
     ports:
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
@@ -103,11 +143,12 @@ services:
       context: ..
       dockerfile: services/rows/dev.Dockerfile
     extends:
-      file: docker-compose-dev-base.yml
-      service: rows
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
+      # volumes to local source directory for development
+      - ../services/rows/src:/src/services/rows/src
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
       # storage
@@ -123,7 +164,6 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${ROWS_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${ROWS_UVICORN_PORT-8082}
-    network_mode: ${DEV_NETWORK_MODE}
     ports:
       # for debug
       - ${ROWS_UVICORN_PORT-8082}:${ROWS_UVICORN_PORT-8082}
@@ -136,11 +176,12 @@ services:
       context: ..
       dockerfile: services/search/dev.Dockerfile
     extends:
-      file: docker-compose-dev-base.yml
-      service: search
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      # volumes to local source directory for development
+      - ../services/search/src:/src/services/search/src
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
       # storage
@@ -155,7 +196,6 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${SEARCH_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${SEARCH_UVICORN_PORT-8083}
-    network_mode: ${DEV_NETWORK_MODE}
     ports:
       # for debug
       - ${SEARCH_UVICORN_PORT-8083}:${SEARCH_UVICORN_PORT-8083}
@@ -168,8 +208,10 @@ services:
       context: ..
       dockerfile: services/sse-api/dev.Dockerfile
     extends:
-      file: docker-compose-dev-base.yml
-      service: sse-api
+      service: libapi
+    volumes:
+      # volumes to local source directory for development
+      - ../services/sse-api/src:/src/services/sse-api/src
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -177,7 +219,6 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${SSE_API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${SSE_API_UVICORN_PORT-8085}
-    network_mode: ${DEV_NETWORK_MODE}
     ports:
       # for debug
       - ${SSE_API_UVICORN_PORT-8085}:${SSE_API_UVICORN_PORT-8085}
@@ -196,9 +237,10 @@ services:
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:rw
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
+      # volumes to local source directory for development
+      - ../services/worker/src:/src/services/worker/src
     extends:
-      file: docker-compose-dev-base.yml
-      service: datasets-worker
+      service: libcommon
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
@@ -241,7 +283,19 @@ services:
       WORKER_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       WORKER_UVICORN_NUM_WORKERS: ${WORKER_UVICORN_NUM_WORKERS-2}
       WORKER_UVICORN_PORT: ${WORKER_UVICORN_PORT-8086}
-    network_mode: ${DEV_NETWORK_MODE}
+      # datasets
+      DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+      HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+      # worker
+      WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
+      WORKER_KILL_LONG_JOB_INTERVAL_SECONDS: ${WORKER_KILL_LONG_JOB_INTERVAL_SECONDS-60}
+      WORKER_KILL_ZOMBIES_INTERVAL_SECONDS: ${WORKER_KILL_ZOMBIES_INTERVAL_SECONDS-600}
+      WORKER_MAX_JOB_DURATION_SECONDS: ${WORKER_MAX_JOB_DURATION_SECONDS-1200}
+      WORKER_MAX_MISSING_HEARTBEATS: ${WORKER_MAX_MISSING_HEARTBEATS-5}
+      WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
+      WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
+      WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
     ports:
       - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
     depends_on:
