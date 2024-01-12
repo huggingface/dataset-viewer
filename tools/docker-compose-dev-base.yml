@@ -40,4 +40,4 @@ services:
       API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
     # volumes to local source directory for development
     volumes:
-      - ../libs/libcommon/src:/src/libs/libapi/src
+      - ../libs/libapi/src:/src/libs/libapi/src
