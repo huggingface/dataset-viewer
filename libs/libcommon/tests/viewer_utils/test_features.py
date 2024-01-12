@@ -116,9 +116,10 @@ def assert_output_has_valid_files(value: Any, public_assets_storage: PublicAsset
             and isinstance(value["src"], str)
             and value["src"].startswith(public_assets_storage.assets_base_url)
         ):
-            path = os.path.join(
-                public_assets_storage.storage_client.get_base_directory(),
-                value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+            path = Path(
+                public_assets_storage.storage_client.get_full_path(
+                    value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+                )
             )
             assert os.path.exists(path)
             assert os.path.getsize(path) > 0

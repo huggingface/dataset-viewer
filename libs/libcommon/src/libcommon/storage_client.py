@@ -41,15 +41,14 @@ class StorageClient:
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
 
-    def exists(self, object_key: str) -> bool:
-        object_path = f"{self.get_base_directory()}/{object_key}"
-        return bool(self._fs.exists(object_path))
+    def get_full_path(self, relative_path: str) -> str:
+        return f"{self.storage_root}/{relative_path}"
 
-    def get_base_directory(self) -> str:
-        return self.storage_root
+    def exists(self, object_key: str) -> bool:
+        return bool(self._fs.exists(self.get_full_path(object_key)))
 
     def delete_dataset_directory(self, dataset: str) -> None:
-        dataset_key = f"{self.get_base_directory()}/{dataset}"
+        dataset_key = self.get_full_path(dataset)
         try:
             self._fs.rm(dataset_key, recursive=True)
             logging.info(f"Directory deleted: {dataset_key}")

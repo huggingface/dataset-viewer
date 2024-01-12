@@ -49,7 +49,7 @@ def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storag
     }
     assert public_assets_storage.storage_client.exists(image_key)
 
-    image = PILImage.open(f"{public_assets_storage.storage_client.get_base_directory()}/{image_key}")
+    image = PILImage.open(public_assets_storage.storage_client.get_full_path(image_key))
     assert image is not None
 
 
