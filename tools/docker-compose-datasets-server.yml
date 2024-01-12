@@ -38,7 +38,7 @@ services:
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
     extends:
       file: docker-compose-base.yml
-      service: common
+      service: libcommon
     environment:
       # service
       ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-huggingface}
@@ -76,7 +76,7 @@ services:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -102,7 +102,7 @@ services:
       dockerfile: services/rows/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -134,7 +134,7 @@ services:
       dockerfile: services/search/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
@@ -165,7 +165,7 @@ services:
       dockerfile: services/sse-api/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}

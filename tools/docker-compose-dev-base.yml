@@ -1,5 +1,5 @@
 services:
-  common:
+  libcommon:
     environment:
       # common
       COMMON_BLOCKED_DATASETS: ${COMMON_BLOCKED_DATASETS-}
@@ -26,14 +26,14 @@ services:
       - ../libs/libcommon/src:/src/libs/libcommon/src
   admin:
     extends:
-      service: common
+      service: libcommon
     # volumes to local source directory for development
     volumes:
       - ../libs/libapi/src:/src/libs/libapi/src
       - ../services/admin/src:/src/services/admin/src
   api:
     extends:
-      service: common
+      service: libcommon
     environment:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
       # service
@@ -51,7 +51,7 @@ services:
       - ../services/api/src:/src/services/api/src
   rows:
     extends:
-      service: common
+      service: libcommon
     environment:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
     # volumes to local source directory for development
@@ -60,7 +60,7 @@ services:
       - ../services/rows/src:/src/services/rows/src
   search:
     extends:
-      service: common
+      service: libcommon
     environment:
     # volumes to local source directory for development
     volumes:
@@ -68,7 +68,7 @@ services:
       - ../services/search/src:/src/services/search/src
   sse-api:
     extends:
-      service: common
+      service: libcommon
     environment:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
       # service
@@ -86,7 +86,7 @@ services:
       - ../services/sse-api/src:/src/services/sse-api/src
   datasets-worker:
     extends:
-      service: common
+      service: libcommon
     environment:
       # datasets
       DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
