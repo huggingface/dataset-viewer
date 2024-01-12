@@ -204,13 +204,11 @@ def test_delete_obsolete_cache(
 
     assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(tmp_path / "assets"),
     )
     cached_assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="cached-assets",
+        storage_root=str(tmp_path / "cached-assets"),
     )
 
     if create_assets:

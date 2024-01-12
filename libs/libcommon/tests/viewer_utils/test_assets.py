@@ -18,8 +18,7 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=ASSETS_FOLDER,
+        storage_root=str(tmp_path / ASSETS_FOLDER),
     )
     return PublicAssetsStorage(
         assets_base_url=ASSETS_BASE_URL,

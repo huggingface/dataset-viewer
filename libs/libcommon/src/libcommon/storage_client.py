@@ -16,20 +16,17 @@ class StorageClient:
 
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
-        root (:obj:`str`): The storage root path
-        folder (:obj:`str`): The storage folder path
+        storage_root (:obj:`str`): The storage root path
     """
 
-    _protocol: str
     _fs: Any
-    _storage_root: str
-    _folder: str
+    protocol: str
+    storage_root: str
 
-    def __init__(self, protocol: str, root: str, folder: str, **kwargs: Any) -> None:
-        logging.info(f"trying to initialize storage client with {protocol=} {root=} {folder=}")
-        self._protocol = protocol
-        self._storage_root = root
-        self._folder = folder
+    def __init__(self, protocol: str, storage_root: str, **kwargs: Any) -> None:
+        logging.info(f"trying to initialize storage client with {protocol=} {storage_root=}")
+        self.storage_root = storage_root
+        self.protocol = protocol
         if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
         elif protocol == "file":
@@ -40,7 +37,7 @@ class StorageClient:
 
     def _validate(self) -> None:
         try:
-            self._fs.ls(self._storage_root)
+            self._fs.ls(self.storage_root)
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
 
@@ -49,7 +46,7 @@ class StorageClient:
         return bool(self._fs.exists(object_path))
 
     def get_base_directory(self) -> str:
-        return f"{self._storage_root}/{self._folder}"
+        return self.storage_root
 
     def delete_dataset_directory(self, dataset: str) -> None:
         dataset_key = f"{self.get_base_directory()}/{dataset}"
@@ -60,4 +57,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self._protocol}, root={self._storage_root}, folder={self._folder})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}"
