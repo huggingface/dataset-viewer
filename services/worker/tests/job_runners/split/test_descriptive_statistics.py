@@ -285,7 +285,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             "column_type": column_type,
             "column_statistics": column_stats,
         }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
 
 
 @pytest.fixture
@@ -444,7 +444,6 @@ def test_bool_statistics(
         ("descriptive_statistics_string_text", None),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
@@ -515,7 +514,7 @@ def test_compute(
         assert e.typename == expected_error_code
     else:
         response = job_runner.compute()
-        assert sorted(response.content.keys()) == ["num_examples", "statistics"]
+        assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
