@@ -35,11 +35,10 @@ class AudioSource(TypedDict):
     type: str
 
 
-def generate_asset_src(
-    base_url: str, dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
-) -> tuple[str, str]:
-    dir_path = f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}"
-    return dir_path, f"{base_url}/{dir_path}/{filename}"
+def generate_object_key(
+    dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
+) -> str:
+    return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
 
 
 def create_image_file(
@@ -59,8 +58,7 @@ def create_image_file(
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
-    dir_path, src = generate_asset_src(
-        base_url=assets_base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,
@@ -69,7 +67,7 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    object_key = f"{dir_path}/{filename}"
+    src = f"{assets_base_url}/{object_key}"
 
     if overwrite or not storage_client.exists(object_key=object_key):
         with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
@@ -94,8 +92,7 @@ def create_audio_file(
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
-    dir_path, src = generate_asset_src(
-        base_url=assets_base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,
@@ -104,7 +101,7 @@ def create_audio_file(
         column=column,
         filename=filename,
     )
-    object_key = f"{dir_path}/{filename}"
+    src = f"{assets_base_url}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(

@@ -8,7 +8,7 @@ from PIL import Image as PILImage  # type: ignore
 
 from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_asset_src
+from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_object_key
 
 ASSETS_FOLDER = "assets"
 ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
@@ -89,11 +89,10 @@ def test_create_audio_file(
         ("dataset", "config?<script>alert('XSS');</script>&", "split", "column?"),
     ],
 )
-def test_generate_asset_src(dataset: str, config: str, split: str, column: str) -> None:
+def test_src_is_sanitized(dataset: str, config: str, split: str, column: str) -> None:
     base_url = "https://datasets-server.huggingface.co/assets"
     filename = "image.jpg"
-    _, src = generate_asset_src(
-        base_url=base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision="revision",
         config=config,
@@ -102,4 +101,5 @@ def test_generate_asset_src(dataset: str, config: str, split: str, column: str) 
         column=column,
         filename=filename,
     )
+    src = f"{base_url}/{object_key}"
     assert validators.url(src)
