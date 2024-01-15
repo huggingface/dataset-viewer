@@ -130,6 +130,16 @@ def get_datetime(days: Optional[float] = None) -> datetime:
     return date
 
 
+def get_datetime_string(date: datetime) -> str:
+    # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
+    return str(int((date).timestamp()))
+
+
+def get_expires(minutes: float) -> datetime:
+    # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
+    return datetime.now(timezone.utc) + timedelta(minutes=minutes)
+
+
 def inputs_to_string(
     dataset: str,
     revision: str,
