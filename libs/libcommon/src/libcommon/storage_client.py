@@ -73,4 +73,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite})"
