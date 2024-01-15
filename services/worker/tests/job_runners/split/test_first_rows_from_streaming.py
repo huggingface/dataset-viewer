@@ -75,6 +75,7 @@ def get_job_runner(
             storage_client=StorageClient(
                 protocol="file",
                 storage_root=str(tmp_path / "assets"),
+                base_url="https://notimportant",
             ),
         )
 

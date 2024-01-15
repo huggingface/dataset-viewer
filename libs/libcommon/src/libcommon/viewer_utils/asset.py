@@ -67,7 +67,7 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    if overwrite or not storage_client.exists(object_key=object_key):
+    if overwrite or not storage_client.exists(object_key):
         with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
             image.save(fp=f, format=format)
     return ImageSource(src=storage_client.get_url(object_key), height=image.height, width=image.width)
@@ -105,7 +105,7 @@ def create_audio_file(
         )
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
-    if overwrite or not storage_client.exists(object_key=object_key):
+    if overwrite or not storage_client.exists(object_key):
         audio_path = storage_client.get_full_path(object_key)
         if audio_file_extension == suffix:
             with storage_client._fs.open(audio_path, "wb") as f:
