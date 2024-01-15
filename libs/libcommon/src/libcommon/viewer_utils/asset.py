@@ -39,7 +39,6 @@ def generate_object_key(
     dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
 ) -> str:
     return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
-    # TODO: should we parse.quote() the filename?
 
 
 def create_image_file(
