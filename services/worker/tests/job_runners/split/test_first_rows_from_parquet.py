@@ -79,6 +79,7 @@ def get_job_runner(
                 protocol="file",
                 storage_root=str(tmp_path / "assets"),
                 base_url="https://notimportant",
+                overwrite=True,  # all the job runners will overwrite the files
             ),
         )
 

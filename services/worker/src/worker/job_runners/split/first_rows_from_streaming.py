@@ -21,7 +21,6 @@ from libcommon.exceptions import (
     TooBigContentError,
     TooManyColumnsError,
 )
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, Row
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
@@ -44,7 +43,7 @@ def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> list[Row]:
     return [
         {
@@ -57,7 +56,7 @@ def transform_rows(
                 cell=row[featureName] if featureName in row else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                public_assets_storage=public_assets_storage,
+                storage_client=storage_client,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -70,7 +69,7 @@ def compute_first_rows_response(
     revision: str,
     config: str,
     split: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
@@ -94,8 +93,8 @@ def compute_first_rows_response(
             A configuration name.
         split (`str`):
             A split name.
-        public_assets_storage (`PublicAssetsStorage`):
-            The public assets storage configuration.
+        storage_client (`StorageClient`):
+            A storage client to save the assets (images, audio, etc.).
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
@@ -251,7 +250,7 @@ def compute_first_rows_response(
             split=split,
             rows=rows,
             features=features,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
         )
     except Exception as err:
         raise RowsPostProcessingError(
@@ -297,7 +296,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows
-        self.public_assets_storage = PublicAssetsStorage(overwrite=True, storage_client=storage_client)
+        self.storage_client = storage_client
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -306,7 +305,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 revision=self.dataset_git_revision,
                 config=self.config,
                 split=self.split,
-                public_assets_storage=self.public_assets_storage,
+                storage_client=self.storage_client,
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,

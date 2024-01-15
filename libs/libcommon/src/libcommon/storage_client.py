@@ -17,18 +17,24 @@ class StorageClient:
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
         storage_root (:obj:`str`): The storage root path
+        base_url (:obj:`str`): The base url for the publicly distributed assets
+        overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
     """
 
     _fs: Any
     protocol: str
     storage_root: str
     base_url: str
+    overwrite: bool
 
-    def __init__(self, protocol: str, storage_root: str, base_url: str, **kwargs: Any) -> None:
+    def __init__(
+        self, protocol: str, storage_root: str, base_url: str, overwrite: bool = False, **kwargs: Any
+    ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=}")
         self.storage_root = storage_root
         self.protocol = protocol
         self.base_url = base_url
+        self.overwrite = overwrite
         if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
         elif protocol == "file":

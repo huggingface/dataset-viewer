@@ -33,7 +33,6 @@ from libapi.utils import (
 )
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
@@ -93,7 +92,6 @@ async def create_response(
     )
     pa_table = pa_table.drop(unsupported_columns)
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    public_assets_storage = PublicAssetsStorage(overwrite=False, storage_client=storage_client)
 
     return PaginatedResponse(
         features=to_features_list(features_without_key),
@@ -103,7 +101,7 @@ async def create_response(
             revision=revision,
             config=config,
             split=split,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,

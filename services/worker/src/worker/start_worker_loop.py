@@ -36,6 +36,7 @@ if __name__ == "__main__":
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
+        overwrite=True,  # all the job runners will overwrite the files
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},

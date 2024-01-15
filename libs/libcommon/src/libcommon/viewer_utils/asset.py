@@ -11,8 +11,8 @@ from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath, remove_dir
+from libcommon.storage_client import StorageClient
 
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
@@ -52,12 +52,8 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     format: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> ImageSource:
-    # get url dir path
-    overwrite = public_assets_storage.overwrite
-    storage_client = public_assets_storage.storage_client
-
     object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
@@ -67,7 +63,7 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    if overwrite or not storage_client.exists(object_key):
+    if storage_client.overwrite or not storage_client.exists(object_key):
         with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
             image.save(fp=f, format=format)
     return ImageSource(src=storage_client.get_url(object_key), height=image.height, width=image.width)
@@ -83,11 +79,8 @@ def create_audio_file(
     audio_file_bytes: bytes,
     audio_file_extension: Optional[str],
     filename: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> list[AudioSource]:
-    overwrite = public_assets_storage.overwrite
-    storage_client = public_assets_storage.storage_client
-
     object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
@@ -105,7 +98,7 @@ def create_audio_file(
         )
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
-    if overwrite or not storage_client.exists(object_key):
+    if storage_client.overwrite or not storage_client.exists(object_key):
         audio_path = storage_client.get_full_path(object_key)
         if audio_file_extension == suffix:
             with storage_client._fs.open(audio_path, "wb") as f:
