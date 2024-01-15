@@ -25,6 +25,7 @@ from worker.job_runners.split.first_rows_from_parquet import (
 )
 from worker.utils import get_json_size
 
+from ...constants import ASSETS_BASE_URL
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
@@ -78,7 +79,7 @@ def get_job_runner(
             storage_client=StorageClient(
                 protocol="file",
                 storage_root=str(tmp_path / "assets"),
-                base_url="https://notimportant",
+                base_url=ASSETS_BASE_URL,
                 overwrite=True,  # all the job runners will overwrite the files
             ),
         )

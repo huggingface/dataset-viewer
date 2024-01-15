@@ -17,7 +17,7 @@ from huggingface_hub.constants import REPO_TYPES, REPO_TYPES_URL_PREFIXES
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 
-from ..constants import CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
+from ..constants import ASSETS_BASE_URL, CI_HUB_ENDPOINT, CI_URL_TEMPLATE, CI_USER, CI_USER_TOKEN
 from ..job_runners.utils import REVISION_NAME
 
 DATASET = "dataset"
@@ -593,8 +593,6 @@ def get_IMAGE_rows(dataset: str) -> Any:
 IMAGES_LIST_cols = {
     "col": [{"_type": "Image"}],
 }
-
-ASSETS_BASE_URL = "http://localhost/assets"
 
 
 def get_IMAGES_LIST_rows(dataset: str) -> Any:
