@@ -302,7 +302,24 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
             "column_type": ColumnType.STRING_TEXT,
             "column_statistics": column_stats,
         }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
+
+
+@pytest.fixture
+def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+    ds = datasets["descriptive_statistics_string_text"]
+    df = ds.to_pandas()[:50]  # see `fixtures.hub.hub_public_descriptive_statistics_parquet_builder`
+    expected_statistics = {}
+    for column_name in df.columns:
+        column_stats = count_expected_statistics_for_string_column(df[column_name])
+        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+            raise ValueError(column_name, column_stats)
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": ColumnType.STRING_TEXT,
+            "column_statistics": column_stats,
+        }
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": True}
 
 
 @pytest.mark.parametrize(
@@ -440,8 +457,8 @@ def test_bool_statistics(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("descriptive_statistics_partial", None),
         ("descriptive_statistics_string_text", None),
+        ("descriptive_statistics_string_text_partial", None),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
     ],
@@ -452,27 +469,28 @@ def test_compute(
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_string_text: HubDatasetTest,
+    hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
-    hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
+    descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
-        "descriptive_statistics_partial": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
+        "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
-        "big": hub_responses_big,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
         "descriptive_statistics_partial": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
+        "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
