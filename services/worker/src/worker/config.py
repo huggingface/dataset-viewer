@@ -44,7 +44,6 @@ WORKER_DIFFICULTY_MIN = None
 WORKER_HEARTBEAT_INTERVAL_SECONDS = 60
 WORKER_KILL_LONG_JOB_INTERVAL_SECONDS = 60
 WORKER_KILL_ZOMBIES_INTERVAL_SECONDS = 10 * 60
-WORKER_MAX_DISK_USAGE_PCT = 90
 WORKER_MAX_JOB_DURATION_SECONDS = 20 * 60
 WORKER_MAX_LOAD_PCT = 70
 WORKER_MAX_MEMORY_PCT = 80
@@ -67,14 +66,12 @@ class WorkerConfig:
     job_types_only: list[str] = field(default_factory=get_empty_str_list)
     kill_long_job_interval_seconds: float = WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
     kill_zombies_interval_seconds: float = WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
-    max_disk_usage_pct: int = WORKER_MAX_DISK_USAGE_PCT
     max_job_duration_seconds: float = WORKER_MAX_JOB_DURATION_SECONDS
     max_load_pct: int = WORKER_MAX_LOAD_PCT
     max_memory_pct: int = WORKER_MAX_MEMORY_PCT
     max_missing_heartbeats: int = WORKER_MAX_MISSING_HEARTBEATS
     sleep_seconds: float = WORKER_SLEEP_SECONDS
     state_file_path: Optional[str] = WORKER_STATE_FILE_PATH
-    storage_paths: list[str] = field(default_factory=get_empty_str_list)
 
     @classmethod
     def from_env(cls) -> "WorkerConfig":
@@ -95,7 +92,6 @@ class WorkerConfig:
                 kill_zombies_interval_seconds=env.float(
                     name="KILL_ZOMBIES_INTERVAL_SECONDS", default=WORKER_KILL_ZOMBIES_INTERVAL_SECONDS
                 ),
-                max_disk_usage_pct=env.int(name="MAX_DISK_USAGE_PCT", default=WORKER_MAX_DISK_USAGE_PCT),
                 max_job_duration_seconds=env.float(
                     name="MAX_JOB_DURATION_SECONDS", default=WORKER_MAX_JOB_DURATION_SECONDS
                 ),
@@ -106,7 +102,6 @@ class WorkerConfig:
                 state_file_path=env.str(
                     name="STATE_FILE_PATH", default=WORKER_STATE_FILE_PATH
                 ),  # this environment variable is not expected to be set explicitly, it's set by the worker executor
-                storage_paths=env.list(name="STORAGE_PATHS", default=get_empty_str_list()),
             )
 
 

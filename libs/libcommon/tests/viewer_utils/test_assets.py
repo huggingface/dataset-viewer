@@ -18,8 +18,7 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=ASSETS_FOLDER,
+        storage_root=str(tmp_path / ASSETS_FOLDER),
     )
     return PublicAssetsStorage(
         assets_base_url=ASSETS_BASE_URL,
@@ -50,7 +49,7 @@ def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storag
     }
     assert public_assets_storage.storage_client.exists(image_key)
 
-    image = PILImage.open(f"{public_assets_storage.storage_client.get_base_directory()}/{image_key}")
+    image = PILImage.open(public_assets_storage.storage_client.get_full_path(image_key))
     assert image is not None
 
 

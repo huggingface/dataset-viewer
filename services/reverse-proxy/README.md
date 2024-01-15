@@ -14,8 +14,8 @@ The reverse proxy uses nginx:
 
 It takes various environment variables, all of them are mandatory:
 
-- `ASSETS_DIRECTORY`: the directory that contains the static assets, eg `/assets`
-- `CACHED_ASSETS_DIRECTORY`: the directory that contains the static cached assets, eg `/cached-assets`
+- `ASSETS_STORAGE_ROOT`: the directory that contains the static assets, eg `/storage/assets`
+- `CACHED_ASSETS_STORAGE_ROOT`: the directory that contains the static cached assets, eg `/storage/cached-assets`
 - `OPENAPI_FILE`: the path to the OpenAPI file, eg `docs/source/openapi.json`
 - `HOST`: domain of the reverse proxy, eg `localhost`
 - `PORT`: port of the reverse proxy, eg `80`

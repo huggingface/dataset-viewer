@@ -18,28 +18,27 @@ REVISION_NAME = "revision"
 
 
 def test_recreate_dataset(tmp_path: Path) -> None:
+    assets_directory = tmp_path / "assets"
+    cached_assets_directory = tmp_path / "cached-assets"
+
     assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(assets_directory),
     )
     cached_assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="cached-assets",
+        storage_root=str(cached_assets_directory),
     )
 
-    assets_directory = tmp_path / "assets"
-    cached_assets_directory = tmp_path / "cached-assets"
     dataset = "dataset"
     os.makedirs(f"{assets_directory}/{dataset}", exist_ok=True)
     os.makedirs(f"{cached_assets_directory}/{dataset}", exist_ok=True)
 
-    asset_file = Path(f"{assets_directory}/{dataset}/image.jpg")
+    asset_file = assets_directory / dataset / "image.jpg"
     asset_file.touch()
     assert asset_file.is_file()
 
-    cached_asset_file = Path(f"{cached_assets_directory}/{dataset}/image.jpg")
+    cached_asset_file = cached_assets_directory / dataset / "image.jpg"
     cached_asset_file.touch()
     assert cached_asset_file.is_file()
 

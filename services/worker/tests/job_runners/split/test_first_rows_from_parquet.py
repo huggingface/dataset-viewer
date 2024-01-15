@@ -77,8 +77,7 @@ def get_job_runner(
             parquet_metadata_directory=parquet_metadata_directory,
             storage_client=StorageClient(
                 protocol="file",
-                root=str(tmp_path),
-                folder="assets",
+                storage_root=str(tmp_path / "assets"),
             ),
         )
 

@@ -25,9 +25,6 @@ def test_libraries(
         hf_endpoint=hf_endpoint, init_hf_datasets_cache=init_hf_datasets_cache, numba_path=numba_path
     )
     assert datasets.config.HF_ENDPOINT == hf_endpoint
-    assert (numba_path in resource.storage_paths) == define_numba_path
-    assert str(resource.hf_datasets_cache) in resource.storage_paths
-    assert str(datasets.config.HF_MODULES_CACHE) in resource.storage_paths
     assert not datasets.config.HF_UPDATE_DOWNLOAD_COUNTS
     assert (str(resource.hf_datasets_cache) == init_hf_datasets_cache) == define_init_hf_datasets_cache
 

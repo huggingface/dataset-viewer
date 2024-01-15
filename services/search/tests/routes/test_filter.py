@@ -25,8 +25,7 @@ pytestmark = pytest.mark.anyio
 def storage_client(tmp_path: Path) -> StorageClient:
     return StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=CACHED_ASSETS_FOLDER,
+        storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
     )
 
 

@@ -34,8 +34,7 @@ if __name__ == "__main__":
 
     storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
-        root=app_config.assets.storage_root,
-        folder=app_config.assets.folder_name,
+        storage_root=app_config.assets.storage_root,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
@@ -68,7 +67,6 @@ if __name__ == "__main__":
             storage_client=storage_client,
         )
         loop = Loop(
-            library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
             state_file_path=state_file_path,
             app_config=app_config,

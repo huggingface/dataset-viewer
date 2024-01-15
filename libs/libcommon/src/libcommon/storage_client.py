@@ -16,20 +16,17 @@ class StorageClient:
 
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
-        root (:obj:`str`): The storage root path
-        folder (:obj:`str`): The storage folder path
+        storage_root (:obj:`str`): The storage root path
     """
 
-    _protocol: str
     _fs: Any
-    _storage_root: str
-    _folder: str
+    protocol: str
+    storage_root: str
 
-    def __init__(self, protocol: str, root: str, folder: str, **kwargs: Any) -> None:
-        logging.info(f"trying to initialize storage client with {protocol=} {root=} {folder=}")
-        self._protocol = protocol
-        self._storage_root = root
-        self._folder = folder
+    def __init__(self, protocol: str, storage_root: str, **kwargs: Any) -> None:
+        logging.info(f"trying to initialize storage client with {protocol=} {storage_root=}")
+        self.storage_root = storage_root
+        self.protocol = protocol
         if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
         elif protocol == "file":
@@ -40,19 +37,24 @@ class StorageClient:
 
     def _validate(self) -> None:
         try:
-            self._fs.ls(self._storage_root)
+            self._check_or_create(self.storage_root)
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
 
-    def exists(self, object_key: str) -> bool:
-        object_path = f"{self.get_base_directory()}/{object_key}"
-        return bool(self._fs.exists(object_path))
+    def _check_or_create(self, path: str) -> None:
+        try:
+            self._fs.ls(path)
+        except FileNotFoundError:
+            self._fs.mkdir(path)
 
-    def get_base_directory(self) -> str:
-        return f"{self._storage_root}/{self._folder}"
+    def get_full_path(self, relative_path: str) -> str:
+        return f"{self.storage_root}/{relative_path}"
+
+    def exists(self, object_key: str) -> bool:
+        return bool(self._fs.exists(self.get_full_path(object_key)))
 
     def delete_dataset_directory(self, dataset: str) -> None:
-        dataset_key = f"{self.get_base_directory()}/{dataset}"
+        dataset_key = self.get_full_path(dataset)
         try:
             self._fs.rm(dataset_key, recursive=True)
             logging.info(f"Directory deleted: {dataset_key}")
@@ -60,4 +62,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self._protocol}, root={self._storage_root}, folder={self._folder})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}"
