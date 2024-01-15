@@ -38,7 +38,7 @@ services:
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
     extends:
       file: docker-compose-base.yml
-      service: common
+      service: libapi
     environment:
       # service
       ADMIN_HF_ORGANIZATION: ${ADMIN_HF_ORGANIZATION-huggingface}
@@ -66,7 +66,6 @@ services:
         condition: service_healthy
     restart: always
     ports:
-      # for debug
       - ${ADMIN_UVICORN_PORT-8081}:${ADMIN_UVICORN_PORT-8081}
   api:
     build:
@@ -76,7 +75,7 @@ services:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -90,7 +89,6 @@ services:
       CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
       CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
     ports:
-      # for debug
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
       mongodb:
@@ -102,7 +100,7 @@ services:
       dockerfile: services/rows/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -134,7 +132,7 @@ services:
       dockerfile: services/search/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     volumes:
       - storage:${STORAGE_DIRECTORY-/storage}
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
@@ -165,7 +163,7 @@ services:
       dockerfile: services/sse-api/Dockerfile
     extends:
       file: docker-compose-base.yml
-      service: api
+      service: libapi
     environment:
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -191,7 +189,7 @@ services:
       - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:rw
     extends:
       file: docker-compose-base.yml
-      service: datasets-worker
+      service: libcommon
     environment:
       ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
       ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
@@ -230,18 +228,29 @@ services:
       ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
-      # ^ note: the datasets cache is automatically added, so no need to add it here
       # uvicorn
       WORKER_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       WORKER_UVICORN_NUM_WORKERS: ${WORKER_UVICORN_NUM_WORKERS-2}
       WORKER_UVICORN_PORT: ${WORKER_UVICORN_PORT-8086}
+      # datasets
+      DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
+      HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
+      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
+      # worker
+      WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
+      WORKER_KILL_LONG_JOB_INTERVAL_SECONDS: ${WORKER_KILL_LONG_JOB_INTERVAL_SECONDS-60}
+      WORKER_KILL_ZOMBIES_INTERVAL_SECONDS: ${WORKER_KILL_ZOMBIES_INTERVAL_SECONDS-600}
+      WORKER_MAX_JOB_DURATION_SECONDS: ${WORKER_MAX_JOB_DURATION_SECONDS-1200}
+      WORKER_MAX_MISSING_HEARTBEATS: ${WORKER_MAX_MISSING_HEARTBEATS-5}
+      WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
+      WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
+      WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+    ports:
+      - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
     depends_on:
       mongodb:
         condition: service_healthy
     restart: always
-    ports:
-      # for debug
-      - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
   mongodb:
     image: "mongo:6.0.9"
     ports:
