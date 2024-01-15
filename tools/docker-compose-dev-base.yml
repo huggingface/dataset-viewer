@@ -26,8 +26,7 @@ services:
       - ../libs/libcommon/src:/src/libs/libcommon/src
     network_mode: ${DEV_NETWORK_MODE}
   libapi:
-    extends:
-      service: libcommon
+    extends: libcommon
     environment:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
       # service
