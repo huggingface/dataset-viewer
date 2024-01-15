@@ -79,17 +79,13 @@ CacheableErrorCode = Literal[
     "ConfigNotFoundError",
     "CreateCommitError",
     "DatasetInBlockListError",
-    "DatasetInfoHubRequestError",
     "DatasetManualDownloadError",
     "DatasetModuleNotInstalledError",
     "DatasetNotFoundError",
-    "DatasetRevisionEmptyError",
-    "DatasetRevisionNotFoundError",
     "DatasetScriptError",
     "DatasetWithScriptNotSupportedError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
-    "DisabledViewerError",
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
@@ -106,6 +102,10 @@ CacheableErrorCode = Literal[
     "LockedDatasetTimeoutError",
     "MissingSpawningTokenError",
     "NoSupportedFeaturesError",
+    "NotSupportedDisabledRepositoryError",
+    "NotSupportedDisabledViewerError",
+    "NotSupportedPrivateRepositoryError",
+    "NotSupportedRepositoryNotFoundError",
     "NormalRowsError",
     "ParameterMissingError",
     "ParquetResponseEmptyError",
@@ -177,26 +177,6 @@ class CreateCommitError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "CreateCommitError", cause, False)
 
 
-class DatasetInBlockListError(CacheableError):
-    """The dataset is in the list of blocked datasets."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
-
-
-class DatasetInfoHubRequestError(CacheableError):
-    """The request to the Hub's dataset-info endpoint times out."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            code="DatasetInfoHubRequestError",
-            cause=cause,
-            disclose_cause=False,
-        )
-
-
 class DatasetManualDownloadError(CacheableError):
     """The dataset requires manual download."""
 
@@ -222,20 +202,6 @@ class DatasetNotFoundError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
-
-
-class DatasetRevisionEmptyError(CacheableError):
-    """The current git revision (branch, commit) could not be obtained."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetRevisionEmptyError", cause, False)
-
-
-class DatasetRevisionNotFoundError(CacheableError):
-    """The revision of a dataset repository does not exist."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.NOT_FOUND, "DatasetRevisionNotFoundError", cause, False)
 
 
 class DatasetScriptError(CacheableError):
@@ -264,19 +230,6 @@ class DuckDBIndexFileNotFoundError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "DuckDBIndexFileNotFoundError", cause, False)
-
-
-class DisabledViewerError(CacheableError):
-    """The dataset viewer is disabled."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(
-            message=message,
-            status_code=HTTPStatus.NOT_FOUND,
-            code="DisabledViewerError",
-            cause=cause,
-            disclose_cause=False,
-        )
 
 
 class DiskError(CacheableError):
@@ -570,3 +523,42 @@ class DatasetWithScriptNotSupportedError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithScriptNotSupportedError", cause, True)
+
+
+class NotSupportedError(CacheableError):
+    pass
+
+
+class NotSupportedDisabledRepositoryError(NotSupportedError):
+    """The repository is disabled."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedDisabledRepositoryError", cause, False)
+
+
+class NotSupportedRepositoryNotFoundError(NotSupportedError):
+    """The repository has not been found."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedRepositoryNotFoundError", cause, False)
+
+
+class NotSupportedDisabledViewerError(NotSupportedError):
+    """The dataset viewer is disabled in the dataset configuration."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedDisabledViewerError", cause, False)
+
+
+class NotSupportedPrivateRepositoryError(NotSupportedError):
+    """The repository is private."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "NotSupportedPrivateRepositoryError", cause, False)
+
+
+class DatasetInBlockListError(NotSupportedError):
+    """The dataset is in the list of blocked datasets."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)

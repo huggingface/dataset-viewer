@@ -112,6 +112,7 @@ class CachedResponseDocument(Document):
         details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
         job_runner_version (`int`): The version of the job runner that cached the response.
+        failed_runs (`int`): The number of failed_runs to get cached result.
         dataset_git_revision (`str`): The commit (of the git dataset repo) used to generate the response.
         progress (`float`): Progress percentage (between 0. and 1.) if the result is not complete yet.
     """
@@ -129,7 +130,7 @@ class CachedResponseDocument(Document):
     dataset_git_revision = StringField(required=True)
     progress = FloatField(min_value=0.0, max_value=1.0)
     job_runner_version = IntField()
-
+    failed_runs = IntField(default=0)
     details = DictField()
     updated_at = DateTimeField(default=get_datetime)
 
@@ -233,6 +234,7 @@ def upsert_response(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
+    failed_runs: int = 0,
 ) -> None:
     decrease_metric_for_artifact(kind=kind, dataset=dataset, config=config, split=split)
     CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).upsert_one(
@@ -244,6 +246,7 @@ def upsert_response(
         progress=progress,
         updated_at=updated_at or get_datetime(),
         job_runner_version=job_runner_version,
+        failed_runs=failed_runs,
     )
     increase_metric(kind=kind, http_status=http_status, error_code=error_code)
 
@@ -258,20 +261,28 @@ def upsert_response_params(
     job_runner_version: Optional[int] = None,
     progress: Optional[float] = None,
     updated_at: Optional[datetime] = None,
+    failed_runs: int = 0,
 ) -> None:
+    dataset, config, split, revision = (
+        job_params["dataset"],
+        job_params["config"],
+        job_params["split"],
+        job_params["revision"],
+    )
     upsert_response(
         kind=kind,
-        dataset=job_params["dataset"],
-        config=job_params["config"],
-        split=job_params["split"],
+        dataset=dataset,
+        config=config,
+        split=split,
         content=content,
-        dataset_git_revision=job_params["revision"],
+        dataset_git_revision=revision,
         details=details,
         error_code=error_code,
         http_status=http_status,
         job_runner_version=job_runner_version,
         progress=progress,
         updated_at=updated_at,
+        failed_runs=failed_runs,
     )
 
 
@@ -356,6 +367,7 @@ def get_response_without_content_params(kind: str, job_params: JobParams) -> Cac
 
 class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
+    failed_runs: int
 
 
 # Note: we let the exceptions throw: it's the responsibility of the caller to manage them
@@ -365,7 +377,15 @@ def get_response_metadata(
     try:
         response = (
             CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split)
-            .only("http_status", "error_code", "job_runner_version", "dataset_git_revision", "progress", "updated_at")
+            .only(
+                "http_status",
+                "error_code",
+                "job_runner_version",
+                "dataset_git_revision",
+                "progress",
+                "updated_at",
+                "failed_runs",
+            )
             .get()
         )
     except DoesNotExist as e:
@@ -377,6 +397,7 @@ def get_response_metadata(
         "job_runner_version": response.job_runner_version,
         "progress": response.progress,
         "updated_at": response.updated_at,
+        "failed_runs": response.failed_runs,
     }
 
 
@@ -857,6 +878,7 @@ def _get_df(entries: list[CacheEntryFullMetadata]) -> pd.DataFrame:
             "updated_at": pd.Series(
                 [entry["updated_at"] for entry in entries], dtype="datetime64[ns]"
             ),  # check if it's working as expected
+            "failed_runs": pd.Series([entry["failed_runs"] for entry in entries], dtype=pd.Int16Dtype()),
         }
     )
     # ^ does not seem optimal at all, but I get the types right
@@ -879,6 +901,7 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) 
                 "job_runner_version": response.job_runner_version,
                 "progress": response.progress,
                 "updated_at": response.updated_at,
+                "failed_runs": response.failed_runs,
             }
             for response in CachedResponseDocument.objects(dataset=dataset, **filters).only(
                 "kind",
@@ -891,6 +914,7 @@ def get_cache_entries_df(dataset: str, cache_kinds: Optional[list[str]] = None) 
                 "dataset_git_revision",
                 "progress",
                 "updated_at",
+                "failed_runs",
             )
         ]
     )

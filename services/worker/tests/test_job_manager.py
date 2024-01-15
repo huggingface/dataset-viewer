@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Optional
 
 import pytest
 from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
@@ -8,7 +6,7 @@ from libcommon.exceptions import CustomError
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import CachedResponseDocument, get_response, upsert_response
+from libcommon.simple_cache import CachedResponseDocument, get_response, get_response_metadata, upsert_response
 from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
@@ -36,14 +34,6 @@ class DummyJobRunner(DatasetJobRunner):
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult({"key": "value"})
-
-
-@dataclass
-class CacheEntry:
-    error_code: Optional[str]
-    job_runner_version: Optional[int]
-    dataset_git_revision: Optional[str]
-    progress: Optional[float] = None
 
 
 def test_check_type(
@@ -146,6 +136,12 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
     )
     assert cached_response["progress"] == 1.0
 
+    cached_entry_metadata = get_response_metadata(
+        kind="dataset-config-names", dataset="dataset", config=None, split=None
+    )
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["failed_runs"] == 0
+
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
     assert len(dataset_child_jobs) == 1
@@ -158,6 +154,20 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     dataset = "dataset"
     revision = "revision"
     message = "I'm crashed :("
+    failed_runs = 2
+
+    upsert_response(
+        kind="dataset-config-names",
+        dataset=dataset,
+        config=None,
+        split=None,
+        content={},
+        dataset_git_revision=revision,
+        job_runner_version=processing_graph.get_processing_step("dataset-config-names").job_runner_version,
+        progress=1.0,
+        http_status=HTTPStatus.OK,
+        failed_runs=failed_runs,
+    )
 
     queue = Queue()
     assert JobDocument.objects().count() == 0
@@ -186,6 +196,7 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     assert response.dataset_git_revision == revision
     assert response.content == expected_error
     assert response.details == expected_error
+    assert response.failed_runs == failed_runs + 1
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
 
 

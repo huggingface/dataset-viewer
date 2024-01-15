@@ -21,8 +21,10 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+from libcommon.exceptions import NotSupportedError
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
+from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -95,7 +97,6 @@ def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> list[I
 def create_endpoint(
     endpoint_name: str,
     steps_by_input_type: StepsByInputType,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -105,6 +106,7 @@ def create_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
         context = f"endpoint: {endpoint_name}"
@@ -155,7 +157,7 @@ def create_endpoint(
                         hf_token=hf_token,
                         blocked_datasets=blocked_datasets,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
+                        storage_clients=storage_clients,
                     )
                 content = result["content"]
                 http_status = result["http_status"]
@@ -174,7 +176,9 @@ def create_endpoint(
                         revision=revision,
                     )
             except Exception as e:
-                error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
+                error = (
+                    e if isinstance(e, (ApiError, NotSupportedError)) else UnexpectedApiError("Unexpected error.", e)
+                )
                 with StepProfiler(
                     method="processing_step_endpoint", step="generate API error response", context=context
                 ):

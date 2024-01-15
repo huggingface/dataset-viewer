@@ -9,6 +9,8 @@ from starlette.testclient import TestClient
 from api.app import create_app
 from api.config import AppConfig
 
+API_HF_WEBHOOK_SECRET = "some secret"
+
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
 @fixture(scope="module")
@@ -18,6 +20,7 @@ def real_monkeypatch() -> Iterator[MonkeyPatch]:
     monkeypatch.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
     monkeypatch.setenv("COMMON_HF_ENDPOINT", "https://huggingface.co")
     monkeypatch.setenv("COMMON_HF_TOKEN", "")
+    monkeypatch.setenv("API_HF_WEBHOOK_SECRET", API_HF_WEBHOOK_SECRET)
     yield monkeypatch
     monkeypatch.undo()
 
@@ -38,10 +41,24 @@ def real_app_config(real_monkeypatch: MonkeyPatch) -> AppConfig:
 
 
 @mark.real_dataset
-def test_webhook(
+def test_webhook_untrusted(
     real_client: TestClient,
 ) -> None:
-    dataset = "glue"
-    payload = {"event": "add", "repo": {"type": "dataset", "name": dataset, "gitalyUid": "123", "headSha": "revision"}}
+    payload = {
+        "event": "add",
+        "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"},
+        "scope": "repo",
+    }
     response = real_client.post("/webhook", json=payload)
+    assert response.status_code == 400, response.text
+
+
+@mark.real_dataset
+def test_webhook_trusted(real_client: TestClient) -> None:
+    payload = {
+        "event": "add",
+        "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"},
+        "scope": "repo",
+    }
+    response = real_client.post("/webhook", json=payload, headers={"x-webhook-secret": API_HF_WEBHOOK_SECRET})
     assert response.status_code == 200, response.text

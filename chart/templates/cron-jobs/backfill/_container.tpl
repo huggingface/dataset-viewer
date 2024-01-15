@@ -12,10 +12,11 @@
     {{ include "envCache" . | nindent 2 }}
     {{ include "envQueue" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
+    {{ include "envS3" . | nindent 2 }}
+    {{ include "envAssets" . | nindent 2 }}
+    {{ include "envCachedAssets" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
     value: {{ .Values.backfill.action | quote }}
-  - name: CACHE_MAINTENANCE_BACKFILL_ERROR_CODES_TO_RETRY
-    value: {{ .Values.backfill.errorCodesToRetry | quote }}
   - name: LOG_LEVEL
     value: {{ .Values.backfill.log.level | quote }}
 {{- end -}}

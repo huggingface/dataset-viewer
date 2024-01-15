@@ -5,13 +5,14 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.exceptions import DatasetInBlockListError
-from libcommon.orchestrator import AfterJobPlan, DatasetOrchestrator
+from libcommon.constants import DEFAULT_DIFFICULTY_MAX, DIFFICULTY_BONUS_BY_FAILED_RUNS
+from libcommon.orchestrator import AfterJobPlan, finish_job, has_pending_ancestor_jobs, remove_dataset, set_revision
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
     CachedResponseDocument,
+    get_response_metadata,
     has_some_cache,
     upsert_response_params,
 )
@@ -42,8 +43,6 @@ from .utils import (
     STEP_DD,
     artifact_id_to_job_info,
 )
-
-CACHE_MAX_DAYS = 90
 
 
 @pytest.fixture(autouse=True)
@@ -86,6 +85,7 @@ def test_after_job_plan(
     after_job_plan = AfterJobPlan(
         processing_graph=processing_graph,
         job_info=job_info,
+        failed_runs=0,
     )
     if len(artifacts_to_create):
         assert after_job_plan.as_response() == [f"CreateJobs,{len(artifacts_to_create)}"]
@@ -117,6 +117,7 @@ def test_after_job_plan_delete() -> None:
     after_job_plan = AfterJobPlan(
         processing_graph=PROCESSING_GRAPH_PARALLEL,
         job_info=job_info,
+        failed_runs=0,
     )
     assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteJobs,1"]
 
@@ -171,10 +172,7 @@ def test_finish_job(
             progress=1.0,
         ),
     )
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-    dataset_orchestrator.finish_job(job_result=job_result)
+    finish_job(job_result=job_result, processing_graph=processing_graph)
 
     assert JobDocument.objects(dataset=DATASET_NAME).count() == len(artifacts_to_create)
 
@@ -196,16 +194,6 @@ def test_finish_job(
     assert cached_response.job_runner_version == JOB_RUNNER_VERSION
     assert cached_response.dataset_git_revision == REVISION_NAME
 
-    # check for blocked dataset
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[DATASET_NAME]
-    )
-    with pytest.raises(DatasetInBlockListError):
-        dataset_orchestrator.finish_job(job_result=job_result)
-    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
-    assert has_some_cache(dataset=DATASET_NAME) is False
-
 
 @pytest.mark.parametrize(
     "processing_graph,first_artifacts",
@@ -220,12 +208,11 @@ def test_set_revision(
     processing_graph: ProcessingGraph,
     first_artifacts: list[str],
 ) -> None:
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-
-    dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    set_revision(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        priority=Priority.NORMAL,
+        processing_graph=processing_graph,
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -241,18 +228,6 @@ def test_set_revision(
         for _, row in pending_jobs_df.iterrows()
     ]
     assert set(artifact_ids) == set(first_artifacts)
-
-    # check for blocked dataset
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[DATASET_NAME]
-    )
-    with pytest.raises(DatasetInBlockListError):
-        dataset_orchestrator.set_revision(
-            revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
-        )
-    pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
-    assert has_some_cache(dataset=DATASET_NAME) is False
 
 
 @pytest.mark.parametrize(
@@ -270,11 +245,11 @@ def test_set_revision_handle_existing_jobs(
 ) -> None:
     # create two pending jobs for DA
     Queue().create_jobs([artifact_id_to_job_info(ARTIFACT_DA)] * 2)
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
-    )
-    dataset_orchestrator.set_revision(
-        revision=REVISION_NAME, priority=Priority.NORMAL, error_codes_to_retry=[], cache_max_days=CACHE_MAX_DAYS
+    set_revision(
+        dataset=DATASET_NAME,
+        revision=REVISION_NAME,
+        priority=Priority.NORMAL,
+        processing_graph=processing_graph,
     )
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -310,10 +285,12 @@ def test_has_pending_ancestor_jobs(
     expected_has_pending_ancestor_jobs: bool,
 ) -> None:
     Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=processing_graph, blocked_datasets=[]
+    assert (
+        has_pending_ancestor_jobs(
+            dataset=DATASET_NAME, processing_step_names=processing_step_names, processing_graph=processing_graph
+        )
+        == expected_has_pending_ancestor_jobs
     )
-    assert dataset_orchestrator.has_pending_ancestor_jobs(processing_step_names) == expected_has_pending_ancestor_jobs
 
 
 def test_remove_dataset() -> None:
@@ -337,18 +314,15 @@ def test_remove_dataset() -> None:
     assert len(pending_jobs_df) > 0
     assert has_some_cache(dataset=DATASET_NAME) is True
 
-    dataset_orchestrator = DatasetOrchestrator(
-        dataset=DATASET_NAME, processing_graph=PROCESSING_GRAPH_GENEALOGY, blocked_datasets=[]
-    )
-    dataset_orchestrator.remove_dataset()
+    remove_dataset(dataset=DATASET_NAME)
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
     assert len(pending_jobs_df) == 0
     assert has_some_cache(dataset=DATASET_NAME) is False
 
 
-@pytest.mark.parametrize("is_big", [False, True])
-def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
+@pytest.mark.parametrize("is_big,failed_runs", [(False, 0), (True, 0), (False, 1), (True, 3)])
+def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -> None:
     bonus_difficulty_if_dataset_is_big = 10
     processing_graph = ProcessingGraph(
         {
@@ -401,7 +375,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
         progress=1.0,
     )
 
-    after_job_plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph)
+    after_job_plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
     assert len(after_job_plan.job_infos_to_create) == 2
     config_jobs_with_bonus = [
         job for job in after_job_plan.job_infos_to_create if job["type"] == "config_step_with_bonus"
@@ -412,9 +386,75 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool) -> None:
     ]
     assert len(split_jobs_with_bonus) == 1
 
-    if is_big:
-        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
-        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY + bonus_difficulty_if_dataset_is_big
-    else:
-        assert config_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
-        assert split_jobs_with_bonus[0]["difficulty"] == DIFFICULTY
+    expected_difficulty = min(
+        DEFAULT_DIFFICULTY_MAX,
+        DIFFICULTY
+        + (0 if not is_big else bonus_difficulty_if_dataset_is_big)
+        + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS,
+    )
+    assert config_jobs_with_bonus[0]["difficulty"] == expected_difficulty
+    assert split_jobs_with_bonus[0]["difficulty"] == expected_difficulty
+
+
+def assert_failed_runs(failed_runs: int) -> None:
+    cached_entry_metadata = get_response_metadata(kind=STEP_DA, dataset=DATASET_NAME)
+    assert cached_entry_metadata is not None
+    assert cached_entry_metadata["failed_runs"] == failed_runs
+    assert CachedResponseDocument.objects().count() == 1
+
+
+def run_job(revision: str, http_status: HTTPStatus) -> None:
+    Queue().add_job(
+        dataset=DATASET_NAME,
+        revision=revision,
+        config=None,
+        split=None,
+        job_type=STEP_DA,
+        priority=Priority.NORMAL,
+        difficulty=DIFFICULTY,
+    )
+    job_info = Queue().start_job()
+    job_result = JobResult(
+        job_info=job_info,
+        job_runner_version=JOB_RUNNER_VERSION,
+        is_success=True,
+        output=JobOutput(
+            content=CONFIG_NAMES_CONTENT,
+            http_status=http_status,
+            error_code=None,
+            details=None,
+            progress=1.0,
+        ),
+    )
+    finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
+    # clear generated jobs when finishing jobs
+    Queue().delete_dataset_jobs(DATASET_NAME)
+
+
+def test_upsert_response_failed_runs() -> None:
+    first_revision = "revision"
+    second_revision = "new_revision"
+
+    # new cache record with success result
+    run_job(first_revision, HTTPStatus.OK)
+    assert_failed_runs(0)
+
+    # overwrite cache record with success result and same revision
+    run_job(first_revision, HTTPStatus.OK)
+    assert_failed_runs(0)
+
+    # overwrite cache record with failed result and same revision
+    run_job(first_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(1)
+
+    # overwrite cache record with failed result and same revision
+    run_job(first_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(2)
+
+    # overwrite cache record with failed result and new revision
+    run_job(second_revision, HTTPStatus.INTERNAL_SERVER_ERROR)
+    assert_failed_runs(0)
+
+    # overwrite cache record with success result and new revision
+    run_job(second_revision, HTTPStatus.OK)
+    assert_failed_runs(0)

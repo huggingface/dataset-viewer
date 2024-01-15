@@ -17,14 +17,17 @@ class StorageClient:
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
         root (:obj:`str`): The storage root path
+        folder (:obj:`str`): The storage folder path
     """
 
+    _protocol: str
     _fs: Any
     _storage_root: str
     _folder: str
 
     def __init__(self, protocol: str, root: str, folder: str, **kwargs: Any) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {root=} {folder=}")
+        self._protocol = protocol
         self._storage_root = root
         self._folder = folder
         if protocol == "s3":
@@ -55,3 +58,6 @@ class StorageClient:
             logging.info(f"Directory deleted: {dataset_key}")
         except Exception:
             logging.warning(f"Could not delete directory {dataset_key}")
+
+    def __repr__(self) -> str:
+        return f"StorageClient(protocol={self._protocol}, root={self._storage_root}, folder={self._folder})"

@@ -6,9 +6,10 @@ from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
-from libcommon.exceptions import CustomError, DatasetRevisionEmptyError
-from libcommon.operations import backfill_dataset, delete_dataset
+from libcommon.exceptions import CustomError
+from libcommon.operations import delete_dataset, get_current_revision, update_dataset
 from libcommon.prometheus import StepProfiler
+from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
@@ -28,8 +29,11 @@ schema = {
             },
             "required": ["type", "name"],
         },
+        "scope": {
+            "type": "string",
+        },
     },
-    "required": ["event", "repo"],
+    "required": ["event", "repo", "scope"],
 }
 
 
@@ -50,6 +54,7 @@ class MoonWebhookV2Payload(TypedDict):
     event: Literal["add", "remove", "update", "move"]
     movedTo: Optional[str]
     repo: MoonWebhookV2PayloadRepo
+    scope: str
 
 
 def parse_payload(json: Any) -> MoonWebhookV2Payload:
@@ -60,49 +65,49 @@ def parse_payload(json: Any) -> MoonWebhookV2Payload:
 
 def process_payload(
     payload: MoonWebhookV2Payload,
-    cache_max_days: int,
     blocked_datasets: list[str],
-    trust_sender: bool = False,
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
-    if payload["repo"]["type"] != "dataset":
+    if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content"):
+        # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
         return
     dataset = payload["repo"]["name"]
     if dataset is None:
         return
     event = payload["event"]
     if event == "remove":
-        # destructive actions (delete, move) require a trusted sender
-        if trust_sender:
-            delete_dataset(dataset=dataset)
-        return
-    revision = payload["repo"]["headSha"] if "headSha" in payload["repo"] else None
-    if revision is None:
-        raise DatasetRevisionEmptyError(message=f"Dataset {dataset} has no revision")
-    if event in ["add", "update"]:
-        backfill_dataset(
-            dataset=dataset,
-            revision=revision,
-            priority=Priority.NORMAL,
-            cache_max_days=cache_max_days,
-            blocked_datasets=blocked_datasets,
-        )
-    elif event == "move" and (moved_to := payload["movedTo"]):
-        # destructive actions (delete, move) require a trusted sender
-        if trust_sender:
-            backfill_dataset(
-                dataset=moved_to,
-                revision=revision,
-                priority=Priority.NORMAL,
-                cache_max_days=cache_max_days,
-                blocked_datasets=blocked_datasets,
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    elif event in ["add", "update", "move"]:
+        if event == "update" and get_current_revision(dataset) == payload["repo"]["headSha"]:
+            # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
+            logging.warning(
+                f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."
             )
-            delete_dataset(dataset=dataset)
+            return
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        # ^ delete the old contents (cache + jobs + assets) to avoid mixed content
+        new_dataset = (event == "move" and payload["movedTo"]) or dataset
+        update_dataset(
+            dataset=new_dataset,
+            priority=Priority.NORMAL,
+            blocked_datasets=blocked_datasets,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
+            storage_clients=storage_clients,
+        )
 
 
 def create_webhook_endpoint(
-    cache_max_days: int,
     blocked_datasets: list[str],
+    hf_endpoint: str,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
     hf_webhook_secret: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def webhook_endpoint(request: Request) -> Response:
         with StepProfiler(method="webhook_endpoint", step="all"):
@@ -135,14 +140,19 @@ def create_webhook_endpoint(
                 )
                 if not trust_sender:
                     logging.info(f"/webhook: the sender is not trusted. JSON: {json}")
+                    return get_response(
+                        {"status": "error", "error": "The sender is not trusted. Retry with a valid secret."}, 400
+                    )
 
             with StepProfiler(method="webhook_endpoint", step="process payload"):
                 try:
                     process_payload(
                         payload=payload,
-                        trust_sender=trust_sender,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        hf_timeout_seconds=hf_timeout_seconds,
+                        storage_clients=storage_clients,
                     )
                 except CustomError as e:
                     content = {"status": "error", "error": "the dataset is not supported"}

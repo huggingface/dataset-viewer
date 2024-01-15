@@ -29,7 +29,7 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
             A namespace (user or an organization) and a repo name separated
             by a `/`.
     Returns:
-        `tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
+        `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
     logging.info(f"get is-valid response for {dataset=}")
 
@@ -41,6 +41,7 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     preview = False
     viewer = False
     search = False
+    filter = False
     try:
         total = 0
         pending = 0
@@ -60,17 +61,14 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
             preview = preview or config_is_valid_content["preview"]
             viewer = viewer or config_is_valid_content["viewer"]
             search = search or config_is_valid_content["search"]
+            filter = filter or config_is_valid_content["filter"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - pending) / total if total else 1.0
 
     return (
-        IsValidResponse(
-            preview=preview,
-            viewer=viewer,
-            search=search,
-        ),
+        IsValidResponse(preview=preview, viewer=viewer, search=search, filter=filter),
         progress,
     )
 

@@ -84,7 +84,7 @@ common:
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
   # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,andreped/*,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT,mozilla-foundation/common_voice_*,google/fleurs"
+  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,andreped/*,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
@@ -160,8 +160,6 @@ mongodb:
     create: false
 
 cache:
-  # Maximum number of days to keep the cached API responses
-  maxDays: 1000
   # Name of the mongo db database used to cache the API responses
   mongoDatabase: "datasets_server_cache"
 
@@ -316,7 +314,6 @@ backfill:
   log:
     level: "info"
   action: "backfill"
-  errorCodesToRetry: ""
   schedule: "0 */3 * * *"
   # every 3 hours
   nodeSelector: {}
@@ -415,21 +412,6 @@ cleanStatsCache:
   tolerations: []
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "*"
-
-deleteObsoleteCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "delete-obsolete-cache"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
 
 postMessages:
   enabled: true

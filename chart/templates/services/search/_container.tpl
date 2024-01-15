@@ -6,6 +6,7 @@
   image: {{ include "services.search.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   env:
+  {{ include "envAssets" . | nindent 2 }}
   {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envS3" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}

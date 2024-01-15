@@ -49,12 +49,12 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
 )
-from libcommon.dataset import get_dataset_info_for_supported_datasets
 from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
     DatasetManualDownloadError,
     DatasetNotFoundError,
+    DatasetWithScriptNotSupportedError,
     DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
@@ -79,8 +79,8 @@ from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
-    disable_dataset_scripts_support,
     hf_hub_url,
+    resolve_trust_remote_code,
     retry,
 )
 
@@ -1091,8 +1091,6 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        - [`libcommon.exceptions.DatasetRevisionNotFoundError`]
-          If the revision does not exist or cannot be accessed using the token.
         - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
@@ -1149,16 +1147,24 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
-        with disable_dataset_scripts_support(allow_list=dataset_scripts_allow_list):
-            builder = load_dataset_builder(
-                path=dataset,
-                name=config,
-                revision=source_revision,
-                token=hf_token,
-                download_config=download_config,
-            )
+        builder = load_dataset_builder(
+            path=dataset,
+            name=config,
+            revision=source_revision,
+            token=hf_token,
+            download_config=download_config,
+            trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
+        )
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
+    except ValueError as err:
+        if "trust_remote_code" in str(err):
+            raise DatasetWithScriptNotSupportedError(
+                "The dataset viewer doesn't support this dataset because it runs "
+                "arbitrary python code. Please open a discussion in the discussion tab "
+                "if you think this is an error and tag @lhoestq and @severo."
+            ) from err
+        raise
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
 
@@ -1187,9 +1193,7 @@ def compute_config_parquet_and_info_response(
             hf_endpoint=hf_endpoint,
             hf_token=hf_token,
         )
-        dataset_info = get_dataset_info_for_supported_datasets(
-            dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token, revision=source_revision, files_metadata=True
-        )
+        dataset_info = hf_api.dataset_info(repo_id=dataset, revision=source_revision, files_metadata=True)
         if is_dataset_too_big(
             dataset_info=dataset_info,
             builder=builder,

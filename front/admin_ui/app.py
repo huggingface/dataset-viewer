@@ -67,8 +67,8 @@ with gr.Blocks() as demo:
                 gr.Markdown("### Dataset infos")
                 home_dashboard_trending_datasets_infos_by_builder_name_table = gr.DataFrame(pd.DataFrame({"Builder name": [], "Count": [], r"% of all datasets with infos": [], r"% of all public datasets": []}))
                 gr.Markdown("### Trending datasets coverage (is-valid)")
-                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
-                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": []}))
+                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
+                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
             with gr.Tab("View pending jobs"):
                 fetch_pending_jobs_button = gr.Button("Fetch pending jobs")
                 gr.Markdown("### Pending jobs summary")
@@ -84,7 +84,7 @@ with gr.Blocks() as demo:
                 )
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
-            with gr.Tab("Refresh dataset"):
+            with gr.Tab("Refresh dataset step"):
                 job_types = [processing_step.job_type for processing_step in processing_graph.get_topologically_ordered_processing_steps()]
                 refresh_type = gr.Dropdown(job_types, multiselect=False, label="job type", value=job_types[0])
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
@@ -100,14 +100,6 @@ with gr.Blocks() as demo:
                 gr.Markdown("Beware: this will delete all the jobs, cache entries and assets for the dataset (for all the revisions). The dataset viewer will be unavailable until the cache is rebuilt.")
                 delete_and_recreate_dataset_button = gr.Button("Delete and recreate")
                 delete_and_recreate_dataset_output = gr.Markdown("")
-            with gr.Tab("Obsolete cache"):
-                fetch_obsolete_cache_button = gr.Button("Fetch obsolete cache")
-                delete_obsolete_cache_button = gr.Button("Delete obsolete cache")
-                datasets_to_delete = gr.Markdown("", visible=False)
-                cache_records_to_delete = gr.Markdown("", visible=False)
-                obsolete_cache_table = gr.DataFrame(
-                    pd.DataFrame({"Dataset": [], "Cache records": []})
-                )
             with gr.Tab("Dataset status"):
                 dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 dataset_status_button = gr.Button("Get dataset status")
@@ -115,10 +107,6 @@ with gr.Blocks() as demo:
                 cached_responses_table = gr.DataFrame()
                 gr.Markdown("### Pending jobs")
                 jobs_table = gr.DataFrame()
-                backfill_message = gr.Markdown("", visible=False)
-                backfill_plan_table = gr.DataFrame(visible=False)
-                backfill_execute_button = gr.Button("Execute backfill plan", visible=False)
-                backfill_execute_error = gr.Markdown("", visible=False)
             with gr.Tab("Processing graph"):
                 gr.Markdown("## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫")
                 gr.Markdown("### so that we get the 🚀 production 🚀 version of the graph here ")
@@ -147,53 +135,6 @@ with gr.Blocks() as demo:
             return {
                 auth_error: gr.update(value=f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')")
             }
-
-    def call_obsolete_cache(token, delete):
-        headers = {"Authorization": f"Bearer {token}"}
-        obsolete_cache_endpoint = f"{DSS_ENDPOINT}/admin/obsolete-cache"
-        response = (
-            requests.delete(obsolete_cache_endpoint, headers=headers, timeout=240)
-            if delete
-            else requests.get(obsolete_cache_endpoint, headers=headers, timeout=120)
-        )        
-        action = "delete" if delete else "get"
-        if response.status_code == 200:
-            obsolete_cache = response.json()
-            obsolete_cache_df = pd.DataFrame(obsolete_cache)
-            datasets_to_delete_count = len(obsolete_cache_df)
-            cache_records_to_delete_count = 0 if datasets_to_delete_count == 0 else obsolete_cache_df["cache_records"].sum()
-            return {
-                obsolete_cache_table: gr.update(visible=True, value=obsolete_cache_df),
-                datasets_to_delete: gr.update(
-                    visible=True, value=f"### Datasets: {datasets_to_delete_count}"
-                ),
-                cache_records_to_delete: gr.update(
-                    visible=True,
-                    value=f"### Cached records: {cache_records_to_delete_count}",
-                ),
-            }
-        else:
-            return {
-                obsolete_cache_table: gr.update(
-                    visible=True,
-                    value=pd.DataFrame(
-                        {
-                            "Error": [
-                                f"❌ Failed to {action} obsolete cache (error {response.status_code})"
-                            ]
-                        }
-                    ),
-                ),
-                datasets_to_delete: gr.update(visible=False),
-                cache_records_to_delete: gr.update(visible=False),
-            }   
-     
-    def delete_obsolete_cache(token):
-        return call_obsolete_cache(token, True)
-
-    def get_obsolete_cache(token):
-        return call_obsolete_cache(token, False)
-
     
     def fetch_home_dashboard(token):
         out = {
@@ -228,33 +169,26 @@ with gr.Blocks() as demo:
             trending_datasets_coverage = {"All trending datasets": []}
             error_datasets = []
             for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
-                if is_valid_response.status_code in (200, 500, 501):
+                if is_valid_response.status_code == 200:
                     response_json = is_valid_response.json()
-                    if "error" not in response_json:
-                        trending_datasets_coverage["All trending datasets"].append(dataset)
-                        for is_valid_field in response_json:
-                            pretty_field = is_valid_field.replace("_", " ").capitalize()
-                            if pretty_field not in trending_datasets_coverage:
-                                trending_datasets_coverage[pretty_field] = []
-                            trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
-                    else:
-                        error_datasets.append(dataset)
+                    trending_datasets_coverage["All trending datasets"].append(dataset)
+                    for is_valid_field in response_json:
+                        pretty_field = is_valid_field.replace("_", " ").capitalize()
+                        if pretty_field not in trending_datasets_coverage:
+                            trending_datasets_coverage[pretty_field] = []
+                        trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
                 else:
-                    out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
-                        "Error": [f"❌ Failed to fetch coverage for {dataset} from {DSS_ENDPOINT} (error {is_valid_response.status_code})"]
-                    }))
-                    break
-            else:
-                trending_datasets_coverage["All trending datasets"] += error_datasets
-                for pretty_field in trending_datasets_coverage:
-                    trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
-                out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
-                trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
-                    is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
-                    for is_valid_field in trending_datasets_coverage
-                    if is_valid_field != "All trending datasets"
-                }}
-                out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
+                    error_datasets.append(dataset)
+            trending_datasets_coverage["All trending datasets"] += error_datasets
+            for pretty_field in trending_datasets_coverage:
+                trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
+            out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
+            trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
+                is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
+                for is_valid_field in trending_datasets_coverage
+                if is_valid_field != "All trending datasets"
+            }}
+            out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
         else:
             out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
                 "Error": [f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"]
@@ -344,46 +278,6 @@ with gr.Blocks() as demo:
                 jobs_table: gr.update(value=pd.DataFrame([{"content": str(response.content)}]))
             }
 
-    def get_backfill_plan(token, dataset):
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-backfill-plan?dataset={dataset}", headers=headers, timeout=60)
-        if response.status_code != 200:
-            return {
-                backfill_message: gr.update(value=f"❌ Failed to get backfill plan for {dataset} (error {response.status_code})", visible=True),
-                backfill_plan_table: gr.update(value=None,visible=False),
-                backfill_execute_button: gr.update( visible=False),
-                backfill_execute_error: gr.update( visible=False)
-            }
-        tasks = response.json()
-        tasks_df = pd.DataFrame(tasks)
-        has_tasks = len(tasks_df) > 0
-        return {
-            backfill_message: gr.update(
-                value="""### Backfill plan
-
-The cache is outdated or in an incoherent state. Here is the plan to backfill the cache."""
-            ,visible=has_tasks),
-            backfill_plan_table: gr.update(value=tasks_df,visible=has_tasks),
-            backfill_execute_button: gr.update(visible=has_tasks),
-            backfill_execute_error: gr.update(visible=False),
-        }
-
-    def get_dataset_status_and_backfill_plan(token, dataset):
-        return {**get_dataset_status(token, dataset), **get_backfill_plan(token, dataset)}
-
-
-    def execute_backfill_plan(token, dataset):
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.post(f"{DSS_ENDPOINT}/admin/dataset-backfill?dataset={dataset}", headers=headers, timeout=60)
-        state = get_dataset_status_and_backfill_plan(token, dataset)
-        message = (
-            "✅ Backfill plan executed"
-            if response.status_code == 200
-            else f"❌ Failed to execute backfill plan (error {response.status_code})<pre>{response.text}</pre>"
-        )
-        state[backfill_execute_error] = gr.update(value=message, visible=True)
-        return state
-
     def query_jobs(pending_jobs_query):
         global pending_jobs_df
         try:
@@ -431,8 +325,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
         params = urllib.parse.urlencode(params)
         response = requests.post(f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}", headers=headers, timeout=60)
         if response.status_code == 200:
-            counts = response.json()
-            result = f"[{delete_and_recreate_dataset_name}] ✅ {counts['deleted_cached_responses']} cached responses, {counts['deleted_jobs']} pending jobs, and all the assets have been deleted. A new job has been created to generate the cache again."
+            result = f"[{delete_and_recreate_dataset_name}] ✅ All the assets have been deleted. A new job has been created to generate the cache again."
         else:
             result = f"[{refresh_dataset_name}] ❌ Failed to delete and recreate the dataset. Error {response.status_code}"
             try:
@@ -452,11 +345,7 @@ The cache is outdated or in an incoherent state. Here is the plan to backfill th
     refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name, refresh_priority], outputs=refresh_dataset_output)
     delete_and_recreate_dataset_button.click(delete_and_recreate_dataset, inputs=[token_box, delete_and_recreate_dataset_name, delete_and_recreate_priority], outputs=delete_and_recreate_dataset_output)
 
-    dataset_status_button.click(get_dataset_status_and_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
-    backfill_execute_button.click(execute_backfill_plan, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table, backfill_message, backfill_plan_table, backfill_execute_button, backfill_execute_error])
-
-    fetch_obsolete_cache_button.click(get_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
-    delete_obsolete_cache_button.click(delete_obsolete_cache, inputs=[token_box], outputs=[obsolete_cache_table, datasets_to_delete, cache_records_to_delete])
+    dataset_status_button.click(get_dataset_status, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table])
 
 if __name__ == "__main__":
     demo.launch()

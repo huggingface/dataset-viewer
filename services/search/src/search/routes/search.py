@@ -123,9 +123,8 @@ async def create_response(
 def create_search_endpoint(
     duckdb_index_file_directory: StrPath,
     cached_assets_base_url: str,
-    storage_client: StorageClient,
+    cached_assets_storage_client: StorageClient,
     target_revision: str,
-    cache_max_days: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
     external_auth_url: Optional[str] = None,
@@ -135,6 +134,7 @@ def create_search_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -171,8 +171,8 @@ def create_search_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
+                        storage_clients=storage_clients,
                     )
                     revision = duckdb_index_cache_entry["dataset_git_revision"]
                     if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
@@ -224,7 +224,7 @@ def create_search_endpoint(
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        storage_client=storage_client,
+                        storage_client=cached_assets_storage_client,
                         offset=offset,
                         features=features,
                         num_rows_total=num_rows_total,

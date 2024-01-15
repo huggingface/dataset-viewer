@@ -60,8 +60,7 @@ def create_filter_endpoint(
     duckdb_index_file_directory: StrPath,
     target_revision: str,
     cached_assets_base_url: str,
-    storage_client: StorageClient,
-    cache_max_days: int,
+    cached_assets_storage_client: StorageClient,
     blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
@@ -71,6 +70,7 @@ def create_filter_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -108,8 +108,8 @@ def create_filter_endpoint(
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         hf_timeout_seconds=hf_timeout_seconds,
-                        cache_max_days=cache_max_days,
                         blocked_datasets=blocked_datasets,
+                        storage_clients=storage_clients,
                     )
                     revision = duckdb_index_cache_entry["dataset_git_revision"]
                     if duckdb_index_cache_entry["http_status"] != HTTPStatus.OK:
@@ -164,7 +164,7 @@ def create_filter_endpoint(
                         config=config,
                         split=split,
                         cached_assets_base_url=cached_assets_base_url,
-                        storage_client=storage_client,
+                        storage_client=cached_assets_storage_client,
                         pa_table=pa_table,
                         offset=offset,
                         features=features,

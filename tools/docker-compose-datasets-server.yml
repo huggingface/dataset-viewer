@@ -74,6 +74,8 @@ services:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
+    volumes:
+      - storage:${STORAGE_DIRECTORY-/storage}:rw
     extends:
       file: docker-compose-base.yml
       service: api
@@ -84,6 +86,13 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
+      # storage
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_DIRECTORY-/storage}
+      ASSETS_FOLDER_NAME: ${ASSETS_FOLDER_NAME-assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
+      CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
     ports:
       # for debug
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
@@ -104,6 +113,9 @@ services:
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
       # storage
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_DIRECTORY-/storage}
+      ASSETS_FOLDER_NAME: ${ASSETS_FOLDER_NAME-assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
       CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
       CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
       CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
@@ -135,6 +147,9 @@ services:
     environment:
       CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
       # storage
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_DIRECTORY-/storage}
+      ASSETS_FOLDER_NAME: ${ASSETS_FOLDER_NAME-assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
       CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage}
       CACHED_ASSETS_FOLDER_NAME: ${CACHED_ASSETS_FOLDER_NAME-cached-assets}
       CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}

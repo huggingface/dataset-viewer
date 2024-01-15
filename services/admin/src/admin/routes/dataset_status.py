@@ -44,6 +44,7 @@ def create_dataset_status_endpoint(
                         "jobs": queue.get_dataset_pending_jobs_for_type(
                             dataset=dataset, job_type=processing_step.job_type
                         ),
+                        # TODO: add information about the assets, cached_assets, and other files (metadata, parquet, duckdb)
                     }
                     for processing_step in processing_graph.get_alphabetically_ordered_processing_steps()
                 },

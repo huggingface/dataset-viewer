@@ -36,8 +36,6 @@ SPLIT_NAMES_CONTENT = {
     "splits": [{"dataset": DATASET_NAME, "config": CONFIG_NAME_1, "split": split_name} for split_name in SPLIT_NAMES]
 }
 
-CACHE_MAX_DAYS = 90
-
 CACHE_KIND = "cache_kind"
 CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
@@ -222,15 +220,11 @@ def get_dataset_backfill_plan(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[list[str]] = None,
-    cache_max_days: Optional[int] = None,
 ) -> DatasetBackfillPlan:
     return DatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
-        error_codes_to_retry=error_codes_to_retry,
-        cache_max_days=CACHE_MAX_DAYS if cache_max_days is None else cache_max_days,
     )
 
 
@@ -280,6 +274,7 @@ def put_cache(
     error_code: Optional[str] = None,
     use_old_job_runner_version: Optional[bool] = False,
     updated_at: Optional[datetime] = None,
+    failed_runs: int = 0,
 ) -> None:
     if not config:
         if not step.startswith("dataset-"):
@@ -314,6 +309,7 @@ def put_cache(
         dataset_git_revision=revision,
         error_code=error_code,
         updated_at=updated_at,
+        failed_runs=failed_runs,
     )
 
 
@@ -343,9 +339,8 @@ def compute_all(
     processing_graph: ProcessingGraph,
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
-    error_codes_to_retry: Optional[list[str]] = None,
 ) -> None:
-    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
+    dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision)
     max_runs = 100
     while len(dataset_backfill_plan.tasks) > 0 and max_runs >= 0:
         if max_runs == 0:
@@ -358,7 +353,7 @@ def compute_all(
                 raise ValueError(f"Unexpected task id {task.id}: should contain a comma")
             if task_type == "CreateJobs":
                 process_all_jobs()
-        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision, error_codes_to_retry)
+        dataset_backfill_plan = get_dataset_backfill_plan(processing_graph, dataset, revision)
 
 
 def artifact_id_to_job_info(artifact_id: str) -> JobInfo:

@@ -6,7 +6,6 @@ import sys
 from datetime import datetime
 
 from libcommon.log import init_logging
-from libcommon.obsolete_cache import delete_obsolete_cache
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_dir
 from libcommon.storage_client import StorageClient
@@ -48,12 +47,27 @@ def run_job() -> None:
                     "The connection to the queue database could not be established. The action is skipped."
                 )
                 return
+            cached_assets_storage_client = StorageClient(
+                protocol=job_config.cached_assets.storage_protocol,
+                root=job_config.cached_assets.storage_root,
+                folder=job_config.cached_assets.folder_name,
+                key=job_config.s3.access_key_id,
+                secret=job_config.s3.secret_access_key,
+                client_kwargs={"region_name": job_config.s3.region_name},
+            )
+            assets_storage_client = StorageClient(
+                protocol=job_config.assets.storage_protocol,
+                root=job_config.assets.storage_root,
+                folder=job_config.assets.folder_name,
+                key=job_config.s3.access_key_id,
+                secret=job_config.s3.secret_access_key,
+                client_kwargs={"region_name": job_config.s3.region_name},
+            )
             backfill_cache(
                 hf_endpoint=job_config.common.hf_endpoint,
                 hf_token=job_config.common.hf_token,
                 blocked_datasets=job_config.common.blocked_datasets,
-                error_codes_to_retry=job_config.backfill.error_codes_to_retry,
-                cache_max_days=job_config.cache.max_days,
+                storage_clients=[cached_assets_storage_client, assets_storage_client],
             )
         elif action == "clean-directory":
             directory_path = init_dir(directory=job_config.directory_cleaning.cache_directory)
@@ -87,30 +101,6 @@ def run_job() -> None:
                 bot_associated_user_name=job_config.discussions.bot_associated_user_name,
                 bot_token=job_config.discussions.bot_token,
                 parquet_revision=job_config.discussions.parquet_revision,
-            )
-        elif action == "delete-obsolete-cache":
-            cached_assets_storage_client = StorageClient(
-                protocol=job_config.cached_assets.storage_protocol,
-                root=job_config.cached_assets.storage_root,
-                folder=job_config.cached_assets.folder_name,
-                key=job_config.s3.access_key_id,
-                secret=job_config.s3.secret_access_key,
-                client_kwargs={"region_name": job_config.s3.region_name},
-            )
-
-            assets_storage_client = StorageClient(
-                protocol=job_config.assets.storage_protocol,
-                root=job_config.assets.storage_root,
-                folder=job_config.assets.folder_name,
-                key=job_config.s3.access_key_id,
-                secret=job_config.s3.secret_access_key,
-                client_kwargs={"region_name": job_config.s3.region_name},
-            )
-            delete_obsolete_cache(
-                hf_endpoint=job_config.common.hf_endpoint,
-                hf_token=job_config.common.hf_token,
-                cached_assets_storage_client=cached_assets_storage_client,
-                assets_storage_client=assets_storage_client,
             )
         elif action == "skip":
             pass

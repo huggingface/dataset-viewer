@@ -4,6 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
@@ -12,22 +13,24 @@ from libcommon.constants import (
     CONFIG_INFO_KINDS,
     CONFIG_SPLIT_NAMES_KINDS,
     DATASET_CONFIG_NAMES_KINDS,
-    ERROR_CODES_TO_RETRY,
+    DEFAULT_DIFFICULTY_MAX,
+    DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
-from libcommon.exceptions import DatasetInBlockListError
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
 from libcommon.simple_cache import (
+    CacheEntryDoesNotExistError,
     delete_dataset_responses,
     fetch_names,
     get_best_response,
     get_cache_entries_df,
-    has_some_cache,
+    get_response_metadata,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
-from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
+from libcommon.storage_client import StorageClient
+from libcommon.utils import JobInfo, JobResult, Priority
 
 # TODO: clean dangling cache entries
 
@@ -35,7 +38,6 @@ from libcommon.utils import JobInfo, JobResult, Priority, raise_if_blocked
 @dataclass
 class CacheStatus:
     cache_has_different_git_revision: dict[str, ArtifactState] = field(default_factory=dict)
-    cache_is_old: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_outdated_by_parent: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_empty: dict[str, ArtifactState] = field(default_factory=dict)
     cache_is_error_to_retry: dict[str, ArtifactState] = field(default_factory=dict)
@@ -45,7 +47,6 @@ class CacheStatus:
     def as_response(self) -> dict[str, list[str]]:
         return {
             "cache_has_different_git_revision": sorted(self.cache_has_different_git_revision.keys()),
-            "cache_is_old": sorted(self.cache_is_old.keys()),
             "cache_is_outdated_by_parent": sorted(self.cache_is_outdated_by_parent.keys()),
             "cache_is_empty": sorted(self.cache_is_empty.keys()),
             "cache_is_error_to_retry": sorted(self.cache_is_error_to_retry.keys()),
@@ -156,7 +157,28 @@ class DeleteDatasetCacheEntriesTask(Task):
             delete_dataset_responses(dataset=self.dataset)
 
 
-SupportedTask = Union[CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask]
+@dataclass
+class DeleteDatasetStorageTask(Task):
+    dataset: str
+    storage_client: StorageClient
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"DeleteDatasetStorageTask,{self.dataset},{self.storage_client}"
+        self.long_id = self.id
+
+    def run(self) -> None:
+        with StepProfiler(
+            method="DeleteDatasetStorageTask.run",
+            step="all",
+            context=f"dataset={self.dataset},storage_client={self.storage_client}",
+        ):
+            self.storage_client.delete_dataset_directory(self.dataset)
+
+
+SupportedTask = Union[
+    CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask, DeleteDatasetStorageTask
+]
 
 
 @dataclass
@@ -214,6 +236,7 @@ class AfterJobPlan(Plan):
 
     job_info: JobInfo
     processing_graph: ProcessingGraph
+    failed_runs: int
 
     dataset: str = field(init=False)
     config: Optional[str] = field(init=False)
@@ -344,6 +367,8 @@ class AfterJobPlan(Plan):
             difficulty = next_processing_step.difficulty
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
+            # increase difficulty according to number of failed runs
+            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + self.failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
@@ -370,8 +395,6 @@ class DatasetBackfillPlan(Plan):
     Args:
         dataset: dataset name
         revision: revision to backfill
-        cache_max_days: maximum number of days to keep the cache
-        error_codes_to_retry: list of error codes to retry
         priority: priority of the jobs to create
         only_first_processing_steps: if True, only the first processing steps are backfilled
         processing_graph: processing graph
@@ -379,8 +402,6 @@ class DatasetBackfillPlan(Plan):
 
     dataset: str
     revision: str
-    cache_max_days: int
-    error_codes_to_retry: Optional[list[str]] = None
     priority: Priority = Priority.LOW
     only_first_processing_steps: bool = False
     processing_graph: ProcessingGraph = field(default=processing_graph)
@@ -392,8 +413,6 @@ class DatasetBackfillPlan(Plan):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if self.error_codes_to_retry is None:
-            self.error_codes_to_retry = ERROR_CODES_TO_RETRY.split(",")
         with StepProfiler(
             method="DatasetBackfillPlan.__post_init__",
             step="all",
@@ -446,7 +465,6 @@ class DatasetBackfillPlan(Plan):
                         revision=self.revision,
                         pending_jobs_df=self.pending_jobs_df,
                         cache_entries_df=self.cache_entries_df,
-                        error_codes_to_retry=self.error_codes_to_retry,
                     )
                     if self.only_first_processing_steps
                     else DatasetState(
@@ -455,7 +473,6 @@ class DatasetBackfillPlan(Plan):
                         revision=self.revision,
                         pending_jobs_df=self.pending_jobs_df,
                         cache_entries_df=self.cache_entries_df,
-                        error_codes_to_retry=self.error_codes_to_retry,
                     )
                 )
             with StepProfiler(
@@ -542,11 +559,6 @@ class DatasetBackfillPlan(Plan):
             # config
             artifact_states = self._get_artifact_states_for_step(processing_step)
             for artifact_state in artifact_states:
-                # is an old entry?
-                if artifact_state.cache_state.is_old(days=self.cache_max_days):
-                    cache_status.cache_is_old[artifact_state.id] = artifact_state
-                    continue
-
                 # any of the parents is more recent?
                 if any(
                     artifact_state.cache_state.is_older_than(parent_artifact_state.cache_state)
@@ -606,7 +618,6 @@ class DatasetBackfillPlan(Plan):
         artifact_states = (
             list(self.cache_status.cache_is_empty.values())
             + list(self.cache_status.cache_is_error_to_retry.values())
-            + list(self.cache_status.cache_is_old.values())
             + list(self.cache_status.cache_is_outdated_by_parent.values())
             + list(self.cache_status.cache_is_job_runner_obsolete.values())
             + list(self.cache_status.cache_has_different_git_revision.values())
@@ -647,253 +658,229 @@ class DatasetRemovalPlan(Plan):
 
     Args:
         dataset: dataset name
+        storage_clients (list[StorageClient], optional): The storage clients.
     """
 
     dataset: str
+    storage_clients: Optional[list[StorageClient]]
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self.add_task(DeleteDatasetJobsTask(dataset=self.dataset))
         self.add_task(DeleteDatasetCacheEntriesTask(dataset=self.dataset))
+        if self.storage_clients:
+            for storage_client in self.storage_clients:
+                self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
 
 
-@dataclass
-class DatasetOrchestrator:
+def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
     """
-    Orchestrator for a dataset.
+    Remove the dataset from the Datasets Server
 
     Args:
         dataset (str): The name of the dataset.
-        processing_graph (ProcessingGraph): The processing graph.
-        blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
-          name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
-          are not allowed in the namespace name.
+        storage_clients (list[StorageClient], optional): The storage clients.
+    """
+    plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
+    plan.run()
+    # assets and cached_assets are deleted by the storage clients
+    # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
+    # note that it's not as important as the assets, because generally, we want to delete a dataset
+    # in datasets-server because the repository does not exist anymore on the Hub, so: the other files
+    # don't exist anymore either (they were in refs/convert/parquet).
+    # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
+    # and the user is not pro anymore, etc.)
+
+
+def set_revision(
+    dataset: str,
+    revision: str,
+    priority: Priority,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> None:
+    """
+    Set the current revision of the dataset.
+
+    If the revision is already set to the same value, this is a no-op. Else: one job is created for every first
+        step.
+
+    Args:
+        dataset (str): The name of the dataset.
+        revision (str): The new revision of the dataset.
+        priority (Priority): The priority of the jobs to create.
+        processing_graph (ProcessingGraph, optional): The processing graph.
+
+    Returns:
+        None
 
     Raises:
-        libcommon.exceptions.DatasetInBlockListError: If the dataset is in the block list. As a side-effect, the
-          dataset is deleted from the Datasets Server.
+        ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
+            step.
     """
-
-    dataset: str
-    blocked_datasets: list[str]
-    processing_graph: ProcessingGraph = field(default=processing_graph)
-
-    def _raise_and_remove_if_blocked(self) -> None:
-        try:
-            raise_if_blocked(dataset=self.dataset, blocked_datasets=self.blocked_datasets)
-        except DatasetInBlockListError:
-            logging.warning(f"The dataset {self.dataset} is in the block list, we delete it from the Datasets Server.")
-            self.remove_dataset()
-            raise
-
-    def remove_dataset(self) -> None:
-        """
-        Remove the dataset from the Datasets Server
-        """
-        plan = DatasetRemovalPlan(dataset=self.dataset)
-        plan.run()
-
-    def set_revision(
-        self, revision: str, priority: Priority, error_codes_to_retry: list[str], cache_max_days: int
-    ) -> None:
-        """
-        Set the current revision of the dataset.
-
-        If the revision is already set to the same value, this is a no-op. Else: one job is created for every first
-          step.
-
-        Args:
-            revision (str): The new revision of the dataset.
-            priority (Priority): The priority of the jobs to create.
-            error_codes_to_retry (list[str]): The error codes for which the jobs should be retried.
-            cache_max_days (int): The maximum number of days for which the cache is considered valid.
-
-        Returns:
-            None
-
-        Raises:
-            ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
-              step.
-        """
-        self._raise_and_remove_if_blocked()
-        first_processing_steps = self.processing_graph.get_first_processing_steps()
-        if len(first_processing_steps) < 1:
-            raise ValueError("Processing graph has no first step")
-        if any(first_processing_step.input_type != "dataset" for first_processing_step in first_processing_steps):
-            raise ValueError("One of the first processing steps is not a dataset step")
+    first_processing_steps = processing_graph.get_first_processing_steps()
+    if len(first_processing_steps) < 1:
+        raise ValueError("Processing graph has no first step")
+    if any(first_processing_step.input_type != "dataset" for first_processing_step in first_processing_steps):
+        raise ValueError("One of the first processing steps is not a dataset step")
+    with StepProfiler(
+        method="set_revision",
+        step="all",
+        context=f"dataset={dataset}",
+    ):
+        logging.info(f"Analyzing {dataset}")
         with StepProfiler(
-            method="DatasetOrchestrator.set_revision",
-            step="all",
-            context=f"dataset={self.dataset}",
+            method="set_revision",
+            step="plan",
+            context=f"dataset={dataset}",
         ):
-            logging.info(f"Analyzing {self.dataset}")
-            with StepProfiler(
-                method="DatasetOrchestrator.set_revision",
-                step="plan",
-                context=f"dataset={self.dataset}",
-            ):
-                plan = DatasetBackfillPlan(
-                    dataset=self.dataset,
-                    revision=revision,
-                    priority=priority,
-                    processing_graph=self.processing_graph,
-                    error_codes_to_retry=error_codes_to_retry,
-                    only_first_processing_steps=True,
-                    cache_max_days=cache_max_days,
-                )
-            logging.info(f"Setting new revision to {self.dataset}")
-            with StepProfiler(
-                method="DatasetOrchestrator.set_revision",
-                step="run",
-                context=f"dataset={self.dataset}",
-            ):
-                plan.run()
+            plan = DatasetBackfillPlan(
+                dataset=dataset,
+                revision=revision,
+                priority=priority,
+                processing_graph=processing_graph,
+                only_first_processing_steps=True,
+            )
+        logging.info(f"Setting new revision to {dataset}")
+        with StepProfiler(
+            method="set_revision",
+            step="run",
+            context=f"dataset={dataset}",
+        ):
+            plan.run()
 
-    def finish_job(self, job_result: JobResult) -> None:
-        """
-        Finish a job.
 
-        It will finish the job, store the result in the cache, and trigger the next steps.
+def finish_job(
+    job_result: JobResult,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> None:
+    """
+    Finish a job.
 
-        Args:
-            job_result (JobResult): The result of the job.
+    It will finish the job, store the result in the cache, and trigger the next steps.
 
-        Returns:
-            None
+    Args:
+        job_result (JobResult): The result of the job.
+        processing_graph (ProcessingGraph, optional): The processing graph.
 
-        Raises:
-            ValueError: If the job is not found, or if the processing step is not found.
-        """
-        self._raise_and_remove_if_blocked()
-        # check if the job is still in started status
-        job_info = job_result["job_info"]
-        if not Queue().is_job_started(job_id=job_info["job_id"]):
-            logging.debug("the job was cancelled, don't update the cache")
-            return
-        # if the job could not provide an output, finish it and return
-        if not job_result["output"]:
-            Queue().finish_job(job_id=job_info["job_id"])
-            logging.debug("the job raised an exception, don't update the cache")
-            return
-        # update the cache
-        output = job_result["output"]
-        params = job_info["params"]
-        try:
-            processing_step = self.processing_graph.get_processing_step_by_job_type(job_info["type"])
-        except ProcessingStepDoesNotExist as e:
-            raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
-        upsert_response_params(
-            # inputs
-            kind=processing_step.cache_kind,
-            job_params=params,
-            job_runner_version=job_result["job_runner_version"],
-            # output
-            content=output["content"],
-            http_status=output["http_status"],
-            error_code=output["error_code"],
-            details=output["details"],
-            progress=output["progress"],
-        )
-        logging.debug("the job output has been written to the cache.")
-        # finish the job
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the job is not found, or if the processing step is not found.
+    """
+    # check if the job is still in started status
+    job_info = job_result["job_info"]
+    if not Queue().is_job_started(job_id=job_info["job_id"]):
+        logging.debug("the job was cancelled, don't update the cache")
+        return
+    # if the job could not provide an output, finish it and return
+    if not job_result["output"]:
         Queue().finish_job(job_id=job_info["job_id"])
-        logging.debug("the job has been finished.")
-        # trigger the next steps
-        plan = AfterJobPlan(job_info=job_info, processing_graph=self.processing_graph)
-        plan.run()
-        logging.debug("jobs have been created for the next steps.")
+        logging.debug("the job raised an exception, don't update the cache")
+        return
+    # update the cache
+    output = job_result["output"]
+    params = job_info["params"]
+    try:
+        processing_step = processing_graph.get_processing_step_by_job_type(job_info["type"])
+    except ProcessingStepDoesNotExist as e:
+        raise ValueError(f"Processing step for job type {job_info['type']} does not exist") from e
 
-    def has_some_cache(self) -> bool:
-        """
-        Check if the cache has some entries for the dataset.
+    try:
+        previous_response = get_response_metadata(
+            kind=processing_step.cache_kind, dataset=params["dataset"], config=params["config"], split=params["split"]
+        )
+        failed_runs = (
+            previous_response["failed_runs"] + 1
+            if output["http_status"] != HTTPStatus.OK
+            and previous_response["dataset_git_revision"] == params["revision"]
+            else 0
+        )
+    except CacheEntryDoesNotExistError:
+        failed_runs = 0
 
-        Returns:
-            bool: True if the cache has some entries for the dataset, False otherwise.
-        """
-        return has_some_cache(dataset=self.dataset)
+    upsert_response_params(
+        # inputs
+        kind=processing_step.cache_kind,
+        job_params=params,
+        job_runner_version=job_result["job_runner_version"],
+        # output
+        content=output["content"],
+        http_status=output["http_status"],
+        error_code=output["error_code"],
+        details=output["details"],
+        progress=output["progress"],
+        failed_runs=failed_runs,
+    )
+    logging.debug("the job output has been written to the cache.")
+    # finish the job
+    Queue().finish_job(job_id=job_info["job_id"])
+    logging.debug("the job has been finished.")
+    # trigger the next steps
+    plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
+    plan.run()
+    logging.debug("jobs have been created for the next steps.")
 
-    def has_pending_ancestor_jobs(self, processing_step_names: list[str]) -> bool:
-        """
-        Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
-          in the cache in the future. This method is used when a cache entry is missing in the API,
-          to return a:
-           - 404 error, saying that the artifact does not exist,
-           - or a 500 error, saying that the artifact could be available soon (retry).
 
-        It is implemented by checking if a job exists for the artifacts or one of their ancestors.
+def has_pending_ancestor_jobs(
+    dataset: str, processing_step_names: list[str], processing_graph: ProcessingGraph = processing_graph
+) -> bool:
+    """
+    Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
+        in the cache in the future. This method is used when a cache entry is missing in the API,
+        to return a:
+        - 404 error, saying that the artifact does not exist,
+        - or a 500 error, saying that the artifact could be available soon (retry).
 
-        Note that, if dataset-config-names' job is pending, we cannot know if the config is valid or not, so we
-            consider that the artifact could exist.
+    It is implemented by checking if a job exists for the artifacts or one of their ancestors.
 
-        Args:
-            processing_step_names (list[str]): The processing step names (artifacts) to check.
+    Note that, if dataset-config-names' job is pending, we cannot know if the config is valid or not, so we
+        consider that the artifact could exist.
 
-        Returns:
-            bool: True if any of the artifact could exist, False otherwise.
+    Args:
+        dataset (str): The name of the dataset.
+        processing_step_names (list[str]): The processing step names (artifacts) to check.
+        processing_graph (ProcessingGraph, optional): The processing graph.
 
-        Raises:
-            ValueError: If any of the processing step does not exist.
-        """
-        job_types: set[str] = set()
-        for processing_step_name in processing_step_names:
-            try:
-                processing_step = self.processing_graph.get_processing_step(processing_step_name)
-            except ProcessingStepDoesNotExist as e:
-                raise ValueError(f"Processing step {processing_step_name} does not exist") from e
-            ancestors = self.processing_graph.get_ancestors(processing_step_name)
-            job_types.add(processing_step.job_type)
-            job_types.update(ancestor.job_type for ancestor in ancestors)
-        # check if a pending job exists for the artifact or one of its ancestors
-        # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
-        # while we look for config2,split1). Looking in this detail would be too complex, this approximation
-        # is good enough.
-        return Queue().has_pending_jobs(dataset=self.dataset, job_types=list(job_types))
+    Returns:
+        bool: True if any of the artifact could exist, False otherwise.
 
-    def backfill(
-        self, revision: str, priority: Priority, cache_max_days: int, error_codes_to_retry: Optional[list[str]] = None
-    ) -> int:
-        """
-        Backfill the cache for a given revision.
+    Raises:
+        ProcessingStepDoesNotExist: If any of the processing step does not exist.
+    """
+    job_types: set[str] = set()
+    for processing_step_name in processing_step_names:
+        processing_step = processing_graph.get_processing_step(processing_step_name)
+        ancestors = processing_graph.get_ancestors(processing_step_name)
+        job_types.add(processing_step.job_type)
+        job_types.update(ancestor.job_type for ancestor in ancestors)
+    logging.debug(f"looking at ancestor jobs of {processing_step_names}: {list(job_types)}")
+    # check if a pending job exists for the artifact or one of its ancestors
+    # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
+    # while we look for config2,split1). Looking in this detail would be too complex, this approximation
+    # is good enough.
+    return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
 
-        Args:
-            revision (str): The revision.
-            priority (Priority): The priority of the jobs.
-            cache_max_days (int): The maximum number of days to keep the cache.
-            error_codes_to_retry (Optional[list[str]]): The error codes for which the jobs should be retried.
 
-        Returns:
-            int: The number of jobs created.
-        """
-        with StepProfiler(
-            method="DatasetOrchestrator.backfill",
-            step="all",
-            context=f"dataset={self.dataset}",
-        ):
-            logging.info(f"Analyzing {self.dataset}")
-            with StepProfiler(
-                method="DatasetOrchestrator.raise_and_remove_if_blocked",
-                step="plan",
-                context=f"dataset={self.dataset}",
-            ):
-                self._raise_and_remove_if_blocked()
-            with StepProfiler(
-                method="DatasetOrchestrator.backfill",
-                step="plan",
-                context=f"dataset={self.dataset}",
-            ):
-                plan = DatasetBackfillPlan(
-                    dataset=self.dataset,
-                    revision=revision,
-                    priority=priority,
-                    processing_graph=self.processing_graph,
-                    error_codes_to_retry=error_codes_to_retry,
-                    only_first_processing_steps=False,
-                    cache_max_days=cache_max_days,
-                )
-            logging.info(f"Analyzing {self.dataset}")
-            with StepProfiler(
-                method="DatasetOrchestrator.backfill",
-                step="run",
-                context=f"dataset={self.dataset}",
-            ):
-                return plan.run()
+def get_revision(dataset: str) -> Optional[str]:
+    cache_kinds = [processing_step.cache_kind for processing_step in processing_graph.get_first_processing_steps()]
+    cache_entries = get_cache_entries_df(
+        dataset=dataset,
+        cache_kinds=cache_kinds,
+    ).to_dict(orient="list")
+    if cache_entries.get("dataset_git_revision") and isinstance(
+        revision := cache_entries["dataset_git_revision"][0], str
+    ):
+        return revision
+    job_types = [processing_step.job_type for processing_step in processing_graph.get_first_processing_steps()]
+    pending_jobs = (
+        Queue()
+        .get_pending_jobs_df(
+            dataset=dataset,
+            job_types=job_types,
+        )
+        .to_dict(orient="list")
+    )
+    if pending_jobs.get("revision") and isinstance(revision := pending_jobs["revision"][0], str):
+        return revision
+    return None

@@ -28,7 +28,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
         config (`str`):
             A configuration name.
     Returns:
-        `tuple[IsValidResponse, float]`: The response (viewer, preview, search) and the progress.
+        `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
     logging.info(f"get is-valid response for {dataset=} {config=}")
 
@@ -44,6 +44,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     preview = False
     viewer = False
     search = False
+    filter = False
     try:
         total = 0
         pending = 0
@@ -63,16 +64,13 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
             preview = preview or split_is_valid_content["preview"]
             viewer = viewer or split_is_valid_content["viewer"]
             search = search or split_is_valid_content["search"]
+            filter = filter or split_is_valid_content["filter"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - pending) / total if total else 1.0
     return (
-        IsValidResponse(
-            preview=preview,
-            viewer=viewer,
-            search=search,
-        ),
+        IsValidResponse(preview=preview, viewer=viewer, search=search, filter=filter),
         progress,
     )
 

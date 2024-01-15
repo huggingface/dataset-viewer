@@ -10,6 +10,7 @@ from libapi.utils import EXPOSED_HEADERS
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
+from libcommon.storage_client import StorageClient
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -54,6 +55,25 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         Middleware(PrometheusMiddleware, filter_unhandled_paths=True),
     ]
 
+    cached_assets_storage_client = StorageClient(
+        protocol=app_config.cached_assets.storage_protocol,
+        root=app_config.cached_assets.storage_root,
+        folder=app_config.cached_assets.folder_name,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        client_kwargs={"region_name": app_config.s3.region_name},
+    )
+
+    assets_storage_client = StorageClient(
+        protocol=app_config.assets.storage_protocol,
+        root=app_config.assets.storage_root,
+        folder=app_config.assets.folder_name,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        client_kwargs={"region_name": app_config.s3.region_name},
+    )
+    storage_clients = [cached_assets_storage_client, assets_storage_client]
+
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
     resources: list[Resource] = [cache_resource, queue_resource]
@@ -77,7 +97,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
+                storage_clients=storage_clients,
             ),
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
@@ -94,7 +114,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
+                storage_clients=storage_clients,
             ),
         ),
         Route("/healthcheck", endpoint=healthcheck_endpoint),
@@ -104,8 +124,11 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             "/webhook",
             endpoint=create_webhook_endpoint(
                 hf_webhook_secret=app_config.api.hf_webhook_secret,
-                cache_max_days=app_config.cache.max_days,
                 blocked_datasets=app_config.common.blocked_datasets,
+                hf_endpoint=app_config.common.hf_endpoint,
+                hf_token=app_config.common.hf_token,
+                hf_timeout_seconds=app_config.api.hf_timeout_seconds,
+                storage_clients=storage_clients,
             ),
             methods=["POST"],
         ),

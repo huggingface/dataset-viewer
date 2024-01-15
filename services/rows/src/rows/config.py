@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from libapi.config import ApiConfig
 from libcommon.config import (
+    AssetsConfig,
     CacheConfig,
     CachedAssetsConfig,
     CommonConfig,
@@ -19,6 +20,7 @@ from libcommon.config import (
 @dataclass(frozen=True)
 class AppConfig:
     api: ApiConfig = field(default_factory=ApiConfig)
+    assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
@@ -33,6 +35,7 @@ class AppConfig:
         common_config = CommonConfig.from_env()
         return cls(
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
+            assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
             common=common_config,

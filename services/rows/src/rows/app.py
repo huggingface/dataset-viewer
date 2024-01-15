@@ -57,7 +57,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
 
-    storage_client = StorageClient(
+    cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         root=app_config.cached_assets.storage_root,
         folder=app_config.cached_assets.folder_name,
@@ -65,6 +65,16 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
     )
+    assets_storage_client = StorageClient(
+        protocol=app_config.assets.storage_protocol,
+        root=app_config.assets.storage_root,
+        folder=app_config.assets.folder_name,
+        key=app_config.s3.access_key_id,
+        secret=app_config.s3.secret_access_key,
+        client_kwargs={"region_name": app_config.s3.region_name},
+    )
+    storage_clients = [cached_assets_storage_client, assets_storage_client]
+
     resources: list[Resource] = [cache_resource, queue_resource]
     if not cache_resource.is_available():
         raise RuntimeError("The connection to the cache database could not be established. Exiting.")
@@ -79,7 +89,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             "/rows",
             endpoint=create_rows_endpoint(
                 cached_assets_base_url=app_config.cached_assets.base_url,
-                storage_client=storage_client,
+                cached_assets_storage_client=cached_assets_storage_client,
                 parquet_metadata_directory=parquet_metadata_directory,
                 max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -91,7 +101,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 hf_timeout_seconds=app_config.api.hf_timeout_seconds,
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
-                cache_max_days=app_config.cache.max_days,
+                storage_clients=storage_clients,
             ),
         ),
     ]

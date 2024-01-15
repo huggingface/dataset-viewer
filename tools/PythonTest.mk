@@ -2,6 +2,7 @@ TEST_PATH ?= tests
 
 .PHONY: test
 test:
+	$(MAKE) down
 	$(MAKE) up
 	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
 	$(MAKE) down

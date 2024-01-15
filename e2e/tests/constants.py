@@ -1,10 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2022 The HuggingFace Authors.
+# Copyright 2023 The HuggingFace Authors.
 
-import csv
-
-import pytest
-from pytest import TempPathFactory
+# see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
+CI_APP_TOKEN = "hf_app_datasets-server_token"
+CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
+NORMAL_USER = "__DUMMY_DATASETS_SERVER_USER__"
+NORMAL_USER_TOKEN = "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"
+NORMAL_USER_COOKIE = "oMidckPVQYumfKrAHNYKqnbacRoLaMppHRRlfNbupNahzAHCzInBVbhgGosDneYXHVTKkkWygoMDxBfFUkFPIPiVWBtZtSTYIYTScnEKAJYkyGBAcbVTbokAygCCTWvH"
+NORMAL_ORG = "__NORMAL_ORG__"
+PRO_USER = "__PRO_USER__"
+PRO_USER_TOKEN = "hf_pro_user_token"
+ENTERPRISE_ORG = "__ENTERPRISE_ORG__"
+ENTERPRISE_USER = "__ENTERPRISE_USER__"
+ENTERPRISE_USER_TOKEN = "hf_enterprise_user_token"
 
 DATA = [
     {
@@ -36,14 +44,3 @@ DATA = [
         "col_5": None,
     },
 ]
-
-
-@pytest.fixture(scope="session")
-def csv_path(tmp_path_factory: TempPathFactory) -> str:
-    path = str(tmp_path_factory.mktemp("data") / "dataset.csv")
-    with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["col_1", "col_2", "col_3", "col_4", "col_5"])
-        writer.writeheader()
-        for item in DATA:
-            writer.writerow(item)
-    return path

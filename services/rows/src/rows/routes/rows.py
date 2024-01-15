@@ -38,9 +38,8 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 
 def create_rows_endpoint(
     cached_assets_base_url: str,
-    storage_client: StorageClient,
+    cached_assets_storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
-    cache_max_days: int,
     max_arrow_data_in_memory: int,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -51,6 +50,7 @@ def create_rows_endpoint(
     hf_timeout_seconds: Optional[float] = None,
     max_age_long: int = 0,
     max_age_short: int = 0,
+    storage_clients: Optional[list[StorageClient]] = None,
 ) -> Endpoint:
     indexer = Indexer(
         hf_token=hf_token,
@@ -105,7 +105,7 @@ def create_rows_endpoint(
                             config=config,
                             split=split,
                             cached_assets_base_url=cached_assets_base_url,
-                            storage_client=storage_client,
+                            storage_client=cached_assets_storage_client,
                             pa_table=pa_table,
                             offset=offset,
                             features=rows_index.parquet_index.features,
@@ -121,8 +121,8 @@ def create_rows_endpoint(
                             hf_endpoint=hf_endpoint,
                             hf_timeout_seconds=hf_timeout_seconds,
                             hf_token=hf_token,
-                            cache_max_days=cache_max_days,
                             blocked_datasets=blocked_datasets,
+                            storage_clients=storage_clients,
                         )
                 with StepProfiler(method="rows_endpoint", step="generate the OK response"):
                     return get_json_ok_response(content=response, max_age=max_age_long, revision=revision)

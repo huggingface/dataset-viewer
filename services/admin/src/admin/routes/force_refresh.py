@@ -17,8 +17,8 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
-from libcommon.dataset import get_dataset_git_revision
 from libcommon.exceptions import CustomError
+from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
@@ -34,6 +34,7 @@ def create_force_refresh_endpoint(
     job_type: str,
     difficulty: int,
     bonus_difficulty_if_dataset_is_big: int,
+    blocked_datasets: list[str],
     hf_endpoint: str,
     hf_token: Optional[str] = None,
     external_auth_url: Optional[str] = None,
@@ -77,8 +78,13 @@ def create_force_refresh_endpoint(
                 organization=organization,
                 hf_timeout_seconds=hf_timeout_seconds,
             )
-            revision = get_dataset_git_revision(dataset=dataset, hf_endpoint=hf_endpoint, hf_token=hf_token)
-            # we directly create a job, without even checking if the dataset is blocked.
+            revision = get_latest_dataset_revision_if_supported_or_raise(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
+                hf_timeout_seconds=hf_timeout_seconds,
+                blocked_datasets=blocked_datasets,
+            )
             Queue().add_job(
                 job_type=job_type,
                 difficulty=total_difficulty,
