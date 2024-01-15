@@ -92,7 +92,7 @@ Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_
 - `DUCKDB_INDEX_CACHE_DIRECTORY`: directory where the temporal duckdb index files are stored. Defaults to empty.
 - `DUCKDB_INDEX_COMMIT_MESSAGE`: the git commit message when the worker uploads the duckdb index file to the Hub. Defaults to `Update duckdb index file`.
 - `DUCKDB_INDEX_COMMITTER_HF_TOKEN`: the HuggingFace token to commit the duckdb index file to the Hub. The token must be an app token associated with a user that has the right to 1. create the `refs/convert/parquet` branch (see `DUCKDB_INDEX_TARGET_REVISION`) and 2. push commits to it on any dataset. [Datasets maintainers](https://huggingface.co/datasets-maintainers) members have these rights. The token must have permission to write. If not set, the worker will fail. Defaults to None.
-- `DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES`: the maximum size in bytes of the dataset's parquet files to index. Datasets with bigger size are ignored. Defaults to `100_000_000`.
+- `DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES`: the maximum size in bytes of the dataset's parquet files to index. Defaults to `100_000_000`.
 - `DUCKDB_INDEX_TARGET_REVISION`: the git revision of the dataset where to store the duckdb index file. Make sure the committer token (`DUCKDB_INDEX_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
 - `DUCKDB_INDEX_URL_TEMPLATE`: the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
 - `DUCKDB_INDEX_EXTENSIONS_DIRECTORY`: directory where the duckdb extensions will be downloaded. Defaults to empty.
@@ -108,7 +108,7 @@ Set environment variables to configure the `descriptive-statistics` worker (`DES
 #### How descriptive statistics are computed 
 
 Descriptive statistics are currently computed for the following data types: strings, floats, and ints (including `ClassLabel` int). 
-Response has three fields: `num_examples`, `statistics` and `partial`. `partial` indicates if statistics are computed over first N gigabytes of a dataset. If it equals to `False`, that means that `num_examples` correspond to the number of examples in this first N gigabytes chunk of data, not of the full dataset. 
+Response has three fields: `num_examples`, `statistics` and `partial`. `partial` indicates if statistics are computed over first ~`DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES` of a dataset. If it equals to `False`, that means that `num_examples` correspond to the number of examples in this first chunk of data, not of the full dataset. 
 `statistics` field is a list of dicts with three keys: `column_name`, `column_type`, and `column_statistics`.
 
 `column_type` is one of the following values:
