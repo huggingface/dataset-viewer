@@ -79,7 +79,6 @@ async def create_response(
     revision: str,
     config: str,
     split: str,
-    cached_assets_base_url: str,
     storage_client: StorageClient,
     offset: int,
     features: Features,
@@ -94,11 +93,7 @@ async def create_response(
     )
     pa_table = pa_table.drop(unsupported_columns)
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    public_assets_storage = PublicAssetsStorage(
-        assets_base_url=cached_assets_base_url,
-        overwrite=False,
-        storage_client=storage_client,
-    )
+    public_assets_storage = PublicAssetsStorage(overwrite=False, storage_client=storage_client)
 
     return PaginatedResponse(
         features=to_features_list(features_without_key),
@@ -122,7 +117,6 @@ async def create_response(
 
 def create_search_endpoint(
     duckdb_index_file_directory: StrPath,
-    cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
     target_revision: str,
     hf_endpoint: str,
@@ -223,7 +217,6 @@ def create_search_endpoint(
                         revision=revision,
                         config=config,
                         split=split,
-                        cached_assets_base_url=cached_assets_base_url,
                         storage_client=cached_assets_storage_client,
                         offset=offset,
                         features=features,

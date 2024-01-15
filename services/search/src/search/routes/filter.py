@@ -59,7 +59,6 @@ logger = logging.getLogger(__name__)
 def create_filter_endpoint(
     duckdb_index_file_directory: StrPath,
     target_revision: str,
-    cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
     blocked_datasets: list[str],
     hf_endpoint: str,
@@ -163,7 +162,6 @@ def create_filter_endpoint(
                         revision=revision,
                         config=config,
                         split=split,
-                        cached_assets_base_url=cached_assets_base_url,
                         storage_client=cached_assets_storage_client,
                         pa_table=pa_table,
                         offset=offset,

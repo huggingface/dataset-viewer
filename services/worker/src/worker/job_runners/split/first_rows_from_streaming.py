@@ -297,12 +297,7 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
             hf_datasets_cache=hf_datasets_cache,
         )
         self.first_rows_config = app_config.first_rows
-        self.assets_base_url = app_config.assets.base_url
-        self.public_assets_storage = PublicAssetsStorage(
-            assets_base_url=self.assets_base_url,
-            overwrite=True,
-            storage_client=storage_client,
-        )
+        self.public_assets_storage = PublicAssetsStorage(overwrite=True, storage_client=storage_client)
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(

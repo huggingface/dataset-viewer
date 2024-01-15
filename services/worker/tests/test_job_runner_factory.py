@@ -51,8 +51,7 @@ def test_create_job_runner(
     tmp_path: Path,
 ) -> None:
     storage_client = StorageClient(
-        protocol="file",
-        storage_root=str(tmp_path / "assets"),
+        protocol="file", storage_root=str(tmp_path / "assets"), base_url=app_config.assets.base_url
     )
     factory = JobRunnerFactory(
         app_config=app_config,

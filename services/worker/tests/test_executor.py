@@ -205,8 +205,7 @@ def job_runner_factory(
     tmp_path: Path,
 ) -> JobRunnerFactory:
     storage_client = StorageClient(
-        protocol="file",
-        storage_root=str(tmp_path / "assets"),
+        protocol="file", storage_root=str(tmp_path / "assets"), base_url=app_config.assets.base_url
     )
     return JobRunnerFactory(
         app_config=app_config,

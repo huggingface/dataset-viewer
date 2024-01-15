@@ -20,7 +20,6 @@ async def create_response(
     revision: str,
     config: str,
     split: str,
-    cached_assets_base_url: str,
     storage_client: StorageClient,
     pa_table: pa.Table,
     offset: int,
@@ -36,7 +35,6 @@ async def create_response(
         )
     logging.debug(f"create response for {dataset=} {config=} {split=}")
     public_assets_storage = PublicAssetsStorage(
-        assets_base_url=cached_assets_base_url,
         overwrite=False,
         storage_client=storage_client,
     )

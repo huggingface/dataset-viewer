@@ -55,7 +55,6 @@ def create_image_file(
     public_assets_storage: PublicAssetsStorage,
 ) -> ImageSource:
     # get url dir path
-    assets_base_url = public_assets_storage.assets_base_url
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
@@ -68,12 +67,10 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    src = f"{assets_base_url}/{object_key}"
-
     if overwrite or not storage_client.exists(object_key=object_key):
         with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
             image.save(fp=f, format=format)
-    return ImageSource(src=src, height=image.height, width=image.width)
+    return ImageSource(src=storage_client.get_url(object_key), height=image.height, width=image.width)
 
 
 def create_audio_file(
@@ -88,8 +85,6 @@ def create_audio_file(
     filename: str,
     public_assets_storage: PublicAssetsStorage,
 ) -> list[AudioSource]:
-    # get url dir path
-    assets_base_url = public_assets_storage.assets_base_url
     overwrite = public_assets_storage.overwrite
     storage_client = public_assets_storage.storage_client
 
@@ -102,7 +97,6 @@ def create_audio_file(
         column=column,
         filename=filename,
     )
-    src = f"{assets_base_url}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(
@@ -128,4 +122,4 @@ def create_audio_file(
                 buffer.seek(0)
                 with storage_client._fs.open(audio_path, "wb") as f:
                     f.write(buffer.read())
-    return [AudioSource(src=src, type=media_type)]
+    return [AudioSource(src=storage_client.get_url(object_key), type=media_type)]

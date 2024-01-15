@@ -19,12 +19,9 @@ def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
         storage_root=str(tmp_path / ASSETS_FOLDER),
+        base_url=ASSETS_BASE_URL,
     )
-    return PublicAssetsStorage(
-        assets_base_url=ASSETS_BASE_URL,
-        overwrite=False,
-        storage_client=storage_client,
-    )
+    return PublicAssetsStorage(overwrite=False, storage_client=storage_client)
 
 
 def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:

@@ -34,12 +34,9 @@ def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
         storage_root=str(tmp_path / ASSETS_FOLDER),
+        base_url=ASSETS_BASE_URL,
     )
-    return PublicAssetsStorage(
-        assets_base_url=ASSETS_BASE_URL,
-        overwrite=False,
-        storage_client=storage_client,
-    )
+    return PublicAssetsStorage(overwrite=False, storage_client=storage_client)
 
 
 # we need to know the correspondence between the feature type and the cell value, in order to:
@@ -114,11 +111,11 @@ def assert_output_has_valid_files(value: Any, public_assets_storage: PublicAsset
         if (
             "src" in value
             and isinstance(value["src"], str)
-            and value["src"].startswith(public_assets_storage.assets_base_url)
+            and value["src"].startswith(public_assets_storage.storage_client.base_url)
         ):
             path = Path(
                 public_assets_storage.storage_client.get_full_path(
-                    value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+                    value["src"][len(public_assets_storage.storage_client.base_url) + 1 :],  # noqa: E203
                 )
             )
             assert os.path.exists(path)
@@ -407,12 +404,9 @@ def test_ogg_audio_with_s3(
             storage_client = StorageClient(
                 protocol=s3_resource,
                 storage_root=f"{bucket_name}/{ASSETS_FOLDER}",
+                base_url=ASSETS_BASE_URL,
             )
-        public_assets_storage = PublicAssetsStorage(
-            assets_base_url=ASSETS_BASE_URL,
-            overwrite=True,
-            storage_client=storage_client,
-        )
+        public_assets_storage = PublicAssetsStorage(overwrite=True, storage_client=storage_client)
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore
         # at https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L47

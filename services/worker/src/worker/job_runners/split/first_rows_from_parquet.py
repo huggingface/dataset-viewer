@@ -181,7 +181,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             app_config=app_config,
         )
         self.first_rows_config = app_config.first_rows
-        self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
             hf_token=self.app_config.common.hf_token,
@@ -191,12 +190,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             all_columns_supported_datasets_allow_list="all",
             max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
-
-        self.public_assets_storage = PublicAssetsStorage(
-            assets_base_url=self.assets_base_url,
-            overwrite=True,
-            storage_client=storage_client,
-        )
+        self.public_assets_storage = PublicAssetsStorage(overwrite=True, storage_client=storage_client)
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
