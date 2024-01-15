@@ -70,10 +70,9 @@ def create_image_file(
         filename=filename,
     )
     object_key = f"{dir_path}/{filename}"
-    image_path = f"{storage_client.get_base_directory()}/{object_key}"
 
     if overwrite or not storage_client.exists(object_key=object_key):
-        with storage_client._fs.open(image_path, "wb") as f:
+        with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
             image.save(fp=f, format=format)
     return ImageSource(src=src, height=image.height, width=image.width)
 
@@ -106,7 +105,6 @@ def create_audio_file(
         filename=filename,
     )
     object_key = f"{dir_path}/{filename}"
-    audio_path = f"{storage_client.get_base_directory()}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(
@@ -116,6 +114,7 @@ def create_audio_file(
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
     if overwrite or not storage_client.exists(object_key=object_key):
+        audio_path = storage_client.get_full_path(object_key)
         if audio_file_extension == suffix:
             with storage_client._fs.open(audio_path, "wb") as f:
                 f.write(audio_file_bytes)

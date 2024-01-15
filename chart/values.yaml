@@ -180,8 +180,6 @@ worker:
   killLongJobIntervalSeconds: 60
   # the time interval at which the worker looks for zombie jobs to kill them
   killZombiesIntervalSeconds: 600
-  # maximum disk usage of every storage disk in the list (in percentage) to allow a job to start. Set to 0 to disable the test.
-  maxDiskUsagePct: 90
   # the maximum duration of a job before it gets stopped for exceeded the maximum duration
   maxJobDurationSeconds: 2400
   # Max CPU load (%) - if reached, sleeps until it comes back under the limit. Set to 0 to disable the test.
@@ -245,17 +243,15 @@ s3:
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
-  # Directory on the shared storage (audio files and images)
-  storageRoot: "/storage"
-  folderName: "assets"
+  # name of the folder where assets are stored.
+  storageRoot: "/storage/assets"
   storageProtocol: "file"
 
 cachedAssets:
   # base URL for the cached assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/cached-assets
   # baseUrl: "not used for now"
-  # Directory on the cached shared storage (audio files and images)
-  storageRoot: "/storage"
-  folderName: "cached-assets"
+  # name of the folder where cached assets are stored.
+  storageRoot: "/storage/cached-assets"
   storageProtocol: "file"
 
 parquetMetadata:

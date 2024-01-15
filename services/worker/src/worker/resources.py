@@ -20,7 +20,6 @@ class LibrariesResource(Resource):
     previous_hf_update_download_counts: bool = field(init=False)
     previous_verbosity: int = field(init=False)
     hf_datasets_cache: Path = field(init=False)
-    storage_paths: set[str] = field(init=False)
 
     def allocate(self) -> None:
         self.hf_datasets_cache = (
@@ -44,12 +43,6 @@ class LibrariesResource(Resource):
         # various of the datasets functions. The fix, for now, is to set the HF_ENDPOINT
         # environment variable to the desired value.
         # TODO: check here if huggingface_hub and datasets use the same endpoint
-
-        # Add the datasets and numba cache paths to the list of storage paths, to ensure the disk is not full
-        storage_paths = {str(self.hf_datasets_cache), str(datasets.config.HF_MODULES_CACHE)}
-        if self.numba_path is not None:
-            storage_paths.add(self.numba_path)
-        self.storage_paths = storage_paths
 
     def release(self) -> None:
         datasets.config.HF_ENDPOINT = self.previous_hf_endpoint

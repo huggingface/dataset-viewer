@@ -33,8 +33,7 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=ASSETS_FOLDER,
+        storage_root=str(tmp_path / ASSETS_FOLDER),
     )
     return PublicAssetsStorage(
         assets_base_url=ASSETS_BASE_URL,
@@ -117,9 +116,10 @@ def assert_output_has_valid_files(value: Any, public_assets_storage: PublicAsset
             and isinstance(value["src"], str)
             and value["src"].startswith(public_assets_storage.assets_base_url)
         ):
-            path = os.path.join(
-                public_assets_storage.storage_client.get_base_directory(),
-                value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+            path = Path(
+                public_assets_storage.storage_client.get_full_path(
+                    value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+                )
             )
             assert os.path.exists(path)
             assert os.path.getsize(path) > 0
@@ -406,8 +406,7 @@ def test_ogg_audio_with_s3(
         with patch("libcommon.storage_client.StorageClient._validate", return_value=None):
             storage_client = StorageClient(
                 protocol=s3_resource,
-                root=bucket_name,
-                folder=ASSETS_FOLDER,
+                storage_root=f"{bucket_name}/{ASSETS_FOLDER}",
             )
         public_assets_storage = PublicAssetsStorage(
             assets_base_url=ASSETS_BASE_URL,

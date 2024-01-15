@@ -10,8 +10,6 @@
   value: {{ .Values.worker.killZombiesIntervalSeconds | quote}}
 - name: WORKER_KILL_LONG_JOB_INTERVAL_SECONDS
   value: {{ .Values.worker.killLongJobIntervalSeconds | quote}}
-- name: WORKER_MAX_DISK_USAGE_PCT
-  value: {{ .Values.worker.maxDiskUsagePct | quote }}
 - name: WORKER_MAX_JOB_DURATION_SECONDS
   value: {{ .Values.worker.maxJobDurationSeconds | quote }}
 - name: WORKER_MAX_LOAD_PCT
@@ -25,8 +23,6 @@
 - name: TMPDIR
   value: "/tmp"
   # ^ensure the temporary files are created in /tmp, which is writable
-- name: WORKER_STORAGE_PATHS
-  value: {{ .Values.assets.storageDirectory | quote }}
 # specific to the /first-rows job runner
 - name: FIRST_ROWS_MAX_BYTES
   value: {{ .Values.firstRows.maxBytes | quote }}

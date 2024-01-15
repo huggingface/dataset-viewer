@@ -137,11 +137,11 @@ parquetAndInfo:
   maxDatasetSizeBytes: "500_000_000"
 
 assets:
-  storageRoot: "hf-datasets-server-statics-staging"
+  storageRoot: "hf-datasets-server-statics-staging/assets"
   storageProtocol: "s3"
 
 cachedAssets:
-  storageRoot: "hf-datasets-server-statics-staging"
+  storageRoot: "hf-datasets-server-statics-staging/cached-assets"
   storageProtocol: "s3"
 
 # --- jobs (pre-install/upgrade hooks) ---

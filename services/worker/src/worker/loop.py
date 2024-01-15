@@ -4,7 +4,7 @@
 import logging
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, TypedDict
 
@@ -19,7 +19,7 @@ from libcommon.queue import (
     Queue,
 )
 from libcommon.utils import JobInfo, get_datetime
-from psutil import cpu_count, disk_usage, getloadavg, swap_memory, virtual_memory
+from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from worker.config import AppConfig
 from worker.job_manager import JobManager
@@ -43,8 +43,6 @@ class Loop:
         job_runner_factory (`JobRunnerFactory`):
             The job runner factory that will create a job runner for each job. Must be able to process the jobs of the
               queue.
-        library_cache_paths (`set[str]`):
-            The paths of the library caches. Used to check if the disk is full.
         worker_config (`WorkerConfig`):
             Worker configuration.
         state_file_path (`str`):
@@ -52,14 +50,11 @@ class Loop:
     """
 
     job_runner_factory: BaseJobRunnerFactory
-    library_cache_paths: set[str]
     app_config: AppConfig
     state_file_path: str
-    storage_paths: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
         self.queue = Queue()
-        self.storage_paths = set(self.app_config.worker.storage_paths).union(self.library_cache_paths)
 
     def has_memory(self) -> bool:
         if self.app_config.worker.max_memory_pct <= 0:
@@ -85,21 +80,8 @@ class Loop:
             logging.info(f"cpu load is too high: {load_pct:.0f}% - max is {self.app_config.worker.max_load_pct}%")
         return ok
 
-    def has_storage(self) -> bool:
-        if self.app_config.worker.max_disk_usage_pct <= 0:
-            return True
-        for path in self.storage_paths:
-            try:
-                usage = disk_usage(path)
-                if usage.percent >= self.app_config.worker.max_disk_usage_pct:
-                    return False
-            except Exception:
-                # if we can't get the disk usage, we let the process continue
-                return True
-        return True
-
     def has_resources(self) -> bool:
-        return self.has_memory() and self.has_cpu() and self.has_storage()
+        return self.has_memory() and self.has_cpu()
 
     def sleep(self) -> None:
         jitter = 0.75 + random.random() / 2  # nosec
