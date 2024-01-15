@@ -1081,7 +1081,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool"]
       },
       "Histogram": {
         "type": "object",
@@ -1167,6 +1167,24 @@
           }
         }
       },
+      "BoolStatisticsItem": {
+        "type": "object",
+        "required": ["nan_count", "nan_proportion", "frequencies"],
+        "properties": {
+          "nan_count": {
+            "type": "integer"
+          },
+          "nan_proportion": {
+            "type": "number"
+          },
+          "frequencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      },
       "StatisticsPerColumnItem": {
         "type": "object",
         "required": ["column_name", "column_type", "column_statistics"],
@@ -1184,6 +1202,9 @@
               },
               {
                 "$ref": "#/components/schemas/CategoricalStatisticsItem"
+              },
+              {
+                "$ref": "#/components/schemas/BoolStatisticsItem"
               }
             ]
           }
@@ -1201,6 +1222,9 @@
           },
           "num_examples": {
             "type": "integer"
+          },
+          "partial": {
+            "$ref": "#/components/schemas/Partial"
           }
         }
       },
