@@ -24,10 +24,12 @@ def test_recreate_dataset(tmp_path: Path) -> None:
     assets_storage_client = StorageClient(
         protocol="file",
         storage_root=str(assets_directory),
+        base_url="http://notimportant/assets",
     )
     cached_assets_storage_client = StorageClient(
         protocol="file",
         storage_root=str(cached_assets_directory),
+        base_url="http://notimportant/cached-assets",
     )
 
     dataset = "dataset"
