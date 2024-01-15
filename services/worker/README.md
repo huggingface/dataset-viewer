@@ -114,7 +114,8 @@ Set environment variables to configure the `descriptive-statistics` worker (`DES
 #### How descriptive statistics are computed 
 
 Descriptive statistics are currently computed for the following data types: strings, floats, and ints (including `ClassLabel` int). 
-Response has two fields: `num_examples` and `statistics`. `statistics` field is a list of dicts with three keys: `column_name`, `column_type`, and `column_statistics`.
+Response has three fields: `num_examples`, `statistics` and `partial`. `partial` indicates if statistics are computed over first N gigabytes of a dataset. If it equals to `False`, that means that `num_examples` correspond to the number of examples in this first N gigabytes chunk of data, not of the full dataset. 
+`statistics` field is a list of dicts with three keys: `column_name`, `column_type`, and `column_statistics`.
 
 `column_type` is one of the following values:
 * `class_label` - for `datasets.ClassLabel` feature
