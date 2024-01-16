@@ -61,6 +61,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         storage_root=app_config.cached_assets.storage_root,
+        base_url=app_config.cached_assets.base_url,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
@@ -68,6 +69,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
+        base_url=app_config.assets.base_url,
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
@@ -87,7 +89,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             "/search",
             endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
-                cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_storage_client=cached_assets_storage_client,
                 target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
@@ -107,7 +108,6 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             endpoint=create_filter_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 target_revision=app_config.duckdb_index.target_revision,
-                cached_assets_base_url=app_config.cached_assets.base_url,
                 cached_assets_storage_client=cached_assets_storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,

@@ -50,6 +50,7 @@ def run_job() -> None:
             cached_assets_storage_client = StorageClient(
                 protocol=job_config.cached_assets.storage_protocol,
                 storage_root=job_config.cached_assets.storage_root,
+                base_url=job_config.cached_assets.base_url,
                 key=job_config.s3.access_key_id,
                 secret=job_config.s3.secret_access_key,
                 client_kwargs={"region_name": job_config.s3.region_name},
@@ -57,6 +58,7 @@ def run_job() -> None:
             assets_storage_client = StorageClient(
                 protocol=job_config.assets.storage_protocol,
                 storage_root=job_config.assets.storage_root,
+                base_url=job_config.assets.base_url,
                 key=job_config.s3.access_key_id,
                 secret=job_config.s3.secret_access_key,
                 client_kwargs={"region_name": job_config.s3.region_name},

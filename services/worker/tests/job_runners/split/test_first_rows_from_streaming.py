@@ -21,6 +21,7 @@ from worker.job_runners.split.first_rows_from_streaming import (
 from worker.resources import LibrariesResource
 from worker.utils import get_json_size
 
+from ...constants import ASSETS_BASE_URL
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
 
@@ -75,6 +76,8 @@ def get_job_runner(
             storage_client=StorageClient(
                 protocol="file",
                 storage_root=str(tmp_path / "assets"),
+                base_url=ASSETS_BASE_URL,
+                overwrite=True,  # all the job runners will overwrite the files
             ),
         )
 

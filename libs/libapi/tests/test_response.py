@@ -21,6 +21,7 @@ def storage_client(tmp_path: Path) -> StorageClient:
     return StorageClient(
         protocol="file",
         storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
+        base_url="http://localhost/cached-assets",
     )
 
 
@@ -31,7 +32,6 @@ async def test_create_response(storage_client: StorageClient) -> None:
         revision="revision",
         config="default",
         split="train",
-        cached_assets_base_url="http://localhost/cached-assets",
         storage_client=storage_client,
         pa_table=ds.data,
         offset=0,
@@ -60,7 +60,6 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
         revision="revision",
         config=config,
         split=split,
-        cached_assets_base_url="http://localhost/cached-assets",
         storage_client=storage_client,
         pa_table=ds_image.data,
         offset=0,

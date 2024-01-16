@@ -6,28 +6,21 @@ import validators  # type: ignore
 from datasets import Dataset
 from PIL import Image as PILImage  # type: ignore
 
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_asset_src
+from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_object_key
 
 ASSETS_FOLDER = "assets"
 ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 
 
 @pytest.fixture
-def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
-    storage_client = StorageClient(
-        protocol="file",
-        storage_root=str(tmp_path / ASSETS_FOLDER),
-    )
-    return PublicAssetsStorage(
-        assets_base_url=ASSETS_BASE_URL,
-        overwrite=False,
-        storage_client=storage_client,
+def storage_client(tmp_path: Path) -> StorageClient:
+    return StorageClient(
+        protocol="file", storage_root=str(tmp_path / ASSETS_FOLDER), base_url=ASSETS_BASE_URL, overwrite=False
     )
 
 
-def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storage: PublicAssetsStorage) -> None:
+def test_create_image_file(datasets: Mapping[str, Dataset], storage_client: StorageClient) -> None:
     dataset = datasets["image"]
     value = create_image_file(
         dataset="dataset",
@@ -39,7 +32,7 @@ def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storag
         filename="image.jpg",
         row_idx=7,
         format="JPEG",
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
     )
     image_key = "dataset/--/revision/--/config/split/7/col/image.jpg"
     assert value == {
@@ -47,16 +40,14 @@ def test_create_image_file(datasets: Mapping[str, Dataset], public_assets_storag
         "height": 480,
         "width": 640,
     }
-    assert public_assets_storage.storage_client.exists(image_key)
+    assert storage_client.exists(image_key)
 
-    image = PILImage.open(public_assets_storage.storage_client.get_full_path(image_key))
+    image = PILImage.open(storage_client.get_full_path(image_key))
     assert image is not None
 
 
 @pytest.mark.parametrize("audio_file_extension", [".wav", ""])  # also test audio files without extension
-def test_create_audio_file(
-    audio_file_extension: str, shared_datadir: Path, public_assets_storage: PublicAssetsStorage
-) -> None:
+def test_create_audio_file(audio_file_extension: str, shared_datadir: Path, storage_client: StorageClient) -> None:
     audio_file_bytes = (shared_datadir / "test_audio_44100.wav").read_bytes()
     value = create_audio_file(
         dataset="dataset",
@@ -68,7 +59,7 @@ def test_create_audio_file(
         audio_file_bytes=audio_file_bytes,
         column="col",
         filename="audio.wav",
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
     )
 
     audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
@@ -79,7 +70,7 @@ def test_create_audio_file(
         },
     ]
 
-    assert public_assets_storage.storage_client.exists(audio_key)
+    assert storage_client.exists(audio_key)
 
 
 @pytest.mark.parametrize(
@@ -89,11 +80,10 @@ def test_create_audio_file(
         ("dataset", "config?<script>alert('XSS');</script>&", "split", "column?"),
     ],
 )
-def test_generate_asset_src(dataset: str, config: str, split: str, column: str) -> None:
+def test_src_is_sanitized(dataset: str, config: str, split: str, column: str) -> None:
     base_url = "https://datasets-server.huggingface.co/assets"
     filename = "image.jpg"
-    _, src = generate_asset_src(
-        base_url=base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision="revision",
         config=config,
@@ -102,4 +92,5 @@ def test_generate_asset_src(dataset: str, config: str, split: str, column: str) 
         column=column,
         filename=filename,
     )
+    src = f"{base_url}/{object_key}"
     assert validators.url(src)

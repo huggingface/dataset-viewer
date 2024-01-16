@@ -13,7 +13,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
 from libcommon.utils import JobInfo, Row, RowItem
@@ -32,7 +31,7 @@ def transform_rows(
     split: str,
     rows: list[RowItem],
     features: Features,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> list[Row]:
     return [
         {
@@ -45,7 +44,7 @@ def transform_rows(
                 cell=row["row"][featureName] if featureName in row["row"] else None,
                 featureName=featureName,
                 fieldType=fieldType,
-                public_assets_storage=public_assets_storage,
+                storage_client=storage_client,
             )
             for (featureName, fieldType) in features.items()
         }
@@ -58,7 +57,7 @@ def compute_first_rows_response(
     revision: str,
     config: str,
     split: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
@@ -136,7 +135,7 @@ def compute_first_rows_response(
             split=split,
             rows=rows,
             features=features,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
         )
     except Exception as err:
         raise RowsPostProcessingError(
@@ -181,7 +180,6 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             app_config=app_config,
         )
         self.first_rows_config = app_config.first_rows
-        self.assets_base_url = app_config.assets.base_url
         self.parquet_metadata_directory = parquet_metadata_directory
         self.indexer = Indexer(
             hf_token=self.app_config.common.hf_token,
@@ -191,12 +189,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
             all_columns_supported_datasets_allow_list="all",
             max_arrow_data_in_memory=app_config.rows_index.max_arrow_data_in_memory,
         )
-
-        self.public_assets_storage = PublicAssetsStorage(
-            assets_base_url=self.assets_base_url,
-            overwrite=True,
-            storage_client=storage_client,
-        )
+        self.storage_client = storage_client
 
     def compute(self) -> CompleteJobResult:
         return CompleteJobResult(
@@ -205,7 +198,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 revision=self.dataset_git_revision,
                 config=self.config,
                 split=self.split,
-                public_assets_storage=self.public_assets_storage,
+                storage_client=self.storage_client,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_max_number=self.first_rows_config.max_number,
