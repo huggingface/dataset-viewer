@@ -64,6 +64,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
+        cloudfront_config=app_config.cloudfront,
     )
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
@@ -72,6 +73,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
+        # no need to specify cloudfront config here, as we are not generating signed urls for assets
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
