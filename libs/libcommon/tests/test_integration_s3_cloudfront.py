@@ -15,22 +15,22 @@ BUCKET = "hf-datasets-server-statics-test"
 
 def test_s3_access_key_id() -> None:
     s3_config = S3Config.from_env()
-    assert s3_config.access_key_id is not None, len(s3_config.access_key_id)
+    assert len(s3_config.access_key_id), len(s3_config.access_key_id)
 
 
 def test_s3_secret_access_key() -> None:
     s3_config = S3Config.from_env()
-    assert s3_config.secret_access_key is not None, len(s3_config.secret_access_key)
+    assert len(s3_config.secret_access_key), len(s3_config.secret_access_key)
 
 
 def test_cloudfront_key_pair_id() -> None:
     cloudfront_config = CloudFrontConfig.from_env()
-    assert cloudfront_config.key_pair_id is not None, len(cloudfront_config.key_pair_id)
+    assert len(cloudfront_config.key_pair_id), len(cloudfront_config.key_pair_id)
 
 
 def test_cloudfront_private_key() -> None:
     cloudfront_config = CloudFrontConfig.from_env()
-    assert cloudfront_config.private_key is not None, len(cloudfront_config.private_key)
+    assert len(cloudfront_config.private_key), len(cloudfront_config.private_key)
 
 
 def test_real_cloudfront() -> None:
