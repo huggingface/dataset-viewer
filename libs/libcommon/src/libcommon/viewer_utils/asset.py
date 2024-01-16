@@ -72,8 +72,11 @@ def create_image_file(
     object_key = f"{dir_path}/{filename}"
 
     if overwrite or not storage_client.exists(object_key=object_key):
+        buffer = BytesIO()
+        image.save(fp=buffer, format=format)
+        buffer.seek(0)
         with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
-            image.save(fp=f, format=format)
+            f.write(buffer.read())
     return ImageSource(src=src, height=image.height, width=image.width)
 
 
