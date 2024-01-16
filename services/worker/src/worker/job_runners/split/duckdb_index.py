@@ -35,6 +35,7 @@ from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
+from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
@@ -160,7 +161,8 @@ def compute_index_rows(
     # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     for parquet_file in parquet_file_names:
-        hf_hub_download(
+        retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
+        retry_download_hub_file(
             repo_type=REPO_TYPE,
             revision=target_revision,
             repo_id=dataset,
@@ -172,7 +174,6 @@ def compute_index_rows(
             force_download=True,
             resume_download=False,
         )
-
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 

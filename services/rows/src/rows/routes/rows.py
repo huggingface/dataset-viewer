@@ -37,7 +37,6 @@ ALL_COLUMNS_SUPPORTED_DATASETS_ALLOW_LIST: Union[Literal["all"], list[str]] = ["
 
 
 def create_rows_endpoint(
-    cached_assets_base_url: str,
     cached_assets_storage_client: StorageClient,
     parquet_metadata_directory: StrPath,
     max_arrow_data_in_memory: int,
@@ -104,7 +103,6 @@ def create_rows_endpoint(
                             revision=revision,
                             config=config,
                             split=split,
-                            cached_assets_base_url=cached_assets_base_url,
                             storage_client=cached_assets_storage_client,
                             pa_table=pa_table,
                             offset=offset,

@@ -17,7 +17,6 @@ from datasets import Audio, Dataset, Features, Image, Value
 from moto import mock_s3
 from urllib3.response import HTTPHeaderDict  # type: ignore
 
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import (
     get_cell_value,
@@ -30,15 +29,9 @@ ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
 
 
 @pytest.fixture
-def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
-    storage_client = StorageClient(
-        protocol="file",
-        storage_root=str(tmp_path / ASSETS_FOLDER),
-    )
-    return PublicAssetsStorage(
-        assets_base_url=ASSETS_BASE_URL,
-        overwrite=False,
-        storage_client=storage_client,
+def storage_client(tmp_path: Path) -> StorageClient:
+    return StorageClient(
+        protocol="file", storage_root=str(tmp_path / ASSETS_FOLDER), base_url=ASSETS_BASE_URL, overwrite=False
     )
 
 
@@ -82,7 +75,7 @@ def public_assets_storage(tmp_path: Path) -> PublicAssetsStorage:
     ],
 )
 def test_value(
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     dataset_type: str,
     output_value: Any,
     output_dtype: str,
@@ -101,24 +94,20 @@ def test_value(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
     )
     assert value == output_value
 
 
-def assert_output_has_valid_files(value: Any, public_assets_storage: PublicAssetsStorage) -> None:
+def assert_output_has_valid_files(value: Any, storage_client: StorageClient) -> None:
     if isinstance(value, list):
         for item in value:
-            assert_output_has_valid_files(item, public_assets_storage=public_assets_storage)
+            assert_output_has_valid_files(item, storage_client=storage_client)
     elif isinstance(value, dict):
-        if (
-            "src" in value
-            and isinstance(value["src"], str)
-            and value["src"].startswith(public_assets_storage.assets_base_url)
-        ):
+        if "src" in value and isinstance(value["src"], str) and value["src"].startswith(storage_client.base_url):
             path = Path(
-                public_assets_storage.storage_client.get_full_path(
-                    value["src"][len(public_assets_storage.assets_base_url) + 1 :],  # noqa: E203
+                storage_client.get_full_path(
+                    value["src"][len(storage_client.base_url) + 1 :],  # noqa: E203
                 )
             )
             assert os.path.exists(path)
@@ -331,7 +320,7 @@ def test_others(
     output_value: Any,
     output_type: Any,
     datasets: Mapping[str, Dataset],
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> None:
     dataset = datasets[dataset_type]
     feature = dataset.features["col"]
@@ -349,10 +338,10 @@ def test_others(
         cell=dataset[0]["col"],
         featureName="col",
         fieldType=feature,
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
     )
     assert value == output_value
-    assert_output_has_valid_files(output_value, public_assets_storage=public_assets_storage)
+    assert_output_has_valid_files(output_value, storage_client=storage_client)
     # encoded
     value = get_cell_value(
         dataset="dataset",
@@ -363,10 +352,10 @@ def test_others(
         cell=dataset.with_format("arrow")[0].to_pydict()["col"][0],
         featureName="col",
         fieldType=feature,
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
     )
     assert value == output_value
-    assert_output_has_valid_files(output_value, public_assets_storage=public_assets_storage)
+    assert_output_has_valid_files(output_value, storage_client=storage_client)
 
 
 def test_get_supported_unsupported_columns() -> None:
@@ -407,12 +396,9 @@ def test_ogg_audio_with_s3(
             storage_client = StorageClient(
                 protocol=s3_resource,
                 storage_root=f"{bucket_name}/{ASSETS_FOLDER}",
+                base_url=ASSETS_BASE_URL,
+                overwrite=True,
             )
-        public_assets_storage = PublicAssetsStorage(
-            assets_base_url=ASSETS_BASE_URL,
-            overwrite=True,
-            storage_client=storage_client,
-        )
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore
         # at https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L47
@@ -447,7 +433,7 @@ def test_ogg_audio_with_s3(
                 cell=dataset[0]["col"],
                 featureName="col",
                 fieldType=feature,
-                public_assets_storage=public_assets_storage,
+                storage_client=storage_client,
             )
             audio_key = "dataset/--/revision/--/config/split/7/col/audio.wav"
             assert value == [
@@ -463,10 +449,7 @@ def test_ogg_audio_with_s3(
     [("test_audio_44100.wav", ".wav"), ("test_audio_16000.mp3", ".mp3")],
 )
 def test_infer_audio_file_extension(
-    audio_file_name: str,
-    expected_audio_file_extension: str,
-    shared_datadir: Path,
-    public_assets_storage: PublicAssetsStorage,
+    audio_file_name: str, expected_audio_file_extension: str, shared_datadir: Path
 ) -> None:
     audio_file_bytes = (shared_datadir / audio_file_name).read_bytes()
     audio_file_extension = infer_audio_file_extension(audio_file_bytes)

@@ -2,7 +2,6 @@ import logging
 
 import pyarrow as pa
 from datasets import Features
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage_client import StorageClient
 from libcommon.utils import (
     MAX_NUM_ROWS_PER_PAGE,
@@ -20,7 +19,6 @@ async def create_response(
     revision: str,
     config: str,
     split: str,
-    cached_assets_base_url: str,
     storage_client: StorageClient,
     pa_table: pa.Table,
     offset: int,
@@ -35,11 +33,6 @@ async def create_response(
             "The pyarrow table contains unsupported columns. They should have been ignored in the row group reader."
         )
     logging.debug(f"create response for {dataset=} {config=} {split=}")
-    public_assets_storage = PublicAssetsStorage(
-        assets_base_url=cached_assets_base_url,
-        overwrite=False,
-        storage_client=storage_client,
-    )
     return {
         "features": to_features_list(features),
         "rows": await to_rows_list(
@@ -48,7 +41,7 @@ async def create_response(
             revision=revision,
             config=config,
             split=split,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
             offset=offset,
             features=features,
             unsupported_columns=unsupported_columns,

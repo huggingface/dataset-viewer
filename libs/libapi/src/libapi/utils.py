@@ -11,7 +11,6 @@ from datasets import Features
 from libcommon.exceptions import CustomError
 from libcommon.operations import update_dataset
 from libcommon.orchestrator import has_pending_ancestor_jobs
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response, has_some_cache
 from libcommon.storage_client import StorageClient
 from libcommon.utils import Priority, RowItem, orjson_dumps
@@ -185,7 +184,7 @@ async def to_rows_list(
     offset: int,
     features: Features,
     unsupported_columns: list[str],
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     row_idx_column: Optional[str] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
@@ -201,7 +200,7 @@ async def to_rows_list(
             split=split,
             rows=pa_table.to_pylist(),
             features=features,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
             offset=offset,
             row_idx_column=row_idx_column,
         )
