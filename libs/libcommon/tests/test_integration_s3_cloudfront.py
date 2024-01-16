@@ -13,26 +13,6 @@ from libcommon.storage_client import StorageClient
 BUCKET = "hf-datasets-server-statics-test"
 
 
-def test_s3_access_key_id() -> None:
-    s3_config = S3Config.from_env()
-    assert len(s3_config.access_key_id), len(s3_config.access_key_id)
-
-
-def test_s3_secret_access_key() -> None:
-    s3_config = S3Config.from_env()
-    assert len(s3_config.secret_access_key), len(s3_config.secret_access_key)
-
-
-def test_cloudfront_key_pair_id() -> None:
-    cloudfront_config = CloudFrontConfig.from_env()
-    assert len(cloudfront_config.key_pair_id), len(cloudfront_config.key_pair_id)
-
-
-def test_cloudfront_private_key() -> None:
-    cloudfront_config = CloudFrontConfig.from_env()
-    assert len(cloudfront_config.private_key), len(cloudfront_config.private_key)
-
-
 def test_real_cloudfront() -> None:
     # this test is not mocked, and will fail if the credentials are not valid
     # it requires the following environment variables to be set:
@@ -51,10 +31,10 @@ def test_real_cloudfront() -> None:
         storage_root=f"{BUCKET}/assets",
     )
     if (
-        (s3_config.access_key_id is None)
-        or (s3_config.secret_access_key is None)
-        or (cloudfront_config.key_pair_id is None)
-        or (cloudfront_config.private_key is None)
+        not s3_config.access_key_id
+        or not s3_config.secret_access_key
+        or not cloudfront_config.key_pair_id
+        or not cloudfront_config.private_key
     ):
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
