@@ -537,7 +537,7 @@ def compute_descriptive_statistics_response(
         if total_bytes > max_dataset_size_bytes:
             break
     partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
-    split_parquet_files = split_parquet_files[: parquet_file_id + 1]
+    split_parquet_files = split_parquet_files[: num_parquet_files_to_index]
 
     # store data as local parquet files for fast querying
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
