@@ -74,6 +74,25 @@ class CachedAssetsConfig:
             )
 
 
+CLOUD_FRONT_KEY_PAIR_ID = None
+CLOUD_FRONT_PRIVATE_KEY = None
+
+
+@dataclass(frozen=True)
+class CloudFrontConfig:
+    key_pair_id: Optional[str] = CLOUD_FRONT_KEY_PAIR_ID
+    private_key: Optional[str] = CLOUD_FRONT_PRIVATE_KEY
+
+    @classmethod
+    def from_env(cls) -> "CloudFrontConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("CLOUD_FRONT_"):
+            return cls(
+                key_pair_id=env.str(name="KEY_PAIR_ID", default=CLOUD_FRONT_KEY_PAIR_ID),
+                private_key=env.str(name="PRIVATE_KEY", default=CLOUD_FRONT_PRIVATE_KEY),
+            )
+
+
 PARQUET_METADATA_STORAGE_DIRECTORY = None
 
 
