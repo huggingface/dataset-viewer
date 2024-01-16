@@ -4,6 +4,7 @@
 
 from datetime import datetime
 
+import pytest
 import requests
 
 from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
@@ -35,8 +36,7 @@ def test_real_cloudfront() -> None:
         or not cloudfront_config.key_pair_id
         or not cloudfront_config.private_key
     ):
-        # we don't have the credentials, so we skip the test
-        return
+        pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
     storage_client = StorageClient(
         protocol=assets_config.storage_protocol,
