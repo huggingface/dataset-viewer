@@ -4,8 +4,8 @@
 
 from datetime import datetime
 
+import httpx
 import pytest
-import requests
 
 from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
@@ -76,7 +76,7 @@ def test_real_cloudfront() -> None:
     unsigned_url = storage_client.get_unsigned_url(path)
     assert unsigned_url == f"{assets_config.base_url}/{path}"
 
-    response = requests.get(unsigned_url)
+    response = httpx.get(unsigned_url)
     assert response.status_code == 403
 
     # can access the file through the signed url
@@ -84,7 +84,7 @@ def test_real_cloudfront() -> None:
     assert signed_url != f"{assets_config.base_url}/{path}"
     assert signed_url.startswith(f"{assets_config.base_url}/{path}")
 
-    response = requests.get(signed_url)
+    response = httpx.get(signed_url)
     assert response.status_code == 200
     assert response.text == "hello world"
 
@@ -92,7 +92,7 @@ def test_real_cloudfront() -> None:
     storage_client.delete_dataset_directory(dataset=DATASET)
     assert not storage_client.exists(DATASET)
     assert not storage_client.exists(path)
-    response = requests.get(signed_url)
+    response = httpx.get(signed_url)
 
     assert response.status_code == 200
     # ^ the file does not exist anymore, but it's still in the cache... we need to invalidate it
