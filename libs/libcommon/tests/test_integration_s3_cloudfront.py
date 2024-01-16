@@ -11,6 +11,7 @@ from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
 
 BUCKET = "hf-datasets-server-statics-test"
+CLOUDFRONT_KEY_PAIR_ID = "K3814DK2QUJ71H"
 
 
 def test_real_cloudfront() -> None:
@@ -18,11 +19,11 @@ def test_real_cloudfront() -> None:
     # it requires the following environment variables to be set:
     # - S3_ACCESS_KEY_ID
     # - S3_SECRET_ACCESS_KEY
-    # - CLOUDFRONT_KEY_PAIR_ID
     # - CLOUDFRONT_PRIVATE_KEY
     # To run it locally, set the environment variables in .env and run:
     #     set -a && source .env && set +a && make test
     cloudfront_config = CloudFrontConfig.from_env()
+    cloudfront_config.key_pair_id = CLOUDFRONT_KEY_PAIR_ID
     s3_config = S3Config.from_env()
     assets_config = AssetsConfig(
         base_url="https://datasets-server-test.us.dev.moon.huggingface.tech/assets",
@@ -30,12 +31,7 @@ def test_real_cloudfront() -> None:
         storage_protocol="s3",
         storage_root=f"{BUCKET}/assets",
     )
-    if (
-        not s3_config.access_key_id
-        or not s3_config.secret_access_key
-        or not cloudfront_config.key_pair_id
-        or not cloudfront_config.private_key
-    ):
+    if not s3_config.access_key_id or not s3_config.secret_access_key or not cloudfront_config.private_key:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
     storage_client = StorageClient(

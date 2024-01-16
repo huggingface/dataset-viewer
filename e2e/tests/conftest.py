@@ -3,6 +3,7 @@
 
 import csv
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from pytest import TempPathFactory
@@ -30,4 +31,30 @@ def csv_path(tmp_path_factory: TempPathFactory) -> str:
 @pytest.fixture(scope="session")
 def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/csv_data.csv": csv_path}) as dataset:
+        yield dataset
+
+
+@pytest.fixture(scope="session")
+def normal_user_images_public_dataset() -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={
+            "1.jpg": str(Path(__file__).resolve().parent / "data" / "1.jpg"),
+            "2.jpg": str(Path(__file__).resolve().parent / "data" / "2.jpg"),
+        },
+    ) as dataset:
+        yield dataset
+
+
+@pytest.fixture(scope="session")
+def normal_user_audios_public_dataset() -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER,
+        token=NORMAL_USER_TOKEN,
+        files={
+            "1.wav": str(Path(__file__).resolve().parent / "data" / "1.wav"),
+            "2.wav": str(Path(__file__).resolve().parent / "data" / "2.wav"),
+        },
+    ) as dataset:
         yield dataset

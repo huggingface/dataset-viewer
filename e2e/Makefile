@@ -27,6 +27,8 @@ export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1
 export WORKER_UVICORN_NUM_WORKERS := 2
 export WORKER_UVICORN_PORT := 9086
+export ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/assets
+export CACHED_ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 export ADMIN_HF_ORGANIZATION := valid_org

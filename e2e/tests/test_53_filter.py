@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2023 The HuggingFace Authors.
+
 import pytest
 
 from .utils import get_default_config_split, poll_until_ready_and_assert
