@@ -13,6 +13,26 @@ from libcommon.storage_client import StorageClient
 BUCKET = "hf-datasets-server-statics-test"
 
 
+def test_s3_access_key_id() -> None:
+    s3_config = S3Config.from_env()
+    assert s3_config.access_key_id is not None, len(s3_config.access_key_id)
+
+
+def test_s3_secret_access_key() -> None:
+    s3_config = S3Config.from_env()
+    assert s3_config.secret_access_key is not None, len(s3_config.secret_access_key)
+
+
+def test_cloudfront_key_pair_id() -> None:
+    cloudfront_config = CloudFrontConfig.from_env()
+    assert cloudfront_config.key_pair_id is not None, len(cloudfront_config.key_pair_id)
+
+
+def test_cloudfront_private_key() -> None:
+    cloudfront_config = CloudFrontConfig.from_env()
+    assert cloudfront_config.private_key is not None, len(cloudfront_config.private_key)
+
+
 def test_real_cloudfront() -> None:
     # this test is not mocked, and will fail if the credentials are not valid
     # it requires the following environment variables to be set:
