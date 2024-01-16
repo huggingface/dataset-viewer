@@ -14,7 +14,7 @@ BUCKET = "hf-datasets-server-statics-test"
 CLOUDFRONT_KEY_PAIR_ID = "K3814DK2QUJ71H"
 
 
-def test_real_cloudfront() -> None:
+def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
     # this test is not mocked, and will fail if the credentials are not valid
     # it requires the following environment variables to be set:
     # - S3_ACCESS_KEY_ID
@@ -22,8 +22,8 @@ def test_real_cloudfront() -> None:
     # - CLOUDFRONT_PRIVATE_KEY
     # To run it locally, set the environment variables in .env and run:
     #     set -a && source .env && set +a && make test
+    monkeypatch.setenv("CLOUDFRONT_KEY_PAIR_ID", CLOUDFRONT_KEY_PAIR_ID)
     cloudfront_config = CloudFrontConfig.from_env()
-    cloudfront_config.key_pair_id = CLOUDFRONT_KEY_PAIR_ID
     s3_config = S3Config.from_env()
     assets_config = AssetsConfig(
         base_url="https://datasets-server-test.us.dev.moon.huggingface.tech/assets",
