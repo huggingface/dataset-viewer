@@ -12,7 +12,6 @@ import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.utils import (
-    get_datetime_string,
     get_expires,
     inputs_to_string,
     is_image_url,
@@ -91,11 +90,6 @@ def test_orjson_dumps() -> None:
 # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
 EXAMPLE_DATETIME = datetime(2013, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
 EXAMPLE_DATETIME_MINUS_ONE_HOUR = datetime(2013, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
-EXAMPLE_SECONDS = "1357034400"
-
-
-def test_get_datetime_string() -> None:
-    assert get_datetime_string(EXAMPLE_DATETIME) == EXAMPLE_SECONDS
 
 
 def test_get_expires() -> None:
@@ -103,8 +97,8 @@ def test_get_expires() -> None:
     with patch("libcommon.utils.datetime") as mock_datetime:
         mock_datetime.now.return_value = EXAMPLE_DATETIME_MINUS_ONE_HOUR
         # ^ 1 hour before the example date
-        date = get_expires(60)
+        date = get_expires(seconds=3600)
         # check tests
         assert date > mock_datetime.now(timezone.utc)
         assert date < mock_datetime.now(timezone.utc) + timedelta(hours=2)
-    assert get_datetime_string(date) == EXAMPLE_SECONDS
+    assert date == EXAMPLE_DATETIME
