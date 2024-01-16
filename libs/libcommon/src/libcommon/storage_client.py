@@ -80,7 +80,10 @@ class StorageClient:
         return bool(self._fs.exists(self.get_full_path(path)))
 
     def get_url(self, path: str) -> str:
-        return self.sign_url_if_available(f"{self.base_url}/{path}")
+        return self.sign_url_if_available(self.get_unsigned_url(path))
+
+    def get_unsigned_url(self, path: str) -> str:
+        return f"{self.base_url}/{path}"
 
     def sign_url_if_available(self, url: str) -> str:
         if self.cloudfront:
