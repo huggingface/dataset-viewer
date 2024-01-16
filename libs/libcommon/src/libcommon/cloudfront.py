@@ -32,10 +32,14 @@ class CloudFront:
         """
         pk = serialization.load_pem_private_key(private_key.encode("utf8"), password=None, backend=default_backend())
         p = padding.PKCS1v15()
-        h = hashes.SHA1()
+        h = hashes.SHA1()  # nosec
+        # ^ bandit raises a warning:
+        #     https://bandit.readthedocs.io/en/1.7.5/blacklists/blacklist_calls.html#b303-md5
+        #   but CloudFront mandates SHA1
 
-        def rsa_signer(message):
-            return pk.sign(message, p, h)
+        def rsa_signer(message: bytes) -> bytes:
+            return pk.sign(message, p, h)  # type: ignore
+            # ^ ignoring mypy type errors (the setup should work, as long as the private key is RSA)
 
         self._expiration_seconds = expiration_seconds
         self._signer = CloudFrontSigner(key_pair_id, rsa_signer)
@@ -52,7 +56,8 @@ class CloudFront:
         Returns:
             :obj:`str`: The signed url
         """
-        return self._signer.generate_presigned_url(url, date_less_than=date_less_than)
+        return self._signer.generate_presigned_url(url, date_less_than=date_less_than)  # type: ignore
+        # ^ ignoring mypy type error, it should return a string
 
     def sign_url(self, url: str) -> str:
         """

@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import fsspec
+
+from libcommon.cloudfront import CloudFront
+from libcommon.config import CloudFrontConfig
 
 
 class StorageClientInitializeError(Exception):
@@ -19,6 +22,7 @@ class StorageClient:
         storage_root (:obj:`str`): The storage root path
         base_url (:obj:`str`): The base url for the publicly distributed assets
         overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
+        cloudfront_config (:obj:`CloudFrontConfig`, `optional`): The CloudFront configuration to generate signed urls
     """
 
     _fs: Any
@@ -26,9 +30,16 @@ class StorageClient:
     storage_root: str
     base_url: str
     overwrite: bool
+    cloudfront: Optional[CloudFront] = None
 
     def __init__(
-        self, protocol: str, storage_root: str, base_url: str, overwrite: bool = False, **kwargs: Any
+        self,
+        protocol: str,
+        storage_root: str,
+        base_url: str,
+        overwrite: bool = False,
+        cloudfront_config: Optional[CloudFrontConfig] = None,
+        **kwargs: Any,
     ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=}")
         self.storage_root = storage_root
@@ -37,6 +48,13 @@ class StorageClient:
         self.overwrite = overwrite
         if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
+            if cloudfront_config and cloudfront_config.key_pair_id and cloudfront_config.private_key:
+                # ^ signed urls are enabled if the key pair id is passed in the configuration
+                self.cloudfront = CloudFront(
+                    key_pair_id=cloudfront_config.key_pair_id,
+                    private_key=cloudfront_config.private_key,
+                    expiration_seconds=cloudfront_config.expiration_seconds,
+                )
         elif protocol == "file":
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
         else:
@@ -62,7 +80,12 @@ class StorageClient:
         return bool(self._fs.exists(self.get_full_path(path)))
 
     def get_url(self, path: str) -> str:
-        return f"{self.base_url}/{path}"
+        return self.sign_url_if_available(f"{self.base_url}/{path}")
+
+    def sign_url_if_available(self, url: str) -> str:
+        if self.cloudfront:
+            url = self.cloudfront.sign_url(url=url)
+        return url
 
     def delete_dataset_directory(self, dataset: str) -> None:
         dataset_key = self.get_full_path(dataset)
@@ -73,4 +96,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), cloudfront={self.cloudfront})"

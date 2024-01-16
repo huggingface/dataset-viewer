@@ -23,8 +23,10 @@ Set the cached-assets (images and audio files) environment variables to configur
 Set the CloudFront environment variables to configure the following aspects:
 
 - `CLOUDFRONT_EXPIRATION_SECONDS`: CloudFront expiration delay in seconds. Defaults to `3600`.
-- `CLOUDFRONT_KEY_PAIR_ID`: CloudFront key pair ID. Defaults to empty. If set, the private key must also be set, and all the URLs created by StorageClient will be signed.
+- `CLOUDFRONT_KEY_PAIR_ID`: CloudFront key pair ID. Defaults to empty.
 - `CLOUDFRONT_PRIVATE_KEY`: CloudFront private key in PEM format. Defaults to empty.
+
+To enable signed URLs on the StorageClient, `CLOUDFRONT_KEY_PAIR_ID` and `CLOUDFRONT_PRIVATE_KEY` must be set, and the StorageClient protocol must be `s3`.
 
 ## Common configuration
 

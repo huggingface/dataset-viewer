@@ -7,7 +7,6 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-cryptography = "^41.0.7"
 environs = "^9.5.0"
 httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
