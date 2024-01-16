@@ -473,7 +473,7 @@ def compute_descriptive_statistics_response(
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
         max_dataset_size_bytes (`int`):
-            The maximum size in bytes of the dataset's parquet files to compute statistics.
+            The approximate maximum size in bytes of the dataset's parquet files to compute statistics.
             For partial datasets that means that only data up to this size is counted.
 
     Returns:
