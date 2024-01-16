@@ -51,10 +51,10 @@ def test_real_cloudfront() -> None:
         storage_root=f"{BUCKET}/assets",
     )
     if (
-        not s3_config.access_key_id
-        or not s3_config.secret_access_key
-        or not cloudfront_config.key_pair_id
-        or not cloudfront_config.private_key
+        (s3_config.access_key_id is None)
+        or (s3_config.secret_access_key is None)
+        or (cloudfront_config.key_pair_id is None)
+        or (cloudfront_config.private_key is None)
     ):
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
