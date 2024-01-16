@@ -28,7 +28,11 @@ from worker.utils import get_parquet_file
 
 
 def create_parquet_metadata_file_from_remote_parquet(
-    parquet_file_item: SplitHubFile, fs: HTTPFileSystem, hf_token: Optional[str], parquet_metadata_directory: StrPath
+    parquet_file_item: SplitHubFile,
+    fs: HTTPFileSystem,
+    hf_token: Optional[str],
+    parquet_metadata_directory: StrPath,
+    revision: str,
 ) -> ParquetFileMetadataItem:
     try:
         parquet_file = get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
@@ -36,6 +40,7 @@ def create_parquet_metadata_file_from_remote_parquet(
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
     parquet_metadata_subpath = create_parquet_metadata_file(
         dataset=parquet_file_item["dataset"],
+        revision=revision,
         config=parquet_file_item["config"],
         split=parquet_file_item["split"],
         parquet_file_metadata=parquet_file.metadata,
@@ -100,6 +105,7 @@ def compute_parquet_metadata_response(
             # (July 23) we can remove this later and raise an error instead (can be None for backward compatibility)
             features = None
         partial = config_parquet_best_response.response["content"]["partial"]
+        revision = config_parquet_best_response.response["dataset_git_revision"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 
@@ -111,6 +117,7 @@ def compute_parquet_metadata_response(
             fs=fs,
             hf_token=hf_token,
             parquet_metadata_directory=parquet_metadata_directory,
+            revision=revision,
         ),
         parquet_file_items,
         desc=desc,

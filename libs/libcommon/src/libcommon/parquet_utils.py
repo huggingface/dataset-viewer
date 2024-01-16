@@ -82,6 +82,11 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
     return split_directory_name_for_parquet_export.startswith(PARTIAL_PREFIX)
 
 
+@lru_cache(maxsize=4)  # avoid reading from disk again when possible to reduce EFS costs
+def parquet_read_metadata(metadata_path: str) -> pq.FileMetaData:
+    return pq.read_metadata(metadata_path)
+
+
 @dataclass
 class RowGroupReader:
     parquet_file: pq.ParquetFile
@@ -165,7 +170,7 @@ class ParquetIndexWithMetadata:
                         cache_type=None,
                         **self.httpfs.kwargs,
                     ),
-                    metadata=pq.read_metadata(metadata_path),
+                    metadata=parquet_read_metadata(metadata_path),
                     pre_buffer=True,
                 )
                 for url, metadata_path, size in zip(urls, metadata_paths, num_bytes)
