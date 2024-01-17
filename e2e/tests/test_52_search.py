@@ -67,14 +67,11 @@ def test_search_images_endpoint(normal_user_images_public_dataset: str) -> None:
     dataset = normal_user_images_public_dataset
     config, split = get_default_config_split()
     query = "yellow"
-    poll_until_ready_and_assert(
-        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
-        dataset=dataset,
-    )
-    # ^ not sure if it's required. I had 404 errors without it
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/search?dataset={dataset}&config={config}&split={split}&query={query}",
         dataset=dataset,
+        should_retry_x_error_codes=["ResponseNotFound"],
+        # ^ I had 404 errors without it. It should return something else at one point.
     )
     content = rows_response.json()
     # ensure the URL is signed
@@ -91,14 +88,11 @@ def test_search_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     dataset = normal_user_audios_public_dataset
     config, split = get_default_config_split()
     query = "small"
-    poll_until_ready_and_assert(
-        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
-        dataset=dataset,
-    )
-    # ^ not sure if it's required. I had 404 errors without it
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/search?dataset={dataset}&config={config}&split={split}&query={query}",
         dataset=dataset,
+        should_retry_x_error_codes=["ResponseNotFound"],
+        # ^ I had 404 errors without it. It should return something else at one point.
     )
     content = rows_response.json()
     # ensure the URL is signed
