@@ -398,7 +398,6 @@ def test_ogg_audio_with_s3(
                 storage_root=f"{bucket_name}/{ASSETS_FOLDER}",
                 base_url=ASSETS_BASE_URL,
                 overwrite=True,
-                # TODO: pass cloudfront config
             )
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore
