@@ -90,7 +90,7 @@ def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, nor
     assert len(content["rows"]) == expected_num_rows
 
 
-def test_search_images_endpoint(normal_user_images_public_dataset: str) -> None:
+def test_filter_images_endpoint(normal_user_images_public_dataset: str) -> None:
     dataset = normal_user_images_public_dataset
     config, split = get_default_config_split()
     where = "rating=3"
