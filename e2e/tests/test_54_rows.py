@@ -47,12 +47,13 @@ def test_rows_endpoint(normal_user_public_dataset: str) -> None:
 def test_rows_images_endpoint(normal_user_images_public_dataset: str) -> None:
     dataset = normal_user_images_public_dataset
     config, split = get_default_config_split()
-    # ensure the /rows endpoint works as well
-    offset = 1
-    length = 10
+    poll_until_ready_and_assert(
+        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
+        dataset=dataset,
+    )
+    # ^ not sure if it's required. I had 404 errors without it
     rows_response = poll_until_ready_and_assert(
-        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
-        check_x_revision=True,
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}",
         dataset=dataset,
     )
     content = rows_response.json()
@@ -62,19 +63,20 @@ def test_rows_images_endpoint(normal_user_images_public_dataset: str) -> None:
     assert "&Signature=" in url, url
     assert "&Key-Pair-Id=" in url, url
     # ensure the URL is valid
-    response = poll(url)
+    response = poll(url, url="")
     assert response.status_code == 200, response
 
 
 def test_rows_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     dataset = normal_user_audios_public_dataset
     config, split = get_default_config_split()
-    # ensure the /rows endpoint works as well
-    offset = 1
-    length = 10
+    poll_until_ready_and_assert(
+        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
+        dataset=dataset,
+    )
+    # ^ not sure if it's required. I had 404 errors without it
     rows_response = poll_until_ready_and_assert(
-        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
-        check_x_revision=True,
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}",
         dataset=dataset,
     )
     content = rows_response.json()
@@ -84,5 +86,5 @@ def test_rows_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     assert "&Signature=" in url, url
     assert "&Key-Pair-Id=" in url, url
     # ensure the URL is valid
-    response = poll(url)
+    response = poll(url, url="")
     assert response.status_code == 200, response

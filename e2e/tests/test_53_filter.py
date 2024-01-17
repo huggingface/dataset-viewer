@@ -3,7 +3,7 @@
 
 import pytest
 
-from .utils import get_default_config_split, poll_until_ready_and_assert
+from .utils import get_default_config_split, poll, poll_until_ready_and_assert
 
 
 def test_filter_endpoint(normal_user_public_dataset: str) -> None:
@@ -88,3 +88,51 @@ def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, nor
     content = response.json()
     assert "rows" in content, response
     assert len(content["rows"]) == expected_num_rows
+
+
+def test_search_images_endpoint(normal_user_images_public_dataset: str) -> None:
+    dataset = normal_user_images_public_dataset
+    config, split = get_default_config_split()
+    where = "rating=3"
+    poll_until_ready_and_assert(
+        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
+        dataset=dataset,
+    )
+    # ^ not sure if it's required. I had 404 errors without it
+    rows_response = poll_until_ready_and_assert(
+        relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
+        dataset=dataset,
+    )
+    content = rows_response.json()
+    # ensure the URL is signed
+    url = content["rows"][0]["row"]["image"]["src"]
+    assert "image.jpg?Expires=" in url, url
+    assert "&Signature=" in url, url
+    assert "&Key-Pair-Id=" in url, url
+    # ensure the URL is valid
+    response = poll(url, url="")
+    assert response.status_code == 200, response
+
+
+def test_search_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
+    dataset = normal_user_audios_public_dataset
+    config, split = get_default_config_split()
+    where = "age=3"
+    poll_until_ready_and_assert(
+        relative_url=f"/parquet?dataset={dataset}&config={config}&split={split}",
+        dataset=dataset,
+    )
+    # ^ not sure if it's required. I had 404 errors without it
+    rows_response = poll_until_ready_and_assert(
+        relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
+        dataset=dataset,
+    )
+    content = rows_response.json()
+    # ensure the URL is signed
+    url = content["rows"][0]["row"]["audio"][0]["src"]
+    assert "audio.wav?Expires=" in url, url
+    assert "&Signature=" in url, url
+    assert "&Key-Pair-Id=" in url, url
+    # ensure the URL is valid
+    response = poll(url, url="")
+    assert response.status_code == 200, response

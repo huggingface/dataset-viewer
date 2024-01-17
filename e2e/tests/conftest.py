@@ -40,8 +40,9 @@ def normal_user_images_public_dataset() -> Iterator[str]:
         namespace=NORMAL_USER,
         token=NORMAL_USER_TOKEN,
         files={
-            "1.jpg": str(Path(__file__).resolve().parent / "data" / "1.jpg"),
-            "2.jpg": str(Path(__file__).resolve().parent / "data" / "2.jpg"),
+            "1.jpg": str(Path(__file__).resolve().parent / "data" / "images" / "1.jpg"),
+            "2.jpg": str(Path(__file__).resolve().parent / "data" / "images" / "2.jpg"),
+            "metadata.csv": str(Path(__file__).resolve().parent / "data" / "images" / "metadata.csv"),
         },
     ) as dataset:
         yield dataset
@@ -53,8 +54,9 @@ def normal_user_audios_public_dataset() -> Iterator[str]:
         namespace=NORMAL_USER,
         token=NORMAL_USER_TOKEN,
         files={
-            "1.wav": str(Path(__file__).resolve().parent / "data" / "1.wav"),
-            "2.wav": str(Path(__file__).resolve().parent / "data" / "2.wav"),
+            "1.wav": str(Path(__file__).resolve().parent / "data" / "audios" / "1.wav"),
+            "2.wav": str(Path(__file__).resolve().parent / "data" / "audios" / "2.wav"),
+            "metadata.csv": str(Path(__file__).resolve().parent / "data" / "audios" / "metadata.csv"),
         },
     ) as dataset:
         yield dataset

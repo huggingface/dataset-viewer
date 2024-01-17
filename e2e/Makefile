@@ -27,14 +27,25 @@ export PROMETHEUS_MULTIPROC_DIR := /tmp
 export WORKER_SLEEP_SECONDS := 1
 export WORKER_UVICORN_NUM_WORKERS := 2
 export WORKER_UVICORN_PORT := 9086
-export ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/assets
-export CACHED_ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 export ADMIN_HF_ORGANIZATION := valid_org
 export E2E_ADMIN_USER_TOKEN := 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
 
 export COMPOSE_PROJECT_NAME := e2e
+
+# set the secret environment variables by your own (ie. in a .env file, and source it):
+export ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/assets
+export ASSETS_STORAGE_PROTOCOL := s3
+export ASSETS_STORAGE_ROOT := hf-datasets-server-statics-test/assets
+export CACHED_ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets
+export CACHED_ASSETS_STORAGE_PROTOCOL := s3
+export CACHED_ASSETS_STORAGE_ROOT := hf-datasets-server-statics-test/cached-assets
+export CLOUDFRONT_KEY_PAIR_ID := K3814DK2QUJ71H
+# CLOUDFRONT_PRIVATE_KEY <- secret
+export S3_REGION_NAME := us-east-1
+# S3_ACCESS_KEY_ID       <- secret
+# S3_SECRET_ACCESS_KEY   <- secret
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml

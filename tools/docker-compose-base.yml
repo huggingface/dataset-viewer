@@ -19,6 +19,22 @@ services:
       # metrics
       METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://mongodb:${MONGO_PORT:-27017}} # use mongo container by default (with custom port)
       METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
+      # assets
+      ASSETS_BASE_URL: ${ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/assets
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
+      # cached assets
+      CACHED_ASSETS_BASE_URL: ${CACHED_ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
+      # S3
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY-}
+      S3_REGION_NAME: ${S3_REGION_NAME-us-east-1}
+      # cloudfront (for signed URLs)
+      CLOUDFRONT_EXPIRATION_SECONDS: ${CLOUDFRONT_EXPIRATION_SECONDS-3600}
+      CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID-}
+      CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY-}
   libapi:
     extends: libcommon
     environment:

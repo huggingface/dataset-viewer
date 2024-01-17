@@ -9,8 +9,8 @@ from typing import Optional
 from environs import Env
 
 ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_STORAGE_ROOT = "/storage/assets"
 ASSETS_STORAGE_PROTOCOL = "file"
+ASSETS_STORAGE_ROOT = "/storage/assets"
 
 
 @dataclass(frozen=True)
@@ -53,8 +53,8 @@ class S3Config:
 
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 CACHED_ASSETS_STORAGE_PROTOCOL = "file"
+CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 
 
 @dataclass(frozen=True)
