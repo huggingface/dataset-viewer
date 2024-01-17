@@ -28,7 +28,7 @@ class CloudFront:
         Args:
             key_pair_id (:obj:`str`): The cloudfront key pair id, eg. "K2JCJMDEHXQW5F"
             private_key (:obj:`str`): The cloudfront private key, in PEM format
-            expiration_seconds (:obj:`int`): The number of minutes the signed url will be valid for
+            expiration_seconds (:obj:`int`): The number of seconds the signed url will be valid for
         """
         pk = serialization.load_pem_private_key(private_key.encode("utf8"), password=None, backend=default_backend())
         p = padding.PKCS1v15()
