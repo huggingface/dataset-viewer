@@ -111,7 +111,7 @@ def test_filter_images_endpoint(normal_user_images_public_dataset: str) -> None:
     assert response.status_code == 200, response
 
 
-def test_search_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
+def test_filter_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     dataset = normal_user_audios_public_dataset
     config, split = get_default_config_split()
     where = "age=3"
