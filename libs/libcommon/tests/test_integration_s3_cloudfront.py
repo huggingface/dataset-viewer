@@ -78,7 +78,9 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
     # can access the file through the signed url
     signed_url = storage_client.get_url(path)
     assert signed_url != f"{assets_config.base_url}/{path}"
-    assert signed_url.startswith(f"{assets_config.base_url}/{path}")
+    assert signed_url.startswith(f"{assets_config.base_url}/{path}?Expires=")
+    assert "&Signature=" in signed_url
+    assert signed_url.endswith(f"&Key-Pair-Id={CLOUDFRONT_KEY_PAIR_ID}")
 
     response = httpx.get(signed_url)
     assert response.status_code == 200
