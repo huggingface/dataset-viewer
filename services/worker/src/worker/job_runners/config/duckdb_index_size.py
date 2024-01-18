@@ -7,7 +7,6 @@ from http import HTTPStatus
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
-    get_previous_step_or_raise,
     get_response,
 )
 
@@ -18,6 +17,7 @@ from worker.dtos import (
     SplitDuckdbIndexSize,
 )
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import get_split_names
 
 
 def compute_config_duckdb_index_size_response(dataset: str, config: str) -> ConfigDuckdbIndexSizeResponse:
@@ -38,22 +38,11 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
           If the content of the previous step has not the expected format
     """
     logging.info(f"get duckdb_index_size for dataset={dataset}, config={config}")
-
-    split_names_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"],
-        dataset=dataset,
-        config=config,
-    )
-    content = split_names_response.response["content"]
-    if "splits" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
-
     try:
         total = 0
         split_duckdb_index_sizes: list[SplitDuckdbIndexSize] = []
         partial = False
-        for split_item in content["splits"]:
-            split = split_item["split"]
+        for split in get_split_names(dataset=dataset, config=config):
             total += 1
             try:
                 duckdb_index_response = get_response(

@@ -4,6 +4,7 @@
 import copy
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -44,6 +45,7 @@ from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
+    get_split_names,
     hf_hub_url,
     retry,
 )
@@ -78,6 +80,29 @@ def get_indexable_columns(features: Features) -> list[str]:
         if indexable:
             indexable_columns.append(column)
     return indexable_columns
+
+
+def get_delete_operations(
+    all_repo_files: set[str], split_names: set[str], config: str, index_file_location: str
+) -> list[CommitOperationDelete]:
+    only_config_files: set[str] = {
+        file for file in all_repo_files if re.compile(f"^({re.escape(config)})/").match(file)
+    }
+    pattern_only_config_splits_files = re.compile(
+        f"^({'|'.join(re.escape(f'{config}/{split_name}') for split_name in split_names)})/"
+    )
+
+    # delete old files from non existent splits
+    files_to_ignore: set[str] = {
+        file
+        for file in only_config_files
+        # ignore existing files in all current splits
+        if pattern_only_config_splits_files.match(file)
+        # but not the old index in split
+        and file != index_file_location
+    }
+    files_to_delete = only_config_files - files_to_ignore
+    return [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
 
 
 def compute_index_rows(
@@ -225,9 +250,12 @@ def compute_index_rows(
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
-            delete_operations: list[CommitOperation] = []
-            if index_file_location in all_repo_files:
-                delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+            delete_operations = get_delete_operations(
+                all_repo_files=all_repo_files,
+                split_names=get_split_names(dataset=dataset, config=config),
+                config=config,
+                index_file_location=index_file_location,
+            )
             logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision
