@@ -28,7 +28,7 @@ def assert_unchanged(dataset: str, kind: str) -> None:
 
 def test_cache_add_partial(mongo_host: str) -> None:
     kind = "split-descriptive-statistics"
-    with MongoResource(database="test_cache_add_has_fts", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(database="test_cache_add_partial", host=mongo_host, mongoengine_alias="cache"):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
         cache: list[dict[str, Any]] = [
             {
