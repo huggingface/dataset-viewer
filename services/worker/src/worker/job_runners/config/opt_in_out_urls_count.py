@@ -24,10 +24,11 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[Op
     num_urls = 0
     num_scanned_rows = 0
     full_scan_count = 0
+    splits = get_split_names(dataset=dataset, config=config)
     try:
         total = 0
         pending = 0
-        for split in get_split_names(dataset=dataset, config=config):
+        for split in splits:
             total += 1
             try:
                 response = get_response(

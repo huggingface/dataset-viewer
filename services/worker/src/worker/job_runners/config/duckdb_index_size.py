@@ -38,11 +38,12 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
           If the content of the previous step has not the expected format
     """
     logging.info(f"get duckdb_index_size for dataset={dataset}, config={config}")
+    splits = get_split_names(dataset=dataset, config=config)
     try:
         total = 0
         split_duckdb_index_sizes: list[SplitDuckdbIndexSize] = []
         partial = False
-        for split in get_split_names(dataset=dataset, config=config):
+        for split in splits:
             total += 1
             try:
                 duckdb_index_response = get_response(
