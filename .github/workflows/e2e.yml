@@ -35,3 +35,4 @@ jobs:
       working-directory: e2e
   e2e-tests:
     uses: ./.github/workflows/_e2e_tests.yml
+    secrets: inherit
