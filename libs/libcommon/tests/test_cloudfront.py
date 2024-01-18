@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from libcommon.cloudfront import CloudFront
+from libcommon.cloudfront import CloudFront, InvalidPrivateKeyError
 
 # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
 EXAMPLE_DATETIME = datetime(2013, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
@@ -66,6 +66,6 @@ def test_cloudfront_sign_url() -> None:
 
 def test_cloudfront_invalid_key() -> None:
     INVALID_PRIVATE_KEY = "not a RSA private key"
-    with pytest.raises(ValueError, match="Could not deserialize key data."):
+    with pytest.raises(InvalidPrivateKeyError):
         # from cryptography/hazmat/backends/openssl/backend.py
         CloudFront(key_pair_id=KEY_PAIR_ID, private_key=INVALID_PRIVATE_KEY, expiration_seconds=1)

@@ -2,13 +2,27 @@
 # Copyright 2024 The HuggingFace Authors.
 
 import datetime
+from functools import partial
 
 from botocore.signers import CloudFrontSigner
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.hashes import SHA1
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from libcommon.utils import get_expires
+
+
+class InvalidPrivateKeyError(ValueError):
+    pass
+
+
+padding = PKCS1v15()
+algorithm = SHA1()  # nosec
+# ^ bandit raises a warning:
+#     https://bandit.readthedocs.io/en/1.7.5/blacklists/blacklist_calls.html#b303-md5
+#   but CloudFront mandates SHA1
 
 
 class CloudFront:
@@ -30,19 +44,15 @@ class CloudFront:
             private_key (:obj:`str`): The cloudfront private key, in PEM format
             expiration_seconds (:obj:`int`): The number of seconds the signed url will be valid for
         """
-        pk = serialization.load_pem_private_key(private_key.encode("utf8"), password=None, backend=default_backend())
-        p = padding.PKCS1v15()
-        h = hashes.SHA1()  # nosec
-        # ^ bandit raises a warning:
-        #     https://bandit.readthedocs.io/en/1.7.5/blacklists/blacklist_calls.html#b303-md5
-        #   but CloudFront mandates SHA1
-
-        def rsa_signer(message: bytes) -> bytes:
-            return pk.sign(message, p, h)  # type: ignore
-            # ^ ignoring mypy type errors (the setup should work, as long as the private key is RSA)
+        try:
+            pk = load_pem_private_key(private_key.encode("utf8"), password=None, backend=default_backend())
+        except ValueError as e:
+            raise InvalidPrivateKeyError("Invalid private key") from e
+        if not isinstance(pk, RSAPrivateKey):
+            raise InvalidPrivateKeyError("Expected an RSA private key")
 
         self._expiration_seconds = expiration_seconds
-        self._signer = CloudFrontSigner(key_pair_id, rsa_signer)
+        self._signer = CloudFrontSigner(key_pair_id, partial(pk.sign, padding=padding, algorithm=algorithm))
 
     def _sign_url(self, url: str, date_less_than: datetime.datetime) -> str:
         """
