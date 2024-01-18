@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-{{- define "envS3" -}}
+{{- define "envCloudfront" -}}
 - name: CLOUDFRONT_EXPIRATION_SECONDS
   value: {{ .Values.cloudfront.expirationSeconds | quote }}
 - name: CLOUDFRONT_KEY_PAIR_ID
