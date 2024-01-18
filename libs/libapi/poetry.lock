@@ -1138,6 +1138,7 @@ develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
+cryptography = "^41.0.7"
 datasets = {version = "^2.16.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.20.1"

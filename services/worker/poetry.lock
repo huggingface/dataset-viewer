@@ -920,7 +920,7 @@ files = [
 name = "cryptography"
 version = "41.0.7"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1923,6 +1923,7 @@ develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
+cryptography = "^41.0.7"
 datasets = {version = "^2.16.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.20.1"
