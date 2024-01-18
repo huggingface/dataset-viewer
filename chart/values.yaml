@@ -133,6 +133,13 @@ secrets:
     secretAccessKey:
       fromSecret: true
       secretName: "aws-secret-access-key"
+  cloudfront:
+    keyPairId:
+      fromSecret: false
+      value: ""
+    privateKey:
+      fromSecret: false
+      value: ""
 
 uid: 1000
 gid: 3000
