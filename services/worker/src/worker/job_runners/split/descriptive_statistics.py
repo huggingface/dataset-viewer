@@ -22,11 +22,13 @@ from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import JobInfo
+from requests.exceptions import ReadTimeout
 from tqdm import tqdm
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
+from worker.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
 
 REPO_TYPE = "dataset"
 
@@ -545,7 +547,8 @@ def compute_descriptive_statistics_response(
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
     for parquet_file in split_parquet_files:
-        hf_hub_download(
+        retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
+        retry_download_hub_file(
             repo_type=REPO_TYPE,
             revision=parquet_revision,
             repo_id=dataset,

@@ -17,16 +17,24 @@ class StorageClient:
     Args:
         protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
         storage_root (:obj:`str`): The storage root path
+        base_url (:obj:`str`): The base url for the publicly distributed assets
+        overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
     """
 
     _fs: Any
     protocol: str
     storage_root: str
+    base_url: str
+    overwrite: bool
 
-    def __init__(self, protocol: str, storage_root: str, **kwargs: Any) -> None:
+    def __init__(
+        self, protocol: str, storage_root: str, base_url: str, overwrite: bool = False, **kwargs: Any
+    ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=}")
         self.storage_root = storage_root
         self.protocol = protocol
+        self.base_url = base_url
+        self.overwrite = overwrite
         if protocol == "s3":
             self._fs = fsspec.filesystem(protocol, **kwargs)
         elif protocol == "file":
@@ -47,11 +55,14 @@ class StorageClient:
         except FileNotFoundError:
             self._fs.mkdir(path)
 
-    def get_full_path(self, relative_path: str) -> str:
-        return f"{self.storage_root}/{relative_path}"
+    def get_full_path(self, path: str) -> str:
+        return f"{self.storage_root}/{path}"
 
-    def exists(self, object_key: str) -> bool:
-        return bool(self._fs.exists(self.get_full_path(object_key)))
+    def exists(self, path: str) -> bool:
+        return bool(self._fs.exists(self.get_full_path(path)))
+
+    def get_url(self, path: str) -> str:
+        return f"{self.base_url}/{path}"
 
     def delete_dataset_directory(self, dataset: str) -> None:
         dataset_key = self.get_full_path(dataset)
@@ -62,4 +73,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite})"

@@ -53,6 +53,8 @@ def test_create_job_runner(
     storage_client = StorageClient(
         protocol="file",
         storage_root=str(tmp_path / "assets"),
+        base_url=app_config.assets.base_url,
+        overwrite=True,  # all the job runners will overwrite the files
     )
     factory = JobRunnerFactory(
         app_config=app_config,
