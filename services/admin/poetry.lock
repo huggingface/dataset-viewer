@@ -1118,7 +1118,6 @@ files = []
 develop = true
 
 [package.dependencies]
-cryptography = "^41.0.7"
 environs = "^9.5.0"
 httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
@@ -1143,6 +1142,7 @@ develop = true
 
 [package.dependencies]
 appdirs = "^1.4.4"
+cryptography = "^41.0.7"
 datasets = {version = "^2.16.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.20.1"
