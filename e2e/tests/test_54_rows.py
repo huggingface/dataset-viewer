@@ -1,59 +1,40 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2023 The HuggingFace Authors.
+# Copyright 2024 The HuggingFace Authors.
 
 from .utils import get_default_config_split, poll, poll_until_ready_and_assert
 
 
-def test_search_endpoint(normal_user_public_dataset: str) -> None:
+def test_rows_endpoint(normal_user_public_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
-    # ensure the /search endpoint works as well
+    # ensure the /rows endpoint works as well
     offset = 1
-    length = 2
-    query = "Lord Vader"
-    search_response = poll_until_ready_and_assert(
-        relative_url=(
-            f"/search?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&query={query}"
-        ),
+    length = 10
+    rows_response = poll_until_ready_and_assert(
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
         check_x_revision=True,
         dataset=dataset,
     )
-    content = search_response.json()
-    assert "rows" in content, search_response
-    assert "features" in content, search_response
-    assert "num_rows_total" in content, search_response
-    assert "num_rows_per_page" in content, search_response
+    content = rows_response.json()
+    assert "rows" in content, rows_response
+    assert "features" in content, rows_response
     rows = content["rows"]
     features = content["features"]
-    num_rows_total = content["num_rows_total"]
-    num_rows_per_page = content["num_rows_per_page"]
     assert isinstance(rows, list), rows
     assert isinstance(features, list), features
-    assert num_rows_total == 3
-    assert num_rows_per_page == 100
+    assert len(rows) == 3, rows
     assert rows[0] == {
-        "row_idx": 2,
+        "row_idx": 1,
         "row": {
-            "col_1": "We count thirty Rebel ships, Lord Vader.",
-            "col_2": 2,
-            "col_3": 2.0,
-            "col_4": "A",
-            "col_5": True,
+            "col_1": "Vader turns round and round in circles as his ship spins into space.",
+            "col_2": 1,
+            "col_3": 1.0,
+            "col_4": "B",
+            "col_5": False,
         },
         "truncated_cells": [],
     }, rows[0]
-    assert rows[1] == {
-        "row_idx": 3,
-        "row": {
-            "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
-            "col_2": 3,
-            "col_3": 3.0,
-            "col_4": "B",
-            "col_5": None,
-        },
-        "truncated_cells": [],
-    }, rows[1]
     assert features == [
         {"feature_idx": 0, "name": "col_1", "type": {"dtype": "string", "_type": "Value"}},
         {"feature_idx": 1, "name": "col_2", "type": {"dtype": "int64", "_type": "Value"}},
@@ -63,12 +44,11 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
     ], features
 
 
-def test_search_images_endpoint(normal_user_images_public_dataset: str) -> None:
+def test_rows_images_endpoint(normal_user_images_public_dataset: str) -> None:
     dataset = normal_user_images_public_dataset
     config, split = get_default_config_split()
-    query = "yellow"
     rows_response = poll_until_ready_and_assert(
-        relative_url=f"/search?dataset={dataset}&config={config}&split={split}&query={query}",
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}",
         dataset=dataset,
         should_retry_x_error_codes=["ResponseNotFound"],
         # ^ I had 404 errors without it. It should return something else at one point.
@@ -84,12 +64,11 @@ def test_search_images_endpoint(normal_user_images_public_dataset: str) -> None:
     assert response.status_code == 200, response
 
 
-def test_search_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
+def test_rows_audios_endpoint(normal_user_audios_public_dataset: str) -> None:
     dataset = normal_user_audios_public_dataset
     config, split = get_default_config_split()
-    query = "small"
     rows_response = poll_until_ready_and_assert(
-        relative_url=f"/search?dataset={dataset}&config={config}&split={split}&query={query}",
+        relative_url=f"/rows?dataset={dataset}&config={config}&split={split}",
         dataset=dataset,
         should_retry_x_error_codes=["ResponseNotFound"],
         # ^ I had 404 errors without it. It should return something else at one point.

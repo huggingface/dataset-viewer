@@ -40,6 +40,7 @@ if __name__ == "__main__":
         key=app_config.s3.access_key_id,
         secret=app_config.s3.secret_access_key,
         client_kwargs={"region_name": app_config.s3.region_name},
+        # no need to specify cloudfront config here, as we are not generating signed urls in cached entries
     )
 
     with (

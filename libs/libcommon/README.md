@@ -18,6 +18,16 @@ Set the cached-assets (images and audio files) environment variables to configur
 - `CACHED_ASSETS_STORAGE_PROTOCOL`: fsspec protocol for storage, it can take values `file` or `s3`. Defaults to `file`, which means local file system is used.
 - `CACHED_ASSETS_STORAGE_ROOT`: name of the folder where cached assets are stored. If using `s3` protocol, the first part of the path is the bucket name. Defaults to `/storage/cached-assets`.
 
+## CloudFront configuration
+
+Set the CloudFront environment variables to configure the following aspects:
+
+- `CLOUDFRONT_EXPIRATION_SECONDS`: CloudFront expiration delay in seconds. Defaults to `3600`.
+- `CLOUDFRONT_KEY_PAIR_ID`: CloudFront key pair ID. Defaults to empty.
+- `CLOUDFRONT_PRIVATE_KEY`: CloudFront private key in PEM format. Defaults to empty.
+
+To enable signed URLs on the StorageClient, `CLOUDFRONT_KEY_PAIR_ID` and `CLOUDFRONT_PRIVATE_KEY` must be set, and the StorageClient protocol must be `s3`.
+
 ## Common configuration
 
 Set the common environment variables to configure the following aspects:

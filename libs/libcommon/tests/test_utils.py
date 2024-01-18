@@ -2,14 +2,22 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from contextlib import nullcontext as does_not_raise
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
-from libcommon.utils import inputs_to_string, is_image_url, orjson_dumps, raise_if_blocked
+from libcommon.utils import (
+    get_expires,
+    inputs_to_string,
+    is_image_url,
+    orjson_dumps,
+    raise_if_blocked,
+)
 
 
 @pytest.mark.parametrize(
@@ -77,3 +85,20 @@ def test_orjson_dumps() -> None:
     }
     serialized_obj = orjson_dumps(obj)
     assert serialized_obj is not None
+
+
+# see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
+EXAMPLE_DATETIME = datetime(2013, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+EXAMPLE_DATETIME_MINUS_ONE_HOUR = datetime(2013, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
+
+
+def test_get_expires() -> None:
+    # see https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
+    with patch("libcommon.utils.datetime") as mock_datetime:
+        mock_datetime.now.return_value = EXAMPLE_DATETIME_MINUS_ONE_HOUR
+        # ^ 1 hour before the example date
+        date = get_expires(seconds=3600)
+        # check tests
+        assert date > mock_datetime.now(timezone.utc)
+        assert date < mock_datetime.now(timezone.utc) + timedelta(hours=2)
+    assert date == EXAMPLE_DATETIME

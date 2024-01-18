@@ -8,6 +8,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CachedAssetsConfig,
+    CloudFrontConfig,
     CommonConfig,
     LogConfig,
     ParquetMetadataConfig,
@@ -23,6 +24,7 @@ class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
+    cloudfront: CloudFrontConfig = field(default_factory=CloudFrontConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -38,6 +40,7 @@ class AppConfig:
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
+            cloudfront=CloudFrontConfig.from_env(),
             common=common_config,
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

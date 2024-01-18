@@ -54,6 +54,7 @@ def run_job() -> None:
                 key=job_config.s3.access_key_id,
                 secret=job_config.s3.secret_access_key,
                 client_kwargs={"region_name": job_config.s3.region_name},
+                # no need to specify cloudfront config here, as we are not generating signed urls
             )
             assets_storage_client = StorageClient(
                 protocol=job_config.assets.storage_protocol,
@@ -62,6 +63,7 @@ def run_job() -> None:
                 key=job_config.s3.access_key_id,
                 secret=job_config.s3.secret_access_key,
                 client_kwargs={"region_name": job_config.s3.region_name},
+                # no need to specify cloudfront config here, as we are not generating signed urls
             )
             backfill_cache(
                 hf_endpoint=job_config.common.hf_endpoint,

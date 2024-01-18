@@ -9,8 +9,8 @@ from typing import Optional
 from environs import Env
 
 ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_STORAGE_ROOT = "/storage/assets"
 ASSETS_STORAGE_PROTOCOL = "file"
+ASSETS_STORAGE_ROOT = "/storage/assets"
 
 
 @dataclass(frozen=True)
@@ -53,8 +53,8 @@ class S3Config:
 
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 CACHED_ASSETS_STORAGE_PROTOCOL = "file"
+CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 
 
 @dataclass(frozen=True)
@@ -71,6 +71,28 @@ class CachedAssetsConfig:
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
                 storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
+            )
+
+
+CLOUDFRONT_EXPIRATION_SECONDS = 60 * 60 * 24
+CLOUDFRONT_KEY_PAIR_ID = None
+CLOUDFRONT_PRIVATE_KEY = None
+
+
+@dataclass(frozen=True)
+class CloudFrontConfig:
+    expiration_seconds: int = CLOUDFRONT_EXPIRATION_SECONDS
+    key_pair_id: Optional[str] = CLOUDFRONT_KEY_PAIR_ID
+    private_key: Optional[str] = CLOUDFRONT_PRIVATE_KEY
+
+    @classmethod
+    def from_env(cls) -> "CloudFrontConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("CLOUDFRONT_"):
+            return cls(
+                expiration_seconds=env.int(name="EXPIRATION_SECONDS", default=CLOUDFRONT_EXPIRATION_SECONDS),
+                key_pair_id=env.str(name="KEY_PAIR_ID", default=CLOUDFRONT_KEY_PAIR_ID),
+                private_key=env.str(name="PRIVATE_KEY", default=CLOUDFRONT_PRIVATE_KEY),
             )
 
 

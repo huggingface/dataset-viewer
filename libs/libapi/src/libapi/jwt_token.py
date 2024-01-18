@@ -102,7 +102,7 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("utf-8")
-    # ^ we assume that the key contain UTF-8 encoded bytes, which is why we use type ignore for mypy
+    # ^ we assume that the key contains UTF-8 encoded bytes, which is why we use type ignore for mypy
 
 
 def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> str:
