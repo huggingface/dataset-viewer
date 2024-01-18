@@ -247,6 +247,10 @@ configNames:
 s3:
   regionName: "us-east-1"
 
+cloudfront:
+  # CloudFront expiration delay in seconds, for the signed URLs
+  expirationSeconds: 3600
+
 assets:
   # base URL for the assets files. It should be set accordingly to the datasets-server domain, eg https://datasets-server.huggingface.co/assets
   # baseUrl: "not used for now"
