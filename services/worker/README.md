@@ -105,7 +105,6 @@ Set environment variables to configure the `descriptive-statistics` worker (`DES
 - `DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES`: size in bytes by which the number of first `n` parquet files to compute statistics over is determined, satisfies the following condition: `sum(parquet_files[0] + ... + parquet_files[n-1]) <= DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES & sum(parquet_files[0] + ... + parquet_files[n]) > DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES`. Defaults to `100_000_000`.
 - `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`: number of histogram bins (see examples below for more info).
 - `DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES`: maximum size in bytes of the dataset's parquet files to compute statistics. Datasets with bigger size are ignored. Defaults to `100_000_000`.
-variable
 #### How descriptive statistics are computed 
 
 Descriptive statistics are currently computed for the following data types: strings, floats, and ints (including `ClassLabel` int). 
