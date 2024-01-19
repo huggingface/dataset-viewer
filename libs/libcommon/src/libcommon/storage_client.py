@@ -63,15 +63,11 @@ class StorageClient:
 
     def _validate(self) -> None:
         try:
-            self._check_or_create(self.storage_root)
+            self._fs.ls(self.storage_root)
+        except FileNotFoundError:
+            self._fs.mkdir(self.storage_root)
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
-
-    def _check_or_create(self, path: str) -> None:
-        try:
-            self._fs.ls(path)
-        except FileNotFoundError:
-            self._fs.mkdir(path)
 
     def get_full_path(self, path: str) -> str:
         return f"{self.storage_root}/{path}"
