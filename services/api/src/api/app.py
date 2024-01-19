@@ -7,6 +7,7 @@ from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
+from libcommon.cloudfront import get_url_signer
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -60,7 +61,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         storage_root=app_config.cached_assets.storage_root,
         base_url=app_config.cached_assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
 
     assets_storage_client = StorageClient(
@@ -68,7 +69,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls (YET - see  /first-rows)
+        # no need to specify a url_signer
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 

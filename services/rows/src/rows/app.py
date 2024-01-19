@@ -7,6 +7,7 @@ from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
+from libcommon.cloudfront import get_url_signer
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import exists, init_parquet_metadata_dir
@@ -57,19 +58,20 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
     cache_resource = CacheMongoResource(database=app_config.cache.mongo_database, host=app_config.cache.mongo_url)
     queue_resource = QueueMongoResource(database=app_config.queue.mongo_database, host=app_config.queue.mongo_url)
 
+    url_signer = get_url_signer(cloudfront_config=app_config.cloudfront)
     cached_assets_storage_client = StorageClient(
         protocol=app_config.cached_assets.storage_protocol,
         storage_root=app_config.cached_assets.storage_root,
         base_url=app_config.cached_assets.base_url,
         s3_config=app_config.s3,
-        cloudfront_config=app_config.cloudfront,
+        url_signer=url_signer,
     )
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls for assets
+        # no need to specify a url_signer
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
