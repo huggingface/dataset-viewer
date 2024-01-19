@@ -83,17 +83,14 @@ def get_indexable_columns(features: Features) -> list[str]:
 
 
 def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
-    only_config_files: set[str] = {
-        file for file in all_repo_files if re.compile(f"^({re.escape(config)})/").match(file)
-    }
-    pattern_only_config_splits_files = re.compile(
+    same_config_pattern = re.compile(f"^({re.escape(config)})/")
+    existing_split_pattern = re.compile(
         f"^({'|'.join(re.escape(f'{config}/{split_name}') for split_name in split_names)})/"
     )
-
     return [
         CommitOperationDelete(path_in_repo=file)
-        for file in only_config_files
-        if not pattern_only_config_splits_files.match(file)
+        for file in all_repo_files
+        if same_config_pattern.match(file) and not existing_split_pattern.match(file)
     ]
 
 
