@@ -9,6 +9,7 @@ from libcommon.config import (
     AssetsConfig,
     CacheConfig,
     CachedAssetsConfig,
+    CloudFrontConfig,
     CommonConfig,
     LogConfig,
     QueueConfig,
@@ -23,6 +24,7 @@ class AppConfig:
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
+    cloudfront: CloudFrontConfig = field(default_factory=CloudFrontConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     log: LogConfig = field(default_factory=LogConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -36,6 +38,7 @@ class AppConfig:
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
+            cloudfront=CloudFrontConfig.from_env(),
             log=LogConfig.from_env(),
             queue=QueueConfig.from_env(),
             api=ApiConfig.from_env(hf_endpoint=common_config.hf_endpoint),
@@ -89,6 +92,7 @@ class EndpointConfig:
             "/statistics": {"split": ["split-descriptive-statistics"]},
         }
     )
+    endpoints_with_assets_urls: list[str] = field(default_factory=lambda: ["/first-rows"])
 
     @classmethod
     def from_env(cls) -> "EndpointConfig":

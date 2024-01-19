@@ -8,7 +8,6 @@ def test_rows_endpoint(normal_user_public_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
-    # ensure the /rows endpoint works as well
     offset = 1
     length = 10
     rows_response = poll_until_ready_and_assert(

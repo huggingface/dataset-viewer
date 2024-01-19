@@ -99,6 +99,7 @@ def create_endpoint(
     steps_by_input_type: StepsByInputType,
     hf_endpoint: str,
     blocked_datasets: list[str],
+    assets_storage_client: StorageClient,
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -107,6 +108,7 @@ def create_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    contains_assets_urls: bool = False,
 ) -> Endpoint:
     async def processing_step_endpoint(request: Request) -> Response:
         context = f"endpoint: {endpoint_name}"
@@ -164,6 +166,9 @@ def create_endpoint(
                 error_code = result["error_code"]
                 revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
+                    if contains_assets_urls:
+                        with StepProfiler(method="processing_step_endpoint", step="sign assets urls", context=context):
+                            content = assets_storage_client.sign_urls_in_obj(content)
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 

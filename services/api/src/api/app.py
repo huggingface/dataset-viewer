@@ -7,6 +7,7 @@ from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
+from libcommon.cloudfront import get_url_signer
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -63,12 +64,13 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         # no need to specify a url_signer
     )
 
+    url_signer = get_url_signer(cloudfront_config=app_config.cloudfront)
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify a url_signer
+        url_signer=url_signer,
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
@@ -89,6 +91,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
+                assets_storage_client=assets_storage_client,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,
@@ -96,6 +99,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                contains_assets_urls=endpoint_name in endpoint_config.endpoints_with_assets_urls,
             ),
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
