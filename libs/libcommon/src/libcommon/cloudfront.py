@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
-from libcommon.config import CloudfrontConfig
+from libcommon.config import CloudFrontConfig
 from libcommon.utils import get_expires
 
 
@@ -93,7 +93,7 @@ class CloudFront(URLSigner):
         return self._sign_url(url=url, date_less_than=date_less_than)
 
 
-def get_url_signer(cloudfront_config: CloudfrontConfig) -> Optional[URLSigner]:
+def get_url_signer(cloudfront_config: CloudFrontConfig) -> Optional[URLSigner]:
     return (
         CloudFront(
             key_pair_id=cloudfront_config.key_pair_id,
