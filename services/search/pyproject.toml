@@ -7,13 +7,13 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
+duckdb = "^0.9.3.dev2934"
 environs = "^9.5.0"
 jsonschema = "^4.17.0"
 libapi = {path = "../../libs/libapi", develop = true}
 soundfile = ">=0.12.1"
 uvicorn = "^0.20.0"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
-duckdb = "^0.9.3.dev2934"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

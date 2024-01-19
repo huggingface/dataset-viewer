@@ -620,7 +620,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names-from-streaming",
             "config-parquet-metadata",
         ],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
     },
