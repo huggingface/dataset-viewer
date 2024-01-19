@@ -82,9 +82,7 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_delete_operations(
-    all_repo_files: set[str], split_names: set[str], config: str, index_file_location: str
-) -> list[CommitOperationDelete]:
+def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
     only_config_files: set[str] = {
         file for file in all_repo_files if re.compile(f"^({re.escape(config)})/").match(file)
     }
@@ -92,16 +90,11 @@ def get_delete_operations(
         f"^({'|'.join(re.escape(f'{config}/{split_name}') for split_name in split_names)})/"
     )
 
-    # delete old files from non existent splits
-    files_to_delete: set[str] = {
-        file
+    return [
+        CommitOperationDelete(path_in_repo=file)
         for file in only_config_files
-        # delete the obsolete index in the current split
-        if file == index_file_location
-        # and files from unknown splits
-        or not pattern_only_config_splits_files.match(file)
-    }
-    return [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
+        if not pattern_only_config_splits_files.match(file)
+    ]
 
 
 def compute_index_rows(
@@ -253,7 +246,6 @@ def compute_index_rows(
                 all_repo_files=all_repo_files,
                 split_names=get_split_names(dataset=dataset, config=config),
                 config=config,
-                index_file_location=index_file_location,
             )
             logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
