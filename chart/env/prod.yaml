@@ -115,10 +115,10 @@ secrets:
   cloudfront:
     keyPairId:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: "datasets-server-prod-secrets"
     privateKey:
       fromSecret: true
-      secretName: "datasets-server-staging-secrets"
+      secretName: "datasets-server-prod-secrets"
 
 persistence:
   descriptiveStatistics:
