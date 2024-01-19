@@ -6,7 +6,7 @@ from typing import Any, Optional
 import fsspec
 
 from libcommon.cloudfront import CloudFront
-from libcommon.config import CloudFrontConfig
+from libcommon.config import CloudFrontConfig, S3Config
 
 
 class StorageClientInitializeError(Exception):
@@ -18,10 +18,11 @@ class StorageClient:
     A resource that represents a connection to a storage client.
 
     Args:
-        protocol (:obj:`str`): The fsspec protocol (supported s3 or file)
+        protocol (:obj:`str`): The fsspec protocol (supported: "file" or "s3")
         storage_root (:obj:`str`): The storage root path
         base_url (:obj:`str`): The base url for the publicly distributed assets
         overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
+        s3_config (:obj:`S3Config`, `optional`): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
         cloudfront_config (:obj:`CloudFrontConfig`, `optional`): The CloudFront configuration to generate signed urls
     """
 
@@ -38,8 +39,8 @@ class StorageClient:
         storage_root: str,
         base_url: str,
         overwrite: bool = False,
+        s3_config: Optional[S3Config] = None,
         cloudfront_config: Optional[CloudFrontConfig] = None,
-        **kwargs: Any,
     ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=} {base_url=} {overwrite=}")
         self.storage_root = storage_root
@@ -47,7 +48,14 @@ class StorageClient:
         self.base_url = base_url
         self.overwrite = overwrite
         if protocol == "s3":
-            self._fs = fsspec.filesystem(protocol, **kwargs)
+            if not s3_config:
+                raise StorageClientInitializeError("s3 config is required")
+            self._fs = fsspec.filesystem(
+                protocol,
+                key=s3_config.access_key_id,
+                secret=s3_config.secret_access_key,
+                client_kwargs={"region_name": s3_config.region_name},
+            )
             if cloudfront_config and cloudfront_config.key_pair_id and cloudfront_config.private_key:
                 # ^ signed urls are enabled if the key pair id is passed in the configuration
                 self.cloudfront = CloudFront(
@@ -63,15 +71,11 @@ class StorageClient:
 
     def _validate(self) -> None:
         try:
-            self._check_or_create(self.storage_root)
+            self._fs.ls(self.storage_root)
+        except FileNotFoundError:
+            self._fs.mkdir(self.storage_root)
         except Exception as e:
             raise StorageClientInitializeError("error when trying to initialize client", e)
-
-    def _check_or_create(self, path: str) -> None:
-        try:
-            self._fs.ls(path)
-        except FileNotFoundError:
-            self._fs.mkdir(path)
 
     def get_full_path(self, path: str) -> str:
         return f"{self.storage_root}/{path}"
