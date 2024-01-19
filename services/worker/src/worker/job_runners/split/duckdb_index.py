@@ -93,15 +93,14 @@ def get_delete_operations(
     )
 
     # delete old files from non existent splits
-    files_to_ignore: set[str] = {
+    files_to_delete: set[str] = {
         file
         for file in only_config_files
-        # ignore existing files in all current splits
-        if pattern_only_config_splits_files.match(file)
-        # but not the old index in split
-        and file != index_file_location
+        # delete the obsolete index in the current split
+        if file == index_file_location
+        # and files from unknown splits
+        or not pattern_only_config_splits_files.match(file)
     }
-    files_to_delete = only_config_files - files_to_ignore
     return [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
 
 
