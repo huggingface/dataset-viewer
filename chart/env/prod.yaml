@@ -85,6 +85,8 @@ secrets:
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-prod-datasets-server-jwt-additional-public-keys"
       AWS_ACCESS_KEY_ID: "hub-prod-datasets-server-s3-access-key-id"
       AWS_SECRET_ACCESS_KEY: "hub-prod-datasets-server-s3-secret-access-key"
+      CLOUDFRONT_KEY_PAIR_ID: "hub-prod-datasets-server-cloudfront-key-id"
+      CLOUDFRONT_PRIVATE_KEY: "hub-prod-datasets-server-cloudfront-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-prod-secrets"
@@ -112,11 +114,11 @@ secrets:
       secretName: "datasets-server-prod-secrets"
   cloudfront:
     keyPairId:
-      fromSecret: false
-      value: ""
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
     privateKey:
-      fromSecret: false
-      value: ""
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
 
 persistence:
   descriptiveStatistics:
