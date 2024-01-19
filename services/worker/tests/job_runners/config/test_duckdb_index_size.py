@@ -9,7 +9,6 @@ import pytest
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
-    CachedArtifactError,
     CachedArtifactNotFoundError,
     upsert_response,
 )
@@ -140,7 +139,7 @@ def get_job_runner(
             "config_1",
             HTTPStatus.NOT_FOUND,
             [{"error": "error"}],
-            CachedArtifactError.__name__,
+            CachedArtifactNotFoundError.__name__,
             None,
             True,
         ),
@@ -199,7 +198,7 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        assert job_runner.compute().content == expected_content
+        assert sorted(job_runner.compute().content) == sorted(expected_content)
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:

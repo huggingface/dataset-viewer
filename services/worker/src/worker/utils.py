@@ -20,7 +20,7 @@ from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -384,6 +384,23 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
     if split not in [split_item["split"] for split_item in splits_content]:
         raise SplitNotFoundError(f"Split '{split}' does not exist for the config '{config}' of the dataset.")
+
+
+def get_split_names(dataset: str, config: str) -> set[str]:
+    split_names_best_response = get_previous_step_or_raise(
+        kinds=CONFIG_SPLIT_NAMES_KINDS, dataset=dataset, config=config
+    )
+
+    split_names_content = split_names_best_response.response["content"]
+    if "splits" not in split_names_content:
+        raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
+
+    if not isinstance(split_names_content["splits"], list):
+        raise PreviousStepFormatError(
+            "Previous step did not return the expected content.",
+            TypeError(f"'splits' should be a list, but got {type(split_names_content['splits'])}"),
+        )
+    return {split_name_item["split"] for split_name_item in split_names_content["splits"]}
 
 
 def is_dataset_script_error() -> bool:
