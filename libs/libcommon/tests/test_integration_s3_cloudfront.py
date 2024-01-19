@@ -40,9 +40,7 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         base_url=assets_config.base_url,
         overwrite=True,
         cloudfront_config=cloudfront_config,
-        key=s3_config.access_key_id,
-        secret=s3_config.secret_access_key,
-        client_kwargs={"region_name": s3_config.region_name},
+        s3_config=s3_config,
     )
     DATASET = datetime.now().strftime("%Y%m%d-%H%M%S")
     # ^ we could delete them, or simply set a TTL in the bucket
