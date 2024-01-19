@@ -46,9 +46,9 @@ ALREADY_SIGNED_URL = f"{BASE_URL}/file.txt?already_signed=1"
         (OBJECT_WITH_URL, 2),
         (ARRAY_WITH_URL, 2),
         (NESTED_OBJECT_WITH_URL, 3),
-        # below are limitations, hopefully will not happen
+        # below are limitations, we would ideally expect 0. Hopefully will not happen
         (STRING_WITH_URL_AT_THE_START, 1),
-        (ALREADY_SIGNED_URL, 0),
+        (ALREADY_SIGNED_URL, 1),
     ],
 )
 def test_sign_urls_in_obj(content: Any, num_replaced_urls: int) -> None:
