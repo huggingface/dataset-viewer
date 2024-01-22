@@ -2,8 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+from dataclasses import dataclass
 from time import sleep
-from typing import Literal, Optional, TypedDict
+from typing import Literal, Optional
 from urllib import parse
 
 from huggingface_hub import HfApi
@@ -14,14 +15,16 @@ PARQUET_CACHE_KIND = "config-parquet"
 DAYS = 1
 
 
-class ParquetCounters(TypedDict):
-    datasets: int
-    new_discussions: int
-    dismissed_discussions: int
-    errors: int
+@dataclass
+class ParquetCounters:
+    datasets: int = 0
+    new_discussions: int = 0
+    dismissed_discussions: int = 0
+    errors: int = 0
 
 
-class Counters(TypedDict):
+@dataclass
+class Counters:
     parquet: ParquetCounters
 
 
@@ -57,24 +60,19 @@ def post_messages_on_parquet_conversion(
 
     logging.info(f"Creating discussions for {len(datasets)} datasets")
     log_batch = 100
-    counters: ParquetCounters = {
-        "datasets": 0,
-        "new_discussions": 0,
-        "dismissed_discussions": 0,
-        "errors": 0,
-    }
+    counters = ParquetCounters()
 
     def get_log() -> str:
         return (
-            f" {counters['new_discussions']} discussions have been opened. A total of"
-            f" {len(datasets)} datasets were selected, but {counters['dismissed_discussions']} datasets"
-            f" already had a discussion (open or closed). {counters['errors']} errors."
+            f" [{counters.datasets}/{len(datasets)}] {counters.new_discussions} discussions"
+            f" have been opened, {counters.dismissed_discussions} datasets"
+            f" already had a discussion (open or closed). {counters.errors} errors."
         )
 
     hf_api = HfApi(endpoint=hf_endpoint, token=bot_token)
 
     for dataset in datasets:
-        counters["datasets"] += 1
+        counters.datasets += 1
         try:
             bot_discussions = [
                 discussion
@@ -85,7 +83,7 @@ def post_messages_on_parquet_conversion(
             ]
 
             if bot_discussions:
-                counters["dismissed_discussions"] += 1
+                counters.dismissed_discussions += 1
                 continue
             else:
                 hf_api.create_discussion(
@@ -102,14 +100,14 @@ def post_messages_on_parquet_conversion(
                 )
                 sleep(1)
                 # ^ see https://github.com/huggingface/moon-landing/issues/7729 (internal)
-                counters["new_discussions"] += 1
+                counters.new_discussions += 1
 
         except Exception as e:
-            logging.warning(f"Failed to post a message for {dataset}: {e}")
-            counters["errors"] += 1
+            logging.warning(f"Failed to process dataset {dataset}: {e}")
+            counters.errors += 1
 
         logging.debug(get_log())
-        if (counters["datasets"]) % log_batch == 0:
+        if (counters.datasets) % log_batch == 0:
             logging.info(get_log())
 
     logging.info(get_log())
