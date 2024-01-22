@@ -91,21 +91,6 @@ class StorageClient:
             logging.debug(f"signed url: {url}")
         return url
 
-    def sign_urls_in_obj(self, obj: Any) -> Any:
-        if not self.url_signer:
-            logging.debug("url_signer is not configured, object is left unchanged")
-            return obj
-        if isinstance(obj, dict):
-            return {k: self.sign_urls_in_obj(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self.sign_urls_in_obj(v) for v in obj]
-        elif isinstance(obj, tuple):
-            return tuple(self.sign_urls_in_obj(v) for v in obj)
-        elif isinstance(obj, str) and obj.startswith(self.base_url + "/"):
-            return self.url_signer.sign_url(url=obj)
-        else:
-            return obj
-
     def delete_dataset_directory(self, dataset: str) -> None:
         dataset_key = self.get_full_path(dataset)
         try:

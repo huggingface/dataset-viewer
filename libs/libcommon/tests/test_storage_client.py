@@ -7,7 +7,6 @@ from typing import Any
 import pytest
 
 from libcommon.cloudfront import URLSigner
-from libcommon.storage_client import StorageClient
 
 BASE_URL = "https://baseurl/assets"
 
@@ -53,6 +52,5 @@ ALREADY_SIGNED_URL = f"{BASE_URL}/file.txt?already_signed=1"
 )
 def test_sign_urls_in_obj(content: Any, num_replaced_urls: int) -> None:
     url_signer = FakeUrlSigner()
-    storage_client = StorageClient(protocol="file", storage_root="/tmp", base_url=BASE_URL, url_signer=url_signer)
-    storage_client.sign_urls_in_obj(content)
+    url_signer.sign_urls_in_obj(obj=content, base_url=BASE_URL)
     assert url_signer.counter == num_replaced_urls

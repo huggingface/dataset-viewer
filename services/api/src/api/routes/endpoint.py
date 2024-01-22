@@ -166,9 +166,11 @@ def create_endpoint(
                 error_code = result["error_code"]
                 revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
-                    if contains_assets_urls:
+                    if contains_assets_urls and assets_storage_client.url_signer:
                         with StepProfiler(method="processing_step_endpoint", step="sign assets urls", context=context):
-                            content = assets_storage_client.sign_urls_in_obj(content)
+                            content = assets_storage_client.url_signer.sign_urls_in_obj(
+                                obj=content, base_url=assets_storage_client.base_url
+                            )
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 

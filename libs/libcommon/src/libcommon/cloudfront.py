@@ -4,7 +4,7 @@
 import datetime
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Optional
+from typing import Any, Optional
 
 from botocore.signers import CloudFrontSigner
 from cryptography.hazmat.backends import default_backend
@@ -32,6 +32,18 @@ class URLSigner(ABC):
     @abstractmethod
     def sign_url(self, url: str) -> str:
         pass
+
+    def sign_urls_in_obj(self, obj: Any, base_url: str) -> Any:
+        if isinstance(obj, dict):
+            return {k: self.sign_urls_in_obj(v, base_url) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self.sign_urls_in_obj(v, base_url) for v in obj]
+        elif isinstance(obj, tuple):
+            return tuple(self.sign_urls_in_obj(v, base_url) for v in obj)
+        elif isinstance(obj, str) and obj.startswith(base_url + "/"):
+            return self.url_signer.sign_url(url=obj)
+        else:
+            return obj
 
 
 class CloudFront(URLSigner):
