@@ -63,6 +63,7 @@ def test_create_link() -> None:
     )
 
 
+@pytest.mark.skip("the user name is invalid, see #8742 in moonlanding")
 def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
     with TemporaryDataset(prefix="dataset") as dataset:
         assert fetch_bot_discussion(dataset=dataset.repo_id) is None
@@ -130,6 +131,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
         assert count_comments(third_discussion) == 1
 
 
+@pytest.mark.skip("the user name is invalid, see #8742 in moonlanding")
 def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig) -> None:
     with TemporaryDataset(prefix="dataset1") as dataset1, TemporaryDataset(prefix="dataset2") as dataset2:
         assert fetch_bot_discussion(dataset=dataset1.repo_id) is None
@@ -179,6 +181,7 @@ def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig)
         )
 
 
+@pytest.mark.skip("the user name is invalid, see #8742 in moonlanding")
 @pytest.mark.parametrize(
     "gated,private",
     [
@@ -224,6 +227,7 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
         )
 
 
+@pytest.mark.skip("the user name is invalid, see #8742 in moonlanding")
 def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
     with TemporaryDataset(prefix="dataset") as dataset:
         assert fetch_bot_discussion(dataset=dataset.repo_id) is None

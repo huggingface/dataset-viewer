@@ -72,19 +72,19 @@ def post_messages_on_parquet_conversion(
 
     for dataset in datasets:
         counters.datasets += 1
+        prefix = f"[{counters.datasets}/{len(datasets)}]"
+        logging.info(f"{prefix} Processing dataset {dataset}")
         try:
-            bot_discussions = [
-                discussion
-                for discussion in hf_api.get_repo_discussions(
-                    repo_id=dataset, repo_type=REPO_TYPE_DATASET, token=bot_token
+            try:
+                next(
+                    hf_api.get_repo_discussions(
+                        repo_id=dataset, repo_type=REPO_TYPE_DATASET, token=bot_token, author=bot_associated_user_name
+                    )
                 )
-                if discussion.author == bot_associated_user_name
-            ]
-
-            if bot_discussions:
+                # if we get here, the bot has already opened a discussion for this dataset
                 counters.dismissed_discussions += 1
-                continue
-            else:
+                logging.info(f"{prefix} [dismissed] Dataset {dataset} already has a discussion, skipping")
+            except StopIteration:
                 hf_api.create_discussion(
                     repo_id=dataset,
                     repo_type=REPO_TYPE_DATASET,
@@ -98,10 +98,10 @@ def post_messages_on_parquet_conversion(
                     token=bot_token,
                 )
                 counters.new_discussions += 1
-
+                logging.info(f"{prefix} [new] Dataset {dataset} has a new discussion")
         except Exception as e:
-            logging.warning(f"Failed to process dataset {dataset}: {e}")
             counters.errors += 1
+            logging.warning(f"{prefix} [error] Failed to process dataset {dataset}: {e}")
 
         logging.debug(get_log())
         if (counters.datasets) % log_batch == 0:
