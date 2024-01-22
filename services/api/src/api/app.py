@@ -7,7 +7,7 @@ from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
-from libcommon.cloudfront import get_url_signer
+from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -64,7 +64,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         # no need to specify a url_signer
     )
 
-    url_signer = get_url_signer(cloudfront_config=app_config.cloudfront)
+    url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,

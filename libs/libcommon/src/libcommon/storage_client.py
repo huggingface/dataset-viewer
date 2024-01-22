@@ -5,8 +5,8 @@ from typing import Any, Optional
 
 import fsspec
 
-from libcommon.cloudfront import URLSigner
 from libcommon.config import S3Config
+from libcommon.url_signer import URLSigner
 
 
 class StorageClientInitializeError(Exception):

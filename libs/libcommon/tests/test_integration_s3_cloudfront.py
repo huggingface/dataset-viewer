@@ -7,7 +7,7 @@ from datetime import datetime
 import httpx
 import pytest
 
-from libcommon.cloudfront import get_url_signer
+from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
 
@@ -32,7 +32,7 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         storage_protocol="s3",
         storage_root=f"{BUCKET}/assets",
     )
-    url_signer = get_url_signer(cloudfront_config=cloudfront_config)
+    url_signer = get_cloudfront_signer(cloudfront_config=cloudfront_config)
     if not s3_config.access_key_id or not s3_config.secret_access_key or not url_signer:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
