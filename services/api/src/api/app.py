@@ -99,7 +99,6 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
-                contains_assets_urls=endpoint_name in endpoint_config.endpoints_with_assets_urls,
             ),
         )
         for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()

@@ -101,7 +101,7 @@ class URLSigner(ABC):
                     raise InvalidFirstRowsError("Expected the cell to be a dict")
                 cell[key] = self._sign_asset_url_path(cell=cell[key], asset_url_path=asset_url_path)
 
-    def sign_urls_in_first_rows(self, first_rows: Any) -> Any:
+    def sign_urls_in_first_rows_in_place(self, first_rows: Any) -> None:
         if not isinstance(first_rows, dict):
             raise InvalidFirstRowsError("Expected response to be a dict")
         # parse the features to find the paths to assets URLs
@@ -112,7 +112,7 @@ class URLSigner(ABC):
         features = Features.from_dict(features_dict)
         asset_url_paths = get_asset_url_paths(features)
         if not asset_url_paths:
-            return first_rows
+            return
         # sign the URLs
         row_items = first_rows.get("rows")
         if not isinstance(row_items, list):
@@ -125,19 +125,6 @@ class URLSigner(ABC):
                 raise InvalidFirstRowsError('Expected response["rows"][i]["row"] to be a dict')
             for asset_url_path in asset_url_paths:
                 self._sign_asset_url_path(cell=row, asset_url_path=asset_url_path)
-        return first_rows
-
-    def sign_urls_in_obj(self, obj: Any, base_url: str) -> Any:
-        if isinstance(obj, dict):
-            return {k: self.sign_urls_in_obj(v, base_url) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [self.sign_urls_in_obj(v, base_url) for v in obj]
-        elif isinstance(obj, tuple):
-            return tuple(self.sign_urls_in_obj(v, base_url) for v in obj)
-        elif isinstance(obj, str) and obj.startswith(base_url + "/"):
-            return self.sign_url(url=obj)
-        else:
-            return obj
 
 
 class InvalidPrivateKeyError(ValueError):

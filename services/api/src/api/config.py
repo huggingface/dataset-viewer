@@ -92,7 +92,6 @@ class EndpointConfig:
             "/statistics": {"split": ["split-descriptive-statistics"]},
         }
     )
-    endpoints_with_assets_urls: list[str] = field(default_factory=lambda: ["/first-rows"])
 
     @classmethod
     def from_env(cls) -> "EndpointConfig":
