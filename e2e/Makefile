@@ -16,7 +16,7 @@ export SEARCH_UVICORN_PORT := 9083
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
-export COMMON_BLOCKED_DATASETS := __DUMMY_DATASETS_SERVER_USER__/blocked-*
+export COMMON_BLOCKED_DATASETS := DSSUser/blocked-*
 export LOG_LEVEL := DEBUG
 export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
