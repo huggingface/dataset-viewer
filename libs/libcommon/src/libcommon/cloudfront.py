@@ -41,7 +41,7 @@ class URLSigner(ABC):
         elif isinstance(obj, tuple):
             return tuple(self.sign_urls_in_obj(v, base_url) for v in obj)
         elif isinstance(obj, str) and obj.startswith(base_url + "/"):
-            return self.url_signer.sign_url(url=obj)
+            return self.sign_url(url=obj)
         else:
             return obj
 
