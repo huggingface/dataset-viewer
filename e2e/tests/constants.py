@@ -4,14 +4,14 @@
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
 CI_APP_TOKEN = "hf_app_datasets-server_token"
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"
-NORMAL_USER = "__DUMMY_DATASETS_SERVER_USER__"
+NORMAL_USER = "DSSUser"
 NORMAL_USER_TOKEN = "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"
 NORMAL_USER_COOKIE = "oMidckPVQYumfKrAHNYKqnbacRoLaMppHRRlfNbupNahzAHCzInBVbhgGosDneYXHVTKkkWygoMDxBfFUkFPIPiVWBtZtSTYIYTScnEKAJYkyGBAcbVTbokAygCCTWvH"
-NORMAL_ORG = "__NORMAL_ORG__"
-PRO_USER = "__PRO_USER__"
+NORMAL_ORG = "DSSNormalOrg"
+PRO_USER = "DSSProUser"
 PRO_USER_TOKEN = "hf_pro_user_token"
-ENTERPRISE_ORG = "__ENTERPRISE_ORG__"
-ENTERPRISE_USER = "__ENTERPRISE_USER__"
+ENTERPRISE_ORG = "DSSEnterpriseOrg"
+ENTERPRISE_USER = "DSSEnterpriseUser"
 ENTERPRISE_USER_TOKEN = "hf_enterprise_user_token"
 
 DATA = [
