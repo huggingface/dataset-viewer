@@ -22,6 +22,7 @@ from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundErro
 from libcommon.constants import (
     DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
 )
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     CreateCommitError,
@@ -35,7 +36,6 @@ from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DuckDbIndexConfig

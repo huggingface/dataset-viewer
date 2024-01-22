@@ -9,6 +9,7 @@ from typing import Any, Optional
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
     ExternalServerError,
@@ -18,7 +19,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl

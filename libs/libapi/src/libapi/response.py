@@ -2,11 +2,9 @@ import logging
 
 import pyarrow as pa
 from datasets import Features
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.dtos import PaginatedResponse
 from libcommon.storage_client import StorageClient
-from libcommon.utils import (
-    MAX_NUM_ROWS_PER_PAGE,
-    PaginatedResponse,
-)
 from libcommon.viewer_utils.features import to_features_list
 
 from libapi.utils import to_rows_list

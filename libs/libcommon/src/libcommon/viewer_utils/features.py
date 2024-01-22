@@ -26,8 +26,8 @@ from datasets import (
 from datasets.features.features import FeatureType, _visit
 from PIL import Image as PILImage  # type: ignore
 
+from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient
-from libcommon.utils import FeatureItem
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file
 
 UNSUPPORTED_FEATURES = [Value("binary")]

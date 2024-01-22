@@ -6,6 +6,7 @@ from http import HTTPStatus
 from typing import Optional
 
 from libcommon.config import CommonConfig
+from libcommon.dtos import JobInfo, JobParams, JobResult, Priority
 from libcommon.exceptions import (
     CustomError,
     DatasetInBlockListError,
@@ -26,7 +27,7 @@ from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
     get_response_without_content_params,
 )
-from libcommon.utils import JobInfo, JobParams, JobResult, Priority, orjson_dumps
+from libcommon.utils import orjson_dumps
 
 from worker.config import AppConfig, WorkerConfig
 from worker.job_runner import JobRunner

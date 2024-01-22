@@ -5,9 +5,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 
+from libcommon.dtos import JobInfo
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner

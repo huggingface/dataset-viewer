@@ -17,12 +17,12 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
 from libcommon.processing_graph import InputType
 from libcommon.queue import Queue
-from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 

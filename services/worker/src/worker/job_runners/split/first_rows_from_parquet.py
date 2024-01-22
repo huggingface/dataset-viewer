@@ -3,8 +3,9 @@
 
 import logging
 
-from datasets import Audio, Features, Image
+from datasets import Audio, Image
 from fsspec.implementations.http import HTTPFileSystem
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
@@ -15,41 +16,13 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, Row, RowItem
-from libcommon.viewer_utils.features import get_cell_value, to_features_list
+from libcommon.viewer_utils.features import to_features_list
+from libcommon.viewer_utils.rows import transform_rows
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 from worker.utils import create_truncated_row_items, get_json_size
-
-
-def transform_rows(
-    dataset: str,
-    revision: str,
-    config: str,
-    split: str,
-    rows: list[RowItem],
-    features: Features,
-    storage_client: StorageClient,
-) -> list[Row]:
-    return [
-        {
-            featureName: get_cell_value(
-                dataset=dataset,
-                revision=revision,
-                config=config,
-                split=split,
-                row_idx=row_idx,
-                cell=row["row"][featureName] if featureName in row["row"] else None,
-                featureName=featureName,
-                fieldType=fieldType,
-                storage_client=storage_client,
-            )
-            for (featureName, fieldType) in features.items()
-        }
-        for row_idx, row in enumerate(rows)
-    ]
 
 
 def compute_first_rows_response(
@@ -115,17 +88,6 @@ def compute_first_rows_response(
             cause=err,
         )
 
-    rows = [
-        RowItem(
-            {
-                "row_idx": idx,
-                "row": row,
-                "truncated_cells": [],
-            }
-        )
-        for idx, row in enumerate(pa_table.to_pylist())
-    ]
-
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
         transformed_rows = transform_rows(
@@ -133,7 +95,7 @@ def compute_first_rows_response(
             revision=revision,
             config=config,
             split=split,
-            rows=rows,
+            rows=pa_table.to_pylist(),
             features=features,
             storage_client=storage_client,
         )

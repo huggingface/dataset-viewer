@@ -21,6 +21,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.dtos import Row, RowItem
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -31,7 +32,7 @@ from libcommon.exceptions import (
     StreamingRowsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import Row, RowItem, orjson_dumps
+from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
 
 from worker.dtos import RowsContent

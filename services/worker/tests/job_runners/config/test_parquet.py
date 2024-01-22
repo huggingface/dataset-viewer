@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from datasets import Features, Value
+from libcommon.dtos import Priority, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
@@ -14,7 +15,6 @@ from libcommon.simple_cache import (
     CachedArtifactNotFoundError,
     upsert_response,
 )
-from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
 from worker.dtos import ConfigParquetAndInfoResponse, ConfigParquetResponse

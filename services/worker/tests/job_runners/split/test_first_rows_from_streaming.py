@@ -8,11 +8,11 @@ from pathlib import Path
 
 import pytest
 from datasets.packaged_modules import csv
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_streaming import (

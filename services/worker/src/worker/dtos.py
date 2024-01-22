@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypedDict, Union
 
-from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
+from libcommon.dtos import FeatureItem, Row, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):

@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 
 from libcommon.constants import PARALLEL_STEPS_LISTS
-from libcommon.utils import JobInfo
+from libcommon.dtos import JobInfo
 
 from worker.config import AppConfig
 from worker.dtos import JobResult

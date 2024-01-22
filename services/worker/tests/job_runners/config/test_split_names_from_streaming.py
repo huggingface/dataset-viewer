@@ -6,10 +6,10 @@ from dataclasses import replace
 from http import HTTPStatus
 
 import pytest
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError, DatasetManualDownloadError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.split_names_from_streaming import (

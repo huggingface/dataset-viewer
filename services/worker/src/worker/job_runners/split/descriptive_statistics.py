@@ -11,6 +11,7 @@ import numpy as np
 import polars as pl
 from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     NoSupportedFeaturesError,
@@ -21,7 +22,6 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
 from requests.exceptions import ReadTimeout
 from tqdm import tqdm
 

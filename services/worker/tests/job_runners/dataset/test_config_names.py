@@ -6,9 +6,9 @@ from dataclasses import replace
 from unittest.mock import patch
 
 import pytest
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
