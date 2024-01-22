@@ -3,7 +3,6 @@
 
 import logging
 from dataclasses import dataclass
-from time import sleep
 from typing import Literal, Optional
 from urllib import parse
 
@@ -98,8 +97,6 @@ def post_messages_on_parquet_conversion(
                     ),
                     token=bot_token,
                 )
-                sleep(1)
-                # ^ see https://github.com/huggingface/moon-landing/issues/7729 (internal)
                 counters.new_discussions += 1
 
         except Exception as e:
