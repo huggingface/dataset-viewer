@@ -464,14 +464,15 @@ FTS_COMMAND = (
 )
 
 
+@pytest.mark.skip(reason="enable once https://pypi.org/project/duckdb/0.9.3.dev3058/ is avialable for poetry")
 @pytest.mark.parametrize(
     "df, query, expected_ids",
     [
         (pd.DataFrame([{"line": line} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [line]} for line in DATA.split("\n")]), "bold", [2]),
-        # (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
-        # (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
-        # (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
+        (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
     ],
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
