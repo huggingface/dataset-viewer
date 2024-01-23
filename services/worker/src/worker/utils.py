@@ -32,23 +32,11 @@ from libcommon.exceptions import (
     StreamingRowsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import orjson_dumps
+from libcommon.utils import get_json_size, orjson_dumps
 from pyarrow.parquet import ParquetFile
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-def get_json_size(obj: Any) -> int:
-    """Returns the size of an object in bytes once serialized as JSON
-
-    Args:
-        obj (Any): the Python object
-
-    Returns:
-        int: the size of the serialized object in bytes
-    """
-    return len(orjson_dumps(obj))
 
 
 # from https://stackoverflow.com/a/43848928/7351594

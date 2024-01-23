@@ -31,6 +31,18 @@ def orjson_dumps(content: Any) -> bytes:
     )
 
 
+def get_json_size(obj: Any) -> int:
+    """Returns the size of an object in bytes once serialized as JSON
+
+    Args:
+        obj (Any): the Python object
+
+    Returns:
+        int: the size of the serialized object in bytes
+    """
+    return len(orjson_dumps(obj))
+
+
 def get_datetime(days: Optional[float] = None) -> datetime:
     date = datetime.now(timezone.utc)
     if days is not None:

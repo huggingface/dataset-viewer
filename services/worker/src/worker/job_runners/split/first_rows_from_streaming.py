@@ -22,6 +22,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.storage_client import StorageClient
+from libcommon.utils import get_json_size
 from libcommon.viewer_utils.features import to_features_list
 from libcommon.viewer_utils.rows import transform_rows
 
@@ -30,7 +31,6 @@ from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import (
     create_truncated_row_items,
-    get_json_size,
     get_rows_or_raise,
     resolve_trust_remote_code,
 )
