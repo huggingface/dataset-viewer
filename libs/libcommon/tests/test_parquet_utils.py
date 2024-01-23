@@ -496,7 +496,7 @@ def test_indexer_schema_mistmatch_error(
         ("https://hf.co/datasets/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/train/0000.parquet", "train"),
     ],
 )
-def test_extract_split_name_from_url(url:str, expected:str) -> None:
-    split_name = extract_split_name_from_url(url)
+def test_extract_split_name_from_parquet_url(parquet_url:str, expected:str) -> None:
+    split_name = extract_split_name_from_parquet_url(parquet_url)
 
     assert split_name == expected
