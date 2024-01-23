@@ -5,7 +5,7 @@ import logging
 
 from datasets import Audio, Image
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.dtos import JobInfo
+from libcommon.dtos import JobInfo, RowsContent
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     RowsPostProcessingError,
@@ -79,7 +79,9 @@ def compute_first_rows_response(
     # get the rows
     try:
         pa_table = rows_index.query(offset=0, length=rows_max_number)
-        all_fetched = rows_index.parquet_index.num_rows_total <= rows_max_number
+        rows_content = RowsContent(
+            rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number
+        )
     except TooBigRows as err:
         raise TooBigContentError(str(err))
     except SchemaMismatchError as err:
@@ -95,7 +97,7 @@ def compute_first_rows_response(
             revision=revision,
             config=config,
             split=split,
-            rows=pa_table.to_pylist(),
+            rows=rows_content.rows,
             features=features,
             storage_client=storage_client,
         )
@@ -117,7 +119,7 @@ def compute_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (not all_fetched) or truncated
+    response["truncated"] = (not rows_content.all_fetched) or truncated
 
     return response
 

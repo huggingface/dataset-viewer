@@ -201,8 +201,6 @@ def compute_first_rows_response(
         token=hf_token,
         trust_remote_code=trust_remote_code,
     )
-    rows = rows_content.rows
-    all_fetched = rows_content.all_fetched
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:
@@ -211,7 +209,7 @@ def compute_first_rows_response(
             revision=revision,
             config=config,
             split=split,
-            rows=rows,
+            rows=rows_content.rows,
             features=features,
             storage_client=storage_client,
         )
@@ -233,7 +231,7 @@ def compute_first_rows_response(
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (not all_fetched) or truncated
+    response["truncated"] = (not rows_content.all_fetched) or truncated
 
     # return the response
     return response
