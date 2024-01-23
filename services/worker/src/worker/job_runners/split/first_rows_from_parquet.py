@@ -4,7 +4,7 @@
 import logging
 
 from fsspec.implementations.http import HTTPFileSystem
-from libcommon.dtos import JobInfo, RowsContent
+from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
     SplitParquetSchemaMismatchError,
@@ -16,7 +16,7 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunner
 
 

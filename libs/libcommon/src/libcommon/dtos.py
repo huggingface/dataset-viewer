@@ -98,3 +98,29 @@ class PaginatedResponse(TypedDict):
     num_rows_total: int
     num_rows_per_page: int
     partial: bool
+
+
+class DatasetItem(TypedDict):
+    dataset: str
+
+
+class ConfigItem(DatasetItem):
+    config: Optional[str]
+
+
+class SplitItem(ConfigItem):
+    split: Optional[str]
+
+
+class FullConfigItem(DatasetItem):
+    config: str
+
+
+class FullSplitItem(FullConfigItem):
+    split: str
+
+
+class SplitFirstRowsResponse(FullSplitItem):
+    features: list[FeatureItem]
+    rows: list[RowItem]
+    truncated: bool

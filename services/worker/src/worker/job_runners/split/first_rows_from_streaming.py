@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
-from libcommon.dtos import JobInfo, RowsContent
+from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
     FeaturesError,
@@ -16,7 +16,7 @@ from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
 
 from worker.config import AppConfig, FirstRowsConfig
-from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
+from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import get_rows_or_raise, resolve_trust_remote_code
 

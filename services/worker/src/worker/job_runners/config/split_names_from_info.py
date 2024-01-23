@@ -3,10 +3,11 @@
 
 import logging
 
+from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
-from worker.dtos import CompleteJobResult, FullSplitItem, SplitsList
+from worker.dtos import CompleteJobResult, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 

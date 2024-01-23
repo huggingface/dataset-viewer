@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from typing import Callable
+
+from typing import Protocol
 
 from datasets import Audio, Features, Image
 
@@ -149,6 +150,11 @@ def create_truncated_row_items(
     return row_items, len(row_items) < len(rows)
 
 
+class GetRowsContent(Protocol):
+    def __call__(self, rows_max_number: int) -> RowsContent:
+        ...
+
+
 def create_first_rows_response(
     dataset: str,
     revision: str,
@@ -156,7 +162,7 @@ def create_first_rows_response(
     split: str,
     storage_client: StorageClient,
     features: Features,
-    get_rows_content: Callable[[], RowsContent],
+    get_rows_content: GetRowsContent,
     min_cell_bytes: int,
     rows_max_bytes: int,
     rows_max_number: int,
@@ -188,7 +194,7 @@ def create_first_rows_response(
             f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
         )
 
-    rows_content = get_rows_content(rows_max_number=rows_max_number)
+    rows_content = get_rows_content(rows_max_number)
     if len(rows_content.rows) > rows_max_number:
         raise ValueError(
             f"The number of rows ({len(rows_content.rows)}) exceeds the maximum supported number of rows"
