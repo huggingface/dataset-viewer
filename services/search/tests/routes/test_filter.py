@@ -45,8 +45,6 @@ def ds() -> Dataset:
 def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     index_file_location = "index.duckdb"
     con = duckdb.connect(index_file_location)
-    con.execute("INSTALL 'httpfs';")
-    con.execute("LOAD 'httpfs';")
     con.execute("INSTALL 'fts';")
     con.execute("LOAD 'fts';")
     con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")

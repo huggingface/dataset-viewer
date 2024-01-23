@@ -60,8 +60,7 @@ CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
-LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
+INSTALL_AND_LOAD_FTS_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 
@@ -199,9 +198,7 @@ def compute_index_rows(
         # configure duckdb extensions
         if extensions_directory is not None:
             con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-        con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-        con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
+        con.execute(INSTALL_AND_LOAD_FTS_EXTENSION_COMMAND)
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)

@@ -62,8 +62,6 @@ def test_full_text_search(
     # simulate index file
     index_file_location = "index.duckdb"
     con = duckdb.connect(index_file_location)
-    con.execute("INSTALL 'httpfs';")
-    con.execute("LOAD 'httpfs';")
     con.execute("INSTALL 'fts';")
     con.execute("LOAD 'fts';")
     con.sql("CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;")

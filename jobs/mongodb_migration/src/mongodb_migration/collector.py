@@ -302,4 +302,8 @@ class MigrationsCollector:
             MigrationAddFailedRunsToCacheResponse(
                 version="20240109160700", description="add 'failed_runs' filed to cache records"
             ),
+            CacheDeletionMigration(
+                cache_kind="split-duckdb-index",
+                version="20240119143500",
+            ),
         ]
