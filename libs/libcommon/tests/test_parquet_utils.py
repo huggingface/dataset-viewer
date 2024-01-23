@@ -491,7 +491,7 @@ def test_indexer_schema_mistmatch_error(
 
 
 @pytest.mark.parametrize(
-    "url,expected",
+    "parquet_url,expected",
     [
         ("https://hf.co/datasets/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/train/0000.parquet", "train"),
     ],
