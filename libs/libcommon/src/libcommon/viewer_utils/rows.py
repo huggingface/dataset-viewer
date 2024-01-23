@@ -1,12 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-from datasets import Features
+from typing import Callable
 
-from libcommon.dtos import Row, RowItem
+from datasets import Audio, Features, Image
+
+from libcommon.dtos import Row, RowItem, RowsContent, SplitFirstRowsResponse
+from libcommon.exceptions import (
+    RowsPostProcessingError,
+    TooBigContentError,
+    TooManyColumnsError,
+)
 from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size, orjson_dumps, utf8_byte_truncate
-from libcommon.viewer_utils.features import get_cell_value
+from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 
 def transform_rows(
@@ -140,3 +147,84 @@ def create_truncated_row_items(
             break
         row_items.append(row_item)
     return row_items, len(row_items) < len(rows)
+
+
+def create_first_rows_response(
+    dataset: str,
+    revision: str,
+    config: str,
+    split: str,
+    storage_client: StorageClient,
+    features: Features,
+    get_rows_content: Callable[[], RowsContent],
+    min_cell_bytes: int,
+    rows_max_bytes: int,
+    rows_max_number: int,
+    rows_min_number: int,
+    columns_max_number: int,
+) -> SplitFirstRowsResponse:
+    if features and len(features) > columns_max_number:
+        raise TooManyColumnsError(
+            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
+            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
+            " of columns if you want the viewer to work."
+        )
+
+    # validate size of response without the rows
+    features_list = to_features_list(features=features)
+    response_features_only: SplitFirstRowsResponse = {
+        "dataset": dataset,
+        "config": config,
+        "split": split,
+        "features": features_list,
+        "rows": [],
+        "truncated": False,
+    }
+
+    surrounding_json_size = get_json_size(response_features_only)
+    if surrounding_json_size > rows_max_bytes:
+        raise TooBigContentError(
+            f"The size of the content of the first rows ({surrounding_json_size} B) exceeds the maximum"
+            f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
+        )
+
+    rows_content = get_rows_content(rows_max_number=rows_max_number)
+    if len(rows_content.rows) > rows_max_number:
+        raise ValueError(
+            f"The number of rows ({len(rows_content.rows)}) exceeds the maximum supported number of rows"
+            f" ({rows_max_number})."
+        )
+
+    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
+    try:
+        transformed_rows = transform_rows(
+            dataset=dataset,
+            revision=revision,
+            config=config,
+            split=split,
+            rows=rows_content.rows,
+            features=features,
+            storage_client=storage_client,
+        )
+    except Exception as err:
+        raise RowsPostProcessingError(
+            "Server error while post-processing the split rows. Please report the issue.",
+            cause=err,
+        ) from err
+
+    # truncate the rows to fit within the restrictions, and prepare them as RowItems
+    columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
+    row_items, truncated = create_truncated_row_items(
+        rows=transformed_rows,
+        min_cell_bytes=min_cell_bytes,
+        rows_max_bytes=rows_max_bytes - surrounding_json_size,
+        rows_min_number=rows_min_number,
+        columns_to_keep_untruncated=columns_to_keep_untruncated,
+    )
+
+    response = response_features_only
+    response["rows"] = row_items
+    response["truncated"] = (not rows_content.all_fetched) or truncated
+
+    # return the response
+    return response

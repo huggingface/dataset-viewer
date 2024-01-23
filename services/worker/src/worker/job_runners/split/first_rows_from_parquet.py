@@ -3,22 +3,17 @@
 
 import logging
 
-from datasets import Audio, Image
 from fsspec.implementations.http import HTTPFileSystem
 from libcommon.dtos import JobInfo, RowsContent
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
-    RowsPostProcessingError,
     SplitParquetSchemaMismatchError,
     TooBigContentError,
-    TooManyColumnsError,
 )
 from libcommon.parquet_utils import EmptyParquetMetadataError, Indexer, SchemaMismatchError, TooBigRows
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import get_json_size
-from libcommon.viewer_utils.features import to_features_list
-from libcommon.viewer_utils.rows import create_truncated_row_items, transform_rows
+from libcommon.viewer_utils.rows import create_first_rows_response
 
 from worker.config import AppConfig, FirstRowsConfig
 from worker.dtos import CompleteJobResult, SplitFirstRowsResponse
@@ -49,79 +44,37 @@ def compute_first_rows_response(
     except EmptyParquetMetadataError:
         raise ParquetResponseEmptyError("No parquet files found.")
 
-    # validate the features
     features = rows_index.parquet_index.features
-    if features and len(features) > columns_max_number:
-        raise TooManyColumnsError(
-            f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
-            f" ({columns_max_number}). This is a current limitation of the datasets viewer. You can reduce the number"
-            " of columns if you want the viewer to work."
-        )
-
-    # validate size of response without the rows
-    features_list = to_features_list(features=features)
-    response_features_only: SplitFirstRowsResponse = {
-        "dataset": dataset,
-        "config": config,
-        "split": split,
-        "features": features_list,
-        "rows": [],
-        "truncated": False,
-    }
-
-    surrounding_json_size = get_json_size(response_features_only)
-    if surrounding_json_size > rows_max_bytes:
-        raise TooBigContentError(
-            f"The size of the content of the first rows ({surrounding_json_size}) exceeds the maximum"
-            f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
-        )
 
     # get the rows
-    try:
-        pa_table = rows_index.query(offset=0, length=rows_max_number)
-        rows_content = RowsContent(
-            rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number
-        )
-    except TooBigRows as err:
-        raise TooBigContentError(str(err))
-    except SchemaMismatchError as err:
-        raise SplitParquetSchemaMismatchError(
-            "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
-            cause=err,
-        )
+    def get_rows_content(rows_max_number: int) -> RowsContent:
+        try:
+            pa_table = rows_index.query(offset=0, length=rows_max_number)
+            return RowsContent(
+                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number
+            )
+        except TooBigRows as err:
+            raise TooBigContentError(str(err))
+        except SchemaMismatchError as err:
+            raise SplitParquetSchemaMismatchError(
+                "Split parquet files being processed have different schemas. Ensure all files have identical column names.",
+                cause=err,
+            )
 
-    # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
-    try:
-        transformed_rows = transform_rows(
-            dataset=dataset,
-            revision=revision,
-            config=config,
-            split=split,
-            rows=rows_content.rows,
-            features=features,
-            storage_client=storage_client,
-        )
-    except Exception as err:
-        raise RowsPostProcessingError(
-            "Server error while post-processing the split rows. Please report the issue.",
-            cause=err,
-        ) from err
-
-    # truncate the rows to fit within the restrictions, and prepare them as RowItems
-    columns_to_keep_untruncated = [col for col, feature in features.items() if isinstance(feature, (Image, Audio))]
-    row_items, truncated = create_truncated_row_items(
-        rows=transformed_rows,
+    return create_first_rows_response(
+        dataset=dataset,
+        revision=revision,
+        config=config,
+        split=split,
+        storage_client=storage_client,
+        features=features,
+        get_rows_content=get_rows_content,
         min_cell_bytes=min_cell_bytes,
-        rows_max_bytes=rows_max_bytes - surrounding_json_size,
+        rows_max_bytes=rows_max_bytes,
+        rows_max_number=rows_max_number,
         rows_min_number=rows_min_number,
-        columns_to_keep_untruncated=columns_to_keep_untruncated,
+        columns_max_number=columns_max_number,
     )
-
-    response = response_features_only
-    response["rows"] = row_items
-    response["truncated"] = (not rows_content.all_fetched) or truncated
-
-    return response
 
 
 class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
