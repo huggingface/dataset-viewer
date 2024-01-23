@@ -265,7 +265,7 @@ def compute_opt_in_out_urls_scan_response(
         num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
-        full_scan=rows_content["all_fetched"],
+        full_scan=rows_content.all_fetched,
     )
 
 
