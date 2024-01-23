@@ -20,7 +20,7 @@ from libcommon.exceptions import (
     SplitWithTooBigParquetError,
     StatisticsComputationError,
 )
-    extract_split_name_from_parquet_url,
+from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from requests.exceptions import ReadTimeout

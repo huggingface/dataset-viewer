@@ -94,7 +94,7 @@ def extract_split_name_from_parquet_url(parquet_url: str) -> str:
     Returns:
         str: The extracted split name.
     """
-    split_name = url.rsplit("/", 2)[1]
+    split_name = parquet_url.rsplit("/", 2)[1]
     return split_name
 
 

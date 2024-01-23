@@ -32,7 +32,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import parquet_export_is_partial, extract_split_name_from_parquet_url
+from libcommon.parquet_utils import extract_split_name_from_parquet_url, parquet_export_is_partial
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
