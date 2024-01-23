@@ -12,7 +12,7 @@ import anyio
 from anyio import Path
 from huggingface_hub import hf_hub_download
 from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KINDS
-from libcommon.parquet_utils import extract_split_name_from_url
+from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
