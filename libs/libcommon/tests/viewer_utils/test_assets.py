@@ -3,43 +3,39 @@ from pathlib import Path
 
 import pytest
 import validators  # type: ignore
-from datasets import Dataset
 from PIL import Image as PILImage  # type: ignore
 
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_object_key
 
-ASSETS_FOLDER = "assets"
-ASSETS_BASE_URL = f"http://localhost/{ASSETS_FOLDER}"
+from ..constants import (
+    ASSETS_BASE_URL,
+    DEFAULT_COLUMN_NAME,
+    DEFAULT_CONFIG,
+    DEFAULT_REVISION,
+    DEFAULT_ROW_IDX,
+    DEFAULT_SPLIT,
+)
+from ..types import DatasetFixture
 
 
-@pytest.fixture
-def storage_client(tmp_path: Path) -> StorageClient:
-    return StorageClient(
-        protocol="file", storage_root=str(tmp_path / ASSETS_FOLDER), base_url=ASSETS_BASE_URL, overwrite=False
-    )
-
-
-def test_create_image_file(datasets: Mapping[str, Dataset], storage_client: StorageClient) -> None:
-    dataset = datasets["image"]
+def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture]) -> None:
+    dataset_name = "image"
+    dataset_fixture = datasets_fixtures[dataset_name]
     value = create_image_file(
-        dataset="dataset",
-        revision="revision",
-        config="config",
-        split="split",
-        image=dataset[0]["col"],
-        column="col",
+        dataset=dataset_name,
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        image=dataset_fixture.dataset[DEFAULT_ROW_IDX][DEFAULT_COLUMN_NAME],
+        column=DEFAULT_COLUMN_NAME,
         filename="image.jpg",
-        row_idx=7,
+        row_idx=DEFAULT_ROW_IDX,
         format="JPEG",
         storage_client=storage_client,
     )
-    image_key = "dataset/--/revision/--/config/split/7/col/image.jpg"
-    assert value == {
-        "src": f"{ASSETS_BASE_URL}/{image_key}",
-        "height": 480,
-        "width": 640,
-    }
+    assert value == dataset_fixture.expected_row[DEFAULT_COLUMN_NAME]
+    image_key = value["src"].removeprefix(f"{ASSETS_BASE_URL}/")
     assert storage_client.exists(image_key)
 
     image = PILImage.open(storage_client.get_full_path(image_key))

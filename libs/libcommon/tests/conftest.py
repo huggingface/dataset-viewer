@@ -3,13 +3,16 @@
 from collections.abc import Iterator
 
 from environs import Env
-from pytest import fixture
+from pytest import TempPathFactory, fixture
 
 from libcommon.config import ParquetMetadataConfig
 from libcommon.queue import _clean_queue_database
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import _clean_cache_database
 from libcommon.storage import StrPath, init_parquet_metadata_dir
+from libcommon.storage_client import StorageClient
+
+from .constants import ASSETS_BASE_URL
 
 # Import fixture modules as plugins
 pytest_plugins = ["tests.fixtures.datasets", "tests.fixtures.fsspec"]
@@ -82,3 +85,10 @@ def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
 @fixture
 def parquet_metadata_directory() -> StrPath:
     return init_parquet_metadata_dir(ParquetMetadataConfig().storage_directory)
+
+
+@fixture(scope="session")
+def storage_client(tmp_path_factory: TempPathFactory) -> StorageClient:
+    return StorageClient(
+        protocol="file", storage_root=str(tmp_path_factory.getbasetemp()), base_url=ASSETS_BASE_URL, overwrite=True
+    )

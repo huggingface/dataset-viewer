@@ -8,7 +8,7 @@ from typing import Any, Callable, Literal, Optional, Union
 from datasets import Audio, Features, Image
 from datasets.features.features import FeatureType, Sequence
 
-from libcommon.utils import FeatureItem
+from libcommon.dtos import FeatureItem
 
 
 class InvalidFirstRowsError(ValueError):
