@@ -22,7 +22,7 @@ from libcommon.parquet_utils import (
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
-    extract_split_name_from_url,
+    extract_split_name_from_parquet_url,
     parquet_export_is_partial,
 )
 from libcommon.resources import CacheMongoResource
