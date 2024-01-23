@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+from libcommon.dtos import Status
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobTotalMetricDocument, Queue
-from libcommon.utils import Status
 
 from cache_maintenance.queue_metrics import collect_queue_metrics
 

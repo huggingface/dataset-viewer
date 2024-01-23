@@ -14,12 +14,12 @@ import pytest
 from datasets import Dataset, Features, Value
 from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import hf_hub_url
+from libcommon.dtos import Priority, SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.parquet_utils import ParquetIndexWithMetadata
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority, SplitHubFile
 
 from worker.config import AppConfig
 from worker.dtos import (

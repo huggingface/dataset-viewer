@@ -2,107 +2,15 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
-import enum
 import mimetypes
-from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
-from http import HTTPStatus
-from typing import Any, Optional, TypedDict
+from typing import Any, Optional
 
 import orjson
 import pandas as pd
 
 from libcommon.exceptions import DatasetInBlockListError
-
-
-class Status(str, enum.Enum):
-    WAITING = "waiting"
-    STARTED = "started"
-
-
-class Priority(str, enum.Enum):
-    HIGH = "high"
-    NORMAL = "normal"
-    LOW = "low"
-
-
-class JobParams(TypedDict):
-    dataset: str
-    revision: str
-    config: Optional[str]
-    split: Optional[str]
-
-
-class JobInfo(TypedDict):
-    job_id: str
-    type: str
-    params: JobParams
-    priority: Priority
-    difficulty: int
-
-
-class FlatJobInfo(TypedDict):
-    job_id: str
-    type: str
-    dataset: str
-    revision: str
-    config: Optional[str]
-    split: Optional[str]
-    priority: str
-    status: str
-    difficulty: int
-    created_at: datetime
-
-
-class JobOutput(TypedDict):
-    content: Mapping[str, Any]
-    http_status: HTTPStatus
-    error_code: Optional[str]
-    details: Optional[Mapping[str, Any]]
-    progress: Optional[float]
-
-
-class JobResult(TypedDict):
-    job_info: JobInfo
-    job_runner_version: int
-    is_success: bool
-    output: Optional[JobOutput]
-
-
-class SplitHubFile(TypedDict):
-    dataset: str
-    config: str
-    split: str
-    url: str
-    filename: str
-    size: int
-
-
-Row = dict[str, Any]
-
-
-class RowItem(TypedDict):
-    row_idx: int
-    row: Row
-    truncated_cells: list[str]
-
-
-class FeatureItem(TypedDict):
-    feature_idx: int
-    name: str
-    type: dict[str, Any]
-
-
-class PaginatedResponse(TypedDict):
-    features: list[FeatureItem]
-    rows: list[RowItem]
-    num_rows_total: int
-    num_rows_per_page: int
-    partial: bool
-
-
-MAX_NUM_ROWS_PER_PAGE = 100
 
 
 # orjson is used to get rid of errors with datetime (see allenai/c4)
@@ -121,6 +29,36 @@ def orjson_dumps(content: Any) -> bytes:
     return orjson.dumps(
         content, option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS, default=orjson_default
     )
+
+
+def get_json_size(obj: Any) -> int:
+    """Returns the size of an object in bytes once serialized as JSON
+
+    Args:
+        obj (Any): the Python object
+
+    Returns:
+        int: the size of the serialized object in bytes
+    """
+    return len(orjson_dumps(obj))
+
+
+# from https://stackoverflow.com/a/43848928/7351594
+def utf8_lead_byte(b: int) -> bool:
+    """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
+    return (b & 0xC0) != 0x80
+
+
+def utf8_byte_truncate(text: str, max_bytes: int) -> str:
+    """If text[max_bytes] is not a lead byte, back up until a lead byte is
+    found and truncate before that character."""
+    utf8 = text.encode("utf8")
+    if len(utf8) <= max_bytes:
+        return text
+    i = max_bytes
+    while i > 0 and not utf8_lead_byte(utf8[i]):
+        i -= 1
+    return utf8[:i].decode("utf8", "ignore")
 
 
 def get_datetime(days: Optional[float] = None) -> datetime:

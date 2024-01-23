@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from fsspec.implementations.http import HTTPFileSystem
+from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     FileSystemError,
     ParquetResponseEmptyError,
@@ -13,7 +14,6 @@ from libcommon.exceptions import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo, SplitHubFile
 from libcommon.viewer_utils.parquet_metadata import create_parquet_metadata_file
 from tqdm.contrib.concurrent import thread_map
 

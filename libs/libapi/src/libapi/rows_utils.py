@@ -7,8 +7,8 @@ from typing import Any, Optional
 
 import anyio
 from datasets import Features
+from libcommon.dtos import Row
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Row
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
 

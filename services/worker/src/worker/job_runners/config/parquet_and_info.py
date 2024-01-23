@@ -49,6 +49,7 @@ from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS,
 )
+from libcommon.dtos import JobInfo, SplitHubFile
 from libcommon.exceptions import (
     ConfigNamesError,
     CreateCommitError,
@@ -69,7 +70,6 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import PARTIAL_PREFIX
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import JobInfo, SplitHubFile
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, ParquetAndInfoConfig

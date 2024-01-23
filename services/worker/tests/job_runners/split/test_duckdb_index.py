@@ -19,10 +19,10 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
