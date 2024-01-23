@@ -21,7 +21,7 @@ from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
 from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, EXTERNAL_DATASET_SCRIPT_PATTERN
-from libcommon.dtos import Row, RowItem
+from libcommon.dtos import Row, RowItem, RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
     DatasetNotFoundError,
@@ -34,8 +34,6 @@ from libcommon.exceptions import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.utils import orjson_dumps
 from pyarrow.parquet import ParquetFile
-
-from worker.dtos import RowsContent
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS

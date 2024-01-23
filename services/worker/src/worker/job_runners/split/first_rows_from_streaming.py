@@ -210,8 +210,8 @@ def compute_first_rows_response(
                 "if you think this is an error and tag @lhoestq and @severo."
             ) from err
         raise
-    rows = rows_content["rows"]
-    all_fetched = rows_content["all_fetched"]
+    rows = rows_content.rows
+    all_fetched = rows_content.all_fetched
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)
     try:

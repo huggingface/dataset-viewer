@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypedDict, Union
 
-from libcommon.dtos import FeatureItem, Row, RowItem, SplitHubFile
+from libcommon.dtos import FeatureItem, RowItem, SplitHubFile
 
 
 class JobRunnerInfo(TypedDict):
@@ -99,11 +99,6 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
 
 class ImageUrlColumnsResponse(TypedDict):
     columns: list[str]
-
-
-class RowsContent(TypedDict):
-    rows: list[Row]
-    all_fetched: bool
 
 
 class ConfigInfoResponse(TypedDict):

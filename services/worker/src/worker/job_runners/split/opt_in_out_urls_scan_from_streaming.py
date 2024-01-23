@@ -220,7 +220,7 @@ def compute_opt_in_out_urls_scan_response(
         column_names=image_url_columns,
         trust_remote_code=trust_remote_code,
     )
-    rows = rows_content["rows"]
+    rows = rows_content.rows
 
     # get the urls
     num_scanned_rows = len(rows)

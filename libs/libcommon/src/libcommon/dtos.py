@@ -3,11 +3,18 @@
 
 import enum
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional, TypedDict
 
 Row = dict[str, Any]
+
+
+@dataclass
+class RowsContent:
+    rows: list[Row]
+    all_fetched: bool
 
 
 class Status(str, enum.Enum):
