@@ -12,6 +12,7 @@ import anyio
 from anyio import Path
 from huggingface_hub import hf_hub_download
 from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KINDS
+from libcommon.parquet_utils import extract_split_name_from_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
@@ -39,7 +40,7 @@ async def get_index_file_location_and_download_if_missing(
         # For directories like "partial-train" for the file
         # at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names, so it doesn't create directory names collisions.
-        split_directory = url.rsplit("/", 2)[1]
+        split_directory = extract_split_name_from_url(url)
         repo_file_location = f"{config}/{split_directory}/{filename}"
         index_file_location = f"{index_folder}/{repo_file_location}"
         index_path = Path(index_file_location)

@@ -78,8 +78,22 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
         partial (bool): True is the Parquet export is partial,
             or False if it's the full dataset.
     """
-    split_directory_name_for_parquet_export = parquet_file_url.rsplit("/", 2)[1]
+    split_directory_name_for_parquet_export = extract_split_name_from_url(parquet_file_url)
     return split_directory_name_for_parquet_export.startswith(PARTIAL_PREFIX)
+
+
+def extract_split_name_from_url(url: str) -> str:
+    """
+    Extracts the split name from a dataset URL.
+
+    Args:
+        url (str): The URL to extract the split name from.
+
+    Returns:
+        str: The extracted split name.
+    """
+    split_name = url.rsplit("/", 2)[1]
+    return split_name
 
 
 @dataclass

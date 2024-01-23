@@ -32,7 +32,7 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import parquet_export_is_partial
+from libcommon.parquet_utils import parquet_export_is_partial, extract_split_name_from_url
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -132,7 +132,7 @@ def compute_index_rows(
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-        split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+        split_directory = extract_split_name_from_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
         num_parquet_files_to_index = 0
