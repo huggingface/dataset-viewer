@@ -60,6 +60,9 @@ from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_spl
 )
 from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 from mongodb_migration.migrations._20240109160700_cache_add_failed_runs import MigrationAddFailedRunsToCacheResponse
+from mongodb_migration.migrations._20240123152100_cache_invalidate_search_and_filter import (
+    MigrationInvalidateSearchAndFilterCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -305,5 +308,9 @@ class MigrationsCollector:
             CacheDeletionMigration(
                 cache_kind="split-duckdb-index",
                 version="20240119143500",
+            ),
+            MigrationInvalidateSearchAndFilterCacheResponse(
+                version="20240123152100",
+                description="invalidate 'search' and 'filter' for dataset-is-valid, config-is-valid and split-is-valid cache entries",
             ),
         ]
