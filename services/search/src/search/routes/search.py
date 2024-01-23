@@ -31,11 +31,12 @@ from libapi.utils import (
     get_json_ok_response,
     to_rows_list,
 )
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
+from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE, PaginatedResponse
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
     to_features_list,

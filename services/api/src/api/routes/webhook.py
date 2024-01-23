@@ -6,11 +6,11 @@ from typing import Any, Literal, Optional, TypedDict
 
 from jsonschema import ValidationError, validate
 from libapi.utils import Endpoint, get_response
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.operations import delete_dataset, get_current_revision, update_dataset
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority
 from starlette.requests import Request
 from starlette.responses import Response
 

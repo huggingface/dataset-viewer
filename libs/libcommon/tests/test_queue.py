@@ -15,6 +15,7 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
+from libcommon.dtos import Priority, Status
 from libcommon.queue import (
     EmptyQueueError,
     JobDocument,
@@ -24,7 +25,7 @@ from libcommon.queue import (
     lock,
 )
 from libcommon.resources import QueueMongoResource
-from libcommon.utils import Priority, Status, get_datetime
+from libcommon.utils import get_datetime
 
 from .utils import assert_metric
 

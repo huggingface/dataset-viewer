@@ -11,9 +11,10 @@ from libcommon.constants import (
     QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
 )
+from libcommon.dtos import Status
 from libcommon.queue import JobDocument
 from libcommon.resources import MongoResource
-from libcommon.utils import Status, get_datetime
+from libcommon.utils import get_datetime
 from mongoengine.connection import get_db
 from pytest import raises
 

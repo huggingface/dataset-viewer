@@ -1,7 +1,7 @@
 from dataclasses import replace
 
+from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult

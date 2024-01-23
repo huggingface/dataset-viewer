@@ -11,10 +11,10 @@ import pandas as pd
 import polars as pl
 import pytest
 from datasets import ClassLabel, Dataset
+from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner

@@ -11,12 +11,13 @@ import orjson
 import pytest
 import pytz
 from filelock import FileLock
+from libcommon.dtos import JobInfo, Priority, Status
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, Priority, Status, get_datetime
+from libcommon.utils import get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
