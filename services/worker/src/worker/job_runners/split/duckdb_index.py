@@ -132,7 +132,7 @@ def compute_index_rows(
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-        split_directory = extract_split_name_from_url(split_parquet_files[0]["url"])
+        split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
         num_parquet_files_to_index = 0
