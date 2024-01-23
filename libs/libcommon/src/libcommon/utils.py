@@ -43,6 +43,24 @@ def get_json_size(obj: Any) -> int:
     return len(orjson_dumps(obj))
 
 
+# from https://stackoverflow.com/a/43848928/7351594
+def utf8_lead_byte(b: int) -> bool:
+    """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
+    return (b & 0xC0) != 0x80
+
+
+def utf8_byte_truncate(text: str, max_bytes: int) -> str:
+    """If text[max_bytes] is not a lead byte, back up until a lead byte is
+    found and truncate before that character."""
+    utf8 = text.encode("utf8")
+    if len(utf8) <= max_bytes:
+        return text
+    i = max_bytes
+    while i > 0 and not utf8_lead_byte(utf8[i]):
+        i -= 1
+    return utf8[:i].decode("utf8", "ignore")
+
+
 def get_datetime(days: Optional[float] = None) -> datetime:
     date = datetime.now(timezone.utc)
     if days is not None:
