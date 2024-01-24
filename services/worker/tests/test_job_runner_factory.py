@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+from libcommon.dtos import JobInfo, Priority
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, Priority
 
 from worker.config import AppConfig
 from worker.job_runner_factory import JobRunnerFactory
@@ -52,8 +52,9 @@ def test_create_job_runner(
 ) -> None:
     storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(tmp_path / "assets"),
+        base_url=app_config.assets.base_url,
+        overwrite=True,  # all the job runners will overwrite the files
     )
     factory = JobRunnerFactory(
         app_config=app_config,

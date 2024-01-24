@@ -8,9 +8,9 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Optional
 
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import DiskError
 from libcommon.storage import init_dir, remove_dir
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner

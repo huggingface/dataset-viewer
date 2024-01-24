@@ -1,5 +1,5 @@
 services:
-  common:
+  libcommon:
     environment:
       # common
       COMMON_BLOCKED_DATASETS: ${COMMON_BLOCKED_DATASETS-}
@@ -19,31 +19,30 @@ services:
       # metrics
       METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
       METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
-      # worker
-      WORKER_CONTENT_MAX_BYTES: ${WORKER_CONTENT_MAX_BYTES-10_000_000}
-      WORKER_KILL_LONG_JOB_INTERVAL_SECONDS: ${WORKER_KILL_LONG_JOB_INTERVAL_SECONDS-60}
-      WORKER_KILL_ZOMBIES_INTERVAL_SECONDS: ${WORKER_KILL_ZOMBIES_INTERVAL_SECONDS-600}
-      WORKER_MAX_DISK_USAGE_PCT: ${WORKER_MAX_DISK_USAGE_PCT-90}
-      WORKER_MAX_JOB_DURATION_SECONDS: ${WORKER_MAX_JOB_DURATION_SECONDS-1200}
-      WORKER_MAX_MISSING_HEARTBEATS: ${WORKER_MAX_MISSING_HEARTBEATS-5}
-      WORKER_MAX_LOAD_PCT: ${WORKER_MAX_LOAD_PCT-70}
-      WORKER_MAX_MEMORY_PCT: ${WORKER_MAX_MEMORY_PCT-80}
-      WORKER_SLEEP_SECONDS: ${WORKER_SLEEP_SECONDS-15}
+    # assets
+      ASSETS_BASE_URL: ${ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/assets
+      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
+      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
+      # cached assets
+      CACHED_ASSETS_BASE_URL: ${CACHED_ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets
+      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
+      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
+      # S3
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY-}
+      S3_REGION_NAME: ${S3_REGION_NAME-us-east-1}
+      # cloudfront (for signed URLs)
+      CLOUDFRONT_EXPIRATION_SECONDS: ${CLOUDFRONT_EXPIRATION_SECONDS-3600}
+      CLOUDFRONT_KEY_PAIR_ID: ${CLOUDFRONT_KEY_PAIR_ID-}
+      CLOUDFRONT_PRIVATE_KEY: ${CLOUDFRONT_PRIVATE_KEY-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # volumes to local source directory for development
     volumes:
       - ../libs/libcommon/src:/src/libs/libcommon/src
-  admin:
-    extends:
-      service: common
-    # volumes to local source directory for development
-    volumes:
-      - ../libs/libapi/src:/src/libs/libapi/src
-      - ../services/admin/src:/src/services/admin/src
-  api:
-    extends:
-      service: common
+    network_mode: ${DEV_NETWORK_MODE}
+  libapi:
+    extends: libcommon
     environment:
       NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
       # service
@@ -54,54 +53,6 @@ services:
       API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-10.0}
       API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
       API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
-
     # volumes to local source directory for development
     volumes:
       - ../libs/libapi/src:/src/libs/libapi/src
-      - ../services/api/src:/src/services/api/src
-  rows:
-    extends:
-      service: common
-    environment:
-      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
-    # volumes to local source directory for development
-    volumes:
-      - ../libs/libapi/src:/src/libs/libapi/src
-      - ../services/rows/src:/src/services/rows/src
-  search:
-    extends:
-      service: common
-    environment:
-    # volumes to local source directory for development
-    volumes:
-      - ../libs/libapi/src:/src/libs/libapi/src
-      - ../services/search/src:/src/services/search/src
-  sse-api:
-    extends:
-      service: common
-    environment:
-      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
-      # service
-      API_HF_AUTH_PATH: ${API_HF_AUTH_PATH-/api/datasets/%s/auth-check}
-      API_HF_JWT_PUBLIC_KEY_URL: ${API_HF_JWT_PUBLIC_KEY_URL}
-      API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: ${API_HF_JWT_ADDITIONAL_PUBLIC_KEYS}
-      API_HF_JWT_ALGORITHM: ${API_HF_JWT_ALGORITHM-EdDSA}
-      API_HF_TIMEOUT_SECONDS: ${API_HF_TIMEOUT_SECONDS-10.0}
-      API_MAX_AGE_LONG: ${API_MAX_AGE_LONG-120}
-      API_MAX_AGE_SHORT: ${API_MAX_AGE_SHORT-10}
-
-    # volumes to local source directory for development
-    volumes:
-      - ../libs/libapi/src:/src/libs/libapi/src
-      - ../services/sse-api/src:/src/services/sse-api/src
-  datasets-worker:
-    extends:
-      service: common
-    environment:
-      # datasets
-      DATASETS_BASED_HF_DATASETS_CACHE: ${HF_DATASETS_CACHE-/datasets-cache}
-      HF_MODULES_CACHE: ${HF_DATASETS_CACHE-/modules-cache}
-      NUMBA_CACHE_DIR: ${NUMBA_CACHE_DIR-/numba-cache}
-    # volumes to local source directory for development
-    volumes:
-      - ../services/worker/src:/src/services/worker/src

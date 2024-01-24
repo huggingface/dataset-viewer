@@ -34,11 +34,11 @@ if __name__ == "__main__":
 
     storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
-        root=app_config.assets.storage_root,
-        folder=app_config.assets.folder_name,
-        key=app_config.s3.access_key_id,
-        secret=app_config.s3.secret_access_key,
-        client_kwargs={"region_name": app_config.s3.region_name},
+        storage_root=app_config.assets.storage_root,
+        base_url=app_config.assets.base_url,
+        overwrite=True,  # all the job runners will overwrite the files
+        s3_config=app_config.s3,
+        # no need to specify cloudfront config here, as we are not generating signed urls in cached entries
     )
 
     with (
@@ -68,7 +68,6 @@ if __name__ == "__main__":
             storage_client=storage_client,
         )
         loop = Loop(
-            library_cache_paths=libraries_resource.storage_paths,
             job_runner_factory=job_runner_factory,
             state_file_path=state_file_path,
             app_config=app_config,

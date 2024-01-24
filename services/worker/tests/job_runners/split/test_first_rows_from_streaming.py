@@ -8,19 +8,20 @@ from pathlib import Path
 
 import pytest
 from datasets.packaged_modules import csv
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority
+from libcommon.utils import get_json_size
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_streaming import (
     SplitFirstRowsFromStreamingJobRunner,
 )
 from worker.resources import LibrariesResource
-from worker.utils import get_json_size
 
+from ...constants import ASSETS_BASE_URL
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
 
@@ -74,8 +75,9 @@ def get_job_runner(
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
             storage_client=StorageClient(
                 protocol="file",
-                root=str(tmp_path),
-                folder="assets",
+                storage_root=str(tmp_path / "assets"),
+                base_url=ASSETS_BASE_URL,
+                overwrite=True,  # all the job runners will overwrite the files
             ),
         )
 

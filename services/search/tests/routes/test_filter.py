@@ -22,11 +22,11 @@ pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture
-def storage_client(tmp_path: Path) -> StorageClient:
+def storage_client(tmp_path: Path, app_config: AppConfig) -> StorageClient:
     return StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=CACHED_ASSETS_FOLDER,
+        storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
+        base_url=app_config.cached_assets.base_url,
     )
 
 
@@ -104,7 +104,6 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
         revision="revision",
         config=config,
         split=split,
-        cached_assets_base_url=app_config.cached_assets.base_url,
         storage_client=storage_client,
         pa_table=pa_table,
         offset=0,

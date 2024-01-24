@@ -3,8 +3,8 @@
 
 from pathlib import Path
 
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import ParameterMissingError
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runner import JobRunner

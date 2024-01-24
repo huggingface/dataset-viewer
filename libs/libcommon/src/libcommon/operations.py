@@ -14,6 +14,7 @@ from huggingface_hub.utils import (
     validate_hf_hub_args,
 )
 
+from libcommon.dtos import Priority
 from libcommon.exceptions import (
     NotSupportedDisabledRepositoryError,
     NotSupportedDisabledViewerError,
@@ -23,7 +24,7 @@ from libcommon.exceptions import (
 )
 from libcommon.orchestrator import get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority, raise_if_blocked
+from libcommon.utils import raise_if_blocked
 
 
 @dataclass

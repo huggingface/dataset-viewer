@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypedDict, Union
 
-from libcommon.utils import FeatureItem, Row, RowItem, SplitHubFile
+from libcommon.dtos import FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
 
 
 class JobRunnerInfo(TypedDict):
@@ -29,26 +29,6 @@ class CompleteJobResult(JobResult):
     progress: float = field(init=False, default=1.0)
 
 
-class DatasetItem(TypedDict):
-    dataset: str
-
-
-class ConfigItem(DatasetItem):
-    config: Optional[str]
-
-
-class SplitItem(ConfigItem):
-    split: Optional[str]
-
-
-class FullConfigItem(DatasetItem):
-    config: str
-
-
-class FullSplitItem(FullConfigItem):
-    split: str
-
-
 class SplitsList(TypedDict):
     splits: list[FullSplitItem]
 
@@ -68,12 +48,6 @@ class PreviousJob(TypedDict):
     config: Optional[str]
     split: Optional[Union[str, None]]
     kind: str
-
-
-class SplitFirstRowsResponse(FullSplitItem):
-    features: list[FeatureItem]
-    rows: list[RowItem]
-    truncated: bool
 
 
 class OptUrl(TypedDict):
@@ -99,11 +73,6 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
 
 class ImageUrlColumnsResponse(TypedDict):
     columns: list[str]
-
-
-class RowsContent(TypedDict):
-    rows: list[Row]
-    all_fetched: bool
 
 
 class ConfigInfoResponse(TypedDict):

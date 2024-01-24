@@ -154,18 +154,24 @@ def poll_until_ready_and_assert(
     url: str = URL,
     check_x_revision: bool = False,
     dataset: Optional[str] = None,
+    should_retry_x_error_codes: Optional[list[str]] = None,
 ) -> Any:
     interval = INTERVAL
     timeout = MAX_DURATION
     retries = timeout // interval
     should_retry = True
     response = None
+    should_retry_x_error_codes = (should_retry_x_error_codes or []) + [
+        "ResponseNotReady",
+        "ResponseAlreadyComputedError",
+        "PreviousStepStillProcessingError",
+    ]
     while retries > 0 and should_retry:
         retries -= 1
         time.sleep(interval)
         response = get(relative_url=relative_url, headers=headers, url=url)
         print(response.headers.get("X-Error-Code"))
-        should_retry = response.headers.get("X-Error-Code") in ["ResponseNotReady", "ResponseAlreadyComputedError"]
+        should_retry = response.headers.get("X-Error-Code") in should_retry_x_error_codes
     if retries == 0 or response is None:
         raise RuntimeError("Poll timeout")
     assert response.status_code == expected_status_code, log(response, url, relative_url, dataset)

@@ -20,8 +20,8 @@ CACHED_ASSETS_FOLDER = "cached-assets"
 def storage_client(tmp_path: Path) -> StorageClient:
     return StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder=CACHED_ASSETS_FOLDER,
+        storage_root=str(tmp_path / CACHED_ASSETS_FOLDER),
+        base_url="http://localhost/cached-assets",
     )
 
 
@@ -32,7 +32,6 @@ async def test_create_response(storage_client: StorageClient) -> None:
         revision="revision",
         config="default",
         split="train",
-        cached_assets_base_url="http://localhost/cached-assets",
         storage_client=storage_client,
         pa_table=ds.data,
         offset=0,
@@ -61,7 +60,6 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
         revision="revision",
         config=config,
         split=split,
-        cached_assets_base_url="http://localhost/cached-assets",
         storage_client=storage_client,
         pa_table=ds_image.data,
         offset=0,
@@ -86,5 +84,5 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
     ]
     assert response["partial"] is False
     assert storage_client.exists(image_key)
-    image = PILImage.open(f"{storage_client.get_base_directory()}/{image_key}")
+    image = PILImage.open(f"{storage_client.storage_root}/{image_key}")
     assert image is not None

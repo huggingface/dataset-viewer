@@ -11,6 +11,7 @@ import numpy as np
 import polars as pl
 from datasets import ClassLabel, Features
 from huggingface_hub import hf_hub_download
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     NoSupportedFeaturesError,
@@ -19,14 +20,16 @@ from libcommon.exceptions import (
     SplitWithTooBigParquetError,
     StatisticsComputationError,
 )
+from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
+from requests.exceptions import ReadTimeout
 from tqdm import tqdm
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
+from worker.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
 
 REPO_TYPE = "dataset"
 
@@ -539,9 +542,10 @@ def compute_descriptive_statistics_response(
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-    split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+    split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
     for parquet_file in split_parquet_files:
-        hf_hub_download(
+        retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
+        retry_download_hub_file(
             repo_type=REPO_TYPE,
             revision=parquet_revision,
             repo_id=dataset,

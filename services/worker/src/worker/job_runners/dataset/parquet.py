@@ -4,13 +4,13 @@
 import logging
 from http import HTTPStatus
 
+from libcommon.dtos import SplitHubFile
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
     get_previous_step_or_raise,
     get_response,
 )
-from libcommon.utils import SplitHubFile
 
 from worker.dtos import (
     ConfigParquetResponse,

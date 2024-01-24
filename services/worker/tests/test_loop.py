@@ -1,7 +1,7 @@
 from dataclasses import replace
 
+from libcommon.dtos import JobInfo
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult
@@ -46,7 +46,6 @@ def test_process_next_job(
 
     loop = Loop(
         job_runner_factory=factory,
-        library_cache_paths=libraries_resource.storage_paths,
         app_config=app_config,
         state_file_path=worker_state_file_path,
     )

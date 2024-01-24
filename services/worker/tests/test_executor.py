@@ -11,12 +11,13 @@ import orjson
 import pytest
 import pytz
 from filelock import FileLock
+from libcommon.dtos import JobInfo, Priority, Status
 from libcommon.queue import JobDocument, JobDoesNotExistError, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, Priority, Status, get_datetime
+from libcommon.utils import get_datetime
 from mirakuru import ProcessExitedWithError, TimeoutExpired
 from pytest import fixture
 
@@ -36,7 +37,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
         job_id=job_id + "0" * (24 - len(job_id)),
         type="dataset-config-names",
         params={
-            "dataset": f"__DUMMY_DATASETS_SERVER_USER__/{prefix}_dataset_{_TIME}",
+            "dataset": f"DSSUser/{prefix}_dataset_{_TIME}",
             "revision": "revision",
             "config": "default",
             "split": "train",
@@ -206,8 +207,9 @@ def job_runner_factory(
 ) -> JobRunnerFactory:
     storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(tmp_path / "assets"),
+        base_url=app_config.assets.base_url,
+        overwrite=True,  # all the job runners will overwrite the files
     )
     return JobRunnerFactory(
         app_config=app_config,

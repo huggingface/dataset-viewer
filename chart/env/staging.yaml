@@ -80,6 +80,8 @@ secrets:
       API_HF_JWT_ADDITIONAL_PUBLIC_KEYS: "hub-ephemeral-datasets-server-jwt-additional-public-keys"
       AWS_ACCESS_KEY_ID: "hub-ephemeral-datasets-server-s3-access-key-id"
       AWS_SECRET_ACCESS_KEY: "hub-ephemeral-datasets-server-s3-secret-access-key"
+      CLOUDFRONT_KEY_PAIR_ID: "hub-ephemeral-datasets-server-cloudfront-key-id"
+      CLOUDFRONT_PRIVATE_KEY: "hub-ephemeral-datasets-server-cloudfront-key"
   mongoUrl:
     fromSecret: true
     secretName: "datasets-server-staging-secrets"
@@ -103,6 +105,13 @@ secrets:
       fromSecret: true
       secretName: "datasets-server-staging-secrets"
     secretAccessKey:
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
+  cloudfront:
+    keyPairId:
+      fromSecret: true
+      secretName: "datasets-server-staging-secrets"
+    privateKey:
       fromSecret: true
       secretName: "datasets-server-staging-secrets"
 
@@ -137,11 +146,11 @@ parquetAndInfo:
   maxDatasetSizeBytes: "500_000_000"
 
 assets:
-  storageRoot: "hf-datasets-server-statics-staging"
+  storageRoot: "hf-datasets-server-statics-staging/assets"
   storageProtocol: "s3"
 
 cachedAssets:
-  storageRoot: "hf-datasets-server-statics-staging"
+  storageRoot: "hf-datasets-server-statics-staging/cached-assets"
   storageProtocol: "s3"
 
 # --- jobs (pre-install/upgrade hooks) ---
@@ -152,7 +161,6 @@ mongodbMigration:
       cpu: 100m
     limits:
       cpu: 1
-
 
 # --- cron jobs  ---
 backfill:

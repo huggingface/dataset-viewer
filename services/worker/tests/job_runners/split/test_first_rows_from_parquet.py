@@ -12,19 +12,20 @@ import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
 from fsspec import AbstractFileSystem
+from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority
+from libcommon.utils import get_json_size
 
 from worker.config import AppConfig
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
-from worker.utils import get_json_size
 
+from ...constants import ASSETS_BASE_URL
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
@@ -77,8 +78,9 @@ def get_job_runner(
             parquet_metadata_directory=parquet_metadata_directory,
             storage_client=StorageClient(
                 protocol="file",
-                root=str(tmp_path),
-                folder="assets",
+                storage_root=str(tmp_path / "assets"),
+                base_url=ASSETS_BASE_URL,
+                overwrite=True,  # all the job runners will overwrite the files
             ),
         )
 

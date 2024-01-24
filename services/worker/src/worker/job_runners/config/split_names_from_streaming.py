@@ -7,6 +7,7 @@ from typing import Optional
 from datasets import get_dataset_split_names
 from datasets.builder import ManualDownloadError
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from libcommon.dtos import FullSplitItem
 from libcommon.exceptions import (
     DatasetManualDownloadError,
     DatasetWithScriptNotSupportedError,
@@ -14,7 +15,7 @@ from libcommon.exceptions import (
     SplitNamesFromStreamingError,
 )
 
-from worker.dtos import CompleteJobResult, FullSplitItem, SplitsList
+from worker.dtos import CompleteJobResult, SplitsList
 from worker.job_runners.config.config_job_runner import ConfigJobRunnerWithDatasetsCache
 from worker.utils import resolve_trust_remote_code
 

@@ -25,13 +25,13 @@ from datasets.packaged_modules.generator.generator import (
 )
 from datasets.utils.py_utils import asdict
 from huggingface_hub.hf_api import CommitOperationAdd, HfApi
+from libcommon.dtos import JobInfo, JobParams, Priority
 from libcommon.exceptions import (
     DatasetManualDownloadError,
 )
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import JobInfo, JobParams, Priority
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult

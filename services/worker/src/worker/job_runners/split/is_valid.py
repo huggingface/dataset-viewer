@@ -4,11 +4,11 @@
 import logging
 
 from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_HAS_PREVIEW_KINDS, SPLIT_HAS_SEARCH_KINDS
+from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
     has_any_successful_response,
 )
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult, IsValidResponse, JobResult

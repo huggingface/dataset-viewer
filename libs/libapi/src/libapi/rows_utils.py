@@ -7,8 +7,8 @@ from typing import Any, Optional
 
 import anyio
 from datasets import Features
-from libcommon.public_assets_storage import PublicAssetsStorage
-from libcommon.utils import Row
+from libcommon.dtos import Row
+from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_cell_value
 from tqdm.contrib.concurrent import thread_map
 
@@ -20,7 +20,7 @@ def _transform_row(
     config: str,
     split: str,
     features: Features,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     offset: int,
     row_idx_column: Optional[str],
 ) -> Row:
@@ -35,7 +35,7 @@ def _transform_row(
             cell=row[featureName] if featureName in row else None,
             featureName=featureName,
             fieldType=fieldType,
-            public_assets_storage=public_assets_storage,
+            storage_client=storage_client,
         )
         for (featureName, fieldType) in features.items()
     }
@@ -51,7 +51,7 @@ async def transform_rows(
     split: str,
     rows: list[Row],
     features: Features,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
     offset: int,
     row_idx_column: Optional[str],
 ) -> list[Row]:
@@ -62,7 +62,7 @@ async def transform_rows(
         config=config,
         split=split,
         features=features,
-        public_assets_storage=public_assets_storage,
+        storage_client=storage_client,
         offset=offset,
         row_idx_column=row_idx_column,
     )

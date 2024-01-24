@@ -11,8 +11,8 @@ from PIL import Image  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
-from libcommon.public_assets_storage import PublicAssetsStorage
 from libcommon.storage import StrPath, remove_dir
+from libcommon.storage_client import StorageClient
 
 ASSET_DIR_MODE = 0o755
 DATASETS_SERVER_MDATE_FILENAME = ".dss"
@@ -35,11 +35,10 @@ class AudioSource(TypedDict):
     type: str
 
 
-def generate_asset_src(
-    base_url: str, dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
-) -> tuple[str, str]:
-    dir_path = f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}"
-    return dir_path, f"{base_url}/{dir_path}/{filename}"
+def generate_object_key(
+    dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
+) -> str:
+    return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
 
 
 def create_image_file(
@@ -52,15 +51,9 @@ def create_image_file(
     filename: str,
     image: Image.Image,
     format: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> ImageSource:
-    # get url dir path
-    assets_base_url = public_assets_storage.assets_base_url
-    overwrite = public_assets_storage.overwrite
-    storage_client = public_assets_storage.storage_client
-
-    dir_path, src = generate_asset_src(
-        base_url=assets_base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,
@@ -69,13 +62,13 @@ def create_image_file(
         column=column,
         filename=filename,
     )
-    object_key = f"{dir_path}/{filename}"
-    image_path = f"{storage_client.get_base_directory()}/{object_key}"
-
-    if overwrite or not storage_client.exists(object_key=object_key):
-        with storage_client._fs.open(image_path, "wb") as f:
-            image.save(fp=f, format=format)
-    return ImageSource(src=src, height=image.height, width=image.width)
+    if storage_client.overwrite or not storage_client.exists(object_key):
+        buffer = BytesIO()
+        image.save(fp=buffer, format=format)
+        buffer.seek(0)
+        with storage_client._fs.open(storage_client.get_full_path(object_key), "wb") as f:
+            f.write(buffer.read())
+    return ImageSource(src=storage_client.get_url(object_key), height=image.height, width=image.width)
 
 
 def create_audio_file(
@@ -88,15 +81,9 @@ def create_audio_file(
     audio_file_bytes: bytes,
     audio_file_extension: Optional[str],
     filename: str,
-    public_assets_storage: PublicAssetsStorage,
+    storage_client: StorageClient,
 ) -> list[AudioSource]:
-    # get url dir path
-    assets_base_url = public_assets_storage.assets_base_url
-    overwrite = public_assets_storage.overwrite
-    storage_client = public_assets_storage.storage_client
-
-    dir_path, src = generate_asset_src(
-        base_url=assets_base_url,
+    object_key = generate_object_key(
         dataset=dataset,
         revision=revision,
         config=config,
@@ -105,8 +92,6 @@ def create_audio_file(
         column=column,
         filename=filename,
     )
-    object_key = f"{dir_path}/{filename}"
-    audio_path = f"{storage_client.get_base_directory()}/{object_key}"
     suffix = f".{filename.split('.')[-1]}"
     if suffix not in SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE:
         raise ValueError(
@@ -115,7 +100,8 @@ def create_audio_file(
         )
     media_type = SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE[suffix]
 
-    if overwrite or not storage_client.exists(object_key=object_key):
+    if storage_client.overwrite or not storage_client.exists(object_key):
+        audio_path = storage_client.get_full_path(object_key)
         if audio_file_extension == suffix:
             with storage_client._fs.open(audio_path, "wb") as f:
                 f.write(audio_file_bytes)
@@ -131,4 +117,4 @@ def create_audio_file(
                 buffer.seek(0)
                 with storage_client._fs.open(audio_path, "wb") as f:
                     f.write(buffer.read())
-    return [AudioSource(src=src, type=media_type)]
+    return [AudioSource(src=storage_client.get_url(object_key), type=media_type)]

@@ -19,10 +19,10 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.parquet import ConfigParquetJobRunner
@@ -32,6 +32,7 @@ from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
     CREATE_TABLE_COMMANDS,
     SplitDuckDbIndexJobRunner,
+    get_delete_operations,
     get_indexable_columns,
 )
 from worker.resources import LibrariesResource
@@ -396,6 +397,34 @@ def test_compute(
         con.close()
         os.remove(file_name)
     job_runner.post_compute()
+
+
+@pytest.mark.parametrize(
+    "split_names,config,deleted_files",
+    [
+        (
+            {"s1", "s2"},
+            "c1",
+            set(),
+        ),
+        (
+            {"s1"},
+            "c2",
+            {"c2/s2/index.duckdb", "c2/s2/0.parquet"},
+        ),
+    ],
+)
+def test_get_delete_operations(split_names: set[str], config: str, deleted_files: set[str]) -> None:
+    all_repo_files = {
+        "c1/s1/0.parquet",
+        "c1/s1/index.duckdb",
+        "c2/s1/0.parquet",
+        "c2/s1/index.duckdb",
+        "c2/s2/0.parquet",
+        "c2/s2/index.duckdb",
+    }
+    delete_operations = get_delete_operations(all_repo_files=all_repo_files, split_names=split_names, config=config)
+    assert set(delete_operation.path_in_repo for delete_operation in delete_operations) == deleted_files
 
 
 @pytest.mark.parametrize(

@@ -5,11 +5,11 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
+from libcommon.dtos import JobInfo, Priority
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.simple_cache import upsert_response
-from libcommon.utils import JobInfo, Priority
 
 DATASET_NAME = "dataset"
 

@@ -7,10 +7,10 @@ from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import patch
 
+from libcommon.dtos import Priority, Status
 from libcommon.queue import Queue
 from libcommon.simple_cache import has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
-from libcommon.utils import Priority, Status
 
 from admin.routes.recreate_dataset import recreate_dataset
 
@@ -18,28 +18,29 @@ REVISION_NAME = "revision"
 
 
 def test_recreate_dataset(tmp_path: Path) -> None:
+    assets_directory = tmp_path / "assets"
+    cached_assets_directory = tmp_path / "cached-assets"
+
     assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="assets",
+        storage_root=str(assets_directory),
+        base_url="http://notimportant/assets",
     )
     cached_assets_storage_client = StorageClient(
         protocol="file",
-        root=str(tmp_path),
-        folder="cached-assets",
+        storage_root=str(cached_assets_directory),
+        base_url="http://notimportant/cached-assets",
     )
 
-    assets_directory = tmp_path / "assets"
-    cached_assets_directory = tmp_path / "cached-assets"
     dataset = "dataset"
     os.makedirs(f"{assets_directory}/{dataset}", exist_ok=True)
     os.makedirs(f"{cached_assets_directory}/{dataset}", exist_ok=True)
 
-    asset_file = Path(f"{assets_directory}/{dataset}/image.jpg")
+    asset_file = assets_directory / dataset / "image.jpg"
     asset_file.touch()
     assert asset_file.is_file()
 
-    cached_asset_file = Path(f"{cached_assets_directory}/{dataset}/image.jpg")
+    cached_asset_file = cached_assets_directory / dataset / "image.jpg"
     cached_asset_file.touch()
     assert cached_asset_file.is_file()
 
