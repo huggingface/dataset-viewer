@@ -62,7 +62,7 @@ def update_repo_settings(
     Returns:
         The HTTP response in json.
     <Tip>
-    Raises the following errors:
+    Raises:
         - [`~huggingface_hub.utils.RepositoryNotFoundError`]
             If the repository to download from cannot be found. This may be because it doesn't exist,
             or because it is set to `private` and you do not have access.

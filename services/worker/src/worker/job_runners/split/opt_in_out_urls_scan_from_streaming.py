@@ -138,7 +138,7 @@ def compute_opt_in_out_urls_scan_response(
 
     Returns:
         [`OptInOutUrlsScanResponse`]
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

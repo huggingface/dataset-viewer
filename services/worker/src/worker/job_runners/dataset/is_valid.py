@@ -17,9 +17,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     """
-    Get the response of /is-valid for one specific dataset on huggingface.co.
-
-
+    Get the response of `dataset-is-valid` for one specific dataset on huggingface.co.
     A dataset is valid if at least one response of any of the artifacts for any of the
     steps (for viewer and preview) is valid.
     The deprecated `valid` field is an "or" of the `preview` and `viewer` fields.

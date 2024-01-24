@@ -18,7 +18,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, float]:
     """
-    Get the response of dataset-info for one specific dataset on huggingface.co.
+    Get the response of `dataset-info` for one specific dataset on huggingface.co.
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -28,7 +28,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
         progress float value from 0. to 1. which corresponds to the percentage of dataset configs
         correctly processed and included in current response (some configs might not exist in cache yet
         or raise errors).
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

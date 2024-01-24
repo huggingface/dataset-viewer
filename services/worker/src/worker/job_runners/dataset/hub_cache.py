@@ -12,21 +12,25 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, float]:
     """
-    Get the content of a /sse/hub-cache SSE for one specific dataset on huggingface.co.
-
+    Get the response of `dataset-hub-cache` for one specific dataset on huggingface.co.
     Its purpose is specific to the Hub, and we won't ensure backward compatibility for this step.
     It provides information about:
     - the capabilities of the dataset: preview and viewer
     - the number of rows and if the dataset is partial
 
     Args:
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+        dataset (:obj:`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        PreviousStepFormatError:
+            If the content of the previous step has not the expected format
+
     Returns:
-        `tuple[DatasetHubCacheResponse, float]`: The response and the progress.
+        :obj:`tuple[DatasetHubCacheResponse, float]`: 
+            A tuple containing the response and the progress.
     """
-    logging.info(f"get hub_cache response for {dataset=}")
+    logging.info(f"get 'dataset-hub-cache' response for {dataset=}")
 
     is_valid_response = get_previous_step_or_raise(kinds=["dataset-is-valid"], dataset=dataset)
     content = is_valid_response.response["content"]

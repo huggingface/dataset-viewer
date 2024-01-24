@@ -74,7 +74,7 @@ def compute_first_rows_response(
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
     Returns:
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.SplitNotFoundError`]
           If the split does not exist in the dataset.
         - [`libcommon.exceptions.InfoError`]

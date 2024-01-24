@@ -284,7 +284,7 @@ def is_dataset_too_big(
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.UnsupportedExternalFilesError`]
           If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
@@ -1080,7 +1080,7 @@ def compute_config_parquet_and_info_response(
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
           (dataset info and list of parquet files).
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)

@@ -18,7 +18,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
             Dataset configuration name
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

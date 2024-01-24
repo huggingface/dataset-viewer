@@ -21,7 +21,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             A configuration name.
     Returns:
         `ConfigSizeResponse`: An object with the size_response.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

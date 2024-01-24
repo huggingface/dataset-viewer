@@ -31,7 +31,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
             A configuration name.
     Returns:
         `ConfigDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

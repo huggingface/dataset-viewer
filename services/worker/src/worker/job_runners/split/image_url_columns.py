@@ -35,7 +35,7 @@ def compute_image_url_columns(
             A split name.
     Returns:
         [`ImageUrlColumnsResponse`]: The list of image url columns.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

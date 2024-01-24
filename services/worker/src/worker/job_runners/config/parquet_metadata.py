@@ -71,8 +71,7 @@ def compute_parquet_metadata_response(
             The directory where the parquet metadata files are stored.
     Returns:
         `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
-    <Tip>
-    Raises the following errors:
+    Raises:
         - [`~libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`~libcommon.exceptions.PreviousStepFormatError`]
@@ -81,7 +80,6 @@ def compute_parquet_metadata_response(
             If the previous step provided an empty list of parquet files.
         - [`~libcommon.exceptions.FileSystemError`]
             If the HfFileSystem couldn't access the parquet files.
-    </Tip>
     """
     logging.info(f"get parquet files for dataset={dataset}, config={config}")
 

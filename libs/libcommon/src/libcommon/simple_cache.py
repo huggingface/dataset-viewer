@@ -724,7 +724,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     Returns:
         [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    Raises the following errors:
+    Raises:
         - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
         - [`~simple_cache.InvalidLimit`]
@@ -817,7 +817,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     Returns:
         [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
-    Raises the following errors:
+    Raises:
         - [`~simple_cache.InvalidCursor`]
           If the cursor is invalid.
         - [`~simple_cache.InvalidLimit`]

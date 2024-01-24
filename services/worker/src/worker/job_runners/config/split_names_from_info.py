@@ -27,7 +27,7 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
             A configuration name.
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

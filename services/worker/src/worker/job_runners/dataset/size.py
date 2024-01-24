@@ -33,7 +33,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             by a `/`.
     Returns:
         `DatasetSizeResponse`: An object with the sizes_response.
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]

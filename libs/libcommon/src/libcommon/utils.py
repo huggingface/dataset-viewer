@@ -115,7 +115,7 @@ def raise_if_blocked(
 
     Returns:
         `None`
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """

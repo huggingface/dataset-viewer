@@ -482,7 +482,7 @@ def compute_descriptive_statistics_response(
         `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
         numerical (int and float) or ClassLabel feature.
 
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step does not have the expected format.
         - [`libcommon.exceptions.ParquetResponseEmptyError`]
