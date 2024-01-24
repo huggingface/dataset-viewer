@@ -1,14 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+import itertools
 from collections.abc import Mapping
+from copy import deepcopy
 
 import pytest
 
-from libcommon.url_signer import AssetUrlPath, get_asset_url_paths, to_features_dict
+from libcommon.dtos import RowsContent
+from libcommon.storage_client import StorageClient
+from libcommon.url_signer import URLSigner, get_asset_url_paths, to_features_dict
 from libcommon.viewer_utils.features import to_features_list
+from libcommon.viewer_utils.rows import create_first_rows_response
 
-from .constants import DATASETS_NAMES
+from .constants import DATASETS_NAMES, DEFAULT_CONFIG, DEFAULT_REVISION, DEFAULT_SPLIT
 from .types import DatasetFixture
 
 
@@ -27,24 +32,97 @@ def test_to_features_dict(datasets_fixtures: Mapping[str, DatasetFixture], datas
 def test_get_asset_url_paths(datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     asset_url_paths = get_asset_url_paths(dataset_fixture.dataset.features)
-    assert isinstance(asset_url_paths, list)
-    if dataset_name in {"audio", "audio_ogg"}:
-        assert len(asset_url_paths) == 1
-        assert asset_url_paths[0] == AssetUrlPath(feature_type="Audio", path=["col", 0])
-    elif dataset_name in {"images_list", "images_sequence"}:
-        assert len(asset_url_paths) == 1
-        assert asset_url_paths[0] == AssetUrlPath(feature_type="Image", path=["col", 0])
-    elif dataset_name in {"image"}:
-        assert len(asset_url_paths) == 1
-        assert asset_url_paths[0] == AssetUrlPath(feature_type="Image", path=["col"])
-    elif dataset_name in {"audios_list", "audios_sequence"}:
-        assert len(asset_url_paths) == 1
-        assert asset_url_paths[0] == AssetUrlPath(feature_type="Audio", path=["col", 0, 0])
-    elif dataset_name in {"dict_of_audios_and_images"}:
-        assert len(asset_url_paths) == 2
-        assert asset_url_paths == [
-            AssetUrlPath(feature_type="Image", path=["col", "b", 0]),
-            AssetUrlPath(feature_type="Audio", path=["col", "c", "ca", 0, 0]),
-        ]
-    else:
-        assert len(asset_url_paths) == 0
+    assert asset_url_paths == dataset_fixture.expected_asset_url_paths
+
+
+FAKE_SIGNING_PREFIX = "?signed"
+
+
+class FakeUrlSigner(URLSigner):
+    def __init__(self) -> None:
+        self.counter = 0
+
+    def sign_url(self, url: str) -> str:
+        self.counter += 1
+        return url + FAKE_SIGNING_PREFIX
+
+
+@pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
+def test__sign_asset_url_path_in_place(datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str) -> None:
+    dataset_fixture = datasets_fixtures[dataset_name]
+    url_signer = FakeUrlSigner()
+    for asset_url_path in dataset_fixture.expected_asset_url_paths:
+        cell_asset_url_path = asset_url_path.enter()
+        # ^ remove the column name, as we will sign the cell, not the row
+        url_signer._sign_asset_url_path_in_place(
+            cell=deepcopy(dataset_fixture.expected_cell), asset_url_path=cell_asset_url_path
+        )
+
+    assert url_signer.counter == dataset_fixture.expected_num_asset_urls
+
+
+@pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
+def test__get_asset_url_paths_from_first_rows(
+    storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
+) -> None:
+    dataset_fixture = datasets_fixtures[dataset_name]
+    dataset = dataset_fixture.dataset
+
+    # no need for the rows in this test
+    def get_fake_rows_content(rows_max_number: int) -> RowsContent:  # noqa: ARG001
+        return RowsContent(rows=[], all_fetched=False)
+
+    first_rows = create_first_rows_response(
+        dataset=dataset_name,
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        storage_client=storage_client,
+        features=dataset.features,
+        get_rows_content=get_fake_rows_content,
+        min_cell_bytes=0,
+        rows_max_bytes=1000000,
+        rows_max_number=1000000,
+        rows_min_number=0,
+        columns_max_number=100000,
+    )
+
+    url_signer = FakeUrlSigner()
+    asset_url_paths = url_signer._get_asset_url_paths_from_first_rows(first_rows=first_rows)
+
+    assert asset_url_paths == dataset_fixture.expected_asset_url_paths
+
+
+@pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
+def test_sign_urls_in_first_rows_in_place(
+    storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
+) -> None:
+    if dataset_name != "dict_of_audios_and_images":
+        pytest.skip("This test is only for the dict_of_audios_and_images dataset")
+    dataset_fixture = datasets_fixtures[dataset_name]
+    dataset = dataset_fixture.dataset
+
+    def get_rows_content(rows_max_number: int) -> RowsContent:
+        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+        # ^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
+        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
+
+    first_rows = create_first_rows_response(
+        dataset=dataset_name,
+        revision=DEFAULT_REVISION,
+        config=DEFAULT_CONFIG,
+        split=DEFAULT_SPLIT,
+        storage_client=storage_client,
+        features=dataset.features,
+        get_rows_content=get_rows_content,
+        min_cell_bytes=0,
+        rows_max_bytes=1000000,
+        rows_max_number=1000000,
+        rows_min_number=0,
+        columns_max_number=100000,
+    )
+
+    url_signer = FakeUrlSigner()
+    url_signer.sign_urls_in_first_rows_in_place(first_rows=first_rows)
+
+    assert url_signer.counter == dataset_fixture.expected_num_asset_urls

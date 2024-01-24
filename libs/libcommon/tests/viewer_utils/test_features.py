@@ -66,7 +66,7 @@ def test_get_cell_value_value(
         if decoded
         else dataset.with_format("arrow")[DEFAULT_ROW_IDX].to_pydict()[DEFAULT_COLUMN_NAME][DEFAULT_ROW_IDX]
     )
-    expected_cell = dataset_fixture.expected_row[DEFAULT_COLUMN_NAME]
+    expected_cell = dataset_fixture.expected_cell
     value = get_cell_value(
         dataset=dataset_name,
         revision=DEFAULT_REVISION,
@@ -183,7 +183,7 @@ def test_ogg_audio_with_s3(
                 fieldType=feature,
                 storage_client=storage_client,
             )
-            assert value == dataset_fixture.expected_row[DEFAULT_COLUMN_NAME]
+            assert value == dataset_fixture.expected_cell
 
 
 @pytest.mark.parametrize(

@@ -6,9 +6,13 @@ from typing import Any
 
 from datasets import Dataset
 
+from libcommon.url_signer import AssetUrlPath
+
 
 @dataclass
 class DatasetFixture:
     dataset: Dataset
     expected_feature_type: Any
-    expected_row: Any
+    expected_cell: Any
+    expected_asset_url_paths: list[AssetUrlPath]
+    expected_num_asset_urls: int

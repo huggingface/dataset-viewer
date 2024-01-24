@@ -34,7 +34,7 @@ def test_create_image_file(storage_client: StorageClient, datasets_fixtures: Map
         format="JPEG",
         storage_client=storage_client,
     )
-    assert value == dataset_fixture.expected_row[DEFAULT_COLUMN_NAME]
+    assert value == dataset_fixture.expected_cell
     image_key = value["src"].removeprefix(f"{ASSETS_BASE_URL}/")
     assert storage_client.exists(image_key)
 

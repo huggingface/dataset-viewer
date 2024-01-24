@@ -11,7 +11,7 @@ from libcommon.dtos import RowsContent
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
 
-from ..constants import DATASETS_NAMES, DEFAULT_CONFIG, DEFAULT_REVISION, DEFAULT_SPLIT
+from ..constants import DATASETS_NAMES, DEFAULT_COLUMN_NAME, DEFAULT_CONFIG, DEFAULT_REVISION, DEFAULT_SPLIT
 from ..types import DatasetFixture
 
 
@@ -42,4 +42,4 @@ def test_create_first_rows_response(
         columns_max_number=100000,
     )
     assert response["features"][0]["type"] == dataset_fixture.expected_feature_type
-    assert response["rows"][0]["row"] == dataset_fixture.expected_row
+    assert response["rows"][0]["row"] == {DEFAULT_COLUMN_NAME: dataset_fixture.expected_cell}
