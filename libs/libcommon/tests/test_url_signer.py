@@ -97,8 +97,6 @@ def test__get_asset_url_paths_from_first_rows(
 def test_sign_urls_in_first_rows_in_place(
     storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
 ) -> None:
-    if dataset_name != "dict_of_audios_and_images":
-        pytest.skip("This test is only for the dict_of_audios_and_images dataset")
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
 
