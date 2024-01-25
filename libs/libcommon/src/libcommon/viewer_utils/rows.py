@@ -53,14 +53,12 @@ def to_row_item(row_idx: int, row: Row) -> RowItem:
     }
 
 
-# Mutates row_item, and returns it anyway
 def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: list[str]) -> RowItem:
     """
     Truncate all the cells of a row item to min_cell_bytes, and return the row item.
 
     The row item is mutated, and the cells are replaced by their JSON serialization, truncated to min_cell_bytes.
-    The names of the truncated cells are listed in row_item["truncated_cells"] (note that we just append them, it
-    might contain duplicates)
+    The names of the truncated cells are listed in row_item["truncated_cells"].
 
     Args:
         row_item ([`RowItem`]): the row item to truncate
@@ -79,7 +77,8 @@ def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_un
         try:
             truncated_serialized_cell = serialize_and_truncate(obj=cell, max_bytes=min_cell_bytes)
             row_item["row"][column_name] = truncated_serialized_cell
-            row_item["truncated_cells"].append(column_name)
+            if column_name not in row_item["truncated_cells"]:
+                row_item["truncated_cells"].append(column_name)
         except SmallerThanMaxBytesError:
             # the cell serialization is smaller than min_cell_bytes, we keep it untouched
             continue
