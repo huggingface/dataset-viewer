@@ -17,6 +17,7 @@ from libcommon.utils import (
     is_image_url,
     orjson_dumps,
     raise_if_blocked,
+    utf8_byte_truncate,
 )
 
 
@@ -102,3 +103,30 @@ def test_get_expires() -> None:
         assert date > mock_datetime.now(timezone.utc)
         assert date < mock_datetime.now(timezone.utc) + timedelta(hours=2)
     assert date == EXAMPLE_DATETIME
+
+
+NINE_CHARS_TEXT = "Some text"
+FOUR_BYTES_UTF8 = "🤗"
+OBJ = orjson_dumps({"a": 1, "b": 2}).decode("utf-8")
+EXPECTED_OBJ = '{"a":1,"b":2}'
+
+
+@pytest.mark.parametrize(
+    "text,max_bytes,expected",
+    [
+        (NINE_CHARS_TEXT, 0, ""),
+        (NINE_CHARS_TEXT, 1, NINE_CHARS_TEXT[0]),
+        (NINE_CHARS_TEXT, 8, NINE_CHARS_TEXT[0:8]),
+        (NINE_CHARS_TEXT, 9, NINE_CHARS_TEXT),
+        (NINE_CHARS_TEXT, 10, NINE_CHARS_TEXT),
+        (NINE_CHARS_TEXT, 100, NINE_CHARS_TEXT),
+        (FOUR_BYTES_UTF8, 1, ""),
+        (FOUR_BYTES_UTF8, 2, ""),
+        (FOUR_BYTES_UTF8, 4, FOUR_BYTES_UTF8),
+        (OBJ, 1, "{"),
+        (OBJ, 3, '{"a'),
+        (OBJ, 100, EXPECTED_OBJ),
+    ],
+)
+def test_utf8_byte_truncate(text: str, max_bytes: int, expected: str) -> None:
+    assert utf8_byte_truncate(text=text, max_bytes=max_bytes) == expected
