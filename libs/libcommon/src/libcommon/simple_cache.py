@@ -31,7 +31,8 @@ from libcommon.constants import (
     CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
 )
-from libcommon.utils import JobParams, get_datetime
+from libcommon.dtos import JobParams
+from libcommon.utils import get_datetime
 
 
 class DateCodec(TypeEncoder):  # type: ignore[misc]

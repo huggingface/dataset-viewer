@@ -16,7 +16,7 @@ export SEARCH_UVICORN_PORT := 9083
 export COMMON_HF_ENDPOINT := https://hub-ci.huggingface.co
 export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
-export COMMON_BLOCKED_DATASETS := __DUMMY_DATASETS_SERVER_USER__/blocked-*
+export COMMON_BLOCKED_DATASETS := DSSUser/blocked-*
 export LOG_LEVEL := DEBUG
 export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
@@ -33,6 +33,19 @@ export ADMIN_HF_ORGANIZATION := valid_org
 export E2E_ADMIN_USER_TOKEN := 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
 
 export COMPOSE_PROJECT_NAME := e2e
+
+# set the secret environment variables by your own (ie. in a .env file, and source it):
+export ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/assets
+export ASSETS_STORAGE_PROTOCOL := s3
+export ASSETS_STORAGE_ROOT := hf-datasets-server-statics-test/assets
+export CACHED_ASSETS_BASE_URL := https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets
+export CACHED_ASSETS_STORAGE_PROTOCOL := s3
+export CACHED_ASSETS_STORAGE_ROOT := hf-datasets-server-statics-test/cached-assets
+export CLOUDFRONT_KEY_PAIR_ID := K3814DK2QUJ71H
+# CLOUDFRONT_PRIVATE_KEY <- secret
+export S3_REGION_NAME := us-east-1
+# S3_ACCESS_KEY_ID       <- secret
+# S3_SECRET_ACCESS_KEY   <- secret
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml

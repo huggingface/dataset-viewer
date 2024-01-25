@@ -16,6 +16,7 @@ from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
+from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
@@ -30,7 +31,6 @@ from libcommon.simple_cache import (
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
 from libcommon.storage_client import StorageClient
-from libcommon.utils import JobInfo, JobResult, Priority
 
 # TODO: clean dangling cache entries
 

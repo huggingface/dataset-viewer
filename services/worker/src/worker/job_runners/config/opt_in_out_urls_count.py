@@ -7,25 +7,16 @@ from http import HTTPStatus
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
-    get_previous_step_or_raise,
     get_response,
 )
 
 from worker.dtos import JobResult, OptInOutUrlsCountResponse
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import get_split_names
 
 
 def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"get config-opt-in-out-urls-count for dataset={dataset} config={config}")
-
-    split_names_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"],
-        dataset=dataset,
-        config=config,
-    )
-    content = split_names_response.response["content"]
-    if "splits" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
 
     urls_columns = []
     num_opt_in_urls = 0
@@ -33,11 +24,11 @@ def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[Op
     num_urls = 0
     num_scanned_rows = 0
     full_scan_count = 0
+    splits = get_split_names(dataset=dataset, config=config)
     try:
         total = 0
         pending = 0
-        for split_item in content["splits"]:
-            split = split_item["split"]
+        for split in splits:
             total += 1
             try:
                 response = get_response(

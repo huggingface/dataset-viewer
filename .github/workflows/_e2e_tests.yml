@@ -52,9 +52,21 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
-          COMMON_BLOCKED_DATASETS: "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+          COMMON_BLOCKED_DATASETS: "DSSUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
+          # the containers need to access S3 and Cloudfront
+          ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/assets"
+          ASSETS_STORAGE_PROTOCOL: "s3"
+          ASSETS_STORAGE_ROOT: "hf-datasets-server-statics-test/assets"
+          CACHED_ASSETS_BASE_URL: "https://datasets-server-test.us.dev.moon.huggingface.tech/cached-assets"
+          CACHED_ASSETS_STORAGE_PROTOCOL: "s3"
+          CACHED_ASSETS_STORAGE_ROOT: "hf-datasets-server-statics-test/cached-assets"
+          S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+          S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          S3_REGION_NAME: "us-east-1"
+          CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
+          CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
         run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry
@@ -98,7 +110,7 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
-          COMMON_BLOCKED_DATASETS: "__DUMMY_DATASETS_SERVER_USER__/blocked-*"
+          COMMON_BLOCKED_DATASETS: "DSSUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
         run: |

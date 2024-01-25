@@ -4,6 +4,7 @@
 import copy
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +22,7 @@ from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundErro
 from libcommon.constants import (
     DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
 )
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     CreateCommitError,
@@ -30,11 +32,10 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import parquet_export_is_partial
+from libcommon.parquet_utils import extract_split_name_from_parquet_url, parquet_export_is_partial
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from libcommon.utils import JobInfo
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DuckDbIndexConfig
@@ -44,6 +45,7 @@ from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
+    get_split_names,
     hf_hub_url,
     retry,
 )
@@ -78,6 +80,18 @@ def get_indexable_columns(features: Features) -> list[str]:
         if indexable:
             indexable_columns.append(column)
     return indexable_columns
+
+
+def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
+    same_config_pattern = re.compile(f"^({re.escape(config)})/")
+    existing_split_pattern = re.compile(
+        f"^({'|'.join(re.escape(f'{config}/{split_name}') for split_name in split_names)})/"
+    )
+    return [
+        CommitOperationDelete(path_in_repo=file)
+        for file in all_repo_files
+        if same_config_pattern.match(file) and not existing_split_pattern.match(file)
+    ]
 
 
 def compute_index_rows(
@@ -118,7 +132,7 @@ def compute_index_rows(
 
         # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-        split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
+        split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
         num_parquet_files_to_index = 0
@@ -225,9 +239,11 @@ def compute_index_rows(
             logging.debug(f"get dataset info for {dataset=} with {target_revision=}")
             target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
             all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
-            delete_operations: list[CommitOperation] = []
-            if index_file_location in all_repo_files:
-                delete_operations.append(CommitOperationDelete(path_in_repo=index_file_location))
+            delete_operations = get_delete_operations(
+                all_repo_files=all_repo_files,
+                split_names=get_split_names(dataset=dataset, config=config),
+                config=config,
+            )
             logging.debug(f"delete operations for {dataset=} {delete_operations=}")
 
             # send the files to the target revision

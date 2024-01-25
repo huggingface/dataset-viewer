@@ -6,14 +6,13 @@ from http import HTTPStatus
 from typing import Any
 
 import pytest
+from libcommon.dtos import Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
-    CachedArtifactError,
     CachedArtifactNotFoundError,
     upsert_response,
 )
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.job_runners.config.duckdb_index_size import ConfigDuckdbIndexSizeJobRunner
@@ -140,7 +139,7 @@ def get_job_runner(
             "config_1",
             HTTPStatus.NOT_FOUND,
             [{"error": "error"}],
-            CachedArtifactError.__name__,
+            CachedArtifactNotFoundError.__name__,
             None,
             True,
         ),
@@ -199,7 +198,7 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        assert job_runner.compute().content == expected_content
+        assert sorted(job_runner.compute().content) == sorted(expected_content)
 
 
 def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:

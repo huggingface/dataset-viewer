@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from api.routes.croissant import get_croissant_from_dataset_infos
 
 squad_info = {
@@ -63,3 +65,12 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert isinstance(croissant["recordSet"][0]["field"], list)
     assert isinstance(squad_info["features"], dict)
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
+
+
+def test_get_croissant_from_dataset_infos_max_columns() -> None:
+    MAX_COLUMNS = 3
+    with patch("api.routes.croissant.MAX_COLUMNS", MAX_COLUMNS):
+        croissant = get_croissant_from_dataset_infos("user/squad with space", [squad_info, squad_info], partial=False)
+
+    assert len(croissant["recordSet"][0]["field"]) == MAX_COLUMNS
+    assert "max number of columns reached" in croissant["recordSet"][0]["description"]

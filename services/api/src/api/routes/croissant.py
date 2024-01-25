@@ -28,6 +28,9 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 MAX_CONFIGS = 100
+MAX_COLUMNS = 1_000
+# ^ same value as the default for FIRST_ROWS_COLUMNS_MAX_NUMBER (see services/worker)
+
 
 HF_TO_CROISSANT_VALUE_TYPE = {
     "string": "sc:Text",
@@ -76,6 +79,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
     ]
     record_set = []
     for info in infos:
+        description_body = ""
         config = info["config_name"]
         features = Features.from_dict(info["features"])
         fields: list[dict[str, Any]] = []
@@ -92,6 +96,9 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         )
         skipped_columns = []
         for column, feature in features.items():
+            if len(fields) >= MAX_COLUMNS:
+                description_body += f"\n- {len(features) - MAX_COLUMNS} skipped column{'s' if len(features) - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+                break
             fields_names: set[str] = set()
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
                 fields.append(
@@ -134,7 +141,6 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         description = f"{dataset} - '{config}' subset"
         if partial:
             description += " (first 5GB)"
-        description_body = ""
         if len(splits) > 1:
             description_body += f"\n- {len(splits)} split{'s' if len(splits) > 1 else ''}: {', '.join(splits)}"
         if skipped_columns:

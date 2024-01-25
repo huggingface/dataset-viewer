@@ -7,8 +7,8 @@ from typing import Optional
 
 import datasets.config
 import pytest
+from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.utils import Priority
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult

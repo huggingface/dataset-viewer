@@ -9,6 +9,7 @@
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envS3" . | nindent 2 }}
+  {{ include "envCloudfront" . | nindent 2 }}
   {{ include "envCache" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
   {{ include "envQueue" . | nindent 2 }}

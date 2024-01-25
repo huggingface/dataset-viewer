@@ -17,6 +17,7 @@ from datasets import Audio, Dataset, Features, Image, Value
 from moto import mock_s3
 from urllib3.response import HTTPHeaderDict  # type: ignore
 
+from libcommon.config import S3Config
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import (
     get_cell_value,
@@ -385,19 +386,23 @@ def test_ogg_audio_with_s3(
     dataset = datasets["audio_ogg"]
     feature = dataset.features["col"]
     bucket_name = "bucket"
-    s3_resource = "s3"
     with mock_s3():
-        conn = boto3.resource(s3_resource, region_name="us-east-1")
+        conn = boto3.resource("s3", region_name="us-east-1")
         conn.create_bucket(Bucket=bucket_name)
 
         # patch _validate to avoid calling self._fs.ls because of known issue in aiotbotocore
         # at https://github.com/aio-libs/aiobotocore/blob/master/aiobotocore/endpoint.py#L47
         with patch("libcommon.storage_client.StorageClient._validate", return_value=None):
             storage_client = StorageClient(
-                protocol=s3_resource,
+                protocol="s3",
                 storage_root=f"{bucket_name}/{ASSETS_FOLDER}",
                 base_url=ASSETS_BASE_URL,
                 overwrite=True,
+                s3_config=S3Config(
+                    access_key_id="fake_access_key_id",
+                    secret_access_key="fake_secret_access_key",
+                    region_name="us-east-1",
+                ),
             )
 
         # patch aiobotocore.endpoint.convert_to_response_dict  because of known issue in aiotbotocore

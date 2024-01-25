@@ -1,15 +1,14 @@
 services:
   reverse-proxy:
     image: docker.io/nginx:1.25.3
-    # image: ${IMAGE_REVERSE_PROXY?IMAGE_REVERSE_PROXY env var must be provided}
     volumes:
       - ../chart/nginx-templates/:/etc/nginx/templates:ro
       - storage:${STORAGE_DIRECTORY-/storage}:ro
     ports:
       - "${PORT_REVERSE_PROXY-8000}:80"
     environment:
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
+      ASSETS_STORAGE_ROOT: ${REVERSE_PROXY_ASSETS_STORAGE_ROOT-false} # <- if not set, returns 404 on /assets
+      CACHED_ASSETS_STORAGE_ROOT: ${REVERSE_PROXY_CACHED_ASSETS_STORAGE_ROOT-false} # <- if not set, returns 404 on /cached-assets
       OPENAPI_FILE: ${OPENAPI_FILE-docs/source/openapi.json}
       HOST: localhost
       PORT: 80
@@ -53,11 +52,6 @@ services:
       ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
-      # storage
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
-      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
-      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
@@ -83,11 +77,6 @@ services:
       API_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       API_UVICORN_NUM_WORKERS: ${API_UVICORN_NUM_WORKERS-2}
       API_UVICORN_PORT: ${API_UVICORN_PORT-8080}
-      # storage
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
-      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
-      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
     ports:
       - ${API_UVICORN_PORT-8080}:${API_UVICORN_PORT-8080}
     depends_on:
@@ -105,12 +94,6 @@ services:
       - storage:${STORAGE_DIRECTORY-/storage}
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     environment:
-      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      # storage
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
-      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
-      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
       ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY: ${ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY-300_000_000}
       # prometheus
@@ -137,12 +120,6 @@ services:
       - storage:${STORAGE_DIRECTORY-/storage}
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
     environment:
-      CACHED_ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/cached-assets" # hard-coded to work with the reverse-proxy
-      # storage
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
-      CACHED_ASSETS_STORAGE_ROOT: ${CACHED_ASSETS_STORAGE_ROOT-/storage/cached-assets}
-      CACHED_ASSETS_STORAGE_PROTOCOL: ${CACHED_ASSETS_STORAGE_PROTOCOL-file}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
@@ -191,9 +168,6 @@ services:
       file: docker-compose-base.yml
       service: libcommon
     environment:
-      ASSETS_BASE_URL: "http://localhost:${PORT_REVERSE_PROXY-8000}/assets" # hard-coded to work with the reverse-proxy
-      ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
-      ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}
       CONFIG_NAMES_MAX_NUMBER: ${CONFIG_NAMES_MAX_NUMBER-3_000}
       DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS: ${DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS-10}

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-from libcommon.utils import MAX_NUM_ROWS_PER_PAGE
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from starlette.requests import Request
 
 from libapi.exceptions import InvalidParameterError, MissingRequiredParameterError

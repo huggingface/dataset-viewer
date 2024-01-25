@@ -2,12 +2,12 @@ from http import HTTPStatus
 
 import pytest
 from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
+from libcommon.dtos import JobInfo, Priority, Status
 from libcommon.exceptions import CustomError
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedResponseDocument, get_response, get_response_metadata, upsert_response
-from libcommon.utils import JobInfo, Priority, Status
 
 from worker.config import AppConfig
 from worker.dtos import CompleteJobResult

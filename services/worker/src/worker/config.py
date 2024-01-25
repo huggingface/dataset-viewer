@@ -121,7 +121,7 @@ class DatasetsBasedConfig:
             )
 
 
-FIRST_ROWS_CELL_MIN_BYTES = 100
+FIRST_ROWS_MIN_CELL_BYTES = 100
 FIRST_ROWS_COLUMNS_MAX_NUMBER = 1_000
 FIRST_ROWS_MAX_BYTES = 1_000_000
 FIRST_ROWS_MAX_NUMBER = 100
@@ -133,7 +133,7 @@ class FirstRowsConfig:
     columns_max_number: int = FIRST_ROWS_COLUMNS_MAX_NUMBER
     max_bytes: int = FIRST_ROWS_MAX_BYTES
     max_number: int = FIRST_ROWS_MAX_NUMBER
-    min_cell_bytes: int = FIRST_ROWS_CELL_MIN_BYTES
+    min_cell_bytes: int = FIRST_ROWS_MIN_CELL_BYTES
     min_number: int = FIRST_ROWS_MIN_NUMBER
 
     @classmethod
@@ -144,7 +144,7 @@ class FirstRowsConfig:
                 columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=FIRST_ROWS_COLUMNS_MAX_NUMBER),
                 max_bytes=env.int(name="MAX_BYTES", default=FIRST_ROWS_MAX_BYTES),
                 max_number=env.int(name="MAX_NUMBER", default=FIRST_ROWS_MAX_NUMBER),
-                min_cell_bytes=env.int(name="CELL_MIN_BYTES", default=FIRST_ROWS_CELL_MIN_BYTES),
+                min_cell_bytes=env.int(name="MIN_CELL_BYTES", default=FIRST_ROWS_MIN_CELL_BYTES),
                 min_number=env.int(name="MIN_NUMBER", default=FIRST_ROWS_MIN_NUMBER),
             )
 

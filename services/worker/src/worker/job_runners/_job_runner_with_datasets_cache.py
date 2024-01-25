@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import datasets.config
-from libcommon.utils import JobInfo
+from libcommon.dtos import JobInfo
 
 from worker.config import AppConfig
 from worker.job_runners._job_runner_with_cache import JobRunnerWithCache

@@ -9,6 +9,7 @@ from typing import Any, Optional
 from aiohttp import ClientSession
 from aiolimiter import AsyncLimiter
 from datasets import get_dataset_config_info
+from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
     ExternalServerError,
@@ -18,7 +19,6 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
-from libcommon.utils import JobInfo
 
 from worker.config import AppConfig, OptInOutUrlsScanConfig
 from worker.dtos import CompleteJobResult, OptInOutUrlsScanResponse, OptUrl
@@ -220,7 +220,7 @@ def compute_opt_in_out_urls_scan_response(
         column_names=image_url_columns,
         trust_remote_code=trust_remote_code,
     )
-    rows = rows_content["rows"]
+    rows = rows_content.rows
 
     # get the urls
     num_scanned_rows = len(rows)
@@ -265,7 +265,7 @@ def compute_opt_in_out_urls_scan_response(
         num_urls=len(urls),
         num_scanned_rows=num_scanned_rows,
         has_urls_columns=True,
-        full_scan=rows_content["all_fetched"],
+        full_scan=rows_content.all_fetched,
     )
 
 

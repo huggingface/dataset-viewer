@@ -7,12 +7,12 @@ from http import HTTPStatus
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
-    get_previous_step_or_raise,
     get_response,
 )
 
 from worker.dtos import IsValidResponse, JobResult
 from worker.job_runners.config.config_job_runner import ConfigJobRunner
+from worker.utils import get_split_names
 
 
 def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidResponse, float]:
@@ -32,15 +32,6 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     """
     logging.info(f"get is-valid response for {dataset=} {config=}")
 
-    split_names_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"],
-        dataset=dataset,
-        config=config,
-    )
-    content = split_names_response.response["content"]
-    if "splits" not in content:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
-
     preview = False
     viewer = False
     search = False
@@ -48,8 +39,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     try:
         total = 0
         pending = 0
-        for split_item in content["splits"]:
-            split = split_item["split"]
+        for split in get_split_names(dataset=dataset, config=config):
             total += 1
             try:
                 response = get_response(kind="split-is-valid", dataset=dataset, config=config, split=split)

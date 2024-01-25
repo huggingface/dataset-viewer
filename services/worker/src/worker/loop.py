@@ -10,6 +10,7 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
+from libcommon.dtos import JobInfo
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import (
     AlreadyStartedJobError,
@@ -18,7 +19,7 @@ from libcommon.queue import (
     NoWaitingJobError,
     Queue,
 )
-from libcommon.utils import JobInfo, get_datetime
+from libcommon.utils import get_datetime
 from psutil import cpu_count, getloadavg, swap_memory, virtual_memory
 
 from worker.config import AppConfig

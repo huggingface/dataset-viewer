@@ -12,6 +12,7 @@ from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import (
     DAYS,
     PARQUET_CACHE_KIND,
+    ParquetCounters,
     create_discussion_description,
     create_link,
     limit_to_one_dataset_per_namespace,
@@ -82,12 +83,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure one discussion has been created
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 1,
-            "dismissed_discussions": 0,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, new_discussions=1)
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
         assert count_comments(first_discussion) == 1
@@ -116,12 +112,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure no new discussion has been created
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 0,
-            "dismissed_discussions": 1,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, dismissed_discussions=1)
         # close the discussion
         close_discussion(dataset=dataset.repo_id, discussion_num=first_discussion.num)
         # call post_messages again
@@ -132,12 +123,7 @@ def test_post_messages_in_one_dataset(job_config: JobConfig) -> None:
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure no new discussion has been created
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 0,
-            "dismissed_discussions": 1,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, dismissed_discussions=1)
         third_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert third_discussion is not None
         assert first_discussion.num == third_discussion.num
@@ -171,12 +157,7 @@ def test_post_messages_with_two_datasets_in_one_namespace(job_config: JobConfig)
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure one discussion has been created
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 1,
-            "dismissed_discussions": 0,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, new_discussions=1)
         discussion1 = fetch_bot_discussion(dataset=dataset1.repo_id)
         discussion2 = fetch_bot_discussion(dataset=dataset2.repo_id)
         discussion = discussion1 or discussion2
@@ -229,12 +210,7 @@ def test_post_messages_in_private_or_gated_dataset(job_config: JobConfig, gated:
         # Normally: the cache should not contain private datasets, but a public
         # dataset can be switched to private, and for some reason, or during some
         # time, the cache can contain private datasets.
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 1,
-            "dismissed_discussions": 0,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, new_discussions=1)
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
         assert count_comments(first_discussion) == 1
@@ -268,12 +244,7 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure one discussion has been created, because the content was too old
-        assert counters["parquet"] == {
-            "datasets": 0,
-            "new_discussions": 0,
-            "dismissed_discussions": 0,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters()
         assert fetch_bot_discussion(dataset=dataset.repo_id) is None
         # update the content
         upsert_response(
@@ -291,12 +262,7 @@ def test_post_messages_for_outdated_response(job_config: JobConfig) -> None:
             parquet_revision=job_config.discussions.parquet_revision,
         )
         # ensure one discussion has been created
-        assert counters["parquet"] == {
-            "datasets": 1,
-            "new_discussions": 1,
-            "dismissed_discussions": 0,
-            "errors": 0,
-        }
+        assert counters.parquet == ParquetCounters(datasets=1, new_discussions=1)
         first_discussion = fetch_bot_discussion(dataset=dataset.repo_id)
         assert first_discussion is not None
         assert count_comments(first_discussion) == 1

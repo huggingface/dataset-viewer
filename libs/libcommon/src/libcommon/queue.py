@@ -35,7 +35,8 @@ from libcommon.constants import (
     QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
 )
-from libcommon.utils import FlatJobInfo, JobInfo, Priority, Status, get_datetime, inputs_to_string
+from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status
+from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
 # see https://github.com/sbdchd/mongo-types#install

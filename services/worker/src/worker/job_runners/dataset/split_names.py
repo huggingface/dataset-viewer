@@ -4,14 +4,14 @@
 import logging
 from http import HTTPStatus
 
+from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
+from libcommon.dtos import FullConfigItem, FullSplitItem
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_best_response, get_previous_step_or_raise
 
 from worker.dtos import (
     DatasetSplitNamesResponse,
     FailedConfigItem,
-    FullConfigItem,
-    FullSplitItem,
     JobResult,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -44,7 +44,6 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
     if any(not isinstance(config_name, str) for config_name in config_names):
         raise PreviousStepFormatError("Previous step 'dataset-config-names' did not return a list of config names.")
 
-    split_names_cache_kinds = ["config-split-names-from-info", "config-split-names-from-streaming"]
     try:
         splits: list[FullSplitItem] = []
         pending: list[FullConfigItem] = []
@@ -52,16 +51,16 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
         total = 0
         for config in config_names:
             total += 1
-            best_response = get_best_response(split_names_cache_kinds, dataset=dataset, config=config)
+            best_response = get_best_response(CONFIG_SPLIT_NAMES_KINDS, dataset=dataset, config=config)
             if best_response.response["error_code"] == "CachedResponseNotFound":
                 logging.debug(
                     "No response (successful or erroneous) found in cache for the previous steps"
-                    f" '{split_names_cache_kinds}' for this dataset."
+                    f" '{CONFIG_SPLIT_NAMES_KINDS}' for this dataset."
                 )
                 pending.append(FullConfigItem({"dataset": dataset, "config": config}))
                 continue
             if best_response.response["http_status"] != HTTPStatus.OK:
-                logging.debug(f"No successful response found in the previous steps {split_names_cache_kinds}.")
+                logging.debug(f"No successful response found in the previous steps {CONFIG_SPLIT_NAMES_KINDS}.")
                 failed.append(
                     FailedConfigItem(
                         {
