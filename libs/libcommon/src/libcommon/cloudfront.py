@@ -40,9 +40,9 @@ class CloudFront:
     def __init__(self, key_pair_id: str, private_key: str, expiration_seconds: int) -> None:
         """
         Args:
-            key_pair_id (:obj:`str`): The cloudfront key pair id, eg. "K2JCJMDEHXQW5F"
-            private_key (:obj:`str`): The cloudfront private key, in PEM format
-            expiration_seconds (:obj:`int`): The number of seconds the signed url will be valid for
+            key_pair_id (`str`): The cloudfront key pair id, eg. "K2JCJMDEHXQW5F"
+            private_key (`str`): The cloudfront private key, in PEM format
+            expiration_seconds (`int`): The number of seconds the signed url will be valid for
         """
         try:
             pk = load_pem_private_key(private_key.encode("utf8"), password=None, backend=default_backend())
@@ -60,11 +60,11 @@ class CloudFront:
         provided using a canned policy.
 
         Args:
-            url (:obj:`str`): The url to sign
-            date_less_than (:obj:`datetime.datetime`): The expiry date
+            url (`str`): The url to sign
+            date_less_than (`datetime.datetime`): The expiry date
 
         Returns:
-            :obj:`str`: The signed url
+            `str`: The signed url
         """
         return self._signer.generate_presigned_url(url, date_less_than=date_less_than)  # type: ignore
         # ^ ignoring mypy type error, it should return a string
@@ -75,10 +75,10 @@ class CloudFront:
         using a canned policy.
 
         Args:
-            url (:obj:`str`): The url to sign
+            url (`str`): The url to sign
 
         Returns:
-            :obj:`str`: The signed url
+            `str`: The signed url
         """
         date_less_than = get_expires(seconds=self._expiration_seconds)
         return self._sign_url(url=url, date_less_than=date_less_than)

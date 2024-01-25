@@ -68,10 +68,10 @@ class MongoResource(Resource):
     The method is_available() allows to check if the resource is available. It's not called automatically.
 
     Args:
-        database (:obj:`str`): The name of the mongo database.
-        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
-        mongoengine_alias (:obj:`str`): The alias of the connection in mongoengine.
-        server_selection_timeout_ms (:obj:`int`, `optional`, defaults to 30_000): The timeout in milliseconds for
+        database (`str`): The name of the mongo database.
+        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        mongoengine_alias (`str`): The alias of the connection in mongoengine.
+        server_selection_timeout_ms (`int`, `optional`, defaults to 30_000): The timeout in milliseconds for
             server selection.
     """
 
@@ -122,8 +122,8 @@ class CacheMongoResource(MongoResource):
     A resource that represents a connection to the cache mongo database.
 
     Args:
-        database (:obj:`str`): The name of the mongo database.
-        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (`str`): The name of the mongo database.
+        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=CACHE_MONGOENGINE_ALIAS, init=False)
@@ -135,8 +135,8 @@ class QueueMongoResource(MongoResource):
     A resource that represents a connection to the queue mongo database.
 
     Args:
-        database (:obj:`str`): The name of the mongo database.
-        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (`str`): The name of the mongo database.
+        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=QUEUE_MONGOENGINE_ALIAS, init=False)
@@ -148,8 +148,8 @@ class MetricsMongoResource(MongoResource):
     A resource that represents a connection to the metrics mongo database.
 
     Args:
-        database (:obj:`str`): The name of the mongo database.
-        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (`str`): The name of the mongo database.
+        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=METRICS_MONGOENGINE_ALIAS, init=False)

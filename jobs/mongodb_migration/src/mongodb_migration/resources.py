@@ -14,8 +14,8 @@ class MigrationsMongoResource(MongoResource):
     A resource that represents a connection to the migrations mongo database.
 
     Args:
-        database (:obj:`str`): The name of the mongo database.
-        host (:obj:`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
+        database (`str`): The name of the mongo database.
+        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
     """
 
     mongoengine_alias: str = field(default=DATABASE_MIGRATIONS_MONGOENGINE_ALIAS, init=False)
