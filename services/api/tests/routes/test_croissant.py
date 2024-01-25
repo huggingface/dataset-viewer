@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from api.routes.croissant import get_croissant_from_dataset_infos
 
 squad_info = {
@@ -50,7 +52,9 @@ squad_info = {
 
 
 def test_get_croissant_from_dataset_infos() -> None:
-    croissant = get_croissant_from_dataset_infos("user/squad with space", [squad_info, squad_info], partial=False)
+    croissant = get_croissant_from_dataset_infos(
+        "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=False
+    )
     assert "@context" in croissant
     assert "@type" in croissant
     assert "name" in croissant
@@ -65,12 +69,23 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert isinstance(croissant["recordSet"][0]["field"], list)
     assert isinstance(squad_info["features"], dict)
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
+    assert "1 skipped column: answers" in croissant["recordSet"][0]["description"]
 
 
-def test_get_croissant_from_dataset_infos_max_columns() -> None:
-    MAX_COLUMNS = 3
+MAX_COLUMNS = 3
+
+
+@pytest.mark.parametrize(
+    ("full_jsonld", "num_columns"),
+    [
+        (True, 4),
+        (False, MAX_COLUMNS),
+    ],
+)
+def test_get_croissant_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int) -> None:
     with patch("api.routes.croissant.MAX_COLUMNS", MAX_COLUMNS):
-        croissant = get_croissant_from_dataset_infos("user/squad with space", [squad_info, squad_info], partial=False)
-
-    assert len(croissant["recordSet"][0]["field"]) == MAX_COLUMNS
-    assert "max number of columns reached" in croissant["recordSet"][0]["description"]
+        croissant = get_croissant_from_dataset_infos(
+            "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=full_jsonld
+        )
+    assert len(croissant["recordSet"][0]["field"]) == num_columns
+    assert full_jsonld or "max number of columns reached" in croissant["recordSet"][0]["description"]
