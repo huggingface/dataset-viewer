@@ -8,7 +8,7 @@ import pytest
 
 from libcommon.dtos import RowItem
 from libcommon.utils import get_json_size
-from libcommon.viewer_utils.rows import truncate_row_item, truncate_row_items_cells
+from libcommon.viewer_utils.rows import create_truncated_row_items, truncate_row_item, truncate_row_items_cells
 
 from ..constants import (
     DEFAULT_CELL_BYTES,
@@ -16,6 +16,7 @@ from ..constants import (
     DEFAULT_NUM_CELLS,
     DEFAULT_NUM_ROWS,
     DEFAULT_ROWS_MAX_BYTES,
+    DEFAULT_ROWS_MIN_NUMBER,
     TEN_CHARS_TEXT,
 )
 
@@ -280,3 +281,36 @@ def test_truncate_row_items_cells_untruncated_columns(
     )
 
 
+@pytest.mark.parametrize(
+    "rows_max_bytes, expected_num_rows_items, expected_truncated",
+    [
+        # the rows are kept as is
+        (5_000, DEFAULT_NUM_ROWS, False),
+        (2_000, DEFAULT_NUM_ROWS, False),
+        # some rows have been removed at the end, the rest is kept as is
+        (1_500, 10, True),
+        (1_000, 7, True),
+        (900, 6, True),
+        # all the row above the limit have been removed, and the rest have been truncated
+        (500, DEFAULT_ROWS_MIN_NUMBER, True),
+        (100, DEFAULT_ROWS_MIN_NUMBER, True),
+    ],
+)
+# all other things being equal, decreasing the maximum size of the rows decreases the number of rows after truncation
+def test_create_truncated_row_items(
+    rows_max_bytes: int,
+    expected_num_rows_items: int,
+    expected_truncated: bool,
+) -> None:
+    rows = [
+        {f"c{i}": "a" * DEFAULT_CELL_BYTES for i in range(DEFAULT_NUM_CELLS)} for row_idx in range(DEFAULT_NUM_ROWS)
+    ]
+    (truncated_row_items, truncated) = create_truncated_row_items(
+        rows=rows,
+        rows_max_bytes=rows_max_bytes,
+        min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
+        rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
+        columns_to_keep_untruncated=[],
+    )
+    assert len(truncated_row_items) == expected_num_rows_items
+    assert truncated == expected_truncated
