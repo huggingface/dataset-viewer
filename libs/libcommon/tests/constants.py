@@ -65,3 +65,5 @@ DATASETS_NAMES = [
     "sequence_of_dicts",
     "none_value",
 ]
+
+TEN_CHARS_TEXT = "a" * 10

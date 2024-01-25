@@ -21,6 +21,8 @@ from libcommon.utils import (
     serialize_and_truncate,
 )
 
+from .constants import TEN_CHARS_TEXT
+
 
 @pytest.mark.parametrize(
     "dataset,revision,config,split,prefix,expected",
@@ -106,7 +108,6 @@ def test_get_expires() -> None:
     assert date == EXAMPLE_DATETIME
 
 
-NINE_CHARS_TEXT = "Some text"
 FOUR_BYTES_UTF8 = "🤗"
 OBJ = {"a": 1, "b": 2}
 OBJ_SERIALIZED = '{"a":1,"b":2}'
@@ -115,11 +116,10 @@ OBJ_SERIALIZED = '{"a":1,"b":2}'
 @pytest.mark.parametrize(
     "obj,max_bytes,expected",
     [
-        (NINE_CHARS_TEXT, 0, ""),
-        (NINE_CHARS_TEXT, 1, '"'),  # <- a serialized string gets a quote at the beginning
-        (NINE_CHARS_TEXT, 8, '"' + NINE_CHARS_TEXT[0:7]),
-        (NINE_CHARS_TEXT, 9, '"' + NINE_CHARS_TEXT[0:8]),
-        (NINE_CHARS_TEXT, 10, '"' + NINE_CHARS_TEXT[0:9]),
+        (TEN_CHARS_TEXT, 0, ""),
+        (TEN_CHARS_TEXT, 1, '"'),  # <- a serialized string gets a quote at the beginning
+        (TEN_CHARS_TEXT, 10, '"' + TEN_CHARS_TEXT[0:9]),
+        (TEN_CHARS_TEXT, 11, '"' + TEN_CHARS_TEXT),
         (FOUR_BYTES_UTF8, 1, '"'),
         (FOUR_BYTES_UTF8, 2, '"'),
         (FOUR_BYTES_UTF8, 3, '"'),
@@ -137,8 +137,8 @@ def test_serialize_and_truncate_does_not_raise(obj: Any, max_bytes: int, expecte
 @pytest.mark.parametrize(
     "obj,max_bytes",
     [
-        (NINE_CHARS_TEXT, 11),
-        (NINE_CHARS_TEXT, 100),
+        (TEN_CHARS_TEXT, 12),
+        (TEN_CHARS_TEXT, 100),
         (FOUR_BYTES_UTF8, 6),
         (OBJ, 13),
         (OBJ, 100),
