@@ -206,9 +206,7 @@ def _get_full_jsonld_parameter(request: Request) -> bool:
     full_jsonld = get_request_parameter(request, "full", default="false")
     if full_jsonld.lower() == "true":
         return True
-    elif full_jsonld.lower() == "false":
-        return False
-    raise MissingRequiredParameterError("Parameter 'full' must have value 'full=true' or 'full=false'")
+    return False
 
 
 def create_croissant_endpoint(
