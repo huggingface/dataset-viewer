@@ -13,7 +13,7 @@ from libcommon.exceptions import (
     TooManyColumnsError,
 )
 from libcommon.storage_client import StorageClient
-from libcommon.utils import get_json_size, orjson_dumps, utf8_byte_truncate
+from libcommon.utils import SmallerThanMaxBytesError, get_json_size, serialize_and_truncate
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
 
 
@@ -55,19 +55,34 @@ def to_row_item(row_idx: int, row: Row) -> RowItem:
 
 # Mutates row_item, and returns it anyway
 def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: list[str]) -> RowItem:
-    row = {}
+    """
+    Truncate all the cells of a row item to min_cell_bytes, and return the row item.
+
+    The row item is mutated, and the cells are replaced by their JSON serialization, truncated to min_cell_bytes.
+    The names of the truncated cells are listed in row_item["truncated_cells"] (note that we just append them, it
+    might contain duplicates)
+
+    Args:
+        row_item ([`RowItem`]): the row item to truncate
+        min_cell_bytes (`int`): the minimum number of bytes for a cell. If a cell has less than this number of bytes,
+            it is not truncated. If it has more, it is truncated to this number of bytes.
+            The size of a cell is computed as the size of its JSON serialization using orjson_dumps().
+        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated
+
+    Returns:
+        [`RowItem`]: the same row item, mutated, with all the cells truncated to min_cell_bytes
+    """
     for column_name, cell in row_item["row"].items():
-        # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
-        # it's done by replacing the cell (which can have any type) by a string with
-        # its JSON serialization, and then truncating it to min_cell_bytes
-        cell_json = orjson_dumps(cell)
-        if len(cell_json) <= min_cell_bytes or column_name in columns_to_keep_untruncated:
-            row[column_name] = cell
-        else:
-            cell_json_str = cell_json.decode("utf8", "ignore")
+        if column_name in columns_to_keep_untruncated:
+            # we keep the cell untouched
+            continue
+        try:
+            truncated_serialized_cell = serialize_and_truncate(obj=cell, max_bytes=min_cell_bytes)
+            row_item["row"][column_name] = truncated_serialized_cell
             row_item["truncated_cells"].append(column_name)
-            row[column_name] = utf8_byte_truncate(text=cell_json_str, max_bytes=min_cell_bytes)
-    row_item["row"] = row
+        except SmallerThanMaxBytesError:
+            # the cell serialization is smaller than min_cell_bytes, we keep it untouched
+            continue
     return row_item
 
 

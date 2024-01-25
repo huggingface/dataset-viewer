@@ -12,12 +12,13 @@ import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.utils import (
+    SmallerThanMaxBytesError,
     get_expires,
     inputs_to_string,
     is_image_url,
     orjson_dumps,
     raise_if_blocked,
-    utf8_byte_truncate,
+    serialize_and_truncate,
 )
 
 
@@ -107,26 +108,42 @@ def test_get_expires() -> None:
 
 NINE_CHARS_TEXT = "Some text"
 FOUR_BYTES_UTF8 = "🤗"
-OBJ = orjson_dumps({"a": 1, "b": 2}).decode("utf-8")
-EXPECTED_OBJ = '{"a":1,"b":2}'
+OBJ = {"a": 1, "b": 2}
+OBJ_SERIALIZED = '{"a":1,"b":2}'
 
 
 @pytest.mark.parametrize(
-    "text,max_bytes,expected",
+    "obj,max_bytes,expected",
     [
         (NINE_CHARS_TEXT, 0, ""),
-        (NINE_CHARS_TEXT, 1, NINE_CHARS_TEXT[0]),
-        (NINE_CHARS_TEXT, 8, NINE_CHARS_TEXT[0:8]),
-        (NINE_CHARS_TEXT, 9, NINE_CHARS_TEXT),
-        (NINE_CHARS_TEXT, 10, NINE_CHARS_TEXT),
-        (NINE_CHARS_TEXT, 100, NINE_CHARS_TEXT),
-        (FOUR_BYTES_UTF8, 1, ""),
-        (FOUR_BYTES_UTF8, 2, ""),
-        (FOUR_BYTES_UTF8, 4, FOUR_BYTES_UTF8),
-        (OBJ, 1, "{"),
+        (NINE_CHARS_TEXT, 1, '"'),  # <- a serialized string gets a quote at the beginning
+        (NINE_CHARS_TEXT, 8, '"' + NINE_CHARS_TEXT[0:7]),
+        (NINE_CHARS_TEXT, 9, '"' + NINE_CHARS_TEXT[0:8]),
+        (NINE_CHARS_TEXT, 10, '"' + NINE_CHARS_TEXT[0:9]),
+        (FOUR_BYTES_UTF8, 1, '"'),
+        (FOUR_BYTES_UTF8, 2, '"'),
+        (FOUR_BYTES_UTF8, 3, '"'),
+        (FOUR_BYTES_UTF8, 4, '"'),
+        (FOUR_BYTES_UTF8, 5, '"' + FOUR_BYTES_UTF8),
+        (OBJ, 0, ""),
         (OBJ, 3, '{"a'),
-        (OBJ, 100, EXPECTED_OBJ),
+        (OBJ, 12, '{"a":1,"b":2'),
     ],
 )
-def test_utf8_byte_truncate(text: str, max_bytes: int, expected: str) -> None:
-    assert utf8_byte_truncate(text=text, max_bytes=max_bytes) == expected
+def test_serialize_and_truncate_does_not_raise(obj: Any, max_bytes: int, expected: str) -> None:
+    assert serialize_and_truncate(obj=obj, max_bytes=max_bytes) == expected
+
+
+@pytest.mark.parametrize(
+    "obj,max_bytes",
+    [
+        (NINE_CHARS_TEXT, 11),
+        (NINE_CHARS_TEXT, 100),
+        (FOUR_BYTES_UTF8, 6),
+        (OBJ, 13),
+        (OBJ, 100),
+    ],
+)
+def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
+    with pytest.raises(SmallerThanMaxBytesError):
+        serialize_and_truncate(obj=obj, max_bytes=max_bytes)
