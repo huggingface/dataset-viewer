@@ -68,8 +68,6 @@ def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_un
             row_item["truncated_cells"].append(column_name)
             row[column_name] = utf8_byte_truncate(text=cell_json_str, max_bytes=min_cell_bytes)
     row_item["row"] = row
-    # row_idx = row_item["row_idx"]
-    # logging.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
     return row_item
 
 
