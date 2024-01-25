@@ -2,25 +2,22 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
-import itertools
-from collections.abc import Mapping
 from typing import Any
 
 import pytest
 
-from libcommon.dtos import RowItem, RowsContent
-from libcommon.storage_client import StorageClient
-from libcommon.viewer_utils.rows import create_first_rows_response, truncate_row_item
+from libcommon.dtos import RowItem
+from libcommon.utils import get_json_size
+from libcommon.viewer_utils.rows import truncate_row_item, truncate_row_items_cells
 
 from ..constants import (
-    DATASETS_NAMES,
-    DEFAULT_COLUMN_NAME,
-    DEFAULT_CONFIG,
-    DEFAULT_REVISION,
-    DEFAULT_SPLIT,
+    DEFAULT_CELL_BYTES,
+    DEFAULT_MIN_CELL_BYTES,
+    DEFAULT_NUM_CELLS,
+    DEFAULT_NUM_ROWS,
+    DEFAULT_ROWS_MAX_BYTES,
     TEN_CHARS_TEXT,
 )
-from ..types import DatasetFixture
 
 
 @pytest.mark.parametrize(
@@ -49,31 +46,237 @@ def test_truncate_row_item(
         assert truncated_row_item["row"][f"c{i}"] == cell
 
 
-@pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
-def test_create_first_rows_response(
-    storage_client: StorageClient, datasets_fixtures: Mapping[str, DatasetFixture], dataset_name: str
+def assert_test_truncate_row_items_cells(
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+    num_rows: int = DEFAULT_NUM_ROWS,
+    num_cells: int = DEFAULT_NUM_CELLS,
+    cell_bytes: int = DEFAULT_CELL_BYTES,
+    min_cell_bytes: int = DEFAULT_MIN_CELL_BYTES,
+    rows_max_bytes: int = DEFAULT_ROWS_MAX_BYTES,
+    columns_to_keep_untruncated: list[str] = [],
 ) -> None:
-    dataset_fixture = datasets_fixtures[dataset_name]
-    dataset = dataset_fixture.dataset
-
-    def get_rows_content(rows_max_number: int) -> RowsContent:
-        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
-        # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
-
-    response = create_first_rows_response(
-        dataset=dataset_name,
-        revision=DEFAULT_REVISION,
-        config=DEFAULT_CONFIG,
-        split=DEFAULT_SPLIT,
-        storage_client=storage_client,
-        features=dataset.features,
-        get_rows_content=get_rows_content,
-        min_cell_bytes=0,
-        rows_max_bytes=1000000,
-        rows_max_number=1000000,
-        rows_min_number=0,
-        columns_max_number=100000,
+    row_items = [
+        RowItem(row_idx=row_idx, row={f"c{i}": "a" * cell_bytes for i in range(num_cells)}, truncated_cells=[])
+        # ^ the cell size is DEFAULT_CELL_BYTES, while the rest of the object accounts for other ~50 bytes (row_idx, truncated_cells)
+        for row_idx in range(num_rows)
+    ]
+    truncated_row_items = truncate_row_items_cells(
+        row_items=row_items,
+        min_cell_bytes=min_cell_bytes,
+        rows_max_bytes=rows_max_bytes,
+        columns_to_keep_untruncated=columns_to_keep_untruncated,
     )
-    assert response["features"][0]["type"] == dataset_fixture.expected_feature_type
-    assert response["rows"][0]["row"] == {DEFAULT_COLUMN_NAME: dataset_fixture.expected_cell}
+    assert (
+        len([row_item for row_item in truncated_row_items if row_item["truncated_cells"]])
+        == expected_num_truncated_rows
+    )
+    assert not any(
+        row_item["truncated_cells"]
+        for row_item in truncated_row_items[: len(truncated_row_items) - expected_num_truncated_rows]
+    )
+    # ^ the first rows are not truncated
+    assert all(
+        row_item["truncated_cells"]
+        for row_item in truncated_row_items[len(truncated_row_items) - expected_num_truncated_rows :]
+    )
+    # ^ the last rows are truncated
+    assert (get_json_size(truncated_row_items) <= rows_max_bytes) is expected_is_under_limit
+
+
+@pytest.mark.parametrize(
+    "num_rows, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        (1, 0, True),
+        (10, 0, True),
+        (20, 0, True),
+        # some truncated rows
+        (50, 28, True),
+        (75, 73, True),
+        (77, 76, True),
+        # all truncated rows, but still under limit
+        (78, 78, True),
+        # all truncated rows, and over limit
+        (79, 79, False),
+        (100, 100, False),
+    ],
+)
+# all other things being equal, increasing the number of rows increases the proportion of truncated rows
+def test_truncate_row_items_cells_num_rows(
+    num_rows: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        num_rows=num_rows,
+    )
+
+
+@pytest.mark.parametrize(
+    "num_cells, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        (1, 0, True),
+        (2, 0, True),
+        (3, 0, True),
+        # some truncated rows
+        (4, 3, True),
+        (5, 6, True),
+        (6, 8, True),
+        (7, 9, True),
+        (8, 10, True),
+        (9, 11, True),
+        (10, 11, True),
+        (11, 12, True),
+        (12, 12, True),
+        # all truncated rows, but still under the limit
+        (14, DEFAULT_NUM_ROWS, True),
+        (15, DEFAULT_NUM_ROWS, True),
+        # all truncated rows, and over limit
+        (16, DEFAULT_NUM_ROWS, False),
+        (17, DEFAULT_NUM_ROWS, False),
+    ],
+)
+# all other things being equal, increasing the number of cells increases the proportion of truncated rows
+def test_truncate_row_items_cells_num_cells(
+    num_cells: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        num_cells=num_cells,
+    )
+
+
+@pytest.mark.parametrize(
+    "cell_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        (1, 0, True),
+        (10, 0, True),
+        (100, 0, True),
+        (200, 0, True),
+        # some truncated rows
+        (500, 5, True),
+        (1_000, 9, True),
+        (2_000, 11, True),
+        # all truncated rows, but still under the limit
+        (5_000, DEFAULT_NUM_ROWS, True),
+        (10_000, DEFAULT_NUM_ROWS, True),
+        (10_000, DEFAULT_NUM_ROWS, True),
+        # all truncated rows, and over limit
+        # -> not possible
+    ],
+)
+# all other things being equal, increasing the cell size increases the proportion of truncated rows
+def test_truncate_row_items_cells_cell_bytes(
+    cell_bytes: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        cell_bytes=cell_bytes,
+    )
+
+
+@pytest.mark.parametrize(
+    "min_cell_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        # -> not possible with the other settings
+        # some truncated rows
+        (1, 9, True),
+        (10, 9, True),
+        (100, 10, True),
+        (200, 11, True),
+        # all truncated rows, but still under the limit
+        (300, DEFAULT_NUM_ROWS, True),
+        # all truncated rows, and over limit
+        (350, DEFAULT_NUM_ROWS, False),
+        (500, DEFAULT_NUM_ROWS, False),
+        # min_cell_bytes is higher than the cells, so no truncation happens, size is over the limit
+        (1_000, 0, False),
+        (2_000, 0, False),
+    ],
+)
+# all other things being equal, increasing the minimum size of each cell increases the proportion of truncated rows
+def test_truncate_row_items_cells_min_cell_bytes(
+    min_cell_bytes: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        min_cell_bytes=min_cell_bytes,
+        cell_bytes=900,
+    )
+
+
+@pytest.mark.parametrize(
+    "rows_max_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        (5_000, 0, True),
+        # some truncated rows
+        (1_000, 11, True),
+        # all truncated rows, but still under the limit
+        (850, DEFAULT_NUM_ROWS, True),
+        # all truncated rows, and over limit
+        (500, DEFAULT_NUM_ROWS, False),
+        (100, DEFAULT_NUM_ROWS, False),
+        (10, DEFAULT_NUM_ROWS, False),
+        (1, DEFAULT_NUM_ROWS, False),
+    ],
+)
+# all other things being equal, decreasing the maximum size of the rows increases the proportion of truncated rows
+def test_truncate_row_items_cells_rows_max_bytes(
+    rows_max_bytes: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        rows_max_bytes=rows_max_bytes,
+    )
+
+
+@pytest.mark.parametrize(
+    "num_columns_to_keep_untruncated, expected_num_truncated_rows, expected_is_under_limit",
+    [
+        # no truncated rows
+        # <- not possible with the other settings
+        # some truncated rows
+        (0, 6, True),
+        (1, 7, True),
+        (2, 9, True),
+        # all truncated rows, but still under the limit
+        (3, DEFAULT_NUM_ROWS, True),
+        # all truncated rows, and over limit
+        (4, DEFAULT_NUM_ROWS, False),
+        # all the columns are in the exception list, so no truncation happens, size is over the limit
+        (5, 0, False),
+    ],
+)
+# all other things being equal, increasing the number of columns to keep untruncated increases the proportion of truncated rows
+def test_truncate_row_items_cells_untruncated_columns(
+    num_columns_to_keep_untruncated: int,
+    expected_num_truncated_rows: int,
+    expected_is_under_limit: bool,
+) -> None:
+    assert_test_truncate_row_items_cells(
+        expected_num_truncated_rows=expected_num_truncated_rows,
+        expected_is_under_limit=expected_is_under_limit,
+        columns_to_keep_untruncated=[f"c{i}" for i in range(num_columns_to_keep_untruncated)],
+        num_cells=5,
+    )
+
+

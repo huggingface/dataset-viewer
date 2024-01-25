@@ -85,27 +85,52 @@ def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_un
     return row_item
 
 
-COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
-
-
-# Mutates row_items, and returns them anyway
-def truncate_row_items(
+def truncate_row_items_cells(
     row_items: list[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: list[str]
 ) -> list[RowItem]:
+    """
+    Truncate the cells of a list of row items to fit within a maximum number of bytes.
+
+    The row items are mutated, and the cells are replaced by their JSON serialization, truncated to min_cell_bytes.
+    The names of the truncated cells are listed in row_item["truncated_cells"].
+
+    The rows are truncated in reverse order, starting from the last row, until the sum of the rows is under the
+    rows_max_bytes threshold, or until the first row.
+
+    Note that only the content of the cells (row_item["row"][column_name]) is truncated, while the other fields
+    like row_item["row_idx"] and row_item["truncated_cells"] account for the size of the response. This means that
+    the size of the response might be greater than rows_max_bytes, even if all the rows have been "truncated".
+
+    Args:
+        row_items (`list[RowItem]`): the row items to truncate
+        min_cell_bytes (`int`): the minimum number of bytes for a cell. If a cell has less than this number of bytes,
+            it is not truncated. If it has more, it is serialized to JSON and truncated to this number of bytes.
+            The size of a cell is computed as the size of its JSON serialization using orjson_dumps().
+        rows_max_bytes (`int`): the maximum number of bytes of the rows JSON serialization, after truncation of the last ones.
+            The size accounts for the comma separators between rows.
+        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated
+
+    Returns:
+        list[`RowItem`]: the same row items, mutated
+    """
     # compute the current size
-    rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
+    rows_bytes = get_json_size(row_items)
 
     # Loop backwards, so that the last rows are truncated first
     for row_item in reversed(row_items):
         if rows_bytes < rows_max_bytes:
             break
-        previous_size = get_json_size(row_item) + COMMA_SIZE
+        previous_size = get_json_size(row_item)
         row_item = truncate_row_item(
             row_item=row_item, min_cell_bytes=min_cell_bytes, columns_to_keep_untruncated=columns_to_keep_untruncated
         )
-        new_size = get_json_size(row_item) + COMMA_SIZE
+        new_size = get_json_size(row_item)
         rows_bytes += new_size - previous_size
     return row_items
+
+
+COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
+BRACKET_SIZE = 1  # the brackets "[" and "]" are encoded with one byte in utf-8
 
 
 def create_truncated_row_items(
@@ -116,7 +141,7 @@ def create_truncated_row_items(
     columns_to_keep_untruncated: list[str],
 ) -> tuple[list[RowItem], bool]:
     row_items = []
-    rows_bytes = 0
+    rows_bytes = 2 * BRACKET_SIZE
 
     # two restrictions must be enforced:
     # - at least rows_min_number rows
@@ -139,7 +164,7 @@ def create_truncated_row_items(
         #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
         #     f" ({rows_max_bytes}), they will be truncated"
         # )
-        truncated_row_items = truncate_row_items(
+        truncated_row_items = truncate_row_items_cells(
             row_items=row_items,
             min_cell_bytes=min_cell_bytes,
             rows_max_bytes=rows_max_bytes,
