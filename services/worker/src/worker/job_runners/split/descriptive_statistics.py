@@ -452,7 +452,7 @@ def compute_descriptive_statistics_response(
     hf_token: Optional[str],
     parquet_revision: str,
     histogram_num_bins: int,
-    max_dataset_size_bytes: int,
+    max_split_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
     Compute statistics and get response for the `split-descriptive-statistics` step.
@@ -474,8 +474,8 @@ def compute_descriptive_statistics_response(
         histogram_num_bins (`int`):
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
-        max_dataset_size_bytes (`int`):
-            The approximate maximum size in bytes of the dataset's parquet files to compute statistics.
+        max_split_size_bytes (`int`):
+            Maximum split size in bytes to compute statistics.
             For partial datasets that means that only data up to this size is counted.
 
     Returns:
@@ -536,7 +536,7 @@ def compute_descriptive_statistics_response(
         num_parquet_files_to_index += 1
         parquet_file_size_bytes = parquet_file["size"]
         total_bytes += parquet_file_size_bytes
-        if total_bytes > max_dataset_size_bytes:
+        if total_bytes > max_split_size_bytes:
             break
     partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
     split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
@@ -644,6 +644,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
-                max_dataset_size_bytes=self.descriptive_statistics_config.max_dataset_size_bytes,
+                max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
             )
         )

@@ -92,7 +92,7 @@ Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_
 - `DUCKDB_INDEX_CACHE_DIRECTORY`: directory where the temporal duckdb index files are stored. Defaults to empty.
 - `DUCKDB_INDEX_COMMIT_MESSAGE`: the git commit message when the worker uploads the duckdb index file to the Hub. Defaults to `Update duckdb index file`.
 - `DUCKDB_INDEX_COMMITTER_HF_TOKEN`: the HuggingFace token to commit the duckdb index file to the Hub. The token must be an app token associated with a user that has the right to 1. create the `refs/convert/parquet` branch (see `DUCKDB_INDEX_TARGET_REVISION`) and 2. push commits to it on any dataset. [Datasets maintainers](https://huggingface.co/datasets-maintainers) members have these rights. The token must have permission to write. If not set, the worker will fail. Defaults to None.
-- `DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES`: size in bytes by which the number of first `n` parquet files to index is determined, satisfies the following condition: `sum(parquet_files[0] + ... + parquet_files[n-1]) <= DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES & sum(parquet_files[0] + ... + parquet_files[n]) > DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES`. Defaults to `100_000_000`.
+- `DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES`: size in bytes by which the number of first `n` parquet files to index is determined, satisfies the following condition: `sum(parquet_files[0] + ... + parquet_files[n-1]) <= DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES & sum(parquet_files[0] + ... + parquet_files[n]) > DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES`. Defaults to `100_000_000`.
 - `DUCKDB_INDEX_TARGET_REVISION`: the git revision of the dataset where to store the duckdb index file. Make sure the committer token (`DUCKDB_INDEX_COMMITTER_HF_TOKEN`) has the permission to write there. Defaults to `refs/convert/parquet`.
 - `DUCKDB_INDEX_URL_TEMPLATE`: the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
 - `DUCKDB_INDEX_EXTENSIONS_DIRECTORY`: directory where the duckdb extensions will be downloaded. Defaults to empty.
@@ -102,9 +102,9 @@ Set environment variables to configure the `duckdb-index` worker (`DUCKDB_INDEX_
 Set environment variables to configure the `descriptive-statistics` worker (`DESCRIPTIVE_STATISTICS_` prefix):
 
 - `DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY`: directory to which a dataset in parquet format is downloaded. Defaults to empty.
-- `DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES`: size in bytes by which the number of first `n` parquet files to compute statistics over is determined, satisfies the following condition: `sum(parquet_files[0] + ... + parquet_files[n-1]) <= DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES & sum(parquet_files[0] + ... + parquet_files[n]) > DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES`. Defaults to `100_000_000`.
+- `DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES`: size in bytes by which the number of first `n` parquet files to compute statistics over is determined, satisfies the following condition: `sum(parquet_files[0] + ... + parquet_files[n-1]) <= DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES & sum(parquet_files[0] + ... + parquet_files[n]) > DESCRIPTIVE_STATISTICS_MAX_DATASET_SIZE_BYTES`. Defaults to `100_000_000`.
 - `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`: number of histogram bins (see examples below for more info).
-- `DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES`: maximum size in bytes of the dataset's parquet files to compute statistics. Datasets with bigger size are ignored. Defaults to `100_000_000`.
+- 
 #### How descriptive statistics are computed 
 
 Descriptive statistics are currently computed for the following data types: strings, floats, and ints (including `ClassLabel` int). 

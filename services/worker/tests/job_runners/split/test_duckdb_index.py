@@ -215,7 +215,7 @@ def get_parquet_metadata_job_runner(
 
 
 @pytest.mark.parametrize(
-    "hub_dataset_name,max_dataset_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
+    "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
         ("duckdb_index", None, 5, True, False, None),
         ("duckdb_index_from_partial_export", None, 5, True, True, None),
@@ -233,7 +233,7 @@ def test_compute(
     hub_responses_duckdb_index: HubDatasetTest,
     hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
-    max_dataset_size_bytes: Optional[int],
+    max_split_size_bytes: Optional[int],
     expected_has_fts: bool,
     expected_rows_count: int,
     expected_partial: bool,
@@ -253,9 +253,9 @@ def test_compute(
 
     app_config = (
         app_config
-        if max_dataset_size_bytes is None
+        if max_split_size_bytes is None
         else replace(
-            app_config, duckdb_index=replace(app_config.duckdb_index, max_dataset_size_bytes=max_dataset_size_bytes)
+            app_config, duckdb_index=replace(app_config.duckdb_index, max_split_size_bytes=max_split_size_bytes)
         )
     )
     app_config = (
@@ -274,7 +274,7 @@ def test_compute(
         if multiple_parquet_files:
             stack.enter_context(patch.object(datasets.config, "MAX_SHARD_SIZE", 1))
             # Set a small chunk size to yield more than one Arrow Table in _generate_tables
-            # to be able generate multiple tables and therefore multiple files
+            # to be able to generate multiple tables and therefore multiple files
             stack.enter_context(patch.object(CsvConfig, "pd_read_csv_kwargs", {"chunksize": 1}))
         parquet_and_info_response = parquet_and_info_job_runner.compute()
     config_parquet_and_info = parquet_and_info_response.content

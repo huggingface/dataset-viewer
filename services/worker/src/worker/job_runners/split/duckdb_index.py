@@ -91,7 +91,7 @@ def compute_index_rows(
     commit_message: str,
     url_template: str,
     hf_token: Optional[str],
-    max_dataset_size_bytes: int,
+    max_split_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
@@ -131,7 +131,7 @@ def compute_index_rows(
             num_rows += parquet_metadata.num_rows
             for row_group_id in range(parquet_metadata.num_row_groups):
                 num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
-            if num_bytes > max_dataset_size_bytes:
+            if num_bytes > max_split_size_bytes:
                 break
 
         index_filename = (
@@ -344,7 +344,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
-                max_dataset_size_bytes=self.duckdb_index_config.max_dataset_size_bytes,
+                max_split_size_bytes=self.duckdb_index_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )
