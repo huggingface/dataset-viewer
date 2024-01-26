@@ -1767,37 +1767,37 @@
                 },
                 "examples": {
                   "all splits in a dataset": {
-                    "summary": "duorc: two configs, six splits",
-                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=duorc.",
+                    "summary": "ibm/duorc: two configs, six splits",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=ibm/duorc.",
                     "value": {
                       "splits": [
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "train"
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "validation"
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "test"
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "train"
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "validation"
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "test"
                         }
@@ -4111,54 +4111,54 @@
                 "examples": {
                   "duorc": {
                     "summary": "duorc: six parquet files, one per split",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=duorc",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc",
                     "value": {
                       "parquet_files": [
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 6136591
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 26005668
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 5566868
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 3035736
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 14851720
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "SelfRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/SelfRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 3114390
                         }
@@ -4170,30 +4170,30 @@
                   },
                   "duorc with ParaphraseRC config": {
                     "summary": "duorc: three parquet files for ParaphraseRC, one per split",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=duorc&config=ParaphraseRC",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc&config=ParaphraseRC",
                     "value": {
                       "parquet_files": [
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "test",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/test/0000.parquet",
                           "filename": "duorc-test.parquet",
                           "size": 6136591
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/train/0000.parquet",
                           "filename": "duorc-train.parquet",
                           "size": 26005668
                         },
                         {
-                          "dataset": "duorc",
+                          "dataset": "ibm/duorc",
                           "config": "ParaphraseRC",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
+                          "url": "https://huggingface.co/datasets/ibm/duorc/resolve/refs%2Fconvert%2Fparquet/ParaphraseRC/validation/0000.parquet",
                           "filename": "duorc-validation.parquet",
                           "size": 5566868
                         }
