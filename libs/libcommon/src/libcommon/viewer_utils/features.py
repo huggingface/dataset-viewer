@@ -41,8 +41,8 @@ def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] =
     """
     Hash the json path to a string.
     Args:
-        string (``str``): The string to append the hash to.
-        json_path (``list(str|int)``): the json path, which is a list of keys and indices
+        string (`str`): The string to append the hash to.
+        json_path (`list(str|int)`): the json path, which is a list of keys and indices
     Returns:
         the string suffixed with the hash of the json path
 

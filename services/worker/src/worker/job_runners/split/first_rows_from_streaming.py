@@ -56,7 +56,7 @@ def compute_first_rows_response(
             The Hub endpoint (for example: "https://huggingface.co")
         hf_token (`str` or `None`):
             An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int` or `None`): **DEPRECATED**
+        max_size_fallback (`int`, *optional*, defaults to `None`): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
             This argument is now hard-coded to 100MB, and will be removed in a future version.
         rows_max_bytes (`int`):

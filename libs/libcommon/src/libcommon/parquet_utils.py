@@ -65,7 +65,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
     If it starts with "partial-" then it is a partially exported split.
 
     Args:
-        parquet_file_url (str): URL of a Parquet file from the Parquet export
+        parquet_file_url (`str`): URL of a Parquet file from the Parquet export
             It must be placed in a directory name after the split,
             e.g. "train" or "partial-train" for a partial split export.
 
@@ -75,7 +75,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
             directory as the Parquet files.
 
     Returns:
-        partial (bool): True is the Parquet export is partial,
+        partial (`bool`): True is the Parquet export is partial,
             or False if it's the full dataset.
     """
     split_directory_name_for_parquet_export = extract_split_name_from_parquet_url(parquet_file_url)
@@ -89,7 +89,7 @@ def extract_split_name_from_parquet_url(parquet_url: str) -> str:
     dataset repository on the Hub
 
     Args:
-        parquet_url (str): The URL to extract the split name from.
+        parquet_url (`str`): The URL to extract the split name from.
 
     Returns:
         str: The extracted split name.
@@ -140,8 +140,8 @@ class ParquetIndexWithMetadata:
         have the same schema, even if the requested rows are invalid (out of range).
 
         Args:
-            offset (int): The first row to read.
-            length (int): The number of rows to read.
+            offset (`int`): The first row to read.
+            length (`int`): The number of rows to read.
 
         Raises:
             TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
@@ -369,8 +369,8 @@ class RowsIndex:
         have the same schema, even if the requested rows are invalid (out of range).
 
         Args:
-            offset (int): The first row to read.
-            length (int): The number of rows to read.
+            offset (`int`): The first row to read.
+            length (`int`): The number of rows to read.
 
         Returns:
             pa.Table: The requested rows.

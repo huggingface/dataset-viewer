@@ -86,7 +86,7 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
     Convert the key to PEM format.
 
     Args:
-        key (SupportedKey): the key to convert
+        key (`SupportedKey`): the key to convert
 
     Raises:
         RuntimeError: if the key is not a public key
@@ -111,8 +111,8 @@ def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> st
     compatible with the algorithm
 
     Args:
-        keys (Any): the JSON to parse. It must be a list of keys in JWK format
-        algorithm (SupportedAlgorithm): the algorithm the key should implement
+        keys (`Any`) the JSON to parse. It must be a list of keys in JWK format
+        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
         RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
@@ -197,11 +197,11 @@ def get_jwt_public_keys(
     The keys must be compatible with the algorithm.
 
     Args:
-        algorithm_name (str|None): the algorithm to use to decode the JWT token. If not provided, no keys will be
+        algorithm_name (`str`, *optional*): the algorithm to use to decode the JWT token. If not provided, no keys will be
           returned
-        public_key_url (str|None): the URL to fetch the public key from
-        additional_public_keys (list[str]|None): additional public keys to use to decode the JWT token
-        timeout_seconds (float|None): the timeout in seconds for fetching the remote key
+        public_key_url (`str`, *optional*): the URL to fetch the public key from
+        additional_public_keys (`list[str]`, *optional*): additional public keys to use to decode the JWT token
+        timeout_seconds (`float`, *optional*): the timeout in seconds for fetching the remote key
 
     Raises:
         JWTKeysError: if some exception occurred while creating the public keys. Some reasons: if the algorithm

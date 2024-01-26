@@ -806,7 +806,7 @@ class Queue:
         """Get the job for a given job id.
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Raises:
             DoesNotExist: if the job does not exist
@@ -819,7 +819,7 @@ class Queue:
         """Get the job type for a given job id.
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Raises:
             DoesNotExist: if the job does not exist
@@ -834,7 +834,7 @@ class Queue:
           (does not exist, not started, incorrect values for started_at).
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Returns:
             `Job`: the started job
@@ -850,7 +850,7 @@ class Queue:
         """Check if a job is started, with the correct values for started_at.
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Returns:
             `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
@@ -872,8 +872,8 @@ class Queue:
         The job is moved from the started state to the success or error state. The existing locks are released.
 
         Args:
-            job_id (`str`, required): id of the job
-            is_success (`bool`, required): whether the job succeeded or not
+            job_id (`str`): id of the job
+            is_success (`bool`): whether the job succeeded or not
 
         Returns:
             `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
@@ -898,7 +898,7 @@ class Queue:
         Delete all the jobs for a given dataset.
 
         Args:
-            dataset (`str`, required): dataset name
+            dataset (`str`): dataset name
 
         Returns:
             `int`: the number of deleted jobs
@@ -918,9 +918,9 @@ class Queue:
         """Check if a job is in process (waiting or started).
 
         Args:
-            job_type (`str`, required): job type
-            dataset (`str`, required): dataset name
-            revision (`str`, required): dataset git revision
+            job_type (`str`): job type
+            dataset (`str`): dataset name
+            revision (`str`): dataset git revision
             config (`str`, *optional*): config name. Defaults to None.
             split (`str`, *optional*): split name. Defaults to None.
 
@@ -982,8 +982,8 @@ class Queue:
         """Count the number of jobs with a given status and the given type.
 
         Args:
-            status (`Status`, required): status of the jobs
-            job_type (`str`, required): job type
+            status (`Status`): status of the jobs
+            job_type (`str`): job type
 
         Returns: the number of jobs with the given status and the given type.
         """
@@ -1008,8 +1008,8 @@ class Queue:
         """Get the dump of the jobs with a given status and a given type.
 
         Args:
-            status (`Status`, required): status of the jobs
-            job_type (`str`, required): job type
+            status (`Status`): status of the jobs
+            job_type (`str`): job type
 
         Returns: a list of jobs with the given status and the given type
         """

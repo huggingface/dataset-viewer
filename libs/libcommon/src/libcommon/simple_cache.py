@@ -560,9 +560,9 @@ def get_best_response(
             A non-empty list of cache kinds to look responses for.
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
-        config (`str`, optional):
+        config (`str`, *optional*):
             A config name.
-        split (`str`, optional):
+        split (`str`, *optional*):
             A split name.
     Returns:
         BestResponse: The best response (object with fields: kind and response). The response can be an error,
@@ -714,7 +714,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     The "reports" are the cached entries, without the "content", "details" and "updated_at" fields.
 
     Args:
-        kind (str): the kind of the cache entries
+        kind (`str`): the kind of the cache entries
         cursor (`str`):
             An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
@@ -809,7 +809,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     The cache reports contain all the fields of the object, including the "content" field.
 
     Args:
-        kind (str): the kind of the cache entries
+        kind (`str`): the kind of the cache entries
         cursor (`str`):
             An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
@@ -942,12 +942,12 @@ def fetch_names(
     If no entry is found in cache, return an empty list. Exceptions are silently caught.
 
     Args:
-        dataset (str): The dataset name.
-        config (Optional[str]): The config name. Only needed for split names.
-        cache_kinds (list[str]): The cache kinds to fetch, eg ["dataset-config-names"],
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name. Only needed for split names.
+        cache_kinds (`list[str]`): The cache kinds to fetch, eg ["dataset-config-names"],
           or ["config-split-names-from-streaming", "config-split-names-from-info"].
-        names_field (str): The name of the field containing the list of names, eg: "config_names", or "splits".
-        name_field (str): The name of the field containing the name, eg: "config", or "split".
+        names_field (`str`): The name of the field containing the list of names, eg: "config_names", or "splits".
+        name_field (`str`): The name of the field containing the name, eg: "config", or "split".
 
     Returns:
         list[str]: The list of names.
@@ -970,8 +970,8 @@ def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[str]:
     Get the list of datasets for which an artifact of some kind has been updated in the last days.
 
     Args:
-        kind (str): The kind of the cache entries.
-        days (int): The number of days to look back.
+        kind (`str`): The kind of the cache entries.
+        days (`int`): The number of days to look back.
 
     Returns:
         list[str]: The list of datasets.

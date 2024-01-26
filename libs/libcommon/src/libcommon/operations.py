@@ -80,7 +80,7 @@ def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     Delete a dataset
 
     Args:
-        dataset (str): the dataset
+        dataset (`str`): the dataset
 
     Returns: None.
     """
@@ -98,7 +98,7 @@ def update_dataset(
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
     """
-      blocked_datasets (list[str]): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
+      blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
     name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
     are not allowed in the namespace name.
     """

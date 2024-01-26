@@ -230,8 +230,8 @@ class AfterJobPlan(Plan):
     Plan to create jobs after a processing step has finished.
 
     Args:
-        job_info (JobInfo): The job info.
-        processing_graph (ProcessingGraph): The processing graph.
+        job_info (`JobInfo`): The job info.
+        processing_graph (`ProcessingGraph`): The processing graph.
     """
 
     job_info: JobInfo
@@ -494,7 +494,7 @@ class DatasetBackfillPlan(Plan):
         """Get the artifact states for a step.
 
         Args:
-            processing_step (ProcessingStep): the processing step
+            processing_step (`ProcessingStep`): the processing step
             config (`str`, *optional*): if not None, and step input type is config or split, only return the artifact
               states for this config
             split (`str`, *optional*): if not None, and step input type is split, only return the artifact states for
@@ -678,7 +678,7 @@ def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     Remove the dataset from the Datasets Server
 
     Args:
-        dataset (str): The name of the dataset.
+        dataset (`str`): The name of the dataset.
         storage_clients (`list[StorageClient]`, *optional*): The storage clients.
     """
     plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
