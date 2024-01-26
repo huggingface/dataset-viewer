@@ -233,9 +233,6 @@ def raise_if_requires_manual_download(
             If the datasets.config.HF_ENDPOINT is not set to the expected value.
         [`libcommon.exceptions.DatasetManualDownloadError`]:
             If the dataset requires manual download.
-
-    Returns:
-        `None`
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -874,8 +871,7 @@ def create_commits(
             default to the stored token.
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model. Default is
-            `None`.
+            space, `None` or `"model"` if uploading to a model.
         revision (`str`, *optional*):
             The git revision to commit from. Defaults to the head of the `"main"` branch.
         parent_commit (`str`, *optional*):

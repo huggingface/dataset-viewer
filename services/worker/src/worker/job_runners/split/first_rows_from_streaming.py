@@ -54,7 +54,7 @@ def compute_first_rows_response(
             A storage client to save the assets (images, audio, etc.).
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str` or `None`):
+        hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         max_size_fallback (`int`, *optional*): **DEPRECATED**
             The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.

@@ -116,9 +116,6 @@ def raise_if_blocked(
     Raises:
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
-
-    Returns:
-        `None`
     """
     for blocked_dataset in blocked_datasets:
         parts = blocked_dataset.split("/")

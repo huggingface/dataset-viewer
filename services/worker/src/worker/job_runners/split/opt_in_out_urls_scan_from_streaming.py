@@ -114,7 +114,7 @@ def compute_opt_in_out_urls_scan_response(
             A configuration name.
         split (`str`):
             A split name.
-        hf_token (`str` or `None`):
+        hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         rows_max_number (`int`):
             The maximum number of rows of the response.
@@ -122,7 +122,7 @@ def compute_opt_in_out_urls_scan_response(
             The maximum number of supported columns.
         urls_number_per_batch (`int`):
             The number of batch URLs to be sent to spawning service.
-        spawning_token (`str` or `None`):
+        spawning_token (`str`, *optional*):
             An authentication token to use spawning service (See https://api.spawning.ai/spawning-api)
         max_concurrent_requests_number (`int`):
             The maximum number of requests to be processed concurrently.

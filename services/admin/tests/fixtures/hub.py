@@ -49,8 +49,7 @@ def update_repo_settings(
             An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model. Default is
-            `None`.
+            space, `None` or `"model"` if uploading to a model.
 
     Raises:
         - [`~huggingface_hub.utils.RepositoryNotFoundError`]
