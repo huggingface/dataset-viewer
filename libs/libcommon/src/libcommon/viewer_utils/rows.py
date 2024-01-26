@@ -127,6 +127,12 @@ def create_first_rows_response(
     response = response_features_only
     response["rows"] = row_items
     response["truncated"] = (not rows_content.all_fetched) or truncated
+    # ^ this boolean contains two different infos:
+    #   - if the dataset contains more than rows_max_number rows, or
+    #   - if some rows have been deleted OR some cells have been serialized+truncated, to fit the budget of rows_max_bytes
+    # The only way for it to be True is if the dataset contains less than rows_max_number rows, and if their size is
+    # small enough to fit within rows_max_bytes. It only happens for very small datasets.
+    # Note that changing it means recomputing all the /first-rows responses.
 
     # return the response
     return response
