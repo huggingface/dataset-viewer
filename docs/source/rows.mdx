@@ -32,7 +32,7 @@ The `/rows` endpoint accepts five query parameters:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10"
+API_URL = "https://datasets-server.huggingface.co/rows?dataset=ibm/duorc&config=SelfRC&split=train&offset=150&length=10"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -44,7 +44,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10",
+        "https://datasets-server.huggingface.co/rows?dataset=ibm/duorc&config=SelfRC&split=train&offset=150&length=10",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -60,7 +60,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=10 \
+curl https://datasets-server.huggingface.co/rows?dataset=ibm/duorc&config=SelfRC&split=train&offset=150&length=10 \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -72,10 +72,10 @@ The endpoint response is a JSON containing two keys:
 - The [`features`](https://huggingface.co/docs/datasets/about_dataset_features) of a dataset, including the column's name and data type.
 - The slice of `rows` of a dataset and the content contained in each column of a specific row.
 
-For example, here are the `features` and the slice of `rows` of the `duorc`/`SelfRC` train split from 150 to 151:
+For example, here are the `features` and the slice of `rows` of the `ibm/duorc`/`SelfRC` train split from 150 to 151:
 
 ```json
-// https://datasets-server.huggingface.co/rows?dataset=duorc&config=SelfRC&split=train&offset=150&length=2
+// https://datasets-server.huggingface.co/rows?dataset=ibm/duorc&config=SelfRC&split=train&offset=150&length=2
 {
   "features": [
     {
@@ -144,7 +144,10 @@ For example, here are the `features` and the slice of `rows` of the `duorc`/`Sel
       },
       "truncated_cells": []
     }
-  ]
+  ],
+  "num_rows_total":60721,
+  "num_rows_per_page":100,
+  "partial":false
 }
 ```
 
@@ -183,9 +186,15 @@ Here is an example of image, from the first row of the cifar100 dataset:
       },
       "truncated_cells": []
     }
-  ]
+  ],
+  "num_rows_total":50000,
+  "num_rows_per_page":100,
+  "partial":false
 }
 ```
+
+If the result has `partial: true` it means that the slices couldn't be run on the full dataset because it's too big.
+
 
 ### Caching
 

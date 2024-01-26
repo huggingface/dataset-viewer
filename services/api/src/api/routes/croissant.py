@@ -64,7 +64,9 @@ def _escape_name(name: str, names: set[str]) -> str:
     return escaped_name
 
 
-def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]], partial: bool) -> Mapping[str, Any]:
+def get_croissant_from_dataset_infos(
+    dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool
+) -> Mapping[str, Any]:
     repo_name = "repo"
     names: set[str] = set(repo_name)
     distribution = [
@@ -96,7 +98,7 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
         )
         skipped_columns = []
         for column, feature in features.items():
-            if len(fields) >= MAX_COLUMNS:
+            if len(fields) >= MAX_COLUMNS and not full_jsonld:
                 description_body += f"\n- {len(features) - MAX_COLUMNS} skipped column{'s' if len(features) - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
                 break
             fields_names: set[str] = set()
@@ -199,6 +201,14 @@ def get_croissant_from_dataset_infos(dataset: str, infos: list[Mapping[str, Any]
     }
 
 
+def _get_full_jsonld_parameter(request: Request) -> bool:
+    """Parameter to retrieve the full JSON-LD (full=True) or a truncated/abridged JSON-LD (full=False) with less features."""
+    full_jsonld = get_request_parameter(request, "full", default="false")
+    if full_jsonld.lower() == "true":
+        return True
+    return False
+
+
 def create_croissant_endpoint(
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -222,6 +232,7 @@ def create_croissant_endpoint(
                     step="validate parameters and get processing steps",
                     context=context,
                 ):
+                    full_jsonld = _get_full_jsonld_parameter(request)
                     dataset = get_request_parameter(request, "dataset")
                     logging.debug(f"endpoint={endpoint_name} dataset={dataset}")
                     if not are_valid_parameters([dataset]):
@@ -257,7 +268,9 @@ def create_croissant_endpoint(
                     infos = list(islice(content["dataset_info"].values(), MAX_CONFIGS))
                     partial = content["partial"]
                     with StepProfiler(method="croissant_endpoint", step="generate croissant json", context=context):
-                        croissant = get_croissant_from_dataset_infos(dataset=dataset, infos=infos, partial=partial)
+                        croissant = get_croissant_from_dataset_infos(
+                            dataset=dataset, infos=infos, partial=partial, full_jsonld=full_jsonld
+                        )
                     with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)
                 else:
