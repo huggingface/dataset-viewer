@@ -495,9 +495,9 @@ class DatasetBackfillPlan(Plan):
 
         Args:
             processing_step (ProcessingStep): the processing step
-            config (str, optional): if not None, and step input type is config or split, only return the artifact
+            config (`str`, *optional*): if not None, and step input type is config or split, only return the artifact
               states for this config
-            split (str, optional): if not None, and step input type is split, only return the artifact states for
+            split (`str`, *optional*): if not None, and step input type is split, only return the artifact states for
               this split (config must be specified)
 
         Returns:
@@ -658,7 +658,7 @@ class DatasetRemovalPlan(Plan):
 
     Args:
         dataset: dataset name
-        storage_clients (list[StorageClient], optional): The storage clients.
+        storage_clients (`list[StorageClient]`, *optional*): The storage clients.
     """
 
     dataset: str
@@ -679,7 +679,7 @@ def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
 
     Args:
         dataset (str): The name of the dataset.
-        storage_clients (list[StorageClient], optional): The storage clients.
+        storage_clients (`list[StorageClient]`, *optional*): The storage clients.
     """
     plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
     plan.run()
@@ -705,10 +705,10 @@ def set_revision(
         step.
 
     Args:
-        dataset (str): The name of the dataset.
-        revision (str): The new revision of the dataset.
-        priority (Priority): The priority of the jobs to create.
-        processing_graph (ProcessingGraph, optional): The processing graph.
+        dataset (`str`): The name of the dataset.
+        revision (`str`): The new revision of the dataset.
+        priority (`Priority`): The priority of the jobs to create.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
         ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
@@ -759,8 +759,8 @@ def finish_job(
     It will finish the job, store the result in the cache, and trigger the next steps.
 
     Args:
-        job_result (JobResult): The result of the job.
-        processing_graph (ProcessingGraph, optional): The processing graph.
+        job_result (`JobResult`): The result of the job.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
         ValueError: If the job is not found, or if the processing step is not found.
@@ -838,9 +838,9 @@ def has_pending_ancestor_jobs(
         consider that the artifact could exist.
 
     Args:
-        dataset (str): The name of the dataset.
-        processing_step_names (list[str]): The processing step names (artifacts) to check.
-        processing_graph (ProcessingGraph, optional): The processing graph.
+        dataset (`str`): The name of the dataset.
+        processing_step_names (`list[str]`): The processing step names (artifacts) to check.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
         ProcessingStepDoesNotExist: If any of the processing step does not exist.
