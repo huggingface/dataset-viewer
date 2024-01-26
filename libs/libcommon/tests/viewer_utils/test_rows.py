@@ -3,12 +3,14 @@
 
 import itertools
 from collections.abc import Mapping
+from typing import Literal
 
 import pandas as pd
 import pytest
 from datasets import Dataset
 
 from libcommon.dtos import RowsContent
+from libcommon.exceptions import TooBigContentError
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
 
@@ -104,3 +106,90 @@ def test_create_first_rows_response_truncated(
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )
     assert response["truncated"] == truncated
+
+
+INCREMENT_BYTES = 100
+
+
+@pytest.mark.parametrize(
+    "dataset_name, rows_max_bytes, expected",
+    [
+        # with rows_max_bytes > response size, the response is not truncated
+        ("audio", 337 + INCREMENT_BYTES, "complete"),
+        ("image", 319 + INCREMENT_BYTES, "complete"),
+        ("images_list", 455 + INCREMENT_BYTES, "complete"),
+        ("audios_list", 447 + INCREMENT_BYTES, "complete"),
+        ("images_sequence", 484 + INCREMENT_BYTES, "complete"),
+        ("audios_sequence", 476 + INCREMENT_BYTES, "complete"),
+        ("dict_of_audios_and_images", 797 + INCREMENT_BYTES, "complete"),
+        # with rows_max_bytes < response size, the response is:
+        # - not truncated for top-level Audio and Image features
+        # - truncated for nested Audio and Image features
+        ("audio", 337 - INCREMENT_BYTES, "complete"),
+        ("image", 319 - INCREMENT_BYTES, "complete"),
+        ("images_list", 455 - INCREMENT_BYTES, "truncated_cells"),
+        ("audios_list", 447 - INCREMENT_BYTES, "truncated_cells"),
+        ("images_sequence", 484 - INCREMENT_BYTES, "truncated_cells"),
+        ("audios_sequence", 476 - INCREMENT_BYTES, "truncated_cells"),
+        ("dict_of_audios_and_images", 797 - INCREMENT_BYTES, "truncated_cells"),
+        # with rows_max_bytes <<< response size, a TooBigContentError exception is raised
+        # (note that it should never happen if the correct set of parameters is chosen)
+        ("audio", 10, "error"),
+        ("image", 10, "error"),
+        ("images_list", 10, "error"),
+        ("audios_list", 10, "error"),
+        ("images_sequence", 10, "error"),
+        ("audios_sequence", 10, "error"),
+        ("dict_of_audios_and_images", 10, "error"),
+    ],
+)
+def test_create_first_rows_response_truncation_on_audio_or_image(
+    storage_client: StorageClient,
+    datasets_fixtures: Mapping[str, DatasetFixture],
+    dataset_name: str,
+    rows_max_bytes: int,
+    expected: Literal["error", "truncated_cells", "complete"],
+) -> None:
+    dataset_fixture = datasets_fixtures[dataset_name]
+    dataset = dataset_fixture.dataset
+
+    def get_rows_content(rows_max_number: int) -> RowsContent:
+        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+        # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
+        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
+
+    if expected == "error":
+        with pytest.raises(TooBigContentError):
+            response = create_first_rows_response(
+                dataset="dataset",
+                revision=DEFAULT_REVISION,
+                config=DEFAULT_CONFIG,
+                split=DEFAULT_SPLIT,
+                storage_client=storage_client,
+                features=dataset.features,
+                get_rows_content=get_rows_content,
+                min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
+                rows_max_bytes=rows_max_bytes,
+                rows_max_number=100,
+                rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
+                columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
+            )
+            print(response)
+    else:
+        response = create_first_rows_response(
+            dataset="dataset",
+            revision=DEFAULT_REVISION,
+            config=DEFAULT_CONFIG,
+            split=DEFAULT_SPLIT,
+            storage_client=storage_client,
+            features=dataset.features,
+            get_rows_content=get_rows_content,
+            min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
+            rows_max_bytes=rows_max_bytes,
+            rows_max_number=100,
+            rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
+            columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
+        )
+        assert not response["truncated"]
+        # ^ no rows have been deleted
+        assert len(response["rows"][0]["truncated_cells"]) == (1 if (expected == "truncated_cells") else 0), response

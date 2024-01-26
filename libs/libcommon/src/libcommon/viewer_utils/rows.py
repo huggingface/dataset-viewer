@@ -65,6 +65,47 @@ def create_first_rows_response(
     rows_min_number: int,
     columns_max_number: int,
 ) -> SplitFirstRowsResponse:
+    """
+    Create the response for the first rows of a split.
+
+    The response contains the features, and the first rows of the split, obtained by calling get_rows_content.
+    If the size of the response exceeds the maximum supported size or the maximum supported number of rows, the rows
+    are "truncated" to fit within the restrictions:
+    1. the last rows are removed, one by one, until the conditions are met.
+    2. if the minimim number of rows has been reached, the remaining rows are "truncated" (backwards) to fit within the
+         restrictions. For each row, the size of a each cell is computed as the size of its JSON serialization using
+        orjson_dumps(). If a cell has less than min_cell_bytes, it is not truncated. If it has more, it is serialized
+        to JSON and truncated to min_cell_bytes. The names of the truncated cells are listed in row_item["truncated_cells"].
+        The cells from columns with type Audio or Image are never truncated (only applies to top-level types, nested audio
+        files and images can be truncated).
+
+    If the size of the response still exceeds the maximum supported size, a TooBigContentError is raised.
+
+    Args:
+        dataset (`str`): the dataset name
+        revision (`str`): the revision of the dataset
+        config (`str`): the config name
+        split (`str`): the split name
+        storage_client (`StorageClient`): the storage client to use to store the assets (audio, images)
+        features (`Features`): the features to return in the response
+        get_rows_content (`GetRowsContent`): a callable that returns the rows content
+        min_cell_bytes (`int`): the minimum number of bytes for a cell, when truncation applies.
+        rows_max_bytes (`int`): the maximum number of bytes for the response.
+        rows_max_number (`int`): the maximum number of rows to return. The response will never contain more than this
+            number of rows.
+        rows_min_number (`int`): the minimum number of rows to return. The response will always contain at least this
+            number of rows (provided that get_rows_content returns at least this number of rows).
+        columns_max_number (`int`): the maximum number of columns to return. The response will never contain more than
+            this number of columns.
+
+    Returns:
+        [`SplitFirstRowsResponse`]: the response for the first rows of the split
+
+    Raises:
+        `TooBigContentError`: if the size of the content of the first rows exceeds the maximum supported size
+        `TooManyColumnsError`: if the number of columns exceeds the maximum supported number of columns
+        `RowsPostProcessingError`: if there is an error while post-processing the rows
+    """
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"
@@ -127,12 +168,6 @@ def create_first_rows_response(
     response = response_features_only
     response["rows"] = row_items
     response["truncated"] = (not rows_content.all_fetched) or truncated
-    # ^ this boolean contains two different infos:
-    #   - if the dataset contains more than rows_max_number rows, or
-    #   - if some rows have been deleted OR some cells have been serialized+truncated, to fit the budget of rows_max_bytes
-    # The only way for it to be True is if the dataset contains less than rows_max_number rows, and if their size is
-    # small enough to fit within rows_max_bytes. It only happens for very small datasets.
-    # Note that changing it means recomputing all the /first-rows responses.
 
     # return the response
     return response
