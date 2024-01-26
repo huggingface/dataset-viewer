@@ -40,9 +40,9 @@ def update_repo_settings(
             <Tip>
             Version added: 0.5
             </Tip>
-        private (`bool`, *optional*, defaults to `None`):
+        private (`bool`, *optional*):
             Whether the repo should be private.
-        gated (`str`, *optional*, defaults to `None`):
+        gated (`str`, *optional*):
             Whether the repo should request user access.
             Possible values are 'auto' and 'manual'
         token (`str`, *optional*):
