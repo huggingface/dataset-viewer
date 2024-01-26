@@ -113,11 +113,12 @@ def raise_if_blocked(
             to block all the datasets in the `open-llm-leaderboard` namespace. They are not allowed in
             the namespace name.
 
-    Returns:
-        `None`
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
+
+    Returns:
+        `None`
     """
     for blocked_dataset in blocked_datasets:
         parts = blocked_dataset.split("/")

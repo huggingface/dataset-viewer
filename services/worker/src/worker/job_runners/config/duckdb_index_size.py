@@ -23,19 +23,22 @@ from worker.utils import get_split_names
 def compute_config_duckdb_index_size_response(dataset: str, config: str) -> ConfigDuckdbIndexSizeResponse:
     """
     Get the response of config-duckdb-index-size for one specific dataset and config on huggingface.co.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
         config (`str`):
             A configuration name.
-    Returns:
-        `ConfigDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
           If the content of the previous step has not the expected format
+
+    Returns:
+        `ConfigDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
     """
     logging.info(f"get duckdb_index_size for dataset={dataset}, config={config}")
     splits = get_split_names(dataset=dataset, config=config)

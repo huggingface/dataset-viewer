@@ -59,6 +59,7 @@ def compute_parquet_metadata_response(
 ) -> ConfigParquetMetadataResponse:
     """
     Store the config's parquet metadata on the disk and return the list of local metadata files.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -69,10 +70,8 @@ def compute_parquet_metadata_response(
             An authentication token (See https://huggingface.co/settings/token)
         parquet_metadata_directory (`str` or `pathlib.Path`):
             The directory where the parquet metadata files are stored.
-    Returns:
-        `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
-    <Tip>
-    Raises the following errors:
+
+    Raises:
         - [`~libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
         - [`~libcommon.exceptions.PreviousStepFormatError`]
@@ -81,7 +80,9 @@ def compute_parquet_metadata_response(
             If the previous step provided an empty list of parquet files.
         - [`~libcommon.exceptions.FileSystemError`]
             If the HfFileSystem couldn't access the parquet files.
-    </Tip>
+
+    Returns:
+        `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
     """
     logging.info(f"get parquet files for dataset={dataset}, config={config}")
 

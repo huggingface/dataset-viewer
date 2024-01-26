@@ -457,6 +457,7 @@ def compute_descriptive_statistics_response(
     """
     Compute statistics and get response for the `split-descriptive-statistics` step.
     Currently, integers, floats and ClassLabel features are supported.
+    
     Args:
         dataset (`str`):
             Name of a dataset.
@@ -478,11 +479,7 @@ def compute_descriptive_statistics_response(
             The maximum size in bytes of the dataset's parquet files to compute statistics.
             Datasets with bigger size are ignored.
 
-    Returns:
-        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
-        numerical (int and float) or ClassLabel feature.
-
-    Raises the following errors:
+    Raises:
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step does not have the expected format.
         - [`libcommon.exceptions.ParquetResponseEmptyError`]
@@ -494,6 +491,10 @@ def compute_descriptive_statistics_response(
             Currently, floats, integers and ClassLabels are supported.
         - [`libcommon.exceptions.StatisticsComputationError`]
             If there was some unexpected behaviour during statistics computation.
+
+    Returns:
+        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
+        numerical (int and float) or ClassLabel feature.
     """
 
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")

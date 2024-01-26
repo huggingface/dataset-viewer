@@ -228,14 +228,14 @@ def raise_if_requires_manual_download(
         hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
 
-    Returns:
-        `None`
-
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
             If the datasets.config.HF_ENDPOINT is not set to the expected value.
         [`libcommon.exceptions.DatasetManualDownloadError`]:
             If the dataset requires manual download.
+
+    Returns:
+        `None`
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -281,10 +281,8 @@ def is_dataset_too_big(
         max_external_data_files (`int`):
             The maximum number of external data files (i.e. not hosted on HF).
             If the dataset is under the limit (which means that the files can be fetched), it will be allowed.
-    Returns:
-        `ParquetResponseResult`: An object with the parquet_response
-          (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.exceptions.UnsupportedExternalFilesError`]
           If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
@@ -297,6 +295,10 @@ def is_dataset_too_big(
           If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
           If the datasets.config.HF_ENDPOINT is not set to the expected value
+
+    Returns:
+        `ParquetResponseResult`: An object with the parquet_response
+          (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -885,10 +887,7 @@ def create_commits(
             if the repo is updated / committed to concurrently.
         max_operations_per_commit (`int`, *optional*):
             The max number of operations per commit, to avoid time out errors from the Hub. Defaults to 500.
-    Returns:
-        [`list[huggingface_hub.CommitInfo]`]:
-            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
-            url, pr url, commit message,...).
+
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If commit message is empty.
@@ -901,6 +900,11 @@ def create_commits(
             but not authenticated or repo does not exist.
         [`libcommon.exceptions.CreateCommitError`]:
             If one of the commits could not be created on the Hub.
+
+    Returns:
+        [`list[huggingface_hub.CommitInfo]`]:
+            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
+            url, pr url, commit message,...).
     """
     commit_infos: list[CommitInfo] = []
     offsets = range(0, len(operations), max_operations_per_commit)
@@ -990,10 +994,7 @@ def commit_parquet_conversion(
             The summary (first line) of the commit that will be created.
         target_revision (`str`, *optional*):
             The git revision to commit from. Defaults to the head of the `"main"` branch.
-    Returns:
-        [`list[huggingface_hub.CommitInfo]`]:
-            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
-            url, pr url, commit message,...).
+
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If commit message is empty.
@@ -1006,6 +1007,11 @@ def commit_parquet_conversion(
             but not authenticated or repo does not exist.
         [`libcommon.exceptions.CreateCommitError`]:
             If one of the commits could not be created on the Hub.
+
+    Returns:
+        [`list[huggingface_hub.CommitInfo]`]:
+            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
+            url, pr url, commit message,...).
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
@@ -1042,6 +1048,7 @@ def compute_config_parquet_and_info_response(
     """
     Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
     It is assumed that the dataset can be accessed with the token.
+    
     Args:
         job_id (`str`):
             The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.
@@ -1077,10 +1084,8 @@ def compute_config_parquet_and_info_response(
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-    Returns:
-        `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
-          (dataset info and list of parquet files).
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
         - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)

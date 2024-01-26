@@ -240,11 +240,11 @@ class ProcessingGraph:
         Args:
             processing_step_name (str): The name of the processing step
 
-        Returns:
-            list[ProcessingStep]: The list of children processing steps (successors)
-
         Raises:
             ProcessingStepDoesNotExist: If the processing step is not in the graph
+
+        Returns:
+            list[ProcessingStep]: The list of children processing steps (successors)
         """
         try:
             return [
@@ -265,11 +265,11 @@ class ProcessingGraph:
         Args:
             processing_step_name (str): The name of the processing step
 
-        Returns:
-            list[ProcessingStep]: The list of parent processing steps (predecessors)
-
         Raises:
             ProcessingStepDoesNotExist: If the processing step is not in the graph
+
+        Returns:
+            list[ProcessingStep]: The list of parent processing steps (predecessors)
         """
         try:
             return [
@@ -291,11 +291,11 @@ class ProcessingGraph:
         Args:
             processing_step_name (str): The name of the processing step
 
-        Returns:
-            list[ProcessingStep]: The list of ancestor processing steps
-
         Raises:
             ProcessingStepDoesNotExist: If the processing step is not in the graph
+
+        Returns:
+            list[ProcessingStep]: The list of ancestor processing steps
         """
         try:
             return [

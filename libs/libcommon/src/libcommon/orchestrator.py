@@ -710,12 +710,12 @@ def set_revision(
         priority (Priority): The priority of the jobs to create.
         processing_graph (ProcessingGraph, optional): The processing graph.
 
-    Returns:
-        None
-
     Raises:
         ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
             step.
+
+    Returns:
+        None
     """
     first_processing_steps = processing_graph.get_first_processing_steps()
     if len(first_processing_steps) < 1:
@@ -762,11 +762,11 @@ def finish_job(
         job_result (JobResult): The result of the job.
         processing_graph (ProcessingGraph, optional): The processing graph.
 
-    Returns:
-        None
-
     Raises:
         ValueError: If the job is not found, or if the processing step is not found.
+
+    Returns:
+        None
     """
     # check if the job is still in started status
     job_info = job_result["job_info"]
@@ -842,11 +842,11 @@ def has_pending_ancestor_jobs(
         processing_step_names (list[str]): The processing step names (artifacts) to check.
         processing_graph (ProcessingGraph, optional): The processing graph.
 
-    Returns:
-        bool: True if any of the artifact could exist, False otherwise.
-
     Raises:
         ProcessingStepDoesNotExist: If any of the processing step does not exist.
+
+    Returns:
+        bool: True if any of the artifact could exist, False otherwise.
     """
     job_types: set[str] = set()
     for processing_step_name in processing_step_names:

@@ -703,12 +703,12 @@ class Queue:
         Args:
             job: the job to start
 
-        Returns:
-            the started job
-
         Raises:
             AlreadyStartedJobError: if a started job already exist for the same unicity_id.
             LockTimeoutError: if the lock could not be acquired after 20 retries.
+
+        Returns:
+            the started job
         """
         # could be a method of Job
         RETRIES = 20
@@ -808,10 +808,10 @@ class Queue:
         Args:
             job_id (`str`, required): id of the job
 
-        Returns: the requested job
-
         Raises:
             DoesNotExist: if the job does not exist
+
+        Returns: the requested job
         """
         return JobDocument.objects(pk=job_id).get()
 
@@ -821,10 +821,10 @@ class Queue:
         Args:
             job_id (`str`, required): id of the job
 
-        Returns: the job type
-
         Raises:
             DoesNotExist: if the job does not exist
+
+        Returns: the job type
         """
         job = self.get_job_with_id(job_id=job_id)
         return job.type

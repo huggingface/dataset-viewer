@@ -136,9 +136,7 @@ def compute_opt_in_out_urls_scan_response(
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
-    Returns:
-        [`OptInOutUrlsScanResponse`]
-    Raises the following errors:
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
@@ -153,6 +151,9 @@ def compute_opt_in_out_urls_scan_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
+
+    Returns:
+        [`OptInOutUrlsScanResponse`]
     """
     logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)

@@ -24,17 +24,20 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, float]:
     """
     Get the response of dataset-parquet for one specific dataset on huggingface.co.
+    
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
-    Returns:
-        `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
+
+    Returns:
+        `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
     """
     logging.info(f"get parquet files for dataset={dataset}")
 

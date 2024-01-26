@@ -52,9 +52,8 @@ def compute_split_names_from_streaming_response(
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
-    Returns:
-        `SplitsList`: An object with the list of split names for the dataset and config.
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
         - [`libcommon.exceptions.EmptyDatasetError`]
@@ -63,6 +62,9 @@ def compute_split_names_from_streaming_response(
           If the list of splits could not be obtained using the datasets library.
         - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
+
+    Returns:
+        `SplitsList`: An object with the list of split names for the dataset and config.
     """
     logging.info(f"get split names for dataset={dataset}, config={config}")
     try:

@@ -44,9 +44,8 @@ def compute_config_names_response(
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
-    Returns:
-        `DatasetConfigNamesResponse`: An object with the list of config names.
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
         - [`libcommon.exceptions.DatasetModuleNotInstalledError`]
@@ -55,6 +54,9 @@ def compute_config_names_response(
           If the list of configs could not be obtained using the datasets library.
         - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
+
+    Returns:
+        `DatasetConfigNamesResponse`: An object with the list of config names.
     """
     logging.info(f"get config names for dataset={dataset}")
     # get the list of splits in streaming mode

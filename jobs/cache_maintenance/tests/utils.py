@@ -67,14 +67,14 @@ def update_repo_settings(
             Set to `"dataset"` or `"space"` if uploading to a dataset or
             space, `None` or `"model"` if uploading to a model. Default is
             `None`.
-    Returns:
-        The HTTP response in json.
-    <Tip>
-    Raises the following errors:
+
+    Raises:
         - [`~huggingface_hub.utils.RepositoryNotFoundError`]
             If the repository to download from cannot be found. This may be because it doesn't exist,
             or because it is set to `private` and you do not have access.
-    </Tip>
+
+    Returns:
+        The HTTP response in json.
     """
     if repo_type not in REPO_TYPES:
         raise ValueError("Invalid repo type")

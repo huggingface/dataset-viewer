@@ -26,17 +26,20 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_dataset_duckdb_index_size_response(dataset: str) -> tuple[DatasetDuckdbIndexSizeResponse, float]:
     """
     Get the response of config-duckdb-index-size for one specific dataset on huggingface.co.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
-    Returns:
-        `DatasetDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
-    Raises the following errors:
+
+    Raises:
         - [`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
         - [`libcommon.exceptions.PreviousStepFormatError`]
           If the content of the previous step has not the expected format
+
+    Returns:
+        `DatasetDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
     """
     logging.info(f"get duckdb_index_size for dataset={dataset}")
 

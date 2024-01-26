@@ -72,9 +72,8 @@ def compute_first_rows_response(
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-    Returns:
-        [`SplitFirstRowsResponse`]: The list of first rows of the split.
-    Raises the following errors:
+    
+    Raises:
         - [`libcommon.exceptions.SplitNotFoundError`]
           If the split does not exist in the dataset.
         - [`libcommon.exceptions.InfoError`]
@@ -97,6 +96,9 @@ def compute_first_rows_response(
           If the split rows could not be obtained using the datasets library in normal mode.
         - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
+
+    Returns:
+        [`SplitFirstRowsResponse`]: The list of first rows of the split.
     """
     logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
