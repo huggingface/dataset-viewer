@@ -64,7 +64,7 @@ def create_algorithm(algorithm_name: str) -> SupportedAlgorithm:
     Create an algorithm object from the algorithm name.
 
     Args:
-        algorithm_name (str): the algorithm name
+        algorithm_name (`str`): the algorithm name
     
     Raises:
         RuntimeError: if the algorithm is not supported
@@ -136,8 +136,8 @@ def parse_jwt_public_key_pem(payload: str, algorithm: SupportedAlgorithm) -> str
     with the algorithm
 
     Args:
-        key (str): the key to parse. It should be a public key in PEM format
-        algorithm (SupportedAlgorithm): the algorithm the key should implement
+        key (`str`): the key to parse. It should be a public key in PEM format
+        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
         RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
@@ -163,8 +163,8 @@ def fetch_jwt_public_key_json(
     See https://huggingface.co/api/keys/jwt
 
     Args:
-        url (str): the URL to fetch the public key from
-        hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
+        url (`str`): the URL to fetch the public key from
+        hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the external authentication service. It
             is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Raises:
@@ -246,11 +246,11 @@ def validate_jwt(
     Raise an exception if any of the condition is not met.
 
     Args:
-        dataset (str): the dataset identifier
-        token (Any): the JWT token to decode
-        public_keys (list[str]): the public keys to use to decode the JWT token. They are tried in order.
-        algorithm (str): the algorithm to use to decode the JWT token
-        verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
+        dataset (`str`): the dataset identifier
+        token (`Any`): the JWT token to decode
+        public_keys (`list[str]`): the public keys to use to decode the JWT token. They are tried in order.
+        algorithm (`str`): the algorithm to use to decode the JWT token
+        verify_exp (`bool`, *optional*): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
         JWTInvalidSignature: if the signature verification failed
