@@ -58,7 +58,7 @@ class ProcessingStepDoesNotExist(Exception):
 class ProcessingStep:
     """A dataset processing step.
 
-    Attributes:
+    **Attributes**:
         name (str): The processing step name.
         input_type (InputType): The input type ('dataset', 'config' or 'split').
         job_runner_version (int): The version of the job runner to use to compute the response.
@@ -356,7 +356,7 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            order (Optional[Literal["alphabetical", "topological"]], optional): The order in which to return the
+            order (`Optional[Literal["alphabetical", "topological"]]`, *optional*): The order in which to return the
               processing steps. If None, the order is alphabetical. Defaults to None.
 
         Returns:
@@ -375,7 +375,7 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            input_type (InputType, optional): The input type. Defaults to "dataset".
+            input_type (`InputType`, *optional*): The input type. Defaults to "dataset".
 
         Returns:
             list[ProcessingStep]: The list of processing steps

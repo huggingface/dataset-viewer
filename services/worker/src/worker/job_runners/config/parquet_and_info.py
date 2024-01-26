@@ -271,7 +271,7 @@ def is_dataset_too_big(
             A dataset builder instance to check.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
@@ -1059,9 +1059,9 @@ def compute_config_parquet_and_info_response(
             Dataset configuration name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
-        committer_hf_token (`str`, `optional`):
+        committer_hf_token (`str`, *optional*):
             An app authentication token with write access. It must be part of the `datasets-maintainers`
               organization (to create the refs/convert/parquet "branch" and push to it)
         source_revision (`str`):

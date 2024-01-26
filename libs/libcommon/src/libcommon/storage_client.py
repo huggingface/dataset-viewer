@@ -21,9 +21,9 @@ class StorageClient:
         protocol (`str`): The fsspec protocol (supported: "file" or "s3")
         storage_root (`str`): The storage root path
         base_url (`str`): The base url for the publicly distributed assets
-        overwrite (`bool`, `optional`, defaults to `False`): Whether to overwrite existing files
-        s3_config (`S3Config`, `optional`): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
-        cloudfront_config (`CloudFrontConfig`, `optional`): The CloudFront configuration to generate signed urls
+        overwrite (`bool`, *optional*, defaults to `False`): Whether to overwrite existing files
+        s3_config (`S3Config`, *optional*): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
+        cloudfront_config (`CloudFrontConfig`, *optional*): The CloudFront configuration to generate signed urls
     """
 
     _fs: Any

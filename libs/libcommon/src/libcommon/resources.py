@@ -71,7 +71,7 @@ class MongoResource(Resource):
         database (`str`): The name of the mongo database.
         host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
         mongoengine_alias (`str`): The alias of the connection in mongoengine.
-        server_selection_timeout_ms (`int`, `optional`, defaults to 30_000): The timeout in milliseconds for
+        server_selection_timeout_ms (`int`, *optional*, defaults to 30_000): The timeout in milliseconds for
             server selection.
     """
 

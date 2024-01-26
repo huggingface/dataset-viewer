@@ -127,17 +127,17 @@ class JobDocument(Document):
         type (`str`): The type of the job, identifies the queue
         dataset (`str`): The dataset on which to apply the job.
         revision (`str`): The git revision of the dataset.
-        config (`str`, optional): The config on which to apply the job.
-        split (`str`, optional): The split on which to apply the job.
+        config (`str`, *optional*): The config on which to apply the job.
+        split (`str`, *optional*): The split on which to apply the job.
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
-        priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
-        status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
+        priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
+        status (`Status`, *optional*): The status of the job. Defaults to Status.WAITING.
         difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
-        started_at (`datetime`, optional): When the job has started.
-        last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
+        started_at (`datetime`, *optional*): When the job has started.
+        last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
     """
 
     meta = {
@@ -406,7 +406,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
             dataset (`str`): the dataset repository
             branch (`str`): the branch to lock
             owner (`str`): the current job id that holds the lock
-            sleeps (`Sequence[float]`, optional): the time in seconds to sleep between each attempt to acquire the lock
+            sleeps (`Sequence[float]`, *optional*): the time in seconds to sleep between each attempt to acquire the lock
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
@@ -479,9 +479,9 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
             difficulty (`int`): The difficulty of the job.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
+            config (`str`, *optional*): The config on which to apply the job.
+            split (`str`, *optional*): The config on which to apply the job.
+            priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
 
         Returns: the job
         """
@@ -921,8 +921,8 @@ class Queue:
             job_type (`str`, required): job type
             dataset (`str`, required): dataset name
             revision (`str`, required): dataset git revision
-            config (`str`, optional): config name. Defaults to None.
-            split (`str`, optional): split name. Defaults to None.
+            config (`str`, *optional*): config name. Defaults to None.
+            split (`str`, *optional*): split name. Defaults to None.
 
         Returns:
             `bool`: whether the job is in process (waiting or started)

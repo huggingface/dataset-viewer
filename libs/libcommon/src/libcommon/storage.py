@@ -26,8 +26,8 @@ def init_dir(directory: Optional[StrPath] = None, appname: Optional[str] = None)
     not None).
 
     Args:
-        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
-        appname (Optional[str], optional): The name of the application. Used if `directory`is None. Defaults to None.
+        directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
+        appname (`str`, *optional*): The name of the application. Used if `directory`is None. Defaults to None.
 
     Returns:
         Union[str, PathLike[str]]: The directory.
@@ -46,7 +46,7 @@ def init_parquet_metadata_dir(directory: Optional[StrPath] = None) -> StrPath:
     If directory is None, it will be set to the default cache location on the machine.
 
     Args:
-        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+        directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
         Union[str, PathLike[str]]: The directory.
@@ -60,7 +60,7 @@ def init_duckdb_index_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
     If directory is None, it will be set to the default duckdb index location on the machine.
 
     Args:
-        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+        directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
         Union[str, PathLike[str]]: The directory.
@@ -74,7 +74,7 @@ def init_hf_datasets_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
     If directory is None, it will be set to the default cache location on the machine.
 
     Args:
-        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+        directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
         Union[str, PathLike[str]]: The directory.
@@ -88,7 +88,7 @@ def init_statistics_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
     If directory is None, it will be set to the default cache location on the machine.
 
     Args:
-        directory (Optional[Union[str, PathLike[str]]], optional): The directory to initialize. Defaults to None.
+        directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
         Union[str, PathLike[str]]: The directory.

@@ -105,12 +105,12 @@ class CachedResponseDocument(Document):
     Args:
         kind (`str`): The kind of the cached response, identifies the job type
         dataset (`str`): The requested dataset.
-        config (`str`, optional): The requested config, if any.
-        split (`str`, optional): The requested split, if any.
+        config (`str`, *optional*): The requested config, if any.
+        split (`str`, *optional*): The requested split, if any.
         http_status (`HTTPStatus`): The HTTP status code.
-        error_code (`str`, optional): The error code, if any.
+        error_code (`str`, *optional*): The error code, if any.
         content (`dict`): The content of the cached response. Can be an error or a valid content.
-        details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
+        details (`dict`, *optional*): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.

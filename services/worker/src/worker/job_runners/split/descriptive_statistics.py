@@ -468,7 +468,7 @@ def compute_descriptive_statistics_response(
         local_parquet_directory (`Path`):
             Path to a local directory where the dataset's parquet files are stored. We download these files locally
             because it enables fast querying and statistics computation.
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
             The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
