@@ -587,7 +587,7 @@ class Queue:
             job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
-            `EmptyQueueError`: if there is no waiting job in the queue that satisfies the restrictions above.
+            [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
 
         Returns:
             `JobDocument`: the next waiting job for priority
@@ -682,7 +682,7 @@ class Queue:
             job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
-            `EmptyQueueError`: if there is no waiting job in the queue that satisfies the restrictions above.
+            [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
 
         Returns:
             `JobDocument`: the next waiting job
@@ -813,7 +813,7 @@ class Queue:
             job_id (`str`): id of the job
 
         Raises:
-            `DoesNotExist`: if the job does not exist
+            [`DoesNotExist`]: if the job does not exist
 
         Returns:
             `JobDocument`: the requested job
@@ -827,7 +827,7 @@ class Queue:
             job_id (`str`): id of the job
 
         Raises:
-            `DoesNotExist`: if the job does not exist
+            [`DoesNotExist`]: if the job does not exist
 
         Returns:
             `str`: the job type

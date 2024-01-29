@@ -67,7 +67,7 @@ def create_algorithm(algorithm_name: str) -> SupportedAlgorithm:
         algorithm_name (`str`): the algorithm name
 
     Raises:
-        `RuntimeError`: if the algorithm is not supported
+        [`RuntimeError`]: if the algorithm is not supported
 
     Returns:
         `SupportedAlgorithm`: the algorithm object
@@ -89,7 +89,7 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
         key (`SupportedKey`): the key to convert
 
     Raises:
-        `RuntimeError`: if the key is not a public key
+        [`RuntimeError`]: if the key is not a public key
 
     Returns:
         `str`: the key in PEM format (PKCS#8)
@@ -140,8 +140,8 @@ def parse_jwt_public_key_pem(payload: str, algorithm: SupportedAlgorithm) -> str
         algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
-        `RuntimeError`: if the payload is not compatible with the algorithm, or if the key is not public
-        `ValueError`: if the input is not a list
+        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
+        [`ValueError`]: if the input is not a list
 
     Returns:
         `str`: the public key in PEM format
@@ -168,7 +168,7 @@ def fetch_jwt_public_key_json(
             is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Raises:
-        `RuntimeError`: if the request fails
+        [`RuntimeError`]: if the request fails
 
     Returns:
         `Any`: the response JSON payload
@@ -204,7 +204,7 @@ def get_jwt_public_keys(
         timeout_seconds (`float`, *optional*): the timeout in seconds for fetching the remote key
 
     Raises:
-        `JWTKeysError`: if some exception occurred while creating the public keys. Some reasons: if the algorithm
+        [`JWTKeysError`]: if some exception occurred while creating the public keys. Some reasons: if the algorithm
           is not supported, if a payload could not be parsed, if a key is not compatible with the algorithm,
             if a key is not public, if th remote key could not be fetch or parsed
 

@@ -711,7 +711,7 @@ def set_revision(
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
+        [`ValueError`]: If the first processing steps are not dataset steps, or if the processing graph has no first
             step.
     """
     first_processing_steps = processing_graph.get_first_processing_steps()
@@ -760,7 +760,7 @@ def finish_job(
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        ValueError: If the job is not found, or if the processing step is not found.
+        [`ValueError`]: If the job is not found, or if the processing step is not found.
     """
     # check if the job is still in started status
     job_info = job_result["job_info"]
@@ -837,7 +837,7 @@ def has_pending_ancestor_jobs(
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        `ProcessingStepDoesNotExist`: If any of the processing step does not exist.
+        []`ProcessingStepDoesNotExist`]: If any of the processing step does not exist.
 
     Returns:
         `bool`: True if any of the artifact could exist, False otherwise.
