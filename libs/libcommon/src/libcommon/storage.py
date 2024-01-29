@@ -100,7 +100,7 @@ def exists(path: StrPath) -> bool:
     """Check if a path exists.
 
     Args:
-        path (Union[str, PathLike[str]]): The path to check.
+        path (`StrPath`): The path to check.
 
     Returns:
         `bool`: True if the path exists, False otherwise.
@@ -114,7 +114,7 @@ def remove_dir(directory: StrPath) -> None:
     If the directory does not exist, don't raise.
 
     Args:
-        directory (Union[str, PathLike[str]]): The directory to remove.
+        directory (`StrPath`): The directory to remove.
     """
     shutil.rmtree(directory, ignore_errors=True)
     logging.debug(f"Directory removed: {directory}")
