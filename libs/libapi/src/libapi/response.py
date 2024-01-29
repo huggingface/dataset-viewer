@@ -34,7 +34,11 @@ async def create_response(
         )
     logging.debug(f"create response for {dataset=} {config=} {split=}")
     return {
-        "features": to_features_list(features),
+        "features": [
+            feature_item
+            for feature_item in to_features_list(features)
+            if not use_row_idx_column or feature_item["name"] != ROW_IDX_COLUMN
+        ],
         "rows": await to_rows_list(
             pa_table=pa_table,
             dataset=dataset,
