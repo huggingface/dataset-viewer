@@ -4,7 +4,7 @@
 import logging
 import re
 from http import HTTPStatus
-from typing import Optional
+from typing import Literal, Optional, Union
 
 import anyio
 import duckdb
@@ -138,20 +138,25 @@ def create_filter_endpoint(
                         hf_token=hf_token,
                     )
                 with StepProfiler(method="filter_endpoint", step="get features"):
-                    try:
-                        features = Features.from_dict(
-                            {
-                                name: feature
-                                for name, feature in duckdb_index_cache_entry["content"]["features"].items()
-                                if name != ROW_IDX_COLUMN
-                            }
-                        )
-                    except (KeyError, AttributeError):
-                        raise RuntimeError("The indexing process did not store the features.")
+                    # Features can be missing in old cache entries,
+                    # but in this case it's ok to get them from the Arrow schema.
+                    # Indded at one point we refreshed all the datasets that need the features
+                    # to be cached (i.e. image and audio datasets).
+                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
+                        duckdb_index_cache_entry["content"]["features"], dict
+                    ):
+                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                    else:
+                        features = None
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                        features,
-                    )
+                    supported_columns: Union[list[str], Literal["*"]]
+                    unsupported_columns: list[str]
+                    if features:
+                        supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                            features,
+                        )
+                    else:
+                        supported_columns, unsupported_columns = "*", []
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
@@ -165,7 +170,7 @@ def create_filter_endpoint(
                         storage_client=cached_assets_storage_client,
                         pa_table=pa_table,
                         offset=offset,
-                        features=features,
+                        features=features or Features.from_arrow_schema(pa_table.schema),
                         unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
@@ -182,11 +187,11 @@ def create_filter_endpoint(
 
 
 def execute_filter_query(
-    index_file_location: str, columns: list[str], where: str, limit: int, offset: int
+    index_file_location: str, columns: Union[list[str], Literal["*"]], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
-            columns=",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
+            columns="*" if columns == "*" else ",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
             where=where,
             limit=limit,
             offset=offset,
