@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
-import itertools
 from collections.abc import Mapping
 from typing import Literal
 
@@ -9,7 +8,6 @@ import pandas as pd
 import pytest
 from datasets import Dataset
 
-from libcommon.dtos import RowsContent
 from libcommon.exceptions import TooBigContentError
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
@@ -141,11 +139,6 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
 ) -> None:
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
-
-    def get_rows_content(rows_max_number: int, dataset: str) -> RowsContent:
-        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
-        # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
 
     if expected == "error":
         with pytest.raises(TooBigContentError):
