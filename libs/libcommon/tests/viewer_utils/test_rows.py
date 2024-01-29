@@ -25,8 +25,10 @@ from ..constants import (
     DEFAULT_ROWS_MAX_NUMBER,
     DEFAULT_ROWS_MIN_NUMBER,
     DEFAULT_SPLIT,
+    SOME_BYTES,
 )
 from ..types import DatasetFixture
+from ..utils import get_dataset_rows_content
 
 
 @pytest.mark.parametrize("dataset_name", DATASETS_NAMES)
@@ -36,11 +38,6 @@ def test_create_first_rows_response(
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
 
-    def get_rows_content(rows_max_number: int) -> RowsContent:
-        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
-        # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
-
     response = create_first_rows_response(
         dataset=dataset_name,
         revision=DEFAULT_REVISION,
@@ -48,7 +45,7 @@ def test_create_first_rows_response(
         split=DEFAULT_SPLIT,
         storage_client=storage_client,
         features=dataset.features,
-        get_rows_content=get_rows_content,
+        get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=DEFAULT_ROWS_MAX_BYTES,
         rows_max_number=DEFAULT_ROWS_MAX_NUMBER,
@@ -86,11 +83,6 @@ def test_create_first_rows_response_truncated(
         )
     )
 
-    def get_rows_content(rows_max_number: int) -> RowsContent:
-        rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
-        # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-        return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
-
     response = create_first_rows_response(
         dataset="dataset",
         revision=DEFAULT_REVISION,
@@ -98,7 +90,7 @@ def test_create_first_rows_response_truncated(
         split=DEFAULT_SPLIT,
         storage_client=storage_client,
         features=dataset.features,
-        get_rows_content=get_rows_content,
+        get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=rows_max_bytes,
         rows_max_number=rows_max_number,
@@ -106,9 +98,6 @@ def test_create_first_rows_response_truncated(
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )
     assert response["truncated"] == truncated
-
-
-SOME_BYTES = 100
 
 
 @pytest.mark.parametrize(
@@ -153,7 +142,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
     dataset_fixture = datasets_fixtures[dataset_name]
     dataset = dataset_fixture.dataset
 
-    def get_rows_content(rows_max_number: int) -> RowsContent:
+    def get_rows_content(rows_max_number: int, dataset: str) -> RowsContent:
         rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
         # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
         return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
@@ -167,7 +156,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
                 split=DEFAULT_SPLIT,
                 storage_client=storage_client,
                 features=dataset.features,
-                get_rows_content=get_rows_content,
+                get_rows_content=get_dataset_rows_content(dataset=dataset),
                 min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
                 rows_max_bytes=rows_max_bytes,
                 rows_max_number=100,
@@ -183,7 +172,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
             split=DEFAULT_SPLIT,
             storage_client=storage_client,
             features=dataset.features,
-            get_rows_content=get_rows_content,
+            get_rows_content=get_dataset_rows_content(dataset=dataset),
             min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
             rows_max_bytes=rows_max_bytes,
             rows_max_number=100,

@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import itertools
 from datetime import datetime
+from functools import partial
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
-from libcommon.dtos import JobInfo, Priority
+from datasets import Dataset
+
+from libcommon.dtos import JobInfo, Priority, RowsContent
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
@@ -376,3 +380,13 @@ def assert_metric(job_type: str, status: str, total: int) -> None:
     metric = JobTotalMetricDocument.objects(job_type=job_type, status=status).first()
     assert metric is not None
     assert metric.total == total
+
+
+def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
+    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+    # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
+    return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
+
+
+def get_dataset_rows_content(dataset: Dataset) -> Callable[[int], RowsContent]:
+    return partial(get_rows_content, dataset=dataset)
