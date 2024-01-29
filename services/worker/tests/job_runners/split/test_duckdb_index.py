@@ -403,14 +403,19 @@ def test_compute(
     "split_names,config,deleted_files",
     [
         (
-            {"s1", "s2"},
+            {"s1", "s2", "s3"},
             "c1",
             set(),
         ),
         (
-            {"s1"},
+            {"s1", "s3"},
             "c2",
             {"c2/s2/index.duckdb", "c2/s2/0.parquet"},
+        ),
+        (
+            {"s1"},
+            "c2",
+            {"c2/s2/index.duckdb", "c2/s2/0.parquet", "c2/partial-s3/partial-index.duckdb"},
         ),
     ],
 )
@@ -422,6 +427,7 @@ def test_get_delete_operations(split_names: set[str], config: str, deleted_files
         "c2/s1/index.duckdb",
         "c2/s2/0.parquet",
         "c2/s2/index.duckdb",
+        "c2/partial-s3/partial-index.duckdb",
     }
     delete_operations = get_delete_operations(all_repo_files=all_repo_files, split_names=split_names, config=config)
     assert set(delete_operation.path_in_repo for delete_operation in delete_operations) == deleted_files
