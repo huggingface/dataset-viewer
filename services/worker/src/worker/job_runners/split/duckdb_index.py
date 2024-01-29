@@ -98,6 +98,7 @@ def get_delete_operations(all_repo_files: set[str], split_names: set[str], confi
         CommitOperationDelete(path_in_repo=file)
         for file in all_repo_files
         if same_config_pattern.match(file)
+        and file.endswith(".duckdb")
         and not existing_split_pattern.match(file)
         and not existing_partial_split_pattern.match(file)
     ]
