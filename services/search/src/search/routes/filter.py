@@ -166,7 +166,7 @@ def create_filter_endpoint(
                         storage_client=cached_assets_storage_client,
                         pa_table=pa_table,
                         offset=offset,
-                        features=features,
+                        features=features or Features.from_arrow_schema(pa_table.schema),
                         unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
