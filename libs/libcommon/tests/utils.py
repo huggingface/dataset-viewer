@@ -5,7 +5,7 @@ import itertools
 from datetime import datetime
 from functools import partial
 from http import HTTPStatus
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from datasets import Dataset
 
@@ -14,6 +14,7 @@ from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue
 from libcommon.simple_cache import upsert_response
+from libcommon.viewer_utils.rows import GetRowsContent
 
 DATASET_NAME = "dataset"
 
@@ -388,5 +389,5 @@ def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
     return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
 
 
-def get_dataset_rows_content(dataset: Dataset) -> Callable[[int], RowsContent]:
+def get_dataset_rows_content(dataset: Dataset) -> GetRowsContent:
     return partial(get_rows_content, dataset=dataset)
