@@ -108,30 +108,30 @@ def test_create_first_rows_response_truncated(
     assert response["truncated"] == truncated
 
 
-INCREMENT_BYTES = 100
+SOME_BYTES = 100
 
 
 @pytest.mark.parametrize(
     "dataset_name, rows_max_bytes, expected",
     [
         # with rows_max_bytes > response size, the response is not truncated
-        ("audio", 337 + INCREMENT_BYTES, "complete"),
-        ("image", 319 + INCREMENT_BYTES, "complete"),
-        ("images_list", 455 + INCREMENT_BYTES, "complete"),
-        ("audios_list", 447 + INCREMENT_BYTES, "complete"),
-        ("images_sequence", 484 + INCREMENT_BYTES, "complete"),
-        ("audios_sequence", 476 + INCREMENT_BYTES, "complete"),
-        ("dict_of_audios_and_images", 797 + INCREMENT_BYTES, "complete"),
+        ("audio", 337 + SOME_BYTES, "complete"),
+        ("image", 319 + SOME_BYTES, "complete"),
+        ("images_list", 455 + SOME_BYTES, "complete"),
+        ("audios_list", 447 + SOME_BYTES, "complete"),
+        ("images_sequence", 484 + SOME_BYTES, "complete"),
+        ("audios_sequence", 476 + SOME_BYTES, "complete"),
+        ("dict_of_audios_and_images", 797 + SOME_BYTES, "complete"),
         # with rows_max_bytes < response size, the response is:
         # - not truncated for top-level Audio and Image features
         # - truncated for nested Audio and Image features
-        ("audio", 337 - INCREMENT_BYTES, "complete"),
-        ("image", 319 - INCREMENT_BYTES, "complete"),
-        ("images_list", 455 - INCREMENT_BYTES, "truncated_cells"),
-        ("audios_list", 447 - INCREMENT_BYTES, "truncated_cells"),
-        ("images_sequence", 484 - INCREMENT_BYTES, "truncated_cells"),
-        ("audios_sequence", 476 - INCREMENT_BYTES, "truncated_cells"),
-        ("dict_of_audios_and_images", 797 - INCREMENT_BYTES, "truncated_cells"),
+        ("audio", 337 - SOME_BYTES, "complete"),
+        ("image", 319 - SOME_BYTES, "complete"),
+        ("images_list", 455 - SOME_BYTES, "truncated_cells"),
+        ("audios_list", 447 - SOME_BYTES, "truncated_cells"),
+        ("images_sequence", 484 - SOME_BYTES, "truncated_cells"),
+        ("audios_sequence", 476 - SOME_BYTES, "truncated_cells"),
+        ("dict_of_audios_and_images", 797 - SOME_BYTES, "truncated_cells"),
         # with rows_max_bytes <<< response size, a TooBigContentError exception is raised
         # (note that it should never happen if the correct set of parameters is chosen)
         ("audio", 10, "error"),
