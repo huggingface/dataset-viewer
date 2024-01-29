@@ -74,7 +74,7 @@ async def auth_check(
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
-        None: the dataset is authorized for the request
+        `bool`: the dataset is authorized for the request
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="check JWT"):

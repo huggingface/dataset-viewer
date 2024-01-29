@@ -103,7 +103,7 @@ class HubCacheWatcher:
         The caller is responsible for calling `self.unsubscribe` to release resources.
 
         Returns:
-            (str, RandomValueChangedEvent):
+            `tuple[str, HubCacheChangedEvent]`:
                 A 2-tuple containing a UUID and an instance of RandomValueChangedEvent.
                 RandomValueChangedEvent can be `await`ed to be notified of updates to the random value.
                 UUID must be passed when unsubscribing to release the associated resources.

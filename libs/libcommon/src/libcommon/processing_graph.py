@@ -85,7 +85,7 @@ class ProcessingStep:
         """Copy the processing step.
 
         Returns:
-            ProcessingStep: The copy of the processing step.
+            `ProcessingStep`: The copy of the processing step.
         """
         return ProcessingStep(
             name=self.name,
@@ -205,7 +205,7 @@ class ProcessingGraph:
             processing_step_name (`str`): The name of the processing step
 
         Returns:
-            ProcessingStep: The processing step
+            `ProcessingStep`: The processing step
         """
         try:
             return self._processing_steps[processing_step_name].copy()
@@ -223,7 +223,7 @@ class ProcessingGraph:
             job_type (`str`): The job type of the processing step
 
         Returns:
-            ProcessingStep: The processing step
+            `ProcessingStep`: The processing step
         """
         # for now: the job_type is just an alias for the processing step name
         return self.get_processing_step(job_type)
@@ -241,10 +241,10 @@ class ProcessingGraph:
             processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            `ProcessingStepDoesNotExist`: If the processing step is not in the graph
 
         Returns:
-            list[ProcessingStep]: The list of children processing steps (successors)
+            `list[ProcessingStep]`: The list of children processing steps (successors)
         """
         try:
             return [
@@ -266,10 +266,10 @@ class ProcessingGraph:
             processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            `ProcessingStepDoesNotExist`: If the processing step is not in the graph
 
         Returns:
-            list[ProcessingStep]: The list of parent processing steps (predecessors)
+            `list[ProcessingStep]`: The list of parent processing steps (predecessors)
         """
         try:
             return [
@@ -292,10 +292,10 @@ class ProcessingGraph:
             processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            `ProcessingStepDoesNotExist`: If the processing step is not in the graph
 
         Returns:
-            list[ProcessingStep]: The list of ancestor processing steps
+            `list[ProcessingStep]`: The list of ancestor processing steps
         """
         try:
             return [
@@ -315,7 +315,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of first processing steps
+            `list[ProcessingStep]`: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
 
@@ -330,7 +330,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return copy_processing_steps_list(self._topologically_ordered_processing_steps)
 
@@ -342,7 +342,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return copy_processing_steps_list(self._alphabetically_ordered_processing_steps)
 
@@ -360,7 +360,7 @@ class ProcessingGraph:
               processing steps. If None, the order is alphabetical. Defaults to None.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         if order == "topological":
             return self.get_topologically_ordered_processing_steps()
@@ -378,7 +378,7 @@ class ProcessingGraph:
             input_type (`InputType`, *optional*, defaults to `dataset`): The input type.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return [
             self.get_processing_step(processing_step_name)

@@ -81,8 +81,6 @@ def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
 
     Args:
         dataset (`str`): the dataset
-
-    Returns: None.
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
     remove_dataset(dataset=dataset, storage_clients=storage_clients)

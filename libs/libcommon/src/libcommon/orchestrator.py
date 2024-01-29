@@ -195,7 +195,7 @@ class Plan:
         """Run all the tasks in the plan.
 
         Returns:
-            The number of tasks that were run.
+            `int`: The number of tasks that were run.
         """
         for idx, task in enumerate(self.tasks):
             logging.debug(f"Running task [{idx}/{len(self.tasks)}]: {task.long_id}")
@@ -501,7 +501,7 @@ class DatasetBackfillPlan(Plan):
               this split (config must be specified)
 
         Returns:
-            the artifact states for the step
+            `list[ArtifactState]`: the artifact states for the step
         """
         if processing_step.input_type == "dataset":
             artifact_states = [self.dataset_state.artifact_state_by_step[processing_step.name]]
@@ -713,9 +713,6 @@ def set_revision(
     Raises:
         ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
             step.
-
-    Returns:
-        None
     """
     first_processing_steps = processing_graph.get_first_processing_steps()
     if len(first_processing_steps) < 1:
@@ -764,9 +761,6 @@ def finish_job(
 
     Raises:
         ValueError: If the job is not found, or if the processing step is not found.
-
-    Returns:
-        None
     """
     # check if the job is still in started status
     job_info = job_result["job_info"]
@@ -843,10 +837,10 @@ def has_pending_ancestor_jobs(
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        ProcessingStepDoesNotExist: If any of the processing step does not exist.
+        `ProcessingStepDoesNotExist`: If any of the processing step does not exist.
 
     Returns:
-        bool: True if any of the artifact could exist, False otherwise.
+        `bool`: True if any of the artifact could exist, False otherwise.
     """
     job_types: set[str] = set()
     for processing_step_name in processing_step_names:

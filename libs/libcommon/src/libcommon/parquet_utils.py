@@ -75,7 +75,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
             directory as the Parquet files.
 
     Returns:
-        partial (`bool`): True is the Parquet export is partial,
+        `bool`: True is the Parquet export is partial,
             or False if it's the full dataset.
     """
     split_directory_name_for_parquet_export = extract_split_name_from_parquet_url(parquet_file_url)
@@ -92,7 +92,7 @@ def extract_split_name_from_parquet_url(parquet_url: str) -> str:
         parquet_url (`str`): The URL to extract the split name from.
 
     Returns:
-        str: The extracted split name.
+        `str`: The extracted split name.
     """
     split_name = parquet_url.rsplit("/", 2)[1]
     return split_name
@@ -144,10 +144,10 @@ class ParquetIndexWithMetadata:
             length (`int`): The number of rows to read.
 
         Raises:
-            TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
+            `TooBigRows`: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
 
         Returns:
-            pa.Table: The requested rows.
+            `pa.Table`: The requested rows.
         """
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
@@ -373,7 +373,7 @@ class RowsIndex:
             length (`int`): The number of rows to read.
 
         Returns:
-            pa.Table: The requested rows.
+            `pa.Table`: The requested rows.
         """
         logging.info(
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"

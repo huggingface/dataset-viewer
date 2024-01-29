@@ -38,7 +38,7 @@ def get_json_size(obj: Any) -> int:
         obj (`Any`) the Python object
 
     Returns:
-        int: the size of the serialized object in bytes
+        `int`: the size of the serialized object in bytes
     """
     return len(orjson_dumps(obj))
 

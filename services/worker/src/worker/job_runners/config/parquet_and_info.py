@@ -448,7 +448,7 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
         ds_config_info (`datasets.info.DatasetInfo`):
             Dataset info from `datasets`.
     Returns:
-        writer_batch_size (`Optional[int]`):
+        `Optional[int]`:
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
@@ -481,8 +481,7 @@ def get_writer_batch_size_from_row_group_size(
             Maximum number of bytes of uncompressed data for batches that
             will be passed to a dataset builder.
     Returns:
-        writer_batch_size (`Optional[int]`):
-            Writer batch size to pass to a dataset builder.
+        `int`: Writer batch size to pass to a dataset builder.
     """
     writer_batch_size = max(num_rows // factor_of * factor_of, factor_of)
     writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows

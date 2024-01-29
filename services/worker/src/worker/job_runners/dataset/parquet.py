@@ -37,7 +37,7 @@ def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, floa
             If the content of the previous step has not the expected format
 
     Returns:
-        `DatasetParquetResponse`: An object with the parquet_response (list of parquet files).
+        `tuple[DatasetParquetResponse, float]`: A tuple with the parquet_response (list of parquet files) and progress.
     """
     logging.info(f"get parquet files for dataset={dataset}")
 

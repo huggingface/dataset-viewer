@@ -13,7 +13,7 @@ def duckdb_index_is_partial(duckdb_index_url: str) -> bool:
         duckdb_index_url (`str`): The URL of the DuckDB index file.
 
     Returns:
-        partial (`bool`): True is the DuckDB index is partial,
+        `bool`: True is the DuckDB index is partial,
             or False if it's an index of the full dataset.
     """
     _, duckdb_index_file_name = duckdb_index_url.rsplit("/", 1)

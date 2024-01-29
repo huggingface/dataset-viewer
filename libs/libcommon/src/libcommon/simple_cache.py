@@ -565,7 +565,7 @@ def get_best_response(
         split (`str`, *optional*):
             A split name.
     Returns:
-        BestResponse: The best response (object with fields: kind and response). The response can be an error,
+        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
     if not kinds:
@@ -950,7 +950,7 @@ def fetch_names(
         name_field (`str`): The name of the field containing the name, eg: "config", or "split".
 
     Returns:
-        list[str]: The list of names.
+        `list[str]`: The list of names.
     """
     try:
         names = []
@@ -974,7 +974,7 @@ def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[str]:
         days (`int`): The number of days to look back.
 
     Returns:
-        list[str]: The list of datasets.
+        `list[str]`: The list of datasets.
     """
 
     pipeline = [

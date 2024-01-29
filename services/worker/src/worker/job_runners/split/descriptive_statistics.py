@@ -113,7 +113,7 @@ def generate_bins(
     when min = max (only one value observed in data). In this case, bin edges are [min, max].
 
     Returns:
-        List of bin edges of lengths <= n_bins + 1 and >= 2.
+        `list[Union[int, float]]`: List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
     if column_type is ColumnType.FLOAT:
         if min_value == max_value:
@@ -494,7 +494,7 @@ def compute_descriptive_statistics_response(
 
     Returns:
         `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
-        numerical (int and float) or ClassLabel feature.
+            numerical (int and float) or ClassLabel feature.
     """
 
     logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")

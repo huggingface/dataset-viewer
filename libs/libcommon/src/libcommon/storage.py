@@ -30,7 +30,7 @@ def init_dir(directory: Optional[StrPath] = None, appname: Optional[str] = None)
         appname (`str`, *optional*): The name of the application. Used if `directory`is None. Defaults to None.
 
     Returns:
-        Union[str, PathLike[str]]: The directory.
+        `StrPath`: The directory.
     """
     if directory is None:
         directory = user_cache_dir(appname=appname)
@@ -49,7 +49,7 @@ def init_parquet_metadata_dir(directory: Optional[StrPath] = None) -> StrPath:
         directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
-        Union[str, PathLike[str]]: The directory.
+        `StrPath`: The directory.
     """
     return init_dir(directory, appname=PARQUET_METADATA_CACHE_APPNAME)
 
@@ -63,7 +63,7 @@ def init_duckdb_index_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
         directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
-        Union[str, PathLike[str]]: The directory.
+        `StrPath`: The directory.
     """
     return init_dir(directory, appname=DUCKDB_INDEX_CACHE_APPNAME)
 
@@ -77,7 +77,7 @@ def init_hf_datasets_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
         directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
-        Union[str, PathLike[str]]: The directory.
+        `StrPath`: The directory.
     """
     return init_dir(directory, appname=HF_DATASETS_CACHE_APPNAME)
 
@@ -91,7 +91,7 @@ def init_statistics_cache_dir(directory: Optional[StrPath] = None) -> StrPath:
         directory (`StrPath`, *optional*): The directory to initialize. Defaults to None.
 
     Returns:
-        Union[str, PathLike[str]]: The directory.
+        `StrPath`: The directory.
     """
     return init_dir(directory, appname=DESCRIPTIVE_STATISTICS_CACHE_APPNAME)
 
@@ -103,7 +103,7 @@ def exists(path: StrPath) -> bool:
         path (Union[str, PathLike[str]]): The path to check.
 
     Returns:
-        bool: True if the path exists, False otherwise.
+        `bool`: True if the path exists, False otherwise.
     """
     return Path(path).exists()
 

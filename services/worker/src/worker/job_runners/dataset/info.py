@@ -32,10 +32,10 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             If the content of the previous step doesn't have the expected format.
 
     Returns:
-        (`DatasetInfoResponse`, `float`): Tuple of an object with the dataset_info response and
-        progress float value from 0. to 1. which corresponds to the percentage of dataset configs
-        correctly processed and included in current response (some configs might not exist in cache yet
-        or raise errors).
+        `tuple[DatasetInfoResponse, float]`: Tuple of an object with the dataset_info response and
+            progress float value from 0. to 1. which corresponds to the percentage of dataset configs
+            correctly processed and included in current response (some configs might not exist in cache yet
+            or raise errors).
     """
     logging.info(f"get dataset_info for {dataset=}")
 

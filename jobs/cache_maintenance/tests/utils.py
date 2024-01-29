@@ -73,7 +73,7 @@ def update_repo_settings(
             or because it is set to `private` and you do not have access.
 
     Returns:
-        The HTTP response in json.
+        `Any`: The HTTP response in json.
     """
     if repo_type not in REPO_TYPES:
         raise ValueError("Invalid repo type")

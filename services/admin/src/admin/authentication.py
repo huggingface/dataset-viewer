@@ -28,7 +28,7 @@ async def auth_check(
           service.
 
     Returns:
-        None: the user is authorized
+        `Literal[bool]`: the user is authorized
     """
     if organization is None or external_auth_url is None:
         return True
