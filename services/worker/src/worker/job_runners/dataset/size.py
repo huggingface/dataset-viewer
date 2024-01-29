@@ -27,7 +27,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
     """
     Get the response of 'dataset-size' for one specific dataset on huggingface.co.
-    
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.

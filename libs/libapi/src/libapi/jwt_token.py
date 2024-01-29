@@ -65,7 +65,7 @@ def create_algorithm(algorithm_name: str) -> SupportedAlgorithm:
 
     Args:
         algorithm_name (`str`): the algorithm name
-    
+
     Raises:
         `RuntimeError`: if the algorithm is not supported
 

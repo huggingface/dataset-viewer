@@ -1040,7 +1040,7 @@ def compute_config_parquet_and_info_response(
 ) -> ConfigParquetAndInfoResponse:
     """
     Get the response of 'config-parquet-and-info' for one specific dataset and config on huggingface.co.
-    
+
     Args:
         job_id (`str`):
             The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.

@@ -69,7 +69,7 @@ def compute_first_rows_response(
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-    
+
     Raises:
         [~`libcommon.exceptions.SplitNotFoundError`]
           If the split does not exist in the dataset.

@@ -24,7 +24,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, float]:
     """
     Get the response of 'dataset-parquet' for one specific dataset on huggingface.co.
-    
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.

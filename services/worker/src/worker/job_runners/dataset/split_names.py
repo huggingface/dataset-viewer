@@ -21,11 +21,11 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
     """
     Get the response of 'dataset-split-names' for one specific dataset on huggingface.co
     computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
-    
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
-    
+
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]
             If the the previous step gave an error.

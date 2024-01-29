@@ -457,7 +457,7 @@ def compute_descriptive_statistics_response(
     """
     Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
     Currently, integers, floats and ClassLabel features are supported.
-    
+
     Args:
         dataset (`str`):
             Name of a dataset.

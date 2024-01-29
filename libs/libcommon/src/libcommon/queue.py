@@ -483,8 +483,8 @@ class Queue:
             split (`str`, *optional*): The config on which to apply the job.
             priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
 
-        Returns: 
-            `JobDocument`: the new job added to the queue 
+        Returns:
+            `JobDocument`: the new job added to the queue
         """
         increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
@@ -589,7 +589,7 @@ class Queue:
         Raises:
             `EmptyQueueError`: if there is no waiting job in the queue that satisfies the restrictions above.
 
-        Returns: 
+        Returns:
             `JobDocument`: the next waiting job for priority
         """
         logging.debug(
@@ -815,7 +815,7 @@ class Queue:
         Raises:
             `DoesNotExist`: if the job does not exist
 
-        Returns: 
+        Returns:
             `JobDocument`: the requested job
         """
         return JobDocument.objects(pk=job_id).get()
@@ -829,7 +829,7 @@ class Queue:
         Raises:
             `DoesNotExist`: if the job does not exist
 
-        Returns: 
+        Returns:
             `str`: the job type
         """
         job = self.get_job_with_id(job_id=job_id)
