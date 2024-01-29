@@ -4,7 +4,7 @@
 import logging
 import re
 from http import HTTPStatus
-from typing import Optional
+from typing import Literal, Optional, Union
 
 import anyio
 import duckdb
@@ -138,20 +138,21 @@ def create_filter_endpoint(
                         hf_token=hf_token,
                     )
                 with StepProfiler(method="filter_endpoint", step="get features"):
-                    try:
-                        features = Features.from_dict(
-                            {
-                                name: feature
-                                for name, feature in duckdb_index_cache_entry["content"]["features"].items()
-                                if name != ROW_IDX_COLUMN
-                            }
-                        )
-                    except (KeyError, AttributeError):
-                        raise RuntimeError("The indexing process did not store the features.")
+                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
+                        duckdb_index_cache_entry["content"]["features"], dict
+                    ):
+                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                    else:
+                        features = None
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                        features,
-                    )
+                    supported_columns: Union[list[str], Literal["*"]]
+                    unsupported_columns: list[str]
+                    if features:
+                        supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                            features,
+                        )
+                    else:
+                        supported_columns, unsupported_columns = "*", []
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
@@ -182,11 +183,11 @@ def create_filter_endpoint(
 
 
 def execute_filter_query(
-    index_file_location: str, columns: list[str], where: str, limit: int, offset: int
+    index_file_location: str, columns: Union[list[str], Literal["*"]], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
-            columns=",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
+            columns="*" if columns == "*" else ",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
             where=where,
             limit=limit,
             offset=offset,
