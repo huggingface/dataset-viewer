@@ -150,7 +150,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
     if expected == "error":
         with pytest.raises(TooBigContentError):
             response = create_first_rows_response(
-                dataset="dataset",
+                dataset=dataset_name,
                 revision=DEFAULT_REVISION,
                 config=DEFAULT_CONFIG,
                 split=DEFAULT_SPLIT,
@@ -166,7 +166,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
             print(response)
     else:
         response = create_first_rows_response(
-            dataset="dataset",
+            dataset=dataset_name,
             revision=DEFAULT_REVISION,
             config=DEFAULT_CONFIG,
             split=DEFAULT_SPLIT,
