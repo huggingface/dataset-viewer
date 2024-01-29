@@ -76,7 +76,9 @@ class URLSigner(ABC):
         pass
 
     def _sign_asset_url_path_in_place(self, cell: Any, asset_url_path: AssetUrlPath) -> Any:
-        if len(asset_url_path.path) == 0:
+        if not cell:
+            return cell
+        elif len(asset_url_path.path) == 0:
             if not isinstance(cell, dict):
                 raise InvalidFirstRowsError("Expected the cell to be a dict")
             src = cell.get("src")

@@ -350,6 +350,8 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 [
                     str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
                     str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                    None,
+                    # ^ image lists can include nulls
                 ],
                 [Image()],
             ),
@@ -370,6 +372,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     "height": 480,
                     "width": 640,
                 },
+                None,
             ],
             [AssetUrlPath(feature_type="Image", path=[DEFAULT_COLUMN_NAME, 0])],
             2,
@@ -379,6 +382,8 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 [
                     {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
                     {"array": [0.1, 0.2, 0.3], "sampling_rate": DEFAULT_SAMPLING_RATE},
+                    None,
+                    # ^ audio lists can include nulls
                 ],
                 [Audio()],
             ),
@@ -400,6 +405,7 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                         "type": "audio/wav",
                     },
                 ],
+                None,
             ],
             [AssetUrlPath(feature_type="Audio", path=[DEFAULT_COLUMN_NAME, 0, 0])],
             2,
