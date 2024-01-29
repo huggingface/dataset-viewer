@@ -84,7 +84,7 @@ def create_filter_endpoint(
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logger.info(
-                        f'/filter, dataset={dataset}, config={config}, split={split}, where="{where}",'
+                        f'/filter, dataset={dataset}, {config=}, split={split}, where="{where}",'
                         f" offset={offset}, length={length}"
                     )
                 with StepProfiler(method="filter_endpoint", step="check authentication"):

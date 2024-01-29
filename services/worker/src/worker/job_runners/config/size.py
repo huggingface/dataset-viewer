@@ -12,7 +12,7 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
-    Get the response of config-size for one specific dataset and config on huggingface.co.
+    Get the response of 'config-size' for one specific dataset and config on huggingface.co.
 
     Args:
         dataset (`str`):
@@ -30,7 +30,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     Returns:
         `ConfigSizeResponse`: An object with the size_response.
     """
-    logging.info(f"get size for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-size' for {dataset=} {config=}")
 
     dataset_info_best_response = get_previous_step_or_raise(
         kinds=["config-parquet-and-info"], dataset=dataset, config=config

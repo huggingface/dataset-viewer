@@ -28,15 +28,13 @@ def compute_config_names_response(
     hf_token: Optional[str] = None,
 ) -> DatasetConfigNamesResponse:
     """
-    Get the response of dataset-config-names for one specific dataset on huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
+    Get the response of 'dataset-config-names' for one specific dataset on huggingface.co.
+    Dataset can be gated if you pass an acceptable token.
     It is assumed that the dataset exists and can be accessed using the token.
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
@@ -58,7 +56,7 @@ def compute_config_names_response(
     Returns:
         `DatasetConfigNamesResponse`: An object with the list of config names.
     """
-    logging.info(f"get config names for dataset={dataset}")
+    logging.info(f"get 'dateset-config-names' for {dataset=}")
     # get the list of splits in streaming mode
     try:
         config_name_items: list[ConfigNameItem] = [

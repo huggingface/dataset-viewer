@@ -121,7 +121,7 @@ def create_endpoint(
                     dataset = get_request_parameter(request, "dataset")
                     config = get_request_parameter(request, "config") or None
                     split = get_request_parameter(request, "split") or None
-                    logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
+                    logging.debug(f"{endpoint_name=} {dataset=} {config=} {split=}")
                     dataset, config, split, input_type = validate_parameters(
                         dataset, config, split, steps_by_input_type
                     )

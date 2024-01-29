@@ -102,8 +102,8 @@ def compute_opt_in_out_urls_scan_response(
     dataset_scripts_allow_list: list[str],
 ) -> OptInOutUrlsScanResponse:
     """
-    Get the response of split-opt-in-out-urls-scan cache for a specific split of a dataset from huggingface.co.
-    The response is not used directly in the API but it is an input for config-opt-in-out-urls-scan processing step.
+    Get the response of 'split-opt-in-out-urls-scan' cache for a specific split of a dataset from huggingface.co.
+    The response is not used directly in the API but it is an input for 'config-opt-in-out-urls-scan' processing step.
     Note that only image URLs are scanned, see image_url_columns.py for details about the detection heuristic.
 
     Args:
@@ -155,7 +155,7 @@ def compute_opt_in_out_urls_scan_response(
     Returns:
         [`OptInOutUrlsScanResponse`]
     """
-    logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
+    logging.info(f"get 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     if not spawning_token:

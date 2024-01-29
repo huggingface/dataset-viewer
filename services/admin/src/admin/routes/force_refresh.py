@@ -62,7 +62,7 @@ def create_force_refresh_endpoint(
                     f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
                 )
             logging.info(
-                f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}, priority={priority}"
+                f"/force-refresh/{job_type}, dataset={dataset}, {config=}, split={split}, {priority=}"
             )
 
             total_difficulty = difficulty

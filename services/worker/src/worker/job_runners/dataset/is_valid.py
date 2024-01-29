@@ -17,21 +17,19 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     """
-    Get the response of /is-valid for one specific dataset on huggingface.co.
-
+    Get the response of 'dataset-is-valid' for one specific dataset on huggingface.co.
 
     A dataset is valid if at least one response of any of the artifacts for any of the
-    steps (for viewer and preview) is valid.
+    steps (for viewer, preview, search and filter) is valid.
     The deprecated `valid` field is an "or" of the `preview` and `viewer` fields.
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
     Returns:
         `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
-    logging.info(f"get is-valid response for {dataset=}")
+    logging.info(f"get 'dataset-is-valid' response for {dataset=}")
 
     config_names_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_response.response["content"]

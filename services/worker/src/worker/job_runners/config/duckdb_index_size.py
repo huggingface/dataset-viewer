@@ -22,7 +22,7 @@ from worker.utils import get_split_names
 
 def compute_config_duckdb_index_size_response(dataset: str, config: str) -> ConfigDuckdbIndexSizeResponse:
     """
-    Get the response of config-duckdb-index-size for one specific dataset and config on huggingface.co.
+    Get the response of 'config-duckdb-index-size' for one specific dataset and config on huggingface.co.
 
     Args:
         dataset (`str`):
@@ -40,7 +40,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
     Returns:
         `ConfigDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
     """
-    logging.info(f"get duckdb_index_size for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-duckdb-index-size' for {dataset=} {config=}")
     splits = get_split_names(dataset=dataset, config=config)
     try:
         total = 0

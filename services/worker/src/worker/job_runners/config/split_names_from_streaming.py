@@ -27,11 +27,7 @@ def compute_split_names_from_streaming_response(
     hf_token: Optional[str] = None,
 ) -> SplitsList:
     """
-    Get the response of config-split-names-from-streaming for one specific dataset and config on huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
-    It is assumed that the dataset exists and can be accessed using the token, and that the config exists in
-    the dataset.
+    Get the response of 'config-split-names-from-streaming' for one specific dataset and config on huggingface.co.
 
     This function relies on the streaming mode if the splits are not directly defined in the dataset config. See
     https://github.dev/huggingface/datasets/blob/e183a269067575db8765ee979bd8523d14a1adae/src/datasets/inspect.py#L389-L390
@@ -66,7 +62,7 @@ def compute_split_names_from_streaming_response(
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
     """
-    logging.info(f"get split names for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-split-names-from-streaming' for {dataset=} {config=}")
     try:
         split_name_items: list[FullSplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}

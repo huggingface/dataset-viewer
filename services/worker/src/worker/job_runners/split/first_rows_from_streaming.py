@@ -37,10 +37,7 @@ def compute_first_rows_response(
     max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
     """
-    Get the response of /first-rows for one specific split of a dataset from huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
-    It is assumed that the dataset exist and can be accessed using the token.
+    Get the response of 'first-rows-from-streaming' for one specific split of a dataset from huggingface.co.
 
     Args:
         dataset (`str`):
@@ -100,7 +97,7 @@ def compute_first_rows_response(
     Returns:
         [`SplitFirstRowsResponse`]: The list of first rows of the split.
     """
-    logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
+    logging.info(f"get 'first-rows-from-streaming' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
     # get the features
     try:

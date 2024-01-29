@@ -1039,8 +1039,7 @@ def compute_config_parquet_and_info_response(
     dataset_scripts_allow_list: list[str],
 ) -> ConfigParquetAndInfoResponse:
     """
-    Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
-    It is assumed that the dataset can be accessed with the token.
+    Get the response of 'config-parquet-and-info' for one specific dataset and config on huggingface.co.
     
     Args:
         job_id (`str`):
@@ -1120,7 +1119,7 @@ def compute_config_parquet_and_info_response(
         - [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
-    logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
+    logging.info(f"get 'config-parquet-and-info' for {dataset=} {config=}")
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"

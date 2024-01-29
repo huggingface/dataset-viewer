@@ -58,6 +58,7 @@ def compute_parquet_metadata_response(
     dataset: str, config: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ConfigParquetMetadataResponse:
     """
+    Get the response of 'config-parquet-metadata' for one specific dataset and config on huggingface.co.
     Store the config's parquet metadata on the disk and return the list of local metadata files.
 
     Args:
@@ -84,7 +85,7 @@ def compute_parquet_metadata_response(
     Returns:
         `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
     """
-    logging.info(f"get parquet files for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-parquet-metadata' for {dataset=} {config=}")
 
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:

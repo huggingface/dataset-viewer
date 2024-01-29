@@ -16,7 +16,7 @@ from worker.utils import get_split_names
 
 
 def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[OptInOutUrlsCountResponse, float]:
-    logging.info(f"get config-opt-in-out-urls-count for dataset={dataset} config={config}")
+    logging.info(f"get 'config-opt-in-out-urls-count' for {dataset=} {config=}")
 
     urls_columns = []
     num_opt_in_urls = 0

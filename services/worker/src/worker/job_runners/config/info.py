@@ -9,12 +9,11 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 def compute_config_info_response(dataset: str, config: str) -> ConfigInfoResponse:
     """
-    Get the response of config-info for one specific config of a specific dataset on huggingface.co.
+    Get the response of 'config-info' for one specific config of a specific dataset on huggingface.co.
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
         config (`str`):
             Dataset configuration name
 
@@ -27,7 +26,8 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     """
-    logging.info(f"get dataset_info for {dataset=} and {config=}")
+    logging.info(f"get 'config-info' for {dataset=} and {config=}")
+
     previous_step = "config-parquet-and-info"
     dataset_info_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset, config=config)
     content = dataset_info_best_response.response["content"]

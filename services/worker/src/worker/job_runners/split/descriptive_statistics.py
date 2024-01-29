@@ -455,7 +455,7 @@ def compute_descriptive_statistics_response(
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
-    Compute statistics and get response for the `split-descriptive-statistics` step.
+    Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
     Currently, integers, floats and ClassLabel features are supported.
     
     Args:
@@ -497,7 +497,7 @@ def compute_descriptive_statistics_response(
             numerical (int and float) or ClassLabel feature.
     """
 
-    logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
+    logging.info(f"get 'split-descriptive-statistics' for {dataset=} {config=} {split=}")
 
     config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(
