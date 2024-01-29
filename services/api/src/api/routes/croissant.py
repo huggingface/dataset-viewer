@@ -203,10 +203,10 @@ def get_croissant_from_dataset_infos(
 
 def _get_full_jsonld_parameter(request: Request) -> bool:
     """Parameter to retrieve the full JSON-LD (full=True) or a truncated/abridged JSON-LD (full=False) with less features."""
-    full_jsonld = get_request_parameter(request, "full", default="false")
-    if full_jsonld.lower() == "true":
-        return True
-    return False
+    full_jsonld = get_request_parameter(request, "full", default="true")
+    if full_jsonld.lower() == "false":
+        return False
+    return True
 
 
 def create_croissant_endpoint(
