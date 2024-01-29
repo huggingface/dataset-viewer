@@ -52,7 +52,7 @@ def update_repo_settings(
             space, `None` or `"model"` if uploading to a model.
 
     Raises:
-        - [`~huggingface_hub.utils.RepositoryNotFoundError`]
+        - [~`huggingface_hub.utils.RepositoryNotFoundError`]
             If the repository to download from cannot be found. This may be because it doesn't exist,
             or because it is set to `private` and you do not have access.
 

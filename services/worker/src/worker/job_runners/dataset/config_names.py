@@ -46,13 +46,13 @@ def compute_config_names_response(
             An authentication token (See https://huggingface.co/settings/token)
 
     Raises:
-        - [`libcommon.exceptions.EmptyDatasetError`]
+        - [~`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`libcommon.exceptions.DatasetModuleNotInstalledError`]
+        - [~`libcommon.exceptions.DatasetModuleNotInstalledError`]
           The dataset tries to import a module that is not installed.
-        - [`libcommon.exceptions.ConfigNamesError`]
+        - [~`libcommon.exceptions.ConfigNamesError`]
           If the list of configs could not be obtained using the datasets library.
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        - [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
 
     Returns:

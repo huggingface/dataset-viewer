@@ -114,7 +114,7 @@ def raise_if_blocked(
             the namespace name.
 
     Raises:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
+        - [~`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:

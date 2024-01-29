@@ -118,10 +118,10 @@ class ProcessingGraph:
         specification (ProcessingGraphSpecification): The specification of the graph.
 
     Raises:
-        ValueError: If the graph is not a DAG.
-        ValueError: If a processing step provides dataset config names but its input type is not 'dataset', or if a
-          processing step provides config split names but its input type is not 'config'.
-        ValueError: If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
+        `ValueError`: If the graph is not a DAG.
+            If a processing step provides dataset config names but its input type is not 'dataset', or if a
+            processing step provides config split names but its input type is not 'config'.
+            If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
     """
 
     specification: ProcessingGraphSpecification

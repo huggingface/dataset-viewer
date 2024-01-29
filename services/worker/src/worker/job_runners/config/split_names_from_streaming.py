@@ -54,13 +54,13 @@ def compute_split_names_from_streaming_response(
             An authentication token (See https://huggingface.co/settings/token)
 
     Raises:
-        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+        - [~`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        - [`libcommon.exceptions.EmptyDatasetError`]
+        - [~`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`libcommon.exceptions.SplitsNamesError`]
+        - [~`libcommon.exceptions.SplitsNamesError`]
           If the list of splits could not be obtained using the datasets library.
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        - [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
 
     Returns:

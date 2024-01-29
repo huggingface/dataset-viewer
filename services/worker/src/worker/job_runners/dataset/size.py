@@ -34,9 +34,9 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             by a `/`.
 
     Raises:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+        - [~`libcommon.simple_cache.CachedArtifactError`]
+            If the previous step gave an error.
+        - [~`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
 
     Returns:

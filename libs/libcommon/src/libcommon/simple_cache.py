@@ -723,9 +723,9 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             The maximum number of results.
 
     Raises:
-        - [`~simple_cache.InvalidCursor`]
+        - [~`simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~simple_cache.InvalidLimit`]
+        - [~`simple_cache.InvalidLimit`]
           If the limit is an invalid number.
 
     Returns:
@@ -818,9 +818,9 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             The maximum number of results.
 
     Raises:
-        - [`~simple_cache.InvalidCursor`]
+        - [~`simple_cache.InvalidCursor`]
           If the cursor is invalid.
-        - [`~simple_cache.InvalidLimit`]
+        - [~`simple_cache.InvalidLimit`]
           If the limit is an invalid number.
 
     Returns:

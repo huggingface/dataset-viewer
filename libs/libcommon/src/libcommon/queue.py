@@ -707,8 +707,8 @@ class Queue:
             job (`JobDocument`): the job to start
 
         Raises:
-            `AlreadyStartedJobError`: if a started job already exist for the same unicity_id.
-            `LockTimeoutError`: if the lock could not be acquired after 20 retries.
+            - [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id.
+            - [`LockTimeoutError`]: if the lock could not be acquired after 20 retries.
 
         Returns:
             `JobDocument`: the started job
@@ -777,10 +777,10 @@ class Queue:
             job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
-            EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
-            for a dataset
-            AlreadyStartedJobError: if a started job already exist for the same unicity_id
-            LockTimeoutError: if the lock cannot be acquired
+            - [`EmptyQueueError`]: if there is no job in the queue, within the limit of the maximum number of started jobs
+                for a dataset
+            - [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id
+            - [`LockTimeoutError`]: if the lock cannot be acquired
 
         Returns:
             `JobInfo`: the job id, the type, the input arguments: dataset, revision, config and split
@@ -827,7 +827,7 @@ class Queue:
             job_id (`str`): id of the job
 
         Raises:
-            DoesNotExist: if the job does not exist
+            `DoesNotExist`: if the job does not exist
 
         Returns: 
             `str`: the job type

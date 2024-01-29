@@ -26,9 +26,9 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             by a `/`.
 
     Raises:
-        - [`libcommon.simple_cache.CachedArtifactError`]
+        - [~`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+        - [~`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step doesn't have the expected format.
 
     Returns:
