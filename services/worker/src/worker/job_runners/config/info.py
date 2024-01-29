@@ -18,9 +18,9 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
             Dataset configuration name
 
     Raises:
-        - [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]
           If the previous step gave an error.
-        - [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]
           If the content of the previous step doesn't have the expected format.
 
     Returns:

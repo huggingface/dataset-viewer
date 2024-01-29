@@ -33,9 +33,9 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
             A namespace (user or an organization) and a repo name separated by a `/`.
 
     Raises:
-        - [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
 
     Returns:

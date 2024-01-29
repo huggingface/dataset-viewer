@@ -115,8 +115,8 @@ def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> st
         algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
-        - [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
-        - [`ValueError`]: if the input is not a list
+        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
+        [`ValueError`]: if the input is not a list
 
     Returns:
         `str`: the public key in PEM format
