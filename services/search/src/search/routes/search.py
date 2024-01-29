@@ -204,6 +204,10 @@ def create_search_endpoint(
                     )
 
                 with StepProfiler(method="search_endpoint", step="create response"):
+                    # Features can be missing in old cache entries,
+                    # but in this case it's ok to get them from the Arrow schema.
+                    # Indded at one point we refreshed all the datasets that need the features
+                    # to be cached (i.e. image and audio datasets).
                     if "features" in duckdb_index_cache_entry["content"] and isinstance(
                         duckdb_index_cache_entry["content"]["features"], dict
                     ):

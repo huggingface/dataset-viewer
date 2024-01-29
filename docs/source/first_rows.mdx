@@ -17,7 +17,7 @@ The `/first-rows` endpoint accepts three query parameters:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train"
+API_URL = "https://datasets-server.huggingface.co/first-rows?dataset=ibm/duorc&config=SelfRC&split=train"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -29,7 +29,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train",
+        "https://datasets-server.huggingface.co/first-rows?dataset=ibm/duorc&config=SelfRC&split=train",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -45,7 +45,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/first-rows?dataset=duorc&config=SelfRC&split=train \
+curl https://datasets-server.huggingface.co/first-rows?dataset=ibm/duorc&config=SelfRC&split=train \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -57,11 +57,11 @@ The endpoint response is a JSON containing two keys:
 - The [`features`](https://huggingface.co/docs/datasets/about_dataset_features) of a dataset, including the column's name and data type.
 - The first 100 `rows` of a dataset and the content contained in each column of a specific row.
 
-For example, here are the `features` and the first 100 `rows` of the `duorc`/`SelfRC` train split:
+For example, here are the `features` and the first 100 `rows` of the `ibm/duorc`/`SelfRC` train split:
 
 ```json
 {
-  "dataset": "duorc",
+  "dataset": "ibm/duorc",
   "config": "SelfRC",
   "split": "train",
   "features": [
