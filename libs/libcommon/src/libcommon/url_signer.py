@@ -118,8 +118,14 @@ class URLSigner(ABC):
         for row_item in row_items:
             if not isinstance(row_item, dict):
                 raise InvalidFirstRowsError('Expected response["rows"][i] to be a dict')
+            truncated_cells = row_item.get("truncated_cells")
+            if not isinstance(truncated_cells, list) or not all(isinstance(cell, str) for cell in truncated_cells):
+                raise InvalidFirstRowsError('Expected response["rows"][i]["truncated_cells"] to be a list of strings')
             row = row_item.get("row")
             if not isinstance(row, dict):
                 raise InvalidFirstRowsError('Expected response["rows"][i]["row"] to be a dict')
             for asset_url_path in asset_url_paths:
+                if isinstance(asset_url_path.path[0], str) and asset_url_path.path[0] in truncated_cells:
+                    # the cell has been truncated, nothing to sign in it
+                    continue
                 self._sign_asset_url_path_in_place(cell=row, asset_url_path=asset_url_path)
