@@ -210,17 +210,25 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
             [],
             0,
         ),
-        "sequence_simple": DatasetFixture(
+        "sequence_implicit": DatasetFixture(
             other([0], None),
             {"_type": "Sequence", "feature": {"_type": "Value", "dtype": "int64"}},
             [0],
             [],
             0,
         ),
-        "sequence": DatasetFixture(
+        "sequence_list": DatasetFixture(
+            other([0], Sequence(feature=Value(dtype="int64"))),
+            {"_type": "Sequence", "feature": {"_type": "Value", "dtype": "int64"}},
+            [0],
+            [],
+            0,
+        ),
+        "sequence_dict": DatasetFixture(
             other([{"a": 0}], Sequence(feature={"a": Value(dtype="int64")})),
             {"_type": "Sequence", "feature": {"a": {"_type": "Value", "dtype": "int64"}}},
             {"a": [0]},
+            # ^ converted to a dict of lists, see https://huggingface.co/docs/datasets/v2.16.1/en/package_reference/main_classes#datasets.Features
             [],
             0,
         ),
@@ -422,6 +430,39 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                 "_type": "Sequence",
                 "feature": {
                     "_type": "Image",
+                },
+            },
+            [
+                {
+                    "src": f"{ASSETS_BASE_URL}/images_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d100e9.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+                {
+                    "src": f"{ASSETS_BASE_URL}/images_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d300ea.jpg",
+                    "height": 480,
+                    "width": 640,
+                },
+            ],
+            [AssetUrlPath(feature_type="Image", path=[DEFAULT_COLUMN_NAME, 0])],
+            2,
+        ),
+        "images_sequence_dict": DatasetFixture(
+            other(
+                {
+                    "images": [
+                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                        str(Path(__file__).resolve().parent / "data" / "test_image_rgb.jpg"),
+                    ]
+                },
+                Sequence(feature={"images": Image()}),
+            ),
+            {
+                "_type": "Sequence",
+                "feature": {
+                    "images": {
+                        "_type": "Image",
+                    }
                 },
             },
             [

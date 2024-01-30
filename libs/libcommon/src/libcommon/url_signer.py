@@ -46,6 +46,9 @@ def _visit(
     Returns:
         `FeatureType`: the visited feature.
     """
+    if isinstance(feature, Sequence) and isinstance(feature.feature, dict):
+        feature = {k: [f] for k, f in feature.feature.items()}
+        # ^ Sequence of dicts is special, it must be converted to a dict of lists (see https://huggingface.co/docs/datasets/v2.16.1/en/package_reference/main_classes#datasets.Features)
     if isinstance(feature, dict):
         out = func({k: _visit(f, func, visit_path + [k]) for k, f in feature.items()}, visit_path)
     elif isinstance(feature, (list, tuple)):
