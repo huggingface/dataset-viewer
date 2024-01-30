@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
+from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -19,7 +20,12 @@ from libcommon.exceptions import (
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
-from libcommon.operations import delete_dataset, get_latest_dataset_revision_if_supported_or_raise, update_dataset
+from libcommon.operations import (
+    CustomHfApi,
+    delete_dataset,
+    get_latest_dataset_revision_if_supported_or_raise,
+    update_dataset,
+)
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import has_some_cache, upsert_response
@@ -58,6 +64,21 @@ def test_get_revision_timeout() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "name,expected_pro,expected_enterprise",
+    [
+        (NORMAL_USER, False, None),
+        (PRO_USER, True, None),
+        (NORMAL_ORG, None, False),
+        (ENTERPRISE_ORG, None, True),
+    ],
+)
+def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise: Optional[bool]) -> None:
+    entity_info = CustomHfApi(endpoint=CI_HUB_ENDPOINT).whoisthis(name=name, token=CI_APP_TOKEN)
+    assert entity_info.is_pro == expected_pro
+    assert entity_info.is_enterprise == expected_enterprise
+
+
 @contextmanager
 def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
@@ -79,12 +100,10 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     [
         (NORMAL_USER_TOKEN, NORMAL_USER),
         (NORMAL_USER_TOKEN, NORMAL_ORG),
-        (PRO_USER_TOKEN, PRO_USER),
         (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
     ],
 )
-def test_get_revision_private(token: str, namespace: str) -> None:
+def test_get_revision_private_raises(token: str, namespace: str) -> None:
     with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
         with pytest.raises(NotSupportedPrivateRepositoryError):
             get_latest_dataset_revision_if_supported_or_raise(
@@ -95,11 +114,23 @@ def test_get_revision_private(token: str, namespace: str) -> None:
 @pytest.mark.parametrize(
     "token,namespace",
     [
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
+    ],
+)
+def test_get_revision_private(token: str, namespace: str) -> None:
+    with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
+        get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN
+        )
+
+
+@pytest.mark.parametrize(
+    "token,namespace",
+    [
         (NORMAL_USER_TOKEN, NORMAL_USER),
         (NORMAL_USER_TOKEN, NORMAL_ORG),
-        (PRO_USER_TOKEN, PRO_USER),
         (ENTERPRISE_USER_TOKEN, ENTERPRISE_USER),
-        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
     ],
 )
 def test_update_private_raises(
@@ -155,6 +186,23 @@ def test_update_disabled_dataset_raises_way_2(
         # ^ we have no programmatical way to disable a dataset, so we mock the response of the API
         with pytest.raises(NotSupportedDisabledRepositoryError):
             update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+
+@pytest.mark.parametrize(
+    "token,namespace",
+    [
+        (PRO_USER_TOKEN, PRO_USER),
+        (ENTERPRISE_USER_TOKEN, ENTERPRISE_ORG),
+    ],
+)
+def test_update_private(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+    token: str,
+    namespace: str,
+) -> None:
+    with tmp_dataset(namespace=namespace, token=token, private=True) as dataset:
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
 
 @pytest.mark.parametrize(
