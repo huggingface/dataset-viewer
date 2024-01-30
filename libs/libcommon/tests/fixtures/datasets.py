@@ -465,19 +465,21 @@ def datasets_fixtures() -> Mapping[str, DatasetFixture]:
                     }
                 },
             },
-            [
-                {
-                    "src": f"{ASSETS_BASE_URL}/images_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d100e9.jpg",
-                    "height": 480,
-                    "width": 640,
-                },
-                {
-                    "src": f"{ASSETS_BASE_URL}/images_sequence/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d300ea.jpg",
-                    "height": 480,
-                    "width": 640,
-                },
-            ],
-            [AssetUrlPath(feature_type="Image", path=[DEFAULT_COLUMN_NAME, 0])],
+            {
+                "images": [
+                    {
+                        "src": f"{ASSETS_BASE_URL}/images_sequence_dict/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d9603ef.jpg",
+                        "height": 480,
+                        "width": 640,
+                    },
+                    {
+                        "src": f"{ASSETS_BASE_URL}/images_sequence_dict/--/{DEFAULT_REVISION}/--/{DEFAULT_CONFIG}/{DEFAULT_SPLIT}/{DEFAULT_ROW_IDX}/col/image-1d9803f0.jpg",
+                        "height": 480,
+                        "width": 640,
+                    },
+                ]
+            },
+            [AssetUrlPath(feature_type="Image", path=[DEFAULT_COLUMN_NAME, "images", 0])],
             2,
         ),
         "audios_sequence": DatasetFixture(

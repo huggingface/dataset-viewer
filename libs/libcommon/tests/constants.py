@@ -61,6 +61,7 @@ DATASETS_NAMES = [
     "images_list",
     "audios_list",
     "images_sequence",
+    "images_sequence_dict",
     "audios_sequence",
     "dict_of_audios_and_images",
     "sequence_of_dicts",
