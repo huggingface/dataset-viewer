@@ -65,7 +65,7 @@ def test_get_revision_timeout() -> None:
 
 
 @pytest.mark.parametrize(
-    "name, expected_pro, expected_enterprise",
+    "name,expected_pro,expected_enterprise",
     [
         (NORMAL_USER, False, None),
         (PRO_USER, True, None),
