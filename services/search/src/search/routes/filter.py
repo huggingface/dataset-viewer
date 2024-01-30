@@ -83,9 +83,7 @@ def create_filter_endpoint(
                     validate_where_parameter(where)
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
-                    logger.info(
-                        f'/filter, {dataset=}, {config=}, {split=}, {where=}, {offset=}, {length=}'
-                    )
+                    logger.info(f"/filter, {dataset=}, {config=}, {split=}, {where=}, {offset=}, {length=}")
                 with StepProfiler(method="filter_endpoint", step="check authentication"):
                     # If auth_check fails, it will raise an exception that will be caught below
                     await auth_check(
