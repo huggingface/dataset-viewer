@@ -40,16 +40,16 @@ AUDIO_FILE_MAGIC_NUMBERS: dict[str, Any] = {
 def append_hash_suffix(string: str, json_path: Optional[list[Union[str, int]]] = None) -> str:
     """
     Hash the json path to a string.
-    Args:
-        string (``str``): The string to append the hash to.
-        json_path (``list(str|int)``): the json path, which is a list of keys and indices
-    Returns:
-        the string suffixed with the hash of the json path
-
     Details:
     - no suffix if the list is empty
     - converted to hexadecimal to make the hash shorter
     - the 0x prefix is removed
+
+    Args:
+        string (`str`): The string to append the hash to.
+        json_path (`list(str|int)`): the json path, which is a list of keys and indices
+    Returns:
+        `str`: the string suffixed with the hash of the json path
     """
     return f"{string}-{hex(adler32(json.dumps(json_path).encode()))[2:]}" if json_path else string
 

@@ -12,7 +12,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, float]:
     """
-    Get the content of a /sse/hub-cache SSE for one specific dataset on huggingface.co.
+    Get the content of a 'dataset-hub-cache' SSE for one specific dataset on huggingface.co.
 
     Its purpose is specific to the Hub, and we won't ensure backward compatibility for this step.
     It provides information about:
@@ -26,7 +26,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     Returns:
         `tuple[DatasetHubCacheResponse, float]`: The response and the progress.
     """
-    logging.info(f"get hub_cache response for {dataset=}")
+    logging.info(f"get 'dateset-hub-cache' for {dataset=}")
 
     is_valid_response = get_previous_step_or_raise(kinds=["dataset-is-valid"], dataset=dataset)
     content = is_valid_response.response["content"]

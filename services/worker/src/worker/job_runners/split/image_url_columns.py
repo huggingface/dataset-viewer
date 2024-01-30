@@ -22,7 +22,7 @@ def compute_image_url_columns(
     split: str,
 ) -> ImageUrlColumnsResponse:
     """
-    Get the response of split-image-url-columns cache for a specific split of a dataset from huggingface.co.
+    Get the response of 'split-image-url-columns' cache for a specific split of a dataset from huggingface.co.
     The response is not used directly in the API but it is an input for split-opt-in-out-urls-scan processing step.
 
     Args:
@@ -33,15 +33,17 @@ def compute_image_url_columns(
             A configuration name.
         split (`str`):
             A split name.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+
     Returns:
         [`ImageUrlColumnsResponse`]: The list of image url columns.
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-          If the content of the previous step has not the expected format
     """
-    logging.info(f"get image-url-columns for dataset={dataset} config={config} split={split}")
+    logging.info(f"get 'split-image-url-columns' for {dataset=} {config=} {split=}")
 
     # get the first rows from previous job
     upstream_response = get_previous_step_or_raise(

@@ -55,7 +55,7 @@ def _escape_name(name: str, names: set[str]) -> str:
         name: The initial non-escaped name.
         names: The set of already existing names.
     Returns:
-        The escaped name.
+        `str`: The escaped name.
     """
     escaped_name = re.sub(NAME_PATTERN_REGEX, "_", name)
     while escaped_name in names:

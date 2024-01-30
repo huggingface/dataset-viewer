@@ -58,7 +58,9 @@ def compute_parquet_metadata_response(
     dataset: str, config: str, hf_token: Optional[str], parquet_metadata_directory: StrPath
 ) -> ConfigParquetMetadataResponse:
     """
+    Get the response of 'config-parquet-metadata' for one specific dataset and config on huggingface.co.
     Store the config's parquet metadata on the disk and return the list of local metadata files.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
@@ -69,21 +71,21 @@ def compute_parquet_metadata_response(
             An authentication token (See https://huggingface.co/settings/token)
         parquet_metadata_directory (`str` or `pathlib.Path`):
             The directory where the parquet metadata files are stored.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+            If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.ParquetResponseEmptyError`]
+            If the previous step provided an empty list of parquet files.
+        [~`libcommon.exceptions.FileSystemError`]
+            If the HfFileSystem couldn't access the parquet files.
+
     Returns:
         `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
-    <Tip>
-    Raises the following errors:
-        - [`~libcommon.simple_cache.CachedArtifactError`]
-            If the previous step gave an error.
-        - [`~libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
-        - [`~libcommon.exceptions.ParquetResponseEmptyError`]
-            If the previous step provided an empty list of parquet files.
-        - [`~libcommon.exceptions.FileSystemError`]
-            If the HfFileSystem couldn't access the parquet files.
-    </Tip>
     """
-    logging.info(f"get parquet files for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-parquet-metadata' for {dataset=} {config=}")
 
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:

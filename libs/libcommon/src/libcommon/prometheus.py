@@ -131,9 +131,9 @@ class StepProfiler:
         ...     pass
 
     Args:
-        method (str): The name of the method.
-        step (str): The name of the step.
-        context (str|None): An optional string that adds context. If None, the label "None" is used.
+        method (`str`): The name of the method.
+        step (`str`): The name of the step.
+        context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
     """
 
     def __init__(self, method: str, step: str, context: Optional[str] = None):

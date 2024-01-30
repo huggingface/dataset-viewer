@@ -25,15 +25,17 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
             by a `/`.
         config (`str`):
             A configuration name.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-          If the content of the previous step has not the expected format
     """
-    logging.info(f"get split names from dataset info for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-split-names-from-info' for {dataset=} {config=}")
     config_info_best_response = get_previous_step_or_raise(kinds=["config-info"], dataset=dataset, config=config)
 
     try:

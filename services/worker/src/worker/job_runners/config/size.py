@@ -12,22 +12,25 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 def compute_config_size_response(dataset: str, config: str) -> ConfigSizeResponse:
     """
-    Get the response of config-size for one specific dataset and config on huggingface.co.
+    Get the response of 'config-size' for one specific dataset and config on huggingface.co.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated
             by a `/`.
         config (`str`):
             A configuration name.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+
     Returns:
         `ConfigSizeResponse`: An object with the size_response.
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-          If the content of the previous step has not the expected format
     """
-    logging.info(f"get size for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-size' for {dataset=} {config=}")
 
     dataset_info_best_response = get_previous_step_or_raise(
         kinds=["config-parquet-and-info"], dataset=dataset, config=config

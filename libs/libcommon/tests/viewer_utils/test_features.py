@@ -124,17 +124,17 @@ ASSETS_BASE_URL_SPLIT = "http://localhost/assets/dataset/--/revision/--/config/s
         # - a :class:`datasets.ClassLabel` feature specifies a field with a predefined set of classes
         #   which can have labels associated to them and will be stored as integers in the dataset
         ("class_label", 1, "ClassLabel"),
-        # - a python :obj:`dict` which specifies that the field is a nested field containing a mapping of sub-fields
+        # - a python `dict` which specifies that the field is a nested field containing a mapping of sub-fields
         #   to sub-fields features. It's possible to have nested fields of nested fields in an arbitrary manner
         ("dict", {"a": 0}, {"a": Value(dtype="int64", id=None)}),
-        # - a python :obj:`list` or a :class:`datasets.Sequence` specifies that the field contains a list of objects.
-        #    The python :obj:`list` or :class:`datasets.Sequence` should be provided with a single sub-feature as an
+        # - a python `list` or a :class:`datasets.Sequence` specifies that the field contains a list of objects.
+        #    The python `list` or :class:`datasets.Sequence` should be provided with a single sub-feature as an
         #    example of the feature type hosted in this list
         #   <Tip>
         #   A :class:`datasets.Sequence` with a internal dictionary feature will be automatically converted into a
         #   dictionary of lists. This behavior is implemented to have a compatilbity layer with the TensorFlow Datasets
         #   library but may be un-wanted in some cases. If you don't want this behavior, you can use a python
-        #   :obj:`list` instead of the :class:`datasets.Sequence`.
+        #   `list` instead of the :class:`datasets.Sequence`.
         #   </Tip>
         ("list", [{"a": 0}], [{"a": Value(dtype="int64", id=None)}]),
         ("sequence_simple", [0], "Sequence"),
@@ -188,8 +188,8 @@ ASSETS_BASE_URL_SPLIT = "http://localhost/assets/dataset/--/revision/--/config/s
             ],
             "Audio",
         ),
-        # - an :class:`Image` feature to store the absolute path to an image file, an :obj:`np.ndarray` object, a
-        #   :obj:`PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
+        # - an :class:`Image` feature to store the absolute path to an image file, an `np.ndarray` object, a
+        #   `PIL.Image.Image` object or a dictionary with the relative path to an image file ("path" key) and
         #   its bytes content ("bytes" key). This feature extracts the image data.
         (
             "image",

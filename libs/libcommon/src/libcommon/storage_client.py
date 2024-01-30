@@ -18,12 +18,12 @@ class StorageClient:
     A resource that represents a connection to a storage client.
 
     Args:
-        protocol (:obj:`str`): The fsspec protocol (supported: "file" or "s3")
-        storage_root (:obj:`str`): The storage root path
-        base_url (:obj:`str`): The base url for the publicly distributed assets
-        overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
-        s3_config (:obj:`S3Config`, `optional`): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
-        cloudfront_config (:obj:`CloudFrontConfig`, `optional`): The CloudFront configuration to generate signed urls
+        protocol (`str`): The fsspec protocol (supported: "file" or "s3")
+        storage_root (`str`): The storage root path
+        base_url (`str`): The base url for the publicly distributed assets
+        overwrite (`bool`, *optional*, defaults to `False`): Whether to overwrite existing files
+        s3_config (`S3Config`, *optional*): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
+        cloudfront_config (`CloudFrontConfig`, *optional*): The CloudFront configuration to generate signed urls
     """
 
     _fs: Any

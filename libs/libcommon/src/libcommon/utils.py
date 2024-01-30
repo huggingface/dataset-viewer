@@ -35,10 +35,10 @@ def get_json_size(obj: Any) -> int:
     """Returns the size of an object in bytes once serialized as JSON
 
     Args:
-        obj (Any): the Python object
+        obj (`Any`) the Python object
 
     Returns:
-        int: the size of the serialized object in bytes
+        `int`: the size of the serialized object in bytes
     """
     return len(orjson_dumps(obj))
 
@@ -113,10 +113,8 @@ def raise_if_blocked(
             to block all the datasets in the `open-llm-leaderboard` namespace. They are not allowed in
             the namespace name.
 
-    Returns:
-        `None`
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
+    Raises:
+        [~`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:
