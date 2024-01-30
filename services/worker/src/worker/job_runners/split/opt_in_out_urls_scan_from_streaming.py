@@ -108,8 +108,7 @@ def compute_opt_in_out_urls_scan_response(
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
         config (`str`):
             A configuration name.
         split (`str`):
@@ -137,23 +136,23 @@ def compute_opt_in_out_urls_scan_response(
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
     Raises:
-        [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
           If the previous step gave an error.
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
-        [~`libcommon.exceptions.InfoError`]
+        [~`libcommon.exceptions.InfoError`]:
           If the config info could not be obtained using the datasets library.
-        [~`libcommon.exceptions.TooManyColumnsError`]
+        [~`libcommon.exceptions.TooManyColumnsError`]:
           If the number of columns (features) exceeds the maximum supported number of columns.
-        [~`libcommon.exceptions.StreamingRowsError`]
+        [~`libcommon.exceptions.StreamingRowsError`]:
           If the split rows could not be obtained using the datasets library in streaming mode.
-        [~`libcommon.exceptions.NormalRowsError`]
+        [~`libcommon.exceptions.NormalRowsError`]:
           If the split rows could not be obtained using the datasets library in normal mode.
-        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
 
     Returns:
-        [`OptInOutUrlsScanResponse`]
+        `OptInOutUrlsScanResponse`: An object with the lists of opt-in/opt-out urls
     """
     logging.info(f"get 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)

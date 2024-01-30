@@ -26,7 +26,7 @@ from ..constants import (
 
 
 @pytest.mark.parametrize(
-    "cells, min_cell_bytes, columns_to_keep_untruncated, expected_cells, expected_truncated_cells",
+    "cells,min_cell_bytes,columns_to_keep_untruncated,expected_cells,expected_truncated_cells",
     [
         ([TEN_CHARS_TEXT], 11, [], ['"' + TEN_CHARS_TEXT], ["c0"]),
         ([TEN_CHARS_TEXT], 11, ["c0"], [TEN_CHARS_TEXT], []),
@@ -90,7 +90,7 @@ def assert_test_truncate_row_items_cells(
 
 
 @pytest.mark.parametrize(
-    "num_rows, expected_num_truncated_rows, expected_is_under_limit",
+    "num_rows,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         (1, 0, True),
@@ -121,7 +121,7 @@ def test_truncate_row_items_cells_num_rows(
 
 
 @pytest.mark.parametrize(
-    "num_cells, expected_num_truncated_rows, expected_is_under_limit",
+    "num_cells,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         (1, 0, True),
@@ -159,7 +159,7 @@ def test_truncate_row_items_cells_num_cells(
 
 
 @pytest.mark.parametrize(
-    "cell_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    "cell_bytes,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         (1, 0, True),
@@ -192,7 +192,7 @@ def test_truncate_row_items_cells_cell_bytes(
 
 
 @pytest.mark.parametrize(
-    "min_cell_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    "min_cell_bytes,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         # -> not possible with the other settings
@@ -226,7 +226,7 @@ def test_truncate_row_items_cells_min_cell_bytes(
 
 
 @pytest.mark.parametrize(
-    "rows_max_bytes, expected_num_truncated_rows, expected_is_under_limit",
+    "rows_max_bytes,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         (5_000, 0, True),
@@ -255,7 +255,7 @@ def test_truncate_row_items_cells_rows_max_bytes(
 
 
 @pytest.mark.parametrize(
-    "num_columns_to_keep_untruncated, expected_num_truncated_rows, expected_is_under_limit",
+    "num_columns_to_keep_untruncated,expected_num_truncated_rows,expected_is_under_limit",
     [
         # no truncated rows
         # <- not possible with the other settings
@@ -286,7 +286,7 @@ def test_truncate_row_items_cells_untruncated_columns(
 
 
 @pytest.mark.parametrize(
-    "rows_max_bytes, expected_num_rows_items, expected_truncated",
+    "rows_max_bytes,expected_num_rows_items,expected_truncated",
     [
         # the rows are kept as is
         (5_000, DEFAULT_NUM_ROWS, False),

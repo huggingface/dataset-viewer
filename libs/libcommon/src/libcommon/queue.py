@@ -1038,7 +1038,8 @@ class Queue:
     def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> list[JobDict]:
         """Get the pending jobs of a dataset for a given job type.
 
-        Returns: an array of the pending jobs for the dataset and the given job type
+        Returns:
+            `list[JobDict]`: an array of the pending jobs for the dataset and the given job type
         """
         return [d.to_dict() for d in JobDocument.objects(type=job_type, dataset=dataset)]
 

@@ -112,6 +112,10 @@ def generate_bins(
     For float numbers, length of returned bin edges list is always equal to `n_bins` except for the cases
     when min = max (only one value observed in data). In this case, bin edges are [min, max].
 
+    Raises:
+        [~`libcommon.exceptions.StatisticsComputationError`]:
+            If there was some unexpected behaviour during statistics computation.
+
     Returns:
         `list[Union[int, float]]`: List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
@@ -480,16 +484,16 @@ def compute_descriptive_statistics_response(
             Datasets with bigger size are ignored.
 
     Raises:
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step does not have the expected format.
-        [~`libcommon.exceptions.ParquetResponseEmptyError`]
+        [~`libcommon.exceptions.ParquetResponseEmptyError`]:
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        [~`libcommon.exceptions.SplitWithTooBigParquetError`]
+        [~`libcommon.exceptions.SplitWithTooBigParquetError`]:
             If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
-        [~`libcommon.exceptions.NoSupportedFeaturesError`]
+        [~`libcommon.exceptions.NoSupportedFeaturesError`]:
             If requested dataset doesn't have any supported for statistics computation features.
             Currently, floats, integers and ClassLabels are supported.
-        [~`libcommon.exceptions.StatisticsComputationError`]
+        [~`libcommon.exceptions.StatisticsComputationError`]:
             If there was some unexpected behaviour during statistics computation.
 
     Returns:

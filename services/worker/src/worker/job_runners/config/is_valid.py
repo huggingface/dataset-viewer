@@ -27,6 +27,10 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
             by a `/`.
         config (`str`):
             A configuration name.
+    Raises:
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+          If the content of the previous step has not the expected format.
+
     Returns:
         `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """

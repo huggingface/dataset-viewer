@@ -111,7 +111,7 @@ def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> st
     compatible with the algorithm
 
     Args:
-        keys (`Any`) the JSON to parse. It must be a list of keys in JWK format
+        keys (`Any`): the JSON to parse. It must be a list of keys in JWK format
         algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
