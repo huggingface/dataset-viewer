@@ -38,7 +38,7 @@ class EntityInfo:
 
     </Tip>
 
-    Attributes:
+    **Attributes**:
         is_pro (`bool`, *optional*):
             Is the entity a pro user.
         is_enterprise (`bool`, *optional*):
