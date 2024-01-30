@@ -72,7 +72,7 @@ def create_rows_endpoint(
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logging.info(
-                        f"/rows, dataset={dataset}, {config=}, split={split}, offset={offset}, length={length}"
+                        f"/rows, {dataset=}, {config=}, {split=}, {offset=}, {length=}"
                     )
                 with StepProfiler(method="rows_endpoint", step="check authentication"):
                     # if auth_check fails, it will raise an exception that will be caught below

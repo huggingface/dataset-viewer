@@ -61,7 +61,7 @@ def create_force_refresh_endpoint(
                 raise InvalidParameterError(
                     f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
                 )
-            logging.info(f"/force-refresh/{job_type}, dataset={dataset}, {config=}, split={split}, {priority=}")
+            logging.info(f"/force-refresh/{job_type}, {dataset=}, {config=}, {split=}, {priority=}")
 
             total_difficulty = difficulty
             if config is not None:

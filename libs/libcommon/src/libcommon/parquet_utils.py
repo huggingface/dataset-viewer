@@ -144,7 +144,7 @@ class ParquetIndexWithMetadata:
             length (`int`): The number of rows to read.
 
         Raises:
-            []`TooBigRows`]: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
+            [`TooBigRows`]: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
 
         Returns:
             `pa.Table`: The requested rows.
