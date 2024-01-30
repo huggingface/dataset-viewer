@@ -33,7 +33,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
             If the content of the previous step has not the expected format
 
     Returns:
-        `tuple[DatasetSplitNamesResponse, float]`: 
+        `tuple[DatasetSplitNamesResponse, float]`:
             An object with a list of split names for the dataset [splits],
             a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     """

@@ -189,7 +189,7 @@ def _is_too_big_from_hub(
             The dataset info.
         max_dataset_size_bytes (`int`):
             The maximum size of the dataset in bytes.
-    
+
     Returns:
         `bool`: if dataset size is bigger than max value.
     """

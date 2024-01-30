@@ -111,7 +111,7 @@ def generate_bins(
     bin_size for int data is calculated as np.ceil((max_value - min_value + 1) / n_bins)
     For float numbers, length of returned bin edges list is always equal to `n_bins` except for the cases
     when min = max (only one value observed in data). In this case, bin edges are [min, max].
-    
+
     Raises:
         [~`libcommon.exceptions.StatisticsComputationError`]:
             If there was some unexpected behaviour during statistics computation.
