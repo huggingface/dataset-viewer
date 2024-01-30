@@ -27,13 +27,14 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
             A namespace (user or an organization) and a repo name separated by a `/`.
 
     Raises:
-        [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
             If the the previous step gave an error.
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step has not the expected format
 
     Returns:
-        `DatasetSplitNamesResponse`: An object with a list of split names for the dataset [splits],
+        `tuple[DatasetSplitNamesResponse, float]`: 
+            An object with a list of split names for the dataset [splits],
             a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     """
     logging.info(f"get 'dataset-split-names' for {dataset=}")

@@ -837,7 +837,7 @@ def has_pending_ancestor_jobs(
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        []`ProcessingStepDoesNotExist`]: If any of the processing step does not exist.
+        [`ProcessingStepDoesNotExist`]: If any of the processing step does not exist.
 
     Returns:
         `bool`: True if any of the artifact could exist, False otherwise.

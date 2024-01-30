@@ -132,7 +132,7 @@ def test_sign_urls_in_first_rows_in_place(
 
 
 @pytest.mark.parametrize(
-    "dataset_name, rows_max_bytes, expected",
+    "dataset_name,rows_max_bytes,expected",
     [
         # with rows_max_bytes > response size, the response is not truncated
         ("audio", 337 + SOME_BYTES, "complete"),

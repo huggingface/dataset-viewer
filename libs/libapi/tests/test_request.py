@@ -45,14 +45,14 @@ def test_get_request_parameter_raises(
         _ = get_request_parameter(request, parameter_name, required=required)
 
 
-@pytest.mark.parametrize("length, expected_value", [("50", 50)])
+@pytest.mark.parametrize("length,expected_value", [("50", 50)])
 def test_get_request_parameter_length(length: str, expected_value: int, build_request: Callable[..., Request]) -> None:
     request = build_request(query_string=f"length={length}")
     assert get_request_parameter_length(request) == expected_value
 
 
 @pytest.mark.parametrize(
-    "length, expected_error_message",
+    "length,expected_error_message",
     [
         ("abc", "Parameter 'length' must be integer"),
         ("-1", "Parameter 'length' must be positive"),
@@ -67,14 +67,14 @@ def test_get_request_parameter_length_raises(
         _ = get_request_parameter_length(request)
 
 
-@pytest.mark.parametrize("offset, expected_value", [("50", 50)])
+@pytest.mark.parametrize("offset,expected_value", [("50", 50)])
 def test_get_request_parameter_offset(offset: str, expected_value: int, build_request: Callable[..., Request]) -> None:
     request = build_request(query_string=f"offset={offset}")
     assert get_request_parameter_offset(request) == expected_value
 
 
 @pytest.mark.parametrize(
-    "offset, expected_error_message",
+    "offset,expected_error_message",
     [("abc", "Parameter 'offset' must be integer"), ("-1", "Parameter 'offset' must be positive")],
 )
 def test_get_request_parameter_offset_raises(

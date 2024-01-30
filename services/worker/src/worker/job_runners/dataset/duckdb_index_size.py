@@ -32,13 +32,13 @@ def compute_dataset_duckdb_index_size_response(dataset: str) -> tuple[DatasetDuc
             A namespace (user or an organization) and a repo name separated by a `/`.
 
     Raises:
-        [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
           If the previous step gave an error.
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
 
     Returns:
-        `DatasetDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
+        `tuple[DatasetDuckdbIndexSizeResponse, float]`: An object with the duckdb_index_size_response and the progress.
     """
     logging.info(f"get 'config-duckdb-index-sie' for {dataset=}")
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)

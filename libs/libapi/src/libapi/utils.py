@@ -153,9 +153,9 @@ def get_cache_entry_from_steps(
     Checks if job is still in progress by each processing step in case of no entry found.
 
     Raises:
-        [~`utils.ResponseNotFoundError`]
+        [~`utils.ResponseNotFoundError`]:
           if no result is found.
-        [~`utils.ResponseNotReadyError`]
+        [~`utils.ResponseNotReadyError`]:
           if the response is not ready yet.
 
     Returns:
