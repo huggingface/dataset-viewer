@@ -3,6 +3,7 @@
 
 import datetime
 from functools import partial
+from typing import Optional
 
 from botocore.signers import CloudFrontSigner
 from cryptography.hazmat.backends import default_backend
@@ -11,6 +12,8 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.hazmat.primitives.hashes import SHA1
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
+from libcommon.config import CloudFrontConfig
+from libcommon.url_signer import URLSigner
 from libcommon.utils import get_expires
 
 
@@ -25,7 +28,7 @@ algorithm = SHA1()  # nosec
 #   but CloudFront mandates SHA1
 
 
-class CloudFront:
+class CloudFront(URLSigner):
     """
     Signs CloudFront URLs using a private key.
 
@@ -82,3 +85,15 @@ class CloudFront:
         """
         date_less_than = get_expires(seconds=self._expiration_seconds)
         return self._sign_url(url=url, date_less_than=date_less_than)
+
+
+def get_cloudfront_signer(cloudfront_config: CloudFrontConfig) -> Optional[CloudFront]:
+    return (
+        CloudFront(
+            key_pair_id=cloudfront_config.key_pair_id,
+            private_key=cloudfront_config.private_key,
+            expiration_seconds=cloudfront_config.expiration_seconds,
+        )
+        if cloudfront_config.key_pair_id and cloudfront_config.private_key
+        else None
+    )
