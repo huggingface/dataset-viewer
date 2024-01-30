@@ -41,9 +41,10 @@ def _visit(
     """Visit a (possibly nested) feature.
 
     Args:
-        feature (FeatureType): the feature type to be checked
+        feature (`FeatureType`): the feature type to be checked.
+
     Returns:
-        visited feature (FeatureType)
+        `FeatureType`: the visited feature.
     """
     if isinstance(feature, dict):
         out = func({k: _visit(f, func, visit_path + [k]) for k, f in feature.items()}, visit_path)

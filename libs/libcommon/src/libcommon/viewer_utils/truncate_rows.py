@@ -22,14 +22,14 @@ def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_un
     The names of the truncated cells are listed in row_item["truncated_cells"].
 
     Args:
-        row_item ([`RowItem`]): the row item to truncate
+        row_item ([`RowItem`]): the row item to truncate.
         min_cell_bytes (`int`): the minimum number of bytes for a cell. If a cell has less than this number of bytes,
             it is not truncated. If it has more, it is truncated to this number of bytes.
             The size of a cell is computed as the size of its JSON serialization using orjson_dumps().
-        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated
+        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
 
     Returns:
-        [`RowItem`]: the same row item, mutated, with all the cells truncated to min_cell_bytes
+        [`RowItem`]: the same row item, mutated, with all the cells truncated to min_cell_bytes.
     """
     for column_name, cell in row_item["row"].items():
         if column_name in columns_to_keep_untruncated:
@@ -63,16 +63,16 @@ def truncate_row_items_cells(
     the size of the response might be greater than rows_max_bytes, even if all the rows have been "truncated".
 
     Args:
-        row_items (`list[RowItem]`): the row items to truncate
+        row_items (`list[RowItem]`): the row items to truncate.
         min_cell_bytes (`int`): the minimum number of bytes for a cell. If a cell has less than this number of bytes,
             it is not truncated. If it has more, it is serialized to JSON and truncated to this number of bytes.
             The size of a cell is computed as the size of its JSON serialization using orjson_dumps().
         rows_max_bytes (`int`): the maximum number of bytes of the rows JSON serialization, after truncation of the last ones.
             The size accounts for the comma separators between rows.
-        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated
+        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
 
     Returns:
-        list[`RowItem`]: the same row items, mutated
+        list[`RowItem`]: the same row items, mutated.
     """
     # compute the current size
     rows_bytes = get_json_size(row_items)
@@ -116,18 +116,20 @@ def create_truncated_row_items(
     row_item["truncated_cells"], while only the row_item["cell"] contents are truncated.
 
     Args:
-        rows (`list[Row]`): the rows to truncate
+        rows (`list[Row]`): the rows to truncate.
         min_cell_bytes (`int`): the minimum number of bytes for a cell. If a cell has less than this number of bytes,
             it is not truncated. If it has more, it is serialized to JSON and truncated to this number of bytes.
             The size of a cell is computed as the size of its JSON serialization using orjson_dumps().
         rows_max_bytes (`int`): the maximum number of bytes of the rows JSON serialization, after truncation of the last ones.
             The size accounts for the comma separators between rows.
-        rows_min_number (`int`): the minimum number of rows to keep
-        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated
+        rows_min_number (`int`): the minimum number of rows to keep.
+        columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
 
     Returns:
-        tuple[list[`RowItem`], bool]: the list of row items, and a boolean indicating whether the rows have been truncated
-            False if the rows have been kept untouched, True if they have been deleted or truncated.
+        `tuple[list[RowItem], bool]`:
+        - `list[RowItem]`: the list of row items.
+        - `bool`: a boolean indicating whether the rows have been truncated. False if the rows have been kept untouched,
+            True if they have been deleted or truncated.
     """
     row_items = []
     rows_bytes = 2 * BRACKET_SIZE

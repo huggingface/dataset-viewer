@@ -82,13 +82,13 @@ def create_first_rows_response(
     If the size of the response still exceeds the maximum supported size, a TooBigContentError is raised.
 
     Args:
-        dataset (`str`): the dataset name
-        revision (`str`): the revision of the dataset
-        config (`str`): the config name
-        split (`str`): the split name
-        storage_client (`StorageClient`): the storage client to use to store the assets (audio, images)
-        features (`Features`): the features to return in the response
-        get_rows_content (`GetRowsContent`): a callable that returns the rows content
+        dataset (`str`): the dataset name.
+        revision (`str`): the revision of the dataset.
+        config (`str`): the config name.
+        split (`str`): the split name.
+        storage_client (`StorageClient`): the storage client to use to store the assets (audio, images).
+        features (`Features`): the features to return in the response.
+        get_rows_content (`GetRowsContent`): a callable that returns the rows content.
         min_cell_bytes (`int`): the minimum number of bytes for a cell, when truncation applies.
         rows_max_bytes (`int`): the maximum number of bytes for the response.
         rows_max_number (`int`): the maximum number of rows to return. The response will never contain more than this
@@ -98,13 +98,13 @@ def create_first_rows_response(
         columns_max_number (`int`): the maximum number of columns to return. The response will never contain more than
             this number of columns.
 
-    Returns:
-        [`SplitFirstRowsResponse`]: the response for the first rows of the split
-
     Raises:
-        `TooBigContentError`: if the size of the content of the first rows exceeds the maximum supported size
-        `TooManyColumnsError`: if the number of columns exceeds the maximum supported number of columns
-        `RowsPostProcessingError`: if there is an error while post-processing the rows
+        `TooBigContentError`: if the size of the content of the first rows exceeds the maximum supported size.
+        `TooManyColumnsError`: if the number of columns exceeds the maximum supported number of columns.
+        `RowsPostProcessingError`: if there is an error while post-processing the rows.
+
+    Returns:
+        [`SplitFirstRowsResponse`]: the response for the first rows of the split.
     """
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(

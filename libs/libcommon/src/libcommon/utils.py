@@ -55,17 +55,17 @@ class SmallerThanMaxBytesError(Exception):
 
 def serialize_and_truncate(obj: Any, max_bytes: int) -> str:
     """
-    Serialize an object as JSON and truncate it if it's bigger than max_bytes
+    Serialize an object as JSON and truncate it if it's bigger than max_bytes.
 
     Args:
         obj (`Any`): the Python object (can be a primitive type, a list, a dict, etc.)
-        max_bytes (int): the maximum number of bytes
+        max_bytes (`int`): the maximum number of bytes.
 
     Raises:
-        `SmallerThanMaxBytesError`: if the serialized object is smaller than max_bytes
+        `SmallerThanMaxBytesError`: if the serialized object is smaller than max_bytes.
 
     Returns:
-        `str`: the serialized object, truncated to max_bytes
+        `str`: the serialized object, truncated to max_bytes.
     """
     serialized_bytes = orjson_dumps(obj)
     if len(serialized_bytes) <= max_bytes:
