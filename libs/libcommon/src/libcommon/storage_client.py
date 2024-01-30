@@ -5,8 +5,8 @@ from typing import Any, Optional
 
 import fsspec
 
-from libcommon.cloudfront import CloudFront
-from libcommon.config import CloudFrontConfig, S3Config
+from libcommon.config import S3Config
+from libcommon.url_signer import URLSigner
 
 
 class StorageClientInitializeError(Exception):
@@ -18,12 +18,12 @@ class StorageClient:
     A resource that represents a connection to a storage client.
 
     Args:
-        protocol (:obj:`str`): The fsspec protocol (supported: "file" or "s3")
-        storage_root (:obj:`str`): The storage root path
-        base_url (:obj:`str`): The base url for the publicly distributed assets
-        overwrite (:obj:`bool`, `optional`, defaults to :obj:`False`): Whether to overwrite existing files
-        s3_config (:obj:`S3Config`, `optional`): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
-        cloudfront_config (:obj:`CloudFrontConfig`, `optional`): The CloudFront configuration to generate signed urls
+        protocol (`str`): The fsspec protocol (supported: "file" or "s3")
+        storage_root (`str`): The storage root path
+        base_url (`str`): The base url for the publicly distributed assets
+        overwrite (`bool`, *optional*, defaults to `False`): Whether to overwrite existing files
+        s3_config (`S3Config`, *optional*): The S3 configuration to connect to the storage client. Only needed if the protocol is "s3"
+        url_signer (`URLSigner`, *optional*): The url signer to use for signing urls
     """
 
     _fs: Any
@@ -31,7 +31,7 @@ class StorageClient:
     storage_root: str
     base_url: str
     overwrite: bool
-    cloudfront: Optional[CloudFront] = None
+    url_signer: Optional[URLSigner] = None
 
     def __init__(
         self,
@@ -40,13 +40,14 @@ class StorageClient:
         base_url: str,
         overwrite: bool = False,
         s3_config: Optional[S3Config] = None,
-        cloudfront_config: Optional[CloudFrontConfig] = None,
+        url_signer: Optional[URLSigner] = None,
     ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=} {base_url=} {overwrite=}")
         self.storage_root = storage_root
         self.protocol = protocol
         self.base_url = base_url
         self.overwrite = overwrite
+        self.url_signer = url_signer
         if protocol == "s3":
             if not s3_config:
                 raise StorageClientInitializeError("s3 config is required")
@@ -56,13 +57,6 @@ class StorageClient:
                 secret=s3_config.secret_access_key,
                 client_kwargs={"region_name": s3_config.region_name},
             )
-            if cloudfront_config and cloudfront_config.key_pair_id and cloudfront_config.private_key:
-                # ^ signed urls are enabled if the key pair id is passed in the configuration
-                self.cloudfront = CloudFront(
-                    key_pair_id=cloudfront_config.key_pair_id,
-                    private_key=cloudfront_config.private_key,
-                    expiration_seconds=cloudfront_config.expiration_seconds,
-                )
         elif protocol == "file":
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
         else:
@@ -92,8 +86,8 @@ class StorageClient:
         return url
 
     def sign_url_if_available(self, url: str) -> str:
-        if self.cloudfront:
-            url = self.cloudfront.sign_url(url=url)
+        if self.url_signer:
+            url = self.url_signer.sign_url(url=url)
             logging.debug(f"signed url: {url}")
         return url
 
@@ -106,4 +100,4 @@ class StorageClient:
             logging.warning(f"Could not delete directory {dataset_key}")
 
     def __repr__(self) -> str:
-        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), cloudfront={self.cloudfront})"
+        return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), url_signer={self.url_signer})"

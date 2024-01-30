@@ -41,6 +41,7 @@ def update_repo_settings(
     name: Optional[str] = None,
 ) -> Any:
     """Update the settings of a repository.
+
     Args:
         repo_id (`str`, *optional*):
             A namespace (user or an organization) and a repo name separated
@@ -48,25 +49,24 @@ def update_repo_settings(
             <Tip>
             Version added: 0.5
             </Tip>
-        private (`bool`, *optional*, defaults to `None`):
+        private (`bool`, *optional*):
             Whether the repo should be private.
-        gated (`str`, *optional*, defaults to `None`):
+        gated (`str`, *optional*):
             Whether the repo should request user access.
             Possible values are 'auto' and 'manual'
         token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model. Default is
-            `None`.
-    Returns:
-        The HTTP response in json.
-    <Tip>
-    Raises the following errors:
-        - [`~huggingface_hub.utils.RepositoryNotFoundError`]
+            space, `None` or `"model"` if uploading to a model.
+
+    Raises:
+        [~`huggingface_hub.utils.RepositoryNotFoundError`]
             If the repository to download from cannot be found. This may be because it doesn't exist,
             or because it is set to `private` and you do not have access.
-    </Tip>
+
+    Returns:
+        `Any`: The HTTP response in json.
     """
     if repo_type not in REPO_TYPES:
         raise ValueError("Invalid repo type")

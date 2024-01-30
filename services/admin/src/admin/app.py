@@ -51,14 +51,14 @@ def create_app() -> Starlette:
         storage_root=app_config.cached_assets.storage_root,
         base_url=app_config.cached_assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 

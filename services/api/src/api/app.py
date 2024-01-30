@@ -7,6 +7,7 @@ from libapi.jwt_token import get_jwt_public_keys
 from libapi.routes.healthcheck import healthcheck_endpoint
 from libapi.routes.metrics import create_metrics_endpoint
 from libapi.utils import EXPOSED_HEADERS
+from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.log import init_logging
 from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
@@ -60,15 +61,16 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
         storage_root=app_config.cached_assets.storage_root,
         base_url=app_config.cached_assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
 
+    url_signer = get_cloudfront_signer(cloudfront_config=app_config.cloudfront)
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls (YET - see  /first-rows)
+        url_signer=url_signer,
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
@@ -89,6 +91,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
+                assets_storage_client=assets_storage_client,
                 hf_jwt_public_keys=hf_jwt_public_keys,
                 hf_jwt_algorithm=app_config.api.hf_jwt_algorithm,
                 external_auth_url=app_config.api.external_auth_url,

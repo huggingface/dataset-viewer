@@ -35,10 +35,10 @@ def get_json_size(obj: Any) -> int:
     """Returns the size of an object in bytes once serialized as JSON
 
     Args:
-        obj (Any): the Python object
+        obj (`Any`) the Python object
 
     Returns:
-        int: the size of the serialized object in bytes
+        `int`: the size of the serialized object in bytes
     """
     return len(orjson_dumps(obj))
 
@@ -49,16 +49,33 @@ def utf8_lead_byte(b: int) -> bool:
     return (b & 0xC0) != 0x80
 
 
-def utf8_byte_truncate(text: str, max_bytes: int) -> str:
-    """If text[max_bytes] is not a lead byte, back up until a lead byte is
-    found and truncate before that character."""
-    utf8 = text.encode("utf8")
-    if len(utf8) <= max_bytes:
-        return text
+class SmallerThanMaxBytesError(Exception):
+    pass
+
+
+def serialize_and_truncate(obj: Any, max_bytes: int) -> str:
+    """
+    Serialize an object as JSON and truncate it if it's bigger than max_bytes.
+
+    Args:
+        obj (`Any`): the Python object (can be a primitive type, a list, a dict, etc.)
+        max_bytes (`int`): the maximum number of bytes.
+
+    Raises:
+        `SmallerThanMaxBytesError`: if the serialized object is smaller than max_bytes.
+
+    Returns:
+        `str`: the serialized object, truncated to max_bytes.
+    """
+    serialized_bytes = orjson_dumps(obj)
+    if len(serialized_bytes) <= max_bytes:
+        raise SmallerThanMaxBytesError()
+    # If text[max_bytes] is not a lead byte, back up until a lead byte is
+    # found and truncate before that character
     i = max_bytes
-    while i > 0 and not utf8_lead_byte(utf8[i]):
+    while i > 0 and not utf8_lead_byte(serialized_bytes[i]):
         i -= 1
-    return utf8[:i].decode("utf8", "ignore")
+    return serialized_bytes[:i].decode("utf8", "ignore")
 
 
 def get_datetime(days: Optional[float] = None) -> datetime:
@@ -113,10 +130,8 @@ def raise_if_blocked(
             to block all the datasets in the `open-llm-leaderboard` namespace. They are not allowed in
             the namespace name.
 
-    Returns:
-        `None`
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetInBlockListError`]
+    Raises:
+        [~`libcommon.exceptions.DatasetInBlockListError`]
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:

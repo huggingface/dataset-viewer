@@ -66,10 +66,10 @@ def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
     - 429: if the user is authenticated but the request is throttled
 
     Args:
-        request (WerkzeugRequest): the request sent to the endpoint
+        request (`WerkzeugRequest`): the request sent to the endpoint
 
     Returns:
-        WerkzeugResponse: the response sent by the endpoint
+        `WerkzeugResponse`: the response sent by the endpoint
     """
     dataset = request.path.split("/")[-2]
     if dataset == dataset_public:

@@ -146,10 +146,10 @@ def limit_to_one_dataset_per_namespace(datasets: list[str]) -> list[str]:
     The choice is arbitrary. The filtered list has no particular order.
 
     Args:
-        datasets (list[str]): The list of datasets to filter.
+        datasets (`list[str]`): The list of datasets to filter.
 
     Returns:
-        list[str]: The filtered list of datasets.
+        `list[str]`: The filtered list of datasets.
     """
     namespaces: set[str] = set()
     selected_datasets: list[str] = []

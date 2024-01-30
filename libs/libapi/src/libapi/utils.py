@@ -151,13 +151,15 @@ def get_cache_entry_from_steps(
     """Gets the cache from the first successful step in the processing steps list.
     If no successful result is found, it will return the last one even if it's an error,
     Checks if job is still in progress by each processing step in case of no entry found.
+
     Raises:
-        - [`~utils.ResponseNotFoundError`]
+        [~`utils.ResponseNotFoundError`]
           if no result is found.
-        - [`~utils.ResponseNotReadyError`]
+        [~`utils.ResponseNotReadyError`]
           if the response is not ready yet.
 
-    Returns: the cached record
+    Returns:
+        `CacheEntry`: the cached record
     """
     best_response = get_best_response(kinds=processing_step_names, dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:

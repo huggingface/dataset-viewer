@@ -6,15 +6,16 @@ from typing import Protocol
 
 from datasets import Audio, Features, Image
 
-from libcommon.dtos import Row, RowItem, RowsContent, SplitFirstRowsResponse
+from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     RowsPostProcessingError,
     TooBigContentError,
     TooManyColumnsError,
 )
 from libcommon.storage_client import StorageClient
-from libcommon.utils import get_json_size, orjson_dumps, utf8_byte_truncate
+from libcommon.utils import get_json_size
 from libcommon.viewer_utils.features import get_cell_value, to_features_list
+from libcommon.viewer_utils.truncate_rows import create_truncated_row_items
 
 
 def transform_rows(
@@ -45,111 +46,6 @@ def transform_rows(
     ]
 
 
-def to_row_item(row_idx: int, row: Row) -> RowItem:
-    return {
-        "row_idx": row_idx,
-        "row": row,
-        "truncated_cells": [],
-    }
-
-
-# Mutates row_item, and returns it anyway
-def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_untruncated: list[str]) -> RowItem:
-    row = {}
-    for column_name, cell in row_item["row"].items():
-        # for now: all the cells above min_cell_bytes are truncated to min_cell_bytes
-        # it's done by replacing the cell (which can have any type) by a string with
-        # its JSON serialization, and then truncating it to min_cell_bytes
-        cell_json = orjson_dumps(cell)
-        if len(cell_json) <= min_cell_bytes or column_name in columns_to_keep_untruncated:
-            row[column_name] = cell
-        else:
-            cell_json_str = cell_json.decode("utf8", "ignore")
-            row_item["truncated_cells"].append(column_name)
-            row[column_name] = utf8_byte_truncate(text=cell_json_str, max_bytes=min_cell_bytes)
-    row_item["row"] = row
-    # row_idx = row_item["row_idx"]
-    # logging.debug(f"the size of the rows is now ({rows_bytes}) after truncating row idx={row_idx}")
-    return row_item
-
-
-COMMA_SIZE = 1  # the comma "," is encoded with one byte in utf-8
-
-
-# Mutates row_items, and returns them anyway
-def truncate_row_items(
-    row_items: list[RowItem], min_cell_bytes: int, rows_max_bytes: int, columns_to_keep_untruncated: list[str]
-) -> list[RowItem]:
-    # compute the current size
-    rows_bytes = sum(get_json_size(row_item) for row_item in row_items) + COMMA_SIZE * (len(row_items) - 1)
-
-    # Loop backwards, so that the last rows are truncated first
-    for row_item in reversed(row_items):
-        if rows_bytes < rows_max_bytes:
-            break
-        previous_size = get_json_size(row_item) + COMMA_SIZE
-        row_item = truncate_row_item(
-            row_item=row_item, min_cell_bytes=min_cell_bytes, columns_to_keep_untruncated=columns_to_keep_untruncated
-        )
-        new_size = get_json_size(row_item) + COMMA_SIZE
-        rows_bytes += new_size - previous_size
-    return row_items
-
-
-def create_truncated_row_items(
-    rows: list[Row],
-    min_cell_bytes: int,
-    rows_max_bytes: int,
-    rows_min_number: int,
-    columns_to_keep_untruncated: list[str],
-) -> tuple[list[RowItem], bool]:
-    row_items = []
-    rows_bytes = 0
-
-    # two restrictions must be enforced:
-    # - at least rows_min_number rows
-    # - at most rows_max_bytes bytes. Note that it's the limit to the sum of the rows sizes. The JSON response size
-    #   will be greater, due to the other fields (row_idx, truncated_cells, features, etc.).
-    # To enforce this:
-    # 1. first get the first rows_min_number rows
-    for row_idx, row in enumerate(rows[:rows_min_number]):
-        row_item = to_row_item(row_idx=row_idx, row=row)
-        rows_bytes += get_json_size(row_item) + COMMA_SIZE
-        row_items.append(row_item)
-
-    # 2. if the total is over the bytes limit, truncate the values, iterating backwards starting
-    # from the last rows, until getting under the threshold
-    # caveat: the truncation might not be enough to get under the threshold if:
-    # - the number of columns is too high
-    # - rows_max_bytes is too low (or even negative)
-    if rows_bytes >= rows_max_bytes:
-        # logging.debug(
-        #     f"the size of the first {rows_min_number} rows ({rows_bytes}) is above the max number of bytes"
-        #     f" ({rows_max_bytes}), they will be truncated"
-        # )
-        truncated_row_items = truncate_row_items(
-            row_items=row_items,
-            min_cell_bytes=min_cell_bytes,
-            rows_max_bytes=rows_max_bytes,
-            columns_to_keep_untruncated=columns_to_keep_untruncated,
-        )
-        return truncated_row_items, len(truncated_row_items) < len(rows)
-
-    # 3. else: add the remaining rows until the end, or until the bytes threshold
-    for idx, row in enumerate(rows[rows_min_number:]):
-        row_idx = rows_min_number + idx
-        row_item = to_row_item(row_idx=row_idx, row=row)
-        rows_bytes += get_json_size(row_item) + COMMA_SIZE
-        if rows_bytes >= rows_max_bytes:
-            # logging.debug(
-            #     f"the rows in the split have been truncated to {row_idx} row(s) to keep the size"
-            #     f" ({rows_bytes}) under the limit ({rows_max_bytes})"
-            # )
-            break
-        row_items.append(row_item)
-    return row_items, len(row_items) < len(rows)
-
-
 class GetRowsContent(Protocol):
     def __call__(self, rows_max_number: int) -> RowsContent:
         ...
@@ -169,6 +65,47 @@ def create_first_rows_response(
     rows_min_number: int,
     columns_max_number: int,
 ) -> SplitFirstRowsResponse:
+    """
+    Create the response for the first rows of a split.
+
+    The response contains the features, and the first rows of the split, obtained by calling get_rows_content.
+    If the size of the response exceeds the maximum supported size or the maximum supported number of rows, the rows
+    are "truncated" to fit within the restrictions:
+    1. the last rows are removed, one by one, until the conditions are met.
+    2. if the minimim number of rows has been reached, the remaining rows are "truncated" (backwards) to fit within the
+         restrictions. For each row, the size of a each cell is computed as the size of its JSON serialization using
+        orjson_dumps(). If a cell has less than min_cell_bytes, it is not truncated. If it has more, it is serialized
+        to JSON and truncated to min_cell_bytes. The names of the truncated cells are listed in row_item["truncated_cells"].
+        The cells from columns with type Audio or Image are never truncated (only applies to top-level types, nested audio
+        files and images can be truncated).
+
+    If the size of the response still exceeds the maximum supported size, a TooBigContentError is raised.
+
+    Args:
+        dataset (`str`): the dataset name.
+        revision (`str`): the revision of the dataset.
+        config (`str`): the config name.
+        split (`str`): the split name.
+        storage_client (`StorageClient`): the storage client to use to store the assets (audio, images).
+        features (`Features`): the features to return in the response.
+        get_rows_content (`GetRowsContent`): a callable that returns the rows content.
+        min_cell_bytes (`int`): the minimum number of bytes for a cell, when truncation applies.
+        rows_max_bytes (`int`): the maximum number of bytes for the response.
+        rows_max_number (`int`): the maximum number of rows to return. The response will never contain more than this
+            number of rows.
+        rows_min_number (`int`): the minimum number of rows to return. The response will always contain at least this
+            number of rows (provided that get_rows_content returns at least this number of rows).
+        columns_max_number (`int`): the maximum number of columns to return. The response will never contain more than
+            this number of columns.
+
+    Raises:
+        `TooBigContentError`: if the size of the content of the first rows exceeds the maximum supported size.
+        `TooManyColumnsError`: if the number of columns exceeds the maximum supported number of columns.
+        `RowsPostProcessingError`: if there is an error while post-processing the rows.
+
+    Returns:
+        [`SplitFirstRowsResponse`]: the response for the first rows of the split.
+    """
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(
             f"The number of columns ({len(features)}) exceeds the maximum supported number of columns"

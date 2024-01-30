@@ -19,21 +19,24 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitNamesResponse, float]:
     """
-    Get the response of /splits for one specific dataset on huggingface.co
+    Get the response of 'dataset-split-names' for one specific dataset on huggingface.co
     computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
+
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+            If the the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+            If the content of the previous step has not the expected format
+
     Returns:
         `DatasetSplitNamesResponse`: An object with a list of split names for the dataset [splits],
-         a list of pending configs to be processed [pending] and the list of errors [failed] by config.
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-            If the content of the previous step has not the expected format
+            a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     """
-    logging.info(f"get dataset split names for dataset={dataset}")
+    logging.info(f"get 'dataset-split-names' for {dataset=}")
 
     # Get the config names from the previous steps
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)

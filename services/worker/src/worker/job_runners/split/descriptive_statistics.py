@@ -113,7 +113,7 @@ def generate_bins(
     when min = max (only one value observed in data). In this case, bin edges are [min, max].
 
     Returns:
-        List of bin edges of lengths <= n_bins + 1 and >= 2.
+        `list[Union[int, float]]`: List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
     if column_type is ColumnType.FLOAT:
         if min_value == max_value:
@@ -455,8 +455,9 @@ def compute_descriptive_statistics_response(
     max_parquet_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
-    Compute statistics and get response for the `split-descriptive-statistics` step.
+    Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
     Currently, integers, floats and ClassLabel features are supported.
+
     Args:
         dataset (`str`):
             Name of a dataset.
@@ -467,7 +468,7 @@ def compute_descriptive_statistics_response(
         local_parquet_directory (`Path`):
             Path to a local directory where the dataset's parquet files are stored. We download these files locally
             because it enables fast querying and statistics computation.
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
             The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
@@ -478,25 +479,25 @@ def compute_descriptive_statistics_response(
             The maximum size in bytes of the dataset's parquet files to compute statistics.
             Datasets with bigger size are ignored.
 
-    Returns:
-        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
-        numerical (int and float) or ClassLabel feature.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+    Raises:
+        [~`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step does not have the expected format.
-        - [`libcommon.exceptions.ParquetResponseEmptyError`]
+        [~`libcommon.exceptions.ParquetResponseEmptyError`]
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        - [`libcommon.exceptions.SplitWithTooBigParquetError`]
+        [~`libcommon.exceptions.SplitWithTooBigParquetError`]
             If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
-        - [`libcommon.exceptions.NoSupportedFeaturesError`]
+        [~`libcommon.exceptions.NoSupportedFeaturesError`]
             If requested dataset doesn't have any supported for statistics computation features.
             Currently, floats, integers and ClassLabels are supported.
-        - [`libcommon.exceptions.StatisticsComputationError`]
+        [~`libcommon.exceptions.StatisticsComputationError`]
             If there was some unexpected behaviour during statistics computation.
+
+    Returns:
+        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
+            numerical (int and float) or ClassLabel feature.
     """
 
-    logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
+    logging.info(f"get 'split-descriptive-statistics' for {dataset=} {config=} {split=}")
 
     config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(

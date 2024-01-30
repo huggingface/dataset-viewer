@@ -81,6 +81,11 @@ If you would like to work on any of the open Issues:
 
 Thank you for your contribution!
 
+## Python docstrings
+
+This projects follows [HuggingFace docstring guidelines](https://github.com/huggingface/doc-builder).
+
+
 ## Code of conduct
 
 This project adheres to the HuggingFace [code of conduct](CODE_OF_CONDUCT.md).

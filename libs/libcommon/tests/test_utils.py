@@ -12,12 +12,16 @@ import pytest
 
 from libcommon.exceptions import DatasetInBlockListError
 from libcommon.utils import (
+    SmallerThanMaxBytesError,
     get_expires,
     inputs_to_string,
     is_image_url,
     orjson_dumps,
     raise_if_blocked,
+    serialize_and_truncate,
 )
+
+from .constants import TEN_CHARS_TEXT
 
 
 @pytest.mark.parametrize(
@@ -102,3 +106,44 @@ def test_get_expires() -> None:
         assert date > mock_datetime.now(timezone.utc)
         assert date < mock_datetime.now(timezone.utc) + timedelta(hours=2)
     assert date == EXAMPLE_DATETIME
+
+
+FOUR_BYTES_UTF8 = "🤗"
+OBJ = {"a": 1, "b": 2}
+OBJ_SERIALIZED = '{"a":1,"b":2}'
+
+
+@pytest.mark.parametrize(
+    "obj,max_bytes,expected",
+    [
+        (TEN_CHARS_TEXT, 0, ""),
+        (TEN_CHARS_TEXT, 1, '"'),  # <- a serialized string gets a quote at the beginning
+        (TEN_CHARS_TEXT, 10, '"' + TEN_CHARS_TEXT[0:9]),
+        (TEN_CHARS_TEXT, 11, '"' + TEN_CHARS_TEXT),
+        (FOUR_BYTES_UTF8, 1, '"'),
+        (FOUR_BYTES_UTF8, 2, '"'),
+        (FOUR_BYTES_UTF8, 3, '"'),
+        (FOUR_BYTES_UTF8, 4, '"'),
+        (FOUR_BYTES_UTF8, 5, '"' + FOUR_BYTES_UTF8),
+        (OBJ, 0, ""),
+        (OBJ, 3, '{"a'),
+        (OBJ, 12, '{"a":1,"b":2'),
+    ],
+)
+def test_serialize_and_truncate_does_not_raise(obj: Any, max_bytes: int, expected: str) -> None:
+    assert serialize_and_truncate(obj=obj, max_bytes=max_bytes) == expected
+
+
+@pytest.mark.parametrize(
+    "obj,max_bytes",
+    [
+        (TEN_CHARS_TEXT, 12),
+        (TEN_CHARS_TEXT, 100),
+        (FOUR_BYTES_UTF8, 6),
+        (OBJ, 13),
+        (OBJ, 100),
+    ],
+)
+def test_serialize_and_truncate_raises(obj: Any, max_bytes: int) -> None:
+    with pytest.raises(SmallerThanMaxBytesError):
+        serialize_and_truncate(obj=obj, max_bytes=max_bytes)

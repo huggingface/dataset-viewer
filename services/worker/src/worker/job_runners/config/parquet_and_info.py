@@ -228,13 +228,10 @@ def raise_if_requires_manual_download(
         hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
 
-    Returns:
-        `None`
-
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
             If the datasets.config.HF_ENDPOINT is not set to the expected value.
-        [`libcommon.exceptions.DatasetManualDownloadError`]:
+        [~`libcommon.exceptions.DatasetManualDownloadError`]:
             If the dataset requires manual download.
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
@@ -271,7 +268,7 @@ def is_dataset_too_big(
             A dataset builder instance to check.
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
         revision (`str`):
             The git revision (e.g. "main" or sha) of the dataset
@@ -281,22 +278,24 @@ def is_dataset_too_big(
         max_external_data_files (`int`):
             The maximum number of external data files (i.e. not hosted on HF).
             If the dataset is under the limit (which means that the files can be fetched), it will be allowed.
+
+    Raises:
+        [~`libcommon.exceptions.UnsupportedExternalFilesError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        [~`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        [~`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        [~`libcommon.exceptions.ExternalFilesSizeRequestError`]
+          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
+        [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+          If the datasets.config.HF_ENDPOINT is not set to the expected value
+
     Returns:
         `ParquetResponseResult`: An object with the parquet_response
           (dataset and list of parquet files) and the dataset_git_revision (sha) if any.
-    Raises the following errors:
-        - [`libcommon.exceptions.UnsupportedExternalFilesError`]
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
-          If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-          If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
     if datasets.config.HF_ENDPOINT != hf_endpoint:
         raise ValueError(
@@ -449,7 +448,7 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
         ds_config_info (`datasets.info.DatasetInfo`):
             Dataset info from `datasets`.
     Returns:
-        writer_batch_size (`Optional[int]`):
+        `Optional[int]`:
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
@@ -482,8 +481,7 @@ def get_writer_batch_size_from_row_group_size(
             Maximum number of bytes of uncompressed data for batches that
             will be passed to a dataset builder.
     Returns:
-        writer_batch_size (`Optional[int]`):
-            Writer batch size to pass to a dataset builder.
+        `int`: Writer batch size to pass to a dataset builder.
     """
     writer_batch_size = max(num_rows // factor_of * factor_of, factor_of)
     writer_batch_byte_size = row_group_byte_size * writer_batch_size / num_rows
@@ -860,9 +858,9 @@ def create_commits(
         operations (`Iterable` of [`huggingface_hub.hf_api.CommitOperation`]):
             An iterable of operations to include in the commit, either:
 
-                - [`huggingface_hub.hf_api.CommitOperationAdd`] to upload a file
-                - [`huggingface_hub.hf_api.CommitOperationDelete`] to delete a file
-                - [`huggingface_hub.hf_api.CommitOperationCopy`] to copy a file
+                [~`huggingface_hub.hf_api.CommitOperationAdd`] to upload a file
+                [~`huggingface_hub.hf_api.CommitOperationDelete`] to delete a file
+                [~`huggingface_hub.hf_api.CommitOperationCopy`] to copy a file
         commit_message (`str`):
             The summary (first line) of the commit that will be created.
         commit_description (`str`, *optional*):
@@ -872,8 +870,7 @@ def create_commits(
             default to the stored token.
         repo_type (`str`, *optional*):
             Set to `"dataset"` or `"space"` if uploading to a dataset or
-            space, `None` or `"model"` if uploading to a model. Default is
-            `None`.
+            space, `None` or `"model"` if uploading to a model.
         revision (`str`, *optional*):
             The git revision to commit from. Defaults to the head of the `"main"` branch.
         parent_commit (`str`, *optional*):
@@ -885,22 +882,22 @@ def create_commits(
             if the repo is updated / committed to concurrently.
         max_operations_per_commit (`int`, *optional*):
             The max number of operations per commit, to avoid time out errors from the Hub. Defaults to 500.
+
+    Raises:
+        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+            If commit message is empty.
+            If parent commit is not a valid commit OID.
+            If the Hub API returns an HTTP 400 error (bad request)
+        [~`huggingface_hub.utils.RepositoryNotFoundError`]:
+            If repository is not found (error 404): wrong repo_id/repo_type, private
+            but not authenticated or repo does not exist.
+        [~`libcommon.exceptions.CreateCommitError`]:
+            If one of the commits could not be created on the Hub.
+
     Returns:
         [`list[huggingface_hub.CommitInfo]`]:
             List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
             url, pr url, commit message,...).
-    Raises:
-        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-            If commit message is empty.
-        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-            If parent commit is not a valid commit OID.
-        [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
-            If the Hub API returns an HTTP 400 error (bad request)
-        [`huggingface_hub.utils.RepositoryNotFoundError`]:
-            If repository is not found (error 404): wrong repo_id/repo_type, private
-            but not authenticated or repo does not exist.
-        [`libcommon.exceptions.CreateCommitError`]:
-            If one of the commits could not be created on the Hub.
     """
     commit_infos: list[CommitInfo] = []
     offsets = range(0, len(operations), max_operations_per_commit)
@@ -990,10 +987,7 @@ def commit_parquet_conversion(
             The summary (first line) of the commit that will be created.
         target_revision (`str`, *optional*):
             The git revision to commit from. Defaults to the head of the `"main"` branch.
-    Returns:
-        [`list[huggingface_hub.CommitInfo]`]:
-            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
-            url, pr url, commit message,...).
+
     Raises:
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If commit message is empty.
@@ -1001,11 +995,16 @@ def commit_parquet_conversion(
             If parent commit is not a valid commit OID.
         [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the Hub API returns an HTTP 400 error (bad request)
-        [`huggingface_hub.utils.RepositoryNotFoundError`]:
+        [~`huggingface_hub.utils.RepositoryNotFoundError`]:
             If repository is not found (error 404): wrong repo_id/repo_type, private
             but not authenticated or repo does not exist.
-        [`libcommon.exceptions.CreateCommitError`]:
+        [~`libcommon.exceptions.CreateCommitError`]:
             If one of the commits could not be created on the Hub.
+
+    Returns:
+        [`list[huggingface_hub.CommitInfo]`]:
+            List of [`CommitInfo`] containing information about the newly created commit (commit hash, commit
+            url, pr url, commit message,...).
     """
     target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
     all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
@@ -1040,8 +1039,8 @@ def compute_config_parquet_and_info_response(
     dataset_scripts_allow_list: list[str],
 ) -> ConfigParquetAndInfoResponse:
     """
-    Get the response of config-parquet-and-info for one specific dataset and config on huggingface.co.
-    It is assumed that the dataset can be accessed with the token.
+    Get the response of 'config-parquet-and-info' for one specific dataset and config on huggingface.co.
+
     Args:
         job_id (`str`):
             The id of the current Job. It is used to lock the access to the parquet conversion branch on the Hub.
@@ -1052,9 +1051,9 @@ def compute_config_parquet_and_info_response(
             Dataset configuration name
         hf_endpoint (`str`):
             The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
-        committer_hf_token (`str`, `optional`):
+        committer_hf_token (`str`, *optional*):
             An app authentication token with write access. It must be part of the `datasets-maintainers`
               organization (to create the refs/convert/parquet "branch" and push to it)
         source_revision (`str`):
@@ -1077,52 +1076,50 @@ def compute_config_parquet_and_info_response(
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-    Returns:
-        `ConfigParquetAndInfoResponse`: An object with the config_parquet_and_info_response
-          (dataset info and list of parquet files).
-    Raises the following errors:
-        - [`libcommon.exceptions.DatasetNotFoundError`]:
+
+    Raises:
+        [~`libcommon.exceptions.DatasetNotFoundError`]:
           if the dataset does not exist, or if the token does not give the sufficient access to the dataset,
-        - ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
+        ['requests.exceptions.HTTPError'](https://requests.readthedocs.io/en/latest/api/#requests.HTTPError)
           any other error when asking access
-        - [`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]
             If the previous step gave an error.
-        - [`libcommon.exceptions.CreateCommitError`]:
+        [~`libcommon.exceptions.CreateCommitError`]:
           If one of the commits could not be created on the Hub.
-        - [`libcommon.exceptions.DatasetManualDownloadError`]:
+        [~`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        - [`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
+        [~`libcommon.exceptions.DatasetTooBigFromDatasetsError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the configs
           sizes given by the datasets library.
-        - [`libcommon.exceptions.DatasetTooBigFromHubError`]
+        [~`libcommon.exceptions.DatasetTooBigFromHubError`]
           If the dataset is too big to be converted to parquet, as measured by the sum of the repository
           files sizes given by the Hub.
-        - [`libcommon.exceptions.EmptyDatasetError`]
+        [~`libcommon.exceptions.EmptyDatasetError`]
           The dataset is empty.
-        - [`libcommon.exceptions.ConfigNamesError`]
+        [~`libcommon.exceptions.ConfigNamesError`]
           If the list of configurations could not be obtained using the datasets library.
-        - [`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
+        [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]
             If the dataset has too many external files to be converted to parquet
-        - [`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
+        [~`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]
             If the dataset is too big external files be converted to parquet
-        - [`libcommon.exceptions.UnsupportedExternalFilesError`]
+        [~`libcommon.exceptions.UnsupportedExternalFilesError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
+        [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
+        [~`libcommon.exceptions.ExternalFilesSizeRequestConnectionError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
+        [~`libcommon.exceptions.ExternalFilesSizeRequestTimeoutError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.ExternalFilesSizeRequestError`]
+        [~`libcommon.exceptions.ExternalFilesSizeRequestError`]
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
             If the dataset has a dataset script and is not in the allow list.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]
             If the content of the previous step has not the expected format
-        - [`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
+        [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError)
             If the datasets.config.HF_ENDPOINT is not set to the expected value
     """
-    logging.info(f"get parquet files and dataset info for {dataset=} {config=}")
+    logging.info(f"get 'config-parquet-and-info' for {dataset=} {config=}")
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"

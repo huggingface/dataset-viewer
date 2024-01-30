@@ -18,17 +18,17 @@ async def auth_check(
     """check if the user is member of the organization
 
     Args:
-        external_auth_url (str | None): the URL of an external authentication service. If None, the dataset is always
+        external_auth_url (`str`, *optional*): the URL of an external authentication service. If None, the dataset is always
           authorized.
-        request (Request | None): the request which optionally bears authentication headers: "cookie" or
+        request (`Request`, *optional*): the request which optionally bears authentication headers: "cookie" or
           "authorization"
-        organization (str | None): the organization name. If None, the dataset is always
+        organization (`str`, *optional*): the organization name. If None, the dataset is always
           authorized.
-        hf_timeout_seconds (float | None): the timeout in seconds for the HTTP request to the external authentication
+        hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the HTTP request to the external authentication
           service.
 
     Returns:
-        None: the user is authorized
+        `Literal[True]`: the user is authorized
     """
     if organization is None or external_auth_url is None:
         return True

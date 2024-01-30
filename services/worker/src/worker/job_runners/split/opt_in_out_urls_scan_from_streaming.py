@@ -102,8 +102,8 @@ def compute_opt_in_out_urls_scan_response(
     dataset_scripts_allow_list: list[str],
 ) -> OptInOutUrlsScanResponse:
     """
-    Get the response of split-opt-in-out-urls-scan cache for a specific split of a dataset from huggingface.co.
-    The response is not used directly in the API but it is an input for config-opt-in-out-urls-scan processing step.
+    Get the response of 'split-opt-in-out-urls-scan' cache for a specific split of a dataset from huggingface.co.
+    The response is not used directly in the API but it is an input for 'config-opt-in-out-urls-scan' processing step.
     Note that only image URLs are scanned, see image_url_columns.py for details about the detection heuristic.
 
     Args:
@@ -114,7 +114,7 @@ def compute_opt_in_out_urls_scan_response(
             A configuration name.
         split (`str`):
             A split name.
-        hf_token (`str` or `None`):
+        hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
         rows_max_number (`int`):
             The maximum number of rows of the response.
@@ -122,7 +122,7 @@ def compute_opt_in_out_urls_scan_response(
             The maximum number of supported columns.
         urls_number_per_batch (`int`):
             The number of batch URLs to be sent to spawning service.
-        spawning_token (`str` or `None`):
+        spawning_token (`str`, *optional*):
             An authentication token to use spawning service (See https://api.spawning.ai/spawning-api)
         max_concurrent_requests_number (`int`):
             The maximum number of requests to be processed concurrently.
@@ -136,25 +136,26 @@ def compute_opt_in_out_urls_scan_response(
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
 
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]
+          If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.InfoError`]
+          If the config info could not be obtained using the datasets library.
+        [~`libcommon.exceptions.TooManyColumnsError`]
+          If the number of columns (features) exceeds the maximum supported number of columns.
+        [~`libcommon.exceptions.StreamingRowsError`]
+          If the split rows could not be obtained using the datasets library in streaming mode.
+        [~`libcommon.exceptions.NormalRowsError`]
+          If the split rows could not be obtained using the datasets library in normal mode.
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+            If the dataset has a dataset script and is not in the allow list.
+
     Returns:
         [`OptInOutUrlsScanResponse`]
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-          If the content of the previous step has not the expected format
-        - [`libcommon.exceptions.InfoError`]
-          If the config info could not be obtained using the datasets library.
-        - [`libcommon.exceptions.TooManyColumnsError`]
-          If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`libcommon.exceptions.StreamingRowsError`]
-          If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`libcommon.exceptions.NormalRowsError`]
-          If the split rows could not be obtained using the datasets library in normal mode.
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
-            If the dataset has a dataset script and is not in the allow list.
     """
-    logging.info(f"get opt-in-out-urls-scan for dataset={dataset} config={config} split={split}")
+    logging.info(f"get 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     if not spawning_token:

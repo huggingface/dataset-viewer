@@ -120,7 +120,7 @@ def compute_index_rows(
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
 ) -> SplitDuckdbIndex:
-    logging.info(f"get split-duckdb-index for dataset={dataset} config={config} split={split}")
+    logging.info(f"get split-duckdb-index for {dataset=} {config=} {split=}")
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
