@@ -42,7 +42,7 @@ class EntityInfo:
         is_pro (`bool`, *optional*):
             Is the entity a pro user.
         is_enterprise (`bool`, *optional*):
-            Is the entity an enterprise organization.
+            Is the entity an Enterprise Hub organization.
     """
 
     is_pro: Optional[bool]
@@ -153,7 +153,7 @@ def get_latest_dataset_revision_if_supported_or_raise(
         )
         if (not entity_info.is_pro) and (not entity_info.is_enterprise):
             raise NotSupportedPrivateRepositoryError(
-                f"Not supported: dataset repository {dataset} is private. Private datasets are only supported for pro users and enterprise organizations."
+                f"Not supported: dataset repository {dataset} is private. Private datasets are only supported for PRO users and Enterprise Hub organizations."
             )
     if dataset_info.cardData and not dataset_info.cardData.get("viewer", True):
         raise NotSupportedDisabledViewerError(f"Not supported: dataset viewer is disabled in {dataset} configuration.")
