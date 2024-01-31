@@ -1337,20 +1337,6 @@
           "error": "Parameter 'dataset' is required"
         }
       },
-      "MissingDatasetConfigParameterError": {
-        "summary": "One of the dataset or config parameters is missing.",
-        "description": "try without setting ?dataset",
-        "value": {
-          "error": "Parameters 'dataset' and 'config' are required"
-        }
-      },
-      "EmptyDatasetConfigParameterError": {
-        "summary": "One of the dataset or config parameters is empty.",
-        "description": "try with ?dataset=",
-        "value": {
-          "error": "Parameters 'dataset' and 'config' are required"
-        }
-      },
       "MissingDatasetConfigSplitParameterError": {
         "summary": "One of the dataset, config or split parameters is missing.",
         "description": "try without setting ?dataset",
@@ -1363,13 +1349,6 @@
         "description": "try with ?dataset=",
         "value": {
           "error": "Parameters 'dataset', 'config' and 'split' are required"
-        }
-      },
-      "UnsupportedProcessingStepsDatasetConfigSplitParameterError": {
-        "summary": "None of the processing steps is supported for dataset, config or split parameters.",
-        "description": "",
-        "value": {
-          "error": "No processing steps supported for parameters"
         }
       },
       "ResponseNotReadyError": {
@@ -1616,35 +1595,6 @@
               },
               "inexistent config": {
                 "$ref": "#/components/examples/InexistentConfigError"
-              }
-            }
-          }
-        }
-      },
-      "DatasetConfig422": {
-        "description": "Some of the 'dataset' or 'config' parameters have not been provided or are invalid.",
-        "headers": {
-          "Cache-Control": {
-            "$ref": "#/components/headers/Cache-Control"
-          },
-          "Access-Control-Allow-Origin": {
-            "$ref": "#/components/headers/Access-Control-Allow-Origin"
-          },
-          "X-Error-Code": {
-            "$ref": "#/components/headers/X-Error-Code-422"
-          }
-        },
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/CustomError"
-            },
-            "examples": {
-              "missing required parameter": {
-                "$ref": "#/components/examples/MissingDatasetConfigParameterError"
-              },
-              "empty required parameter": {
-                "$ref": "#/components/examples/EmptyDatasetConfigParameterError"
               }
             }
           }
