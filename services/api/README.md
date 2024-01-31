@@ -1,6 +1,6 @@
 # Datasets server API
 
-> API on 🤗 datasets
+> API for HugginFace 🤗 datasets viewer
 
 ## Configuration
 
@@ -21,7 +21,10 @@ See https://huggingface.co/docs/datasets-server
 - /healthcheck: Ensure the app is running
 - /metrics: Return a list of metrics in the Prometheus format
 - /webhook: Add, update or remove a dataset
+- /croissant:: #Andrea-TODO: Document
 - /is-valid: Tell if a dataset is [valid](https://huggingface.co/docs/datasets-server/valid)
 - /splits: List the [splits](https://huggingface.co/docs/datasets-server/splits) names for a dataset
 - /first-rows: Extract the [first rows](https://huggingface.co/docs/datasets-server/first_rows) for a dataset split
 - /parquet: List the [parquet files](https://huggingface.co/docs/datasets-server/parquet) auto-converted for a dataset
+- /opt-in-out-urls: #Andrea-TODO: Document
+- /statistics: #Andrea-TODO: Document

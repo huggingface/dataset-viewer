@@ -1,6 +1,38 @@
 # Datasets server - worker
 
-> Workers that pre-compute and cache the response to /splits, /first-rows, /parquet, /info and /size.
+> Workers that pre-compute and cache the response for each of the processing steps.
+
+[Processing steps](https://github.com/huggingface/datasets-server/wiki/Glossary#processing-step)  
+
+| Step name      | Description | Source |
+| ----------- | ----------- |----------- |
+| dataset-config-names      |        |      Datasets Library    |
+| config-split-names-from-streaming   |         | Datasets Library         |
+| split-first-rows-from-streaming   |         |   Datasets Library       |
+| config-parquet-and-info   |         |    Datasets Library      |
+| config-parquet   |         |    config-parquet-and-info      |
+| config-parquet-metadata   |         |          |
+| split-first-rows-from-parquet   |         |    config-parquet-and-info      |
+| dataset-parquet   |         |          |
+| config-info   |         |          |
+| dataset-info   |         |          |
+| config-split-names-from-info   |               |    |
+| config-size   |         |          |
+| dataset-size   |         |          |
+| dataset-split-names   |         |          |
+| split-descriptive-statistics   |         |          |
+| split-is-valid   |         |          |
+| config-is-valid   |         |          |
+| dataset-is-valid   |         |          |
+| split-image-url-columns   |         |          |
+| split-opt-in-out-urls-scan   |         |          |
+| split-opt-in-out-urls-count   |         |          |
+| config-opt-in-out-urls-count   |         |          |
+| dataset-opt-in-out-urls-count   |         |          |
+| split-duckdb-index   |         |          |
+| config-duckdb-index-size   |         |          |
+| dataset-duckdb-index-size   |         |          |
+| dataset-hub-cache   |         |          |
 
 ## Configuration
 

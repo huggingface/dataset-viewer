@@ -1,10 +1,10 @@
-# Datasets server admin machine
+# Datasets server admin service
 
 > Admin endpoints
 
 ## Configuration
 
-The worker can be configured using environment variables. They are grouped by scope.
+The service can be configured using environment variables. They are grouped by scope.
 
 ### Admin service
 
@@ -29,6 +29,12 @@ The following environment variables are used to configure the Uvicorn server (`A
 
 - `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
+### Storage
+# Andrea-TODO: Document
+- DATASETS_BASED_HF_DATASETS_CACHE
+- DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
+- DUCKDB_INDEX_CACHE_DIRECTORY
+
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.
@@ -37,15 +43,20 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more in
 
 The admin service provides endpoints:
 
-- `/healthcheck`
+- `/healthcheck`: ensure the app is running
 - `/metrics`: give info about the cache and the queue
-- `/cache-reports{processing_step}`: give detailed reports on the content of the cache for a processing step
-- `/cache-reports-with-content{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy
 - `/pending-jobs`: give the pending jobs, classed by queue and status (waiting or started)
+- `/dataset-status`: # Andrea-TODO: document
+- `/num-dataset-infos-by-builder-name`: # Andrea-TODO: document
+- `/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
+  - `dataset`: the dataset name
+  - `priority`: `low` (default), `normal` or `high`
+
+### Endpoints by processing step
+
 - `/force-refresh{processing_step}`: force refresh cache entries for the processing step. It's a POST endpoint. Pass the requested parameters, depending on the processing step's input type:
   - `dataset`: `?dataset={dataset}`
   - `config`: `?dataset={dataset}&config={config}`
   - `split`: `?dataset={dataset}&config={config}&split={split}`
-- `/recreate-dataset`: deletes all the cache entries related to a specific dataset, then run all the steps in order. It's a POST endpoint. Pass the requested parameters:
-  - `dataset`: the dataset name
-  - `priority`: `low` (default), `normal` or `high`
+- `/cache-reports{processing_step}`: give detailed reports on the content of the cache for a processing step
+- `/cache-reports-with-content{processing_step}`: give detailed reports on the content of the cache for a processing step, including the content itself, which can be heavy

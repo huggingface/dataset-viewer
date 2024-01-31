@@ -64,3 +64,11 @@ Set environment variables to configure the connection to S3.
 - `S3_REGION_NAME`: bucket region name when using `s3` as storage protocol for assets or cached assets. Defaults to `us-east-1`.
 - `S3_ACCESS_KEY_ID`: unique identifier associated with an AWS account. It's used to identify the AWS account that is making requests to S3. Defaults to empty.
 - `S3_SECRET_ACCESS_KEY`: secret key associated with an AWS account. Defaults to empty.
+
+## Parquet Metadata
+# Andrea-TODO Document
+- `PARQUET_METADATA_STORAGE_DIRECTORY`:
+
+## Rows Index
+# Andrea-TODO Document
+- `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`:

@@ -19,11 +19,11 @@ It takes various environment variables, all of them are mandatory:
 - `OPENAPI_FILE`: the path to the OpenAPI file, eg `docs/source/openapi.json`
 - `HOST`: domain of the reverse proxy, eg `localhost`
 - `PORT`: port of the reverse proxy, eg `80`
-- `URL_ADMIN`= URL of the admin, eg `http://admin:8081`
-- `URL_API`= URL of the API, eg `http://api:8080`
-- `URL_ROWS`= URL of the rows service, eg `http://rows:8082`
-- `URL_SEARCH`= URL of the search service, eg `http://search:8083`
-- `URL_SSE_API`= URL of the SSE API service, eg `http://sse-api:8085`
+- `URL_ADMIN`: URL of the admin, eg `http://admin:8081`
+- `URL_API`: URL of the API, eg `http://api:8080`
+- `URL_ROWS`: URL of the rows service, eg `http://rows:8082`
+- `URL_SEARCH`: URL of the search service, eg `http://search:8083`
+- `URL_SSE_API`: URL of the SSE API service, eg `http://sse-api:8085`
 
 The image requires three directories to be mounted (from volumes):
 
