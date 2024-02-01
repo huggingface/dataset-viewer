@@ -31,9 +31,9 @@ poetry run python app.py
 To connect to your local DEV endpoint:
 
 ```
-DEV=1 HF_TOKEN=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 poetry run python app.py
+DEV=1 HF_TOKEN=hf_... poetry run python app.py
 ```
 or to enable auto reloading:
 ```
-DEV=1 HF_TOKEN=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 poetry run gradio app.py
+DEV=1 HF_TOKEN=hf_... poetry run gradio app.py
 ```
