@@ -170,10 +170,10 @@ with gr.Blocks() as demo:
             with gr.Tab("Dataset status"):
                 dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 dataset_status_button = gr.Button("Get dataset status")
-                gr.Markdown("### Cached responses")
-                cached_responses_table = gr.DataFrame()
                 gr.Markdown("### Pending jobs")
                 jobs_table = gr.DataFrame()
+                gr.Markdown("### Cached responses")
+                cached_responses_table = gr.DataFrame()
             with gr.Tab("Processing graph"):
                 gr.Markdown(
                     "## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫"
