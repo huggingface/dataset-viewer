@@ -1,24 +1,26 @@
+import json
 import os
 import urllib.parse
 from itertools import product
 
-import pandas as pd
-import requests
+import duckdb
 import gradio as gr
-from libcommon.processing_graph import processing_graph
+import huggingface_hub as hfh
 import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
-import huggingface_hub as hfh
-import duckdb
-import json
+import pandas as pd
+import requests
+from libcommon.processing_graph import processing_graph
 from tqdm.contrib.concurrent import thread_map
 
-matplotlib.use('SVG')
+matplotlib.use("SVG")
 
 DEV = os.environ.get("DEV", False)
 HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
-PROD_DSS_ENDPOINT = os.environ.get("PROD_DSS_ENDPOINT", "https://datasets-server.huggingface.co")
+PROD_DSS_ENDPOINT = os.environ.get(
+    "PROD_DSS_ENDPOINT", "https://datasets-server.huggingface.co"
+)
 DEV_DSS_ENDPOINT = os.environ.get("DEV_DSS_ENDPOINT", "http://localhost:8100")
 ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "huggingface")
 HF_TOKEN = os.environ.get("HF_TOKEN")
@@ -27,6 +29,7 @@ DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
 
 pending_jobs_df = None
+
 
 def healthcheck():
     try:
@@ -55,24 +58,63 @@ with gr.Blocks() as demo:
 
     with gr.Row(visible=HF_TOKEN is None) as auth_page:
         with gr.Column():
-            auth_title = gr.Markdown("Enter your token ([settings](https://huggingface.co/settings/tokens)):")
-            token_box = gr.Textbox(HF_TOKEN or "", label="token", placeholder="hf_xxx", type="password")
+            auth_title = gr.Markdown(
+                "Enter your token ([settings](https://huggingface.co/settings/tokens)):"
+            )
+            token_box = gr.Textbox(
+                HF_TOKEN or "", label="token", placeholder="hf_xxx", type="password"
+            )
             auth_error = gr.Markdown("", visible=False)
-    
+
     with gr.Row(visible=HF_TOKEN is not None) as main_page:
         with gr.Column():
             welcome_title = gr.Markdown("### Welcome")
             with gr.Tab("Home dashboard"):
                 home_dashboard_fetch_button = gr.Button("Fetch")
                 gr.Markdown("### Dataset infos")
-                home_dashboard_trending_datasets_infos_by_builder_name_table = gr.DataFrame(pd.DataFrame({"Builder name": [], "Count": [], r"% of all datasets with infos": [], r"% of all public datasets": []}))
+                home_dashboard_trending_datasets_infos_by_builder_name_table = (
+                    gr.DataFrame(
+                        pd.DataFrame(
+                            {
+                                "Builder name": [],
+                                "Count": [],
+                                r"% of all datasets with infos": [],
+                                r"% of all public datasets": [],
+                            }
+                        )
+                    )
+                )
                 gr.Markdown("### Trending datasets coverage (is-valid)")
-                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(pd.DataFrame({"Num trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
-                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(pd.DataFrame({"All trending datasets": [], "HTTP Status": [], "Preview": [], "Viewer": [], "Search": [], "Filter": []}))
+                home_dashboard_trending_datasets_coverage_stats_table = gr.DataFrame(
+                    pd.DataFrame(
+                        {
+                            "Num trending datasets": [],
+                            "HTTP Status": [],
+                            "Preview": [],
+                            "Viewer": [],
+                            "Search": [],
+                            "Filter": [],
+                        }
+                    )
+                )
+                home_dashboard_trending_datasets_coverage_table = gr.DataFrame(
+                    pd.DataFrame(
+                        {
+                            "All trending datasets": [],
+                            "HTTP Status": [],
+                            "Preview": [],
+                            "Viewer": [],
+                            "Search": [],
+                            "Filter": [],
+                        }
+                    )
+                )
             with gr.Tab("View pending jobs"):
                 fetch_pending_jobs_button = gr.Button("Fetch pending jobs")
                 gr.Markdown("### Pending jobs summary")
-                pending_jobs_summary_table = gr.DataFrame(pd.DataFrame({"Jobs": [], "Waiting": [], "Started": []}))
+                pending_jobs_summary_table = gr.DataFrame(
+                    pd.DataFrame({"Jobs": [], "Waiting": [], "Started": []})
+                )
                 gr.Markdown("### Most recent")
                 recent_pending_jobs_table = gr.DataFrame()
                 gr.Markdown("### Query the pending jobs table")
@@ -85,31 +127,60 @@ with gr.Blocks() as demo:
                 query_pending_jobs_button = gr.Button("Run")
                 pending_jobs_query_result_df = gr.DataFrame()
             with gr.Tab("Refresh dataset step"):
-                job_types = [processing_step.job_type for processing_step in processing_graph.get_topologically_ordered_processing_steps()]
-                refresh_type = gr.Dropdown(job_types, multiselect=False, label="job type", value=job_types[0])
+                job_types = [
+                    processing_step.job_type
+                    for processing_step in processing_graph.get_topologically_ordered_processing_steps()
+                ]
+                refresh_type = gr.Dropdown(
+                    job_types, multiselect=False, label="job type", value=job_types[0]
+                )
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
-                refresh_config_name = gr.Textbox(label="config (optional)", placeholder="en")
-                refresh_split_name = gr.Textbox(label="split (optional)", placeholder="train, test")
-                gr.Markdown("*you can select multiple values by separating them with commas, e.g. split='train, test'*")
-                refresh_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
+                refresh_config_name = gr.Textbox(
+                    label="config (optional)", placeholder="en"
+                )
+                refresh_split_name = gr.Textbox(
+                    label="split (optional)", placeholder="train, test"
+                )
+                gr.Markdown(
+                    "*you can select multiple values by separating them with commas, e.g. split='train, test'*"
+                )
+                refresh_priority = gr.Dropdown(
+                    ["low", "normal", "high"],
+                    multiselect=False,
+                    label="priority",
+                    value="high",
+                )
                 refresh_dataset_button = gr.Button("Force refresh dataset")
                 refresh_dataset_output = gr.Markdown("")
             with gr.Tab("Recreate dataset"):
-                delete_and_recreate_dataset_name = gr.Textbox(label="dataset", placeholder="imdb")
-                delete_and_recreate_priority = gr.Dropdown(["low", "normal", "high"], multiselect=False, label="priority", value="high")
-                gr.Markdown("Beware: this will delete all the jobs, cache entries and assets for the dataset (for all the revisions). The dataset viewer will be unavailable until the cache is rebuilt.")
+                delete_and_recreate_dataset_name = gr.Textbox(
+                    label="dataset", placeholder="imdb"
+                )
+                delete_and_recreate_priority = gr.Dropdown(
+                    ["low", "normal", "high"],
+                    multiselect=False,
+                    label="priority",
+                    value="high",
+                )
+                gr.Markdown(
+                    "Beware: this will delete all the jobs, cache entries and assets for the dataset (for all the revisions). The dataset viewer will be unavailable until the cache is rebuilt."
+                )
                 delete_and_recreate_dataset_button = gr.Button("Delete and recreate")
                 delete_and_recreate_dataset_output = gr.Markdown("")
             with gr.Tab("Dataset status"):
                 dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 dataset_status_button = gr.Button("Get dataset status")
-                gr.Markdown("### Cached responses")
-                cached_responses_table = gr.DataFrame()
                 gr.Markdown("### Pending jobs")
                 jobs_table = gr.DataFrame()
+                gr.Markdown("### Cached responses")
+                cached_responses_table = gr.DataFrame()
             with gr.Tab("Processing graph"):
-                gr.Markdown("## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫")
-                gr.Markdown("### so that we get the 🚀 production 🚀 version of the graph here ")
+                gr.Markdown(
+                    "## 💫 Please, don't forget to rebuild (factory reboot) this space immediately after each deploy 💫"
+                )
+                gr.Markdown(
+                    "### so that we get the 🚀 production 🚀 version of the graph here "
+                )
                 with gr.Row():
                     width = gr.Slider(1, 30, 19, step=1, label="Width")
                     height = gr.Slider(1, 30, 15, step=1, label="Height")
@@ -129,46 +200,93 @@ with gr.Blocks() as demo:
             return {
                 auth_page: gr.update(visible=False),
                 welcome_title: gr.update(value=f"### Welcome {user['name']}"),
-                main_page: gr.update(visible=True)
+                main_page: gr.update(visible=True),
             }
         else:
             return {
-                auth_error: gr.update(value=f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')")
+                auth_error: gr.update(
+                    value=f"❌ Unauthorized (user '{user['name']} is not a member of '{ADMIN_HF_ORGANIZATION}')"
+                )
             }
-    
+
     def fetch_home_dashboard(token):
         out = {
-            home_dashboard_trending_datasets_infos_by_builder_name_table: gr.update(value=None),
-            home_dashboard_trending_datasets_coverage_stats_table: gr.update(value=None),
+            home_dashboard_trending_datasets_infos_by_builder_name_table: gr.update(
+                value=None
+            ),
+            home_dashboard_trending_datasets_coverage_stats_table: gr.update(
+                value=None
+            ),
             home_dashboard_trending_datasets_coverage_table: gr.update(value=None),
         }
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{DSS_ENDPOINT}/admin/num-dataset-infos-by-builder-name", headers=headers, timeout=60)
+        response = requests.get(
+            f"{DSS_ENDPOINT}/admin/num-dataset-infos-by-builder-name",
+            headers=headers,
+            timeout=60,
+        )
         if response.status_code == 200:
             num_infos_by_builder_name = response.json()
             total_num_infos = sum(num_infos_by_builder_name.values())
-            num_public_datasets = sum(1 for _ in hfh.HfApi(endpoint=HF_ENDPOINT).list_datasets())
-            out[home_dashboard_trending_datasets_infos_by_builder_name_table] = gr.update(visible=True, value=pd.DataFrame({
-                "Builder name": list(num_infos_by_builder_name.keys()),
-                "Count": list(num_infos_by_builder_name.values()),
-                r"% of all datasets with infos": [f"{round(100 * num_infos / total_num_infos, 2)}%"  for num_infos in num_infos_by_builder_name.values()],
-                r"% of all public datasets": [f"{round(100 * num_infos / num_public_datasets, 2)}%"  for num_infos in num_infos_by_builder_name.values()],
-            }))
+            num_public_datasets = sum(
+                1 for _ in hfh.HfApi(endpoint=HF_ENDPOINT).list_datasets()
+            )
+            out[
+                home_dashboard_trending_datasets_infos_by_builder_name_table
+            ] = gr.update(
+                visible=True,
+                value=pd.DataFrame(
+                    {
+                        "Builder name": list(num_infos_by_builder_name.keys()),
+                        "Count": list(num_infos_by_builder_name.values()),
+                        r"% of all datasets with infos": [
+                            f"{round(100 * num_infos / total_num_infos, 2)}%"
+                            for num_infos in num_infos_by_builder_name.values()
+                        ],
+                        r"% of all public datasets": [
+                            f"{round(100 * num_infos / num_public_datasets, 2)}%"
+                            for num_infos in num_infos_by_builder_name.values()
+                        ],
+                    }
+                ),
+            )
         else:
-            out[home_dashboard_trending_datasets_infos_by_builder_name_table] = gr.update(visible=True, value=pd.DataFrame({
-                "Error": [f"❌ Failed to fetch dataset infos from {DSS_ENDPOINT} (error {response.status_code})"]
-            }))
-        response = requests.get(f"{HF_ENDPOINT}/api/trending?type=dataset&limit=20", timeout=60)
+            out[
+                home_dashboard_trending_datasets_infos_by_builder_name_table
+            ] = gr.update(
+                visible=True,
+                value=pd.DataFrame(
+                    {
+                        "Error": [
+                            f"❌ Failed to fetch dataset infos from {DSS_ENDPOINT} (error {response.status_code})"
+                        ]
+                    }
+                ),
+            )
+        response = requests.get(
+            f"{HF_ENDPOINT}/api/trending?type=dataset&limit=20", timeout=60
+        )
         if response.status_code == 200:
-            trending_datasets = [repo_info["repoData"]["id"] for repo_info in response.json()["recentlyTrending"]]
+            trending_datasets = [
+                repo_info["repoData"]["id"]
+                for repo_info in response.json()["recentlyTrending"]
+            ]
 
             def get_is_valid_response(dataset: str):
-                return requests.get(f"{DSS_ENDPOINT}/is-valid?dataset={dataset}", headers=headers, timeout=60)
-    
-            is_valid_responses = thread_map(get_is_valid_response, trending_datasets, desc="get_is_valid_response")
+                return requests.get(
+                    f"{DSS_ENDPOINT}/is-valid?dataset={dataset}",
+                    headers=headers,
+                    timeout=60,
+                )
+
+            is_valid_responses = thread_map(
+                get_is_valid_response, trending_datasets, desc="get_is_valid_response"
+            )
             trending_datasets_coverage = {"All trending datasets": []}
             error_datasets = []
-            for dataset, is_valid_response in zip(trending_datasets, is_valid_responses):
+            for dataset, is_valid_response in zip(
+                trending_datasets, is_valid_responses
+            ):
                 if is_valid_response.status_code == 200:
                     response_json = is_valid_response.json()
                     trending_datasets_coverage["All trending datasets"].append(dataset)
@@ -176,121 +294,209 @@ with gr.Blocks() as demo:
                         pretty_field = is_valid_field.replace("_", " ").capitalize()
                         if pretty_field not in trending_datasets_coverage:
                             trending_datasets_coverage[pretty_field] = []
-                        trending_datasets_coverage[pretty_field].append("✅" if response_json[is_valid_field] is True else "❌")
+                        trending_datasets_coverage[pretty_field].append(
+                            "✅" if response_json[is_valid_field] is True else "❌"
+                        )
                 else:
                     error_datasets.append(dataset)
             trending_datasets_coverage["All trending datasets"] += error_datasets
             for pretty_field in trending_datasets_coverage:
-                trending_datasets_coverage[pretty_field] += ["❌"] * (len(trending_datasets_coverage["All trending datasets"]) - len(trending_datasets_coverage[pretty_field]))
-            out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage))
-            trending_datasets_coverage_stats = {"Num trending datasets": [len(trending_datasets)], **{
-                is_valid_field: [f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"]
-                for is_valid_field in trending_datasets_coverage
-                if is_valid_field != "All trending datasets"
-            }}
-            out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(visible=True, value=pd.DataFrame(trending_datasets_coverage_stats))
+                trending_datasets_coverage[pretty_field] += ["❌"] * (
+                    len(trending_datasets_coverage["All trending datasets"])
+                    - len(trending_datasets_coverage[pretty_field])
+                )
+            out[home_dashboard_trending_datasets_coverage_table] = gr.update(
+                visible=True, value=pd.DataFrame(trending_datasets_coverage)
+            )
+            trending_datasets_coverage_stats = {
+                "Num trending datasets": [len(trending_datasets)],
+                **{
+                    is_valid_field: [
+                        f"{round(100 * sum(1 for coverage in trending_datasets_coverage[is_valid_field] if coverage == '✅') / len(trending_datasets), 2)}%"
+                    ]
+                    for is_valid_field in trending_datasets_coverage
+                    if is_valid_field != "All trending datasets"
+                },
+            }
+            out[home_dashboard_trending_datasets_coverage_stats_table] = gr.update(
+                visible=True, value=pd.DataFrame(trending_datasets_coverage_stats)
+            )
         else:
-            out[home_dashboard_trending_datasets_coverage_table] = gr.update(visible=True, value=pd.DataFrame({
-                "Error": [f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"]
-            }))
+            out[home_dashboard_trending_datasets_coverage_table] = gr.update(
+                visible=True,
+                value=pd.DataFrame(
+                    {
+                        "Error": [
+                            f"❌ Failed to fetch trending datasets from {HF_ENDPOINT} (error {response.status_code})"
+                        ]
+                    }
+                ),
+            )
         return out
-
 
     def view_jobs(token):
         global pending_jobs_df
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{DSS_ENDPOINT}/admin/pending-jobs", headers=headers, timeout=60)
+        response = requests.get(
+            f"{DSS_ENDPOINT}/admin/pending-jobs", headers=headers, timeout=60
+        )
         if response.status_code == 200:
             pending_jobs = response.json()
-            pending_jobs_df = pd.DataFrame([
-                job
-                for job_type in pending_jobs
-                for job_state in pending_jobs[job_type]
-                for job in pending_jobs[job_type][job_state]
-            ])
+            pending_jobs_df = pd.DataFrame(
+                [
+                    job
+                    for job_type in pending_jobs
+                    for job_state in pending_jobs[job_type]
+                    for job in pending_jobs[job_type][job_state]
+                ]
+            )
             if "started_at" in pending_jobs_df.columns:
-                pending_jobs_df["started_at"] = pd.to_datetime(pending_jobs_df["started_at"], errors="coerce")
+                pending_jobs_df["started_at"] = pd.to_datetime(
+                    pending_jobs_df["started_at"], errors="coerce"
+                )
             if "last_heartbeat" in pending_jobs_df.columns:
-                pending_jobs_df["last_heartbeat"] = pd.to_datetime(pending_jobs_df["last_heartbeat"], errors="coerce")
+                pending_jobs_df["last_heartbeat"] = pd.to_datetime(
+                    pending_jobs_df["last_heartbeat"], errors="coerce"
+                )
             if "created_at" in pending_jobs_df.columns:
-                pending_jobs_df["created_at"] = pd.to_datetime(pending_jobs_df["created_at"], errors="coerce")
+                pending_jobs_df["created_at"] = pd.to_datetime(
+                    pending_jobs_df["created_at"], errors="coerce"
+                )
                 most_recent = pending_jobs_df.nlargest(5, "created_at")
             else:
                 most_recent = pd.DataFrame()
             return {
-                pending_jobs_summary_table: gr.update(visible=True, value=pd.DataFrame({
-                    "Jobs": list(pending_jobs),
-                    "Waiting": [len(pending_jobs[job_type]["waiting"]) for job_type in pending_jobs],
-                    "Started": [len(pending_jobs[job_type]["started"]) for job_type in pending_jobs],
-                })),
-                recent_pending_jobs_table: gr.update(value=most_recent)
+                pending_jobs_summary_table: gr.update(
+                    visible=True,
+                    value=pd.DataFrame(
+                        {
+                            "Jobs": list(pending_jobs),
+                            "Waiting": [
+                                len(pending_jobs[job_type]["waiting"])
+                                for job_type in pending_jobs
+                            ],
+                            "Started": [
+                                len(pending_jobs[job_type]["started"])
+                                for job_type in pending_jobs
+                            ],
+                        }
+                    ),
+                ),
+                recent_pending_jobs_table: gr.update(value=most_recent),
             }
         else:
             return {
-                pending_jobs_summary_table: gr.update(visible=True, value=pd.DataFrame({"Error": [f"❌ Failed to view pending jobs to {DSS_ENDPOINT} (error {response.status_code})"]})),
-                recent_pending_jobs_table: gr.update(value=None)
+                pending_jobs_summary_table: gr.update(
+                    visible=True,
+                    value=pd.DataFrame(
+                        {
+                            "Error": [
+                                f"❌ Failed to view pending jobs to {DSS_ENDPOINT} (error {response.status_code})"
+                            ]
+                        }
+                    ),
+                ),
+                recent_pending_jobs_table: gr.update(value=None),
             }
 
     def get_dataset_status(token, dataset):
         headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(f"{DSS_ENDPOINT}/admin/dataset-status?dataset={dataset}", headers=headers, timeout=60)
+        response = requests.get(
+            f"{DSS_ENDPOINT}/admin/dataset-status?dataset={dataset}",
+            headers=headers,
+            timeout=60,
+        )
         if response.status_code == 200:
             dataset_status = response.json()
-            cached_responses_df = pd.DataFrame([{
-                    "kind": cached_response["kind"],
-                    "dataset": cached_response["dataset"],
-                    "config": cached_response["config"],
-                    "split": cached_response["split"],
-                    "http_status": cached_response["http_status"],
-                    "error_code": cached_response["error_code"],
-                    "job_runner_version": cached_response["job_runner_version"],
-                    "dataset_git_revision": cached_response["dataset_git_revision"],
-                    "progress": cached_response["progress"],
-                    "updated_at": cached_response["updated_at"],
-                    "details": json.dumps(cached_response["details"]),
-                }
-                for job_type, content in dataset_status.items()
-                for cached_response in content["cached_responses"]
-            ])
-            jobs_df = pd.DataFrame([{
-                    "type": job["type"],
-                    "dataset": job["dataset"],
-                    "revision": job["revision"],
-                    "config": job["config"],
-                    "split": job["split"],
-                    "namespace": job["namespace"],
-                    "priority": job["priority"],
-                    "status": job["status"],
-                    "created_at": job["created_at"],
-                    "started_at": job["started_at"],
-                    "last_heartbeat": job["last_heartbeat"]
-                }
-                for job_type, content in dataset_status.items()
-                for job in content["jobs"]
-            ])
+            cached_responses_df = pd.DataFrame(
+                [
+                    {
+                        "kind": cached_response["kind"],
+                        "dataset": cached_response["dataset"],
+                        "config": cached_response["config"],
+                        "split": cached_response["split"],
+                        "http_status": cached_response["http_status"],
+                        "error_code": cached_response["error_code"],
+                        "job_runner_version": cached_response["job_runner_version"],
+                        "dataset_git_revision": cached_response["dataset_git_revision"],
+                        "progress": cached_response["progress"],
+                        "updated_at": cached_response["updated_at"],
+                        "details": json.dumps(cached_response["details"]),
+                    }
+                    for content in dataset_status.values()
+                    for cached_response in content["cached_responses"]
+                ]
+            )
+            jobs_df = pd.DataFrame(
+                [
+                    {
+                        "type": job["type"],
+                        "dataset": job["dataset"],
+                        "revision": job["revision"],
+                        "config": job["config"],
+                        "split": job["split"],
+                        "namespace": job["namespace"],
+                        "priority": job["priority"],
+                        "status": job["status"],
+                        "difficulty": job["difficulty"],
+                        "created_at": job["created_at"],
+                        "started_at": job["started_at"],
+                        "last_heartbeat": job["last_heartbeat"],
+                    }
+                    for content in dataset_status.values()
+                    for job in content["jobs"]
+                ]
+            )
             return {
                 cached_responses_table: gr.update(value=cached_responses_df),
-                jobs_table: gr.update(value=jobs_df)
+                jobs_table: gr.update(value=jobs_df),
             }
         else:
             return {
-                cached_responses_table: gr.update(value=pd.DataFrame([{"error": f"❌ Failed to get status for {dataset} (error {response.status_code})"}])),
-                jobs_table: gr.update(value=pd.DataFrame([{"content": str(response.content)}]))
+                cached_responses_table: gr.update(
+                    value=pd.DataFrame(
+                        [
+                            {
+                                "error": f"❌ Failed to get status for {dataset} (error {response.status_code})"
+                            }
+                        ]
+                    )
+                ),
+                jobs_table: gr.update(
+                    value=pd.DataFrame([{"content": str(response.content)}])
+                ),
             }
 
     def query_jobs(pending_jobs_query):
         global pending_jobs_df
         try:
             result = duckdb.query(pending_jobs_query).to_df()
-        except (duckdb.ParserException, duckdb.CatalogException, duckdb.BinderException) as error:
-            return {pending_jobs_query_result_df: gr.update(value=pd.DataFrame({"Error": [f"❌ {str(error)}"]}))}
+        except (
+            duckdb.ParserException,
+            duckdb.CatalogException,
+            duckdb.BinderException,
+        ) as error:
+            return {
+                pending_jobs_query_result_df: gr.update(
+                    value=pd.DataFrame({"Error": [f"❌ {str(error)}"]})
+                )
+            }
         return {pending_jobs_query_result_df: gr.update(value=result)}
 
-    def refresh_dataset(token, refresh_type, refresh_dataset_names, refresh_config_names, refresh_split_names, refresh_priority):
+    def refresh_dataset(
+        token,
+        refresh_type,
+        refresh_dataset_names,
+        refresh_config_names,
+        refresh_split_names,
+        refresh_priority,
+    ):
         headers = {"Authorization": f"Bearer {token}"}
         all_results = ""
         for refresh_dataset_name, refresh_config_name, refresh_split_name in product(
-            refresh_dataset_names.split(","), refresh_config_names.split(","), refresh_split_names.split(",")
+            refresh_dataset_names.split(","),
+            refresh_config_names.split(","),
+            refresh_split_names.split(","),
         ):
             refresh_dataset_name = refresh_dataset_name.strip()
             params = {"dataset": refresh_dataset_name, "priority": refresh_priority}
@@ -301,7 +507,11 @@ with gr.Blocks() as demo:
                 refresh_split_name = refresh_split_name.strip()
                 params["split"] = refresh_split_name
             params = urllib.parse.urlencode(params)
-            response = requests.post(f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}", headers=headers, timeout=60)
+            response = requests.post(
+                f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}",
+                headers=headers,
+                timeout=60,
+            )
             if response.status_code == 200:
                 result = f"[{refresh_dataset_name}] ✅ Added processing step to the queue: '{refresh_type}'"
                 if refresh_config_name:
@@ -318,12 +528,21 @@ with gr.Blocks() as demo:
             all_results += result.strip("\n") + "\n"
         return "```\n" + all_results + "\n```"
 
-    def delete_and_recreate_dataset(token, delete_and_recreate_dataset_name, delete_and_recreate_priority):
+    def delete_and_recreate_dataset(
+        token, delete_and_recreate_dataset_name, delete_and_recreate_priority
+    ):
         headers = {"Authorization": f"Bearer {token}"}
         delete_and_recreate_dataset_name = delete_and_recreate_dataset_name.strip()
-        params = {"dataset": delete_and_recreate_dataset_name, "priority": delete_and_recreate_priority}
+        params = {
+            "dataset": delete_and_recreate_dataset_name,
+            "priority": delete_and_recreate_priority,
+        }
         params = urllib.parse.urlencode(params)
-        response = requests.post(f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}", headers=headers, timeout=60)
+        response = requests.post(
+            f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}",
+            headers=headers,
+            timeout=60,
+        )
         if response.status_code == 200:
             result = f"[{delete_and_recreate_dataset_name}] ✅ All the assets have been deleted. A new job has been created to generate the cache again."
         else:
@@ -335,17 +554,58 @@ with gr.Blocks() as demo:
                 result += f": {response.content}"
         return result.strip("\n") + "\n"
 
-    token_box.change(auth, inputs=token_box, outputs=[auth_error, welcome_title, auth_page, main_page])
+    token_box.change(
+        auth,
+        inputs=token_box,
+        outputs=[auth_error, welcome_title, auth_page, main_page],
+    )
 
-    home_dashboard_fetch_button.click(fetch_home_dashboard, inputs=[token_box], outputs=[home_dashboard_trending_datasets_infos_by_builder_name_table, home_dashboard_trending_datasets_coverage_stats_table, home_dashboard_trending_datasets_coverage_table])
+    home_dashboard_fetch_button.click(
+        fetch_home_dashboard,
+        inputs=[token_box],
+        outputs=[
+            home_dashboard_trending_datasets_infos_by_builder_name_table,
+            home_dashboard_trending_datasets_coverage_stats_table,
+            home_dashboard_trending_datasets_coverage_table,
+        ],
+    )
 
-    fetch_pending_jobs_button.click(view_jobs, inputs=token_box, outputs=[recent_pending_jobs_table, pending_jobs_summary_table])
-    query_pending_jobs_button.click(query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df])
-    
-    refresh_dataset_button.click(refresh_dataset, inputs=[token_box, refresh_type, refresh_dataset_name, refresh_config_name, refresh_split_name, refresh_priority], outputs=refresh_dataset_output)
-    delete_and_recreate_dataset_button.click(delete_and_recreate_dataset, inputs=[token_box, delete_and_recreate_dataset_name, delete_and_recreate_priority], outputs=delete_and_recreate_dataset_output)
+    fetch_pending_jobs_button.click(
+        view_jobs,
+        inputs=token_box,
+        outputs=[recent_pending_jobs_table, pending_jobs_summary_table],
+    )
+    query_pending_jobs_button.click(
+        query_jobs, inputs=pending_jobs_query, outputs=[pending_jobs_query_result_df]
+    )
 
-    dataset_status_button.click(get_dataset_status, inputs=[token_box, dataset_name], outputs=[cached_responses_table, jobs_table])
+    refresh_dataset_button.click(
+        refresh_dataset,
+        inputs=[
+            token_box,
+            refresh_type,
+            refresh_dataset_name,
+            refresh_config_name,
+            refresh_split_name,
+            refresh_priority,
+        ],
+        outputs=refresh_dataset_output,
+    )
+    delete_and_recreate_dataset_button.click(
+        delete_and_recreate_dataset,
+        inputs=[
+            token_box,
+            delete_and_recreate_dataset_name,
+            delete_and_recreate_priority,
+        ],
+        outputs=delete_and_recreate_dataset_output,
+    )
+
+    dataset_status_button.click(
+        get_dataset_status,
+        inputs=[token_box, dataset_name],
+        outputs=[cached_responses_table, jobs_table],
+    )
 
 if __name__ == "__main__":
     demo.launch()
