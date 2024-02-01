@@ -28,17 +28,17 @@ HF_TOKEN = os.environ.get("HF_TOKEN")
 DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
 
 
+# global state (shared with all the user sessions)
 pending_jobs_df = None
 
 
 def healthcheck():
     try:
-        response = requests.head(f"{DSS_ENDPOINT}/admin/pending-jobs", timeout=10)
+        response = requests.head(f"{DSS_ENDPOINT}/admin/healthcheck", timeout=10)
     except requests.ConnectionError as error:
         return f"❌ Failed to connect to {DSS_ENDPOINT} (error {error})"
-    if response.status_code == 401:
+    if response.status_code == 200:
         return f"*Connected to {DSS_ENDPOINT}*"
-
     else:
         return f"❌ Failed to connect to {DSS_ENDPOINT} (error {response.status_code})"
 
@@ -53,7 +53,7 @@ def draw_graph(width, height):
 
 
 with gr.Blocks() as demo:
-    gr.Markdown(" ## Datasets-server admin page")
+    gr.Markdown("## Datasets-server admin page")
     gr.Markdown(healthcheck)
 
     with gr.Row(visible=HF_TOKEN is None) as auth_page:
