@@ -423,7 +423,7 @@ with gr.Blocks() as demo:
                         "updated_at": cached_response["updated_at"],
                         "details": json.dumps(cached_response["details"]),
                     }
-                    for job_type, content in dataset_status.items()
+                    for content in dataset_status.values()
                     for cached_response in content["cached_responses"]
                 ]
             )
@@ -438,11 +438,12 @@ with gr.Blocks() as demo:
                         "namespace": job["namespace"],
                         "priority": job["priority"],
                         "status": job["status"],
+                        "difficulty": job["difficulty"],
                         "created_at": job["created_at"],
                         "started_at": job["started_at"],
                         "last_heartbeat": job["last_heartbeat"],
                     }
-                    for job_type, content in dataset_status.items()
+                    for content in dataset_status.values()
                     for job in content["jobs"]
                 ]
             )
