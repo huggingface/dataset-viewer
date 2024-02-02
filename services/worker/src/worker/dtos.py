@@ -250,3 +250,7 @@ class DatasetSizeResponse(TypedDict):
     pending: list[PreviousJob]
     failed: list[PreviousJob]
     partial: bool
+
+
+class DatasetLoadingTagsResponse(TypedDict):
+    tags: list[str]

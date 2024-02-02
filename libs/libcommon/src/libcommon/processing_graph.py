@@ -642,6 +642,12 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 1,
         "difficulty": 20,
     },
+    "dataset-loading-tags": {
+        "input_type": "dataset",
+        "triggered_by": ["dataset-info"],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
 }
 
 # global variable
