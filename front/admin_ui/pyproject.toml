@@ -6,7 +6,7 @@ authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-duckdb = "^0.9.3.dev2934"
+duckdb = "^0.9.2"
 gradio = "^3.34.0"
 libcommon = { path = "../../libs/libcommon", develop=true }
 matplotlib = "^3.7.0"

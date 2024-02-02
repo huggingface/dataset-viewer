@@ -464,7 +464,6 @@ FTS_COMMAND = (
 )
 
 
-@pytest.mark.skip(reason="enable once https://pypi.org/project/duckdb/0.9.3.dev3058/ is avialable for poetry")
 @pytest.mark.parametrize(
     "df, query, expected_ids",
     [
