@@ -18,7 +18,6 @@ from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
-    NotSupportedError,
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
@@ -101,16 +100,6 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
         except Exception:
             # the dataset could already have been deleted
             pass
-
-
-def turn_private(dataset: str, token: str) -> None:
-    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
-    hf_api.update_repo_visibility(repo_id=dataset, private=True, repo_type="dataset")
-
-
-def delete(dataset: str, token: str) -> None:
-    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
-    hf_api.delete_repo(repo_id=dataset, repo_type="dataset")
 
 
 @pytest.mark.parametrize(
@@ -317,75 +306,7 @@ def test_delete_obsolete_cache(
     assert not Queue().has_pending_jobs(dataset=dataset)
 
 
-def test_2274_update_dataset_if_one_cache_entry(
-    queue_mongo_resource: QueueMongoResource,
-    cache_mongo_resource: CacheMongoResource,
-) -> None:
-    JOB_RUNNER_VERSION = 1
-    FIRST_CACHE_KIND = "dataset-config-names"
-
-    # see https://github.com/huggingface/datasets-server/issues/2274
-    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
-        queue = Queue()
-
-        # first update: one job is created
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-
-        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
-        cache_entries_df = get_cache_entries_df(dataset=dataset)
-
-        assert len(pending_jobs_df) == 1
-        assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
-        assert len(cache_entries_df) == 0
-
-        # update again: nothing changes, the exact same jobs are kept
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
-        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
-
-        # start the first (and only) job
-        job_info = queue.start_job()
-
-        # try to reproduce the bug in #2375 by update at this point: no
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        pending_jobs_df_after_start = queue.get_pending_jobs_df(dataset=dataset)
-        assert len(pending_jobs_df_after_start) == 1
-        assert pending_jobs_df_after_start.iloc[0]["type"] == FIRST_CACHE_KIND
-        assert pending_jobs_df_after_start.iloc[0]["status"] == "started"
-        assert pending_jobs_df_after_start.iloc[0]["job_id"] == pending_jobs_df.iloc[0]["job_id"]
-        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
-
-        # finish the started job
-        job_result: JobResult = {
-            "job_info": job_info,
-            "job_runner_version": JOB_RUNNER_VERSION,
-            "is_success": True,
-            "output": {
-                "content": {},
-                "http_status": HTTPStatus.OK,
-                "error_code": None,
-                "details": None,
-                "progress": 1.0,
-            },
-        }
-        finish_job(job_result=job_result)
-
-        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
-        cache_entries_df = get_cache_entries_df(dataset=dataset)
-
-        assert len(pending_jobs_df) > 5
-        assert len(cache_entries_df) == 1
-        assert cache_entries_df.iloc[0]["kind"] == FIRST_CACHE_KIND
-
-        # try to reproduce the bug in #2375 by update at this point: no
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
-        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
-
-        # we cannot reproduce the bug
-
-
-def test_2274_turn_dataset_private_while_job_is_started(
+def test_2274_only_one_entry(
     queue_mongo_resource: QueueMongoResource,
     cache_mongo_resource: CacheMongoResource,
 ) -> None:
@@ -406,16 +327,8 @@ def test_2274_turn_dataset_private_while_job_is_started(
         assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
         assert cache_entries_df.empty
 
-        # update again: nothing changes, the exact same jobs are kept
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
-        assert get_cache_entries_df(dataset=dataset).empty
-
         # start the first (and only) job
         job_info = queue.start_job()
-
-        # turn the dataset to private - no webhook is received
-        turn_private(dataset=dataset, token=NORMAL_USER_TOKEN)
 
         # finish the started job
         job_result: JobResult = {
@@ -432,84 +345,19 @@ def test_2274_turn_dataset_private_while_job_is_started(
         }
         finish_job(job_result=job_result)
 
-        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
-        cache_entries_df = get_cache_entries_df(dataset=dataset)
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 6
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
 
-        assert len(pending_jobs_df) == 6
-        assert len(cache_entries_df) == 1
+        # let's delete all the jobs, to get in the same state as the bug
+        queue.delete_dataset_jobs(dataset=dataset)
 
-        assert cache_entries_df.iloc[0]["kind"] == FIRST_CACHE_KIND
+        assert queue.get_pending_jobs_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
 
         # try to reproduce the bug in #2375 by update at this point: no
-        with pytest.raises(NotSupportedError):
-            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert get_cache_entries_df(dataset=dataset).empty
-
-        # we cannot reproduce the bug
-
-
-def test_2274_turn_dataset_private_then_delete_it_while_job_is_started(
-    queue_mongo_resource: QueueMongoResource,
-    cache_mongo_resource: CacheMongoResource,
-) -> None:
-    JOB_RUNNER_VERSION = 1
-    FIRST_CACHE_KIND = "dataset-config-names"
-
-    # see https://github.com/huggingface/datasets-server/issues/2274
-    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
-        queue = Queue()
-
-        # first update: one job is created
         update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
 
-        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
-        cache_entries_df = get_cache_entries_df(dataset=dataset)
-
-        assert len(pending_jobs_df) == 1
-        assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
-        assert cache_entries_df.empty
-
-        # update again: nothing changes, the exact same jobs are kept
-        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
-        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
-        assert get_cache_entries_df(dataset=dataset).empty
-
-        # start the first (and only) job
-        job_info = queue.start_job()
-
-        # turn the dataset to private - no webhook is received
-        turn_private(dataset=dataset, token=NORMAL_USER_TOKEN)
-        # then delete the dataset - no webhook is received if the dataset is private
-        delete(dataset=dataset, token=NORMAL_USER_TOKEN)
-
-        # finish the started job
-        job_result: JobResult = {
-            "job_info": job_info,
-            "job_runner_version": JOB_RUNNER_VERSION,
-            "is_success": True,
-            "output": {
-                "content": {},
-                "http_status": HTTPStatus.OK,
-                "error_code": None,
-                "details": None,
-                "progress": 1.0,
-            },
-        }
-        finish_job(job_result=job_result)
-
-        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
-        cache_entries_df = get_cache_entries_df(dataset=dataset)
-
-        assert len(pending_jobs_df) == 6
-        assert len(cache_entries_df) == 1
-
-        assert cache_entries_df.iloc[0]["kind"] == FIRST_CACHE_KIND
-
-        # try to reproduce the bug in #2375 by update at this point: no
-        with pytest.raises(NotSupportedError):
-            update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
         assert queue.get_pending_jobs_df(dataset=dataset).empty
-        assert get_cache_entries_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
 
-        # we cannot reproduce the bug
+        # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
