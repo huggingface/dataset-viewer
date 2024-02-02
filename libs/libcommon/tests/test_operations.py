@@ -14,6 +14,7 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
+from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
@@ -26,9 +27,10 @@ from libcommon.operations import (
     get_latest_dataset_revision_if_supported_or_raise,
     update_dataset,
 )
+from libcommon.orchestrator import finish_job
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import has_some_cache, upsert_response
+from libcommon.simple_cache import get_cache_entries_df, has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
 
 from .constants import (
@@ -83,7 +85,8 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
 def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
-    dataset = f"{namespace}/private-dataset-{int(time.time() * 10e3)}"
+    prefix = "private" if private else "public"
+    dataset = f"{namespace}/{prefix}-dataset-{int(time.time() * 10e3)}"
     hf_api.create_repo(
         repo_id=dataset,
         private=private,
@@ -297,3 +300,71 @@ def test_delete_obsolete_cache(
     assert not cached_assets_storage_client.exists(image_key)
     assert not has_some_cache(dataset=dataset)
     assert not Queue().has_pending_jobs(dataset=dataset)
+
+
+def test_2274_update_dataset_if_one_cache_entry(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    JOB_RUNNER_VERSION = 1
+    FIRST_CACHE_KIND = "dataset-config-names"
+
+    # see https://github.com/huggingface/datasets-server/issues/2274
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
+        queue = Queue()
+
+        # first update: one job is created
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
+        cache_entries_df = get_cache_entries_df(dataset=dataset)
+
+        assert len(pending_jobs_df) == 1
+        assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
+        assert len(cache_entries_df) == 0
+
+        # update again: nothing changes, the exact same jobs are kept
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
+        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
+
+        # start the first (and only) job
+        job_info = queue.start_job()
+
+        # try to reproduce the bug in #2375 by update at this point: no
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        pending_jobs_df_after_start = queue.get_pending_jobs_df(dataset=dataset)
+        assert len(pending_jobs_df_after_start) == 1
+        assert pending_jobs_df_after_start.iloc[0]["type"] == FIRST_CACHE_KIND
+        assert pending_jobs_df_after_start.iloc[0]["status"] == "started"
+        assert pending_jobs_df_after_start.iloc[0]["job_id"] == pending_jobs_df.iloc[0]["job_id"]
+        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
+
+        # finish the started job
+        job_result: JobResult = {
+            "job_info": job_info,
+            "job_runner_version": JOB_RUNNER_VERSION,
+            "is_success": True,
+            "output": {
+                "content": {},
+                "http_status": HTTPStatus.OK,
+                "error_code": None,
+                "details": None,
+                "progress": 1.0,
+            },
+        }
+        finish_job(job_result=job_result)
+
+        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
+        cache_entries_df = get_cache_entries_df(dataset=dataset)
+
+        assert len(pending_jobs_df) > 5
+        assert len(cache_entries_df) == 1
+        assert cache_entries_df.iloc[0]["kind"] == FIRST_CACHE_KIND
+
+        # try to reproduce the bug in #2375 by update at this point: no
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+        assert queue.get_pending_jobs_df(dataset=dataset).equals(pending_jobs_df)
+        assert get_cache_entries_df(dataset=dataset).equals(cache_entries_df)
+
+        # we cannot reproduce the bug
