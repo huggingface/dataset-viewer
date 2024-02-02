@@ -396,8 +396,11 @@ with gr.Blocks() as demo:
                     processing_step.job_type
                     for processing_step in processing_graph.get_topologically_ordered_processing_steps()
                 ]
+                def on_change_refresh_job_type(job_type):
+                    return processing_graph.get_processing_step(job_type).difficulty
+
                 refresh_type = gr.Dropdown(
-                    job_types, multiselect=False, label="job type", value=job_types[0]
+                    job_types, multiselect=False, type="value", label="job type", value=job_types[0]
                 )
                 refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
                 refresh_config_name = gr.Textbox(
@@ -409,6 +412,10 @@ with gr.Blocks() as demo:
                 gr.Markdown(
                     "*you can select multiple values by separating them with commas, e.g. split='train, test'*"
                 )
+
+                refresh_difficulty = gr.Slider(0, 100, processing_graph.get_processing_step(job_types[0]).difficulty, step=10, interactive=True, label="difficulty")
+                refresh_type.change(on_change_refresh_job_type, refresh_type, refresh_difficulty)
+
                 refresh_priority = gr.Dropdown(
                     ["low", "normal", "high"],
                     multiselect=False,
@@ -425,6 +432,7 @@ with gr.Blocks() as demo:
                     refresh_config_names,
                     refresh_split_names,
                     refresh_priority,
+                    refresh_difficulty,
                 ):
                     headers = {"Authorization": f"Bearer {token}"}
                     all_results = ""
@@ -448,6 +456,8 @@ with gr.Blocks() as demo:
                         if refresh_split_name:
                             refresh_split_name = refresh_split_name.strip()
                             params["split"] = refresh_split_name
+                        if refresh_difficulty:
+                            params["difficulty"] = refresh_difficulty
                         params = urllib.parse.urlencode(params)
                         response = requests.post(
                             f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}",
@@ -479,6 +489,7 @@ with gr.Blocks() as demo:
                         refresh_config_name,
                         refresh_split_name,
                         refresh_priority,
+                        refresh_difficulty,
                     ],
                     outputs=refresh_dataset_output,
                 )
@@ -571,6 +582,7 @@ with gr.Blocks() as demo:
                                     ],
                                     "progress": cached_response["progress"],
                                     "updated_at": cached_response["updated_at"],
+                                    "failed_runs": cached_response["failed_runs"],
                                     "details": json.dumps(cached_response["details"]),
                                 }
                                 for content in dataset_status.values()
