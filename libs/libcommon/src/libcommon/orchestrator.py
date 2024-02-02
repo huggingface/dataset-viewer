@@ -709,41 +709,44 @@ def set_revision(
         revision (`str`): The new revision of the dataset.
         priority (`Priority`): The priority of the jobs to create.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
-
-    Raises:
-        [`ValueError`]: If the first processing steps are not dataset steps, or if the processing graph has no first
-            step.
     """
-    first_processing_steps = processing_graph.get_first_processing_steps()
-    if len(first_processing_steps) < 1:
-        raise ValueError("Processing graph has no first step")
-    if any(first_processing_step.input_type != "dataset" for first_processing_step in first_processing_steps):
-        raise ValueError("One of the first processing steps is not a dataset step")
-    with StepProfiler(
-        method="set_revision",
-        step="all",
-        context=f"dataset={dataset}",
-    ):
-        logging.info(f"Analyzing {dataset}")
-        with StepProfiler(
-            method="set_revision",
-            step="plan",
-            context=f"dataset={dataset}",
-        ):
-            plan = DatasetBackfillPlan(
-                dataset=dataset,
-                revision=revision,
-                priority=priority,
-                processing_graph=processing_graph,
-                only_first_processing_steps=True,
-            )
-        logging.info(f"Setting new revision to {dataset}")
-        with StepProfiler(
-            method="set_revision",
-            step="run",
-            context=f"dataset={dataset}",
-        ):
-            plan.run()
+    logging.info(f"Analyzing {dataset}")
+    plan = DatasetBackfillPlan(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+        processing_graph=processing_graph,
+        only_first_processing_steps=True,
+    )
+    logging.info(f"Applying set_revision plan on {dataset}: plan={plan.as_response()}")
+    plan.run()
+
+
+def backfill(
+    dataset: str,
+    revision: str,
+    priority: Priority,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> None:
+    """
+    Analyses the dataset and backfills it with all missing bits, if requires.
+
+    Args:
+        dataset (`str`): The name of the dataset.
+        revision (`str`): The new revision of the dataset.
+        priority (`Priority`): The priority of the jobs to create.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+    """
+    logging.info(f"Analyzing {dataset}")
+    plan = DatasetBackfillPlan(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+        processing_graph=processing_graph,
+        only_first_processing_steps=False,
+    )
+    logging.info(f"Applying backfill plan on {dataset}: plan={plan.as_response()}")
+    plan.run()
 
 
 def finish_job(

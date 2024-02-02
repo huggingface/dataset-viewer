@@ -14,6 +14,7 @@ from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
 from requests import Response  # type: ignore
 
+from libcommon.dtos import JobResult
 from libcommon.exceptions import (
     DatasetInBlockListError,
     NotSupportedDisabledRepositoryError,
@@ -22,13 +23,15 @@ from libcommon.exceptions import (
 )
 from libcommon.operations import (
     CustomHfApi,
+    backfill_dataset,
     delete_dataset,
     get_latest_dataset_revision_if_supported_or_raise,
     update_dataset,
 )
+from libcommon.orchestrator import finish_job
 from libcommon.queue import Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import has_some_cache, upsert_response
+from libcommon.simple_cache import get_cache_entries_df, has_some_cache, upsert_response
 from libcommon.storage_client import StorageClient
 
 from .constants import (
@@ -83,7 +86,8 @@ def test_whoisthis(name: str, expected_pro: Optional[bool], expected_enterprise:
 def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     # create a test dataset in hub-ci, then delete it
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=token)
-    dataset = f"{namespace}/private-dataset-{int(time.time() * 10e3)}"
+    prefix = "private" if private else "public"
+    dataset = f"{namespace}/{prefix}-dataset-{int(time.time() * 10e3)}"
     hf_api.create_repo(
         repo_id=dataset,
         private=private,
@@ -92,7 +96,11 @@ def tmp_dataset(namespace: str, token: str, private: bool) -> Iterator[str]:
     try:
         yield dataset
     finally:
-        hf_api.delete_repo(repo_id=dataset, repo_type="dataset")
+        try:
+            hf_api.delete_repo(repo_id=dataset, repo_type="dataset")
+        except Exception:
+            # the dataset could already have been deleted
+            pass
 
 
 @pytest.mark.parametrize(
@@ -297,3 +305,65 @@ def test_delete_obsolete_cache(
     assert not cached_assets_storage_client.exists(image_key)
     assert not has_some_cache(dataset=dataset)
     assert not Queue().has_pending_jobs(dataset=dataset)
+
+
+def test_2274_only_one_entry(
+    queue_mongo_resource: QueueMongoResource,
+    cache_mongo_resource: CacheMongoResource,
+) -> None:
+    JOB_RUNNER_VERSION = 1
+    FIRST_CACHE_KIND = "dataset-config-names"
+
+    # see https://github.com/huggingface/datasets-server/issues/2274
+    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
+        queue = Queue()
+
+        # first update: one job is created
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+        pending_jobs_df = queue.get_pending_jobs_df(dataset=dataset)
+        cache_entries_df = get_cache_entries_df(dataset=dataset)
+
+        assert len(pending_jobs_df) == 1
+        assert pending_jobs_df.iloc[0]["type"] == FIRST_CACHE_KIND
+        assert cache_entries_df.empty
+
+        # start the first (and only) job
+        job_info = queue.start_job()
+
+        # finish the started job
+        job_result: JobResult = {
+            "job_info": job_info,
+            "job_runner_version": JOB_RUNNER_VERSION,
+            "is_success": True,
+            "output": {
+                "content": {},
+                "http_status": HTTPStatus.OK,
+                "error_code": None,
+                "details": None,
+                "progress": 1.0,
+            },
+        }
+        finish_job(job_result=job_result)
+
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 6
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
+
+        # let's delete all the jobs, to get in the same state as the bug
+        queue.delete_dataset_jobs(dataset=dataset)
+
+        assert queue.get_pending_jobs_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
+
+        # try to reproduce the bug in #2375 by update at this point: no
+        update_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+        assert queue.get_pending_jobs_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
+
+        # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
+
+        backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+        assert not queue.get_pending_jobs_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
