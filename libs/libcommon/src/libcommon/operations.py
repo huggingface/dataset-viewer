@@ -22,7 +22,7 @@ from libcommon.exceptions import (
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
-from libcommon.orchestrator import get_revision, remove_dataset, set_revision
+from libcommon.orchestrator import backfill, get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
 
@@ -208,6 +208,40 @@ def update_dataset(
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
     set_revision(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+    )
+
+
+def backfill_dataset(
+    dataset: str,
+    hf_endpoint: str,
+    blocked_datasets: Optional[list[str]] = None,
+    hf_token: Optional[str] = None,
+    hf_timeout_seconds: Optional[float] = None,
+    priority: Priority = Priority.LOW,
+    storage_clients: Optional[list[StorageClient]] = None,
+) -> None:
+    """
+      blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
+    name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
+    are not allowed in the namespace name.
+    """
+    # let's the exceptions bubble up if any
+    try:
+        revision = get_latest_dataset_revision_if_supported_or_raise(
+            dataset=dataset,
+            hf_endpoint=hf_endpoint,
+            hf_token=hf_token,
+            hf_timeout_seconds=hf_timeout_seconds,
+            blocked_datasets=blocked_datasets,
+        )
+    except NotSupportedError as e:
+        logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        raise
+    backfill(
         dataset=dataset,
         revision=revision,
         priority=priority,

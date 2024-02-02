@@ -23,6 +23,7 @@ from libcommon.exceptions import (
 )
 from libcommon.operations import (
     CustomHfApi,
+    backfill_dataset,
     delete_dataset,
     get_latest_dataset_revision_if_supported_or_raise,
     update_dataset,
@@ -361,3 +362,8 @@ def test_2274_only_one_entry(
         assert len(get_cache_entries_df(dataset=dataset)) == 1
 
         # THE BUG IS REPRODUCED: the jobs should have been recreated at that point.
+
+        backfill_dataset(dataset=dataset, hf_endpoint=CI_HUB_ENDPOINT, hf_token=CI_APP_TOKEN)
+
+        assert not queue.get_pending_jobs_df(dataset=dataset).empty
+        assert len(get_cache_entries_df(dataset=dataset)) == 1
