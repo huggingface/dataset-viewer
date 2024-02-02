@@ -673,3 +673,55 @@ def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner=None)) == 1
     assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 0
     # ^ does not test much, because at that time, the lock should already have been released
+
+
+DATASET_1 = "dataset_1"
+DATASET_2 = "dataset_2"
+DATASET_3 = "dataset_3"
+JOB_TYPE_1 = "job_type_1"
+JOB_TYPE_2 = "job_type_2"
+JOB_TYPE_3 = "job_type_3"
+ALL_JOB_TYPES = {JOB_TYPE_1, JOB_TYPE_2, JOB_TYPE_3}
+JOB_TYPE_4 = "job_type_4"
+
+
+def create_jobs(queue: Queue) -> None:
+    for dataset in [DATASET_1, DATASET_2]:
+        for job_type in ALL_JOB_TYPES:
+            queue.add_job(
+                job_type=job_type,
+                dataset=dataset,
+                revision="dataset_git_revision",
+                config=None,
+                split=None,
+                difficulty=50,
+            )
+
+
+@pytest.mark.parametrize(
+    "dataset,job_types,expected_job_types",
+    [
+        (DATASET_1, None, ALL_JOB_TYPES),
+        (DATASET_1, [JOB_TYPE_1], {JOB_TYPE_1}),
+        (DATASET_1, [JOB_TYPE_1, JOB_TYPE_2], {JOB_TYPE_1, JOB_TYPE_2}),
+        (DATASET_1, [JOB_TYPE_1, JOB_TYPE_4], {JOB_TYPE_1}),
+        (DATASET_2, None, ALL_JOB_TYPES),
+        (DATASET_3, None, set()),
+    ],
+)
+def test_get_pending_jobs_df_and_has_pending_jobs(
+    queue_mongo_resource: QueueMongoResource,
+    dataset: str,
+    job_types: Optional[list[str]],
+    expected_job_types: set[str],
+) -> None:
+    queue = Queue()
+    create_jobs(queue)
+
+    assert queue.has_pending_jobs(dataset=dataset, job_types=job_types) == bool(expected_job_types)
+
+    df = queue.get_pending_jobs_df(dataset=dataset, job_types=job_types)
+    assert len(df) == len(expected_job_types)
+    if expected_job_types:
+        assert df["dataset"].unique() == [dataset]
+        assert set(df["type"].unique()) == set(expected_job_types)
