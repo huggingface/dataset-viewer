@@ -195,7 +195,7 @@ class Plan:
         """Run all the tasks in the plan.
 
         Returns:
-            The number of tasks that were run.
+            `int`: The number of tasks that were run.
         """
         for idx, task in enumerate(self.tasks):
             logging.debug(f"Running task [{idx}/{len(self.tasks)}]: {task.long_id}")
@@ -230,8 +230,8 @@ class AfterJobPlan(Plan):
     Plan to create jobs after a processing step has finished.
 
     Args:
-        job_info (JobInfo): The job info.
-        processing_graph (ProcessingGraph): The processing graph.
+        job_info (`JobInfo`): The job info.
+        processing_graph (`ProcessingGraph`): The processing graph.
     """
 
     job_info: JobInfo
@@ -494,14 +494,14 @@ class DatasetBackfillPlan(Plan):
         """Get the artifact states for a step.
 
         Args:
-            processing_step (ProcessingStep): the processing step
-            config (str, optional): if not None, and step input type is config or split, only return the artifact
+            processing_step (`ProcessingStep`): the processing step
+            config (`str`, *optional*): if not None, and step input type is config or split, only return the artifact
               states for this config
-            split (str, optional): if not None, and step input type is split, only return the artifact states for
+            split (`str`, *optional*): if not None, and step input type is split, only return the artifact states for
               this split (config must be specified)
 
         Returns:
-            the artifact states for the step
+            `list[ArtifactState]`: the artifact states for the step
         """
         if processing_step.input_type == "dataset":
             artifact_states = [self.dataset_state.artifact_state_by_step[processing_step.name]]
@@ -658,7 +658,7 @@ class DatasetRemovalPlan(Plan):
 
     Args:
         dataset: dataset name
-        storage_clients (list[StorageClient], optional): The storage clients.
+        storage_clients (`list[StorageClient]`, *optional*): The storage clients.
     """
 
     dataset: str
@@ -678,8 +678,8 @@ def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     Remove the dataset from the Datasets Server
 
     Args:
-        dataset (str): The name of the dataset.
-        storage_clients (list[StorageClient], optional): The storage clients.
+        dataset (`str`): The name of the dataset.
+        storage_clients (`list[StorageClient]`, *optional*): The storage clients.
     """
     plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
     plan.run()
@@ -705,48 +705,48 @@ def set_revision(
         step.
 
     Args:
-        dataset (str): The name of the dataset.
-        revision (str): The new revision of the dataset.
-        priority (Priority): The priority of the jobs to create.
-        processing_graph (ProcessingGraph, optional): The processing graph.
-
-    Returns:
-        None
-
-    Raises:
-        ValueError: If the first processing steps are not dataset steps, or if the processing graph has no first
-            step.
+        dataset (`str`): The name of the dataset.
+        revision (`str`): The new revision of the dataset.
+        priority (`Priority`): The priority of the jobs to create.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
     """
-    first_processing_steps = processing_graph.get_first_processing_steps()
-    if len(first_processing_steps) < 1:
-        raise ValueError("Processing graph has no first step")
-    if any(first_processing_step.input_type != "dataset" for first_processing_step in first_processing_steps):
-        raise ValueError("One of the first processing steps is not a dataset step")
-    with StepProfiler(
-        method="set_revision",
-        step="all",
-        context=f"dataset={dataset}",
-    ):
-        logging.info(f"Analyzing {dataset}")
-        with StepProfiler(
-            method="set_revision",
-            step="plan",
-            context=f"dataset={dataset}",
-        ):
-            plan = DatasetBackfillPlan(
-                dataset=dataset,
-                revision=revision,
-                priority=priority,
-                processing_graph=processing_graph,
-                only_first_processing_steps=True,
-            )
-        logging.info(f"Setting new revision to {dataset}")
-        with StepProfiler(
-            method="set_revision",
-            step="run",
-            context=f"dataset={dataset}",
-        ):
-            plan.run()
+    logging.info(f"Analyzing {dataset}")
+    plan = DatasetBackfillPlan(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+        processing_graph=processing_graph,
+        only_first_processing_steps=True,
+    )
+    logging.info(f"Applying set_revision plan on {dataset}: plan={plan.as_response()}")
+    plan.run()
+
+
+def backfill(
+    dataset: str,
+    revision: str,
+    priority: Priority,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> None:
+    """
+    Analyses the dataset and backfills it with all missing bits, if requires.
+
+    Args:
+        dataset (`str`): The name of the dataset.
+        revision (`str`): The new revision of the dataset.
+        priority (`Priority`): The priority of the jobs to create.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+    """
+    logging.info(f"Analyzing {dataset}")
+    plan = DatasetBackfillPlan(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+        processing_graph=processing_graph,
+        only_first_processing_steps=False,
+    )
+    logging.info(f"Applying backfill plan on {dataset}: plan={plan.as_response()}")
+    plan.run()
 
 
 def finish_job(
@@ -759,14 +759,11 @@ def finish_job(
     It will finish the job, store the result in the cache, and trigger the next steps.
 
     Args:
-        job_result (JobResult): The result of the job.
-        processing_graph (ProcessingGraph, optional): The processing graph.
-
-    Returns:
-        None
+        job_result (`JobResult`): The result of the job.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        ValueError: If the job is not found, or if the processing step is not found.
+        [`ValueError`]: If the job is not found, or if the processing step is not found.
     """
     # check if the job is still in started status
     job_info = job_result["job_info"]
@@ -838,15 +835,15 @@ def has_pending_ancestor_jobs(
         consider that the artifact could exist.
 
     Args:
-        dataset (str): The name of the dataset.
-        processing_step_names (list[str]): The processing step names (artifacts) to check.
-        processing_graph (ProcessingGraph, optional): The processing graph.
-
-    Returns:
-        bool: True if any of the artifact could exist, False otherwise.
+        dataset (`str`): The name of the dataset.
+        processing_step_names (`list[str]`): The processing step names (artifacts) to check.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
-        ProcessingStepDoesNotExist: If any of the processing step does not exist.
+        [`ProcessingStepDoesNotExist`]: If any of the processing step does not exist.
+
+    Returns:
+        `bool`: True if any of the artifact could exist, False otherwise.
     """
     job_types: set[str] = set()
     for processing_step_name in processing_step_names:

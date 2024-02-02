@@ -9,7 +9,7 @@ from datasets.table import embed_table_storage
 from libcommon.storage_client import StorageClient
 from PIL import Image as PILImage  # type: ignore
 
-from libapi.response import create_response
+from libapi.response import ROW_IDX_COLUMN, create_response
 
 pytestmark = pytest.mark.anyio
 
@@ -44,6 +44,32 @@ async def test_create_response(storage_client: StorageClient) -> None:
     assert response["rows"] == [
         {"row_idx": 0, "row": {"text": "Hello there"}, "truncated_cells": []},
         {"row_idx": 1, "row": {"text": "General Kenobi"}, "truncated_cells": []},
+    ]
+    assert response["num_rows_total"] == 10
+    assert response["num_rows_per_page"] == 100
+    assert response["partial"] is False
+
+
+async def test_create_response_with_row_idx_column(storage_client: StorageClient) -> None:
+    ds = Dataset.from_dict({"text": ["Hello there", "General Kenobi"], ROW_IDX_COLUMN: [3, 4]})
+    response = await create_response(
+        dataset="ds",
+        revision="revision",
+        config="default",
+        split="train",
+        storage_client=storage_client,
+        pa_table=ds.data,
+        offset=0,
+        features=ds.features,
+        unsupported_columns=[],
+        num_rows_total=10,
+        partial=False,
+        use_row_idx_column=True,
+    )
+    assert response["features"] == [{"feature_idx": 0, "name": "text", "type": {"dtype": "string", "_type": "Value"}}]
+    assert response["rows"] == [
+        {"row_idx": 3, "row": {"text": "Hello there"}, "truncated_cells": []},
+        {"row_idx": 4, "row": {"text": "General Kenobi"}, "truncated_cells": []},
     ]
     assert response["num_rows_total"] == 10
     assert response["num_rows_per_page"] == 100

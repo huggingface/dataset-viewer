@@ -13,6 +13,7 @@ Let Datasets Server take care of the heavy lifting so you can use a simple **RES
 - Get the **dataset size** (in number of rows or bytes)
 - Download and view **rows at any index** in the dataset
 - **Search** a word in the dataset
+- **Filter** rows based on a query string
 - Get insightful **statistics** about the data
 - Access the dataset as **parquet files** to use in your favorite **processing or analytics framework**
 

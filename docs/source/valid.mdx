@@ -65,7 +65,31 @@ The response looks like this if a dataset is valid:
 ```json
 {
   "viewer": true,
-  "preview": true
+  "preview": true,
+  "search": true,
+  "filter": true,
+}
+```
+
+The response looks like this if a dataset is valid but /search is not available for it:
+
+```json
+{
+  "viewer": true,
+  "preview": true,
+  "search": false,
+  "filter": true,
+}
+```
+
+The response looks like this if a dataset is valid but /filter is not available for it:
+
+```json
+{
+  "viewer": true,
+  "preview": true,
+  "search": true,
+  "filter": false,
 }
 ```
 
@@ -74,7 +98,9 @@ If only the first rows of a dataset are available, then the response looks like:
 ```json
 {
   "viewer": false,
-  "preview": true
+  "preview": true,
+  "search": true,
+  "filter": true,
 }
 ```
 
@@ -83,7 +109,9 @@ Finally, if the dataset is not valid at all, then the response is:
 ```json
 {
   "viewer": false,
-  "preview": false
+  "preview": false,
+  "search": false,
+  "filter": false,
 }
 ```
 
@@ -91,7 +119,7 @@ Some cases where a dataset is not valid are:
 
 - the dataset viewer is disabled
 - the dataset is gated but the access is not granted: no token is passed or the passed token is not authorized
-- the dataset is private
+- the dataset is private but the owner is not a PRO user or an Enterprise Hub org
 - the dataset contains no data or the data format is not supported
 
 <Tip>

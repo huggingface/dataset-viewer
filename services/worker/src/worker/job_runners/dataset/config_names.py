@@ -28,15 +28,15 @@ def compute_config_names_response(
     hf_token: Optional[str] = None,
 ) -> DatasetConfigNamesResponse:
     """
-    Get the response of dataset-config-names for one specific dataset on huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
+    Get the response of 'dataset-config-names' for one specific dataset on huggingface.co.
+    Dataset can be gated if you pass an acceptable token.
     It is assumed that the dataset exists and can be accessed using the token.
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
+        max_number (`int`):
+            The maximum number of configs for a dataset.
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
@@ -44,19 +44,21 @@ def compute_config_names_response(
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
         hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
+
+    Raises:
+        [~`libcommon.exceptions.EmptyDatasetError`]:
+          The dataset is empty.
+        [~`libcommon.exceptions.DatasetModuleNotInstalledError`]:
+          The dataset tries to import a module that is not installed.
+        [~`libcommon.exceptions.ConfigNamesError`]:
+          If the list of configs could not be obtained using the datasets library.
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
+            If the dataset has a dataset script and is not in the allow list.
+
     Returns:
         `DatasetConfigNamesResponse`: An object with the list of config names.
-    Raises the following errors:
-        - [`libcommon.exceptions.EmptyDatasetError`]
-          The dataset is empty.
-        - [`libcommon.exceptions.DatasetModuleNotInstalledError`]
-          The dataset tries to import a module that is not installed.
-        - [`libcommon.exceptions.ConfigNamesError`]
-          If the list of configs could not be obtained using the datasets library.
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
-            If the dataset has a dataset script and is not in the allow list.
     """
-    logging.info(f"get config names for dataset={dataset}")
+    logging.info(f"get 'dateset-config-names' for {dataset=}")
     # get the list of splits in streaming mode
     try:
         config_name_items: list[ConfigNameItem] = [

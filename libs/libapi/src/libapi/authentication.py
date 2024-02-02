@@ -61,20 +61,20 @@ async def auth_check(
     after 200ms.
 
     Args:
-        dataset (str): the dataset name
-        external_auth_url (str|None): the URL of an external authentication service. The URL must contain `%s`,
+        dataset (`str`): the dataset name
+        external_auth_url (`str`, *optional*): the URL of an external authentication service. The URL must contain `%s`,
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
           The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
-        request (Request | None): the request which optionally bears authentication headers: "cookie",
+        request (`Request`, *optional*): the request which optionally bears authentication headers: "cookie",
           "authorization" or "X-Api-Key"
-        hf_jwt_public_keys (list[str]|None): the public keys to use to decode the JWT token
-        hf_jwt_algorithm (str): the algorithm to use to decode the JWT token
-        hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
+        hf_jwt_public_keys (`list[str]`, *optional*): the public keys to use to decode the JWT token
+        hf_jwt_algorithm (`str`): the algorithm to use to decode the JWT token
+        hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the external authentication service. It
           is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
     Returns:
-        None: the dataset is authorized for the request
+        `Literal[True]`: the dataset is authorized for the request
     """
     with StepProfiler(method="auth_check", step="all"):
         with StepProfiler(method="auth_check", step="check JWT"):

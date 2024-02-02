@@ -127,17 +127,17 @@ class JobDocument(Document):
         type (`str`): The type of the job, identifies the queue
         dataset (`str`): The dataset on which to apply the job.
         revision (`str`): The git revision of the dataset.
-        config (`str`, optional): The config on which to apply the job.
-        split (`str`, optional): The split on which to apply the job.
+        config (`str`, *optional*): The config on which to apply the job.
+        split (`str`, *optional*): The split on which to apply the job.
         unicity_id (`str`): A string that identifies the job uniquely. Only one job with the same unicity_id can be in
           the started state. The revision is not part of the unicity_id.
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
-        priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
-        status (`Status`, optional): The status of the job. Defaults to Status.WAITING.
+        priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
+        status (`Status`, *optional*): The status of the job. Defaults to Status.WAITING.
         difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
         created_at (`datetime`): The creation date of the job.
-        started_at (`datetime`, optional): When the job has started.
-        last_heartbeat (`datetime`, optional): Last time the running job got a heartbeat from the worker.
+        started_at (`datetime`, *optional*): When the job has started.
+        last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
     """
 
     meta = {
@@ -406,7 +406,7 @@ class lock(contextlib.AbstractContextManager["lock"]):
             dataset (`str`): the dataset repository
             branch (`str`): the branch to lock
             owner (`str`): the current job id that holds the lock
-            sleeps (`Sequence[float]`, optional): the time in seconds to sleep between each attempt to acquire the lock
+            sleeps (`Sequence[float]`, *optional*): the time in seconds to sleep between each attempt to acquire the lock
         """
         key = json.dumps({"dataset": dataset, "branch": branch})
         return cls(key=key, owner=owner, sleeps=sleeps, ttl=_TTL.LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH)
@@ -479,11 +479,12 @@ class Queue:
             dataset (`str`): The dataset on which to apply the job.
             revision (`str`): The git revision of the dataset.
             difficulty (`int`): The difficulty of the job.
-            config (`str`, optional): The config on which to apply the job.
-            split (`str`, optional): The config on which to apply the job.
-            priority (`Priority`, optional): The priority of the job. Defaults to Priority.LOW.
+            config (`str`, *optional*): The config on which to apply the job.
+            split (`str`, *optional*): The config on which to apply the job.
+            priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
 
-        Returns: the job
+        Returns:
+            `JobDocument`: the new job added to the queue
         """
         increase_metric(job_type=job_type, status=Status.WAITING)
         return JobDocument(
@@ -580,15 +581,16 @@ class Queue:
 
         Args:
             priority (`Priority`): The priority of the job.
-            difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
-            difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
-            job_types_blocked: if not None, jobs of the given types are not considered.
-            job_types_only: if not None, only jobs of the given types are considered.
+            difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
+            difficulty_max (`int`, *optional*): if not None, only jobs with a difficulty lower or equal to this value are considered.
+            job_types_blocked (`list[str]`, *optinoal*): if not None, jobs of the given types are not considered.
+            job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
-            EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
+            [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
 
-        Returns: the job
+        Returns:
+            `JobDocument`: the next waiting job for priority
         """
         logging.debug(
             f"Getting next waiting job for priority {priority}, blocked types: {job_types_blocked}, only types:"
@@ -674,15 +676,16 @@ class Queue:
           - ensuring that the unicity_id field is unique among the started jobs.
 
         Args:
-            difficulty_min: if not None, only jobs with a difficulty greater or equal to this value are considered.
-            difficulty_max: if not None, only jobs with a difficulty lower or equal to this value are considered.
-            job_types_blocked: if not None, jobs of the given types are not considered.
-            job_types_only: if not None, only jobs of the given types are considered.
+            difficulty_min (`int`, *optional*): if not None, only jobs with a difficulty greater or equal to this value are considered.
+            difficulty_max (`int`, *optional*): if not None, only jobs with a difficulty lower or equal to this value are considered.
+            job_types_blocked (`list[str]`, *optional*): if not None, jobs of the given types are not considered.
+            job_types_only (`list[str]`, *optional*): if not None, only jobs of the given types are considered.
 
         Raises:
-            EmptyQueueError: if there is no waiting job in the queue that satisfies the restrictions above.
+            [`EmptyQueueError`]: if there is no waiting job in the queue that satisfies the restrictions above.
 
-        Returns: the job
+        Returns:
+            `JobDocument`: the next waiting job
         """
         for priority in [Priority.HIGH, Priority.NORMAL, Priority.LOW]:
             with contextlib.suppress(EmptyQueueError):
@@ -701,14 +704,14 @@ class Queue:
         A lock is used to ensure that the job is not started by another worker.
 
         Args:
-            job: the job to start
-
-        Returns:
-            the started job
+            job (`JobDocument`): the job to start
 
         Raises:
-            AlreadyStartedJobError: if a started job already exist for the same unicity_id.
-            LockTimeoutError: if the lock could not be acquired after 20 retries.
+            [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id.
+            [`LockTimeoutError`]: if the lock could not be acquired after 20 retries.
+
+        Returns:
+            `JobDocument`: the started job
         """
         # could be a method of Job
         RETRIES = 20
@@ -774,12 +777,13 @@ class Queue:
             job_types_only: if not None, only jobs of the given types are considered.
 
         Raises:
-            EmptyQueueError: if there is no job in the queue, within the limit of the maximum number of started jobs
-            for a dataset
-            AlreadyStartedJobError: if a started job already exist for the same unicity_id
-            LockTimeoutError: if the lock cannot be acquired
+            [`EmptyQueueError`]: if there is no job in the queue, within the limit of the maximum number of started jobs
+                for a dataset
+            [`AlreadyStartedJobError`]: if a started job already exist for the same unicity_id
+            [`LockTimeoutError`]: if the lock cannot be acquired
 
-        Returns: the job id, the type, the input arguments: dataset, revision, config and split
+        Returns:
+            `JobInfo`: the job id, the type, the input arguments: dataset, revision, config and split
         """
 
         logging.debug(f"looking for a job to start, blocked types: {job_types_blocked}, only types: {job_types_only}")
@@ -806,12 +810,13 @@ class Queue:
         """Get the job for a given job id.
 
         Args:
-            job_id (`str`, required): id of the job
-
-        Returns: the requested job
+            job_id (`str`): id of the job
 
         Raises:
-            DoesNotExist: if the job does not exist
+            [`DoesNotExist`]: if the job does not exist
+
+        Returns:
+            `JobDocument`: the requested job
         """
         return JobDocument.objects(pk=job_id).get()
 
@@ -819,12 +824,13 @@ class Queue:
         """Get the job type for a given job id.
 
         Args:
-            job_id (`str`, required): id of the job
-
-        Returns: the job type
+            job_id (`str`): id of the job
 
         Raises:
-            DoesNotExist: if the job does not exist
+            [`DoesNotExist`]: if the job does not exist
+
+        Returns:
+            `str`: the job type
         """
         job = self.get_job_with_id(job_id=job_id)
         return job.type
@@ -834,7 +840,7 @@ class Queue:
           (does not exist, not started, incorrect values for started_at).
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Returns:
             `Job`: the started job
@@ -850,7 +856,7 @@ class Queue:
         """Check if a job is started, with the correct values for started_at.
 
         Args:
-            job_id (`str`, required): id of the job
+            job_id (`str`): id of the job
 
         Returns:
             `bool`: whether the job exists, is started, and had the expected format (STARTED status, non-empty
@@ -872,8 +878,8 @@ class Queue:
         The job is moved from the started state to the success or error state. The existing locks are released.
 
         Args:
-            job_id (`str`, required): id of the job
-            is_success (`bool`, required): whether the job succeeded or not
+            job_id (`str`): id of the job
+            is_success (`bool`): whether the job succeeded or not
 
         Returns:
             `bool`: whether the job existed, and had the expected format (STARTED status, non-empty started_at)
@@ -898,7 +904,7 @@ class Queue:
         Delete all the jobs for a given dataset.
 
         Args:
-            dataset (`str`, required): dataset name
+            dataset (`str`): dataset name
 
         Returns:
             `int`: the number of deleted jobs
@@ -918,11 +924,11 @@ class Queue:
         """Check if a job is in process (waiting or started).
 
         Args:
-            job_type (`str`, required): job type
-            dataset (`str`, required): dataset name
-            revision (`str`, required): dataset git revision
-            config (`str`, optional): config name. Defaults to None.
-            split (`str`, optional): split name. Defaults to None.
+            job_type (`str`): job type
+            dataset (`str`): dataset name
+            revision (`str`): dataset git revision
+            config (`str`, *optional*): config name. Defaults to None.
+            split (`str`, *optional*): split name. Defaults to None.
 
         Returns:
             `bool`: whether the job is in process (waiting or started)
@@ -982,17 +988,19 @@ class Queue:
         """Count the number of jobs with a given status and the given type.
 
         Args:
-            status (`Status`, required): status of the jobs
-            job_type (`str`, required): job type
+            status (`Status`): status of the jobs
+            job_type (`str`): job type
 
-        Returns: the number of jobs with the given status and the given type.
+        Returns:
+            `int`: the number of jobs with the given status and the given type.
         """
         return JobDocument.objects(type=job_type, status=status.value).count()
 
     def get_jobs_count_by_status(self, job_type: str) -> CountByStatus:
         """Count the number of jobs by status for a given job type.
 
-        Returns: a dictionary with the number of jobs for each status
+        Returns:
+            `CountByStatus`: a dictionary with the number of jobs for each status
         """
         # ensure that all the statuses are present, even if equal to zero
         # note: we repeat the values instead of looping on Status because we don't know how to get the types right
@@ -1008,17 +1016,19 @@ class Queue:
         """Get the dump of the jobs with a given status and a given type.
 
         Args:
-            status (`Status`, required): status of the jobs
-            job_type (`str`, required): job type
+            status (`Status`): status of the jobs
+            job_type (`str`): job type
 
-        Returns: a list of jobs with the given status and the given type
+        Returns:
+            `list[JobDict]`: a list of jobs with the given status and the given type
         """
         return [d.to_dict() for d in JobDocument.objects(status=status.value, type=job_type)]
 
     def get_dump_by_pending_status(self, job_type: str) -> DumpByPendingStatus:
         """Get the dump of the jobs by pending status for a given job type.
 
-        Returns: a dictionary with the dump of the jobs for each pending status
+        Returns:
+            `DumpByPendingStatus`: a dictionary with the dump of the jobs for each pending status
         """
         return {
             "waiting": self.get_dump_with_status(job_type=job_type, status=Status.WAITING),
@@ -1028,7 +1038,8 @@ class Queue:
     def get_dataset_pending_jobs_for_type(self, dataset: str, job_type: str) -> list[JobDict]:
         """Get the pending jobs of a dataset for a given job type.
 
-        Returns: an array of the pending jobs for the dataset and the given job type
+        Returns:
+            `list[JobDict]`: an array of the pending jobs for the dataset and the given job type
         """
         return [d.to_dict() for d in JobDocument.objects(type=job_type, dataset=dataset)]
 
@@ -1046,7 +1057,8 @@ class Queue:
         It returns jobs without recent heartbeats, which means they crashed at one point and became zombies.
         Usually `max_seconds_without_heartbeat` is a factor of the time between two heartbeats.
 
-        Returns: an array of the zombie job infos.
+        Returns:
+            `list[JobInfo]`: an array of the zombie job infos.
         """
         started_jobs = JobDocument.objects(status=Status.STARTED)
         if max_seconds_without_heartbeat <= 0:

@@ -37,28 +37,23 @@ def compute_first_rows_response(
     max_size_fallback: Optional[int] = None,
 ) -> SplitFirstRowsResponse:
     """
-    Get the response of /first-rows for one specific split of a dataset from huggingface.co.
-    Dataset can be private or gated if you pass an acceptable token.
-
-    It is assumed that the dataset exist and can be accessed using the token.
+    Get the response of 'first-rows-from-streaming' for one specific split of a dataset from huggingface.co.
 
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
+        revision (`str`):
+            The git revision of the dataset.
         config (`str`):
             A configuration name.
         split (`str`):
             A split name.
         storage_client (`StorageClient`):
             A storage client to save the assets (images, audio, etc.).
-        hf_endpoint (`str`):
-            The Hub endpoint (for example: "https://huggingface.co")
-        hf_token (`str` or `None`):
+        hf_token (`str`, *optional*):
             An authentication token (See https://huggingface.co/settings/token)
-        max_size_fallback (`int` or `None`): **DEPRECATED**
-            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
-            This argument is now hard-coded to 100MB, and will be removed in a future version.
+        min_cell_bytes (`int`):
+            The minimum number of bytes for a cell, when truncation applies.
         rows_max_bytes (`int`):
             The maximum number of bytes of the response (else, the response is truncated).
         rows_max_number (`int`):
@@ -72,33 +67,38 @@ def compute_first_rows_response(
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
             for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
             The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-    Returns:
-        [`SplitFirstRowsResponse`]: The list of first rows of the split.
-    Raises the following errors:
-        - [`libcommon.exceptions.SplitNotFoundError`]
+        max_size_fallback (`int`, *optional*): **DEPRECATED**
+            The maximum number of bytes of the split to fallback to normal mode if the streaming mode fails.
+            This argument is now hard-coded to 100MB, and will be removed in a future version.
+
+    Raises:
+        [~`libcommon.exceptions.SplitNotFoundError`]:
           If the split does not exist in the dataset.
-        - [`libcommon.exceptions.InfoError`]
+        [~`libcommon.exceptions.InfoError`]:
           If the config info could not be obtained using the datasets library.
-        - [`libcommon.exceptions.FeaturesError`]
+        [~`libcommon.exceptions.FeaturesError`]:
           If the split features could not be obtained using the datasets library.
-        - [`libcommon.exceptions.RowsPostProcessingError`]
+        [~`libcommon.exceptions.RowsPostProcessingError`]:
           If the post-processing of the split rows failed, e.g. while saving the images or audio files to the assets.
-        - [`libcommon.exceptions.TooManyColumnsError`]
+        [~`libcommon.exceptions.TooManyColumnsError`]:
           If the number of columns (features) exceeds the maximum supported number of columns.
-        - [`libcommon.exceptions.TooBigContentError`]
+        [~`libcommon.exceptions.TooBigContentError`]:
           If the first rows content exceeds the maximum supported size of bytes.
-        - [`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
           If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
-        - [`libcommon.exceptions.StreamingRowsError`]
+        [~`libcommon.exceptions.StreamingRowsError`]:
           If the split rows could not be obtained using the datasets library in streaming mode.
-        - [`libcommon.exceptions.NormalRowsError`]
+        [~`libcommon.exceptions.NormalRowsError`]:
           If the split rows could not be obtained using the datasets library in normal mode.
-        - [`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
+
+    Returns:
+        `SplitFirstRowsResponse`: The list of first rows of the split.
     """
-    logging.info(f"get first-rows for dataset={dataset} config={config} split={split}")
+    logging.info(f"get 'first-rows-from-streaming' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
     # get the features
     try:

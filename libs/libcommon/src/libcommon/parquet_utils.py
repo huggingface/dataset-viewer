@@ -65,7 +65,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
     If it starts with "partial-" then it is a partially exported split.
 
     Args:
-        parquet_file_url (str): URL of a Parquet file from the Parquet export
+        parquet_file_url (`str`): URL of a Parquet file from the Parquet export
             It must be placed in a directory name after the split,
             e.g. "train" or "partial-train" for a partial split export.
 
@@ -75,11 +75,27 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
             directory as the Parquet files.
 
     Returns:
-        partial (bool): True is the Parquet export is partial,
+        `bool`: True is the Parquet export is partial,
             or False if it's the full dataset.
     """
-    split_directory_name_for_parquet_export = parquet_file_url.rsplit("/", 2)[1]
+    split_directory_name_for_parquet_export = extract_split_name_from_parquet_url(parquet_file_url)
     return split_directory_name_for_parquet_export.startswith(PARTIAL_PREFIX)
+
+
+def extract_split_name_from_parquet_url(parquet_url: str) -> str:
+    """
+    Extracts the split name from a parquet file URL
+    stored in the `refs/convert/parquet` branch of a
+    dataset repository on the Hub
+
+    Args:
+        parquet_url (`str`): The URL to extract the split name from.
+
+    Returns:
+        `str`: The extracted split name.
+    """
+    split_name = parquet_url.rsplit("/", 2)[1]
+    return split_name
 
 
 @dataclass
@@ -124,14 +140,14 @@ class ParquetIndexWithMetadata:
         have the same schema, even if the requested rows are invalid (out of range).
 
         Args:
-            offset (int): The first row to read.
-            length (int): The number of rows to read.
-
-        Returns:
-            pa.Table: The requested rows.
+            offset (`int`): The first row to read.
+            length (`int`): The number of rows to read.
 
         Raises:
-            TooBigRows: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
+            [`TooBigRows`]: if the arrow data from the parquet row groups is bigger than max_arrow_data_in_memory
+
+        Returns:
+            `pa.Table`: The requested rows.
         """
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
@@ -353,11 +369,11 @@ class RowsIndex:
         have the same schema, even if the requested rows are invalid (out of range).
 
         Args:
-            offset (int): The first row to read.
-            length (int): The number of rows to read.
+            offset (`int`): The first row to read.
+            length (`int`): The number of rows to read.
 
         Returns:
-            pa.Table: The requested rows.
+            `pa.Table`: The requested rows.
         """
         logging.info(
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"

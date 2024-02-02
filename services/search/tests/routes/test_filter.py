@@ -4,13 +4,14 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
+from typing import Literal, Union
 
 import duckdb
 import pyarrow as pa
 import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
-from libapi.response import create_response
+from libapi.response import ROW_IDX_COLUMN, create_response
 from libcommon.storage_client import StorageClient
 
 from search.config import AppConfig
@@ -69,13 +70,18 @@ def test_validate_where_parameter_raises(where: str) -> None:
         validate_where_parameter(where)
 
 
-def test_execute_filter_query(index_file_location: str) -> None:
-    columns, where, limit, offset = ["name", "age"], "gender='female'", 1, 1
+@pytest.mark.parametrize("columns", ["*", ["name", "age"]])
+def test_execute_filter_query(index_file_location: str, columns: Union[list[str], Literal["*"]]) -> None:
+    where, limit, offset = "gender='female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
         index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2
-    assert pa_table == pa.Table.from_pydict({"__hf_index_id": [3], "name": ["Simone"], "age": [30]})
+    expected = pa.Table.from_pydict({"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]})
+    if isinstance(columns, list):
+        for column in set(expected.column_names) - set([ROW_IDX_COLUMN] + columns):
+            expected = expected.drop(column)
+    assert pa_table == expected
 
 
 @pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])

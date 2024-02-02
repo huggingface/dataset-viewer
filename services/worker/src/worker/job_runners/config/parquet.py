@@ -12,22 +12,24 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 
 def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse:
     """
-    Get the response of /parquet for one specific dataset on huggingface.co.
+    Get the response of 'config-parquet' for one specific dataset on huggingface.co.
+
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
+            A namespace (user or an organization) and a repo name separated by a `/`.
         config (`str`):
             A configuration name.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]:
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+          If the content of the previous step has not the expected format
+
     Returns:
         `ConfigParquetResponse`: An object with the parquet_response (list of parquet files).
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
-          If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
-          If the content of the previous step has not the expected format
     """
-    logging.info(f"get parquet files for dataset={dataset}, config={config}")
+    logging.info(f"get 'config-parquet' for {dataset=} {config=}")
 
     previous_step = "config-parquet-and-info"
     config_parquet_and_info_best_response = get_previous_step_or_raise(

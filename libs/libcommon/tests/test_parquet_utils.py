@@ -22,6 +22,7 @@ from libcommon.parquet_utils import (
     RowsIndex,
     SchemaMismatchError,
     TooBigRows,
+    extract_split_name_from_parquet_url,
     parquet_export_is_partial,
 )
 from libcommon.resources import CacheMongoResource
@@ -487,3 +488,15 @@ def test_indexer_schema_mistmatch_error(
                 index = indexer.get_rows_index("ds_sharded", "default", "train")
                 with pytest.raises(SchemaMismatchError):
                     index.query(offset=0, length=3)
+
+
+@pytest.mark.parametrize(
+    "parquet_url,expected",
+    [
+        ("https://hf.co/datasets/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/train/0000.parquet", "train"),
+    ],
+)
+def test_extract_split_name_from_parquet_url(parquet_url: str, expected: str) -> None:
+    split_name = extract_split_name_from_parquet_url(parquet_url)
+
+    assert split_name == expected

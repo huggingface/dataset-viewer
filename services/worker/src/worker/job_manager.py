@@ -39,12 +39,12 @@ class JobManager:
     A job manager is a class that handles a job runner compute, for a specific processing step.
 
     Args:
-        job_info (:obj:`JobInfo`):
+        job_info (`JobInfo`):
             The job to process. It contains the job_id, the job type, the dataset, the revision, the config,
             the split and the priority level.
-        app_config (:obj:`AppConfig`):
+        app_config (`AppConfig`):
             The app config.
-        job_runner (:obj:`JobRunner`):
+        job_runner (`JobRunner`):
             The job runner to use.
     """
 

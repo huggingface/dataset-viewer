@@ -11,7 +11,7 @@ The `/splits` endpoint accepts the dataset name as its query parameter:
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/splits?dataset=duorc"
+API_URL = "https://datasets-server.huggingface.co/splits?dataset=ibm/duorc"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -23,7 +23,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/splits?dataset=duorc",
+        "https://datasets-server.huggingface.co/splits?dataset=ibm/duorc",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -39,24 +39,24 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/splits?dataset=duorc \
+curl https://datasets-server.huggingface.co/splits?dataset=ibm/duorc \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
 
-The endpoint response is a JSON containing a list of the dataset's splits and configurations. For example, the [duorc](https://huggingface.co/datasets/duorc) dataset has six splits and two configurations:
+The endpoint response is a JSON containing a list of the dataset's splits and configurations. For example, the [ibm/duorc](https://huggingface.co/datasets/ibm/duorc) dataset has six splits and two configurations:
 
 ```json
 {
   "splits": [
-    { "dataset": "duorc", "config": "ParaphraseRC", "split": "train" },
-    { "dataset": "duorc", "config": "ParaphraseRC", "split": "validation" },
-    { "dataset": "duorc", "config": "ParaphraseRC", "split": "test" },
-    { "dataset": "duorc", "config": "SelfRC", "split": "train" },
-    { "dataset": "duorc", "config": "SelfRC", "split": "validation" },
-    { "dataset": "duorc", "config": "SelfRC", "split": "test" }
+    { "dataset": "ibm/duorc", "config": "ParaphraseRC", "split": "train" },
+    { "dataset": "ibm/duorc", "config": "ParaphraseRC", "split": "validation" },
+    { "dataset": "ibm/duorc", "config": "ParaphraseRC", "split": "test" },
+    { "dataset": "ibm/duorc", "config": "SelfRC", "split": "train" },
+    { "dataset": "ibm/duorc", "config": "SelfRC", "split": "validation" },
+    { "dataset": "ibm/duorc", "config": "SelfRC", "split": "test" }
   ],
   "pending": [],
   "failed": []

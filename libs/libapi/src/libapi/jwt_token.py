@@ -64,13 +64,13 @@ def create_algorithm(algorithm_name: str) -> SupportedAlgorithm:
     Create an algorithm object from the algorithm name.
 
     Args:
-        algorithm_name (str): the algorithm name
-
-    Returns:
-        SupportedAlgorithm: the algorithm object
+        algorithm_name (`str`): the algorithm name
 
     Raises:
-        RuntimeError: if the algorithm is not supported
+        [`RuntimeError`]: if the algorithm is not supported
+
+    Returns:
+        `SupportedAlgorithm`: the algorithm object
     """
     try:
         algorithm = jwt.get_algorithm_by_name(algorithm_name)
@@ -86,13 +86,13 @@ def _key_to_pem(key: SupportedKey, algorithm: SupportedAlgorithm) -> str:
     Convert the key to PEM format.
 
     Args:
-        key (SupportedKey): the key to convert
-
-    Returns:
-        str: the key in PEM format (PKCS#8)
+        key (`SupportedKey`): the key to convert
 
     Raises:
-        RuntimeError: if the key is not a public key
+        [`RuntimeError`]: if the key is not a public key
+
+    Returns:
+        `str`: the key in PEM format (PKCS#8)
     """
     if isinstance(algorithm, SYMMETRIC_ALGORITHMS) or isinstance(key, bytes):
         return key.decode("utf-8")  # type: ignore
@@ -111,15 +111,15 @@ def parse_jwt_public_key_json(payload: Any, algorithm: SupportedAlgorithm) -> st
     compatible with the algorithm
 
     Args:
-        keys (Any): the JSON to parse. It must be a list of keys in JWK format
-        algorithm (SupportedAlgorithm): the algorithm the key should implement
-
-    Returns:
-        str: the public key in PEM format
+        keys (`Any`): the JSON to parse. It must be a list of keys in JWK format
+        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
-        RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
-        ValueError: if the input is not a list
+        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
+        [`ValueError`]: if the input is not a list
+
+    Returns:
+        `str`: the public key in PEM format
     """
     if not isinstance(payload, list) or not payload:
         raise ValueError("Payload must be a list of JWK formatted keys.")
@@ -136,15 +136,15 @@ def parse_jwt_public_key_pem(payload: str, algorithm: SupportedAlgorithm) -> str
     with the algorithm
 
     Args:
-        key (str): the key to parse. It should be a public key in PEM format
-        algorithm (SupportedAlgorithm): the algorithm the key should implement
-
-    Returns:
-        str: the public key in PEM format
+        key (`str`): the key to parse. It should be a public key in PEM format
+        algorithm (`SupportedAlgorithm`): the algorithm the key should implement
 
     Raises:
-        RuntimeError: if the payload is not compatible with the algorithm, or if the key is not public
-        ValueError: if the input is not a list
+        [`RuntimeError`]: if the payload is not compatible with the algorithm, or if the key is not public
+        [`ValueError`]: if the input is not a list
+
+    Returns:
+        `str`: the public key in PEM format
     """
     try:
         key = algorithm.prepare_key(payload)
@@ -163,15 +163,15 @@ def fetch_jwt_public_key_json(
     See https://huggingface.co/api/keys/jwt
 
     Args:
-        url (str): the URL to fetch the public key from
-        hf_timeout_seconds (float|None): the timeout in seconds for the external authentication service. It
+        url (`str`): the URL to fetch the public key from
+        hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the external authentication service. It
             is used both for the connection timeout and the read timeout. If None, the request never timeouts.
 
-    Returns:
-        Any: the response JSON payload
-
     Raises:
-        RuntimeError: if the request fails
+        [`RuntimeError`]: if the request fails
+
+    Returns:
+        `Any`: the response JSON payload
     """
     try:
         response = httpx.get(url, timeout=hf_timeout_seconds)
@@ -197,19 +197,19 @@ def get_jwt_public_keys(
     The keys must be compatible with the algorithm.
 
     Args:
-        algorithm_name (str|None): the algorithm to use to decode the JWT token. If not provided, no keys will be
+        algorithm_name (`str`, *optional*): the algorithm to use to decode the JWT token. If not provided, no keys will be
           returned
-        public_key_url (str|None): the URL to fetch the public key from
-        additional_public_keys (list[str]|None): additional public keys to use to decode the JWT token
-        timeout_seconds (float|None): the timeout in seconds for fetching the remote key
-
-    Returns:
-        list[str]: the list of public keys in PEM format
+        public_key_url (`str`, *optional*): the URL to fetch the public key from
+        additional_public_keys (`list[str]`, *optional*): additional public keys to use to decode the JWT token
+        timeout_seconds (`float`, *optional*): the timeout in seconds for fetching the remote key
 
     Raises:
-        JWTKeysError: if some exception occurred while creating the public keys. Some reasons: if the algorithm
+        [`JWTKeysError`]: if some exception occurred while creating the public keys. Some reasons: if the algorithm
           is not supported, if a payload could not be parsed, if a key is not compatible with the algorithm,
             if a key is not public, if th remote key could not be fetch or parsed
+
+    Returns:
+        `list[str]`: the list of public keys in PEM format
     """
     try:
         keys: list[str] = []
@@ -246,11 +246,11 @@ def validate_jwt(
     Raise an exception if any of the condition is not met.
 
     Args:
-        dataset (str): the dataset identifier
-        token (Any): the JWT token to decode
-        public_keys (list[str]): the public keys to use to decode the JWT token. They are tried in order.
-        algorithm (str): the algorithm to use to decode the JWT token
-        verify_exp (bool|None): whether to verify the expiration of the JWT token. Default to True.
+        dataset (`str`): the dataset identifier
+        token (`Any`): the JWT token to decode
+        public_keys (`list[str]`): the public keys to use to decode the JWT token. They are tried in order.
+        algorithm (`str`): the algorithm to use to decode the JWT token
+        verify_exp (`bool`, *optional*): whether to verify the expiration of the JWT token. Default to True.
 
     Raise:
         JWTInvalidSignature: if the signature verification failed
