@@ -608,6 +608,7 @@ def test_get_cache_reports() -> None:
             "job_runner_version": None,
             "dataset_git_revision": dataset_git_revision_a,
             "progress": None,
+            "failed_runs": 0,
         },
         {
             "kind": kind,
@@ -621,6 +622,7 @@ def test_get_cache_reports() -> None:
             "job_runner_version": job_runner_version_b,
             "dataset_git_revision": dataset_git_revision_b,
             "progress": None,
+            "failed_runs": 0,
         },
     ]
     assert response["next_cursor"] != ""
@@ -640,6 +642,7 @@ def test_get_cache_reports() -> None:
                 "job_runner_version": None,
                 "dataset_git_revision": dataset_git_revision_c,
                 "progress": None,
+                "failed_runs": 0,
             },
         ],
         "next_cursor": "",
@@ -661,6 +664,7 @@ def test_get_cache_reports() -> None:
             "details": {},
             "updated_at": updated_at_a,
             "progress": None,
+            "failed_runs": 0,
         },
         {
             "kind": kind,
@@ -675,6 +679,7 @@ def test_get_cache_reports() -> None:
             "details": details_b,
             "updated_at": updated_at_b,
             "progress": None,
+            "failed_runs": 0,
         },
     ]
     assert response_with_content["next_cursor"] != ""
@@ -695,6 +700,7 @@ def test_get_cache_reports() -> None:
                 "details": details_c,
                 "updated_at": updated_at_c,
                 "progress": None,
+                "failed_runs": 0,
             },
         ],
         "next_cursor": "",
