@@ -4703,14 +4703,14 @@ test = ["pytest"]
 
 [[package]]
 name = "starlette"
-version = "0.28.0"
+version = "0.37.0"
 description = "The little ASGI library that shines."
 category = "main"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "starlette-0.28.0-py3-none-any.whl", hash = "sha256:e58b9fc402c579950260fbb6d57173395c4e62804c40d3ede7e9ef1074f0c579"},
-    {file = "starlette-0.28.0.tar.gz", hash = "sha256:7bf3da5e997e796cc202cef2bd3f96a7d9b1e1943203c2fe2b42e020bc658482"},
+    {file = "starlette-0.37.0-py3-none-any.whl", hash = "sha256:53a95037cf6a563fca942ea16ba0260edce10258c213cbd554adc263fad22dfc"},
+    {file = "starlette-0.37.0.tar.gz", hash = "sha256:d1ec71a84fd1f691b800361a6a64ecb0e9c17ab308507ccc7f911727888293c7"},
 ]
 
 [package.dependencies]
@@ -4718,7 +4718,7 @@ anyio = ">=3.4.0,<5"
 typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
-full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
+full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
 
 [[package]]
 name = "starlette-prometheus"
@@ -5971,4 +5971,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "fe47f7c3b6e1dc09811b8d49de904d0ca18408103f1ccfcb60e8f22b8b7bf42b"
+content-hash = "6009436f691df43905873f452c825268e4105d1ef56ce13d6413fbc5c8eae470"
