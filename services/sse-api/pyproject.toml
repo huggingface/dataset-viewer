@@ -10,7 +10,7 @@ python = "3.9.18"
 environs = "^9.5.0"
 libapi = {path = "../../libs/libapi", develop = true}
 motor = "^3.3.1"
-sse-starlette = "^1.2.1"
+sse-starlette = "^2.0.0"
 uvicorn = {extras = ["standard"], version = "^0.20.0"}
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 
