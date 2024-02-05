@@ -222,6 +222,7 @@ class DatasetHubCacheResponse(TypedDict):
     viewer: bool
     partial: bool
     num_rows: int
+    tags: list[str]
 
 
 class DatasetParquetResponse(TypedDict):
