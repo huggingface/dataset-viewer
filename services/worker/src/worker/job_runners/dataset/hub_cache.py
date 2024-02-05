@@ -74,7 +74,6 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             "Previous step 'dataset-loading-tags' did not return the expected content: 'tags''."
         )
 
-
     return (
         DatasetHubCacheResponse(
             preview=preview,
