@@ -58,12 +58,44 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
     progress=None,
 )
+UPSTREAM_RESPONSE_DATASET_INFO_OK: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset-info": {}, "pending": [], "failed": []},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_DATASET_INFO_PENDING: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset-info": {}, "pending": ["config1"], "failed": []},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_DATASET_INFO_FAILED: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset-info": {}, "pending": [], "failed": ["config1"]},
+    progress=1.0,
+)
 EXPECTED_OK = (
-    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000},
+    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": ["croissant"]},
     0.2,
 )
+EXPECTED_NO_CROISSANT = (
+    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": []},
+    0.2,
+)
+EXPECTED_NO_DATASET_INFO = (
+    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": []},
+    0.0,
+)
 EXPECTED_NO_PROGRESS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000},
+    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["croissant"]},
     0.5,
 )
 
@@ -103,14 +135,35 @@ def get_job_runner(
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
                 UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_DATASET_INFO_OK,
             ],
             EXPECTED_OK,
         ),
         (
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_SIZE_OK,
             ],
+            EXPECTED_NO_DATASET_INFO,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_DATASET_INFO_PENDING,
+            ],
+            EXPECTED_NO_CROISSANT,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_DATASET_INFO_FAILED,
+            ],
+            EXPECTED_NO_CROISSANT,
+        ),
+        (
+            [UPSTREAM_RESPONSE_IS_VALID_OK, UPSTREAM_RESPONSE_SIZE_NO_PROGRESS, UPSTREAM_RESPONSE_DATASET_INFO_OK],
             EXPECTED_NO_PROGRESS,
         ),
     ],

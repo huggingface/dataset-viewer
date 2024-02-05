@@ -5,7 +5,7 @@ import logging
 
 from libcommon.constants import DATASET_INFO_KINDS
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
 
 from worker.dtos import DatasetHubCacheResponse, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -62,22 +62,26 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     num_rows = content["size"]["dataset"]["num_rows"]
     size_progress = size_response.response["progress"]
 
-    info_response = get_previous_step_or_raise(kinds=DATASET_INFO_KINDS, dataset=dataset)
-    content = info_response.response["content"]
-    if (
-        "partial" not in content
-        or not isinstance(content["partial"], bool)
-        or "dataset-info" not in content
-        or "failed" not in content
-        or not isinstance(content["failed"], list)
-    ):
-        raise PreviousStepFormatError(
-            "Previous step 'dataset-size' did not return the expected content: 'partial' or 'dataset-info' or 'failed'."
-        )
-    info_progress = info_response.response["progress"]
-    has_croissant = not content["partial"] and not content["failed"]
-    # ^ let's consider that the croissant "tag" should be set on datasets which have info for all their configs
-    tags = ["croissant"] if has_croissant else []
+    try:
+        info_response = get_previous_step_or_raise(kinds=DATASET_INFO_KINDS, dataset=dataset)
+        content = info_response.response["content"]
+        if (
+            "dataset-info" not in content
+            or "pending" not in content
+            or not isinstance(content["pending"], list)
+            or "failed" not in content
+            or not isinstance(content["failed"], list)
+        ):
+            raise PreviousStepFormatError(
+                "Previous step 'dataset-size' did not return the expected content: 'dataset-info', 'pending' or 'failed'."
+            )
+        info_progress = info_response.response["progress"]
+        has_croissant = not content["pending"] and not content["failed"]
+        # ^ let's consider that the croissant "tag" should be set on datasets which have info for all their configs
+        tags = ["croissant"] if has_croissant else []
+    except CachedArtifactNotFoundError:
+        info_progress = 0.0
+        tags = []
 
     progress = min((p for p in [is_valid_progress, size_progress, info_progress] if p is not None), default=0.0)
 
