@@ -11,7 +11,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
+from worker.job_runners.dataset.loading_tags import DatasetLoadingTagsJobRunner
 
 from ..utils import REVISION_NAME, UpstreamResponse
 
@@ -22,61 +22,41 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig], DatasetHubCacheJobRunner]
+GetJobRunner = Callable[[str, AppConfig], DatasetLoadingTagsJobRunner]
 
 DATASET = "dataset"
 
-UPSTREAM_RESPONSE_IS_VALID_OK: UpstreamResponse = UpstreamResponse(
-    kind="dataset-is-valid",
+UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"preview": True, "viewer": False, "search": True},
-    progress=0.5,
+    content={"dataset_info": {"default": {"builder_name": "parquet"}}},
+    progress=1.0,
 )
-UPSTREAM_RESPONSE_IS_VALID_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="dataset-is-valid",
+UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"builder_name": "webdataset"}}},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
     progress=0.0,
 )
-UPSTREAM_RESPONSE_SIZE_OK: UpstreamResponse = UpstreamResponse(
-    kind="dataset-size",
-    dataset=DATASET,
-    dataset_git_revision=REVISION_NAME,
-    http_status=HTTPStatus.OK,
-    content={"size": {"dataset": {"num_rows": 1000}}, "partial": False},
-    progress=0.2,
+EXPECTED_PARQUET = (
+    {"tags": ["croissant"]},
+    1.0,
 )
-UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
-    kind="dataset-size",
-    dataset=DATASET,
-    dataset_git_revision=REVISION_NAME,
-    http_status=HTTPStatus.OK,
-    content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
-    progress=None,
-)
-UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
-    kind="dataset-loading-tags",
-    dataset=DATASET,
-    dataset_git_revision=REVISION_NAME,
-    http_status=HTTPStatus.OK,
-    content={"tags": ["tag"]},
-    progress=1.0,
-)
-EXPECTED_OK = (
-    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": []},
-    0.2,
-)
-EXPECTED_NO_PROGRESS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": []},
-    0.5,
-)
-EXPECTED_OK_WITH_TAGS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["tag"]},
-    0.5,
+EXPECTED_WEBDATASET = (
+    {"tags": ["croissant", "webdataset"]},
+    1.0,
 )
 
 
@@ -88,10 +68,10 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-    ) -> DatasetHubCacheJobRunner:
-        return DatasetHubCacheJobRunner(
+    ) -> DatasetLoadingTagsJobRunner:
+        return DatasetLoadingTagsJobRunner(
             job_info={
-                "type": DatasetHubCacheJobRunner.get_job_type(),
+                "type": DatasetLoadingTagsJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,
@@ -113,25 +93,15 @@ def get_job_runner(
     [
         (
             [
-                UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_INFO_PARQUET,
             ],
-            EXPECTED_OK,
+            EXPECTED_PARQUET,
         ),
         (
             [
-                UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_INFO_WEBDATASET,
             ],
-            EXPECTED_NO_PROGRESS,
-        ),
-        (
-            [
-                UPSTREAM_RESPONSE_IS_VALID_OK,
-                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
-                UPSTREAM_RESPONSE_LOADING_TAGS_OK,
-            ],
-            EXPECTED_OK_WITH_TAGS,
+            EXPECTED_WEBDATASET,
         ),
     ],
 )
@@ -155,8 +125,7 @@ def test_compute(
     [
         (
             [
-                UPSTREAM_RESPONSE_IS_VALID_ERROR,
-                UPSTREAM_RESPONSE_SIZE_OK,
+                UPSTREAM_RESPONSE_INFD_ERROR,
             ],
             pytest.raises(CachedArtifactError),
         )

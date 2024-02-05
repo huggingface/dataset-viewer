@@ -11,13 +11,13 @@ from libcommon.simple_cache import (
 )
 
 from worker.dtos import (
-    DatasetLoadingTagsResponse,
     CompleteJobResult,
+    DatasetLoadingTagsResponse,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
-
 MAX_CONFIGS = 100
+
 
 def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
     """
@@ -40,8 +40,6 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
 
     dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
     http_status = dataset_info_best_response.response["http_status"]
-    if "info" not in dataset_info_best_response:
-        raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset-info'.")
     tags: list[str] = []
     if http_status == HTTPStatus.OK:
         try:
@@ -53,7 +51,7 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
                     tags.append("webdataset")
         except KeyError as e:
             raise PreviousStepFormatError(
-                f"Previous step 'dataset-info' did not return the expected content.", e
+                "Previous step 'dataset-info' did not return the expected content.", e
             ) from e
     return DatasetLoadingTagsResponse(tags=tags)
 
