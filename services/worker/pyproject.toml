@@ -32,7 +32,7 @@ pydub = "^0.25.1"
 PyICU = "^2.10.2"
 rarfile = "^4.0"
 scikit-learn = "^1.2.1"
-starlette = "^0.28.0"
+starlette = "^0.36.2"
 tensorflow-aarch64 = {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"}
 tensorflow-cpu = [
     {version = "^2.11.1", markers = "sys_platform == 'linux' and platform_machine != 'aarch64'"},
