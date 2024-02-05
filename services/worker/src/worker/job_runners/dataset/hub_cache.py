@@ -3,6 +3,7 @@
 
 import logging
 
+from libcommon.constants import DATASET_INFO_KINDS
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import get_previous_step_or_raise
 
@@ -61,7 +62,24 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     num_rows = content["size"]["dataset"]["num_rows"]
     size_progress = size_response.response["progress"]
 
-    progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
+    info_response = get_previous_step_or_raise(kinds=DATASET_INFO_KINDS, dataset=dataset)
+    content = info_response.response["content"]
+    if (
+        "partial" not in content
+        or not isinstance(content["partial"], bool)
+        or "dataset-info" not in content
+        or "failed" not in content
+        or not isinstance(content["failed"], list)
+    ):
+        raise PreviousStepFormatError(
+            "Previous step 'dataset-size' did not return the expected content: 'partial' or 'dataset-info' or 'failed'."
+        )
+    info_progress = info_response.response["progress"]
+    has_croissant = not content["partial"] and not content["failed"]
+    # ^ let's consider that the croissant "tag" should be set on datasets which have info for all their configs
+    tags = ["croissant"] if has_croissant else []
+
+    progress = min((p for p in [is_valid_progress, size_progress, info_progress] if p is not None), default=0.0)
 
     return (
         DatasetHubCacheResponse(
@@ -69,6 +87,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             viewer=viewer,
             partial=partial,
             num_rows=num_rows,
+            tags=tags,
         ),
         progress,
     )

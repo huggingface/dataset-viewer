@@ -101,6 +101,7 @@ def init_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -113,6 +114,7 @@ def init_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -125,6 +127,7 @@ def init_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -137,6 +140,7 @@ def init_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
@@ -153,6 +157,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -166,6 +171,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -179,6 +185,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -192,6 +199,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -205,6 +213,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
         http_status=HTTPStatus.OK,
     )
@@ -218,6 +227,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },  # ^ not important
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
@@ -236,6 +246,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },  # ^ not important
         http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     )
@@ -249,6 +260,7 @@ async def update_hub_cache() -> None:
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },  # ^ not important
         http_status=HTTPStatus.OK,
     )
@@ -263,6 +275,7 @@ INIT_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {
@@ -272,6 +285,7 @@ INIT_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {"dataset": "dataset3", "hub_cache": None},
@@ -284,6 +298,7 @@ UPDATE_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {
@@ -293,6 +308,7 @@ UPDATE_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {
@@ -302,6 +318,7 @@ UPDATE_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {"dataset": "dataset1", "hub_cache": None},
@@ -314,6 +331,7 @@ UPDATE_ONLY_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
 ]
@@ -325,6 +343,7 @@ UPDATE_ONLY_AFTER_INIT_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
     {"dataset": "dataset1", "hub_cache": None},
@@ -337,6 +356,7 @@ UPDATE_ONLY_AFTER_INIT_EVENTS: EventsList = [
             "viewer": True,
             "partial": False,
             "num_rows": 100,
+            "tags": ["croissant"],
         },
     },
 ]
