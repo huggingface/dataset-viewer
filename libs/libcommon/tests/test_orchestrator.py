@@ -119,7 +119,7 @@ def test_after_job_plan_delete() -> None:
         job_info=job_info,
         failed_runs=0,
     )
-    assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteJobs,1"]
+    assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteWaitingJobs,1"]
 
     after_job_plan.run()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)

@@ -98,27 +98,23 @@ class CreateJobsTask(Task):
 
 
 @dataclass
-class DeleteJobsTask(Task):
+class DeleteWaitingJobsTask(Task):
     jobs_df: pd.DataFrame
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteJobs,{len(self.jobs_df)}"
+        self.id = f"DeleteWaitingJobs,{len(self.jobs_df)}"
         types = [row["type"] for _, row in self.jobs_df.iterrows()]
-        self.long_id = f"DeleteJobs,{types}"
+        self.long_id = f"DeleteWaitingJobs,{types}"
 
     def run(self) -> None:
         with StepProfiler(
-            method="DeleteJobsTask.run",
+            method="DeleteWaitingJobsTask.run",
             step="all",
             context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
-            deleted_jobs_count = Queue().delete_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
-            if deleted_jobs_count != len(self.jobs_df):
-                raise ValueError(
-                    f"Something went wrong when deleting jobs: {len(self.jobs_df)} jobs were supposed to be"
-                    f" deleted, but {deleted_jobs_count} were deleted."
-                )
+            deleted_jobs_count = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
+            logging.debug(f"{deleted_jobs_count} waiting jobs were deleted.")
 
 
 @dataclass
@@ -177,7 +173,11 @@ class DeleteDatasetStorageTask(Task):
 
 
 SupportedTask = Union[
-    CreateJobsTask, DeleteJobsTask, DeleteDatasetJobsTask, DeleteDatasetCacheEntriesTask, DeleteDatasetStorageTask
+    CreateJobsTask,
+    DeleteWaitingJobsTask,
+    DeleteDatasetJobsTask,
+    DeleteDatasetCacheEntriesTask,
+    DeleteDatasetStorageTask,
 ]
 
 
@@ -327,9 +327,10 @@ class AfterJobPlan(Plan):
                 # we don't support fan-out dataset-level to split-level (no need for now)
 
         # Better keep this order: delete, then create
-        # Note that all the pending jobs for other revisions will be deleted
+        # Note that all the waiting jobs for other revisions will be deleted
+        # The started jobs are ignored, for now.
         if not self.pending_jobs_df.empty:
-            self.add_task(DeleteJobsTask(jobs_df=self.pending_jobs_df))
+            self.add_task(DeleteWaitingJobsTask(jobs_df=self.pending_jobs_df))
         if self.job_infos_to_create:
             self.add_task(CreateJobsTask(job_infos=self.job_infos_to_create))
 
@@ -642,9 +643,10 @@ class DatasetBackfillPlan(Plan):
             else:
                 pending_jobs_to_delete_df.drop(valid_pending_jobs_df.index, inplace=True)
         # Better keep this order: delete, then create
-        # Note that all the pending jobs for other revisions will be deleted
+        # Note that all the waiting jobs for other revisions will be deleted
+        # The started jobs are ignored, for now.
         if not pending_jobs_to_delete_df.empty:
-            self.add_task(DeleteJobsTask(jobs_df=pending_jobs_to_delete_df))
+            self.add_task(DeleteWaitingJobsTask(jobs_df=pending_jobs_to_delete_df))
         if job_infos_to_create:
             self.add_task(CreateJobsTask(job_infos=job_infos_to_create))
 
