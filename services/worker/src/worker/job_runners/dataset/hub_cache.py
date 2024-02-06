@@ -6,7 +6,7 @@ import logging
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
 
-from worker.dtos import DatasetHubCacheResponse, JobResult
+from worker.dtos import DatasetHubCacheResponse, DatasetLoadingTag, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -63,7 +63,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
 
-    tags: list[str] = []
+    tags: list[DatasetLoadingTag] = []
     try:
         loading_tags_response = get_previous_step_or_raise(kinds=["dataset-loading-tags"], dataset=dataset)
         tags = loading_tags_response.response["content"]["tags"]

@@ -12,6 +12,7 @@ from libcommon.simple_cache import (
 
 from worker.dtos import (
     CompleteJobResult,
+    DatasetLoadingTag,
     DatasetLoadingTagsResponse,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
@@ -34,13 +35,13 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
             If the content of the previous step has not the expected format
 
     Returns:
-        `DatasetLoadingTagsResponse`: The dataset_loading_tags_response (list of tags).
+        `DatasetLoadingTagsResponse`: The dataset-loading-tags response (list of tags).
     """
-    logging.info(f"get 'dataset-info' for {dataset=}")
+    logging.info(f"get 'dataset-loading-tags' for {dataset=}")
 
     dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
     http_status = dataset_info_best_response.response["http_status"]
-    tags: list[str] = []
+    tags: list[DatasetLoadingTag] = []
     if http_status == HTTPStatus.OK:
         try:
             content = dataset_info_best_response.response["content"]
