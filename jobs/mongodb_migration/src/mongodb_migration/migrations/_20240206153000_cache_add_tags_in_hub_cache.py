@@ -21,7 +21,7 @@ class MigrationAddTagsToHubCacheCacheResponse(Migration):
         )
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {"kind": "dataset-hub-cache", "http_status": 200, "content.tags": {"$exists": False}},
-            {"$set": {"tags": []}},
+            {"$set": {"content.tags": []}},
         )
 
     def down(self) -> None:
