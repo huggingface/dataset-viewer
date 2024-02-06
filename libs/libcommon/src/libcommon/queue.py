@@ -545,18 +545,18 @@ class Queue:
             return 0
 
     def delete_jobs_by_job_id(self, job_ids: list[str]) -> int:
-        """Delete jobs from the queue.
+        """Delete waiting jobs from the queue given a list of ids.
 
         If the job ids are not valid, they are ignored.
 
         Args:
-            job_ids (`list[str]`): The list of job ids to cancel.
+            job_ids (`list[str]`): The list of job ids to delete.
 
         Returns:
-            `int`: The number of canceled jobs
+            `int`: The number of deleted jobs
         """
         try:
-            existing = JobDocument.objects(pk__in=job_ids)
+            existing = JobDocument.objects(pk__in=job_ids, status=Status.WAITING)
             for job in existing.all():
                 decrease_metric(job_type=job.type, status=job.status)
             deleted_jobs = existing.delete()

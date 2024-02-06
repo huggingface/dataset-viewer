@@ -114,11 +114,7 @@ class DeleteJobsTask(Task):
             context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
             deleted_jobs_count = Queue().delete_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
-            if deleted_jobs_count != len(self.jobs_df):
-                raise ValueError(
-                    f"Something went wrong when deleting jobs: {len(self.jobs_df)} jobs were supposed to be"
-                    f" deleted, but {deleted_jobs_count} were deleted."
-                )
+            logging.debug(f"{deleted_jobs_count} jobs were deleted.")
 
 
 @dataclass

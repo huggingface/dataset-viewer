@@ -114,39 +114,41 @@ def test_add_job() -> None:
 
 
 @pytest.mark.parametrize(
-    "jobs_ids,job_ids_to_cancel,expected_canceled_number",
+    "jobs_ids,job_ids_to_delete,expected_deleted_number",
     [
-        (["a", "b"], ["a", "b"], 2),
-        (["a", "b"], ["a"], 1),
-        (["a"], ["a", "b"], 1),
+        (["a", "b"], ["a", "b"], 1),
+        (["a", "b"], ["b"], 1),
+        (["a"], ["a", "b"], 0),
     ],
 )
 def test_delete_jobs_by_job_id(
-    jobs_ids: list[str], job_ids_to_cancel: list[str], expected_canceled_number: int
+    jobs_ids: list[str], job_ids_to_delete: list[str], expected_deleted_number: int
 ) -> None:
     test_type = "test_type"
     test_difficulty = 50
     queue = Queue()
 
     # we cannot really set job_id, so, we create jobs and get their job id, using dataset as a proxy
-    real_job_ids_to_cancel = []
+    real_job_ids_to_delete = []
     waiting_jobs = 0
-    for job_id in list(set(jobs_ids + job_ids_to_cancel)):
+    all_jobs = sorted(list(set(jobs_ids + job_ids_to_delete)))  # ensure always 'a' is first started
+    for job_id in all_jobs:
         job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision", difficulty=test_difficulty)
         waiting_jobs += 1
         assert_metric(job_type=test_type, status=Status.WAITING, total=waiting_jobs)
-        if job_id in job_ids_to_cancel:
+        if job_id in job_ids_to_delete:
             real_job_id = job.info()["job_id"]
-            real_job_ids_to_cancel.append(real_job_id)
+            real_job_ids_to_delete.append(real_job_id)
         if job_id not in jobs_ids:
             # delete the job, in order to simulate that it did never exist (we just wanted a valid job_id)
             job.delete()
+    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs))
 
     queue.start_job()
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    canceled_number = queue.delete_jobs_by_job_id(job_ids=real_job_ids_to_cancel)
-    assert canceled_number == expected_canceled_number
+    deleted_number = queue.delete_jobs_by_job_id(job_ids=real_job_ids_to_delete)
+    assert deleted_number == expected_deleted_number
 
 
 def test_delete_jobs_by_job_id_wrong_format() -> None:

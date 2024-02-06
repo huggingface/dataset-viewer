@@ -741,7 +741,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [NORMAL_STARTED_OLD],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW, NORMAL_STARTED_OLD, NORMAL_STARTED_NEW],
         ),
         (
             [
@@ -755,7 +755,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [NORMAL_STARTED_NEW],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW, NORMAL_STARTED_NEW],
         ),
         (
             [
@@ -768,7 +768,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [LOW_STARTED_OLD],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW],
         ),
         (
             [LOW_WAITING_OLD, LOW_WAITING_NEW, LOW_STARTED_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
