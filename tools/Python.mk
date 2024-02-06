@@ -1,3 +1,6 @@
+POETRY := $(shell command -v poetry@1.7.1 2> /dev/null)
+POETRY_DEFAULT := $(shell command -v poetry 2> /dev/null)
+POETRY := $(if $(POETRY),$(POETRY),$(POETRY_DEFAULT))
 
 .PHONY: install
 install:
