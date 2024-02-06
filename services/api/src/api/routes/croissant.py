@@ -21,13 +21,12 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.constants import DATASET_INFO_KINDS
+from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KINDS
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
 from starlette.responses import Response
 
-MAX_CONFIGS = 100
 MAX_COLUMNS = 1_000
 # ^ same value as the default for FIRST_ROWS_COLUMNS_MAX_NUMBER (see services/worker)
 
@@ -265,7 +264,7 @@ def create_croissant_endpoint(
                 error_code = info_result["error_code"]
                 revision = info_result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
-                    infos = list(islice(content["dataset_info"].values(), MAX_CONFIGS))
+                    infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
                     partial = content["partial"]
                     with StepProfiler(method="croissant_endpoint", step="generate croissant json", context=context):
                         croissant = get_croissant_from_dataset_infos(

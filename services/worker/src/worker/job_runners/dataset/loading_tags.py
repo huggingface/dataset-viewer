@@ -5,6 +5,7 @@ import logging
 from http import HTTPStatus
 from itertools import islice
 
+from libcommon.constants import CROISSANT_MAX_CONFIGS
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -16,8 +17,6 @@ from worker.dtos import (
     DatasetLoadingTagsResponse,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
-
-MAX_CONFIGS = 100
 
 
 def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
@@ -45,7 +44,7 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
     if http_status == HTTPStatus.OK:
         try:
             content = dataset_info_best_response.response["content"]
-            infos = list(islice(content["dataset_info"].values(), MAX_CONFIGS))
+            infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
             if infos:
                 tags.append("croissant")
                 if infos[0]["builder_name"] == "webdataset":
