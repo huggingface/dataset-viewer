@@ -13,4 +13,4 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/cache_maintenance/main.py
+	$(POETRY) run python src/cache_maintenance/main.py
