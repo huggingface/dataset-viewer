@@ -60,7 +60,9 @@ from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_spl
 )
 from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 from mongodb_migration.migrations._20240109160700_cache_add_failed_runs import MigrationAddFailedRunsToCacheResponse
-from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import MigrationAddTagsToHubCacheCacheResponse
+from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import (
+    MigrationAddTagsToHubCacheCacheResponse,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,

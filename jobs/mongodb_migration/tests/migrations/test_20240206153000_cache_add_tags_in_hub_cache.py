@@ -6,7 +6,9 @@ from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_AL
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
-from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import MigrationAddTagsToHubCacheCacheResponse
+from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import (
+    MigrationAddTagsToHubCacheCacheResponse,
+)
 
 
 def assert_tags(dataset: str, kind: str) -> None:
