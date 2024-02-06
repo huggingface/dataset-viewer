@@ -121,7 +121,7 @@ def test_add_job() -> None:
         (["a"], ["a", "b"], 0),
     ],
 )
-def test_delete_jobs_by_job_id(
+def test_delete_waiting_jobs_by_job_id(
     jobs_ids: list[str], job_ids_to_delete: list[str], expected_deleted_number: int
 ) -> None:
     test_type = "test_type"
@@ -147,14 +147,14 @@ def test_delete_jobs_by_job_id(
     queue.start_job()
     assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    deleted_number = queue.delete_jobs_by_job_id(job_ids=real_job_ids_to_delete)
+    deleted_number = queue.delete_waiting_jobs_by_job_id(job_ids=real_job_ids_to_delete)
     assert deleted_number == expected_deleted_number
 
 
-def test_delete_jobs_by_job_id_wrong_format() -> None:
+def test_delete_waiting_jobs_by_job_id_wrong_format() -> None:
     queue = Queue()
 
-    assert queue.delete_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
     assert JobTotalMetricDocument.objects().count() == 0
 
 

@@ -544,7 +544,7 @@ class Queue:
         except Exception:
             return 0
 
-    def delete_jobs_by_job_id(self, job_ids: list[str]) -> int:
+    def delete_waiting_jobs_by_job_id(self, job_ids: list[str]) -> int:
         """Delete waiting jobs from the queue given a list of ids.
 
         If the job ids are not valid, they are ignored.
@@ -750,8 +750,8 @@ class Queue:
                 update_metrics_for_type(
                     job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
                 )
-                # and delete the other ones, if any
-                self.delete_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs if job.pk != first_job.pk])
+                # and delete the other waiting jobs, if any
+                self.delete_waiting_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs if job.pk != first_job.pk])
                 return first_job.reload()
         except TimeoutError as err:
             raise LockTimeoutError(
