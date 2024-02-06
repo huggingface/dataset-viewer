@@ -639,7 +639,7 @@ specification: ProcessingGraphSpecification = {
     "dataset-hub-cache": {
         "input_type": "dataset",
         "triggered_by": ["dataset-is-valid", "dataset-size", "dataset-loading-tags"],
-        "job_runner_version": 2,
+        "job_runner_version": 1,
         "difficulty": 20,
     },
     "dataset-loading-tags": {
