@@ -36,6 +36,7 @@ PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS = 100
 PARQUET_REVISION = "refs/convert/parquet"
 
 ERROR_CODES_TO_RETRY = {
+    "ConnectionError",
     "CreateCommitError",
     "ExternalServerError",
     "JobManagerCrashedError",
