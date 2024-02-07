@@ -13,4 +13,4 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/mongodb_migration/main.py
+	$(POETRY) run python src/mongodb_migration/main.py

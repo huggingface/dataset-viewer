@@ -6,7 +6,7 @@ from typing import Optional
 
 from libcommon.dtos import Priority
 from libcommon.exceptions import NotSupportedError
-from libcommon.operations import update_dataset
+from libcommon.operations import backfill_dataset
 from libcommon.simple_cache import get_all_datasets
 from libcommon.storage_client import StorageClient
 
@@ -36,7 +36,7 @@ def backfill_cache(
     for dataset in datasets_in_database:
         analyzed_datasets += 1
         try:
-            update_dataset(
+            backfill_dataset(
                 dataset=dataset,
                 hf_endpoint=hf_endpoint,
                 blocked_datasets=blocked_datasets,

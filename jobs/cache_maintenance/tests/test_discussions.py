@@ -31,7 +31,7 @@ DEFAULT_BOT_NAME = "parquet-converter"
 
 
 @pytest.mark.parametrize(
-    "datasets, valid_expected_datasets",
+    "datasets,valid_expected_datasets",
     [
         ([], [set()]),
         (["a/b"], [{"a/b"}]),

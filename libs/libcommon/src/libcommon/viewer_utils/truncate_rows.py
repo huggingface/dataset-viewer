@@ -29,7 +29,7 @@ def truncate_row_item(row_item: RowItem, min_cell_bytes: int, columns_to_keep_un
         columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
 
     Returns:
-        [`RowItem`]: the same row item, mutated, with all the cells truncated to min_cell_bytes.
+        `RowItem`: the same row item, mutated, with all the cells truncated to min_cell_bytes.
     """
     for column_name, cell in row_item["row"].items():
         if column_name in columns_to_keep_untruncated:
@@ -72,7 +72,7 @@ def truncate_row_items_cells(
         columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
 
     Returns:
-        list[`RowItem`]: the same row items, mutated.
+        `list[RowItem]`: the same row items, mutated.
     """
     # compute the current size
     rows_bytes = get_json_size(row_items)

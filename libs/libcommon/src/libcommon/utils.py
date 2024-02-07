@@ -35,7 +35,7 @@ def get_json_size(obj: Any) -> int:
     """Returns the size of an object in bytes once serialized as JSON
 
     Args:
-        obj (`Any`) the Python object
+        obj (`Any`): the Python object
 
     Returns:
         `int`: the size of the serialized object in bytes
@@ -62,7 +62,7 @@ def serialize_and_truncate(obj: Any, max_bytes: int) -> str:
         max_bytes (`int`): the maximum number of bytes.
 
     Raises:
-        `SmallerThanMaxBytesError`: if the serialized object is smaller than max_bytes.
+        [`SmallerThanMaxBytesError`]: if the serialized object is smaller than max_bytes.
 
     Returns:
         `str`: the serialized object, truncated to max_bytes.
@@ -131,7 +131,7 @@ def raise_if_blocked(
             the namespace name.
 
     Raises:
-        [~`libcommon.exceptions.DatasetInBlockListError`]
+        [~`libcommon.exceptions.DatasetInBlockListError`]:
           If the dataset is in the list of blocked datasets.
     """
     for blocked_dataset in blocked_datasets:

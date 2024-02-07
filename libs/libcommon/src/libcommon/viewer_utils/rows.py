@@ -104,7 +104,7 @@ def create_first_rows_response(
         `RowsPostProcessingError`: if there is an error while post-processing the rows.
 
     Returns:
-        [`SplitFirstRowsResponse`]: the response for the first rows of the split.
+        `SplitFirstRowsResponse`: the response for the first rows of the split.
     """
     if features and len(features) > columns_max_number:
         raise TooManyColumnsError(

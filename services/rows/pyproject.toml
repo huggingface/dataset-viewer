@@ -18,7 +18,7 @@ watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
 bandit = "^1.7.4"
 boto3 = "^1.28.43"
 moto = "^4.2.0"
-mypy = "^1.0.0"
+mypy = "^1.8.0"
 pandas-stubs = "^1.5.3"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"

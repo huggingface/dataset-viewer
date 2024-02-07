@@ -22,9 +22,9 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
             A configuration name.
 
     Raises:
-        [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
           If the previous step gave an error.
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
 
     Returns:

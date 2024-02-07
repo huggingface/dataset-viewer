@@ -35,6 +35,8 @@ def compute_config_names_response(
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
+        max_number (`int`):
+            The maximum number of configs for a dataset.
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
@@ -44,13 +46,13 @@ def compute_config_names_response(
             An authentication token (See https://huggingface.co/settings/token)
 
     Raises:
-        [~`libcommon.exceptions.EmptyDatasetError`]
+        [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
-        [~`libcommon.exceptions.DatasetModuleNotInstalledError`]
+        [~`libcommon.exceptions.DatasetModuleNotInstalledError`]:
           The dataset tries to import a module that is not installed.
-        [~`libcommon.exceptions.ConfigNamesError`]
+        [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configs could not be obtained using the datasets library.
-        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]
+        [~`libcommon.exceptions.DatasetWithScriptNotSupportedError`]:
             If the dataset has a dataset script and is not in the allow list.
 
     Returns:
@@ -73,17 +75,20 @@ def compute_config_names_response(
         ]
     except _EmptyDatasetError as err:
         raise EmptyDatasetError("The dataset is empty.", cause=err) from err
-    except ImportError as err:
-        raise DatasetModuleNotInstalledError(
-            "The dataset tries to import a module that is not installed.", cause=err
-        ) from err
-    except Exception as err:
-        if isinstance(err, ValueError) and "trust_remote_code" in str(err):
+    except ValueError as err:
+        if "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError(
                 "The dataset viewer doesn't support this dataset because it runs "
                 "arbitrary python code. Please open a discussion in the discussion tab "
                 "if you think this is an error and tag @lhoestq and @severo."
             ) from err
+        raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
+    except ImportError as err:
+        # this should only happen if the dataset is in the allow list, which should soon disappear
+        raise DatasetModuleNotInstalledError(
+            "The dataset tries to import a module that is not installed.", cause=err
+        ) from err
+    except Exception as err:
         raise ConfigNamesError("Cannot get the config names for the dataset.", cause=err) from err
 
     number_of_configs = len(config_name_items)

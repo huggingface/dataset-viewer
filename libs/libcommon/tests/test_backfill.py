@@ -741,7 +741,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [NORMAL_STARTED_OLD],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW, NORMAL_STARTED_OLD, NORMAL_STARTED_NEW],
         ),
         (
             [
@@ -755,7 +755,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [NORMAL_STARTED_NEW],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW, NORMAL_STARTED_NEW],
         ),
         (
             [
@@ -768,7 +768,7 @@ NORMAL_STARTED_NEW = (Priority.NORMAL, Status.STARTED, NEW)
             ],
             False,
             True,
-            [LOW_STARTED_OLD],
+            [LOW_STARTED_OLD, LOW_STARTED_NEW],
         ),
         (
             [LOW_WAITING_OLD, LOW_WAITING_NEW, LOW_STARTED_NEW, NORMAL_WAITING_OLD, NORMAL_WAITING_NEW],
@@ -817,7 +817,7 @@ def test_delete_jobs(
             raise NotImplementedError()
         expected_tasks = ["CreateJobs,1"]
     elif expected_delete_jobs:
-        expected_tasks = [f"DeleteJobs,{len(existing_jobs) - 1}"]
+        expected_tasks = [f"DeleteWaitingJobs,{len(existing_jobs) - 1}"]
     else:
         expected_tasks = []
 
@@ -905,7 +905,7 @@ def test_multiple_revisions() -> None:
             "up_to_date": [],
         },
         queue_status={"in_process": []},
-        tasks=["DeleteJobs,1", "CreateJobs,1"],
+        tasks=["DeleteWaitingJobs,1", "CreateJobs,1"],
     )
     dataset_backfill_plan.run()
 

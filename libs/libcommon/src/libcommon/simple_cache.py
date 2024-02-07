@@ -691,6 +691,7 @@ class CacheReport(TypedDict):
     updated_at: datetime
     job_runner_version: Optional[int]
     progress: Optional[float]
+    failed_runs: int
 
 
 class CacheReportsPage(TypedDict):
@@ -723,13 +724,13 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
             The maximum number of results.
 
     Raises:
-        [~`simple_cache.InvalidCursor`]
+        [~`simple_cache.InvalidCursor`]:
           If the cursor is invalid.
-        [~`simple_cache.InvalidLimit`]
+        [~`simple_cache.InvalidLimit`]:
           If the limit is an invalid number.
 
     Returns:
-        [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
+        `CacheReportsPage`: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
     """
     if not cursor:
@@ -756,6 +757,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
                 "progress": object.progress,
+                "failed_runs": object.failed_runs,
             }
             for object in objects
         ],
@@ -787,6 +789,7 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> l
             "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
             "progress": response.progress,
+            "failed_runs": response.failed_runs,
         }
         for response in responses
     ]
@@ -818,13 +821,13 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
             The maximum number of results.
 
     Raises:
-        [~`simple_cache.InvalidCursor`]
+        [~`simple_cache.InvalidCursor`]:
           If the cursor is invalid.
-        [~`simple_cache.InvalidLimit`]
+        [~`simple_cache.InvalidLimit`]:
           If the limit is an invalid number.
 
     Returns:
-        [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
+        `CacheReportsWithContentPage`: A dict with the list of reports and the next cursor. The next cursor is
         an empty string if there are no more items to be fetched.
     """
     if not cursor:
@@ -852,6 +855,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "progress": object.progress,
+                "failed_runs": object.failed_runs,
             }
             for object in objects
         ],

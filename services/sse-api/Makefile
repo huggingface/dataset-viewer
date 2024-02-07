@@ -12,8 +12,8 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/sse_api/main.py
+	$(POETRY) run python src/sse_api/main.py
 
 .PHONY: watch
 watch:
-	poetry run watchmedo auto-restart -d src/sse_api -p "*.py" -R python src/sse_api/main.py
+	$(POETRY) run watchmedo auto-restart -d src/sse_api -p "*.py" -R python src/sse_api/main.py

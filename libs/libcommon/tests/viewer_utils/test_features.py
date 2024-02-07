@@ -187,7 +187,7 @@ def test_ogg_audio_with_s3(
 
 
 @pytest.mark.parametrize(
-    "audio_file_name, expected_audio_file_extension",
+    "audio_file_name,expected_audio_file_extension",
     [("test_audio_44100.wav", ".wav"), ("test_audio_16000.mp3", ".mp3")],
 )
 def test_infer_audio_file_extension(

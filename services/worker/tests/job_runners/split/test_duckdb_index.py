@@ -473,7 +473,7 @@ FTS_COMMAND = (
 
 
 @pytest.mark.parametrize(
-    "df, query, expected_ids",
+    "df,query,expected_ids",
     [
         (pd.DataFrame([{"line": line} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [line]} for line in DATA.split("\n")]), "bold", [2]),

@@ -35,13 +35,13 @@ def compute_image_url_columns(
             A split name.
 
     Raises:
-        [~`libcommon.simple_cache.CachedArtifactError`]
+        [~`libcommon.simple_cache.CachedArtifactError`]:
           If the previous step gave an error.
-        [~`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
           If the content of the previous step has not the expected format
 
     Returns:
-        [`ImageUrlColumnsResponse`]: The list of image url columns.
+        `ImageUrlColumnsResponse`: The list of image url columns.
     """
     logging.info(f"get 'split-image-url-columns' for {dataset=} {config=} {split=}")
 
