@@ -12,4 +12,4 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/worker/main.py
+	$(POETRY) run python src/worker/main.py

@@ -12,11 +12,11 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	poetry run python src/api/main.py
+	$(POETRY) run python src/api/main.py
 
 .PHONY: watch
 watch:
-	poetry run watchmedo auto-restart -d src/api -p "*.py" -R python src/api/main.py
+	$(POETRY) run watchmedo auto-restart -d src/api -p "*.py" -R python src/api/main.py
 
 # override the default test target to test prometheus depending on the environment
 # we cannot set the env var with pytest.MonkeyPatch, it's too late
@@ -24,10 +24,10 @@ watch:
 test:
 	$(MAKE) down
 	$(MAKE) up
-	poetry run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
+	$(POETRY) run python -m pytest -vv -x ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/api.prometheus
 	mkdir /tmp/api.prometheus
-	PROMETHEUS_MULTIPROC_DIR=/tmp/api.prometheus poetry run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
+	PROMETHEUS_MULTIPROC_DIR=/tmp/api.prometheus $(POETRY) run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/api.prometheus
 	$(MAKE) down
 
@@ -35,5 +35,5 @@ test:
 coverage:
 	$(MAKE) down
 	$(MAKE) up
-	poetry run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
+	$(POETRY) run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
 	$(MAKE) down
