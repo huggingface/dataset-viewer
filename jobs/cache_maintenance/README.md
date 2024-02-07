@@ -38,8 +38,8 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for the fol
 
 ### Clean Directory job configurations
 
-- `DIRECTORY_CLEANING_CACHE_DIRECTORY`: directory location to clean.
-- `DIRECTORY_CLEANING_SUBFOLDER_PATTERN`: sub folder pattern inside cache directory to delete files.
+- `DIRECTORY_CLEANING_CACHE_DIRECTORY`: directory location to clean up.
+- `DIRECTORY_CLEANING_SUBFOLDER_PATTERN`: sub folder pattern inside the cache directory.
 - `DIRECTORY_CLEANING_EXPIRED_TIME_INTERVAL_SECONDS`: time in seconds after a file is deleted since its last accessed time.
 
 ### Post Messages job configurations

@@ -53,7 +53,13 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs), [libs](./libs) and [services](./services):
 
-- [jobs](./jobs) contains the one-time jobs run by Helm before deploying the pods. For now, the only job migrates the databases when needed.
+The following diagram represents the general architecture of datasets-server:
+![Architecture](architecture.png)
+
+- [jobs](./jobs) contains the jobs run by Helm before deploying the pods or scheduled basis.
+For now we have two type of jobs:
+    - [cache maintenance](./jobs/cache_maintenance/)
+    - [mongodb migrations](./jobs/mongodb_migration/)
 - [libs](./libs) contains the Python libraries used by the services and workers. For now, the only library is [libcommon](./libs/libcommon), which contains the common code for the services and workers.
 - [services](./services) contains the applications: the public API, the admin API (which is separated from the public API and might be published under its own domain at some point), the reverse proxy, and the worker that processes the queue asynchronously: it gets a "job" (caution: the jobs stored in the queue, not the Helm jobs), processes the expected response for the associated endpoint, and stores the response in the cache.
 

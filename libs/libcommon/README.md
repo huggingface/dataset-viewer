@@ -66,9 +66,9 @@ Set environment variables to configure the connection to S3.
 - `S3_SECRET_ACCESS_KEY`: secret key associated with an AWS account. Defaults to empty.
 
 ## Parquet Metadata
-# Andrea-TODO Document
-- `PARQUET_METADATA_STORAGE_DIRECTORY`:
+
+- `PARQUET_METADATA_STORAGE_DIRECTORY`: storage directory where parquet metadata files are stored. See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.FileMetaData.html for more information. 
 
 ## Rows Index
-# Andrea-TODO Document
-- `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`:
+
+- `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`: The maximun number of row groups to be loaded in memory.
