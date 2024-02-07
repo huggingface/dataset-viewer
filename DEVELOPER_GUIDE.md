@@ -93,8 +93,8 @@ The application also has optional components:
 
 - a reverse proxy in front of the API to serve static files and proxy the rest to the API server
 - an admin server to serve technical endpoints
-- a shared directory for the assets and cached-assets in [S3](https://aws.amazon.com/s3/)
-- a shared storage for temporal files created by the workers in [EFS](https://aws.amazon.com/efs/)
+- a shared directory for the assets and cached-assets in [S3](https://aws.amazon.com/s3/) (It can be configured to point to a local storage instead)
+- a shared storage for temporal files created by the workers in [EFS](https://aws.amazon.com/efs/) (It can be configured to point to a local storage instead)
 
 
 The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
