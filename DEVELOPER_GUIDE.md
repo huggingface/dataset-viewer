@@ -53,45 +53,49 @@ If you use VSCode, it might be useful to use the ["monorepo" workspace](./.vscod
 
 The repository is structured as a monorepo, with Python libraries and applications in [jobs](./jobs), [libs](./libs) and [services](./services):
 
-The following diagram represents the general architecture of datasets-server:
+The following diagram represents the general architecture of the project:
 ![Architecture](architecture.png)
 
+- [Mongo Server](https://www.mongodb.com/), a Mongo server with databases for: "cache", "queue" and "metrics".
 - [jobs](./jobs) contains the jobs run by Helm before deploying the pods or scheduled basis.
-For now we have two type of jobs:
+For now there are two type of jobs:
     - [cache maintenance](./jobs/cache_maintenance/)
     - [mongodb migrations](./jobs/mongodb_migration/)
-- [libs](./libs) contains the Python libraries used by the services and workers. For now, the only library is [libcommon](./libs/libcommon), which contains the common code for the services and workers.
-- [services](./services) contains the applications: the public API, the admin API (which is separated from the public API and might be published under its own domain at some point), the reverse proxy, and the worker that processes the queue asynchronously: it gets a "job" (caution: the jobs stored in the queue, not the Helm jobs), processes the expected response for the associated endpoint, and stores the response in the cache.
+- [libs](./libs) contains the Python libraries used by the services and workers. 
+For now, there are two libraries 
+    - [libcommon](./libs/libcommon), which contains the common code for the services and workers.
+    - [libapi](./libs/libapi/), which contains common code for authentication, http requests, exceptions and other utilities for the services.
+- [services](./services) contains the applications: 
+    - [api](./services/api/), the public API, is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). All the responses are served from pre-computed responses in Mongo server. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
+    The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses   are deleted. On creation or update, a new job is appended in the "queue" database.
+    - [rows](./services/rows/)
+    - [search](./services/search/)
+    - [admin](./services/admin/), the admin API (which is separated from the public API and might be published under its own domain at some point)
+    - [reverse proxy](./services/reverse-proxy/) the reverse proxy
+    - [worker](./services/worker/) the worker that processes the queue asynchronously: it gets a "job" collection (caution: the jobs stored in the queue, not the Helm jobs), processes the expected response for the associated endpoint, and stores the response in the "cache" collection.
+    Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_STORAGE_ROOT`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
+    - [sse-api](./services/sse-api/)
+- Clients
+    - [Admin UI](./front/admin_ui/)
+    - [Hugging Face Hub](https://huggingface.co/) 
 
 If you have access to the internal HF notion, see https://www.notion.so/huggingface2/Datasets-server-464848da2a984e999c540a4aa7f0ece5.
 
-The application is distributed in several components.
+Hence, the working application has the following core components:
 
-[api](./services/api) is a web server that exposes the [API endpoints](https://huggingface.co/docs/datasets-server). Apart from some endpoints (`valid`, `is-valid`), all the responses are served from pre-computed responses. That's the main point of this project: generating these responses takes time, and the API server provides this service to the users.
-
-The precomputed responses are stored in a Mongo database called "cache". They are computed by [workers](./services/worker) which take their jobs from a job queue stored in a Mongo database called "queue", and store the results (error or valid response) into the "cache" (see [libcommon](./libs/libcommon)).
-
-The API service exposes the `/webhook` endpoint which is called by the Hub on every creation, update or deletion of a dataset on the Hub. On deletion, the cached responses are deleted. On creation or update, a new job is appended in the "queue" database.
-
-Note that every worker has its own job queue:
-
-- `/splits`: the job is to refresh a dataset, namely to get the list of [config](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-configuration) and [split](https://huggingface.co/docs/datasets/v2.1.0/en/load_hub#select-a-split) names, then to create a new job for every split for the workers that depend on it.
-- `/first-rows`: the job is to get the columns and the first 100 rows of the split.
-- `/parquet`: the job is to download the dataset, prepare a parquet version of every split (various sharded parquet files), and upload them to the `refs/convert/parquet` "branch" of the dataset repository on the Hub.
-
-Note also that the workers create local files when the dataset contains images or audios. A shared directory (`ASSETS_STORAGE_ROOT`) must therefore be provisioned with sufficient space for the generated files. The `/first-rows` endpoint responses contain URLs to these files, served by the API under the `/assets/` endpoint.
-
-Hence, the working application has:
-
+- a Mongo server with two main databases: "cache" and "queue"
 - one instance of the API service which exposes a port
-- N1 instances of the `splits` worker, N2 instances of the `first-rows` worker (N2 should generally be higher than N1), N3 instances of the `parquet` worker
-- a Mongo server with two databases: "cache" and "queue"
-- a shared directory for the assets
+- one instance of the ROWS service which exposes a port
+- one instance of the SEARCH service which exposes a port
+- N instances of worker that processes the pending "jobs" and stores the results in the "cache"
 
-The application also has:
+The application also has optional components:
 
 - a reverse proxy in front of the API to serve static files and proxy the rest to the API server
 - an admin server to serve technical endpoints
+- a shared directory for the assets and cached-assets in [S3](https://aws.amazon.com/s3/)
+- a shared storage for temporal files created by the workers in [EFS](https://aws.amazon.com/efs/)
+
 
 The following environments contain all the modules: reverse proxy, API server, admin API server, workers, and the Mongo database.
 
