@@ -56,7 +56,7 @@ The repository is structured as a monorepo, with Python libraries and applicatio
 The following diagram represents the general architecture of the project:
 ![Architecture](architecture.png)
 
-- [Mongo Server](https://www.mongodb.com/), a Mongo server with databases for: "cache", "queue" and "metrics".
+- [Mongo Server](https://www.mongodb.com/), a Mongo server with databases for: "cache", "queue" and "maintenance".
 - [jobs](./jobs) contains the jobs run by Helm before deploying the pods or scheduled basis.
 For now there are two type of jobs:
     - [cache maintenance](./jobs/cache_maintenance/)
