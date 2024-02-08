@@ -257,10 +257,12 @@ def backfill_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        orchestrator_statistics = delete_dataset(dataset=dataset, storage_clients=storage_clients)
-    orchestrator_statistics = backfill(
-        dataset=dataset,
-        revision=revision,
-        priority=priority,
+        return delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    return OperationsStatistics(
+        num_updated_datasets=1,
+        tasks=backfill(
+            dataset=dataset,
+            revision=revision,
+            priority=priority,
+        ),
     )
-    return OperationsStatistics(num_updated_datasets=1, tasks=orchestrator_statistics)

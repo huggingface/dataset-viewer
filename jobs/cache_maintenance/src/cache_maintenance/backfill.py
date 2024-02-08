@@ -43,7 +43,7 @@ def backfill_cache(
     logging.info("backfill datasets in the database and delete non-supported ones")
     datasets_in_database = get_all_datasets()
     logging.info(f"analyzing {len(datasets_in_database)} datasets in the database")
-    statistics = BackfillStatistics(total_datasets=len(datasets_in_database))
+    statistics = BackfillStatistics(num_total_datasets=len(datasets_in_database))
     log_batch = 100
 
     for dataset in datasets_in_database:

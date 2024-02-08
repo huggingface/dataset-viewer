@@ -16,7 +16,7 @@ from libcommon.constants import (
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
-from libcommon.dtos import BackfillStatistics, JobInfo, JobResult, Priority
+from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import Queue
@@ -791,7 +791,7 @@ def backfill(
     revision: str,
     priority: Priority,
     processing_graph: ProcessingGraph = processing_graph,
-) -> BackfillStatistics:
+) -> TasksStatistics:
     """
     Analyses the dataset and backfills it with all missing bits, if requires.
 
@@ -839,12 +839,12 @@ def finish_job(
     job_info = job_result["job_info"]
     if not Queue().is_job_started(job_id=job_info["job_id"]):
         logging.debug("the job was cancelled, don't update the cache")
-        return
+        return TasksStatistics()
     # if the job could not provide an output, finish it and return
     if not job_result["output"]:
         Queue().finish_job(job_id=job_info["job_id"])
         logging.debug("the job raised an exception, don't update the cache")
-        return
+        return TasksStatistics()
     # update the cache
     output = job_result["output"]
     params = job_info["params"]
