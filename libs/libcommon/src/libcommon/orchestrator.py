@@ -126,19 +126,16 @@ class DeleteDatasetWaitingJobsTask(Task):
         self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
         self.long_id = self.id
 
-    def run(self) -> int:
+    def run(self) -> None:
         """
         Delete the dataset waiting jobs.
-
-        Returns:
-            `int`: The number of jobs deleted
         """
         with StepProfiler(
             method="DeleteDatasetWaitingJobsTask.run",
             step="all",
             context=f"dataset={self.dataset}",
         ):
-            return Queue().delete_dataset_waiting_jobs(dataset=self.dataset)
+            Queue().delete_dataset_waiting_jobs(dataset=self.dataset)
 
 
 @dataclass

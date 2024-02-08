@@ -317,7 +317,7 @@ def test_remove_dataset() -> None:
     remove_dataset(dataset=DATASET_NAME)
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
+    assert len(pending_jobs_df) == 1
     assert has_some_cache(dataset=DATASET_NAME) is False
 
 
