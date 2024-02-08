@@ -118,7 +118,7 @@ class DeleteWaitingJobsTask(Task):
 
 
 @dataclass
-class DeleteDatasetJobsTask(Task):
+class DeleteDatasetWaitingJobsTask(Task):
     dataset: str
 
     def __post_init__(self) -> None:
@@ -126,13 +126,19 @@ class DeleteDatasetJobsTask(Task):
         self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
         self.long_id = self.id
 
-    def run(self) -> None:
+    def run(self) -> int:
+        """
+        Delete the dataset waiting jobs.
+
+        Returns:
+            `int`: The number of jobs deleted
+        """
         with StepProfiler(
-            method="DeleteDatasetJobsTask.run",
+            method="DeleteDatasetWaitingJobsTask.run",
             step="all",
             context=f"dataset={self.dataset}",
         ):
-            Queue().delete_dataset_jobs(dataset=self.dataset)
+            return Queue().delete_dataset_waiting_jobs(dataset=self.dataset)
 
 
 @dataclass
@@ -175,7 +181,7 @@ class DeleteDatasetStorageTask(Task):
 SupportedTask = Union[
     CreateJobsTask,
     DeleteWaitingJobsTask,
-    DeleteDatasetJobsTask,
+    DeleteDatasetWaitingJobsTask,
     DeleteDatasetCacheEntriesTask,
     DeleteDatasetStorageTask,
 ]
@@ -668,7 +674,7 @@ class DatasetRemovalPlan(Plan):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.add_task(DeleteDatasetJobsTask(dataset=self.dataset))
+        self.add_task(DeleteDatasetWaitingJobsTask(dataset=self.dataset))
         self.add_task(DeleteDatasetCacheEntriesTask(dataset=self.dataset))
         if self.storage_clients:
             for storage_client in self.storage_clients:

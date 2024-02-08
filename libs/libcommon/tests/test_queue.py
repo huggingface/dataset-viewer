@@ -590,12 +590,12 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
     Lock.objects().delete()
 
 
-def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     """
-    Test that delete_dataset_jobs deletes all jobs for a dataset
+    Test that delete_dataset_waiting_jobs deletes all the waiting jobs for a dataset
 
     -> deletes at several levels (dataset, config, split)
-    -> deletes started and waiting jobs
+    -> deletes waiting jobs, but not started jobs
     -> remove locks
     -> does not cancel, and does not remove locks, for other datasets
     """
@@ -663,17 +663,17 @@ def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert started_job_info_2["params"]["dataset"] == other_dataset
     assert started_job_info_2["type"] == job_type_1
 
-    assert queue.delete_dataset_jobs(dataset=dataset) == 4
+    assert queue.delete_dataset_waiting_jobs(dataset=dataset) == 2
 
-    assert JobDocument.objects().count() == 2
-    assert JobDocument.objects(dataset=dataset).count() == 0
+    assert JobDocument.objects().count() == 3
+    assert JobDocument.objects(dataset=dataset).count() == 1
     assert JobDocument.objects(dataset=other_dataset).count() == 2
-    assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 1
+    assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 2
     assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
 
     assert len(Lock.objects()) == 2
     assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner=None)) == 1
-    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 0
+    assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 1
     # ^ does not test much, because at that time, the lock should already have been released
 
 

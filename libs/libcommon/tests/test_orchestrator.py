@@ -428,7 +428,7 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
     )
     finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
     # clear generated jobs when finishing jobs
-    Queue().delete_dataset_jobs(DATASET_NAME)
+    Queue().delete_dataset_waiting_jobs(DATASET_NAME)
 
 
 def test_upsert_response_failed_runs() -> None:

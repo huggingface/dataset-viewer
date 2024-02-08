@@ -350,7 +350,7 @@ def test_2274_only_one_entry(
         assert len(get_cache_entries_df(dataset=dataset)) == 1
 
         # let's delete all the jobs, to get in the same state as the bug
-        queue.delete_dataset_jobs(dataset=dataset)
+        queue.delete_dataset_waiting_jobs(dataset=dataset)
 
         assert queue.get_pending_jobs_df(dataset=dataset).empty
         assert len(get_cache_entries_df(dataset=dataset)) == 1
