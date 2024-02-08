@@ -20,14 +20,10 @@ DISCUSSION_DESCRIPTION = """The {bot_name} bot has created a version of this dat
 
 Parquet is a columnar storage format optimized for querying and processing large datasets. Parquet is a popular choice for big data processing and analytics and is widely used for data processing and machine learning.
 
-In Parquet, data is divided into chunks called "row groups", and within each row group, it is stored in columns rather than rows. Each row group column is compressed separately using the best compression algorithm depending on the data, and contains metadata and statistics (min/max value, number of NULL values) about the data it contains.
-
-This structure allows for efficient data reading and querying:
+Its structure allows for efficient data reading and querying:
 - only the necessary columns are read from disk (projection pushdown); no need to read the entire file. This reduces the memory requirement for working with Parquet data. 
 - entire row groups are skipped if the statistics stored in its metadata do not match the data of interest (automatic filtering)
 - the data is compressed, which reduces the amount of data that needs to be stored and transferred.
-
-A Parquet file contains a single table. If a dataset has multiple tables (e.g. multiple splits or configurations), each table is stored in a separate Parquet file.
 
 You can learn more about the advantages associated with this format in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
