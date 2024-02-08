@@ -1,12 +1,31 @@
 # List Parquet files
 
-Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format. The Parquet files are published to the Hub on a specific `refs/convert/parquet` branch (like this `amazon_polarity` [branch](https://huggingface.co/datasets/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example) that lives in parallel to the `main` branch.
+Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format.
+
+## What is Parquet?
+
+Parquet is a columnar storage format that is optimized for querying and processing large datasets. Parquet is a popular choice for big data processing and analytics, and it is widely used in the industry.
+
+In Parquet, data is divided in chunks called "row groups", and within each row group, it is stored in columns rather than rows. Each row group column is compressed separately using the most adapted compression algorithm, and contains metadata about the data it contains.
+
+This structure allows for efficient reading and querying of the data:
+- only the necessary columns are read from disk (projection pushdown), no need to read the entire file
+- thanks to the statistics of each row group (min, max, number of NULL values), entire row groups can be skipped if they do not contain the data of interest (automatic filtering)
+- the data is compressed, which reduces the amount of data that needs to be stored and transfered
+
+Note that a Parquet file contains a single table. If a dataset has multiple tables (e.g. multiple splits or configurations), each table is stored in a separate Parquet file.
+
+## Conversion to Parquet
+
+The Parquet files are published to the Hub on a specific `refs/convert/parquet` branch (like this `amazon_polarity` [branch](https://huggingface.co/datasets/amazon_polarity/tree/refs%2Fconvert%2Fparquet) for example) that lives in parallel to the `main` branch.
 
 <Tip>
 
 In order for Datasets Server to generate a Parquet version of a dataset, the dataset must be _public_, or owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
 
 </Tip>
+
+## Using the Datasets Server API
 
 This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
