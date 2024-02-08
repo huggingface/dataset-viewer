@@ -13,6 +13,34 @@ from libcommon.simple_cache import get_datasets_with_last_updated_kind
 PARQUET_CACHE_KIND = "config-parquet"
 DAYS = 1
 
+DISCUSSION_TITLE = "[bot] [No action needed] Conversion to Parquet"
+DISCUSSION_DESCRIPTION = """The {bot_name} bot has created a version of this dataset in the Parquet format in the {parquet_link} branch.
+
+## What is Parquet?
+
+Parquet is a columnar storage format optimized for querying and processing large datasets. Parquet is a popular choice for big data processing and analytics and is widely used for data processing and machine learning.
+
+In Parquet, data is divided in chunks called "row groups", and within each row group, it is stored in columns rather than rows. Each row group column is compressed separately using the most adapted compression algorithm, and contains metadata about the data it contains.
+
+This structure allows for efficient reading and querying of the data:
+- only the necessary columns are read from disk (projection pushdown); no need to read the entire file. This reduces the memory requirement for working with Parquet data. 
+- thanks to the statistics of each row group (min, max, number of NULL values), entire row groups can be skipped if they do not contain the data of interest (automatic filtering)
+- the data is compressed, which reduces the amount of data that needs to be stored and transfered
+
+Note that a Parquet file contains a single table. If a dataset has multiple tables (e.g. multiple splits or configurations), each table is stored in a separate Parquet file.
+
+You can learn more about the advantages associated with this format in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
+
+## How to access the Parquet version of the dataset?
+
+You can access the Parquet version of the dataset by following this link: {parquet_link}
+
+## What should I do?
+
+You don't need to do anything. The Parquet version of the dataset is available for you to use. Refer to the [documentation](https://huggingface.co/docs/datasets-server/parquet_process) for examples and code snippets on how to query the Parquet files with ClickHouse, DuckDB, Pandas or Polars.
+
+If you have any questions or concerns, feel free to ask in the discussion below. You can also close the discussion if you don't have any questions."""
+
 
 @dataclass
 class ParquetCounters:
@@ -116,20 +144,14 @@ def post_messages_on_parquet_conversion(
 def create_discussion_description(
     dataset: str, hf_endpoint: str, parquet_revision: str, bot_associated_user_name: str
 ) -> str:
-    link_parquet = create_link(
+    parquet_link = create_link(
         text=parquet_revision,
         dataset=dataset,
         hf_endpoint=hf_endpoint,
         revision_type="tree",
         revision=parquet_revision,
     )
-    return (
-        f"The {bot_associated_user_name} bot has created a version of this dataset in the [Parquet"
-        " format](https://parquet.apache.org/). You can learn more about the advantages associated with this format"
-        f""" in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
-
-The Parquet files are published in the {link_parquet} branch."""
-    )
+    return DISCUSSION_DESCRIPTION.format(bot_name=bot_associated_user_name, parquet_link=parquet_link)
 
 
 def create_link(
