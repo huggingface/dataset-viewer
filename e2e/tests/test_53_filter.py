@@ -17,7 +17,7 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
         relative_url=(
             f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
         ),
-        check_x_revision=True,
+        check_x_repo_commit=True,
         dataset=dataset,
     )
     content = filter_response.json()
@@ -82,7 +82,7 @@ def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, nor
     config, split = get_default_config_split()
     response = poll_until_ready_and_assert(
         relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
-        check_x_revision=True,
+        check_x_repo_commit=True,
         dataset=dataset,
     )
     content = response.json()

@@ -12,7 +12,7 @@ def test_rows_endpoint(normal_user_public_dataset: str) -> None:
     length = 10
     rows_response = poll_until_ready_and_assert(
         relative_url=f"/rows?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}",
-        check_x_revision=True,
+        check_x_repo_commit=True,
         dataset=dataset,
     )
     content = rows_response.json()

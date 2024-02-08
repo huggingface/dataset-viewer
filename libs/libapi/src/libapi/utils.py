@@ -50,14 +50,14 @@ def get_json_response(
     if error_code is not None:
         headers["X-Error-Code"] = error_code
     if revision is not None:
-        headers["X-Revision"] = revision
+        headers["X-Repo-Commit"] = revision
     return OrjsonResponse(content=content, status_code=status_code.value, headers=headers)
 
 
 # these headers are exposed to the client (browser)
 EXPOSED_HEADERS = [
     "X-Error-Code",
-    "X-Revision",
+    "X-Repo-Commit",
 ]
 
 

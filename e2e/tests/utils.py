@@ -152,7 +152,7 @@ def poll_until_ready_and_assert(
     expected_error_code: Optional[str] = None,
     headers: Optional[Headers] = None,
     url: str = URL,
-    check_x_revision: bool = False,
+    check_x_repo_commit: bool = False,
     dataset: Optional[str] = None,
     should_retry_x_error_codes: Optional[list[str]] = None,
 ) -> Any:
@@ -176,9 +176,9 @@ def poll_until_ready_and_assert(
         raise RuntimeError("Poll timeout")
     assert response.status_code == expected_status_code, log(response, url, relative_url, dataset)
     assert response.headers.get("X-Error-Code") == expected_error_code, log(response, url, relative_url)
-    if check_x_revision:
-        assert response.headers.get("X-Revision") is not None, log(response, url, relative_url)
-        assert len(str(response.headers.get("X-Revision"))) == 40, log(response, url, relative_url)
+    if check_x_repo_commit:
+        assert response.headers.get("X-Repo-Commit") is not None, log(response, url, relative_url)
+        assert len(str(response.headers.get("X-Repo-Commit"))) == 40, log(response, url, relative_url)
     return response
 
 

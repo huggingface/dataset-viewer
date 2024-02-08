@@ -16,7 +16,7 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
         relative_url=(
             f"/search?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&query={query}"
         ),
-        check_x_revision=True,
+        check_x_repo_commit=True,
         dataset=dataset,
     )
     content = search_response.json()

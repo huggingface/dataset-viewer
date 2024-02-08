@@ -46,7 +46,7 @@ def poll_parquet_until_ready_and_assert(
         expected_status_code=expected_status_code,
         expected_error_code=expected_error_code,
         headers=headers,
-        check_x_revision=False,
+        check_x_repo_commit=False,
         dataset=dataset,
     )
     if expected_status_code == 200:
@@ -318,4 +318,4 @@ def test_endpoint(
             if input_type != "config":
                 relative_url += f"&split={split}"
 
-    poll_until_ready_and_assert(relative_url=relative_url, check_x_revision=input_type != "all", dataset=dataset)
+    poll_until_ready_and_assert(relative_url=relative_url, check_x_repo_commit=input_type != "all", dataset=dataset)

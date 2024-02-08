@@ -10,7 +10,7 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
     config, split = get_default_config_split()
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
-        check_x_revision=True,
+        check_x_repo_commit=True,
         dataset=dataset,
     )
 
