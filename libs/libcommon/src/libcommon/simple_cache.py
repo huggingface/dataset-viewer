@@ -294,11 +294,21 @@ def delete_response(
     return CachedResponseDocument.objects(kind=kind, dataset=dataset, config=config, split=split).delete()
 
 
-def delete_dataset_responses(dataset: str) -> Optional[int]:
+def delete_dataset_responses(dataset: str) -> int:
+    """
+    Delete all responses for a dataset.
+
+    Args:
+        dataset (`str`): the dataset name
+
+    Returns:
+        `int`: The number of deleted documents.
+    """
     existing_cache = CachedResponseDocument.objects(dataset=dataset)
     for cache in existing_cache:
         decrease_metric(kind=cache.kind, http_status=cache.http_status, error_code=cache.error_code)
-    return existing_cache.delete()
+    num_deleted_cache_responses = existing_cache.delete()
+    return 0 if num_deleted_cache_responses is None else num_deleted_cache_responses
 
 
 T = TypeVar("T")
