@@ -1,6 +1,12 @@
 # libapi
 
-A Python library for the API services
+A Python library with common code for authentication, http requests, exceptions and other utilities.
+Used by the following services:
+- [admin](https://github.com/huggingface/datasets-server/tree/main/services/admin)
+- [api](https://github.com/huggingface/datasets-server/tree/main/services/api)
+- [rows](https://github.com/huggingface/datasets-server/tree/main/services/rows)
+- [search](https://github.com/huggingface/datasets-server/tree/main/services/search)
+- [sse-api](https://github.com/huggingface/datasets-server/tree/main/services/sse-api)
 
 ## Configuration
 
