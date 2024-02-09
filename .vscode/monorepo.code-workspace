@@ -6,6 +6,14 @@
       "python.defaultInterpreterPath": "${workspaceFolder}/e2e/.venv/bin/python"
     },
     {
+      "name": "chart",
+      "path": "../chart"
+    },
+    {
+      "name": "docs",
+      "path": "../docs"
+    },
+    {
       "name": "e2e",
       "path": "../e2e"
     },
@@ -64,6 +72,8 @@
   ],
   "settings": {
     "files.exclude": {
+      "chart": true,
+      "docs": true,
       "e2e": true,
       "jobs": true,
       "libs": true,
