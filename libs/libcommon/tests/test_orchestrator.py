@@ -119,7 +119,7 @@ def test_after_job_plan_delete() -> None:
         job_info=job_info,
         failed_runs=0,
     )
-    assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteJobs,1"]
+    assert after_job_plan.as_response() == ["CreateJobs,1", "DeleteWaitingJobs,1"]
 
     after_job_plan.run()
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
@@ -317,7 +317,7 @@ def test_remove_dataset() -> None:
     remove_dataset(dataset=DATASET_NAME)
 
     pending_jobs_df = Queue().get_pending_jobs_df(dataset=DATASET_NAME)
-    assert len(pending_jobs_df) == 0
+    assert len(pending_jobs_df) == 1
     assert has_some_cache(dataset=DATASET_NAME) is False
 
 
@@ -428,7 +428,7 @@ def run_job(revision: str, http_status: HTTPStatus) -> None:
     )
     finish_job(job_result=job_result, processing_graph=PROCESSING_GRAPH_GENEALOGY)
     # clear generated jobs when finishing jobs
-    Queue().delete_dataset_jobs(DATASET_NAME)
+    Queue().delete_dataset_waiting_jobs(DATASET_NAME)
 
 
 def test_upsert_response_failed_runs() -> None:

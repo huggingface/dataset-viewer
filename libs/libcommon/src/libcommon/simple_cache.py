@@ -105,12 +105,12 @@ class CachedResponseDocument(Document):
     Args:
         kind (`str`): The kind of the cached response, identifies the job type
         dataset (`str`): The requested dataset.
-        config (`str`, optional): The requested config, if any.
-        split (`str`, optional): The requested split, if any.
+        config (`str`, *optional*): The requested config, if any.
+        split (`str`, *optional*): The requested split, if any.
         http_status (`HTTPStatus`): The HTTP status code.
-        error_code (`str`, optional): The error code, if any.
+        error_code (`str`, *optional*): The error code, if any.
         content (`dict`): The content of the cached response. Can be an error or a valid content.
-        details (`dict`, optional): Additional details, eg. a detailed error that we don't want to send as a response.
+        details (`dict`, *optional*): Additional details, eg. a detailed error that we don't want to send as a response.
         updated_at (`datetime`): When the cache entry has been last updated.
         job_runner_version (`int`): The version of the job runner that cached the response.
         failed_runs (`int`): The number of failed_runs to get cached result.
@@ -560,12 +560,12 @@ def get_best_response(
             A non-empty list of cache kinds to look responses for.
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
-        config (`str`, optional):
+        config (`str`, *optional*):
             A config name.
-        split (`str`, optional):
+        split (`str`, *optional*):
             A split name.
     Returns:
-        BestResponse: The best response (object with fields: kind and response). The response can be an error,
+        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
     if not kinds:
@@ -691,6 +691,7 @@ class CacheReport(TypedDict):
     updated_at: datetime
     job_runner_version: Optional[int]
     progress: Optional[float]
+    failed_runs: int
 
 
 class CacheReportsPage(TypedDict):
@@ -714,21 +715,23 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
     The "reports" are the cached entries, without the "content", "details" and "updated_at" fields.
 
     Args:
-        kind (str): the kind of the cache entries
+        kind (`str`): the kind of the cache entries
         cursor (`str`):
             An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
             An empty string means to start from the beginning.
         limit (strictly positive `int`):
             The maximum number of results.
-    Returns:
-        [`CacheReportsPage`]: A dict with the list of reports and the next cursor. The next cursor is
-        an empty string if there are no more items to be fetched.
-    Raises the following errors:
-        - [`~simple_cache.InvalidCursor`]
+
+    Raises:
+        [~`simple_cache.InvalidCursor`]:
           If the cursor is invalid.
-        - [`~simple_cache.InvalidLimit`]
+        [~`simple_cache.InvalidLimit`]:
           If the limit is an invalid number.
+
+    Returns:
+        `CacheReportsPage`: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
     """
     if not cursor:
         queryset = CachedResponseDocument.objects(kind=kind)
@@ -754,6 +757,7 @@ def get_cache_reports(kind: str, cursor: Optional[str], limit: int) -> CacheRepo
                 "job_runner_version": object.job_runner_version,
                 "dataset_git_revision": object.dataset_git_revision,
                 "progress": object.progress,
+                "failed_runs": object.failed_runs,
             }
             for object in objects
         ],
@@ -785,6 +789,7 @@ def get_dataset_responses_without_content_for_kind(kind: str, dataset: str) -> l
             "job_runner_version": response.job_runner_version,
             "dataset_git_revision": response.dataset_git_revision,
             "progress": response.progress,
+            "failed_runs": response.failed_runs,
         }
         for response in responses
     ]
@@ -807,21 +812,23 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
     The cache reports contain all the fields of the object, including the "content" field.
 
     Args:
-        kind (str): the kind of the cache entries
+        kind (`str`): the kind of the cache entries
         cursor (`str`):
             An opaque string value representing a pointer to a specific CachedResponse item in the dataset. The
             server returns results after the given pointer.
             An empty string means to start from the beginning.
         limit (strictly positive `int`):
             The maximum number of results.
-    Returns:
-        [`CacheReportsWithContentPage`]: A dict with the list of reports and the next cursor. The next cursor is
-        an empty string if there are no more items to be fetched.
-    Raises the following errors:
-        - [`~simple_cache.InvalidCursor`]
+
+    Raises:
+        [~`simple_cache.InvalidCursor`]:
           If the cursor is invalid.
-        - [`~simple_cache.InvalidLimit`]
+        [~`simple_cache.InvalidLimit`]:
           If the limit is an invalid number.
+
+    Returns:
+        `CacheReportsWithContentPage`: A dict with the list of reports and the next cursor. The next cursor is
+        an empty string if there are no more items to be fetched.
     """
     if not cursor:
         queryset = CachedResponseDocument.objects(kind=kind)
@@ -848,6 +855,7 @@ def get_cache_reports_with_content(kind: str, cursor: Optional[str], limit: int)
                 "details": _clean_nested_mongo_object(object.details),
                 "updated_at": object.updated_at,
                 "progress": object.progress,
+                "failed_runs": object.failed_runs,
             }
             for object in objects
         ],
@@ -938,15 +946,15 @@ def fetch_names(
     If no entry is found in cache, return an empty list. Exceptions are silently caught.
 
     Args:
-        dataset (str): The dataset name.
-        config (Optional[str]): The config name. Only needed for split names.
-        cache_kinds (list[str]): The cache kinds to fetch, eg ["dataset-config-names"],
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name. Only needed for split names.
+        cache_kinds (`list[str]`): The cache kinds to fetch, eg ["dataset-config-names"],
           or ["config-split-names-from-streaming", "config-split-names-from-info"].
-        names_field (str): The name of the field containing the list of names, eg: "config_names", or "splits".
-        name_field (str): The name of the field containing the name, eg: "config", or "split".
+        names_field (`str`): The name of the field containing the list of names, eg: "config_names", or "splits".
+        name_field (`str`): The name of the field containing the name, eg: "config", or "split".
 
     Returns:
-        list[str]: The list of names.
+        `list[str]`: The list of names.
     """
     try:
         names = []
@@ -966,11 +974,11 @@ def get_datasets_with_last_updated_kind(kind: str, days: int) -> list[str]:
     Get the list of datasets for which an artifact of some kind has been updated in the last days.
 
     Args:
-        kind (str): The kind of the cache entries.
-        days (int): The number of days to look back.
+        kind (`str`): The kind of the cache entries.
+        days (`int`): The number of days to look back.
 
     Returns:
-        list[str]: The list of datasets.
+        `list[str]`: The list of datasets.
     """
 
     pipeline = [

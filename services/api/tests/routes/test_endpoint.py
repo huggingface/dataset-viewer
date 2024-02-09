@@ -13,6 +13,7 @@ from libcommon.exceptions import (
     NotSupportedDisabledViewerError,
     NotSupportedPrivateRepositoryError,
 )
+from libcommon.operations import EntityInfo
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import Queue
 from libcommon.simple_cache import upsert_response
@@ -267,6 +268,7 @@ def test_get_cache_entry_from_steps_no_cache_private() -> None:
     dataset = "dataset"
     revision = "revision"
     config = "config"
+    author = "author"
 
     app_config = AppConfig.from_env()
 
@@ -274,11 +276,62 @@ def test_get_cache_entry_from_steps_no_cache_private() -> None:
 
     with patch(
         "libcommon.operations.get_dataset_info",
-        return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[]),
-    ):
-        # ^ the dataset does not exist on the Hub, we don't want to raise an issue here
-
+        return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[], author=author),
+    ), patch("libcommon.operations.get_entity_info", return_value=EntityInfo(isPro=False, isEnterprise=False)):
+        # ^ the dataset and the author do not exist on the Hub, we don't want to raise an issue here
         with raises(NotSupportedPrivateRepositoryError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_private_pro() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+    author = "author"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[], author=author),
+    ), patch("libcommon.operations.get_entity_info", return_value=EntityInfo(isPro=True, isEnterprise=False)):
+        # ^ the dataset and the author do not exist on the Hub, we don't want to raise an issue here
+        with raises(ResponseNotReadyError):
+            get_cache_entry_from_steps(
+                processing_step_names=[no_cache],
+                dataset=dataset,
+                config=config,
+                split=None,
+                hf_endpoint=app_config.common.hf_endpoint,
+                blocked_datasets=[],
+            )
+
+
+def test_get_cache_entry_from_steps_no_cache_private_enterprise() -> None:
+    dataset = "dataset"
+    revision = "revision"
+    config = "config"
+    author = "author"
+
+    app_config = AppConfig.from_env()
+
+    no_cache = "config-is-valid"
+
+    with patch(
+        "libcommon.operations.get_dataset_info",
+        return_value=DatasetInfo(id=dataset, sha=revision, private=True, downloads=0, likes=0, tags=[], author=author),
+    ), patch("libcommon.operations.get_entity_info", return_value=EntityInfo(isPro=False, isEnterprise=True)):
+        # ^ the dataset and the author do not exist on the Hub, we don't want to raise an issue here
+        with raises(ResponseNotReadyError):
             get_cache_entry_from_steps(
                 processing_step_names=[no_cache],
                 dataset=dataset,

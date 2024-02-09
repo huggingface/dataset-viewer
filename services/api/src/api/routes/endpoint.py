@@ -99,6 +99,7 @@ def create_endpoint(
     steps_by_input_type: StepsByInputType,
     hf_endpoint: str,
     blocked_datasets: list[str],
+    assets_storage_client: StorageClient,
     hf_token: Optional[str] = None,
     hf_jwt_public_keys: Optional[list[str]] = None,
     hf_jwt_algorithm: Optional[str] = None,
@@ -121,7 +122,7 @@ def create_endpoint(
                     dataset = get_request_parameter(request, "dataset")
                     config = get_request_parameter(request, "config") or None
                     split = get_request_parameter(request, "split") or None
-                    logging.debug(f"endpoint={endpoint_name} dataset={dataset} config={config} split={split}")
+                    logging.debug(f"{endpoint_name=} {dataset=} {config=} {split=}")
                     dataset, config, split, input_type = validate_parameters(
                         dataset, config, split, steps_by_input_type
                     )
@@ -164,6 +165,9 @@ def create_endpoint(
                 error_code = result["error_code"]
                 revision = result["dataset_git_revision"]
                 if http_status == HTTPStatus.OK:
+                    if endpoint_name == "/first-rows" and assets_storage_client.url_signer:
+                        with StepProfiler(method="processing_step_endpoint", step="sign assets urls", context=context):
+                            assets_storage_client.url_signer.sign_urls_in_first_rows_in_place(content)
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 

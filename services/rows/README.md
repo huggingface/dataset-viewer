@@ -1,6 +1,8 @@
 # Datasets server API - rows endpoint
 
-> /rows endpoint
+> **GET** /rows
+
+See [usage](https://huggingface.co/docs/datasets-server/rows) for more details.
 
 ## Configuration
 

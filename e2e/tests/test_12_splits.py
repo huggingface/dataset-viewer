@@ -9,7 +9,7 @@ from .utils import get, get_openapi_body_example, poll, poll_splits, post_refres
 @pytest.mark.parametrize(
     "status,name,dataset,config,error_code",
     [
-        #  (200, "all splits in a dataset", "duorc", None, None),
+        #  (200, "all splits in a dataset", "ibm/duorc", None, None),
         #  (200, "splits for a single config", "emotion", "unsplit", None)
         (
             401,
@@ -64,7 +64,7 @@ def test_splits_using_openapi(status: int, name: str, dataset: str, config: str,
 @pytest.mark.parametrize(
     "status,dataset,config,error_code",
     [
-        # (200, "duorc", "SelfRC", None),
+        # (200, "ibm/duorc", "SelfRC", None),
         (401, "missing-parameter", None, "ExternalUnauthenticatedError")
         # missing config will result in asking dataset but it does not exist
     ],

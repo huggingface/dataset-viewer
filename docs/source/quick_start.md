@@ -9,7 +9,10 @@ In this quickstart, you'll learn how to use the Datasets Server's REST API to:
 - Preview the first 100 rows of a dataset.
 - Download slices of rows of a dataset.
 - Search a word in a dataset.
+- Filter rows based on a query string.
 - Access the dataset as parquet files.
+- Get the dataset size (in number of rows or bytes).
+- Get statistics about the dataset.
 
 ## API endpoints
 
@@ -25,6 +28,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/filter](./filter)         | GET    | Filter rows in a dataset split.                         | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split<br>- `where`: filter query<br>- `offset`: offset of the slice<br>- `length`: length of the slice (maximum 100) |
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.             | `dataset`: name of the dataset                                                                                                                                                                                    |
 | [/size](./size)             | GET    | Get the size of a dataset.                              | `dataset`: name of the dataset                                                                                                                                                                                    |
+| [/statistics](./statistics) | GET    | Get statistics about a dataset split.                   | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                          |
 
 There is no installation or setup required to use Datasets Server.
 
@@ -372,7 +376,8 @@ The response looks like:
     ...
   ],
   "num_rows_total": 8530,
-  "num_rows_per_page": 100
+  "num_rows_per_page": 100,
+  "partial": false
 }
 ```
 
@@ -458,13 +463,14 @@ The response looks like:
     ...
   ],
   "num_rows_total": 12,
-  "num_rows_per_page": 100
+  "num_rows_per_page": 100,
+  "partial": false
 }
 ```
 
 ## Access Parquet files
 
-Datasets Server converts every public dataset on the Hub to the [Parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the Parquet URLs for a dataset:
+Datasets Server converts every dataset on the Hub to the [Parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the Parquet URLs for a dataset:
 
 <inferencesnippet>
 <python>
@@ -581,7 +587,7 @@ curl https://datasets-server.huggingface.co/size?dataset=rotten_tomatoes \
 </curl>
 </inferencesnippet>
 
-This returns a URL to the Parquet file for each split:
+This returns the size of the dataset, and for every configuration and split:
 
 ```json
 {

@@ -7,6 +7,7 @@ from datetime import datetime
 import httpx
 import pytest
 
+from libcommon.cloudfront import get_cloudfront_signer
 from libcommon.config import AssetsConfig, CloudFrontConfig, S3Config
 from libcommon.storage_client import StorageClient
 
@@ -31,7 +32,8 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         storage_protocol="s3",
         storage_root=f"{BUCKET}/assets",
     )
-    if not s3_config.access_key_id or not s3_config.secret_access_key or not cloudfront_config.private_key:
+    url_signer = get_cloudfront_signer(cloudfront_config=cloudfront_config)
+    if not s3_config.access_key_id or not s3_config.secret_access_key or not url_signer:
         pytest.skip("the S3 and/or CloudFront credentials are not set in environment variables, so we skip the test")
 
     storage_client = StorageClient(
@@ -39,8 +41,8 @@ def test_real_cloudfront(monkeypatch: pytest.MonkeyPatch) -> None:
         storage_root=assets_config.storage_root,
         base_url=assets_config.base_url,
         overwrite=True,
-        cloudfront_config=cloudfront_config,
         s3_config=s3_config,
+        url_signer=url_signer,
     )
     DATASET = datetime.now().strftime("%Y%m%d-%H%M%S")
     # ^ we could delete them, or simply set a TTL in the bucket

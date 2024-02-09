@@ -16,12 +16,12 @@ from libapi.utils import (
     get_json_api_error_response,
     get_json_ok_response,
 )
-from libcommon.constants import MIN_BYTES_FOR_BONUS_DIFFICULTY
+from libcommon.constants import DEFAULT_DIFFICULTY_MAX, DEFAULT_DIFFICULTY_MIN, MIN_BYTES_FOR_BONUS_DIFFICULTY
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
 from libcommon.operations import get_latest_dataset_revision_if_supported_or_raise
 from libcommon.orchestrator import get_num_bytes_from_config_infos
-from libcommon.processing_graph import InputType
+from libcommon.processing_graph import InputType, processing_graph
 from libcommon.queue import Queue
 from starlette.requests import Request
 from starlette.responses import Response
@@ -32,7 +32,6 @@ from admin.authentication import auth_check
 def create_force_refresh_endpoint(
     input_type: InputType,
     job_type: str,
-    difficulty: int,
     bonus_difficulty_if_dataset_is_big: int,
     blocked_datasets: list[str],
     hf_endpoint: str,
@@ -61,15 +60,27 @@ def create_force_refresh_endpoint(
                 raise InvalidParameterError(
                     f"Parameter 'priority' should be one of {', '.join(prio.value for prio in Priority)}."
                 )
-            logging.info(
-                f"/force-refresh/{job_type}, dataset={dataset}, config={config}, split={split}, priority={priority}"
-            )
 
-            total_difficulty = difficulty
+            difficulty_error_message = "Parameter 'difficulty' should be an int value between 0 and 100."
+            try:
+                total_difficulty = int(
+                    get_request_parameter(
+                        request, "difficulty", default=str(processing_graph.get_processing_step(job_type).difficulty)
+                    )
+                )
+                if total_difficulty > DEFAULT_DIFFICULTY_MAX or total_difficulty < DEFAULT_DIFFICULTY_MIN:
+                    raise InvalidParameterError(difficulty_error_message)
+            except ValueError:
+                raise InvalidParameterError(difficulty_error_message)
+
             if config is not None:
                 num_bytes = get_num_bytes_from_config_infos(dataset=dataset, config=config, split=split)
                 if num_bytes is not None and num_bytes > MIN_BYTES_FOR_BONUS_DIFFICULTY:
                     total_difficulty += bonus_difficulty_if_dataset_is_big
+
+            logging.info(
+                f"/force-refresh/{job_type}, {dataset=}, {config=}, {split=}, {priority=}, {total_difficulty=}"
+            )
 
             # if auth_check fails, it will raise an exception that will be caught below
             await auth_check(

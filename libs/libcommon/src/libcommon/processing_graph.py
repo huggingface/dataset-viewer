@@ -58,14 +58,14 @@ class ProcessingStepDoesNotExist(Exception):
 class ProcessingStep:
     """A dataset processing step.
 
-    Attributes:
-        name (str): The processing step name.
-        input_type (InputType): The input type ('dataset', 'config' or 'split').
-        job_runner_version (int): The version of the job runner to use to compute the response.
+    **Attributes**:
+        name (`str`): The processing step name.
+        input_type (`InputType`): The input type ('dataset', 'config' or 'split').
+        job_runner_version (`int`): The version of the job runner to use to compute the response.
 
     Getters:
-        cache_kind (str): The cache kind (ie. the key in the cache).
-        job_type (str): The job type (ie. the job to run to compute the response).
+        cache_kind (`str`): The cache kind (ie. the key in the cache).
+        job_type (`str`): The job type (ie. the job to run to compute the response).
     """
 
     name: str
@@ -85,7 +85,7 @@ class ProcessingStep:
         """Copy the processing step.
 
         Returns:
-            ProcessingStep: The copy of the processing step.
+            `ProcessingStep`: The copy of the processing step.
         """
         return ProcessingStep(
             name=self.name,
@@ -118,10 +118,10 @@ class ProcessingGraph:
         specification (ProcessingGraphSpecification): The specification of the graph.
 
     Raises:
-        ValueError: If the graph is not a DAG.
-        ValueError: If a processing step provides dataset config names but its input type is not 'dataset', or if a
-          processing step provides config split names but its input type is not 'config'.
-        ValueError: If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
+        [`ValueError`]: If the graph is not a DAG.
+            If a processing step provides dataset config names but its input type is not 'dataset', or if a
+            processing step provides config split names but its input type is not 'config'.
+            If a root processing step (ie. a processing step with no parent) is not a dataset processing step.
     """
 
     specification: ProcessingGraphSpecification
@@ -202,10 +202,10 @@ class ProcessingGraph:
         original one.
 
         Args:
-            processing_step_name (str): The name of the processing step
+            processing_step_name (`str`): The name of the processing step
 
         Returns:
-            ProcessingStep: The processing step
+            `ProcessingStep`: The processing step
         """
         try:
             return self._processing_steps[processing_step_name].copy()
@@ -220,10 +220,10 @@ class ProcessingGraph:
         original one.
 
         Args:
-            job_type (str): The job type of the processing step
+            job_type (`str`): The job type of the processing step
 
         Returns:
-            ProcessingStep: The processing step
+            `ProcessingStep`: The processing step
         """
         # for now: the job_type is just an alias for the processing step name
         return self.get_processing_step(job_type)
@@ -238,13 +238,13 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            processing_step_name (str): The name of the processing step
-
-        Returns:
-            list[ProcessingStep]: The list of children processing steps (successors)
+            processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            [`ProcessingStepDoesNotExist`]: If the processing step is not in the graph
+
+        Returns:
+            `list[ProcessingStep]`: The list of children processing steps (successors)
         """
         try:
             return [
@@ -263,13 +263,13 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            processing_step_name (str): The name of the processing step
-
-        Returns:
-            list[ProcessingStep]: The list of parent processing steps (predecessors)
+            processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            [`ProcessingStepDoesNotExist`]: If the processing step is not in the graph
+
+        Returns:
+            `list[ProcessingStep]`: The list of parent processing steps (predecessors)
         """
         try:
             return [
@@ -289,13 +289,13 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            processing_step_name (str): The name of the processing step
-
-        Returns:
-            list[ProcessingStep]: The list of ancestor processing steps
+            processing_step_name (`str`): The name of the processing step
 
         Raises:
-            ProcessingStepDoesNotExist: If the processing step is not in the graph
+            [`ProcessingStepDoesNotExist`]: If the processing step is not in the graph
+
+        Returns:
+            `list[ProcessingStep]`: The list of ancestor processing steps
         """
         try:
             return [
@@ -315,7 +315,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of first processing steps
+            `list[ProcessingStep]`: The list of first processing steps
         """
         return copy_processing_steps_list(self._first_processing_steps)
 
@@ -330,7 +330,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return copy_processing_steps_list(self._topologically_ordered_processing_steps)
 
@@ -342,7 +342,7 @@ class ProcessingGraph:
         the original ones.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return copy_processing_steps_list(self._alphabetically_ordered_processing_steps)
 
@@ -356,11 +356,11 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            order (Optional[Literal["alphabetical", "topological"]], optional): The order in which to return the
+            order (`Literal["alphabetical", "topological"]`, *optional*): The order in which to return the
               processing steps. If None, the order is alphabetical. Defaults to None.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         if order == "topological":
             return self.get_topologically_ordered_processing_steps()
@@ -375,10 +375,10 @@ class ProcessingGraph:
         the original ones.
 
         Args:
-            input_type (InputType, optional): The input type. Defaults to "dataset".
+            input_type (`InputType`, *optional*, defaults to `dataset`): The input type.
 
         Returns:
-            list[ProcessingStep]: The list of processing steps
+            `list[ProcessingStep]`: The list of processing steps
         """
         return [
             self.get_processing_step(processing_step_name)
@@ -638,7 +638,13 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-hub-cache": {
         "input_type": "dataset",
-        "triggered_by": ["dataset-is-valid", "dataset-size"],
+        "triggered_by": ["dataset-is-valid", "dataset-size", "dataset-loading-tags"],
+        "job_runner_version": 1,
+        "difficulty": 20,
+    },
+    "dataset-loading-tags": {
+        "input_type": "dataset",
+        "triggered_by": ["dataset-info"],
         "job_runner_version": 1,
         "difficulty": 20,
     },

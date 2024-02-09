@@ -17,7 +17,7 @@ from worker.utils import get_split_names
 
 def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidResponse, float]:
     """
-    Get the response of /is-valid for one specific dataset config on huggingface.co.
+    Get the response of 'config-is-valid' for one specific dataset config on huggingface.co.
 
     A dataset config is valid if any of the artifacts for any of the
     steps is valid.
@@ -27,10 +27,14 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
             by a `/`.
         config (`str`):
             A configuration name.
+    Raises:
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+          If the content of the previous step has not the expected format.
+
     Returns:
         `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
-    logging.info(f"get is-valid response for {dataset=} {config=}")
+    logging.info(f"get 'config-is-valid' response for {dataset=} {config=}")
 
     preview = False
     viewer = False

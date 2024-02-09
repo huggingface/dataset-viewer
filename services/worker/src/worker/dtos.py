@@ -3,7 +3,7 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Literal, Optional, TypedDict, Union
 
 from libcommon.dtos import FullConfigItem, FullSplitItem, SplitHubFile, SplitItem
 
@@ -217,11 +217,19 @@ class IsValidResponse(TypedDict):
     filter: bool
 
 
+DatasetLoadingTag = Literal["croissant", "webdataset"]
+
+
+class DatasetLoadingTagsResponse(TypedDict):
+    tags: list[DatasetLoadingTag]
+
+
 class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
     partial: bool
     num_rows: int
+    tags: list[DatasetLoadingTag]
 
 
 class DatasetParquetResponse(TypedDict):

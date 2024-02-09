@@ -112,8 +112,12 @@ def generate_bins(
     For float numbers, length of returned bin edges list is always equal to `n_bins` except for the cases
     when min = max (only one value observed in data). In this case, bin edges are [min, max].
 
+    Raises:
+        [~`libcommon.exceptions.StatisticsComputationError`]:
+            If there was some unexpected behaviour during statistics computation.
+
     Returns:
-        List of bin edges of lengths <= n_bins + 1 and >= 2.
+        `list[Union[int, float]]`: List of bin edges of lengths <= n_bins + 1 and >= 2.
     """
     if column_type is ColumnType.FLOAT:
         if min_value == max_value:
@@ -264,7 +268,7 @@ def compute_class_label_statistics(
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
-    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
     no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
 
@@ -301,7 +305,7 @@ def compute_bool_statistics(
 ) -> BoolStatisticsItem:
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
     # exclude counts of None values from frequencies if exist:
     values2counts.pop(None, None)  # type: ignore
 
@@ -325,7 +329,7 @@ def compute_string_statistics(
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
         if n_unique <= MAX_NUM_STRING_LABELS:
-            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
@@ -455,8 +459,9 @@ def compute_descriptive_statistics_response(
     max_split_size_bytes: int,
 ) -> SplitDescriptiveStatisticsResponse:
     """
-    Compute statistics and get response for the `split-descriptive-statistics` step.
+    Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
     Currently, integers, floats and ClassLabel features are supported.
+
     Args:
         dataset (`str`):
             Name of a dataset.
@@ -467,7 +472,7 @@ def compute_descriptive_statistics_response(
         local_parquet_directory (`Path`):
             Path to a local directory where the dataset's parquet files are stored. We download these files locally
             because it enables fast querying and statistics computation.
-        hf_token (`str`, `optional`):
+        hf_token (`str`, *optional*):
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
             The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
@@ -478,23 +483,25 @@ def compute_descriptive_statistics_response(
             Maximum split size in bytes to compute statistics.
             For partial datasets that means that only data up to this size is counted.
 
-    Returns:
-        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
-        numerical (int and float), boolean or ClassLabel feature.
-
-    Raises the following errors:
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+    Raises:
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step does not have the expected format.
-        - [`libcommon.exceptions.ParquetResponseEmptyError`]
+        [~`libcommon.exceptions.ParquetResponseEmptyError`]:
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        - [`libcommon.exceptions.NoSupportedFeaturesError`]
+        [~`libcommon.exceptions.SplitWithTooBigParquetError`]:
+            If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
+        [~`libcommon.exceptions.NoSupportedFeaturesError`]:
             If requested dataset doesn't have any supported for statistics computation features.
             Currently, floats, integers and ClassLabels are supported.
-        - [`libcommon.exceptions.StatisticsComputationError`]
+        [~`libcommon.exceptions.StatisticsComputationError`]:
             If there was some unexpected behaviour during statistics computation.
+
+    Returns:
+        `SplitDescriptiveStatisticsResponse`: An object with the statistics response for a requested split, per each
+            numerical (int and float) or ClassLabel feature.
     """
 
-    logging.info(f"Compute descriptive statistics for {dataset=}, {config=}, {split=}")
+    logging.info(f"get 'split-descriptive-statistics' for {dataset=} {config=} {split=}")
 
     config_parquet_and_info_step = "config-parquet-and-info"
     parquet_and_info_best_response = get_previous_step_or_raise(

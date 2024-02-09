@@ -4,15 +4,15 @@
 import logging
 
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
 
-from worker.dtos import DatasetHubCacheResponse, JobResult
+from worker.dtos import DatasetHubCacheResponse, DatasetLoadingTag, JobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
 def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, float]:
     """
-    Get the content of a /sse/hub-cache SSE for one specific dataset on huggingface.co.
+    Get the content of a 'dataset-hub-cache' SSE for one specific dataset on huggingface.co.
 
     Its purpose is specific to the Hub, and we won't ensure backward compatibility for this step.
     It provides information about:
@@ -26,7 +26,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     Returns:
         `tuple[DatasetHubCacheResponse, float]`: The response and the progress.
     """
-    logging.info(f"get hub_cache response for {dataset=}")
+    logging.info(f"get 'dateset-hub-cache' for {dataset=}")
 
     is_valid_response = get_previous_step_or_raise(kinds=["dataset-is-valid"], dataset=dataset)
     content = is_valid_response.response["content"]
@@ -63,12 +63,24 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
 
+    tags: list[DatasetLoadingTag] = []
+    try:
+        loading_tags_response = get_previous_step_or_raise(kinds=["dataset-loading-tags"], dataset=dataset)
+        tags = loading_tags_response.response["content"]["tags"]
+    except CachedArtifactNotFoundError:
+        logging.info(f"Missing 'dataset-loading-tags' response for {dataset=}")
+    except KeyError:
+        raise PreviousStepFormatError(
+            "Previous step 'dataset-loading-tags' did not return the expected content: 'tags''."
+        )
+
     return (
         DatasetHubCacheResponse(
             preview=preview,
             viewer=viewer,
             partial=partial,
             num_rows=num_rows,
+            tags=tags,
         ),
         progress,
     )

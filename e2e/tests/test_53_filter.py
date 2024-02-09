@@ -64,7 +64,7 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "where, expected_num_rows",
+    "where,expected_num_rows",
     [
         ("col_2=3", 1),
         ("col_2<3", 3),

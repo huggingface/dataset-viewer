@@ -58,12 +58,24 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
     progress=None,
 )
+UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
+    kind="dataset-loading-tags",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"tags": ["tag"]},
+    progress=1.0,
+)
 EXPECTED_OK = (
-    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000},
+    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": []},
     0.2,
 )
 EXPECTED_NO_PROGRESS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000},
+    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": []},
+    0.5,
+)
+EXPECTED_OK_WITH_TAGS = (
+    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["tag"]},
     0.5,
 )
 
@@ -112,6 +124,14 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
             ],
             EXPECTED_NO_PROGRESS,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_LOADING_TAGS_OK,
+            ],
+            EXPECTED_OK_WITH_TAGS,
         ),
     ],
 )

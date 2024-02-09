@@ -114,45 +114,47 @@ def test_add_job() -> None:
 
 
 @pytest.mark.parametrize(
-    "jobs_ids,job_ids_to_cancel,expected_canceled_number",
+    "jobs_ids,job_ids_to_delete,expected_deleted_number",
     [
-        (["a", "b"], ["a", "b"], 2),
-        (["a", "b"], ["a"], 1),
-        (["a"], ["a", "b"], 1),
+        (["a", "b"], ["a", "b"], 1),
+        (["a", "b"], ["b"], 1),
+        (["a"], ["a", "b"], 0),
     ],
 )
-def test_delete_jobs_by_job_id(
-    jobs_ids: list[str], job_ids_to_cancel: list[str], expected_canceled_number: int
+def test_delete_waiting_jobs_by_job_id(
+    jobs_ids: list[str], job_ids_to_delete: list[str], expected_deleted_number: int
 ) -> None:
     test_type = "test_type"
     test_difficulty = 50
     queue = Queue()
 
     # we cannot really set job_id, so, we create jobs and get their job id, using dataset as a proxy
-    real_job_ids_to_cancel = []
+    real_job_ids_to_delete = []
     waiting_jobs = 0
-    for job_id in list(set(jobs_ids + job_ids_to_cancel)):
+    all_jobs = sorted(list(set(jobs_ids + job_ids_to_delete)))  # ensure always 'a' is first started
+    for job_id in all_jobs:
         job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision", difficulty=test_difficulty)
         waiting_jobs += 1
         assert_metric(job_type=test_type, status=Status.WAITING, total=waiting_jobs)
-        if job_id in job_ids_to_cancel:
+        if job_id in job_ids_to_delete:
             real_job_id = job.info()["job_id"]
-            real_job_ids_to_cancel.append(real_job_id)
+            real_job_ids_to_delete.append(real_job_id)
         if job_id not in jobs_ids:
             # delete the job, in order to simulate that it did never exist (we just wanted a valid job_id)
             job.delete()
+    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs))
 
     queue.start_job()
-    assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
-    canceled_number = queue.delete_jobs_by_job_id(job_ids=real_job_ids_to_cancel)
-    assert canceled_number == expected_canceled_number
+    deleted_number = queue.delete_waiting_jobs_by_job_id(job_ids=real_job_ids_to_delete)
+    assert deleted_number == expected_deleted_number
 
 
-def test_delete_jobs_by_job_id_wrong_format() -> None:
+def test_delete_waiting_jobs_by_job_id_wrong_format() -> None:
     queue = Queue()
 
-    assert queue.delete_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
+    assert queue.delete_waiting_jobs_by_job_id(job_ids=["not_a_valid_job_id"]) == 0
     assert JobTotalMetricDocument.objects().count() == 0
 
 
@@ -588,12 +590,12 @@ def test_lock_git_branch(tmp_path_factory: pytest.TempPathFactory, queue_mongo_r
     Lock.objects().delete()
 
 
-def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
+def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     """
-    Test that delete_dataset_jobs deletes all jobs for a dataset
+    Test that delete_dataset_waiting_jobs deletes all the waiting jobs for a dataset
 
     -> deletes at several levels (dataset, config, split)
-    -> deletes started and waiting jobs
+    -> deletes waiting jobs, but not started jobs
     -> remove locks
     -> does not cancel, and does not remove locks, for other datasets
     """
@@ -661,10 +663,10 @@ def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert started_job_info_2["params"]["dataset"] == other_dataset
     assert started_job_info_2["type"] == job_type_1
 
-    assert queue.delete_dataset_jobs(dataset=dataset) == 4
+    assert queue.delete_dataset_waiting_jobs(dataset=dataset) == 3
 
-    assert JobDocument.objects().count() == 2
-    assert JobDocument.objects(dataset=dataset).count() == 0
+    assert JobDocument.objects().count() == 3
+    assert JobDocument.objects(dataset=dataset).count() == 1
     assert JobDocument.objects(dataset=other_dataset).count() == 2
     assert JobDocument.objects(dataset=other_dataset, status=Status.STARTED).count() == 1
     assert JobDocument.objects(dataset=other_dataset, status=Status.WAITING).count() == 1
@@ -673,3 +675,55 @@ def test_delete_dataset_jobs(queue_mongo_resource: QueueMongoResource) -> None:
     assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner=None)) == 1
     assert len(Lock.objects(key=f"{job_type_1},{dataset},{revision}", owner__ne=None)) == 0
     # ^ does not test much, because at that time, the lock should already have been released
+
+
+DATASET_1 = "dataset_1"
+DATASET_2 = "dataset_2"
+DATASET_3 = "dataset_3"
+JOB_TYPE_1 = "job_type_1"
+JOB_TYPE_2 = "job_type_2"
+JOB_TYPE_3 = "job_type_3"
+ALL_JOB_TYPES = {JOB_TYPE_1, JOB_TYPE_2, JOB_TYPE_3}
+JOB_TYPE_4 = "job_type_4"
+
+
+def create_jobs(queue: Queue) -> None:
+    for dataset in [DATASET_1, DATASET_2]:
+        for job_type in ALL_JOB_TYPES:
+            queue.add_job(
+                job_type=job_type,
+                dataset=dataset,
+                revision="dataset_git_revision",
+                config=None,
+                split=None,
+                difficulty=50,
+            )
+
+
+@pytest.mark.parametrize(
+    "dataset,job_types,expected_job_types",
+    [
+        (DATASET_1, None, ALL_JOB_TYPES),
+        (DATASET_1, [JOB_TYPE_1], {JOB_TYPE_1}),
+        (DATASET_1, [JOB_TYPE_1, JOB_TYPE_2], {JOB_TYPE_1, JOB_TYPE_2}),
+        (DATASET_1, [JOB_TYPE_1, JOB_TYPE_4], {JOB_TYPE_1}),
+        (DATASET_2, None, ALL_JOB_TYPES),
+        (DATASET_3, None, set()),
+    ],
+)
+def test_get_pending_jobs_df_and_has_pending_jobs(
+    queue_mongo_resource: QueueMongoResource,
+    dataset: str,
+    job_types: Optional[list[str]],
+    expected_job_types: set[str],
+) -> None:
+    queue = Queue()
+    create_jobs(queue)
+
+    assert queue.has_pending_jobs(dataset=dataset, job_types=job_types) == bool(expected_job_types)
+
+    df = queue.get_pending_jobs_df(dataset=dataset, job_types=job_types)
+    assert len(df) == len(expected_job_types)
+    if expected_job_types:
+        assert df["dataset"].unique() == [dataset]
+        assert set(df["type"].unique()) == set(expected_job_types)

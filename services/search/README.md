@@ -1,13 +1,17 @@
-# Datasets server API - search service
+# Datasets server API - search and filter endpoints
 
-> /search endpoint
-> /filter endpoint
+> **GET** /search
+>
+> **GET** /filter
+
+See [search](https://huggingface.co/docs/datasets-server/search) and [filter](https://huggingface.co/docs/datasets-server/filter) usage for more details. 
 
 ## Configuration
 
 The service can be configured using environment variables. They are grouped by scope.
 
-### Duckdb index full text search
+### Duckdb index
+
 - `DUCKDB_INDEX_CACHE_DIRECTORY`: directory where the temporal duckdb index files are downloaded. Defaults to empty.
 - `DUCKDB_INDEX_TARGET_REVISION`: the git revision of the dataset where the index file is stored in the dataset repository.
 

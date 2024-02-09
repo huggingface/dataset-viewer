@@ -71,7 +71,7 @@ def process_payload(
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> None:
-    if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content"):
+    if payload["repo"]["type"] != "dataset" or payload["scope"] not in ("repo", "repo.content", "repo.config"):
         # ^ it filters out the webhook calls for non-dataset repos and discussions in dataset repos
         return
     dataset = payload["repo"]["name"]
@@ -81,7 +81,11 @@ def process_payload(
     if event == "remove":
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
     elif event in ["add", "update", "move"]:
-        if event == "update" and get_current_revision(dataset) == payload["repo"]["headSha"]:
+        if (
+            event == "update"
+            and get_current_revision(dataset) == payload["repo"]["headSha"]
+            and not payload["scope"] == "repo.config"
+        ):
             # ^ it filters out the webhook calls when the refs/convert/parquet branch is updated
             logging.warning(
                 f"Webhook revision for {dataset} is the same as the current revision in the db - skipping update."

@@ -51,14 +51,14 @@ def create_app() -> Starlette:
         storage_root=app_config.cached_assets.storage_root,
         base_url=app_config.cached_assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
     assets_storage_client = StorageClient(
         protocol=app_config.assets.storage_protocol,
         storage_root=app_config.assets.storage_root,
         base_url=app_config.assets.base_url,
         s3_config=app_config.s3,
-        # no need to specify cloudfront config here, as we are not generating signed urls
+        # no need to specify a url_signer
     )
     storage_clients = [cached_assets_storage_client, assets_storage_client]
 
@@ -148,7 +148,6 @@ def create_app() -> Starlette:
                     endpoint=create_force_refresh_endpoint(
                         input_type=input_type,
                         job_type=job_type,
-                        difficulty=processing_step.difficulty,
                         bonus_difficulty_if_dataset_is_big=processing_step.bonus_difficulty_if_dataset_is_big,
                         hf_endpoint=app_config.common.hf_endpoint,
                         hf_token=app_config.common.hf_token,

@@ -18,23 +18,25 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, float]:
     """
-    Get the response of dataset-info for one specific dataset on huggingface.co.
+    Get the response of 'dataset-info' for one specific dataset on huggingface.co.
+
     Args:
         dataset (`str`):
-            A namespace (user or an organization) and a repo name separated
-            by a `/`.
-    Returns:
-        (`DatasetInfoResponse`, `float`): Tuple of an object with the dataset_info response and
-        progress float value from 0. to 1. which corresponds to the percentage of dataset configs
-        correctly processed and included in current response (some configs might not exist in cache yet
-        or raise errors).
-    Raises the following errors:
-        - [`libcommon.simple_cache.CachedArtifactError`]
+            A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]:
             If the previous step gave an error.
-        - [`libcommon.exceptions.PreviousStepFormatError`]
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step doesn't have the expected format.
+
+    Returns:
+        `tuple[DatasetInfoResponse, float]`: Tuple of an object with the dataset_info response and
+            progress float value from 0. to 1. which corresponds to the percentage of dataset configs
+            correctly processed and included in current response (some configs might not exist in cache yet
+            or raise errors).
     """
-    logging.info(f"get dataset_info for {dataset=}")
+    logging.info(f"get 'dataset-info' for {dataset=}")
 
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]
