@@ -64,12 +64,33 @@ class QueueStatus:
 
 
 @dataclass
+class TasksStatistics:
+    num_created_jobs: int = 0
+    num_deleted_waiting_jobs: int = 0
+    num_deleted_cache_entries: int = 0
+    num_deleted_storage_directories: int = 0
+
+    def add(self, other: "TasksStatistics") -> None:
+        self.num_created_jobs += other.num_created_jobs
+        self.num_deleted_waiting_jobs += other.num_deleted_waiting_jobs
+        self.num_deleted_cache_entries += other.num_deleted_cache_entries
+        self.num_deleted_storage_directories += other.num_deleted_storage_directories
+
+    def get_log(self) -> str:
+        return (
+            f"{self.num_created_jobs} created jobs, {self.num_deleted_waiting_jobs} deleted waiting jobs,"
+            f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_deleted_storage_directories} deleted"
+            f" storage directories"
+        )
+
+
+@dataclass
 class Task(ABC):
     id: str = field(init=False)
     long_id: str = field(init=False)
 
     @abstractmethod
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
         pass
 
 
@@ -83,18 +104,25 @@ class CreateJobsTask(Task):
         types = [job_info["type"] for job_info in self.job_infos]
         self.long_id = f"CreateJobs,{types}"
 
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
+        """
+        Create the jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the jobs creation.
+        """
         with StepProfiler(
             method="CreateJobsTask.run",
             step="all",
             context=f"num_jobs_to_create={len(self.job_infos)}",
         ):
-            created_jobs_count = Queue().create_jobs(job_infos=self.job_infos)
-            if created_jobs_count != len(self.job_infos):
+            num_created_jobs = Queue().create_jobs(job_infos=self.job_infos)
+            if num_created_jobs != len(self.job_infos):
                 raise ValueError(
                     f"Something went wrong when creating jobs: {len(self.job_infos)} jobs were supposed to be"
-                    f" created, but {created_jobs_count} were created."
+                    f" created, but {num_created_jobs} were created."
                 )
+            return TasksStatistics(num_created_jobs=num_created_jobs)
 
 
 @dataclass
@@ -107,14 +135,21 @@ class DeleteWaitingJobsTask(Task):
         types = [row["type"] for _, row in self.jobs_df.iterrows()]
         self.long_id = f"DeleteWaitingJobs,{types}"
 
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
+        """
+        Delete the waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the waiting jobs deletion.
+        """
         with StepProfiler(
             method="DeleteWaitingJobsTask.run",
             step="all",
             context=f"num_jobs_to_delete={len(self.jobs_df)}",
         ):
-            deleted_jobs_count = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
-            logging.debug(f"{deleted_jobs_count} waiting jobs were deleted.")
+            num_deleted_waiting_jobs = Queue().delete_waiting_jobs_by_job_id(job_ids=self.jobs_df["job_id"].tolist())
+            logging.debug(f"{num_deleted_waiting_jobs} waiting jobs were deleted.")
+            return TasksStatistics(num_deleted_waiting_jobs=num_deleted_waiting_jobs)
 
 
 @dataclass
@@ -126,16 +161,19 @@ class DeleteDatasetWaitingJobsTask(Task):
         self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
         self.long_id = self.id
 
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
         """
         Delete the dataset waiting jobs.
+
+        Returns:
+            `TasksStatistics`: The statistics of the waiting jobs deletion.
         """
         with StepProfiler(
             method="DeleteDatasetWaitingJobsTask.run",
             step="all",
             context=f"dataset={self.dataset}",
         ):
-            Queue().delete_dataset_waiting_jobs(dataset=self.dataset)
+            return TasksStatistics(num_deleted_waiting_jobs=Queue().delete_dataset_waiting_jobs(dataset=self.dataset))
 
 
 @dataclass
@@ -147,13 +185,19 @@ class DeleteDatasetCacheEntriesTask(Task):
         self.id = f"DeleteDatasetCacheEntries,{len(self.dataset)}"
         self.long_id = self.id
 
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset cache entries.
+
+        Returns:
+            `TasksStatistics`: The statistics of the cache entries deletion.
+        """
         with StepProfiler(
             method="DeleteDatasetCacheEntriesTask.run",
             step="all",
             context=f"dataset={self.dataset}",
         ):
-            delete_dataset_responses(dataset=self.dataset)
+            return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
 
 @dataclass
@@ -166,13 +210,21 @@ class DeleteDatasetStorageTask(Task):
         self.id = f"DeleteDatasetStorageTask,{self.dataset},{self.storage_client}"
         self.long_id = self.id
 
-    def run(self) -> None:
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset directory from the storage.
+
+        Returns:
+            `TasksStatistics`: The statistics of the storage directory deletion.
+        """
         with StepProfiler(
             method="DeleteDatasetStorageTask.run",
             step="all",
             context=f"dataset={self.dataset},storage_client={self.storage_client}",
         ):
-            self.storage_client.delete_dataset_directory(self.dataset)
+            return TasksStatistics(
+                num_deleted_storage_directories=self.storage_client.delete_dataset_directory(self.dataset)
+            )
 
 
 SupportedTask = Union[
@@ -194,16 +246,17 @@ class Plan:
     def add_task(self, task: SupportedTask) -> None:
         self.tasks.append(task)
 
-    def run(self) -> int:
+    def run(self) -> TasksStatistics:
         """Run all the tasks in the plan.
 
         Returns:
-            `int`: The number of tasks that were run.
+            `TasksStatistics`: The statistics of the plan (sum of the statistics of the tasks).
         """
+        statistics = TasksStatistics()
         for idx, task in enumerate(self.tasks):
             logging.debug(f"Running task [{idx}/{len(self.tasks)}]: {task.long_id}")
-            task.run()
-        return len(self.tasks)
+            statistics.add(task.run())
+        return statistics
 
     def as_response(self) -> list[str]:
         return sorted(task.id for task in self.tasks)
@@ -678,16 +731,19 @@ class DatasetRemovalPlan(Plan):
                 self.add_task(DeleteDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
 
 
-def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
+def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> TasksStatistics:
     """
     Remove the dataset from the Datasets Server
 
     Args:
         dataset (`str`): The name of the dataset.
         storage_clients (`list[StorageClient]`, *optional*): The storage clients.
+
+    Returns:
+        `TasksStatistics`: The statistics of the deletion.
     """
     plan = DatasetRemovalPlan(dataset=dataset, storage_clients=storage_clients)
-    plan.run()
+    return plan.run()
     # assets and cached_assets are deleted by the storage clients
     # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
     # note that it's not as important as the assets, because generally, we want to delete a dataset
@@ -702,7 +758,7 @@ def set_revision(
     revision: str,
     priority: Priority,
     processing_graph: ProcessingGraph = processing_graph,
-) -> None:
+) -> TasksStatistics:
     """
     Set the current revision of the dataset.
 
@@ -714,6 +770,9 @@ def set_revision(
         revision (`str`): The new revision of the dataset.
         priority (`Priority`): The priority of the jobs to create.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+
+    Returns:
+        `TasksStatistics`: The statistics of the set_revision.
     """
     logging.info(f"Analyzing {dataset}")
     plan = DatasetBackfillPlan(
@@ -724,7 +783,7 @@ def set_revision(
         only_first_processing_steps=True,
     )
     logging.info(f"Applying set_revision plan on {dataset}: plan={plan.as_response()}")
-    plan.run()
+    return plan.run()
 
 
 def backfill(
@@ -732,7 +791,7 @@ def backfill(
     revision: str,
     priority: Priority,
     processing_graph: ProcessingGraph = processing_graph,
-) -> None:
+) -> TasksStatistics:
     """
     Analyses the dataset and backfills it with all missing bits, if requires.
 
@@ -741,6 +800,9 @@ def backfill(
         revision (`str`): The new revision of the dataset.
         priority (`Priority`): The priority of the jobs to create.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+
+    Returns:
+        `TasksStatistics`: The statistics of the backfill.
     """
     logging.info(f"Analyzing {dataset}")
     plan = DatasetBackfillPlan(
@@ -751,13 +813,13 @@ def backfill(
         only_first_processing_steps=False,
     )
     logging.info(f"Applying backfill plan on {dataset}: plan={plan.as_response()}")
-    plan.run()
+    return plan.run()
 
 
 def finish_job(
     job_result: JobResult,
     processing_graph: ProcessingGraph = processing_graph,
-) -> None:
+) -> TasksStatistics:
     """
     Finish a job.
 
@@ -769,17 +831,20 @@ def finish_job(
 
     Raises:
         [`ValueError`]: If the job is not found, or if the processing step is not found.
+
+    Returns:
+        `TasksStatistics`: The statistics of the finish_job.
     """
     # check if the job is still in started status
     job_info = job_result["job_info"]
     if not Queue().is_job_started(job_id=job_info["job_id"]):
         logging.debug("the job was cancelled, don't update the cache")
-        return
+        return TasksStatistics()
     # if the job could not provide an output, finish it and return
     if not job_result["output"]:
         Queue().finish_job(job_id=job_info["job_id"])
         logging.debug("the job raised an exception, don't update the cache")
-        return
+        return TasksStatistics()
     # update the cache
     output = job_result["output"]
     params = job_info["params"]
@@ -820,8 +885,9 @@ def finish_job(
     logging.debug("the job has been finished.")
     # trigger the next steps
     plan = AfterJobPlan(job_info=job_info, processing_graph=processing_graph, failed_runs=failed_runs)
-    plan.run()
+    statistics = plan.run()
     logging.debug("jobs have been created for the next steps.")
+    return statistics
 
 
 def has_pending_ancestor_jobs(
