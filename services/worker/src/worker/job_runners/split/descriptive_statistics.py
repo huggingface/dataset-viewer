@@ -530,7 +530,6 @@ def compute_descriptive_statistics_response(
 
     num_parquet_files_to_index = 0
     total_bytes = 0
-    split_directory = split_parquet_files[0]["url"].rsplit("/", 2)[1]
     partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
     for parquet_file_id, parquet_file in enumerate(split_parquet_files):
         num_parquet_files_to_index += 1
