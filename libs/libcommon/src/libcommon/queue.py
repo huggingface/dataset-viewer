@@ -899,9 +899,9 @@ class Queue:
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
         return True
 
-    def delete_dataset_jobs(self, dataset: str) -> int:
+    def delete_dataset_waiting_jobs(self, dataset: str) -> int:
         """
-        Delete all the jobs for a given dataset.
+        Delete all the waiting jobs for a given dataset.
 
         Args:
             dataset (`str`): dataset name
@@ -909,14 +909,13 @@ class Queue:
         Returns:
             `int`: the number of deleted jobs
         """
-        jobs = JobDocument.objects(dataset=dataset)
+        jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
         previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
-        jobs_to_cancel = len(previous_status)
-        jobs.delete()
+        num_deleted_jobs = jobs.delete()
         for job_type, status, unicity_id in previous_status:
             decrease_metric(job_type=job_type, status=status)
             release_lock(key=unicity_id)
-        return jobs_to_cancel
+        return 0 if num_deleted_jobs is None else num_deleted_jobs
 
     def is_job_in_process(
         self, job_type: str, dataset: str, revision: str, config: Optional[str] = None, split: Optional[str] = None
