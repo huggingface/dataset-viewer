@@ -1202,7 +1202,6 @@ def compute_config_parquet_and_info_response(
             parquet_operations = convert_to_parquet(builder)
 
     try:
-        # ^ timeouts after ~7 minutes
         with lock.git_branch(
             dataset=dataset,
             branch=target_revision,
