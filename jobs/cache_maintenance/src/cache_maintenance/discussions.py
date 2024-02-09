@@ -18,14 +18,15 @@ DISCUSSION_DESCRIPTION = """The {bot_name} bot has created a version of this dat
 
 ## What is Parquet?
 
-Parquet is a columnar storage format optimized for querying and processing large datasets. Parquet is a popular choice for big data processing and analytics and is widely used for data processing and machine learning.
+Apache Parquet is a popular columnar storage format known for:
 
-Its structure allows for efficient data reading and querying:
-- only the necessary columns are read from disk (projection pushdown); no need to read the entire file. This reduces the memory requirement for working with Parquet data. 
-- entire row groups are skipped if the statistics stored in its metadata do not match the data of interest (automatic filtering)
-- the data is compressed, which reduces the amount of data that needs to be stored and transferred.
+- reduced memory requirement,
+- fast data retrieval and filtering,
+- efficient storage.
 
-You can learn more about the advantages associated with this format in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
+It powers the Dataset Viewer (random access, search, filter) and every dataset on the Hub can be accessed with the same code (use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [you tell](https://huggingface.co/docs/datasets-server/parquet_process)). 
+
+You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
 ## How to access the Parquet version of the dataset?
 
