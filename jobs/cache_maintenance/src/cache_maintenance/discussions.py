@@ -31,6 +31,10 @@ You can learn more about the advantages associated with this format in the [docu
 
 You can access the Parquet version of the dataset by following this link: {parquet_link}
 
+## What if my dataset was already in Parquet?
+
+When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule suffers an exception to ensure the Datasets Server API to stay fast: if the row group size of the original Parquet files is too big, new Parquet files are generated.
+
 ## What should I do?
 
 You don't need to do anything. The Parquet version of the dataset is available for you to use. Refer to the [documentation](https://huggingface.co/docs/datasets-server/parquet_process) for examples and code snippets on how to query the Parquet files with ClickHouse, DuckDB, Pandas or Polars.
