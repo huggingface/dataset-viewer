@@ -198,7 +198,6 @@ def test_from_streaming_truncation(
     error_code: str,
     truncated: bool,
 ) -> None:
-    MAX_NUM_ROWS_PER_PAGE = 7
     dataset = hub_public_csv if name == "public" else hub_public_big
     config, split = get_default_config_split()
     job_runner = get_job_runner(
@@ -218,7 +217,7 @@ def test_from_streaming_truncation(
         ),
     )
 
-    with patch("worker.job_runners.split.first_rows_from_streaming.MAX_NUM_ROWS_PER_PAGE", MAX_NUM_ROWS_PER_PAGE):
+    with patch("worker.job_runners.split.first_rows_from_streaming.MAX_NUM_ROWS_PER_PAGE", 1_000_000):
         if error_code:
             with pytest.raises(CustomError) as error_info:
                 job_runner.compute()

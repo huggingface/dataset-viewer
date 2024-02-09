@@ -7,6 +7,7 @@ from typing import Literal
 
 import pytest
 
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import RowsContent
 from libcommon.storage_client import StorageClient
 from libcommon.url_signer import URLSigner, get_asset_url_paths, to_features_dict
@@ -79,7 +80,7 @@ def test__get_asset_url_paths_from_first_rows(
     dataset = dataset_fixture.dataset
 
     # no need for the rows in this test
-    def get_fake_rows_content() -> RowsContent:
+    def get_fake_rows_content(rows_max_number: int) -> RowsContent:  # noqa: ARG001
         return RowsContent(rows=[], all_fetched=False)
 
     first_rows = create_first_rows_response(
@@ -92,6 +93,7 @@ def test__get_asset_url_paths_from_first_rows(
         get_rows_content=get_fake_rows_content,
         min_cell_bytes=0,
         rows_max_bytes=1000000,
+        rows_max_number=1000000,
         rows_min_number=0,
         columns_max_number=100000,
     )
@@ -119,6 +121,7 @@ def test_sign_urls_in_first_rows_in_place(
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=0,
         rows_max_bytes=1000000,
+        rows_max_number=1000000,
         rows_min_number=0,
         columns_max_number=100000,
     )
@@ -172,6 +175,7 @@ def test_sign_urls_in_first_rows_in_place_with_truncated_cells(
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=rows_max_bytes,
+        rows_max_number=MAX_NUM_ROWS_PER_PAGE,
         rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )

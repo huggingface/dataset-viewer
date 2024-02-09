@@ -2,11 +2,10 @@
 # Copyright 2022 The HuggingFace Authors.
 
 
-from typing import Callable
+from typing import Protocol
 
 from datasets import Audio, Features, Image
 
-from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import Row, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     RowsPostProcessingError,
@@ -47,7 +46,9 @@ def transform_rows(
     ]
 
 
-GetRowsContent = Callable[[], RowsContent]
+class GetRowsContent(Protocol):
+    def __call__(self, rows_max_number: int) -> RowsContent:
+        ...
 
 
 def create_first_rows_response(
@@ -60,6 +61,7 @@ def create_first_rows_response(
     get_rows_content: GetRowsContent,
     min_cell_bytes: int,
     rows_max_bytes: int,
+    rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
 ) -> SplitFirstRowsResponse:
@@ -89,6 +91,8 @@ def create_first_rows_response(
         get_rows_content (`GetRowsContent`): a callable that returns the rows content.
         min_cell_bytes (`int`): the minimum number of bytes for a cell, when truncation applies.
         rows_max_bytes (`int`): the maximum number of bytes for the response.
+        rows_max_number (`int`): the maximum number of rows to return. The response will never contain more than this
+            number of rows.
         rows_min_number (`int`): the minimum number of rows to return. The response will always contain at least this
             number of rows (provided that get_rows_content returns at least this number of rows).
         columns_max_number (`int`): the maximum number of columns to return. The response will never contain more than
@@ -127,11 +131,11 @@ def create_first_rows_response(
             f" supported size ({rows_max_bytes} B) even after truncation. Please report the issue."
         )
 
-    rows_content = get_rows_content()
-    if len(rows_content.rows) > MAX_NUM_ROWS_PER_PAGE:
+    rows_content = get_rows_content(rows_max_number)
+    if len(rows_content.rows) > rows_max_number:
         raise ValueError(
             f"The number of rows ({len(rows_content.rows)}) exceeds the maximum supported number of rows"
-            f" ({MAX_NUM_ROWS_PER_PAGE})."
+            f" ({rows_max_number})."
         )
 
     # transform the rows, if needed (e.g. save the images or audio to the assets, and return their URL)

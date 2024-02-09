@@ -21,6 +21,7 @@ from ..constants import (
     DEFAULT_MIN_CELL_BYTES,
     DEFAULT_REVISION,
     DEFAULT_ROWS_MAX_BYTES,
+    DEFAULT_ROWS_MAX_NUMBER,
     DEFAULT_ROWS_MIN_NUMBER,
     DEFAULT_SPLIT,
     SOME_BYTES,
@@ -46,6 +47,7 @@ def test_create_first_rows_response(
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=DEFAULT_ROWS_MAX_BYTES,
+        rows_max_number=DEFAULT_ROWS_MAX_NUMBER,
         rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )
@@ -59,23 +61,23 @@ NUM_ROWS = 15
 
 
 @pytest.mark.parametrize(
-    "rows_max_bytes,num_rows,truncated",
+    "rows_max_bytes,rows_max_number,truncated",
     [
-        (1_000, MAX_NUM_ROWS_PER_PAGE - 5, True),  # truncated because of rows_max_bytes
-        (10_000_000_000, MAX_NUM_ROWS_PER_PAGE + 5, True),  # truncated because of MAX_NUM_ROWS_PER_PAGE
-        (10_000_000_000, MAX_NUM_ROWS_PER_PAGE - 5, False),  # not truncated
+        (1_000, NUM_ROWS + 5, True),  # truncated because of rows_max_bytes
+        (10_000_000_000, NUM_ROWS - 5, True),  # truncated because of rows_max_number
+        (10_000_000_000, NUM_ROWS + 5, False),  # not truncated
     ],
 )
 def test_create_first_rows_response_truncated(
     storage_client: StorageClient,
     rows_max_bytes: int,
-    num_rows: int,
+    rows_max_number: int,
     truncated: bool,
 ) -> None:
     CELL_SIZE = 1_234
     dataset = Dataset.from_pandas(
         pd.DataFrame(
-            ["a" * CELL_SIZE for _ in range(num_rows)],
+            ["a" * CELL_SIZE for _ in range(NUM_ROWS)],
             dtype=pd.StringDtype(storage="python"),
         )
     )
@@ -90,6 +92,7 @@ def test_create_first_rows_response_truncated(
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=rows_max_bytes,
+        rows_max_number=rows_max_number,
         rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )
@@ -150,6 +153,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
                 get_rows_content=get_dataset_rows_content(dataset=dataset),
                 min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
                 rows_max_bytes=rows_max_bytes,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                 rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
                 columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
             )
@@ -165,6 +169,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
             get_rows_content=get_dataset_rows_content(dataset=dataset),
             min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
             rows_max_bytes=rows_max_bytes,
+            rows_max_number=MAX_NUM_ROWS_PER_PAGE,
             rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
             columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
         )

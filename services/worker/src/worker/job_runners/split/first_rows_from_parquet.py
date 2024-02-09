@@ -29,6 +29,7 @@ def compute_first_rows_response(
     storage_client: StorageClient,
     min_cell_bytes: int,
     rows_max_bytes: int,
+    rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
     indexer: Indexer,
@@ -47,11 +48,11 @@ def compute_first_rows_response(
     features = rows_index.parquet_index.features
 
     # get the rows
-    def get_rows_content() -> RowsContent:
+    def get_rows_content(rows_max_number: int) -> RowsContent:
         try:
-            pa_table = rows_index.query(offset=0, length=MAX_NUM_ROWS_PER_PAGE)
+            pa_table = rows_index.query(offset=0, length=rows_max_number)
             return RowsContent(
-                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= MAX_NUM_ROWS_PER_PAGE
+                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number
             )
         except TooBigRows as err:
             raise TooBigContentError(str(err))
@@ -71,6 +72,7 @@ def compute_first_rows_response(
         get_rows_content=get_rows_content,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes,
+        rows_max_number=rows_max_number,
         rows_min_number=rows_min_number,
         columns_max_number=columns_max_number,
     )
@@ -118,6 +120,7 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
                 rows_min_number=self.first_rows_config.min_number,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                 columns_max_number=self.first_rows_config.columns_max_number,
                 indexer=self.indexer,
             )
