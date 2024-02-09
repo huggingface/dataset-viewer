@@ -165,7 +165,6 @@ def test_compute(
                 common=replace(app_config.common, hf_token=None),
                 first_rows=replace(
                     app_config.first_rows,
-                    max_number=1_000_000,
                     min_number=10,
                     max_bytes=rows_max_bytes,
                     min_cell_bytes=10,
@@ -268,7 +267,9 @@ def test_from_parquet_truncation(
     parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
     with patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file), patch(
         "pyarrow.parquet.read_metadata", return_value=parquet_metadata
-    ), patch("pyarrow.parquet.read_schema", return_value=ds.data.schema):
+    ), patch("pyarrow.parquet.read_schema", return_value=ds.data.schema), patch(
+        "worker.job_runners.split.first_rows_from_parquet.MAX_NUM_ROWS_PER_PAGE", rows_max_number
+    ):
         job_runner = get_job_runner(
             dataset,
             config,
@@ -278,7 +279,6 @@ def test_from_parquet_truncation(
                 common=replace(app_config.common, hf_token=None),
                 first_rows=replace(
                     app_config.first_rows,
-                    max_number=rows_max_number,
                     min_number=rows_min_number,
                     max_bytes=rows_max_bytes,
                     min_cell_bytes=10,

@@ -208,7 +208,6 @@ def test_from_streaming_truncation(
             common=replace(app_config.common, hf_token=None),
             first_rows=replace(
                 app_config.first_rows,
-                max_number=1_000_000,
                 min_number=10,
                 max_bytes=rows_max_bytes,
                 min_cell_bytes=10,

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
@@ -30,7 +31,6 @@ def compute_first_rows_response(
     hf_token: Optional[str],
     min_cell_bytes: int,
     rows_max_bytes: int,
-    rows_max_number: int,
     rows_min_number: int,
     columns_max_number: int,
     dataset_scripts_allow_list: list[str],
@@ -56,8 +56,6 @@ def compute_first_rows_response(
             The minimum number of bytes for a cell, when truncation applies.
         rows_max_bytes (`int`):
             The maximum number of bytes of the response (else, the response is truncated).
-        rows_max_number (`int`):
-            The maximum number of rows of the response.
         rows_min_number (`int`):
             The minimum number of rows of the response.
         columns_max_number (`int`):
@@ -150,14 +148,14 @@ def compute_first_rows_response(
     else:
         features = info.features
 
-    def get_rows_content(rows_max_number: int) -> RowsContent:
+    def get_rows_content() -> RowsContent:
         return get_rows_or_raise(
             dataset=dataset,
             config=config,
             split=split,
             info=info,
             max_size_fallback=max_size_fallback,
-            rows_max_number=rows_max_number,
+            rows_max_number=MAX_NUM_ROWS_PER_PAGE,
             token=hf_token,
             trust_remote_code=trust_remote_code,
         )
@@ -172,7 +170,6 @@ def compute_first_rows_response(
         get_rows_content=get_rows_content,
         min_cell_bytes=min_cell_bytes,
         rows_max_bytes=rows_max_bytes,
-        rows_max_number=rows_max_number,
         rows_min_number=rows_min_number,
         columns_max_number=columns_max_number,
     )
@@ -211,7 +208,6 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
-                rows_max_number=self.first_rows_config.max_number,
                 rows_min_number=self.first_rows_config.min_number,
                 columns_max_number=self.first_rows_config.columns_max_number,
                 dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,

@@ -18,7 +18,6 @@ export COMMON_HF_TOKEN := hf_app_datasets-server_token
 # ^ hard coded, see e2e/tests/fixtures/hub.py
 export COMMON_BLOCKED_DATASETS := DSSUser/blocked-*
 export LOG_LEVEL := DEBUG
-export FIRST_ROWS_MAX_NUMBER := 4
 export MONGO_PORT := 27050
 export PARQUET_AND_INFO_COMMITTER_HF_TOKEN := hf_app_datasets-server-parquet-converter_token
 export DUCKDB_INDEX_COMMITTER_HF_TOKEN := hf_app_datasets-server-parquet-converter_token

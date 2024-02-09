@@ -201,8 +201,6 @@ worker:
 firstRows:
   # Max size of the /first-rows endpoint response in bytes
   maxBytes: "1_000_000"
-  # Max number of rows in the /first-rows endpoint response
-  maxNumber: 100
   # Min size of a cell in the /first-rows endpoint response in bytes
   minCellBytes: 100
   # Min number of rows in the /first-rows endpoint response

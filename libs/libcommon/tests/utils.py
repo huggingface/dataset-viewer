@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 from datasets import Dataset
 
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, Priority, RowsContent
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
@@ -383,10 +384,12 @@ def assert_metric(job_type: str, status: str, total: int) -> None:
     assert metric.total == total
 
 
-def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
-    rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
+def get_rows_content(dataset: Dataset) -> RowsContent:
+    rows_plus_one = list(itertools.islice(dataset, MAX_NUM_ROWS_PER_PAGE + 1))
     # ^^ to be able to detect if a split has exactly ROWS_MAX_NUMBER rows
-    return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
+    return RowsContent(
+        rows=rows_plus_one[:MAX_NUM_ROWS_PER_PAGE], all_fetched=len(rows_plus_one) <= MAX_NUM_ROWS_PER_PAGE
+    )
 
 
 def get_dataset_rows_content(dataset: Dataset) -> GetRowsContent:
