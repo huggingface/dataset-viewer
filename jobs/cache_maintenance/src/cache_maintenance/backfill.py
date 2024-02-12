@@ -27,7 +27,8 @@ class BackfillStatistics:
     def get_log(self) -> str:
         return (
             f"{self.num_analyzed_datasets} analyzed datasets (total: {self.num_total_datasets} datasets): "
-            f"{self.operations.num_updated_datasets} updated ({100 * self.operations.num_updated_datasets / self.num_analyzed_datasets:.2f}%), "
+            f"{self.operations.num_untouched_datasets} already ok ({100 * self.operations.num_untouched_datasets / self.num_analyzed_datasets:.2f}%), "
+            f"{self.operations.num_backfilled_datasets} backfilled ({100 * self.operations.num_backfilled_datasets / self.num_analyzed_datasets:.2f}%), "
             f"{self.operations.num_deleted_datasets} deleted ({100 * self.operations.num_deleted_datasets / self.num_analyzed_datasets:.2f}%), "
             f"{self.num_error_datasets} raised an exception ({100 * self.num_error_datasets / self.num_analyzed_datasets:.2f}%). "
             f"{self.operations.tasks.get_log()}"
