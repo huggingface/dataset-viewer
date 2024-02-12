@@ -24,7 +24,7 @@ Apache Parquet is a popular columnar storage format known for:
 - fast data retrieval and filtering,
 - efficient storage.
 
-It powers the Dataset Viewer (random access, search, filter) and every dataset on the Hub can be accessed with the same code (use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [you tell](https://huggingface.co/docs/datasets-server/parquet_process)). 
+**This is what powers the Dataset Viewer** on each dataset page and every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [up to you](https://huggingface.co/docs/datasets-server/parquet_process)).
 
 You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
 
@@ -34,7 +34,7 @@ You can access the Parquet version of the dataset by following this link: {parqu
 
 ## What if my dataset was already in Parquet?
 
-When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule suffers an exception to ensure the Datasets Server API to stay fast: if the row group size of the original Parquet files is too big, new Parquet files are generated.
+When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule has an exception to ensure the Datasets Server API to stay fast: if the row group size of the original Parquet files is too big, new Parquet files are generated.
 
 ## What should I do?
 
