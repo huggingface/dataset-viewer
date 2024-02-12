@@ -171,13 +171,15 @@ def get_current_revision(
 
 @dataclass
 class OperationsStatistics:
+    num_backfilled_datasets: int = 0
     num_deleted_datasets: int = 0
-    num_updated_datasets: int = 0
+    num_untouched_datasets: int = 0
     tasks: TasksStatistics = TasksStatistics()
 
     def add(self, other: "OperationsStatistics") -> None:
+        self.num_backfilled_datasets += other.num_backfilled_datasets
         self.num_deleted_datasets += other.num_deleted_datasets
-        self.num_updated_datasets += other.num_updated_datasets
+        self.num_untouched_datasets += other.num_untouched_datasets
         self.tasks.add(other.tasks)
 
 
@@ -258,11 +260,14 @@ def backfill_dataset(
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         return delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    tasks_statistics = backfill(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+    )
+    has_tasks = tasks_statistics.has_tasks()
     return OperationsStatistics(
-        num_updated_datasets=1,
-        tasks=backfill(
-            dataset=dataset,
-            revision=revision,
-            priority=priority,
-        ),
+        num_backfilled_datasets=1 if has_tasks else 0,
+        num_untouched_datasets=1 if not has_tasks else 0,
+        tasks=tasks_statistics,
     )

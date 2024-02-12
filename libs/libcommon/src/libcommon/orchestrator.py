@@ -76,6 +76,16 @@ class TasksStatistics:
         self.num_deleted_cache_entries += other.num_deleted_cache_entries
         self.num_deleted_storage_directories += other.num_deleted_storage_directories
 
+    def has_tasks(self) -> bool:
+        return any(
+            [
+                self.num_created_jobs > 0,
+                self.num_deleted_waiting_jobs > 0,
+                self.num_deleted_cache_entries > 0,
+                self.num_deleted_storage_directories > 0,
+            ]
+        )
+
     def get_log(self) -> str:
         return (
             f"{self.num_created_jobs} created jobs, {self.num_deleted_waiting_jobs} deleted waiting jobs,"
