@@ -260,12 +260,10 @@ def backfill_dataset(
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         return delete_dataset(dataset=dataset, storage_clients=storage_clients)
-    tasks_statistics = (
-        backfill(
-            dataset=dataset,
-            revision=revision,
-            priority=priority,
-        ),
+    tasks_statistics = backfill(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
     )
     has_tasks = tasks_statistics.has_tasks()
     return OperationsStatistics(
