@@ -36,7 +36,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
             correctly processed and included in current response (some configs might not exist in cache yet
             or raise errors).
     """
-    logging.info(f"get 'dataset-info' for {dataset=}")
+    logging.info(f"compute 'dataset-info' for {dataset=}")
 
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]

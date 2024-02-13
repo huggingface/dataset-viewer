@@ -38,7 +38,7 @@ def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, floa
     Returns:
         `tuple[DatasetParquetResponse, float]`: A tuple with the parquet_response (list of parquet files) and progress.
     """
-    logging.info(f"get 'dataset-parquet' for {dataset=}")
+    logging.info(f"compute 'dataset-parquet' for {dataset=}")
 
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]

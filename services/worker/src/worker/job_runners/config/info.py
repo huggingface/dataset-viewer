@@ -26,7 +26,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
     Returns:
         `ConfigInfoResponse`: An object with the dataset_info response for requested config.
     """
-    logging.info(f"get 'config-info' for {dataset=} and {config=}")
+    logging.info(f"compute 'config-info' for {dataset=} and {config=}")
 
     previous_step = "config-parquet-and-info"
     dataset_info_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset, config=config)

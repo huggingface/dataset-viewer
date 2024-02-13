@@ -9,7 +9,6 @@ from libcommon.config import CommonConfig
 from libcommon.dtos import JobInfo, JobParams, JobResult, Priority
 from libcommon.exceptions import (
     CustomError,
-    DatasetInBlockListError,
     DatasetNotFoundError,
     DatasetScriptError,
     JobManagerCrashedError,
@@ -117,10 +116,7 @@ class JobManager:
         return job_result
 
     def finish(self, job_result: JobResult) -> None:
-        try:
-            finish_job(job_result=job_result)
-        except DatasetInBlockListError:
-            self.debug("The dataset is blocked and has been deleted from the Datasets Server.")
+        finish_job(job_result=job_result)
 
     def raise_if_parallel_response_exists(self, parallel_step_name: str) -> None:
         try:

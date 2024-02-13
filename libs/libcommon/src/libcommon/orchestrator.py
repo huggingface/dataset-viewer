@@ -848,7 +848,7 @@ def finish_job(
     # check if the job is still in started status
     job_info = job_result["job_info"]
     if not Queue().is_job_started(job_id=job_info["job_id"]):
-        logging.debug("the job was cancelled, don't update the cache")
+        logging.debug("the job was deleted, don't update the cache")
         return TasksStatistics()
     # if the job could not provide an output, finish it and return
     if not job_result["output"]:

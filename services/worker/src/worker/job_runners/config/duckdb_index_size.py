@@ -40,7 +40,7 @@ def compute_config_duckdb_index_size_response(dataset: str, config: str) -> Conf
     Returns:
         `ConfigDuckdbIndexSizeResponse`: An object with the duckdb_index_size_response.
     """
-    logging.info(f"get 'config-duckdb-index-size' for {dataset=} {config=}")
+    logging.info(f"compute 'config-duckdb-index-size' for {dataset=} {config=}")
     splits = get_split_names(dataset=dataset, config=config)
     try:
         total = 0
