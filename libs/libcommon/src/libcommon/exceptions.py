@@ -463,6 +463,13 @@ class SplitParquetSchemaMismatchError(CacheableError):
         )
 
 
+class SplitWithTooBigParquetError(CacheableError):
+    """The split parquet size (sum of parquet sizes given) is too big."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
+
+
 class StatisticsComputationError(CacheableError):
     """An unexpected behavior or error occurred during statistics computations."""
 
