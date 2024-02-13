@@ -9,7 +9,6 @@ from libcommon.config import CommonConfig
 from libcommon.dtos import JobInfo, JobParams, JobResult, Priority
 from libcommon.exceptions import (
     CustomError,
-    DatasetInBlockListError,
     DatasetNotFoundError,
     DatasetScriptError,
     JobManagerCrashedError,
