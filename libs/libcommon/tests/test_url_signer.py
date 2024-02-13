@@ -7,6 +7,7 @@ from typing import Literal
 
 import pytest
 
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import RowsContent
 from libcommon.storage_client import StorageClient
 from libcommon.url_signer import URLSigner, get_asset_url_paths, to_features_dict
@@ -174,7 +175,7 @@ def test_sign_urls_in_first_rows_in_place_with_truncated_cells(
         get_rows_content=get_dataset_rows_content(dataset=dataset),
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_max_bytes=rows_max_bytes,
-        rows_max_number=100,
+        rows_max_number=MAX_NUM_ROWS_PER_PAGE,
         rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
         columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
     )

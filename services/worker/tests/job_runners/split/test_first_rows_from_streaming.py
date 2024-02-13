@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from datasets.packaged_modules import csv
@@ -208,7 +209,6 @@ def test_from_streaming_truncation(
             common=replace(app_config.common, hf_token=None),
             first_rows=replace(
                 app_config.first_rows,
-                max_number=1_000_000,
                 min_number=10,
                 max_bytes=rows_max_bytes,
                 min_cell_bytes=10,
@@ -217,11 +217,12 @@ def test_from_streaming_truncation(
         ),
     )
 
-    if error_code:
-        with pytest.raises(CustomError) as error_info:
-            job_runner.compute()
-        assert error_info.value.code == error_code
-    else:
-        response = job_runner.compute().content
-        assert get_json_size(response) <= rows_max_bytes
-        assert response["truncated"] == truncated
+    with patch("worker.job_runners.split.first_rows_from_streaming.MAX_NUM_ROWS_PER_PAGE", 1_000_000):
+        if error_code:
+            with pytest.raises(CustomError) as error_info:
+                job_runner.compute()
+            assert error_info.value.code == error_code
+        else:
+            response = job_runner.compute().content
+            assert get_json_size(response) <= rows_max_bytes
+            assert response["truncated"] == truncated

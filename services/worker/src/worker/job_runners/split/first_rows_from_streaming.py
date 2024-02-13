@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from datasets import IterableDataset, get_dataset_config_info, load_dataset
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     DatasetWithScriptNotSupportedError,
@@ -211,8 +212,8 @@ class SplitFirstRowsFromStreamingJobRunner(SplitJobRunnerWithDatasetsCache):
                 hf_token=self.app_config.common.hf_token,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
-                rows_max_number=self.first_rows_config.max_number,
                 rows_min_number=self.first_rows_config.min_number,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                 columns_max_number=self.first_rows_config.columns_max_number,
                 dataset_scripts_allow_list=self.app_config.common.dataset_scripts_allow_list,
             )
