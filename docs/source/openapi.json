@@ -6086,128 +6086,103 @@
                       "partial": false
                     }
                   },
-                  "A split (lmsys/lmsys-chat-1m) with a boolean column": {
-                    "summary": "Statistics on a boolean column 'redacted'.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=lmsys/lmsys-chat-1m&config=default&split=train.",
+                  "A split (google/boolq) with a boolean column": {
+                    "summary": "Statistics on a boolean column 'answer'.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=google/boolq&config=default&split=train.",
                     "value": {
-                      "num_examples": 1000000,
+                      "num_examples": 9427,
                       "statistics": [
                         {
-                          "column_name": "conversation_id",
-                          "column_type": "string_text",
-                          "column_statistics": {
-                            "nan_count": 0,
-                            "nan_proportion": 0,
-                            "min": 32,
-                            "max": 32,
-                            "mean": 32,
-                            "median": 32,
-                            "std": 0,
-                            "histogram": {
-                              "hist": [
-                                1000000
-                              ],
-                              "bin_edges": [
-                                32,
-                                32
-                              ]
-                            }
-                          }
-                        },
-                        {
-                          "column_name": "language",
-                          "column_type": "string_text",
-                          "column_statistics": {
-                            "nan_count": 0,
-                            "nan_proportion": 0,
-                            "min": 2,
-                            "max": 21,
-                            "mean": 7.06249,
-                            "median": 7,
-                            "std": 0.67744,
-                            "histogram": {
-                              "hist": [
-                                79, 6953, 946566, 12644, 33002, 111, 300, 265, 0, 80
-                              ],
-                              "bin_edges": [
-                                2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 21
-                              ]
-                            }
-                          }
-                        },
-                        {
-                          "column_name": "model",
-                          "column_type": "string_label",
-                          "column_statistics": {
-                            "nan_count": 0,
-                            "nan_proportion": 0,
-                            "no_label_count": 0,
-                            "no_label_proportion": 0,
-                            "n_unique": 25,
-                            "frequencies": {
-                              "RWKV-4-Raven-14B": 15551,
-                              "llama-2-7b-chat": 3778,
-                              "wizardlm-13b": 16564,
-                              "claude-instant-1": 5434,
-                              "gpt-3.5-turbo": 7578,
-                              "vicuna-33b": 31111,
-                              "mpt-7b-chat": 14650,
-                              "vicuna-7b": 16601,
-                              "guanaco-33b": 13719,
-                              "fastchat-t5-3b": 26213,
-                              "mpt-30b-chat": 8658,
-                              "llama-2-13b-chat": 29971,
-                              "chatglm-6b": 35660,
-                              "alpaca-13b": 62469,
-                              "koala-13b": 81586,
-                              "claude-2": 2241,
-                              "llama-13b": 32339,
-                              "gpt4all-13b-snoozy": 7538,
-                              "palm-2": 5537,
-                              "stablelm-tuned-alpha-7b": 12152,
-                              "dolly-v2-12b": 23178,
-                              "gpt-4": 7304,
-                              "oasst-pythia-12b": 26239,
-                              "claude-1": 23217,
-                              "vicuna-13b": 490712
-                            }
-                          }
-                        },
-                        {
-                          "column_name": "redacted",
+                          "column_name": "answer",
                           "column_type": "bool",
                           "column_statistics": {
                             "nan_count": 0,
                             "nan_proportion": 0,
                             "frequencies": {
-                              "False": 733740,
-                              "True": 266260
+                              "True": 5874,
+                              "False": 3553
                             }
                           }
                         },
                         {
-                          "column_name": "turn",
-                          "column_type": "int",
+                          "column_name": "passage",
+                          "column_type": "string_text",
                           "column_statistics": {
                             "nan_count": 0,
                             "nan_proportion": 0,
-                            "min": 1,
-                            "max": 215,
-                            "mean": 2.01564,
-                            "median": 1,
-                            "std": 2.69103,
+                            "min": 35,
+                            "max": 4720,
+                            "mean": 565.61303,
+                            "median": 511,
+                            "std": 323.1375,
                             "histogram": {
                               "hist": [
-                                997765, 1894, 276, 38, 14, 5, 4, 3, 0, 1
+                                4598,
+                                3939,
+                                721,
+                                133,
+                                20,
+                                7,
+                                5,
+                                3,
+                                0,
+                                1
                               ],
                               "bin_edges": [
-                                1, 23, 45, 67, 89, 111, 133, 155, 177, 199, 215
+                                35,
+                                504,
+                                973,
+                                1442,
+                                1911,
+                                2380,
+                                2849,
+                                3318,
+                                3787,
+                                4256,
+                                4720
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "question",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0,
+                            "min": 20,
+                            "max": 100,
+                            "mean": 43.99194,
+                            "median": 42,
+                            "std": 8.85434,
+                            "histogram": {
+                              "hist": [
+                                43,
+                                1914,
+                                4636,
+                                2046,
+                                501,
+                                159,
+                                68,
+                                34,
+                                26
+                              ],
+                              "bin_edges": [
+                                20,
+                                29,
+                                38,
+                                47,
+                                56,
+                                65,
+                                74,
+                                83,
+                                92,
+                                100
                               ]
                             }
                           }
                         }
-                      ],
-                      "partial": false
+                      ]
                     }
                   }
                 }
