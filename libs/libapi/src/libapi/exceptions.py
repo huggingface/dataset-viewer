@@ -24,6 +24,7 @@ ApiErrorCode = Literal[
     "ResponseNotFound",
     "ResponseNotReady",
     "SearchFeatureNotAvailableError",
+    "TooBigContentError",
     "TransformRowsProcessingError",
     "UnexpectedApiError",
 ]
@@ -121,7 +122,7 @@ class TooBigContentError(ApiError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
-            message, HTTPStatus.INTERNAL_SERVER_ERROR, "TransformRowsProcessingError", cause=cause, disclose_cause=True
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooBigContentError", cause=cause, disclose_cause=True
         )
 
 

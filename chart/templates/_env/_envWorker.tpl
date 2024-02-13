@@ -26,8 +26,6 @@
 # specific to the /first-rows job runner
 - name: FIRST_ROWS_MAX_BYTES
   value: {{ .Values.firstRows.maxBytes | quote }}
-- name: FIRST_ROWS_MAX_NUMBER
-  value: {{ .Values.firstRows.maxNumber | quote }}
 - name: FIRST_ROWS_MIN_CELL_BYTES
   value: {{ .Values.firstRows.minCellBytes | quote }}
 - name: FIRST_ROWS_MIN_NUMBER

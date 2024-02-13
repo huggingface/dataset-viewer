@@ -22,7 +22,7 @@ from libcommon.exceptions import (
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
-from libcommon.orchestrator import backfill, get_revision, remove_dataset, set_revision
+from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
 
@@ -169,15 +169,35 @@ def get_current_revision(
     return get_revision(dataset=dataset)
 
 
-def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> None:
+@dataclass
+class OperationsStatistics:
+    num_backfilled_datasets: int = 0
+    num_deleted_datasets: int = 0
+    num_untouched_datasets: int = 0
+    tasks: TasksStatistics = TasksStatistics()
+
+    def add(self, other: "OperationsStatistics") -> None:
+        self.num_backfilled_datasets += other.num_backfilled_datasets
+        self.num_deleted_datasets += other.num_deleted_datasets
+        self.num_untouched_datasets += other.num_untouched_datasets
+        self.tasks.add(other.tasks)
+
+
+def delete_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> OperationsStatistics:
     """
     Delete a dataset
 
     Args:
         dataset (`str`): the dataset
+        storage_clients (`list[StorageClient]`, *optional*): the storage clients to use to delete the dataset
+
+    Returns:
+        `OperationsStatistics`: the statistics of the deletion
     """
     logging.debug(f"delete cache for dataset='{dataset}'")
-    remove_dataset(dataset=dataset, storage_clients=storage_clients)
+    return OperationsStatistics(
+        num_deleted_datasets=1, tasks=remove_dataset(dataset=dataset, storage_clients=storage_clients)
+    )
 
 
 def update_dataset(
@@ -222,7 +242,7 @@ def backfill_dataset(
     hf_timeout_seconds: Optional[float] = None,
     priority: Priority = Priority.LOW,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> None:
+) -> OperationsStatistics:
     """
       blocked_datasets (`list[str]`): The list of blocked datasets. Supports Unix shell-style wildcards in the dataset
     name, e.g. "open-llm-leaderboard/*" to block all the datasets in the `open-llm-leaderboard` namespace. They
@@ -239,10 +259,15 @@ def backfill_dataset(
         )
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
-        delete_dataset(dataset=dataset, storage_clients=storage_clients)
-        raise
-    backfill(
+        return delete_dataset(dataset=dataset, storage_clients=storage_clients)
+    tasks_statistics = backfill(
         dataset=dataset,
         revision=revision,
         priority=priority,
+    )
+    has_tasks = tasks_statistics.has_tasks()
+    return OperationsStatistics(
+        num_backfilled_datasets=1 if has_tasks else 0,
+        num_untouched_datasets=1 if not has_tasks else 0,
+        tasks=tasks_statistics,
     )
