@@ -94,7 +94,7 @@ class StatisticsPerColumnItem(TypedDict):
 class SplitDescriptiveStatisticsResponse(TypedDict):
     num_examples: int
     statistics: list[StatisticsPerColumnItem]
-    partial: Optional[bool]
+    partial: bool
 
 
 def generate_bins(
@@ -480,8 +480,9 @@ def compute_descriptive_statistics_response(
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
         max_split_size_bytes (`int`):
-            Maximum split size in bytes to compute statistics.
-            For partial datasets that means that only data up to this size is counted.
+            Maximum split size in bytes to compute statistics. If the split size is greater, the statistics will
+            be computed only on the first parquet files, up to this size, and the `partial` field will be set
+            to `True` in the response.
 
     Raises:
         [~`libcommon.exceptions.PreviousStepFormatError`]:
