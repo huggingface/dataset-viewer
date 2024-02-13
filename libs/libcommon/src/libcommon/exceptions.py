@@ -463,6 +463,7 @@ class SplitParquetSchemaMismatchError(CacheableError):
         )
 
 
+# TODO: to be deleted after cache with this error is recomputed
 class SplitWithTooBigParquetError(CacheableError):
     """The split parquet size (sum of parquet sizes given) is too big."""
 
