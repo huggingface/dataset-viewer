@@ -23,6 +23,7 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
                 "kind": "split-descriptive-statistics",
+                "http_status": 200,
                 "content.partial": {"$exists": False},
             },
             {
@@ -34,8 +35,8 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
                 "kind": "split-descriptive-statistics",
-                "content.error_code": {"$exists": True},
-                "content.error_code": "SplitWithTooBigParquetError",
+                "error_code": "SplitWithTooBigParquetError",
+                "content.partial": {"$exists": False},
             },
             {
                 "$set": {
@@ -50,7 +51,6 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
                 "kind": "split-descriptive-statistics",
-                "http_status": 200,
             },
             {
                 "$unset": {

@@ -16,7 +16,10 @@ def assert_has_bool_partial_field(dataset: str, kind: str) -> None:
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
     assert "partial" in entry["content"]
-    assert isinstance(entry["content"]["partial"], bool)
+    if entry.get("error_code") == "SplitWithTooBigParquetError":
+        assert entry["content"]["partial"] is True
+    else:
+        assert entry["content"]["partial"] is False
 
 
 def assert_unchanged(dataset: str, kind: str) -> None:
@@ -46,13 +49,30 @@ def test_cache_add_partial(mongo_host: str) -> None:
             },
             {
                 "config": "default",
-                "dataset": "dataset_with_error",
+                "dataset": "dataset_with_split_too_big_error",
                 "kind": kind,
                 "split": "train",
                 "content": {"error": "error"},
                 "details": {
                     "error": "error",
-                    "cause_exception": "UnexpextedError",
+                    "cause_exception": "SplitWithTooBigParquetError",
+                    "cause_message": "error",
+                    "cause_traceback": ["Traceback"],
+                },
+                "error_code": "SplitWithTooBigParquetError",
+                "http_status": 500,
+                "job_runner_version": 3,
+                "progress": 1,
+            },
+            {
+                "config": "default",
+                "dataset": "dataset_with_other_error",
+                "kind": kind,
+                "split": "train",
+                "content": {"error": "error"},
+                "details": {
+                    "error": "error",
+                    "cause_exception": "UnexpectedError",
                     "cause_message": "error",
                     "cause_traceback": ["Traceback"],
                 },
@@ -72,10 +92,12 @@ def test_cache_add_partial(mongo_host: str) -> None:
         migration.up()
 
         assert_has_bool_partial_field("dataset", kind=kind)
-        assert_unchanged("dataset_with_error", kind=kind)
+        assert_has_bool_partial_field("dataset_with_split_too_big_error", kind=kind)
+        assert_unchanged("dataset_with_other_error", kind=kind)
 
         migration.down()
         assert_unchanged("dataset", kind=kind)
-        assert_unchanged("dataset_with_error", kind=kind)
+        assert_unchanged("dataset_with_split_too_big_error", kind=kind)
+        assert_unchanged("dataset_with_other_error", kind=kind)
 
         db[CACHE_COLLECTION_RESPONSES].drop()
