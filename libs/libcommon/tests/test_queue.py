@@ -597,7 +597,7 @@ def test_delete_dataset_waiting_jobs(queue_mongo_resource: QueueMongoResource) -
     -> deletes at several levels (dataset, config, split)
     -> deletes waiting jobs, but not started jobs
     -> remove locks
-    -> does not cancel, and does not remove locks, for other datasets
+    -> does not delete, and does not remove locks, for other datasets
     """
     dataset = "dataset"
     other_dataset = "other_dataset"

@@ -101,8 +101,8 @@ class Loop:
                     continue
                 with StepProfiler("loop", "sleep"):
                     self.sleep()
-        except BaseException:
-            logging.exception("quit due to an uncaught error while processing the job")
+        except BaseException as err:
+            logging.exception(f"quit due to an uncaught error: {err}")
             raise
 
     def process_next_job(self) -> bool:
