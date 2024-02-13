@@ -201,7 +201,7 @@ class WorkerExecutor:
             explanation = f"exit code {err.exit_code}"
             if err.exit_code == -9:
                 explanation += " SIGKILL - surely an OOM"
-            error_msg = f"[Worker executor] Worker crashed ({explanation})"
+            error_msg = f"Worker crashed ({explanation})"
             state = self.get_state()
             if state and state["current_job_info"]:
                 error_msg += f" when running job_id={state['current_job_info']['job_id']}"
