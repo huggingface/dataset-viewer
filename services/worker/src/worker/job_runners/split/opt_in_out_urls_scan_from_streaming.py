@@ -154,7 +154,7 @@ def compute_opt_in_out_urls_scan_response(
     Returns:
         `OptInOutUrlsScanResponse`: An object with the lists of opt-in/opt-out urls
     """
-    logging.info(f"get 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-opt-in-out-urls-scan' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
 
     if not spawning_token:

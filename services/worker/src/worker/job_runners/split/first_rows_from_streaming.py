@@ -99,7 +99,7 @@ def compute_first_rows_response(
     Returns:
         `SplitFirstRowsResponse`: The list of first rows of the split.
     """
-    logging.info(f"get 'first-rows-from-streaming' for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-first-rows-from-streaming' for {dataset=} {config=} {split=}")
     trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
     # get the features
     try:

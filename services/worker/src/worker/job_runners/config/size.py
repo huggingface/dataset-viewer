@@ -30,7 +30,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     Returns:
         `ConfigSizeResponse`: An object with the size_response.
     """
-    logging.info(f"get 'config-size' for {dataset=} {config=}")
+    logging.info(f"compute 'config-size' for {dataset=} {config=}")
 
     dataset_info_best_response = get_previous_step_or_raise(
         kinds=["config-parquet-and-info"], dataset=dataset, config=config

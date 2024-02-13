@@ -43,7 +43,7 @@ def compute_image_url_columns(
     Returns:
         `ImageUrlColumnsResponse`: The list of image url columns.
     """
-    logging.info(f"get 'split-image-url-columns' for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-image-url-columns' for {dataset=} {config=} {split=}")
 
     # get the first rows from previous job
     upstream_response = get_previous_step_or_raise(

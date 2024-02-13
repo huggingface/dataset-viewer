@@ -104,7 +104,7 @@ def get_delete_operations(all_repo_files: set[str], split_names: set[str], confi
     ]
 
 
-def compute_index_rows(
+def compute_split_duckdb_index_response(
     job_id: str,
     dataset: str,
     config: str,
@@ -120,7 +120,7 @@ def compute_index_rows(
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
 ) -> SplitDuckdbIndex:
-    logging.info(f"get split-duckdb-index for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
@@ -357,7 +357,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         if self.cache_subdirectory is None:
             raise CacheDirectoryNotInitializedError("Cache directory has not been initialized.")
         return CompleteJobResult(
-            compute_index_rows(
+            compute_split_duckdb_index_response(
                 job_id=self.job_info["job_id"],
                 dataset=self.dataset,
                 config=self.config,

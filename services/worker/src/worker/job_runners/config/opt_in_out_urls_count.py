@@ -15,8 +15,8 @@ from worker.job_runners.config.config_job_runner import ConfigJobRunner
 from worker.utils import get_split_names
 
 
-def compute_opt_in_out_urls_scan_response(dataset: str, config: str) -> tuple[OptInOutUrlsCountResponse, float]:
-    logging.info(f"get 'config-opt-in-out-urls-count' for {dataset=} {config=}")
+def compute_opt_in_out_urls_count_response(dataset: str, config: str) -> tuple[OptInOutUrlsCountResponse, float]:
+    logging.info(f"compute 'config-opt-in-out-urls-count' for {dataset=} {config=}")
 
     urls_columns = []
     num_opt_in_urls = 0
@@ -76,5 +76,5 @@ class ConfigOptInOutUrlsCountJobRunner(ConfigJobRunner):
         return "config-opt-in-out-urls-count"
 
     def compute(self) -> JobResult:
-        response_content, progress = compute_opt_in_out_urls_scan_response(dataset=self.dataset, config=self.config)
+        response_content, progress = compute_opt_in_out_urls_count_response(dataset=self.dataset, config=self.config)
         return JobResult(response_content, progress=progress)

@@ -1115,7 +1115,7 @@ def compute_config_parquet_and_info_response(
     Returns:
         `ConfigParquetAndInfoResponse`: An object with the list of parquet files, the dataset info and whether the response is partial or not.
     """
-    logging.info(f"get 'config-parquet-and-info' for {dataset=} {config=}")
+    logging.info(f"compute 'config-parquet-and-info' for {dataset=} {config=}")
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"

@@ -62,7 +62,7 @@ def compute_split_names_from_streaming_response(
     Returns:
         `SplitsList`: An object with the list of split names for the dataset and config.
     """
-    logging.info(f"get 'config-split-names-from-streaming' for {dataset=} {config=}")
+    logging.info(f"compute 'config-split-names-from-streaming' for {dataset=} {config=}")
     try:
         split_name_items: list[FullSplitItem] = [
             {"dataset": dataset, "config": config, "split": str(split)}

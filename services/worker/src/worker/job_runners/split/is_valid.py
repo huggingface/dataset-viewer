@@ -33,7 +33,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
     Returns:
         `IsValidResponse`: The response (viewer, preview, search, filter).
     """
-    logging.info(f"get is-valid response for {dataset=}")
+    logging.info(f"compute 'split-is-valid' response for {dataset=}")
 
     viewer = has_any_successful_response(
         dataset=dataset,

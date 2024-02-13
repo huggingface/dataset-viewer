@@ -85,7 +85,7 @@ def compute_parquet_metadata_response(
     Returns:
         `ConfigParquetMetadataResponse`: An object with the list of parquet metadata files.
     """
-    logging.info(f"get 'config-parquet-metadata' for {dataset=} {config=}")
+    logging.info(f"compute 'config-parquet-metadata' for {dataset=} {config=}")
 
     config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
     try:
