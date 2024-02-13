@@ -26,7 +26,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     Returns:
         `tuple[DatasetHubCacheResponse, float]`: The response and the progress.
     """
-    logging.info(f"get 'dateset-hub-cache' for {dataset=}")
+    logging.info(f"compute 'dataset-hub-cache' for {dataset=}")
 
     is_valid_response = get_previous_step_or_raise(kinds=["dataset-is-valid"], dataset=dataset)
     content = is_valid_response.response["content"]

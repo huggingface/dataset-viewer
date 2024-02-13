@@ -34,7 +34,7 @@ def compute_first_rows_response(
     columns_max_number: int,
     indexer: Indexer,
 ) -> SplitFirstRowsResponse:
-    logging.info(f"get 'split-first-rows-from-parquet' for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-first-rows-from-parquet' for {dataset=} {config=} {split=}")
 
     try:
         rows_index = indexer.get_rows_index(

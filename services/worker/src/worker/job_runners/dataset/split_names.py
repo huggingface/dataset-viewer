@@ -37,7 +37,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
             An object with a list of split names for the dataset [splits],
             a list of pending configs to be processed [pending] and the list of errors [failed] by config.
     """
-    logging.info(f"get 'dataset-split-names' for {dataset=}")
+    logging.info(f"compute 'dataset-split-names' for {dataset=}")
 
     # Get the config names from the previous steps
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
