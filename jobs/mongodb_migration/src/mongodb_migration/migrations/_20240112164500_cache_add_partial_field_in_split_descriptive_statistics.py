@@ -23,12 +23,23 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
                 "kind": "split-descriptive-statistics",
-                "http_status": 200,
                 "content.partial": {"$exists": False},
             },
             {
                 "$set": {
-                    "content.partial": None,
+                    "content.partial": False,
+                }
+            },
+        )
+        db[CACHE_COLLECTION_RESPONSES].update_many(
+            {
+                "kind": "split-descriptive-statistics",
+                "content.error_code": {"$exists": True},
+                "content.error_code": "SplitWithTooBigParquetError",
+            },
+            {
+                "$set": {
+                    "content.partial": True,
                 }
             },
         )

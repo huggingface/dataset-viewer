@@ -11,12 +11,12 @@ from mongodb_migration.migrations._20240112164500_cache_add_partial_field_in_spl
 )
 
 
-def assert_has_partial_field(dataset: str, kind: str) -> None:
+def assert_has_bool_partial_field(dataset: str, kind: str) -> None:
     db = get_db(CACHE_MONGOENGINE_ALIAS)
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
     assert "partial" in entry["content"]
-    assert entry["content"]["partial"] is None
+    assert isinstance(entry["content"]["partial"], bool)
 
 
 def assert_unchanged(dataset: str, kind: str) -> None:
@@ -71,7 +71,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
         )
         migration.up()
 
-        assert_has_partial_field("dataset", kind=kind)
+        assert_has_bool_partial_field("dataset", kind=kind)
         assert_unchanged("dataset_with_error", kind=kind)
 
         migration.down()
