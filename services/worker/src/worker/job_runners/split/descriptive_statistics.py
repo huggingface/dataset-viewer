@@ -14,12 +14,17 @@ from huggingface_hub import hf_hub_download
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
+    FeaturesError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     StatisticsComputationError,
 )
-from libcommon.parquet_utils import extract_split_name_from_parquet_url, parquet_export_is_partial
+from libcommon.parquet_utils import (
+    extract_split_name_from_parquet_url,
+    get_num_parquet_files_to_index,
+    parquet_export_is_partial,
+)
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from requests.exceptions import ReadTimeout
@@ -268,7 +273,7 @@ def compute_class_label_statistics(
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
-    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())
+    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())  # type: ignore
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
     no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
 
@@ -305,7 +310,7 @@ def compute_bool_statistics(
 ) -> BoolStatisticsItem:
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
+    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
     # exclude counts of None values from frequencies if exist:
     values2counts.pop(None, None)  # type: ignore
 
@@ -329,7 +334,7 @@ def compute_string_statistics(
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
         if n_unique <= MAX_NUM_STRING_LABELS:
-            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
+            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
@@ -457,6 +462,7 @@ def compute_descriptive_statistics_response(
     parquet_revision: str,
     histogram_num_bins: int,
     max_split_size_bytes: int,
+    parquet_metadata_directory: StrPath,
 ) -> SplitDescriptiveStatisticsResponse:
     """
     Get the response of 'split-descriptive-statistics' for one specific split of a dataset from huggingface.co.
@@ -480,17 +486,21 @@ def compute_descriptive_statistics_response(
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
         max_split_size_bytes (`int`):
-            Maximum split size in bytes to compute statistics. If the split size is greater, the statistics will
-            be computed only on the first parquet files, up to this size, and the `partial` field will be set
+            If raw uncompressed split data is larger than this value, the statistics will are computed
+            only on the first parquet files, approximately up to this size, and the `partial` field will be set
             to `True` in the response.
+        parquet_metadata_directory (`StrPath`):
+            Path to directory on local shared storage containing parquet metadata files. Parquet metadata is needed
+            to get uncompressed size of split files to determine the number of files to use if split is larger
+            than `max_split_size_bytes`
 
     Raises:
         [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step does not have the expected format.
         [~`libcommon.exceptions.ParquetResponseEmptyError`]:
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        [~`libcommon.exceptions.SplitWithTooBigParquetError`]:
-            If requested split's parquet files size exceeds the provided `max_parquet_size_bytes`.
+        [~`libcommon.exceptions.FeaturesError`]:
+            If response for `config-parquet-and-info` doesn't have features.
         [~`libcommon.exceptions.NoSupportedFeaturesError`]:
             If requested dataset doesn't have any supported for statistics computation features.
             Currently, floats, integers and ClassLabels are supported.
@@ -504,47 +514,39 @@ def compute_descriptive_statistics_response(
 
     logging.info(f"compute 'split-descriptive-statistics' for {dataset=} {config=} {split=}")
 
-    config_parquet_and_info_step = "config-parquet-and-info"
-    parquet_and_info_best_response = get_previous_step_or_raise(
-        kinds=[config_parquet_and_info_step],
+    # get parquet urls and dataset_info
+    config_parquet_metadata_step = "config-parquet-metadata"
+    parquet_metadata_best_response = get_previous_step_or_raise(
+        kinds=[config_parquet_metadata_step],
         dataset=dataset,
         config=config,
     )
-    content_parquet_and_info = parquet_and_info_best_response.response["content"]
+    content_parquet_metadata = parquet_metadata_best_response.response["content"]
     try:
         split_parquet_files = [
             parquet_file
-            for parquet_file in content_parquet_and_info["parquet_files"]
+            for parquet_file in content_parquet_metadata["parquet_files_metadata"]
             if parquet_file["config"] == config and parquet_file["split"] == split
         ]
-        dataset_info = content_parquet_and_info["dataset_info"]
+        features = content_parquet_metadata["features"]
+
     except KeyError as e:
         raise PreviousStepFormatError(
-            (
-                f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
-                "'parquet_files' or 'dataset_info'. "
-            ),
-            e,
+            f"Previous step '{config_parquet_metadata_step}' did not return the expected content", e
         ) from e
 
     if not split_parquet_files:
         raise ParquetResponseEmptyError("No parquet files found.")
-    features = dataset_info.get("features")
-    if features is None:
-        raise PreviousStepFormatError(
-            f"Previous step '{config_parquet_and_info_step}' did not return the expected content: "
-            "no features found in 'dataset_info'. "
-        )
 
-    num_parquet_files_to_index = 0
-    total_bytes = 0
+    if not features:
+        raise FeaturesError("No features found in cache. ")
+
+    num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_index(
+        parquet_files=split_parquet_files,
+        parquet_metadata_directory=parquet_metadata_directory,
+        max_size_bytes=max_split_size_bytes,
+    )
     partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
-    for parquet_file_id, parquet_file in enumerate(split_parquet_files):
-        num_parquet_files_to_index += 1
-        parquet_file_size_bytes = parquet_file["size"]
-        total_bytes += parquet_file_size_bytes
-        if total_bytes > max_split_size_bytes:
-            break
     partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
     split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
 
@@ -628,6 +630,7 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
         job_info: JobInfo,
         app_config: AppConfig,
         statistics_cache_directory: StrPath,
+        parquet_metadata_directory: StrPath,
     ):
         super().__init__(
             job_info=job_info,
@@ -635,6 +638,7 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
             cache_directory=Path(statistics_cache_directory),
         )
         self.descriptive_statistics_config = app_config.descriptive_statistics
+        self.parquet_metadata_directory = parquet_metadata_directory
 
     @staticmethod
     def get_job_type() -> str:
@@ -653,5 +657,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
                 histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )

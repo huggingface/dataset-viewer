@@ -17,7 +17,9 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig
+from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
@@ -36,8 +38,9 @@ from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatisticsJobRunner]
-
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
+GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetJobRunner]
+GetParquetMetadataJobRunner = Callable[[str, str, AppConfig], ConfigParquetMetadataJobRunner]
 
 N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
 
@@ -76,6 +79,7 @@ def test_generate_bins(
 
 @pytest.fixture
 def get_job_runner(
+    parquet_metadata_directory: StrPath,
     statistics_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
@@ -118,6 +122,7 @@ def get_job_runner(
             },
             app_config=app_config,
             statistics_cache_directory=statistics_cache_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
@@ -157,6 +162,84 @@ def get_parquet_and_info_job_runner(
             },
             app_config=app_config,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_job_runner
+
+
+@pytest.fixture
+def get_parquet_job_runner(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> GetParquetJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        config: str,
+        app_config: AppConfig,
+    ) -> ConfigParquetJobRunner:
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        return ConfigParquetJobRunner(
+            job_info={
+                "type": ConfigParquetJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            app_config=app_config,
+        )
+
+    return _get_job_runner
+
+
+@pytest.fixture
+def get_parquet_metadata_job_runner(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    parquet_metadata_directory: StrPath,
+) -> GetParquetMetadataJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        config: str,
+        app_config: AppConfig,
+    ) -> ConfigParquetMetadataJobRunner:
+        upsert_response(
+            kind="dataset-config-names",
+            dataset_git_revision=REVISION_NAME,
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        return ConfigParquetMetadataJobRunner(
+            job_info={
+                "type": ConfigParquetMetadataJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            app_config=app_config,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
@@ -467,6 +550,8 @@ def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
+    get_parquet_job_runner: GetParquetJobRunner,
+    get_parquet_metadata_job_runner: GetParquetMetadataJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_string_text: HubDatasetTest,
     hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
@@ -510,10 +595,11 @@ def test_compute(
     )
 
     # computing and pushing real parquet files because we need them for stats computation
-    parquet_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
-    parquet_and_info_response = parquet_job_runner.compute()
-    assert parquet_and_info_response
-    assert parquet_and_info_response.content["partial"] is partial
+    parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
+    parquet_and_info_response = parquet_and_info_job_runner.compute()
+    config_parquet_and_info = parquet_and_info_response.content
+
+    assert config_parquet_and_info["partial"] is partial
 
     upsert_response(
         "config-parquet-and-info",
@@ -522,6 +608,36 @@ def test_compute(
         config=config,
         http_status=HTTPStatus.OK,
         content=parquet_and_info_response.content,
+    )
+
+    parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
+    parquet_response = parquet_job_runner.compute()
+    config_parquet = parquet_response.content
+
+    assert config_parquet["partial"] is partial
+
+    upsert_response(
+        "config-parquet",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        http_status=HTTPStatus.OK,
+        content=config_parquet,
+    )
+
+    parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
+    parquet_metadata_response = parquet_metadata_job_runner.compute()
+    config_parquet_metadata = parquet_metadata_response.content
+
+    assert config_parquet_metadata["partial"] is partial
+
+    upsert_response(
+        "config-parquet-metadata",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        http_status=HTTPStatus.OK,
+        content=config_parquet_metadata,
     )
 
     job_runner = get_job_runner(dataset, config, split, app_config)
