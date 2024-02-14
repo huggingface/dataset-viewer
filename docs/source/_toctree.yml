@@ -28,6 +28,8 @@
       title: Get the number of rows and the bytes size
     - local: statistics
       title: Explore dataset statistics
+    - local: croissant
+      title: Get Croissant metadata
     - title: Query datasets from Datasets Server
       sections:
         - local: parquet_process

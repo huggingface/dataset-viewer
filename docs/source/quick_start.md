@@ -29,6 +29,7 @@ Each feature is served through an endpoint summarized in the table below:
 | [/parquet](./parquet)       | GET    | Get the list of parquet files of a dataset.             | `dataset`: name of the dataset                                                                                                                                                                                    |
 | [/size](./size)             | GET    | Get the size of a dataset.                              | `dataset`: name of the dataset                                                                                                                                                                                    |
 | [/statistics](./statistics) | GET    | Get statistics about a dataset split.                   | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                          |
+| [/croissant](./croissant) | GET    | Get Croissant metadata about a dataset.                   | - `dataset`: name of the dataset                                                                          |
 
 There is no installation or setup required to use Datasets Server.
 
