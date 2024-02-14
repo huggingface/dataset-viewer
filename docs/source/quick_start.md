@@ -54,16 +54,22 @@ The base URL of the REST API is:
 https://datasets-server.huggingface.co
 ```
 
-## Gated datasets
+## Private and gated datasets
 
-For gated datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
+For [private](https://huggingface.co/docs/hub/repositories-settings#private-repositories) and [gated dataset](https://huggingface.co/docs/hub/datasets-gated) datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
+
+<Tip>
+
+Datasets Server supports private datasets owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
+
+</Tip>
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=mozilla-foundation/common_voice_10_0"
+API_URL = "https://datasets-server.huggingface.co/is-valid?dataset=allenai/WildChat-nontoxic"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -75,7 +81,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes",
+        "https://datasets-server.huggingface.co/is-valid?dataset=allenai/WildChat-nontoxic",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET",
@@ -91,7 +97,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
+curl https://datasets-server.huggingface.co/is-valid?dataset=allenai/WildChat-nontoxic \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
