@@ -50,6 +50,7 @@ class ColumnType(str, enum.Enum):
     FLOAT = "float"
     INT = "int"
     BOOL = "bool"
+    LIST = "list"
     CLASS_LABEL = "class_label"
     STRING_LABEL = "string_label"
     STRING_TEXT = "string_text"
@@ -316,6 +317,24 @@ def compute_bool_statistics(
     )
 
 
+def compute_list_statistics(
+    df: pl.dataframe.frame.DataFrame,
+    column_name: str,
+    n_bins: int,
+    n_samples: int,
+) -> NumericalStatisticsItem:
+    lengths_df = df.select(pl.col(column_name)).with_columns(
+        pl.col(column_name).str.len_chars().alias(f"{column_name}_len")
+    )
+    return compute_numerical_statistics(
+        df=lengths_df,
+        column_name=f"{column_name}_len",
+        n_bins=n_bins,
+        n_samples=n_samples,
+        column_type=ColumnType.INT,
+    )
+
+
 def compute_string_statistics(
     df: pl.dataframe.frame.DataFrame,
     column_name: str,
@@ -360,6 +379,7 @@ def compute_descriptive_statistics_for_features(
     class_label_features: Optional[dict[str, dict[str, Any]]],
     numerical_features: Optional[dict[str, dict[str, Any]]],
     bool_features: Optional[dict[str, dict[str, Any]]],
+    list_features: Optional[dict[str, dict[str, Any]]],
     histogram_num_bins: int,
     num_examples: int,
 ) -> list[StatisticsPerColumnItem]:
@@ -442,6 +462,24 @@ def compute_descriptive_statistics_for_features(
                     column_name=feature_name,
                     column_type=ColumnType.BOOL,
                     column_statistics=bool_column_stats,
+                )
+            )
+
+    if list_features:
+        logging.info(f"Compute statistics for list columns {list_features} with polars. ")
+        for feature_name, feature in tqdm(list_features.items()):
+            df = pl.read_parquet(path, columns=[feature_name])
+            list_column_stats = compute_list_statistics(
+                df,
+                column_name=feature_name,
+                n_bins=histogram_num_bins,
+                n_samples=num_examples,
+            )
+            stats.append(
+                StatisticsPerColumnItem(
+                    column_name=feature_name,
+                    column_type=ColumnType.BOOL,
+                    column_statistics=list_column_stats,
                 )
             )
 
@@ -595,7 +633,12 @@ def compute_descriptive_statistics_response(
         for feature_name, feature in features.items()
         if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") == "bool"
     }
-    if not class_label_features and not numerical_features and not string_features:
+    list_features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") == "list"
+    }
+    if not class_label_features and not numerical_features and not string_features and not list_features:
         raise NoSupportedFeaturesError(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
@@ -609,6 +652,7 @@ def compute_descriptive_statistics_response(
         class_label_features=class_label_features,
         numerical_features=numerical_features,
         bool_features=bool_features,
+        list_features=list_features,
         num_examples=num_examples,
         histogram_num_bins=histogram_num_bins,
     )
