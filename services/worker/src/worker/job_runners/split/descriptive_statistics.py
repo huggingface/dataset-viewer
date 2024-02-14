@@ -273,7 +273,7 @@ def compute_class_label_statistics(
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
-    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())
     no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
     no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
 
@@ -310,7 +310,7 @@ def compute_bool_statistics(
 ) -> BoolStatisticsItem:
     nan_count = df[column_name].null_count()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
     # exclude counts of None values from frequencies if exist:
     values2counts.pop(None, None)  # type: ignore
 
@@ -334,7 +334,7 @@ def compute_string_statistics(
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
         if n_unique <= MAX_NUM_STRING_LABELS:
-            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())  # type: ignore
+            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
