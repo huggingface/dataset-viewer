@@ -4,7 +4,7 @@ Datasets Server automatically generates the metadata in [Croissant](https://gith
 
 ## What is Croissant?
 
-Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically. It's 
+Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically.
 
 <Tip>
 
@@ -15,7 +15,6 @@ The [specification](https://github.com/mlcommons/croissant/blob/main/docs/croiss
 ## Using the Datasets Server API
 
 This guide shows you how to use Datasets Server's `/croissant` endpoint to retrieve the Croissant metadata associated to a dataset.
-
 
 The `/croissant` endpoint accepts the dataset name as its query parameter:
 
