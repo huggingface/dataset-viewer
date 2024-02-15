@@ -1,6 +1,6 @@
 # mlcroissant
 
-[mlcroissant](https://github.com/mlcommons/croissant/tree/main/python/mlcroissant) is a DataFrame library to load datasets from Croissant metadata.
+[mlcroissant](https://github.com/mlcommons/croissant/tree/main/python/mlcroissant) is a library to load datasets from Croissant metadata.
 
 <Tip>
 
