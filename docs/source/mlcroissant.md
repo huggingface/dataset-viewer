@@ -4,7 +4,7 @@
 
 <Tip>
 
-💡 Learn more about how to get the Parquet files in the [Get Croissant metadata](croissant) guide.
+💡 Learn more about how to get the metadata from the Datasets Server API in the [Get Croissant metadata](croissant) guide.
 
 </Tip>
 
