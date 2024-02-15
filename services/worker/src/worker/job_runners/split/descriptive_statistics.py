@@ -486,7 +486,7 @@ def compute_descriptive_statistics_response(
             (Maximum) number of bins to compute histogram for numerical data.
             The resulting number of bins might be lower than the requested one for integer data.
         max_split_size_bytes (`int`):
-            If raw uncompressed split data is larger than this value, the statistics will are computed
+            If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
             to `True` in the response.
         parquet_metadata_directory (`StrPath`):
