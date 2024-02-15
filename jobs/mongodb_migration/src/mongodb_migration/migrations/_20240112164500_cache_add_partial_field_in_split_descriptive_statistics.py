@@ -11,10 +11,6 @@ from mongoengine.connection import get_db
 from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
 
-# def get_partial_split(dataset, config, parquet_files):
-#     # dataset, config, parquet_files
-#     splits = set()
-
 
 # connection already occurred in the main.py (caveat: we use globals)
 class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
