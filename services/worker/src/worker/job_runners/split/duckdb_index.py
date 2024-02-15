@@ -33,7 +33,7 @@ from libcommon.exceptions import (
 )
 from libcommon.parquet_utils import (
     extract_split_name_from_parquet_url,
-    get_num_parquet_files_to_index,
+    get_num_parquet_files_to_process,
     parquet_export_is_partial,
 )
 from libcommon.queue import lock
@@ -148,7 +148,7 @@ def compute_split_duckdb_index_response(
         split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
-        num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_index(
+        num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_process(
             parquet_files=split_parquet_files,
             parquet_metadata_directory=parquet_metadata_directory,
             max_size_bytes=max_split_size_bytes,

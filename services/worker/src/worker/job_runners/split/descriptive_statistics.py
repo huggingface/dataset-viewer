@@ -22,7 +22,7 @@ from libcommon.exceptions import (
 )
 from libcommon.parquet_utils import (
     extract_split_name_from_parquet_url,
-    get_num_parquet_files_to_index,
+    get_num_parquet_files_to_process,
     parquet_export_is_partial,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -541,14 +541,14 @@ def compute_descriptive_statistics_response(
     if not features:
         raise FeaturesResponseEmptyError("No features found.")
 
-    num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_index(
+    num_parquet_files_to_process, num_bytes, num_rows = get_num_parquet_files_to_process(
         parquet_files=split_parquet_files,
         parquet_metadata_directory=parquet_metadata_directory,
         max_size_bytes=max_split_size_bytes,
     )
     partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
-    partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
-    split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
+    partial = partial_parquet_export or (num_parquet_files_to_process < len(split_parquet_files))
+    split_parquet_files = split_parquet_files[:num_parquet_files_to_process]
 
     # store data as local parquet files for fast querying
     os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
