@@ -94,6 +94,7 @@ CacheableErrorCode = Literal[
     "ExternalFilesSizeRequestHTTPError",
     "ExternalFilesSizeRequestTimeoutError",
     "ExternalServerError",
+    "FeaturesError",
     "FeaturesResponseEmptyError",
     "FileSystemError",
     "InfoError",
