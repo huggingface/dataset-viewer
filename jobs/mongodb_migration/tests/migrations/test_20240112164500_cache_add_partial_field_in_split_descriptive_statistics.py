@@ -16,10 +16,7 @@ def assert_has_bool_partial_field(dataset: str, kind: str) -> None:
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
     assert "partial" in entry["content"]
-    if "_partial" in dataset:
-        assert entry["content"]["partial"] is True
-    else:
-        assert entry["content"]["partial"] is False
+    assert entry["content"]["partial"] is ("_partial" in dataset)
 
 
 def assert_unchanged(dataset: str, kind: str) -> None:
@@ -64,7 +61,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
                 "config": "default",
                 "dataset": "dataset_partial_successful",
                 "kind": kind,
-                "split": "test",  # TODO: check all splits because config-parquet is config-level
+                "split": "test",  # check all splits because config-parquet is config-level
                 "content": {
                     "num_examples": 20,
                     "statistics": {},
