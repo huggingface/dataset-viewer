@@ -12,7 +12,7 @@ The [specification](https://github.com/mlcommons/croissant/blob/main/docs/croiss
 
 </Tip>
 
-## Using the Datasets Server API
+## Get the metadata
 
 This guide shows you how to use Datasets Server's `/croissant` endpoint to retrieve the Croissant metadata associated to a dataset.
 
@@ -256,3 +256,7 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
   ]
 }
 ```
+
+## Load the dataset
+
+To load the dataset, you can use the [mlcroissant](./mlcroissant.md) library. It provides a simple way to load datasets from Croissant metadata.
