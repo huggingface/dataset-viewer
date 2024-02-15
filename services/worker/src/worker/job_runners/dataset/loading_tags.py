@@ -6,7 +6,7 @@ import re
 from http import HTTPStatus
 from itertools import islice
 from pathlib import Path
-from typing import Callable, Optional, TypedDict
+from typing import Any, Callable, Optional
 
 import datasets.config
 import datasets.data_files
@@ -26,7 +26,7 @@ from datasets.utils.file_utils import cached_path
 from datasets.utils.hub import hf_hub_url
 from datasets.utils.metadata import MetadataConfigs
 from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
-from libcommon.constants import CROISSANT_MAX_CONFIGS
+from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -34,8 +34,11 @@ from libcommon.simple_cache import (
 
 from worker.dtos import (
     CompleteJobResult,
+    DatasetLibrary,
     DatasetLoadingTag,
     DatasetLoadingTagsResponse,
+    LoadingCode,
+    PythonLoadingMethod,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
@@ -52,20 +55,11 @@ if any(
     )
 
 
-class LoadingCode(TypedDict):
-    config_name: str
-    splits: dict[str, str]
-    code: str
-
-
-class PythonLoadingMethod(TypedDict):
-    library: str
-    function: str
-    loading_codes: list[LoadingCode]
-
-
-def get_builder_configs_with_simplified_data_files(dataset: str, module_name: str, hf_token: Optional[str] = None) -> list[BuilderConfig]:
+def get_builder_configs_with_simplified_data_files(
+    dataset: str, module_name: str, hf_token: Optional[str] = None
+) -> list[BuilderConfig]:
     """Get the list of builder configs to get their (possibly simplified) data_files"""
+    builder_configs: list[BuilderConfig]
     base_path = f"hf://datasets/{dataset}"
     if HfFileSystem().exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
         raise NotImplementedError("datasets with a script are not supported")
@@ -136,9 +130,9 @@ def simplify_data_files_patterns(
     - replace the `[0-9][0-9][0-9][0-9][0-9]` symbols by `*`
     - replace the separators `[-._ 0-9/]` by their actual character values
     - add the file extension
-    
+
     For example:
-    
+
         ```
         data/train-[0-9][0-9][0-9][0-9][0-9]-of-[0-9][0-9][0-9][0-9][0-9]*.*        =>      data/train-*-of-*.parquet
         **/*[-._ 0-9/]train[-._ 0-9/]**                                             =>      **/*_train_*.jsonl
@@ -231,6 +225,71 @@ def simplify_data_files_patterns(
     return patterns
 
 
+DATASETS_CODE = """from datasets import load_dataset
+
+ds = load_dataset("{dataset}")
+"""
+
+DATASETS_CODE_CONFIGS = """from datasets import load_dataset
+
+ds = load_dataset("{dataset}", "{config_name}")
+"""
+
+
+MLCROISSANT_CODE_RECORD_SETS = """from mlcroissant import Dataset
+
+ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={dataset}")
+records = ds.records("{record_set}")
+"""
+
+
+def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dict[str, Any]]) -> PythonLoadingMethod:
+    return {
+        "library": "datasets",
+        "function": "load_dataset",
+        "loading_codes": [
+            {
+                "config_name": info["config_name"],
+                "arguments": {"config_name": info["config_name"]} if len(infos) > 1 else {},
+                "code": (
+                    DATASETS_CODE_CONFIGS.format(dataset=dataset, config_name=info["config_name"])
+                    if len(infos) > 1
+                    else DATASETS_CODE.format(dataset=dataset)
+                ),
+            }
+            for info in infos
+        ],
+    }
+
+
+def get_python_loading_method_for_mlcroissant_library(
+    dataset: str, infos: list[dict[str, Any]]
+) -> PythonLoadingMethod:
+    return {
+        "library": "datasets",
+        "function": "load_dataset",
+        "loading_codes": [
+            {
+                "config_name": info["config_name"],
+                "arguments": {
+                    "record_set": info["config_name"]
+                    if info["config_name"] != dataset
+                    else f"record_set_{info['config_name']}"
+                },
+                "code": (
+                    MLCROISSANT_CODE_RECORD_SETS.format(
+                        dataset=dataset,
+                        record_set=info["config_name"]
+                        if info["config_name"] != dataset
+                        else f"record_set_{info['config_name']}",
+                    )
+                ),
+            }
+            for info in infos
+        ],
+    }
+
+
 PANDAS_CODE = """import pandas as pd
 
 df = {function}("{data_file}"{args})"""
@@ -278,6 +337,7 @@ ds = {function}(urls).decode()"""
 
 
 def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -285,27 +345,28 @@ def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) ->
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
-            "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()},
-            "loading_code": "",
+            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
+            "code": "",
         }
         for config in builder_configs
     ]
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
-        for data_file in loading_code["splits"].values()
+        for data_file in loading_code["arguments"]["splits"].values()
     )
     if is_single_file:
         library = "pandas"
         function = "pd.read_json"
         for loading_code in loading_codes:
-            first_file = next(iter(loading_code["splits"].values()))
+            first_file = next(iter(loading_code["arguments"]["splits"].values()))
             if ".jsonl" in first_file or HfFileSystem(token=hf_token).open(first_file, "r").read(1) != "[":
                 args = ", lines=True"
+                loading_code["arguments"]["lines"] = True
             else:
                 args = ""
-            if len(loading_code["splits"]) == 1:
-                data_file = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
                     function=function, dataset=dataset, data_file=data_file, args=args
                 )
@@ -313,28 +374,29 @@ def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) ->
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                     args=args,
                 )
     else:
         library = "dask"
         function = "dd.read_json"
         for loading_code in loading_codes:
-            if len(loading_code["splits"]) == 1:
-                pattern = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                pattern = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
     return {"library": library, "function": function, "loading_codes": loading_codes}
 
 
 def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -342,27 +404,27 @@ def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> 
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
-            "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()},
-            "loading_code": "",
+            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
+            "code": "",
         }
         for config in builder_configs
     ]
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
-        for data_file in loading_code["splits"].values()
+        for data_file in loading_code["arguments"]["splits"].values()
     )
     if is_single_file:
         library = "pandas"
         function = "pd.read_csv"
         for loading_code in loading_codes:
-            first_file = next(iter(loading_code["splits"].values()))
+            first_file = next(iter(loading_code["arguments"]["splits"].values()))
             if ".tsv" in first_file:
                 args = ', sep="\\t"'
             else:
                 args = ""
-            if len(loading_code["splits"]) == 1:
-                data_file = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
                     function=function, dataset=dataset, data_file=data_file, args=args
                 )
@@ -370,28 +432,29 @@ def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> 
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                     args=args,
                 )
     else:
         library = "dask"
         function = "dd.read_csv"
         for loading_code in loading_codes:
-            if len(loading_code["splits"]) == 1:
-                pattern = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                pattern = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
     return {"library": library, "function": function, "loading_codes": loading_codes}
 
 
 def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -399,22 +462,22 @@ def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str])
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
-            "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()},
-            "loading_code": "",
+            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
+            "code": "",
         }
         for config in builder_configs
     ]
     is_single_file = all(
         "*" not in data_file and "[" not in data_file
         for loading_code in loading_codes
-        for data_file in loading_code["splits"].values()
+        for data_file in loading_code["arguments"]["splits"].values()
     )
     if is_single_file:
         library = "pandas"
         function = "pd.read_parquet"
         for loading_code in loading_codes:
-            if len(loading_code["splits"]) == 1:
-                data_file = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
                     function=function, dataset=dataset, data_file=data_file, args=""
                 )
@@ -422,61 +485,71 @@ def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str])
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                     args="",
                 )
     else:
         library = "dask"
         function = "dd.read_parquet"
         for loading_code in loading_codes:
-            if len(loading_code["splits"]) == 1:
-                pattern = next(iter(loading_code["splits"].values()))
+            if len(loading_code["arguments"]["splits"]) == 1:
+                pattern = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
-                    splits=loading_code["splits"],
-                    first_split=next(iter(loading_code["splits"])),
+                    splits=loading_code["arguments"]["splits"],
+                    first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
     return {"library": library, "function": function, "loading_codes": loading_codes}
 
 
 def get_python_loading_method_for_webdataset(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="webdataset", hf_token=hf_token)
+    library: DatasetLibrary
+    builder_configs = get_builder_configs_with_simplified_data_files(
+        dataset, module_name="webdataset", hf_token=hf_token
+    )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
             raise Exception(f"Failed to simplify data files pattern: {config.data_files}")
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
-            "splits": {str(split): data_files[0] for split, data_files in config.data_files.items()},
-            "loading_code": "",
+            "arguments": {"splits": {str(split): data_files[0] for split, data_files in config.data_files.items()}},
+            "code": "",
         }
         for config in builder_configs
     ]
     library = "webdataset"
     function = "wds.WebDataset"
     for loading_code in loading_codes:
-        if len(loading_code["splits"]) == 1:
-            pattern = next(iter(loading_code["splits"].values()))
+        if len(loading_code["arguments"]["splits"]) == 1:
+            pattern = next(iter(loading_code["arguments"]["splits"].values()))
             loading_code["code"] = WEBDATASET_CODE.format(function=function, dataset=dataset, pattern=pattern)
         else:
             loading_code["code"] = WEBDATASET_CODE_SPLITS.format(
                 function=function,
                 dataset=dataset,
-                splits=loading_code["splits"],
-                first_split=next(iter(loading_code["splits"])),
+                splits=loading_code["arguments"]["splits"],
+                first_split=next(iter(loading_code["arguments"]["splits"])),
             )
     return {"library": library, "function": function, "loading_codes": loading_codes}
 
 
-get_python_loading_method_for_builder_name: dict[str, Callable[[str, Optional[str]], PythonLoadingMethod]] = {
+get_python_loading_method_for_builder: dict[str, Callable[[str, Optional[str]], PythonLoadingMethod]] = {
     "webdataset": get_python_loading_method_for_webdataset,
     "json": get_python_loading_method_for_json,
     "csv": get_python_loading_method_for_csv,
     "parquet": get_python_loading_method_for_parquet,
+}
+
+
+loading_tag_for_library: dict[DatasetLibrary, DatasetLoadingTag] = {
+    "webdataset": "webdataset",
+    "pandas": "pandas",
+    "dask": "dask",
 }
 
 
@@ -503,25 +576,33 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     http_status = dataset_info_best_response.response["http_status"]
     tags: list[DatasetLoadingTag] = []
     python_loading_methods: list[PythonLoadingMethod] = []
+    infos: list[dict[str, Any]] = []
     builder_name: Optional[str] = None
     if http_status == HTTPStatus.OK:
         try:
             content = dataset_info_best_response.response["content"]
-            infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
-            if infos:
-                tags.append("croissant")
-                builder_name = infos[0]["builder_name"]
+            infos = list(islice(content["dataset_info"].values(), LOADING_METHODS_MAX_CONFIGS))
         except KeyError as e:
             raise PreviousStepFormatError(
                 "Previous step 'dataset-info' did not return the expected content.", e
             ) from e
-    if builder_name in get_python_loading_method_for_builder_name:
-        try:
-            python_loading_methods.append(get_python_loading_method_for_builder_name[builder_name](dataset, hf_token))
-        except (NotImplementedError, FileNotFoundError):
-            pass
-    for python_loading_method in python_loading_methods:
-        tags.append(python_loading_method["library"])
+    if infos:
+        # mlcroissant library
+        python_loading_methods.append(get_python_loading_method_for_mlcroissant_library(dataset, infos))
+        tags.append("croissant")
+        # datasets library
+        python_loading_methods.append(get_python_loading_method_for_datasets_library(dataset, infos))
+        tags.append("hf_datasets")
+        # pandas or dask or webdataset library
+        builder_name = infos[0]["builder_name"]
+        if builder_name in get_python_loading_method_for_builder:
+            try:
+                python_loading_method = get_python_loading_method_for_builder[builder_name](dataset, hf_token)
+                if python_loading_method["library"] in loading_tag_for_library:
+                    tags.append(loading_tag_for_library[python_loading_method["library"]])
+                python_loading_methods.append(python_loading_method)
+            except (NotImplementedError, FileNotFoundError):
+                pass
     return DatasetLoadingTagsResponse(tags=tags, python_loading_methods=python_loading_methods)
 
 
