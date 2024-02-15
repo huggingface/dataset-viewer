@@ -54,9 +54,10 @@ curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&
 </curl>
 </inferencesnippet>
 
-The response JSON contains two keys:
-* `num_examples` - number of samples in a split
+The response JSON contains three keys:
+* `num_examples` - number of samples in a split or number of samples in the first chunk of data if dataset is larger than 5GB (see `partial` field below).
 * `statistics` - list of dictionaries of statistics per each column, each dictionary has three keys: `column_name`, `column_type`, and `column_statistics`. Content of `column_statistics` depends on a column type, see [Response structure by data types](./statistics#response-structure-by-data-type) for more details
+* `partial` - `true` if statistics are computed on the first 5 GB of data, not on the full split, `false` otherwise.
 
 ```json
 {
@@ -157,7 +158,8 @@ The response JSON contains two keys:
         }
       }
     }
-  ]
+  ],
+  "partial": false
 }
 ```
 

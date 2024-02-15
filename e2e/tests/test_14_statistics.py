@@ -15,14 +15,16 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
     )
 
     content = statistics_response.json()
-    assert "num_examples" in content, statistics_response
-    assert "statistics" in content, statistics_response
+    assert len(content) == 3
+    assert sorted(content) == ["num_examples", "partial", "statistics"], statistics_response
     statistics = content["statistics"]
     num_examples = content["num_examples"]
+    partial = content["partial"]
 
     assert isinstance(statistics, list), statistics
     assert len(statistics) == 5
     assert num_examples == 4
+    assert partial is False
 
     first_column = statistics[0]
     assert "column_name" in first_column
