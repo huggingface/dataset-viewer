@@ -57,7 +57,7 @@ https://datasets-server.huggingface.co
 
 ## Private and gated datasets
 
-For [private](https://huggingface.co/docs/hub/repositories-settings#private-repositories) and [gated dataset](https://huggingface.co/docs/hub/datasets-gated) datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
+For [private](https://huggingface.co/docs/hub/repositories-settings#private-repositories) and [gated](https://huggingface.co/docs/hub/datasets-gated) datasets, you'll need to provide your user token in `headers` of your query. Otherwise, you'll get an error message to retry with authentication.
 
 <Tip>
 
