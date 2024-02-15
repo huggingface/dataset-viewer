@@ -1,6 +1,6 @@
 # Get Croissant metadata
 
-Datasets Server automatically generates the metadata in [Croissant](https://github.com/mlcommons/croissant) format (JSON-LD) for every dataset on the Hugging Face Hub.
+Datasets Server automatically generates the metadata in [Croissant](https://github.com/mlcommons/croissant) format (JSON-LD) for every dataset on the Hugging Face Hub. It lists the dataset's name, description, URL, and the distribution of the dataset as Parquet files, including the columns' metadata. The Croissant metadata is available for all the datasets that can be [converted to Parquet format](./parquet#conversion-to-parquet).
 
 ## What is Croissant?
 
@@ -58,7 +58,7 @@ curl https://datasets-server.huggingface.co/croissant?dataset=ibm/duorc \
 </curl>
 </inferencesnippet>
 
-The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations), and the metadata describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
+The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
 
 ```json
 {
