@@ -28,7 +28,7 @@
       title: Get the number of rows and the bytes size
     - local: statistics
       title: Explore dataset statistics
-    - local: croissant_metadata
+    - local: croissant
       title: Get Croissant metadata
     - title: Query datasets from Datasets Server
       sections:
@@ -42,8 +42,6 @@
           title: Pandas
         - local: polars
           title: Polars
-        - local: croissant
-          title: Croissant
 - title: Conceptual Guides
   sections:
     - local: configs_and_splits

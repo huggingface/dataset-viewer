@@ -21,7 +21,7 @@ See https://huggingface.co/docs/datasets-server
 - /healthcheck: Ensure the app is running
 - /metrics: Return a list of metrics in the Prometheus format
 - /webhook: Add, update or remove a dataset
-- /croissant: Return the [Croissant](https://huggingface.co/docs/datasets-server/croissant_metadata) metadata for a dataset.
+- /croissant: Return the [croissant](https://github.com/mlcommons/croissant) specification for a dataset. 
 - /is-valid: Tell if a dataset is [valid](https://huggingface.co/docs/datasets-server/valid)
 - /splits: List the [splits](https://huggingface.co/docs/datasets-server/splits) names for a dataset
 - /first-rows: Extract the [first rows](https://huggingface.co/docs/datasets-server/first_rows) for a dataset split
