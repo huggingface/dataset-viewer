@@ -20,8 +20,29 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
             " to the cached results of split-descriptive-statistics job runner"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
+        partial_configs_entries = db[CACHE_COLLECTION_RESPONSES].find(
+            {
+                "kind": "config-parquet",
+                "content.partial": True,
+            }
+        )
+        partial_configs = [(entry["dataset"], entry["config"]) for entry in partial_configs_entries]
+        stats_successful_entries = db[CACHE_COLLECTION_RESPONSES].find(
+            {
+                "kind": "split-descriptive-statistics",
+                "http_status": 200,
+                "content.partial": {"$exists": False},
+            }
+        )
+        partial_stats_successful_ids = [
+            entry["_id"]
+            for entry in stats_successful_entries
+            if (entry["dataset"], entry["config"]) in partial_configs
+        ]
+        # set partial: false in all successful entries except for those that are partial according to `config`-parquet`
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
+                "_id": {"$nin": partial_stats_successful_ids},
                 "kind": "split-descriptive-statistics",
                 "http_status": 200,
                 "content.partial": {"$exists": False},
@@ -32,10 +53,12 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
                 }
             },
         )
+        # set partial: true in successful partial entries
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
+                "_id": {"$in": partial_stats_successful_ids},
                 "kind": "split-descriptive-statistics",
-                "error_code": "SplitWithTooBigParquetError",
+                "http_status": 200,
                 "content.partial": {"$exists": False},
             },
             {

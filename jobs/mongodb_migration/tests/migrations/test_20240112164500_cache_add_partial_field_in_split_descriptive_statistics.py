@@ -16,7 +16,7 @@ def assert_has_bool_partial_field(dataset: str, kind: str) -> None:
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
     assert "partial" in entry["content"]
-    if entry.get("error_code") == "SplitWithTooBigParquetError":
+    if "_partial" in dataset:
         assert entry["content"]["partial"] is True
     else:
         assert entry["content"]["partial"] is False
@@ -39,6 +39,32 @@ def test_cache_add_partial(mongo_host: str) -> None:
                 "dataset": "dataset",
                 "kind": kind,
                 "split": "train",
+                "content": {
+                    "num_examples": 20,
+                    "statistics": {},
+                },
+                "http_status": 200,
+                "job_runner_version": 3,
+                "progress": 1,
+            },
+            {
+                "config": "default",
+                "dataset": "dataset_partial_successful",
+                "kind": kind,
+                "split": "train",
+                "content": {
+                    "num_examples": 20,
+                    "statistics": {},
+                },
+                "http_status": 200,
+                "job_runner_version": 3,
+                "progress": 1,
+            },
+            {
+                "config": "default",
+                "dataset": "dataset_partial_successful",
+                "kind": kind,
+                "split": "test",  # TODO: check all splits because config-parquet is config-level
                 "content": {
                     "num_examples": 20,
                     "statistics": {},
@@ -81,6 +107,26 @@ def test_cache_add_partial(mongo_host: str) -> None:
                 "job_runner_version": 3,
                 "progress": 1,
             },
+            {
+                "config": "default",
+                "dataset": "dataset",
+                "kind": "config-parquet",
+                "split": "train",
+                "content": {"parquet_files": [], "features": {}, "partial": False},
+                "http_status": 200,
+                "job_runner_version": 3,
+                "progress": 1,
+            },
+            {
+                "config": "default",
+                "dataset": "dataset_partial_successful",
+                "kind": "config-parquet",
+                "split": None,
+                "content": {"parquet_files": [], "features": {}, "partial": True},
+                "http_status": 200,
+                "job_runner_version": 3,
+                "progress": 1,
+            },
         ]
 
         db[CACHE_COLLECTION_RESPONSES].insert_many(cache)
@@ -92,11 +138,13 @@ def test_cache_add_partial(mongo_host: str) -> None:
         migration.up()
 
         assert_has_bool_partial_field("dataset", kind=kind)
-        assert_has_bool_partial_field("dataset_with_split_too_big_error", kind=kind)
+        assert_has_bool_partial_field("dataset_partial_successful", kind=kind)
+        assert_unchanged("dataset_with_split_too_big_error", kind=kind)
         assert_unchanged("dataset_with_other_error", kind=kind)
 
         migration.down()
         assert_unchanged("dataset", kind=kind)
+        assert_unchanged("dataset_partial_successful", kind=kind)
         assert_unchanged("dataset_with_split_too_big_error", kind=kind)
         assert_unchanged("dataset_with_other_error", kind=kind)
 
