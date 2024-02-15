@@ -14,7 +14,7 @@ from huggingface_hub import hf_hub_download
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
-    FeaturesError,
+    FeaturesResponseEmptyError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
@@ -499,7 +499,7 @@ def compute_descriptive_statistics_response(
             If the content of the previous step does not have the expected format.
         [~`libcommon.exceptions.ParquetResponseEmptyError`]:
             If response for `config-parquet-and-info` doesn't have any parquet files.
-        [~`libcommon.exceptions.FeaturesError`]:
+        [~`libcommon.exceptions.FeaturesResponseEmptyError`]:
             If response for `config-parquet-and-info` doesn't have features.
         [~`libcommon.exceptions.NoSupportedFeaturesError`]:
             If requested dataset doesn't have any supported for statistics computation features.
@@ -539,7 +539,7 @@ def compute_descriptive_statistics_response(
         raise ParquetResponseEmptyError("No parquet files found.")
 
     if not features:
-        raise FeaturesError("No features found in cache. ")
+        raise FeaturesResponseEmptyError("No features found.")
 
     num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_index(
         parquet_files=split_parquet_files,

@@ -94,7 +94,7 @@ CacheableErrorCode = Literal[
     "ExternalFilesSizeRequestHTTPError",
     "ExternalFilesSizeRequestTimeoutError",
     "ExternalServerError",
-    "FeaturesError",
+    "FeaturesResponseEmptyError",
     "FileSystemError",
     "InfoError",
     "JobManagerCrashedError",
@@ -292,6 +292,13 @@ class FeaturesError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
+
+
+class FeaturesResponseEmptyError(CacheableError):
+    """No features were found in cache for split."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesResponseEmptyError", cause, True)
 
 
 class FileSystemError(CacheableError):
