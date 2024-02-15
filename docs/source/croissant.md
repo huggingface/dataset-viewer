@@ -4,7 +4,7 @@ Datasets Server automatically generates the metadata in [Croissant](https://gith
 
 ## What is Croissant?
 
-Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically. It's 
+Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically.
 
 <Tip>
 
