@@ -324,7 +324,7 @@ def compute_list_statistics(
     n_samples: int,
 ) -> NumericalStatisticsItem:
     lengths_df = df.select(pl.col(column_name)).with_columns(
-        pl.col(column_name).str.len_chars().alias(f"{column_name}_len")
+        pl.col(column_name).list.len().alias(f"{column_name}_len")
     )
     return compute_numerical_statistics(
         df=lengths_df,
@@ -636,7 +636,7 @@ def compute_descriptive_statistics_response(
     list_features = {
         feature_name: feature
         for feature_name, feature in features.items()
-        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") == "list"
+        if isinstance(feature, list)  # TODO: can also be Sequence
     }
     if not class_label_features and not numerical_features and not string_features and not list_features:
         raise NoSupportedFeaturesError(
