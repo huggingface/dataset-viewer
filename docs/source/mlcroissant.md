@@ -15,21 +15,21 @@ from mlcroissant import Dataset
 ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=blog_authorship_corpus")
 ```
 
-To read from the first subset (called RecordSet in Croissant's vocabulary), use the [`records`](https://github.com/mlcommons/croissant/blob/cd64e12c733cf8bf48f2f85c951c1c67b1c94f5a/python/mlcroissant/mlcroissant/_src/datasets.py#L86) function to read it into a dict (let's only take the first 1,000 rows).
+To read from the first subset (called RecordSet in Croissant's vocabulary), use the [`records`](https://github.com/mlcommons/croissant/blob/cd64e12c733cf8bf48f2f85c951c1c67b1c94f5a/python/mlcroissant/mlcroissant/_src/datasets.py#L86) function, which returns an iterator of dicts.
+
+```py
+records = ds.records(ds.metadata.record_sets[0].uid)
+```
+
+Finally use Pandas to compute your query on the first 1,000 rows:
 
 ```py
 import itertools
 
-records = list(itertools.islice(ds.records(ds.metadata.record_sets[0].uid), 1000))
-```
-
-Finally use Pandas to compute your query:
-
-```py
 import pandas as pd
 
 df = (
-    pd.DataFrame(records)
+    pd.DataFrame(list(itertools.islice(records, 1000)))
     .groupby("horoscope")["text"]
     .apply(lambda x: x.str.len().mean())
     .sort_values(ascending=False)
