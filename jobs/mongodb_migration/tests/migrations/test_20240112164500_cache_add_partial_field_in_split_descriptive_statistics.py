@@ -3,6 +3,8 @@
 from typing import Any
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
+from libcommon.dtos import SplitHubFile
+from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
@@ -11,12 +13,17 @@ from mongodb_migration.migrations._20240112164500_cache_add_partial_field_in_spl
 )
 
 
-def assert_has_bool_partial_field(dataset: str, kind: str) -> None:
+def assert_partial_field(dataset: str, split: str, kind: str) -> None:
     db = get_db(CACHE_MONGOENGINE_ALIAS)
-    entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
+    entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "split": split, "kind": kind})
     assert entry is not None
+
+    entry_parquet = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": "config-parquet"})
+    partial = parquet_export_is_partial(
+        [file for file in entry_parquet["content"]["parquet_files"] if file["split"] == split][0].get("url", "")
+    )
     assert "partial" in entry["content"]
-    assert entry["content"]["partial"] is ("_partial" in dataset)
+    assert entry["content"]["partial"] is partial
 
 
 def assert_unchanged(dataset: str, kind: str) -> None:
@@ -24,6 +31,26 @@ def assert_unchanged(dataset: str, kind: str) -> None:
     entry = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": kind})
     assert entry is not None
     assert "partial" not in entry["content"]
+
+
+partial_parquet_files = [
+    SplitHubFile(
+        dataset="dataset_partial",
+        config="default",
+        split="train",
+        url="https://huggingface.co/datasets/dummy/test/resolve/refs%2Fconvert%2Fparquet/default/partial-train/0000.parquet",
+        filename="0000.parquet",
+        size=2,
+    ),
+    SplitHubFile(
+        dataset="dataset_partial",
+        config="default",
+        split="test",
+        url="https://huggingface.co/datasets/dummy/test/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet",
+        filename="0000.parquet",
+        size=1,
+    ),
+]
 
 
 def test_cache_add_partial(mongo_host: str) -> None:
@@ -46,7 +73,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
             },
             {
                 "config": "default",
-                "dataset": "dataset_partial_successful",
+                "dataset": "dataset_partial",
                 "kind": kind,
                 "split": "train",
                 "content": {
@@ -59,9 +86,9 @@ def test_cache_add_partial(mongo_host: str) -> None:
             },
             {
                 "config": "default",
-                "dataset": "dataset_partial_successful",
+                "dataset": "dataset_partial",
                 "kind": kind,
-                "split": "test",  # check all splits because config-parquet is config-level
+                "split": "test",  # check multiple splits because config-parquet is config-level
                 "content": {
                     "num_examples": 20,
                     "statistics": {},
@@ -72,7 +99,7 @@ def test_cache_add_partial(mongo_host: str) -> None:
             },
             {
                 "config": "default",
-                "dataset": "dataset_with_split_too_big_error",
+                "dataset": "dataset_with_error",
                 "kind": kind,
                 "split": "train",
                 "content": {"error": "error"},
@@ -89,37 +116,33 @@ def test_cache_add_partial(mongo_host: str) -> None:
             },
             {
                 "config": "default",
-                "dataset": "dataset_with_other_error",
-                "kind": kind,
-                "split": "train",
-                "content": {"error": "error"},
-                "details": {
-                    "error": "error",
-                    "cause_exception": "UnexpectedError",
-                    "cause_message": "error",
-                    "cause_traceback": ["Traceback"],
-                },
-                "error_code": "UnexpectedError",
-                "http_status": 500,
-                "job_runner_version": 3,
-                "progress": 1,
-            },
-            {
-                "config": "default",
                 "dataset": "dataset",
                 "kind": "config-parquet",
                 "split": "train",
-                "content": {"parquet_files": [], "features": {}, "partial": False},
+                "content": {
+                    "parquet_files": [
+                        SplitHubFile(
+                            dataset="dataset",
+                            config="default",
+                            split="train",
+                            url="https://huggingface.co/datasets/dummy/test/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet",
+                            filename="0000.parquet",
+                            size=2,
+                        ),
+                    ],
+                    "features": {},
+                    "partial": False,
+                },
                 "http_status": 200,
                 "job_runner_version": 3,
                 "progress": 1,
             },
             {
                 "config": "default",
-                "dataset": "dataset_partial_successful",
+                "dataset": "dataset_partial",
                 "kind": "config-parquet",
                 "split": None,
-                "content": {"parquet_files": [], "features": {}, "partial": True},
+                "content": {"parquet_files": partial_parquet_files, "features": {}, "partial": True},
                 "http_status": 200,
                 "job_runner_version": 3,
                 "progress": 1,
@@ -134,15 +157,14 @@ def test_cache_add_partial(mongo_host: str) -> None:
         )
         migration.up()
 
-        assert_has_bool_partial_field("dataset", kind=kind)
-        assert_has_bool_partial_field("dataset_partial_successful", kind=kind)
-        assert_unchanged("dataset_with_split_too_big_error", kind=kind)
-        assert_unchanged("dataset_with_other_error", kind=kind)
+        assert_partial_field("dataset", "train", kind=kind)
+        assert_partial_field("dataset_partial", "train", kind=kind)
+        assert_partial_field("dataset_partial", "test", kind=kind)
+        assert_unchanged("dataset_with_error", kind=kind)
 
         migration.down()
         assert_unchanged("dataset", kind=kind)
-        assert_unchanged("dataset_partial_successful", kind=kind)
-        assert_unchanged("dataset_with_split_too_big_error", kind=kind)
-        assert_unchanged("dataset_with_other_error", kind=kind)
+        assert_unchanged("dataset_partial", kind=kind)
+        assert_unchanged("dataset_with_error", kind=kind)
 
         db[CACHE_COLLECTION_RESPONSES].drop()

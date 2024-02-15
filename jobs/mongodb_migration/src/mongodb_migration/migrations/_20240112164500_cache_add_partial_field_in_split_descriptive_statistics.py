@@ -4,11 +4,16 @@
 import logging
 
 from libcommon.constants import CACHE_COLLECTION_RESPONSES, CACHE_MONGOENGINE_ALIAS
+from libcommon.parquet_utils import parquet_export_is_partial
 from libcommon.simple_cache import CachedResponseDocument
 from mongoengine.connection import get_db
 
 from mongodb_migration.check import check_documents
 from mongodb_migration.migration import Migration
+
+# def get_partial_split(dataset, config, parquet_files):
+#     # dataset, config, parquet_files
+#     splits = set()
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -26,7 +31,13 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
                 "content.partial": True,
             }
         )
-        partial_configs = [(entry["dataset"], entry["config"]) for entry in partial_configs_entries]
+        partial_splits = {
+            (entry["dataset"], entry["config"], file["split"])
+            for entry in partial_configs_entries
+            for file in entry["content"]["parquet_files"]
+            if parquet_export_is_partial(file["url"])
+        }
+
         stats_successful_entries = db[CACHE_COLLECTION_RESPONSES].find(
             {
                 "kind": "split-descriptive-statistics",
@@ -37,9 +48,9 @@ class MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(Migration):
         partial_stats_successful_ids = [
             entry["_id"]
             for entry in stats_successful_entries
-            if (entry["dataset"], entry["config"]) in partial_configs
+            if (entry["dataset"], entry["config"], entry["split"]) in partial_splits
         ]
-        # set partial: false in all successful entries except for those that are partial according to `config`-parquet`
+        # set partial: false in all successful entries except for those that are partial
         db[CACHE_COLLECTION_RESPONSES].update_many(
             {
                 "_id": {"$nin": partial_stats_successful_ids},
