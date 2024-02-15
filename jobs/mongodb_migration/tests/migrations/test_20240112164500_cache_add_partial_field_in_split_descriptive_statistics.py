@@ -20,7 +20,7 @@ def assert_partial_field(dataset: str, split: str, kind: str) -> None:
 
     entry_parquet = db[CACHE_COLLECTION_RESPONSES].find_one({"dataset": dataset, "kind": "config-parquet"})
     partial = parquet_export_is_partial(
-        [file for file in entry_parquet["content"]["parquet_files"] if file["split"] == split][0].get("url", "")
+        [file for file in entry_parquet["content"]["parquet_files"] if file["split"] == split][0]["url"]  # type: ignore
     )
     assert "partial" in entry["content"]
     assert entry["content"]["partial"] is partial
