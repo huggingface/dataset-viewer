@@ -42,6 +42,8 @@
           title: Pandas
         - local: polars
           title: Polars
+        - local: mlcroissant
+          title: mlcroissant
 - title: Conceptual Guides
   sections:
     - local: configs_and_splits
