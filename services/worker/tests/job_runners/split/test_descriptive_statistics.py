@@ -26,6 +26,7 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
     compute_bool_statistics,
     compute_class_label_statistics,
+    compute_list_statistics,
     compute_numerical_statistics,
     compute_string_statistics,
     generate_bins,
@@ -209,6 +210,13 @@ def count_expected_statistics_for_numerical_column(
     }
 
 
+def count_expected_statistics_for_list_column(
+    column: pd.Series,  # type: ignore
+) -> dict:
+    lengths_column = column.map(lambda x: len(x) if x is not None else None)
+    return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
+
+
 def count_expected_statistics_for_categorical_column(
     column: pd.Series,  # type: ignore
     class_label_feature: ClassLabel,
@@ -268,18 +276,23 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     expected_statistics = {}
     for column_name in df.columns:
         column_type = ColumnType(column_name.split("__")[0])
+        column_data = df[column_name]
         if column_type is ColumnType.STRING_LABEL:
-            column_stats = count_expected_statistics_for_string_column(df[column_name])
+            column_stats = count_expected_statistics_for_string_column(column_data)
         elif column_type in [ColumnType.FLOAT, ColumnType.INT]:
-            column_stats = count_expected_statistics_for_numerical_column(df[column_name], dtype=column_type)
+            column_stats = count_expected_statistics_for_numerical_column(column_data, dtype=column_type)
             if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
                 raise ValueError(column_name, column_stats)
         elif column_type is ColumnType.CLASS_LABEL:
             column_stats = count_expected_statistics_for_categorical_column(
-                df[column_name], class_label_feature=ds.features[column_name]
+                column_data, class_label_feature=ds.features[column_name]
             )
         elif column_type is ColumnType.BOOL:
-            column_stats = count_expected_statistics_for_bool_column(df[column_name])
+            column_stats = count_expected_statistics_for_bool_column(column_data)
+        elif column_type is ColumnType.LIST:
+            column_stats = count_expected_statistics_for_list_column(column_data)
+        else:
+            raise ValueError
         expected_statistics[column_name] = {
             "column_name": column_name,
             "column_type": column_type,
@@ -432,6 +445,29 @@ def test_bool_statistics(
         df=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
+    )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "list__column",
+        "list__nan_column",
+    ],
+)
+def test_list_statistics(
+    column_name: str,
+    descriptive_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+) -> None:
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = compute_list_statistics(
+        df=pl.from_dict(data),
+        column_name=column_name,
+        n_samples=len(data[column_name]),
+        n_bins=N_BINS,
     )
     assert computed == expected
 
