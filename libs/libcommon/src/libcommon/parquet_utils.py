@@ -71,7 +71,7 @@ def parquet_export_is_partial(parquet_file_url: str) -> bool:
 
             You can also pass the URL of any file in the directory since
             this function only checks the name of the parent directory.
-            For example it also works for DuckDB index files in the same
+            For example, it also works for DuckDB index files in the same
             directory as the Parquet files.
 
     Returns:
@@ -96,6 +96,32 @@ def extract_split_name_from_parquet_url(parquet_url: str) -> str:
     """
     split_name = parquet_url.rsplit("/", 2)[1]
     return split_name
+
+
+def get_num_parquet_files_to_process(
+    parquet_files: list[ParquetFileMetadataItem],
+    parquet_metadata_directory: StrPath,
+    max_size_bytes: int,
+) -> tuple[int, int, int]:
+    """
+    For splits bigger than `max_size_bytes` computes the number of parquet files for future processing steps
+    (for example, duckdb index, statistics), as well as number of bytes and number of rows in these files.
+    Ensures that there is at least 1 parquet file to index.
+
+    Returns:
+        tuple of number of files, number of bytes and number of rows to process
+    """
+    num_parquet_files_to_process, num_bytes, num_rows = 0, 0, 0
+    for parquet_file_id, parquet_file in enumerate(parquet_files):
+        parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
+        parquet_metadata = pq.read_metadata(parquet_metadata_path)
+        num_parquet_files_to_process += 1
+        num_rows += parquet_metadata.num_rows
+        for row_group_id in range(parquet_metadata.num_row_groups):
+            num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
+        if num_bytes > max_size_bytes:
+            break
+    return num_parquet_files_to_process, num_bytes, num_rows
 
 
 @dataclass

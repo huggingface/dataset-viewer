@@ -17,7 +17,9 @@ from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
 
 from worker.config import AppConfig
+from worker.job_runners.config.parquet import ConfigParquetJobRunner
 from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRunner
+from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
@@ -37,8 +39,9 @@ from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatisticsJobRunner]
-
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
+GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetJobRunner]
+GetParquetMetadataJobRunner = Callable[[str, str, AppConfig], ConfigParquetMetadataJobRunner]
 
 N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
 
@@ -77,6 +80,7 @@ def test_generate_bins(
 
 @pytest.fixture
 def get_job_runner(
+    parquet_metadata_directory: StrPath,
     statistics_cache_directory: StrPath,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
@@ -119,6 +123,7 @@ def get_job_runner(
             },
             app_config=app_config,
             statistics_cache_directory=statistics_cache_directory,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
@@ -158,6 +163,84 @@ def get_parquet_and_info_job_runner(
             },
             app_config=app_config,
             hf_datasets_cache=libraries_resource.hf_datasets_cache,
+        )
+
+    return _get_job_runner
+
+
+@pytest.fixture
+def get_parquet_job_runner(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> GetParquetJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        config: str,
+        app_config: AppConfig,
+    ) -> ConfigParquetJobRunner:
+        upsert_response(
+            kind="dataset-config-names",
+            dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        return ConfigParquetJobRunner(
+            job_info={
+                "type": ConfigParquetJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            app_config=app_config,
+        )
+
+    return _get_job_runner
+
+
+@pytest.fixture
+def get_parquet_metadata_job_runner(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    parquet_metadata_directory: StrPath,
+) -> GetParquetMetadataJobRunner:
+    def _get_job_runner(
+        dataset: str,
+        config: str,
+        app_config: AppConfig,
+    ) -> ConfigParquetMetadataJobRunner:
+        upsert_response(
+            kind="dataset-config-names",
+            dataset_git_revision=REVISION_NAME,
+            dataset=dataset,
+            content={"config_names": [{"dataset": dataset, "config": config}]},
+            http_status=HTTPStatus.OK,
+        )
+
+        return ConfigParquetMetadataJobRunner(
+            job_info={
+                "type": ConfigParquetMetadataJobRunner.get_job_type(),
+                "params": {
+                    "dataset": dataset,
+                    "revision": "revision",
+                    "config": config,
+                    "split": None,
+                },
+                "job_id": "job_id",
+                "priority": Priority.NORMAL,
+                "difficulty": 50,
+            },
+            app_config=app_config,
+            parquet_metadata_directory=parquet_metadata_directory,
         )
 
     return _get_job_runner
@@ -298,7 +381,7 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             "column_type": column_type,
             "column_statistics": column_stats,
         }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
 
 
 @pytest.fixture
@@ -315,7 +398,24 @@ def descriptive_statistics_string_text_expected(datasets: Mapping[str, Dataset])
             "column_type": ColumnType.STRING_TEXT,
             "column_statistics": column_stats,
         }
-    return {"num_examples": df.shape[0], "statistics": expected_statistics}
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": False}
+
+
+@pytest.fixture
+def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, Dataset]) -> dict:  # type: ignore
+    ds = datasets["descriptive_statistics_string_text"]
+    df = ds.to_pandas()[:50]  # see `fixtures.hub.hub_public_descriptive_statistics_parquet_builder`
+    expected_statistics = {}
+    for column_name in df.columns:
+        column_stats = count_expected_statistics_for_string_column(df[column_name])
+        if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+            raise ValueError(column_name, column_stats)
+        expected_statistics[column_name] = {
+            "column_name": column_name,
+            "column_type": ColumnType.STRING_TEXT,
+            "column_statistics": column_stats,
+        }
+    return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": True}
 
 
 @pytest.mark.parametrize(
@@ -476,40 +576,42 @@ def test_list_statistics(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("descriptive_statistics_partial", None),
         ("descriptive_statistics_string_text", None),
+        ("descriptive_statistics_string_text_partial", None),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
-        ("big", "SplitWithTooBigParquetError"),
     ],
 )
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
     get_parquet_and_info_job_runner: GetParquetAndInfoJobRunner,
+    get_parquet_job_runner: GetParquetJobRunner,
+    get_parquet_metadata_job_runner: GetParquetMetadataJobRunner,
     hub_responses_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_string_text: HubDatasetTest,
+    hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
-    hub_responses_big: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
+    descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
-        "descriptive_statistics_partial": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
+        "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
-        "big": hub_responses_big,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
         "descriptive_statistics_partial": descriptive_statistics_expected,
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
+        "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -529,10 +631,11 @@ def test_compute(
     )
 
     # computing and pushing real parquet files because we need them for stats computation
-    parquet_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
-    parquet_and_info_response = parquet_job_runner.compute()
-    assert parquet_and_info_response
-    assert parquet_and_info_response.content["partial"] is partial
+    parquet_and_info_job_runner = get_parquet_and_info_job_runner(dataset, config, app_config)
+    parquet_and_info_response = parquet_and_info_job_runner.compute()
+    config_parquet_and_info = parquet_and_info_response.content
+
+    assert config_parquet_and_info["partial"] is partial
 
     upsert_response(
         "config-parquet-and-info",
@@ -543,6 +646,36 @@ def test_compute(
         content=parquet_and_info_response.content,
     )
 
+    parquet_job_runner = get_parquet_job_runner(dataset, config, app_config)
+    parquet_response = parquet_job_runner.compute()
+    config_parquet = parquet_response.content
+
+    assert config_parquet["partial"] is partial
+
+    upsert_response(
+        "config-parquet",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        http_status=HTTPStatus.OK,
+        content=config_parquet,
+    )
+
+    parquet_metadata_job_runner = get_parquet_metadata_job_runner(dataset, config, app_config)
+    parquet_metadata_response = parquet_metadata_job_runner.compute()
+    config_parquet_metadata = parquet_metadata_response.content
+
+    assert config_parquet_metadata["partial"] is partial
+
+    upsert_response(
+        "config-parquet-metadata",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        http_status=HTTPStatus.OK,
+        content=config_parquet_metadata,
+    )
+
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
     if expected_error_code:
@@ -551,8 +684,11 @@ def test_compute(
         assert e.typename == expected_error_code
     else:
         response = job_runner.compute()
-        assert sorted(response.content.keys()) == ["num_examples", "statistics"]
+        assert sorted(response.content.keys()) == ["num_examples", "partial", "statistics"]
         assert response.content["num_examples"] == expected_response["num_examples"]  # type: ignore
+        if hub_dataset_name == "descriptive_statistics_string_text_partial":
+            assert response.content["num_examples"] != descriptive_statistics_string_text_expected["num_examples"]
+
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
         assert len(response) == len(expected)  # type: ignore

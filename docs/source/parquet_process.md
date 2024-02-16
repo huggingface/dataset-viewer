@@ -10,3 +10,4 @@ There are several different libraries you can use to work with the published Par
 - [DuckDB](https://duckdb.org/docs/), a high-performance SQL database for analytical queries
 - [Pandas](https://pandas.pydata.org/docs/index.html), a data analysis tool for working with data structures
 - [Polars](https://pola-rs.github.io/polars-book/user-guide/), a Rust based DataFrame library
+- [mlcroissant](https://github.com/mlcommons/croissant/tree/main/python/mlcroissant), a library for loading datasets from Croissant metadata

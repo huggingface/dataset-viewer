@@ -166,13 +166,13 @@ cachedAssets:
   storageProtocol: "s3"
 
 duckDBIndex:
-  maxDatasetSizeBytes: "5_000_000_000"
+  maxSplitSizeBytes: "5_000_000_000"
 
 rowsIndex:
   maxArrowDataInMemory: "300_000_000"
 
 descriptiveStatistics:
-  maxParquetSizeBytes: "5_000_000_000"
+  maxSplitSizeBytes: "5_000_000_000"
 
 # --- jobs (pre-install/upgrade hooks) ---
 

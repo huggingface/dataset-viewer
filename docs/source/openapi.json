@@ -1081,7 +1081,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool"]
       },
       "Histogram": {
         "type": "object",
@@ -1167,6 +1167,24 @@
           }
         }
       },
+      "BoolStatisticsItem": {
+        "type": "object",
+        "required": ["nan_count", "nan_proportion", "frequencies"],
+        "properties": {
+          "nan_count": {
+            "type": "integer"
+          },
+          "nan_proportion": {
+            "type": "number"
+          },
+          "frequencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      },
       "StatisticsPerColumnItem": {
         "type": "object",
         "required": ["column_name", "column_type", "column_statistics"],
@@ -1184,6 +1202,9 @@
               },
               {
                 "$ref": "#/components/schemas/CategoricalStatisticsItem"
+              },
+              {
+                "$ref": "#/components/schemas/BoolStatisticsItem"
               }
             ]
           }
@@ -1201,6 +1222,9 @@
           },
           "num_examples": {
             "type": "integer"
+          },
+          "partial": {
+            "$ref": "#/components/schemas/Partial"
           }
         }
       },
@@ -5755,7 +5779,8 @@
                             }
                           }
                         }
-                      ]
+                      ],
+                      "partial": false
                     }
                   },
                   "A split (mnist) with a label column": {
@@ -5785,7 +5810,8 @@
                             }
                           }
                         }
-                      ]
+                      ],
+                      "partial": false
                     }
                   },
                   "A split (glue) with a string (text) column": {
@@ -5876,7 +5902,8 @@
                             }
                           }
                         }
-                      ]
+                      ],
+                      "partial": false
                     }
                   },
                   "A split (hellaswag) with a string (label) column": {
@@ -6052,6 +6079,106 @@
                             "n_unique": 1,
                             "frequencies": {
                               "indomain": 39905
+                            }
+                          }
+                        }
+                      ],
+                      "partial": false
+                    }
+                  },
+                  "A split (google/boolq) with a boolean column": {
+                    "summary": "Statistics on a boolean column 'answer'.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=google/boolq&config=default&split=train.",
+                    "value": {
+                      "num_examples": 9427,
+                      "statistics": [
+                        {
+                          "column_name": "answer",
+                          "column_type": "bool",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0,
+                            "frequencies": {
+                              "True": 5874,
+                              "False": 3553
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "passage",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0,
+                            "min": 35,
+                            "max": 4720,
+                            "mean": 565.61303,
+                            "median": 511,
+                            "std": 323.1375,
+                            "histogram": {
+                              "hist": [
+                                4598,
+                                3939,
+                                721,
+                                133,
+                                20,
+                                7,
+                                5,
+                                3,
+                                0,
+                                1
+                              ],
+                              "bin_edges": [
+                                35,
+                                504,
+                                973,
+                                1442,
+                                1911,
+                                2380,
+                                2849,
+                                3318,
+                                3787,
+                                4256,
+                                4720
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "question",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0,
+                            "min": 20,
+                            "max": 100,
+                            "mean": 43.99194,
+                            "median": 42,
+                            "std": 8.85434,
+                            "histogram": {
+                              "hist": [
+                                43,
+                                1914,
+                                4636,
+                                2046,
+                                501,
+                                159,
+                                68,
+                                34,
+                                26
+                              ],
+                              "bin_edges": [
+                                20,
+                                29,
+                                38,
+                                47,
+                                56,
+                                65,
+                                74,
+                                83,
+                                92,
+                                100
+                              ]
                             }
                           }
                         }
