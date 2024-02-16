@@ -29,6 +29,8 @@ COPY services/worker/vendors ./services/worker/vendors/
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+COPY services/worker/tools/duckdb ./services/worker/duckdb
+
 WORKDIR /src/services/worker/
 RUN poetry install --no-cache
 COPY services/worker/src ./src

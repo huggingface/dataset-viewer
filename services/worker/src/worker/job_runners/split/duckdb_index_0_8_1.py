@@ -63,24 +63,25 @@ from worker.utils import (
     retry,
 )
 
-CLI_PATH = "duckdb"
 
+# TODO: Remove file when all split-duckdb-index-010 entries have been computed
 
 def index_with_cli(
     extensions_directory: Optional[str],
+    cli_path: Optional[str],
     database_name: str,
     column_names: str,
     all_split_parquets: str,
     indexable_columns: str,
 ) -> None:
-    duckdb_0_8_1_command = [CLI_PATH, database_name]
+    duckdb_0_8_1_command = [cli_path, database_name]
     logging.warning(duckdb_0_8_1_command)
-    a = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    process = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
     def write_to_process(command: str) -> None:
         logging.info(command)
-        a.stdin.write(str.encode(command))  # type: ignore
-        a.stdin.flush()  # type: ignore
+        process.stdin.write(str.encode(command))  # type: ignore
+        process.stdin.flush()  # type: ignore
 
     if extensions_directory is not None:
         write_to_process(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
@@ -93,7 +94,7 @@ def index_with_cli(
         # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
         # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
         write_to_process(CREATE_INDEX_COMMAND.format(columns=indexable_columns))
-    a.communicate()
+    process.communicate()
 
 
 def compute_split_duckdb_index_response(
@@ -111,8 +112,12 @@ def compute_split_duckdb_index_response(
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
+    cli_path: Optional[str],
 ) -> SplitDuckdbIndex:
     logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
+
+    if cli_path is None or not os.path.isfile(cli_path):
+        raise RuntimeError(f"cli_path was not provided or is not a valid file {cli_path}")
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
@@ -189,6 +194,7 @@ def compute_split_duckdb_index_response(
     db_path = duckdb_index_file_directory.resolve() / index_filename
     index_with_cli(
         extensions_directory,
+        cli_path,
         str(db_path.resolve()),
         column_names,
         all_split_parquets,
@@ -341,5 +347,6 @@ class SplitDuckDbIndex081JobRunner(SplitJobRunnerWithCache):
                 target_revision="refs/convert/parquet",
                 max_split_size_bytes=self.duckdb_index_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
+                cli_path=self.duckdb_index_config.cli_path,
             )
         )
