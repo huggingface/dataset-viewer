@@ -6,9 +6,9 @@ import logging
 import os
 import re
 from pathlib import Path
+from subprocess import PIPE, Popen
 from typing import Optional
 
-import duckdb
 import pyarrow.parquet as pq
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub import hf_hub_download
@@ -60,10 +60,41 @@ CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
-LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
+INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL '{extension}'; LOAD '{extension}';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
+
+
+def index_with_cli(
+    extensions_directory: Optional[str],
+    cli_path: str,
+    database_name: str,
+    column_names: str,
+    all_split_parquets: str,
+    indexable_columns: str,
+) -> None:
+    duckdb_0_8_1_command = [cli_path, database_name]
+    logging.warning(duckdb_0_8_1_command)
+    a = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+    def write_to_process(command: str) -> None:
+        logging.info(command)
+        a.stdin.write(str.encode(command))  # type: ignore
+        a.stdin.flush()  # type: ignore
+
+    if extensions_directory is not None:
+        write_to_process(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+
+    write_to_process(INSTALL_AND_LOAD_EXTENSION_COMMAND.format(extension="fts"))
+
+    write_to_process(CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets))
+
+    if len(indexable_columns) > 0:
+        # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
+        # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
+        write_to_process(CREATE_INDEX_COMMAND.format(columns=indexable_columns))
+    a.communicate()
+    print("process has been finished")
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -199,32 +230,18 @@ def compute_split_duckdb_index_response(
             resume_download=False,
         )
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
-    create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
-    con = duckdb.connect(str(db_path.resolve()))
 
-    try:
-        # configure duckdb extensions
-        if extensions_directory is not None:
-            con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-        con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-        con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
-
-        logging.info(create_command_sql)
-        con.sql(create_command_sql)
-
-        is_indexable = len(indexable_columns) > 0
-        if is_indexable:
-            # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
-            # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-            create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
-            logging.info(create_index_sql)
-            con.sql(create_index_sql)
-    finally:
-        con.close()
+    index_with_cli(
+        extensions_directory,
+        "/tmp/duckbdb10/duckdb",
+        str(db_path.resolve()),
+        column_names,
+        all_split_parquets,
+        indexable_columns,
+    )
 
     logging.info(f"about to push index file to {target_revision}")
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
@@ -324,14 +341,14 @@ def compute_split_duckdb_index_response(
         filename=Path(repo_file.rfilename).name,
         size=repo_file.size,
         features=features,
-        has_fts=is_indexable,
+        has_fts=len(indexable_columns) > 0,
         partial=partial,
         num_rows=num_rows,
         num_bytes=num_bytes,
     )
 
 
-class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
+class SplitDuckDbIndex081JobRunner(SplitJobRunnerWithCache):
     duckdb_index_config: DuckDbIndexConfig
 
     def __init__(
@@ -351,7 +368,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
 
     @staticmethod
     def get_job_type() -> str:
-        return "split-duckdb-index-010"  # TODO: Change to split-duckdb-index once all entries have been computed
+        return "split-duckdb-index"
 
     def compute(self) -> CompleteJobResult:
         if self.cache_subdirectory is None:
