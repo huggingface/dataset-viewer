@@ -147,6 +147,11 @@ class SplitDuckdbIndex(SplitHubFile):
     num_bytes: Optional[int]
 
 
+# TODO: Rename to SplitDuckdbIndex after all split-duckdb-index-010 cache entries have been computed
+class SplitDuckdbIndexWithVersion(SplitDuckdbIndex):
+    version: str
+
+
 class SplitDuckdbIndexSize(TypedDict):
     dataset: str
     config: str

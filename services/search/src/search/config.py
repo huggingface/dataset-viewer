@@ -18,7 +18,7 @@ from libcommon.config import (
 )
 
 DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
 
 
 @dataclass(frozen=True)

@@ -1,21 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2023 The HuggingFace Authors.
+# Copyright 2024 The HuggingFace Authors.
 
 import copy
 import logging
 import os
-import re
 from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import Optional
 
-import pyarrow.parquet as pq
-from datasets.features.features import Features, FeatureType, Value, _visit
+from datasets.features.features import Features
 from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
-    CommitOperationDelete,
 )
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
@@ -32,7 +29,11 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import extract_split_name_from_parquet_url, parquet_export_is_partial
+from libcommon.parquet_utils import (
+    extract_split_name_from_parquet_url,
+    get_num_parquet_files_to_process,
+    parquet_export_is_partial,
+)
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -40,6 +41,18 @@ from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
+from worker.job_runners.split.duckdb_index import (
+    CREATE_INDEX_COMMAND,
+    CREATE_TABLE_COMMANDS,
+    DATASET_TYPE,
+    DUCKDB_DEFAULT_INDEX_FILENAME,
+    DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME,
+    INSTALL_AND_LOAD_EXTENSION_COMMAND,
+    REPO_TYPE,
+    SET_EXTENSIONS_DIRECTORY_COMMAND,
+    get_delete_operations,
+    get_indexable_columns,
+)
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
@@ -50,30 +63,17 @@ from worker.utils import (
     retry,
 )
 
-DATASET_TYPE = "dataset"
-STRING_FEATURE_DTYPE = "string"
-VALUE_FEATURE_TYPE = "Value"
-DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
-DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
-CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
-CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
-CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
-ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
-CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL '{extension}'; LOAD '{extension}';"
-SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
-REPO_TYPE = "dataset"
+CLI_PATH = "duckdb"
 
 
 def index_with_cli(
     extensions_directory: Optional[str],
-    cli_path: str,
     database_name: str,
     column_names: str,
     all_split_parquets: str,
     indexable_columns: str,
 ) -> None:
-    duckdb_0_8_1_command = [cli_path, database_name]
+    duckdb_0_8_1_command = [CLI_PATH, database_name]
     logging.warning(duckdb_0_8_1_command)
     a = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
@@ -85,7 +85,7 @@ def index_with_cli(
     if extensions_directory is not None:
         write_to_process(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
 
-    write_to_process(INSTALL_AND_LOAD_EXTENSION_COMMAND.format(extension="fts"))
+    write_to_process(INSTALL_AND_LOAD_EXTENSION_COMMAND)
 
     write_to_process(CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets))
 
@@ -94,45 +94,6 @@ def index_with_cli(
         # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
         write_to_process(CREATE_INDEX_COMMAND.format(columns=indexable_columns))
     a.communicate()
-    print("process has been finished")
-
-
-def get_indexable_columns(features: Features) -> list[str]:
-    indexable_columns: list[str] = []
-    for column, feature in features.items():
-        indexable = False
-
-        def check_indexable(feature: FeatureType) -> None:
-            nonlocal indexable
-            if isinstance(feature, Value) and feature.dtype == "string":
-                indexable = True
-
-        _visit(feature, check_indexable)
-        if indexable:
-            indexable_columns.append(column)
-    return indexable_columns
-
-
-def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
-    same_config_pattern = re.compile(f"^({re.escape(config)})/")
-    existing_split_pattern = re.compile(
-        f"^({'|'.join(re.escape(f'{config}/{split_name}') for split_name in split_names)})/"
-    )
-    # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
-    # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
-    # caveat: the split could become full processed
-    existing_partial_split_pattern = re.compile(
-        f"^({'|'.join(re.escape(f'{config}/partial-{split_name}') for split_name in split_names)})/"
-    )
-
-    return [
-        CommitOperationDelete(path_in_repo=file)
-        for file in all_repo_files
-        if same_config_pattern.match(file)
-        and file.endswith(".duckdb")
-        and not existing_split_pattern.match(file)
-        and not existing_partial_split_pattern.match(file)
-    ]
 
 
 def compute_split_duckdb_index_response(
@@ -146,7 +107,7 @@ def compute_split_duckdb_index_response(
     commit_message: str,
     url_template: str,
     hf_token: Optional[str],
-    max_dataset_size_bytes: int,
+    max_split_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
@@ -176,18 +137,11 @@ def compute_split_duckdb_index_response(
         split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
-        num_parquet_files_to_index = 0
-        num_bytes = 0
-        num_rows = 0
-        for parquet_file_id, parquet_file in enumerate(split_parquet_files):
-            parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
-            parquet_metadata = pq.read_metadata(parquet_metadata_path)
-            num_parquet_files_to_index += 1
-            num_rows += parquet_metadata.num_rows
-            for row_group_id in range(parquet_metadata.num_row_groups):
-                num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
-            if num_bytes > max_dataset_size_bytes:
-                break
+        num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_process(
+            parquet_files=split_parquet_files,
+            parquet_metadata_directory=parquet_metadata_directory,
+            max_size_bytes=max_split_size_bytes,
+        )
 
         index_filename = (
             DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
@@ -195,7 +149,7 @@ def compute_split_duckdb_index_response(
             else DUCKDB_DEFAULT_INDEX_FILENAME
         )
         partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
-        split_parquet_files = split_parquet_files[: parquet_file_id + 1]
+        split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
         parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
         # get the features
@@ -233,10 +187,8 @@ def compute_split_duckdb_index_response(
 
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
-
     index_with_cli(
         extensions_directory,
-        "/tmp/duckbdb10/duckdb",
         str(db_path.resolve()),
         column_names,
         all_split_parquets,
@@ -386,8 +338,8 @@ class SplitDuckDbIndex081JobRunner(SplitJobRunnerWithCache):
                 extensions_directory=self.duckdb_index_config.extensions_directory,
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
-                target_revision=self.duckdb_index_config.target_revision,
-                max_dataset_size_bytes=self.duckdb_index_config.max_dataset_size_bytes,
+                target_revision="refs/convert/parquet",
+                max_split_size_bytes=self.duckdb_index_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )

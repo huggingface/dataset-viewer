@@ -31,6 +31,7 @@ from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobR
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
     CREATE_TABLE_COMMANDS,
+    DUCKDB_VERSION,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
@@ -343,6 +344,7 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
+        assert content["version"] == DUCKDB_VERSION
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
