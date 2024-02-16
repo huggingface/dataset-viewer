@@ -218,7 +218,7 @@ class IsValidResponse(TypedDict):
 
 
 DatasetLoadingTag = Literal["croissant", "webdataset", "hf_datasets", "pandas", "dask"]
-DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
+DatasetPythonLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
 
 
 class LoadingCode(TypedDict):

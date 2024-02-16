@@ -50,7 +50,7 @@ if any(
     for pattern in datasets.data_files.KEYWORDS_IN_PATH_NAME_BASE_PATTERNS
 ):
     raise ImportError(
-        f"Current `datasets` version is not comptible with simplify_data_files_patterns which expects as separator {NON_WORD_GLOB_SEPARATOR}. "
+        f"Current `datasets` version is not compatible with simplify_data_files_patterns which expects as separator {NON_WORD_GLOB_SEPARATOR}. "
         "You might have to update simplify_data_files_patterns() to work with this `datasets` version."
     )
 
@@ -266,8 +266,8 @@ def get_python_loading_method_for_mlcroissant_library(
     dataset: str, infos: list[dict[str, Any]]
 ) -> PythonLoadingMethod:
     return {
-        "library": "datasets",
-        "function": "load_dataset",
+        "library": "mlcroissant",
+        "function": "Dataset",
         "loading_codes": [
             {
                 "config_name": info["config_name"],
