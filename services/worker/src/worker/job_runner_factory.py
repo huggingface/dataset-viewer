@@ -219,6 +219,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
                 statistics_cache_directory=self.statistics_cache_directory,
+                parquet_metadata_directory=self.parquet_metadata_directory,
             )
 
         if (

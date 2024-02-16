@@ -23,6 +23,7 @@ from libcommon.parquet_utils import (
     SchemaMismatchError,
     TooBigRows,
     extract_split_name_from_parquet_url,
+    get_num_parquet_files_to_process,
     parquet_export_is_partial,
 )
 from libcommon.resources import CacheMongoResource
@@ -494,9 +495,38 @@ def test_indexer_schema_mistmatch_error(
     "parquet_url,expected",
     [
         ("https://hf.co/datasets/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/train/0000.parquet", "train"),
+        (
+            "https://hf.co/datasets/squad/resolve/refs%2Fconvert%2Fparquet/plain_text/partial-test/0000.parquet",
+            "partial-test",
+        ),
     ],
 )
 def test_extract_split_name_from_parquet_url(parquet_url: str, expected: str) -> None:
     split_name = extract_split_name_from_parquet_url(parquet_url)
 
     assert split_name == expected
+
+
+@pytest.mark.parametrize(
+    "max_size_bytes,expected",
+    [
+        (1, (1, 106, 2)),
+        (100, (1, 106, 2)),
+        (200, (2, 212, 4)),
+        (1000, (4, 424, 8)),
+    ],
+)
+def test_get_num_parquet_files_to_index(
+    ds_sharded_parquet_metadata_dir: StrPath,
+    dataset_sharded_with_config_parquet_metadata: dict[str, Any],
+    max_size_bytes: int,
+    expected: tuple[int, int, int],
+) -> None:
+    # 4 parquet files, 1 row group of 106 bytes and 2 rows in each
+    parquet_files = dataset_sharded_with_config_parquet_metadata["parquet_files_metadata"]
+    num_files, num_bytes, num_rows = get_num_parquet_files_to_process(
+        parquet_files=parquet_files,
+        parquet_metadata_directory=ds_sharded_parquet_metadata_dir,
+        max_size_bytes=max_size_bytes,
+    )
+    assert (num_files, num_bytes, num_rows) == expected

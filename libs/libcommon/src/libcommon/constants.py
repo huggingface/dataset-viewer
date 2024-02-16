@@ -37,6 +37,7 @@ PARQUET_REVISION = "refs/convert/parquet"
 
 ERROR_CODES_TO_RETRY = {
     "ConnectionError",
+    "SplitWithTooBigParquetError",  # TODO: to be removed after cache with this error is recomputed
     "CreateCommitError",
     "ExternalServerError",
     "JobManagerCrashedError",
