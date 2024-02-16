@@ -323,15 +323,27 @@ def compute_list_statistics(
     n_bins: int,
     n_samples: int,
 ) -> NumericalStatisticsItem:
-    lengths_df = df.select(pl.col(column_name)).with_columns(
-        pl.col(column_name).list.len().alias(f"{column_name}_len")
+    nan_count = int(df[column_name].null_count())
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+
+    df_without_na = df.select(pl.col(column_name)).drop_nulls()
+    lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(f"{column_name}_len"))
+    lengths_stats = dict(
+        **compute_numerical_statistics(
+            df=lengths_df,
+            column_name=f"{column_name}_len",
+            n_bins=n_bins,
+            n_samples=n_samples - nan_count,
+            column_type=ColumnType.INT,
+        )
     )
-    return compute_numerical_statistics(
-        df=lengths_df,
-        column_name=f"{column_name}_len",
-        n_bins=n_bins,
-        n_samples=n_samples,
-        column_type=ColumnType.INT,
+    lengths_stats.pop("nan_count")
+    lengths_stats.pop("nan_proportion")
+
+    return NumericalStatisticsItem(
+        **lengths_stats,
+        nan_count=nan_count,
+        nan_proportion=nan_proportion,
     )
 
 
