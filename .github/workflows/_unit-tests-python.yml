@@ -66,7 +66,7 @@ jobs:
         run: |
           dir="${{ inputs.working-directory }}"
           echo "codecov_flag=${dir/\//_}" >> $GITHUB_ENV
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v4-beta
         with:
           working-directory: ${{ inputs.working-directory }}
           files: ./coverage.xml
