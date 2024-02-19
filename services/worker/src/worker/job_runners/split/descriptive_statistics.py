@@ -495,7 +495,7 @@ def compute_descriptive_statistics_for_features(
             stats.append(
                 StatisticsPerColumnItem(
                     column_name=feature_name,
-                    column_type=ColumnType.BOOL,
+                    column_type=ColumnType.LIST,
                     column_statistics=list_column_stats,
                 )
             )
@@ -650,7 +650,9 @@ def compute_descriptive_statistics_response(
     list_features = {
         feature_name: feature
         for feature_name, feature in features.items()
-        if isinstance(feature, list)  # TODO: can also be Sequence
+        if isinstance(feature, list)
+        or isinstance(feature, dict)
+        and feature.get("_type") == "Sequence"  # TODO: can also be Sequence
     }
     if not class_label_features and not numerical_features and not string_features and not list_features:
         raise NoSupportedFeaturesError(

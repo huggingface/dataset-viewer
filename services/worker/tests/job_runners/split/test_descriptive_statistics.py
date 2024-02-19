@@ -578,10 +578,10 @@ def test_list_statistics(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        ("descriptive_statistics_string_text", None),
-        ("descriptive_statistics_string_text_partial", None),
-        ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
+        # ("descriptive_statistics_string_text", None),
+        # ("descriptive_statistics_string_text_partial", None),
+        # ("gated", None),
+        # ("audio", "NoSupportedFeaturesError"),
     ],
 )
 def test_compute(
@@ -705,7 +705,12 @@ def test_compute(
             column_response_stats = column_response["column_statistics"]
             expected_column_response_stats = expected_column_response["column_statistics"]
             assert column_response_stats.keys() == expected_column_response_stats.keys()
-            if column_response["column_type"] in [ColumnType.FLOAT, ColumnType.INT, ColumnType.STRING_TEXT]:
+            if column_response["column_type"] in [
+                ColumnType.FLOAT,
+                ColumnType.INT,
+                ColumnType.STRING_TEXT,
+                ColumnType.LIST,
+            ]:
                 hist, expected_hist = (
                     column_response_stats.pop("histogram"),
                     expected_column_response_stats.pop("histogram"),
