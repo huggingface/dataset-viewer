@@ -554,6 +554,8 @@ def test_bool_statistics(
     [
         "list__column",
         "list__nan_column",
+        "list__sequence_column",
+        "list__sequence_nan_column",
     ],
 )
 def test_list_statistics(
