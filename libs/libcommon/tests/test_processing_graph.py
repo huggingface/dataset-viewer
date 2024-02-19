@@ -82,6 +82,7 @@ def test_graph() -> None:
                 "split-first-rows-from-streaming",
                 "dataset-split-names",
                 "split-duckdb-index",
+                "split-duckdb-index-010",
                 "split-descriptive-statistics",
                 "config-is-valid",
             ],
@@ -95,6 +96,7 @@ def test_graph() -> None:
                 "dataset-split-names",
                 "config-opt-in-out-urls-count",
                 "split-duckdb-index",
+                "split-duckdb-index-010",
                 "split-descriptive-statistics",
                 "config-is-valid",
             ],
@@ -149,6 +151,7 @@ def test_graph() -> None:
             [
                 "split-first-rows-from-parquet",
                 "split-duckdb-index",
+                "split-duckdb-index-010",
             ],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],

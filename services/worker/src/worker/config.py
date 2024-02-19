@@ -266,7 +266,7 @@ DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES = 100_000_000
 DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
 DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
-DUCKDB_INDEX_CLI_PATH = None # TODO: Remove once all split-duckdb-index-010 entries have been computed
+DUCKDB_INDEX_CLI_PATH = None  # TODO: Remove once all split-duckdb-index-010 entries have been computed
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ import copy
 import logging
 import os
 from pathlib import Path
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen  # nosec B404
 from typing import Optional
 
 from datasets.features.features import Features
@@ -63,8 +63,8 @@ from worker.utils import (
     retry,
 )
 
-
 # TODO: Remove file when all split-duckdb-index-010 entries have been computed
+
 
 def index_with_cli(
     extensions_directory: Optional[str],
@@ -76,7 +76,7 @@ def index_with_cli(
 ) -> None:
     duckdb_0_8_1_command = [cli_path, database_name]
     logging.warning(duckdb_0_8_1_command)
-    process = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    process = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)  # type: ignore # nosec B603
 
     def write_to_process(command: str) -> None:
         logging.info(command)
