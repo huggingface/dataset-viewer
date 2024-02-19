@@ -72,4 +72,5 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: false
           flags: ${{ env.codecov_flag }}
-          token: ${{ secrets.CODECOV_TOKEN }} # required in v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }} # required in v4
