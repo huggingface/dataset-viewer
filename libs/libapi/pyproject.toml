@@ -21,7 +21,6 @@ ecdsa = "^0.18.0"
 mypy = "^1.8.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
-pytest-cov = "^2.12.1"
 pytest-httpserver = "^1.0.6"
 ruff = "^0.1.3"
 
