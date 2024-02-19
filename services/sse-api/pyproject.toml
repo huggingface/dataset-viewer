@@ -37,9 +37,6 @@ filterwarnings = ["ignore::DeprecationWarning"]
 markers = []
 log_cli = true
 
-[tool.coverage.run]
-source = ["sse_api"]
-
 [tool.mypy]
 strict = true
 disallow_untyped_calls = false

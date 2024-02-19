@@ -54,8 +54,6 @@ markers = [
     "real_dataset: tests on the Hub",
     "wip: tests being developed"
 ]
-[tool.coverage.run]
-source = ["libcommon"]
 
 [tool.mypy]
 strict = true

@@ -28,9 +28,6 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.coverage.run]
-source = ["cache_maintenance"]
-
 [tool.mypy]
 strict = true
 

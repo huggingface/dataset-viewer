@@ -76,9 +76,6 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.coverage.run]
-source = ["worker"]
-
 [tool.mypy]
 exclude = 'vendors'
 strict = true

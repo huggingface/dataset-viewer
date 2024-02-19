@@ -35,9 +35,6 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.coverage.run]
-source = ["api"]
-
 [tool.mypy]
 strict = true
 disallow_untyped_calls = false

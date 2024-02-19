@@ -27,9 +27,6 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.coverage.run]
-source = ["mongodb_migration"]
-
 [tool.mypy]
 strict = true
 
