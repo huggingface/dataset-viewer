@@ -3,6 +3,7 @@
 
 import os
 import time
+from collections.abc import Sequence
 from types import TracebackType
 from typing import Any, Optional, TypeVar
 
@@ -134,9 +135,13 @@ class StepProfiler:
         method (`str`): The name of the method.
         step (`str`): The name of the step.
         context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
+        buckets (`Sequence[float]`, *optional*): An optional sequense of histogram bin edges to log step's duration.
+            If None, default values from Prometheus are used.
     """
 
-    def __init__(self, method: str, step: str, context: Optional[str] = None, buckets: Optional[tuple[float]] = None):
+    def __init__(
+        self, method: str, step: str, context: Optional[str] = None, buckets: Optional[Sequence[float]] = None
+    ):
         self.method = method
         self.step = step
         self.context = str(context)
