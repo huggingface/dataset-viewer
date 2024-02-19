@@ -69,12 +69,12 @@ from worker.utils import (
 def index_with_cli(
     extensions_directory: Optional[str],
     cli_path: Optional[str],
-    database_name: str,
+    database_path: str,
     column_names: str,
     all_split_parquets: str,
     indexable_columns: str,
 ) -> None:
-    duckdb_0_8_1_command = [cli_path, database_name]
+    duckdb_0_8_1_command = [cli_path, database_path]
     logging.warning(duckdb_0_8_1_command)
     process = Popen(duckdb_0_8_1_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)  # type: ignore # nosec B603
 

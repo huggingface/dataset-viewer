@@ -322,7 +322,7 @@ def compute_split_duckdb_index_response(
         partial=partial,
         num_rows=num_rows,
         num_bytes=num_bytes,
-        version=DUCKDB_VERSION,
+        duckdb_version=DUCKDB_VERSION,
     )
 
 
