@@ -34,9 +34,9 @@ from libcommon.simple_cache import (
 
 from worker.dtos import (
     CompleteJobResult,
-    DatasetLibrary,
     DatasetLoadingTag,
     DatasetLoadingTagsResponse,
+    DatasetPythonLibrary,
     LoadingCode,
     PythonLoadingMethod,
 )
@@ -357,7 +357,7 @@ ds = {function}(urls).decode()"""
 
 
 def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetLibrary
+    library: DatasetPythonLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -418,7 +418,7 @@ def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) ->
 
 
 def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetLibrary
+    library: DatasetPythonLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -478,7 +478,7 @@ def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> 
 
 
 def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetLibrary
+    library: DatasetPythonLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -533,7 +533,7 @@ def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str])
 
 
 def get_python_loading_method_for_webdataset(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetLibrary
+    library: DatasetPythonLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(
         dataset, module_name="webdataset", hf_token=hf_token
     )
@@ -574,7 +574,7 @@ get_python_loading_method_for_builder: dict[str, Callable[[str, Optional[str]], 
 }
 
 
-loading_tag_for_library: dict[DatasetLibrary, DatasetLoadingTag] = {
+loading_tag_for_library: dict[DatasetPythonLibrary, DatasetLoadingTag] = {
     "webdataset": "webdataset",
     "pandas": "pandas",
     "dask": "dask",
