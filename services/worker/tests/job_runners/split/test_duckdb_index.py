@@ -344,7 +344,7 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
-        assert content["version"] == DUCKDB_VERSION
+        assert content["duckdb_version"] == DUCKDB_VERSION
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)
