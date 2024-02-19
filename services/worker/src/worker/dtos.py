@@ -228,7 +228,7 @@ class LoadingCode(TypedDict):
 
 
 class PythonLoadingMethod(TypedDict):
-    library: DatasetLibrary
+    library: DatasetPythonLibrary
     function: str
     loading_codes: list[LoadingCode]
 
