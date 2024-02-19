@@ -27,7 +27,7 @@ from datasets.utils.hub import hf_hub_url
 from datasets.utils.metadata import MetadataConfigs
 from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
-from libcommon.exceptions import PreviousStepFormatError
+from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError, PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
 )
@@ -50,15 +50,31 @@ if any(
     for pattern in datasets.data_files.KEYWORDS_IN_PATH_NAME_BASE_PATTERNS
 ):
     raise ImportError(
-        f"Current `datasets` version is not compatible with simplify_data_files_patterns which expects as separator {NON_WORD_GLOB_SEPARATOR}. "
-        "You might have to update simplify_data_files_patterns() to work with this `datasets` version."
+        f"Current `datasets` version is not compatible with simplify_data_files_patterns() which expects as keyword separator {NON_WORD_GLOB_SEPARATOR} for glob patterns. "
+        "Indeed the simplify_data_files_patterns() function is used to create human-readable code snippets with nice glob patterns for files, "
+        f"and therefore it replaces the ugly {NON_WORD_GLOB_SEPARATOR} separator with actual characters, for example\n"
+        "**/*[-._ 0-9/]train[-._ 0-9/]**    =>    **/*_train_*.jsonl\n\n"
+        "To fix this error, please update the simplify_data_files_patterns() to make it support `datasets` new separator and patterns. "
+        "After the fix the get_builder_configs_with_simplified_data_files() should return proper simplified data files on most datasets."
     )
 
 
 def get_builder_configs_with_simplified_data_files(
     dataset: str, module_name: str, hf_token: Optional[str] = None
 ) -> list[BuilderConfig]:
-    """Get the list of builder configs to get their (possibly simplified) data_files"""
+    """
+    Get the list of builder configs to get their (possibly simplified) data_files
+
+    Example:
+
+    ```python
+    >>> configs = get_builder_configs_with_simplified_data_files("Anthropic/hh-rlhf", "json")
+    >>> configs[0].data_files
+    {NamedSplit('train'): ['**/*/train.jsonl.gz'], NamedSplit('test'): ['**/*/test.jsonl.gz']}
+    ```
+
+    which has simpler and better looking glob patterns that what `datasets` uses by default that look like **/*[-._ 0-9/]train[-._ 0-9/]**
+    """
     builder_configs: list[BuilderConfig]
     base_path = f"hf://datasets/{dataset}"
     if HfFileSystem().exists(base_path + "/" + dataset.split("/")[-1] + ".py"):
@@ -66,7 +82,7 @@ def get_builder_configs_with_simplified_data_files(
     download_config = DownloadConfig(token=hf_token)
     try:
         dataset_readme_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOCARD_FILENAME),
+            hf_hub_url(dataset, getattr(datasets.config, "REPOCARD_FILENAME", "README.md")),
             download_config=download_config,
         )
         dataset_card_data = DatasetCard.load(Path(dataset_readme_path)).data
@@ -74,7 +90,7 @@ def get_builder_configs_with_simplified_data_files(
         dataset_card_data = DatasetCardData()
     try:
         standalone_yaml_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOYAML_FILENAME),
+            hf_hub_url(dataset, getattr(datasets.config, "REPOYAML_FILENAME", ".huggingface.yaml")),
             download_config=download_config,
         )
         with open(standalone_yaml_path, "r", encoding="utf-8") as f:
@@ -262,6 +278,16 @@ def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dic
     }
 
 
+def _get_record_set(dataset: str, config_name: str) -> str:
+    # Identical keys are not supported in Croissant
+    # The current workaround that is used in /croissant endpoint
+    # is to prefix the config name with `record_set_` if necessary.
+    if dataset != config_name:
+        return config_name
+    else:
+        return f"record_set_{config_name}"
+
+
 def get_python_loading_method_for_mlcroissant_library(
     dataset: str, infos: list[dict[str, Any]]
 ) -> PythonLoadingMethod:
@@ -271,17 +297,11 @@ def get_python_loading_method_for_mlcroissant_library(
         "loading_codes": [
             {
                 "config_name": info["config_name"],
-                "arguments": {
-                    "record_set": info["config_name"]
-                    if info["config_name"] != dataset
-                    else f"record_set_{info['config_name']}"
-                },
+                "arguments": {"record_set": _get_record_set(dataset=dataset, config_name=info["config_name"])},
                 "code": (
                     MLCROISSANT_CODE_RECORD_SETS.format(
                         dataset=dataset,
-                        record_set=info["config_name"]
-                        if info["config_name"] != dataset
-                        else f"record_set_{info['config_name']}",
+                        record_set=_get_record_set(dataset=dataset, config_name=info["config_name"]),
                     )
                 ),
             }
@@ -341,7 +361,9 @@ def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) ->
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
-            raise Exception(f"Failed to simplify data files pattern: {config.data_files}")
+            raise DatasetWithTooComplexDataFilesPatternsError(
+                f"Failed to simplify json data files pattern: {config.data_files}"
+            )
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
@@ -400,7 +422,9 @@ def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> 
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
-            raise Exception(f"Failed to simplify data files pattern: {config.data_files}")
+            raise DatasetWithTooComplexDataFilesPatternsError(
+                f"Failed to simplify csv data files pattern: {config.data_files}"
+            )
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
@@ -458,7 +482,9 @@ def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str])
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
-            raise Exception(f"Failed to simplify data files pattern: {config.data_files}")
+            raise DatasetWithTooComplexDataFilesPatternsError(
+                f"Failed to simplify parquet data files pattern: {config.data_files}"
+            )
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
@@ -513,7 +539,9 @@ def get_python_loading_method_for_webdataset(dataset: str, hf_token: Optional[st
     )
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
-            raise Exception(f"Failed to simplify data files pattern: {config.data_files}")
+            raise DatasetWithTooComplexDataFilesPatternsError(
+                f"Failed to simplify webdataset data files pattern: {config.data_files}"
+            )
     loading_codes: list[LoadingCode] = [
         {
             "config_name": config.name,
@@ -560,6 +588,8 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     Args:
         dataset (`str`):
             A namespace (user or an organization) and a repo name separated by a `/`.
+        hf_token (`str`, *optional*):
+            An authentication token (See https://huggingface.co/settings/token)
 
     Raises:
         [~`libcommon.simple_cache.CachedArtifactError`]:
@@ -601,7 +631,7 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
                 if python_loading_method["library"] in loading_tag_for_library:
                     tags.append(loading_tag_for_library[python_loading_method["library"]])
                 python_loading_methods.append(python_loading_method)
-            except (NotImplementedError, FileNotFoundError):
+            except NotImplementedError:
                 pass
     return DatasetLoadingTagsResponse(tags=tags, python_loading_methods=python_loading_methods)
 
