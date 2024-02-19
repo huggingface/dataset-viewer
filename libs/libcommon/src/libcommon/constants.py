@@ -66,3 +66,21 @@ PARALLEL_STEPS_LISTS = [
 
 CROISSANT_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100
+
+SPLIT_DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS = (
+    0.01,
+    0.05,
+    0.1,
+    60.0,
+    2 * 60.0,
+    4 * 60.0,
+    6 * 60.0,
+    8 * 60.0,
+    10 * 60.0,
+    12 * 60.0,
+    14 * 60.0,
+    16 * 60.0,
+    18 * 60.0,
+    20 * 60.0,
+    float("inf"),
+)

@@ -78,7 +78,7 @@ PARQUET_METADATA_DISK_USAGE = Gauge(
 METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
     "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
-    ["method", "step", "context"],
+    ["method", "step", "context", "buckets"],
 )
 
 
@@ -136,11 +136,12 @@ class StepProfiler:
         context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
     """
 
-    def __init__(self, method: str, step: str, context: Optional[str] = None):
+    def __init__(self, method: str, step: str, context: Optional[str] = None, buckets: Optional[tuple[float]] = None):
         self.method = method
         self.step = step
         self.context = str(context)
         self.before_time = time.perf_counter()
+        self.buckets = buckets if buckets else Histogram.DEFAULT_BUCKETS
 
     def __enter__(self: T) -> T:
         return self
@@ -152,6 +153,9 @@ class StepProfiler:
         traceback: Optional[TracebackType],
     ) -> None:
         after_time = time.perf_counter()
-        METHOD_STEPS_PROCESSING_TIME.labels(method=self.method, step=self.step, context=self.context).observe(
-            after_time - self.before_time
-        )
+        METHOD_STEPS_PROCESSING_TIME.labels(
+            method=self.method,
+            step=self.step,
+            context=self.context,
+            buckets=self.buckets,
+        ).observe(after_time - self.before_time)
