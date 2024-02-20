@@ -12,7 +12,7 @@ from libcommon.simple_cache import _clean_cache_database
 from pytest import MonkeyPatch, fixture
 
 from api.config import AppConfig, EndpointConfig
-from api.routes.endpoint import EndpointsDefinition, StepsByInputTypeAndEndpoint
+from api.routes.endpoint import EndpointsDefinition, StepByInputTypeAndEndpoint
 
 
 # see https://github.com/pytest-dev/pytest/issues/363#issuecomment-406536200
@@ -45,24 +45,24 @@ def app_config(monkeypatch_session: MonkeyPatch) -> AppConfig:
 @fixture(scope="session")
 def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
     return EndpointConfig(
-        processing_step_names_by_input_type_and_endpoint={
+        processing_step_name_by_input_type_and_endpoint={
             "/splits": {
-                "dataset": ["dataset-split-names"],
-                "config": ["config-split-names-from-streaming"],
+                "dataset": "dataset-split-names",
+                "config": "config-split-names-from-streaming",
             },
-            "/first-rows": {"split": ["split-first-rows-from-streaming"]},
-            "/parquet": {"config": ["config-parquet"]},
+            "/first-rows": {"split": "split-first-rows-from-streaming"},
+            "/parquet": {"config": "config-parquet"},
         }
     )
 
 
 @fixture(scope="session")
-def endpoint_definition(endpoint_config: EndpointConfig) -> StepsByInputTypeAndEndpoint:
-    return EndpointsDefinition(processing_graph, endpoint_config=endpoint_config).steps_by_input_type_and_endpoint
+def endpoint_definition(endpoint_config: EndpointConfig) -> StepByInputTypeAndEndpoint:
+    return EndpointsDefinition(processing_graph, endpoint_config=endpoint_config).step_by_input_type_and_endpoint
 
 
 @fixture(scope="session")
-def first_dataset_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
+def first_dataset_endpoint(endpoint_definition: StepByInputTypeAndEndpoint) -> str:
     return next(
         endpoint
         for endpoint, input_types in endpoint_definition.items()
@@ -71,7 +71,7 @@ def first_dataset_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> 
 
 
 @fixture(scope="session")
-def first_config_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
+def first_config_endpoint(endpoint_definition: StepByInputTypeAndEndpoint) -> str:
     return next(
         endpoint
         for endpoint, input_types in endpoint_definition.items()
@@ -80,7 +80,7 @@ def first_config_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> s
 
 
 @fixture(scope="session")
-def first_split_endpoint(endpoint_definition: StepsByInputTypeAndEndpoint) -> str:
+def first_split_endpoint(endpoint_definition: StepByInputTypeAndEndpoint) -> str:
     return next(
         endpoint
         for endpoint, input_types in endpoint_definition.items()

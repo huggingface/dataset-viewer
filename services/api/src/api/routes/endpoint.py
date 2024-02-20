@@ -30,28 +30,23 @@ from starlette.responses import Response
 
 from api.config import EndpointConfig
 
-StepsByInputType = Mapping[InputType, list[ProcessingStep]]
+StepByInputType = Mapping[InputType, ProcessingStep]
 
-StepsByInputTypeAndEndpoint = Mapping[str, StepsByInputType]
+StepByInputTypeAndEndpoint = Mapping[str, StepByInputType]
 
 
 class EndpointsDefinition:
     """Definition of supported endpoints and its relation with processing steps."""
 
-    steps_by_input_type_and_endpoint: StepsByInputTypeAndEndpoint
+    step_by_input_type_and_endpoint: StepByInputTypeAndEndpoint
 
     def __init__(self, graph: ProcessingGraph, endpoint_config: EndpointConfig):
-        processing_step_names_by_input_type_and_endpoint = (
-            endpoint_config.processing_step_names_by_input_type_and_endpoint.items()
-        )
-        self.steps_by_input_type_and_endpoint = {
+        self.step_by_input_type_and_endpoint = {
             endpoint: {
-                input_type: [
-                    graph.get_processing_step(processing_step_name) for processing_step_name in processing_step_names
-                ]
-                for input_type, processing_step_names in processing_step_names_by_input_type.items()
+                input_type: graph.get_processing_step(processing_step_name)
+                for input_type, processing_step_name in processing_step_name_by_input_type.items()
             }
-            for endpoint, processing_step_names_by_input_type in processing_step_names_by_input_type_and_endpoint
+            for endpoint, processing_step_name_by_input_type in endpoint_config.processing_step_name_by_input_type_and_endpoint.items()
         }
 
 
@@ -89,14 +84,14 @@ HARD_CODED_OPT_IN_OUT_URLS = {
 }
 
 
-def get_input_types_by_priority(steps_by_input_type: StepsByInputType) -> list[InputType]:
+def get_input_types_by_priority(step_by_input_type: StepByInputType) -> list[InputType]:
     input_type_order: list[InputType] = ["split", "config", "dataset"]
-    return [input_type for input_type in input_type_order if input_type in steps_by_input_type]
+    return [input_type for input_type in input_type_order if input_type in step_by_input_type]
 
 
 def create_endpoint(
     endpoint_name: str,
-    steps_by_input_type: StepsByInputType,
+    step_by_input_type: StepByInputType,
     hf_endpoint: str,
     blocked_datasets: list[str],
     assets_storage_client: StorageClient,
@@ -124,9 +119,9 @@ def create_endpoint(
                     split = get_request_parameter(request, "split") or None
                     logging.debug(f"{endpoint_name=} {dataset=} {config=} {split=}")
                     dataset, config, split, input_type = validate_parameters(
-                        dataset, config, split, steps_by_input_type
+                        dataset, config, split, step_by_input_type
                     )
-                    processing_steps = steps_by_input_type[input_type]
+                    processing_step = step_by_input_type[input_type]
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
                     await auth_check(
@@ -150,7 +145,7 @@ def create_endpoint(
                         )
 
                     result = get_cache_entry_from_steps(
-                        processing_step_names=[processing_steps.name for processing_steps in processing_steps],
+                        processing_step_names=[processing_step.name],
                         dataset=dataset,
                         config=config,
                         split=split,
@@ -192,9 +187,9 @@ def create_endpoint(
 
 
 def validate_parameters(
-    dataset: str, config: Optional[str], split: Optional[str], steps_by_input_type: StepsByInputType
+    dataset: str, config: Optional[str], split: Optional[str], step_by_input_type: StepByInputType
 ) -> tuple[str, Optional[str], Optional[str], InputType]:
-    input_types = get_input_types_by_priority(steps_by_input_type=steps_by_input_type)
+    input_types = get_input_types_by_priority(step_by_input_type=step_by_input_type)
     error_message = "No processing steps supported for parameters"
     for input_type in input_types:
         if input_type == "split":
