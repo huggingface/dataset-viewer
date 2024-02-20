@@ -49,7 +49,7 @@ EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 # Arrays are not immutable, we have to take care of not modifying them
 # Anyway: in all this file, we allow constant reassignment (no use of Final)
 CONFIG_HAS_VIEWER_KINDS = ["config-size"]
-CONFIG_INFO_KINDS = ["config-info"]
+CONFIG_INFO_KIND = "config-info"
 CONFIG_PARQUET_METADATA_KINDS = ["config-parquet-metadata"]
 CONFIG_PARQUET_AND_METADATA_KINDS = ["config-parquet", "config-parquet-metadata"]
 CONFIG_SPLIT_NAMES_KIND = "config-split-names-from-streaming"

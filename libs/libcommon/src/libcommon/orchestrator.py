@@ -10,7 +10,7 @@ from typing import Optional, Union
 import pandas as pd
 
 from libcommon.constants import (
-    CONFIG_INFO_KINDS,
+    CONFIG_INFO_KIND,
     CONFIG_SPLIT_NAMES_KIND,
     DATASET_CONFIG_NAMES_KINDS,
     DEFAULT_DIFFICULTY_MAX,
@@ -273,7 +273,7 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_best_response(kinds=CONFIG_INFO_KINDS, dataset=dataset, config=config).response
+    resp = get_best_response(kinds=[CONFIG_INFO_KIND], dataset=dataset, config=config).response
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
