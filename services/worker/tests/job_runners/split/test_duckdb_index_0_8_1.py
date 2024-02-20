@@ -29,6 +29,8 @@ from worker.resources import LibrariesResource
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
+# TODO: Remove this file when all split-duckdb-index-010 entries have been computed
+
 GetJobRunner = Callable[[str, str, str, AppConfig], SplitDuckDbIndex081JobRunner]
 
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]

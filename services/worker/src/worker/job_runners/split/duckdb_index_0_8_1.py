@@ -63,7 +63,7 @@ from worker.utils import (
     retry,
 )
 
-# TODO: Remove file when all split-duckdb-index-010 entries have been computed
+# TODO: Remove this file when all split-duckdb-index-010 entries have been computed
 
 
 def index_with_cli(
@@ -112,12 +112,12 @@ def compute_split_duckdb_index_response(
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
-    cli_path: Optional[str],
+    cli_path: str,
 ) -> SplitDuckdbIndex:
     logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
 
-    if cli_path is None or not os.path.isfile(cli_path):
-        raise RuntimeError(f"cli_path was not provided or is not a valid file {cli_path}")
+    if os.path.isfile(cli_path):
+        raise RuntimeError(f"cli_path is not a valid file location {cli_path=}")
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"

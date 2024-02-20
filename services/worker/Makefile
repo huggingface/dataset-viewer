@@ -3,6 +3,8 @@ export COMPOSE_PROJECT_NAME := worker
 export MONGO_PORT := 27040
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
+
+# Remove this config when all split-duckdb-index-010 entries have been computed
 export DUCKDB_INDEX_CLI_PATH := /src/services/worker/duckdb
 
 # makefile variables
