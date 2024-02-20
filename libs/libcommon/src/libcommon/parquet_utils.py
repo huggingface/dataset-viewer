@@ -357,14 +357,14 @@ class RowsIndex:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                result = get_previous_step_or_raise(
+                response = get_previous_step_or_raise(
                     kind=CONFIG_PARQUET_METADATA_KIND,
                     dataset=self.dataset,
                     config=self.config,
                     split=None,
                 )
-                self.revision = result.response["dataset_git_revision"]
-                content = result.response["content"]
+                self.revision = response["dataset_git_revision"]
+                content = response["content"]
                 if content.get("features"):  # config-parquet-metadata version<2 didn't have features
                     features = Features.from_dict(content["features"])
                 else:
