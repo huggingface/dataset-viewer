@@ -3,7 +3,6 @@
 
 import types
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from http import HTTPStatus
@@ -549,63 +548,9 @@ def get_response_or_missing_error(
     return response
 
 
-@dataclass
-class BestResponse:
-    kind: str
-    response: CacheEntryWithDetails
-
-
-def get_best_response(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> BestResponse:
-    """
-    Get the best response from a list of cache kinds.
-
-    Best means:
-    - the first success response with the highest progress,
-    - else: the first error response (including cache miss)
-
-    Args:
-        kinds (`list[str]`):
-            A non-empty list of cache kinds to look responses for.
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated by a `/`.
-        config (`str`, *optional*):
-            A config name.
-        split (`str`, *optional*):
-            A split name.
-    Returns:
-        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
-          including a cache miss (error code: `CachedResponseNotFound`)
-    """
-    if not kinds:
-        raise ValueError("kinds must be a non-empty list")
-    best_response_candidates = [
-        BestResponse(
-            kind=kind, response=get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
-        )
-        for kind in kinds
-    ]
-    max_index = 0
-    max_value = float("-inf")
-    for index, candidate in enumerate(best_response_candidates):
-        if candidate.response["http_status"] >= HTTPStatus.BAD_REQUEST.value:
-            # only the first error response is considered
-            continue
-        value = (
-            0.0
-            if candidate.response["progress"] is None or candidate.response["progress"] < 0.0
-            else candidate.response["progress"]
-        )
-        if value > max_value:
-            max_value = value
-            max_index = index
-    return best_response_candidates[max_index]
-
-
 def get_previous_step_or_raise(
     kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> BestResponse:
+) -> CacheEntryWithDetails:
     """
     Get the previous step from the cache, or raise an exception if it failed.
 
@@ -616,22 +561,22 @@ def get_previous_step_or_raise(
         split (`str`, *optional*): The split name.
 
     Returns:
-        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
+        `CacheEntryWithDetails`: The response. It can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
-    best_response = get_best_response(kinds=[kind], dataset=dataset, config=config, split=split)
-    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        raise CachedArtifactNotFoundError(kind=best_response.kind, dataset=dataset, config=config, split=split)
-    if best_response.response["http_status"] != HTTPStatus.OK:
+    response = get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
+    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split)
+    if response["http_status"] != HTTPStatus.OK:
         raise CachedArtifactError(
             message="The previous step failed.",
-            kind=best_response.kind,
+            kind=kind,
             dataset=dataset,
             config=config,
             split=split,
-            cache_entry_with_details=best_response.response,
+            cache_entry_with_details=response,
         )
-    return best_response
+    return response
 
 
 def get_all_datasets() -> set[str]:
@@ -977,8 +922,8 @@ def fetch_names(dataset: str, config: Optional[str], cache_kind: str, names_fiel
     """
     try:
         names = []
-        best_response = get_best_response(kinds=[cache_kind], dataset=dataset, config=config)
-        for name_item in best_response.response["content"][names_field]:
+        response = get_response_or_missing_error(kind=cache_kind, dataset=dataset, config=config)
+        for name_item in response["content"][names_field]:
             name = name_item[name_field]
             if not isinstance(name, str):
                 raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")

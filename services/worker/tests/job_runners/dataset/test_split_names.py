@@ -136,7 +136,7 @@ def test_compute_progress(
     progress: float,
 ) -> None:
     # we could also have tested if dataset-info has a response (it's one case among many, see
-    # libcommon.simple_cache.get_best_response)
+    # libcommon.simple_cache.get_response_or_missing_error)
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
@@ -154,7 +154,7 @@ def test_compute_progress(
     )
     for config in split_names:
         # we don't really need both parent responses here, but why not (it's one case among many, see
-        # libcommon.simple_cache.get_best_response)
+        # libcommon.simple_cache.get_response_or_missing_error)
         upsert_response(
             kind="config-split-names-from-info",
             dataset=dataset,
@@ -181,7 +181,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
     dataset = "error"
     config = "error"
     # we could also have tested if dataset-info has a response (it's one case among many, see
-    # libcommon.simple_cache.get_best_response)
+    # libcommon.simple_cache.get_response_or_missing_error)
     upsert_response(
         kind="dataset-config-names",
         dataset=dataset,
@@ -197,7 +197,7 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
         http_status=HTTPStatus.OK,
     )
     # we don't really need both parent responses here, but why not (it's one case among many, see
-    # libcommon.simple_cache.get_best_response)
+    # libcommon.simple_cache.get_response_or_missing_error)
     upsert_response(
         kind="config-split-names-from-info",
         dataset=dataset,
@@ -242,7 +242,7 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         http_status=HTTPStatus.OK,
     )
     # here, 'config-split-names-from-info' will be picked because it's the first success response
-    # with progress==1.0 (see libcommon.simple_cache.get_best_response), but its format is wrong
+    # with progress==1.0 (see libcommon.simple_cache.get_response_or_missing_error), but its format is wrong
     # while the other one ('config-split-names-from-streaming') is correct
     upsert_response(
         kind="config-split-names-from-info",

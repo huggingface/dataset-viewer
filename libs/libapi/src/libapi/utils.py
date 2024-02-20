@@ -12,7 +12,7 @@ from libcommon.dtos import Priority, RowItem
 from libcommon.exceptions import CustomError
 from libcommon.operations import update_dataset
 from libcommon.orchestrator import has_pending_ancestor_jobs
-from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_best_response, has_some_cache
+from libcommon.simple_cache import CACHED_RESPONSE_NOT_FOUND, CacheEntry, get_response_or_missing_error, has_some_cache
 from libcommon.storage_client import StorageClient
 from libcommon.utils import orjson_dumps
 from starlette.requests import Request
@@ -171,8 +171,8 @@ def get_cache_entry_from_step(
     Returns:
         `CacheEntry`: the cached record
     """
-    best_response = get_best_response(kinds=[processing_step_name], dataset=dataset, config=config, split=split)
-    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+    response = get_response_or_missing_error(kind=processing_step_name, dataset=dataset, config=config, split=split)
+    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         try_backfill_dataset_then_raise(
             processing_step_names=[processing_step_name],
             dataset=dataset,
@@ -182,7 +182,7 @@ def get_cache_entry_from_step(
             hf_token=hf_token,
             storage_clients=storage_clients,
         )
-    return best_response.response
+    return response
 
 
 Endpoint = Callable[[Request], Coroutine[Any, Any, Response]]

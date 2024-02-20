@@ -24,7 +24,6 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     delete_response,
     fetch_names,
-    get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
@@ -794,124 +793,6 @@ class EntrySpec(TypedDict):
     config: Optional[str]
     http_status: HTTPStatus
     progress: Optional[float]
-
-
-@pytest.mark.parametrize(
-    "selected_entries,kinds,dataset,config,best_entry",
-    [
-        # Best means:
-        # - the first success response with progress=1.0 is returned
-        (["ok1"], ["kind1"], "dataset", None, "ok1"),
-        (["ok_config1"], ["kind1"], "dataset", "config", "ok_config1"),
-        (["ok1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok1"),
-        (["ok1", "ok2"], ["kind2", "kind1"], "dataset", None, "ok2"),
-        (["partial1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
-        (["error1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
-        # - if no success response with progress=1.0 is found, the success response with the highest progress is
-        #  returned
-        (["partial1", "partial2"], ["kind1", "kind2"], "dataset", None, "partial2"),
-        (["partial1", "error2"], ["kind1", "kind2"], "dataset", None, "partial1"),
-        # - if no success response is found, the first error response is returned
-        (["error1", "error2"], ["kind1", "kind2"], "dataset", None, "error1"),
-        (["error1", "error2"], ["kind2", "kind1"], "dataset", None, "error2"),
-        # - if no response is found, an error response is returned
-        ([], ["kind1"], "dataset", None, "cache_miss"),
-        (["ok_config1"], ["kind1"], "dataset", None, "cache_miss"),
-        (["ok1"], ["kind1"], "dataset", "config", "cache_miss"),
-    ],
-)
-def test_get_best_response(
-    selected_entries: list[str], kinds: list[str], dataset: str, config: Optional[str], best_entry: str
-) -> None:
-    # arrange
-    entries: dict[str, EntrySpec] = {
-        "ok1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "ok2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "partial1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 0,
-        },
-        "partial2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 0.5,
-        },
-        "ok_config1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": "config",
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "error1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
-            "progress": 1.0,
-        },
-        "error2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.NOT_FOUND,
-            "progress": 1.0,
-        },
-        "cache_miss": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.NOT_FOUND,
-            "progress": None,
-        },
-    }
-
-    for entry in selected_entries:
-        upsert_response(
-            kind=entries[entry]["kind"],
-            dataset=entries[entry]["dataset"],
-            dataset_git_revision=entries[entry]["dataset_git_revision"],
-            config=entries[entry]["config"],
-            http_status=entries[entry]["http_status"],
-            progress=entries[entry]["progress"],
-            content={"error": "some_error"} if (entries[entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value) else {},
-        )
-
-    # act
-    best_response = get_best_response(kinds, dataset, config)
-
-    # assert
-    assert best_response.kind == entries[best_entry]["kind"]
-    assert ("error" in best_response.response["content"]) is (
-        entries[best_entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value
-    )
-    assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
-    assert best_response.response["progress"] == entries[best_entry]["progress"]
 
 
 def test_cached_artifact_error() -> None:
