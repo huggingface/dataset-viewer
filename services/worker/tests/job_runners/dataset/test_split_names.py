@@ -153,18 +153,8 @@ def test_compute_progress(
         http_status=HTTPStatus.OK,
     )
     for config in split_names:
-        # we don't really need both parent responses here, but why not (it's one case among many, see
-        # libcommon.simple_cache.get_response_or_missing_error)
         upsert_response(
-            kind="config-split-names-from-info",
-            dataset=dataset,
-            dataset_git_revision=REVISION_NAME,
-            config=config["config"],
-            content=config["response"],
-            http_status=HTTPStatus.OK,
-        )
-        upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config["config"],
@@ -196,18 +186,8 @@ def test_compute_error(app_config: AppConfig, get_job_runner: GetJobRunner) -> N
         },
         http_status=HTTPStatus.OK,
     )
-    # we don't really need both parent responses here, but why not (it's one case among many, see
-    # libcommon.simple_cache.get_response_or_missing_error)
     upsert_response(
-        kind="config-split-names-from-info",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    upsert_response(
-        kind="config-split-names-from-streaming",
+        kind="config-split-names",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,
@@ -241,23 +221,12 @@ def test_compute_format_error(app_config: AppConfig, get_job_runner: GetJobRunne
         },
         http_status=HTTPStatus.OK,
     )
-    # here, 'config-split-names-from-info' will be picked because it's the first success response
-    # with progress==1.0 (see libcommon.simple_cache.get_response_or_missing_error), but its format is wrong
-    # while the other one ('config-split-names-from-streaming') is correct
     upsert_response(
-        kind="config-split-names-from-info",
+        kind="config-split-names",
         dataset=dataset,
         dataset_git_revision=REVISION_NAME,
         config=config,
         content={"wrong_format": []},
-        http_status=HTTPStatus.OK,
-    )
-    upsert_response(
-        kind="config-split-names-from-streaming",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content={"splits": [{"dataset": "dataset", "config": "config", "split": "split"}]},
         http_status=HTTPStatus.OK,
     )
     job_runner = get_job_runner(dataset, app_config)

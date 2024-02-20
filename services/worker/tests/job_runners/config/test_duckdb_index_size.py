@@ -10,6 +10,7 @@ from libcommon.dtos import Priority
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import (
+    CachedArtifactError,
     CachedArtifactNotFoundError,
     upsert_response,
 )
@@ -75,7 +76,7 @@ def get_job_runner(
             HTTPStatus.OK,
             [
                 {
-                    "dataset": "dataste_ok",
+                    "dataset": "dataset_ok",
                     "config": "config_1",
                     "split": "train",
                     "url": "https://foo.bar/config_1/split_1/index.duckdb",
@@ -88,7 +89,7 @@ def get_job_runner(
                     "num_bytes": 40,
                 },
                 {
-                    "dataset": "dataste_ok",
+                    "dataset": "dataset_ok",
                     "config": "config_1",
                     "split": "test",
                     "url": "https://foo.bar/config_1/split_1/index.duckdb",
@@ -137,6 +138,15 @@ def get_job_runner(
         (
             "status_error",
             "config_1",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            [{"error": "error"}],
+            CachedArtifactError.__name__,
+            None,
+            True,
+        ),
+        (
+            "status_not_found",
+            "config_1",
             HTTPStatus.NOT_FOUND,
             [{"error": "error"}],
             CachedArtifactNotFoundError.__name__,
@@ -165,33 +175,34 @@ def test_compute(
     expected_content: Any,
     should_raise: bool,
 ) -> None:
-    splits = [{"split": upstream_content.get("split", "train")} for upstream_content in upstream_contents]
-    upsert_response(
-        kind="config-split-names-from-streaming",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content={"splits": splits},
-        http_status=upstream_status,
-    )
-    upsert_response(
-        kind="config-info",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content={},
-        http_status=upstream_status,
-    )
-    for upstream_content in upstream_contents:
+    if upstream_status != HTTPStatus.NOT_FOUND:
+        splits = [{"split": upstream_content.get("split", "train")} for upstream_content in upstream_contents]
         upsert_response(
-            kind="split-duckdb-index",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,
-            split=upstream_content.get("split", "train"),
-            content=upstream_content,
+            content={"splits": splits},
             http_status=upstream_status,
         )
+        upsert_response(
+            kind="config-info",
+            dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
+            config=config,
+            content={},
+            http_status=upstream_status,
+        )
+        for upstream_content in upstream_contents:
+            upsert_response(
+                kind="split-duckdb-index",
+                dataset=dataset,
+                dataset_git_revision=REVISION_NAME,
+                config=config,
+                split=upstream_content.get("split", "train"),
+                content=upstream_content,
+                http_status=upstream_status,
+            )
     job_runner = get_job_runner(dataset, config, app_config)
     if should_raise:
         with pytest.raises(Exception) as e:

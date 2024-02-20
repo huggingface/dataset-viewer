@@ -20,7 +20,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitNamesResponse, float]:
     """
     Get the response of 'dataset-split-names' for one specific dataset on huggingface.co
-    computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
+    computed from response cached in 'config-split-names' step.
 
     Args:
         dataset (`str`):

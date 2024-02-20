@@ -227,21 +227,16 @@ def check_config_exists(dataset: str, config: str) -> None:
 
 def check_split_exists(dataset: str, config: str, split: str) -> None:
     """
-    Check if dataset has a provided split in a provided config. Dataset's splits are taken from the best response
-    of 'config-split-names-from-streaming' and 'config-split-names-from-info' steps' cache.
+    Check if dataset has a provided split in a provided config. Dataset's splits are taken from 'config-split-names'
+      step's cache.
     """
     check_config_exists(dataset, config)
-    split_names_best_response = get_previous_step_or_raise(
-        kind="config-split-names-from-streaming", dataset=dataset, config=config
-    )
+    split_names_response = get_previous_step_or_raise(kind="config-split-names", dataset=dataset, config=config)
     try:
-        splits_content = split_names_best_response.response["content"]["splits"]
+        splits_content = split_names_response["content"]["splits"]
     except Exception as e:
         raise PreviousStepFormatError(
-            (
-                "Previous steps 'config-split-names-from-streaming' and 'config-split-names-from-info did not return"
-                " the expected content."
-            ),
+            "Previous step 'config-split-names' did not return" " the expected content.",
             e,
         ) from e
 

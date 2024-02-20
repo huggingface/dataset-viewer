@@ -457,15 +457,9 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 1,
         "difficulty": 50,
     },
-    "config-split-names-from-streaming": {
-        "input_type": "config",
-        "triggered_by": "dataset-config-names",
-        "job_runner_version": 3,
-        "difficulty": 60,
-    },
     "split-first-rows-from-streaming": {
         "input_type": "split",
-        "triggered_by": ["config-split-names-from-streaming", "config-split-names-from-info"],
+        "triggered_by": "config-split-names",
         "job_runner_version": 4,
         "difficulty": 70,
     },
@@ -511,11 +505,11 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 2,
         "difficulty": 20,
     },
-    "config-split-names-from-info": {
+    "config-split-names": {
         "input_type": "config",
-        "triggered_by": "config-info",
+        "triggered_by": ["dataset-config-names", "config-info"],
         "job_runner_version": 3,
-        "difficulty": 20,
+        "difficulty": 60,
     },
     "config-size": {
         "input_type": "config",
@@ -532,8 +526,7 @@ specification: ProcessingGraphSpecification = {
     "dataset-split-names": {
         "input_type": "dataset",
         "triggered_by": [
-            "config-split-names-from-info",
-            "config-split-names-from-streaming",
+            "config-split-names",
             "dataset-config-names",
         ],
         "job_runner_version": 3,
@@ -541,10 +534,7 @@ specification: ProcessingGraphSpecification = {
     },
     "split-descriptive-statistics": {
         "input_type": "split",
-        "triggered_by": [
-            "config-split-names-from-info",
-            "config-split-names-from-streaming",
-        ],
+        "triggered_by": "config-split-names",
         "job_runner_version": 3,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
@@ -563,8 +553,7 @@ specification: ProcessingGraphSpecification = {
     "config-is-valid": {
         "input_type": "config",
         "triggered_by": [
-            "config-split-names-from-streaming",
-            "config-split-names-from-info",
+            "config-split-names",
             "split-is-valid",
         ],
         "job_runner_version": 2,
@@ -600,8 +589,7 @@ specification: ProcessingGraphSpecification = {
     "config-opt-in-out-urls-count": {
         "input_type": "config",
         "triggered_by": [
-            "config-split-names-from-streaming",
-            "config-split-names-from-info",
+            "config-split-names",
             "split-opt-in-out-urls-count",
         ],
         "job_runner_version": 3,
@@ -616,8 +604,7 @@ specification: ProcessingGraphSpecification = {
     "split-duckdb-index": {
         "input_type": "split",
         "triggered_by": [
-            "config-split-names-from-info",
-            "config-split-names-from-streaming",
+            "config-split-names",
             "config-parquet-metadata",
         ],
         "job_runner_version": 2,

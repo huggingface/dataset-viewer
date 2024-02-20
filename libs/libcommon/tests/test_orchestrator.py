@@ -327,7 +327,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -
     processing_graph = ProcessingGraph(
         {
             "dataset_step": {"input_type": "dataset"},
-            "config-split-names-from-streaming": {
+            "config-split-names": {
                 "input_type": "config",
                 "triggered_by": "dataset_step",
             },
@@ -348,7 +348,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -
         },
         min_bytes_for_bonus_difficulty=1000,
     )
-    job_info = artifact_id_to_job_info("config-split-names-from-streaming,dataset_name,revision_hash,config_name")
+    job_info = artifact_id_to_job_info("config-split-names,dataset_name,revision_hash,config_name")
     upsert_response_params(
         # inputs
         kind=job_info["type"],

@@ -48,7 +48,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
         processing_step_name_by_input_type_and_endpoint={
             "/splits": {
                 "dataset": "dataset-split-names",
-                "config": "config-split-names-from-streaming",
+                "config": "config-split-names",
             },
             "/first-rows": {"split": "split-first-rows-from-streaming"},
             "/parquet": {"config": "config-parquet"},

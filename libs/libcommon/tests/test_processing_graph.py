@@ -53,7 +53,7 @@ def test_graph() -> None:
         (
             "dataset-config-names",
             [
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "config-parquet-and-info",
                 "dataset-opt-in-out-urls-count",
                 "dataset-split-names",
@@ -76,7 +76,7 @@ def test_graph() -> None:
             ["dataset-config-names"],
         ),
         (
-            "config-split-names-from-info",
+            "config-split-names",
             [
                 "config-opt-in-out-urls-count",
                 "split-first-rows-from-streaming",
@@ -86,37 +86,21 @@ def test_graph() -> None:
                 "split-descriptive-statistics",
                 "config-is-valid",
             ],
-            ["config-info"],
+            ["dataset-config-names", "config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
-        ),
-        (
-            "config-split-names-from-streaming",
-            [
-                "split-first-rows-from-streaming",
-                "dataset-split-names",
-                "config-opt-in-out-urls-count",
-                "split-duckdb-index",
-                "split-duckdb-index-010",
-                "split-descriptive-statistics",
-                "config-is-valid",
-            ],
-            ["dataset-config-names"],
-            ["dataset-config-names"],
         ),
         (
             "dataset-split-names",
             [],
             [
                 "dataset-config-names",
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
             ],
             [
                 "dataset-config-names",
                 "config-parquet-and-info",
                 "config-info",
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
             ],
         ),
         (
@@ -129,13 +113,11 @@ def test_graph() -> None:
             "split-first-rows-from-streaming",
             ["split-is-valid", "split-image-url-columns"],
             [
-                "config-split-names-from-streaming",
-                "config-split-names-from-info",
+                "config-split-names",
             ],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
-                "config-split-names-from-info",
+                "config-split-names",
                 "config-parquet-and-info",
                 "config-info",
             ],
@@ -164,7 +146,7 @@ def test_graph() -> None:
         ),
         (
             "config-info",
-            ["dataset-info", "config-split-names-from-info"],
+            ["dataset-info", "config-split-names"],
             ["config-parquet-and-info"],
             ["dataset-config-names", "config-parquet-and-info"],
         ),
@@ -205,9 +187,8 @@ def test_graph() -> None:
                 "config-info",
                 "config-parquet",
                 "config-size",
-                "config-split-names-from-info",
+                "config-split-names",
                 "config-parquet-metadata",
-                "config-split-names-from-streaming",
                 "split-first-rows-from-parquet",
                 "split-first-rows-from-streaming",
                 "config-is-valid",
@@ -221,8 +202,7 @@ def test_graph() -> None:
             ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
-                "config-split-names-from-info",
+                "config-split-names",
                 "config-info",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -237,8 +217,7 @@ def test_graph() -> None:
             ["split-image-url-columns"],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
-                "config-split-names-from-info",
+                "config-split-names",
                 "config-info",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -254,9 +233,8 @@ def test_graph() -> None:
             ["split-opt-in-out-urls-scan"],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "split-first-rows-from-streaming",
-                "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -269,12 +247,11 @@ def test_graph() -> None:
         (
             "config-opt-in-out-urls-count",
             ["dataset-opt-in-out-urls-count"],
-            ["split-opt-in-out-urls-count", "config-split-names-from-info", "config-split-names-from-streaming"],
+            ["split-opt-in-out-urls-count", "config-split-names"],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "split-first-rows-from-streaming",
-                "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -291,9 +268,8 @@ def test_graph() -> None:
             ["config-opt-in-out-urls-count", "dataset-config-names"],
             [
                 "dataset-config-names",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "split-first-rows-from-streaming",
-                "config-split-names-from-info",
                 "config-info",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -308,10 +284,9 @@ def test_graph() -> None:
         (
             "split-duckdb-index",
             ["config-duckdb-index-size", "split-is-valid"],
-            ["config-split-names-from-info", "config-split-names-from-streaming", "config-parquet-metadata"],
+            ["config-split-names", "config-parquet-metadata"],
             [
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "config-parquet",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -324,8 +299,7 @@ def test_graph() -> None:
             ["dataset-duckdb-index-size"],
             ["split-duckdb-index"],
             [
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "config-parquet",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -340,8 +314,7 @@ def test_graph() -> None:
             ["config-duckdb-index-size"],
             [
                 "config-duckdb-index-size",
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "config-parquet",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
@@ -353,13 +326,12 @@ def test_graph() -> None:
         (
             "split-descriptive-statistics",
             [],
-            ["config-split-names-from-info", "config-split-names-from-streaming"],
+            ["config-split-names"],
             [
                 "dataset-config-names",
                 "config-parquet-and-info",
                 "config-info",
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
             ],
         ),
         (
@@ -373,8 +345,7 @@ def test_graph() -> None:
                 "config-parquet-and-info",
                 "config-parquet-metadata",
                 "config-size",
-                "config-split-names-from-info",
-                "config-split-names-from-streaming",
+                "config-split-names",
                 "dataset-config-names",
                 "dataset-info",
                 "dataset-is-valid",

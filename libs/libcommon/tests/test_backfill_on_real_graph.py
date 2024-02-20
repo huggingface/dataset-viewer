@@ -144,10 +144,8 @@ def test_plan_job_creation_and_termination() -> None:
             "cache_is_empty": [
                 "config-duckdb-index-size,dataset,revision,config1",
                 "config-duckdb-index-size,dataset,revision,config2",
-                "config-split-names-from-info,dataset,revision,config1",
-                "config-split-names-from-info,dataset,revision,config2",
-                "config-split-names-from-streaming,dataset,revision,config1",
-                "config-split-names-from-streaming,dataset,revision,config2",
+                "config-split-names,dataset,revision,config1",
+                "config-split-names,dataset,revision,config2",
                 "config-info,dataset,revision,config1",
                 "config-info,dataset,revision,config2",
                 "config-opt-in-out-urls-count,dataset,revision,config1",
@@ -190,5 +188,5 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-split-names,dataset,revision",
             ]
         },
-        tasks=["CreateJobs,20"],
+        tasks=["CreateJobs,18"],
     )

@@ -181,7 +181,18 @@ def get_job_runner(
             {},
             [],
             [],
-            "CachedArtifactNotFoundError",
+            "CachedArtifactError",
+            None,
+            True,
+        ),
+        (
+            "previous_step_not_found",
+            "config",
+            HTTPStatus.NOT_FOUND,
+            {},
+            [],
+            [],
+            "CachedArtifactError",
             None,
             True,
         ),
@@ -216,14 +227,15 @@ def test_compute(
     expected_content: Any,
     should_raise: bool,
 ) -> None:
-    upsert_response(
-        kind="config-split-names-from-streaming",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content=split_names_content,
-        http_status=split_names_status,
-    )
+    if split_names_status != HTTPStatus.NOT_FOUND:
+        upsert_response(
+            kind="config-split-names",
+            dataset=dataset,
+            dataset_git_revision=REVISION_NAME,
+            config=config,
+            content=split_names_content,
+            http_status=split_names_status,
+        )
 
     if split_names_status == HTTPStatus.OK:
         for split_item, status, content in zip(split_names_content["splits"], spawning_status, spawning_content):

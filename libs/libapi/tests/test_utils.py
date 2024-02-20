@@ -24,7 +24,7 @@ def test_get_cache_entry_from_step(hf_endpoint: str) -> None:
     revision = "revision"
     config = "config"
 
-    kind = "config-split-names-from-streaming"
+    kind = "config-split-names"
 
     upsert_response(
         kind=kind,
@@ -53,7 +53,7 @@ def test_get_cache_entry_from_step_error(hf_endpoint: str) -> None:
     revision = "revision"
     config = "config"
 
-    kind = "config-split-names-from-streaming"
+    kind = "config-split-names"
 
     upsert_response(
         kind=kind,
