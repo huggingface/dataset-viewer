@@ -51,7 +51,6 @@ EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 CONFIG_HAS_VIEWER_KINDS = ["config-size"]
 CONFIG_INFO_KIND = "config-info"
 CONFIG_PARQUET_METADATA_KIND = "config-parquet-metadata"
-CONFIG_PARQUET_AND_METADATA_KINDS = ["config-parquet", "config-parquet-metadata"]
 CONFIG_SPLIT_NAMES_KIND = "config-split-names-from-streaming"
 DATASET_CONFIG_NAMES_KIND = "dataset-config-names"
 DATASET_INFO_KIND = "dataset-info"

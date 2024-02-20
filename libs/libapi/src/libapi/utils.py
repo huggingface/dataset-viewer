@@ -98,7 +98,7 @@ def are_valid_parameters(parameters: list[Any]) -> bool:
 
 
 def try_backfill_dataset_then_raise(
-    processing_step_names: list[str],
+    processing_step_name: str,
     dataset: str,
     hf_endpoint: str,
     blocked_datasets: list[str],
@@ -109,7 +109,7 @@ def try_backfill_dataset_then_raise(
     """
     Tries to backfill the dataset, and then raises an error.
     """
-    if has_pending_ancestor_jobs(dataset=dataset, processing_step_names=processing_step_names):
+    if has_pending_ancestor_jobs(dataset=dataset, processing_step_names=[processing_step_name]):
         logging.debug("Cache entry not found but some jobs are still in progress, so it could exist in the future")
         raise ResponseNotReadyError(
             "The server is busier than usual and the response is not ready yet. Please retry later."
