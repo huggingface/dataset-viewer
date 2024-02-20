@@ -40,6 +40,7 @@ jobs:
         run: |
           curl -LO https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip
           unzip duckdb_cli-linux-amd64.zip
+          pwd
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
