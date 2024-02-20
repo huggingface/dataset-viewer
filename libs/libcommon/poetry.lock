@@ -570,13 +570,13 @@ toml = ">=0.10.0,<0.11.0"
 
 [[package]]
 name = "datasets"
-version = "2.17.0"
+version = "2.17.1"
 description = "HuggingFace community-driven open-source library of datasets"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "datasets-2.17.0-py3-none-any.whl", hash = "sha256:1479667383d002c2b4a4fc6ac0fb99a7f8e7e440f348991ae7343837f9fc84db"},
-    {file = "datasets-2.17.0.tar.gz", hash = "sha256:81e32e0393a8ca398800223992bfd6222f8a830a6e6aaf3b41b887646f771a86"},
+    {file = "datasets-2.17.1-py3-none-any.whl", hash = "sha256:346974daf2fe9c14ddb35646896b2308b95e7dc27709d1a6e25273573b140cf8"},
+    {file = "datasets-2.17.1.tar.gz", hash = "sha256:66ec24077807f374f379b62ab0256c4dcb7c38a57ff1529a22993e8d95f2f9f1"},
 ]
 
 [package.dependencies]
@@ -3621,4 +3621,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "5dd156e9914e7f8e70f1e76ce001b50888c4c2573090c612f86fa54d13081155"
+content-hash = "bae7e270b2d1c978a2f7facae583467b3b3e50cb36cda135f825b484d31a7407"
