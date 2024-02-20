@@ -27,7 +27,6 @@ RUN pip install "poetry==$POETRY_VERSION"
 WORKDIR /src
 COPY libs/libcommon/poetry.lock ./libs/libcommon/poetry.lock
 COPY libs/libcommon/pyproject.toml ./libs/libcommon/pyproject.toml
-COPY services/worker/vendors ./services/worker/vendors/
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 
