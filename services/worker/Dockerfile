@@ -30,7 +30,7 @@ COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
 RUN wget https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip -O duckdb_0_8_1.zip
-RUN unzip duckdb_0_8_1.zip -d /services/worker
+RUN unzip duckdb_0_8_1.zip -d ./services/worker
 RUN rm duckdb_0_8_1.zip
 
 WORKDIR /src/services/worker/
