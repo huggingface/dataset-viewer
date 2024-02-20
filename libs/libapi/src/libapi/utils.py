@@ -174,7 +174,7 @@ def get_cache_entry_from_step(
     response = get_response_or_missing_error(kind=processing_step_name, dataset=dataset, config=config, split=split)
     if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         try_backfill_dataset_then_raise(
-            processing_step_names=[processing_step_name],
+            processing_step_name=processing_step_name,
             dataset=dataset,
             hf_endpoint=hf_endpoint,
             blocked_datasets=blocked_datasets,
