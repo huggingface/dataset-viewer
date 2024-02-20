@@ -37,7 +37,7 @@ jobs:
       - name: Install packages
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config poppler-utils
       - name: Download DUCKB_CLI
-        run: curl -o https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip /tmp/duckdb_0_8_1.zip  
+        run: curl https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip -o /tmp/duckdb_0_8_1.zip  
       - name: Unzip DUCKDB_CLI file
         run: unzip /tmp/duckdb_0_8_1.zip -d /tmp
       - name: Install dependencies
