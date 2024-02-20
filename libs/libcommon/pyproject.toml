@@ -9,7 +9,7 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^42.0.0"
-datasets = {version = "^2.16.1", extras = ["audio", "vision"]}
+datasets = {version = "^2.17.1", extras = ["audio", "vision"]}
 environs = "^9.5.0"
 huggingface-hub = "^0.20.1"
 mongo-types = "0.15.1"

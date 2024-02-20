@@ -12,7 +12,7 @@ httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 orjson = "^3.8.6"
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
-starlette = "^0.37.0"
+starlette = "^0.37.1"
 starlette-prometheus = "^0.9.0"
 
 [tool.poetry.group.dev.dependencies]

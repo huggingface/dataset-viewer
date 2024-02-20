@@ -40,7 +40,7 @@ def compute_dataset_duckdb_index_size_response(dataset: str) -> tuple[DatasetDuc
     Returns:
         `tuple[DatasetDuckdbIndexSizeResponse, float]`: An object with the duckdb_index_size_response and the progress.
     """
-    logging.info(f"get 'config-duckdb-index-sie' for {dataset=}")
+    logging.info(f"compute 'config-duckdb-index-size' for {dataset=}")
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]
     if "config_names" not in content:

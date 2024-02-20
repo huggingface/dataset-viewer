@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 import duckdb
-import pyarrow.parquet as pq
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
@@ -32,7 +31,11 @@ from libcommon.exceptions import (
     ParquetResponseEmptyError,
     PreviousStepFormatError,
 )
-from libcommon.parquet_utils import extract_split_name_from_parquet_url, parquet_export_is_partial
+from libcommon.parquet_utils import (
+    extract_split_name_from_parquet_url,
+    get_num_parquet_files_to_process,
+    parquet_export_is_partial,
+)
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -104,7 +107,7 @@ def get_delete_operations(all_repo_files: set[str], split_names: set[str], confi
     ]
 
 
-def compute_index_rows(
+def compute_split_duckdb_index_response(
     job_id: str,
     dataset: str,
     config: str,
@@ -115,12 +118,12 @@ def compute_index_rows(
     commit_message: str,
     url_template: str,
     hf_token: Optional[str],
-    max_dataset_size_bytes: int,
+    max_split_size_bytes: int,
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
 ) -> SplitDuckdbIndex:
-    logging.info(f"get split-duckdb-index for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
@@ -145,18 +148,11 @@ def compute_index_rows(
         split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
         partial_parquet_export = parquet_export_is_partial(split_parquet_files[0]["url"])
 
-        num_parquet_files_to_index = 0
-        num_bytes = 0
-        num_rows = 0
-        for parquet_file_id, parquet_file in enumerate(split_parquet_files):
-            parquet_metadata_path = os.path.join(parquet_metadata_directory, parquet_file["parquet_metadata_subpath"])
-            parquet_metadata = pq.read_metadata(parquet_metadata_path)
-            num_parquet_files_to_index += 1
-            num_rows += parquet_metadata.num_rows
-            for row_group_id in range(parquet_metadata.num_row_groups):
-                num_bytes += parquet_metadata.row_group(row_group_id).total_byte_size
-            if num_bytes > max_dataset_size_bytes:
-                break
+        num_parquet_files_to_index, num_bytes, num_rows = get_num_parquet_files_to_process(
+            parquet_files=split_parquet_files,
+            parquet_metadata_directory=parquet_metadata_directory,
+            max_size_bytes=max_split_size_bytes,
+        )
 
         index_filename = (
             DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME
@@ -164,7 +160,7 @@ def compute_index_rows(
             else DUCKDB_DEFAULT_INDEX_FILENAME
         )
         partial = partial_parquet_export or (num_parquet_files_to_index < len(split_parquet_files))
-        split_parquet_files = split_parquet_files[: parquet_file_id + 1]
+        split_parquet_files = split_parquet_files[:num_parquet_files_to_index]
         parquet_file_names = [parquet_file["filename"] for parquet_file in split_parquet_files]
 
         # get the features
@@ -357,7 +353,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
         if self.cache_subdirectory is None:
             raise CacheDirectoryNotInitializedError("Cache directory has not been initialized.")
         return CompleteJobResult(
-            compute_index_rows(
+            compute_split_duckdb_index_response(
                 job_id=self.job_info["job_id"],
                 dataset=self.dataset,
                 config=self.config,
@@ -370,7 +366,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
-                max_dataset_size_bytes=self.duckdb_index_config.max_dataset_size_bytes,
+                max_split_size_bytes=self.duckdb_index_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
         )

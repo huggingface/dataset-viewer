@@ -698,8 +698,8 @@ class Queue:
                 )
         raise EmptyQueueError("no job available")
 
-    def _start_newest_job_and_cancel_others(self, job: JobDocument) -> JobDocument:
-        """Start a job (the newest one for unicity_id) and cancel the other ones.
+    def _start_newest_job_and_delete_others(self, job: JobDocument) -> JobDocument:
+        """Start a job (the newest one for unicity_id) and delete the other ones.
 
         A lock is used to ensure that the job is not started by another worker.
 
@@ -803,7 +803,7 @@ class Queue:
             raise RuntimeError(
                 f"The job type {next_waiting_job.type} is not in the list of allowed job types {job_types_only}"
             )
-        started_job = self._start_newest_job_and_cancel_others(job=next_waiting_job)
+        started_job = self._start_newest_job_and_delete_others(job=next_waiting_job)
         return started_job.info()
 
     def get_job_with_id(self, job_id: str) -> JobDocument:

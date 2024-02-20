@@ -312,6 +312,32 @@ def hub_public_descriptive_statistics_string_text(datasets: Mapping[str, Dataset
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]) -> list[str]:
+    # split "descriptive_statistics_string_text" dataset into two parquet files
+    dataset = datasets["descriptive_statistics_string_text"]
+    path1 = str(tmp_path_factory.mktemp("data") / "0.parquet")
+    data1 = Dataset.from_dict(dataset[:50])  # first file - first 50 samples
+    with open(path1, "wb") as f:
+        data1.to_parquet(f)
+
+    path2 = str(tmp_path_factory.mktemp("data") / "1.parquet")
+    data2 = Dataset.from_dict(dataset[50:])  # second file - all the rest
+    with open(path2, "wb") as f:
+        data2.to_parquet(f)
+
+    return [path1, path2]
+
+
+@pytest.fixture(scope="session")
+def hub_public_descriptive_statistics_parquet_builder(parquet_files_paths: list[str]) -> Iterator[str]:
+    # to test partial stats, pushing "descriptive_statistics_string_text" dataset split into two parquet files
+    # stats will be computed only on the first file (first 50 samples)
+    repo_id = create_hub_dataset_repo(prefix="parquet_builder", file_paths=parquet_files_paths)
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
@@ -915,6 +941,19 @@ def hub_responses_descriptive_statistics_string_text(
         "name": hub_public_descriptive_statistics_string_text,
         "config_names_response": create_config_names_response(hub_public_descriptive_statistics_string_text),
         "splits_response": create_splits_response(hub_public_descriptive_statistics_string_text),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_descriptive_statistics_parquet_builder(
+    hub_public_descriptive_statistics_parquet_builder: str
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_descriptive_statistics_parquet_builder,
+        "config_names_response": create_config_names_response(hub_public_descriptive_statistics_parquet_builder),
+        "splits_response": create_splits_response(hub_public_descriptive_statistics_parquet_builder),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

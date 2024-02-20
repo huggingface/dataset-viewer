@@ -34,7 +34,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     Returns:
         `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
-    logging.info(f"get 'config-is-valid' response for {dataset=} {config=}")
+    logging.info(f"compute 'config-is-valid' response for {dataset=} {config=}")
 
     preview = False
     viewer = False

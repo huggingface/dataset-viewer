@@ -26,8 +26,6 @@
 # specific to the /first-rows job runner
 - name: FIRST_ROWS_MAX_BYTES
   value: {{ .Values.firstRows.maxBytes | quote }}
-- name: FIRST_ROWS_MAX_NUMBER
-  value: {{ .Values.firstRows.maxNumber | quote }}
 - name: FIRST_ROWS_MIN_CELL_BYTES
   value: {{ .Values.firstRows.minCellBytes | quote }}
 - name: FIRST_ROWS_MIN_NUMBER
@@ -101,8 +99,8 @@
   value: {{ .Values.duckDBIndex.targetRevision | quote }}
 - name: DUCKDB_INDEX_URL_TEMPLATE
   value: {{ .Values.duckDBIndex.urlTemplate | quote }}
-- name: DUCKDB_INDEX_MAX_DATASET_SIZE_BYTES
-  value: {{ .Values.duckDBIndex.maxDatasetSizeBytes | quote }}
+- name: DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
+  value: {{ .Values.duckDBIndex.maxSplitSizeBytes | quote }}
 - name: DUCKDB_INDEX_CACHE_DIRECTORY
   value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
@@ -110,8 +108,8 @@
 # specific to 'split-descriptive-statistics'
 - name: DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStatistics.histogramNumBins | quote }}
-- name: DESCRIPTIVE_STATISTICS_MAX_PARQUET_SIZE_BYTES
-  value: {{ .Values.descriptiveStatistics.maxParquetSizeBytes | quote }}
+- name: DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
+  value: {{ .Values.descriptiveStatistics.maxSplitSizeBytes | quote }}
 - name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
   value: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
 {{- end -}}

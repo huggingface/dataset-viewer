@@ -600,7 +600,7 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     Returns:
         `DatasetLoadingTagsResponse`: The dataset-loading-tags response (list of tags).
     """
-    logging.info(f"get 'dataset-loading-tags' for {dataset=}")
+    logging.info(f"compute 'dataset-loading-tags' for {dataset=}")
 
     dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
     http_status = dataset_info_best_response.response["http_status"]

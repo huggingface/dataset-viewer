@@ -201,8 +201,6 @@ worker:
 firstRows:
   # Max size of the /first-rows endpoint response in bytes
   maxBytes: "1_000_000"
-  # Max number of rows in the /first-rows endpoint response
-  maxNumber: 100
   # Min size of a cell in the /first-rows endpoint response in bytes
   minCellBytes: 100
   # Min number of rows in the /first-rows endpoint response
@@ -279,7 +277,7 @@ duckDBIndex:
   # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
-  maxDatasetSizeBytes: "100_000_000"
+  maxSplitSizeBytes: "100_000_000"
 
 rowsIndex:
   # Maximum number of bytes to load in memory from parquet row groups to avoid OOM
@@ -291,7 +289,7 @@ descriptiveStatistics:
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.
-  maxParquetSizeBytes: "100_000_000"
+  maxSplitSizeBytes: "100_000_000"
 
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored

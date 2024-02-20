@@ -21,18 +21,17 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
         dataset=dataset,
     )
     content = filter_response.json()
-    assert "rows" in content, filter_response
-    assert "features" in content, filter_response
-    assert "num_rows_total" in content, filter_response
-    assert "num_rows_per_page" in content, filter_response
+    assert sorted(content) == sorted(["rows", "features", "num_rows_total", "num_rows_per_page", "partial"])
     rows = content["rows"]
     features = content["features"]
     num_rows_total = content["num_rows_total"]
     num_rows_per_page = content["num_rows_per_page"]
+    partial = content["partial"]
     assert isinstance(rows, list), rows
     assert isinstance(features, list), features
     assert num_rows_total == 3
     assert num_rows_per_page == 100
+    assert partial is False
     assert rows[0] == {
         "row_idx": 1,
         "row": {

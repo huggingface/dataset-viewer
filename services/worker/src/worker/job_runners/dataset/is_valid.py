@@ -29,7 +29,7 @@ def compute_is_valid_response(dataset: str) -> tuple[IsValidResponse, float]:
     Returns:
         `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
     """
-    logging.info(f"get 'dataset-is-valid' response for {dataset=}")
+    logging.info(f"compute 'dataset-is-valid' response for {dataset=}")
 
     config_names_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_response.response["content"]

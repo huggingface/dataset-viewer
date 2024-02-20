@@ -95,6 +95,7 @@ CacheableErrorCode = Literal[
     "ExternalFilesSizeRequestTimeoutError",
     "ExternalServerError",
     "FeaturesError",
+    "FeaturesResponseEmptyError",
     "FileSystemError",
     "InfoError",
     "JobManagerCrashedError",
@@ -294,6 +295,13 @@ class FeaturesError(CacheableError):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesError", cause, True)
 
 
+class FeaturesResponseEmptyError(CacheableError):
+    """No features were found in cache for split."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FeaturesResponseEmptyError", cause, True)
+
+
 class FileSystemError(CacheableError):
     """An error happen reading from File System."""
 
@@ -461,13 +469,6 @@ class SplitParquetSchemaMismatchError(CacheableError):
             cause=cause,
             disclose_cause=False,
         )
-
-
-class SplitWithTooBigParquetError(CacheableError):
-    """The split parquet size (sum of parquet sizes given) is too big."""
-
-    def __init__(self, message: str, cause: Optional[BaseException] = None):
-        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "SplitWithTooBigParquetError", cause, False)
 
 
 class StatisticsComputationError(CacheableError):

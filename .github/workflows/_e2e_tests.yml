@@ -44,7 +44,6 @@ jobs:
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
-          FIRST_ROWS_MAX_NUMBER: "4"
           PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           DUCKDB_INDEX_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"
@@ -72,7 +71,7 @@ jobs:
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}
       - name: Use Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
           cache: "poetry"
@@ -104,7 +103,6 @@ jobs:
           COMMON_HF_TOKEN: "hf_app_datasets-server_token"
           # ^ hard coded, see e2e/tests/fixtures/hub.py
           LOG_LEVEL: "DEBUG"
-          FIRST_ROWS_MAX_NUMBER: "4"
           PARQUET_AND_INFO_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           DUCKDB_INDEX_COMMITTER_HF_TOKEN: "hf_app_datasets-server-parquet-converter_token"
           PORT_REVERSE_PROXY: "8000"

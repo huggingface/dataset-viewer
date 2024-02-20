@@ -13,6 +13,35 @@ from libcommon.simple_cache import get_datasets_with_last_updated_kind
 PARQUET_CACHE_KIND = "config-parquet"
 DAYS = 1
 
+DISCUSSION_TITLE = "[bot] [No action needed] Conversion to Parquet"
+DISCUSSION_DESCRIPTION = """The {bot_name} bot has created a version of this dataset in the Parquet format in the {parquet_link} branch.
+
+## What is Parquet?
+
+Apache Parquet is a popular columnar storage format known for:
+
+- reduced memory requirement,
+- fast data retrieval and filtering,
+- efficient storage.
+
+**This is what powers the Dataset Viewer** on each dataset page and every dataset on the Hub can be accessed with the same code (you can use HF Datasets, ClickHouse, DuckDB, Pandas or Polars, [up to you](https://huggingface.co/docs/datasets-server/parquet_process)).
+
+You can learn more about the advantages associated with Parquet in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
+
+## How to access the Parquet version of the dataset?
+
+You can access the Parquet version of the dataset by following this link: {parquet_link}
+
+## What if my dataset was already in Parquet?
+
+When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule has an exception to ensure the Datasets Server API to stay fast: if the row group size of the original Parquet files is too big, new Parquet files are generated.
+
+## What should I do?
+
+You don't need to do anything. The Parquet version of the dataset is available for you to use. Refer to the [documentation](https://huggingface.co/docs/datasets-server/parquet_process) for examples and code snippets on how to query the Parquet files with ClickHouse, DuckDB, Pandas or Polars.
+
+If you have any questions or concerns, feel free to ask in the discussion below. You can also close the discussion if you don't have any questions."""
+
 
 @dataclass
 class ParquetCounters:
@@ -116,20 +145,14 @@ def post_messages_on_parquet_conversion(
 def create_discussion_description(
     dataset: str, hf_endpoint: str, parquet_revision: str, bot_associated_user_name: str
 ) -> str:
-    link_parquet = create_link(
+    parquet_link = create_link(
         text=parquet_revision,
         dataset=dataset,
         hf_endpoint=hf_endpoint,
         revision_type="tree",
         revision=parquet_revision,
     )
-    return (
-        f"The {bot_associated_user_name} bot has created a version of this dataset in the [Parquet"
-        " format](https://parquet.apache.org/). You can learn more about the advantages associated with this format"
-        f""" in the [documentation](https://huggingface.co/docs/datasets-server/parquet).
-
-The Parquet files are published in the {link_parquet} branch."""
-    )
+    return DISCUSSION_DESCRIPTION.format(bot_name=bot_associated_user_name, parquet_link=parquet_link)
 
 
 def create_link(

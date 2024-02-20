@@ -198,13 +198,13 @@ class WorkerExecutor:
         try:
             worker_loop_executor.stop()  # raises an error if the worker returned unexpected exit code
         except ProcessExitedWithError as err:
-            explanation = f"exit code f{err.exit_code}"
+            explanation = f"exit code {err.exit_code}"
             if err.exit_code == -9:
                 explanation += " SIGKILL - surely an OOM"
             error_msg = f"Worker crashed ({explanation})"
             state = self.get_state()
             if state and state["current_job_info"]:
-                error_msg += f"when running job_id={state['current_job_info']['job_id']}"
+                error_msg += f" when running job_id={state['current_job_info']['job_id']}"
             logging.error(error_msg)
             raise
         return False

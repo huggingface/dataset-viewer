@@ -91,13 +91,24 @@ class StorageClient:
             logging.debug(f"signed url: {url}")
         return url
 
-    def delete_dataset_directory(self, dataset: str) -> None:
+    def delete_dataset_directory(self, dataset: str) -> int:
+        """
+        Delete a dataset directory
+
+        Args:
+            dataset (`str`): the dataset
+
+        Returns:
+            int: The number of directories deleted (0 or 1)
+        """
         dataset_key = self.get_full_path(dataset)
         try:
             self._fs.rm(dataset_key, recursive=True)
             logging.info(f"Directory deleted: {dataset_key}")
+            return 1
         except Exception:
             logging.warning(f"Could not delete directory {dataset_key}")
+            return 0
 
     def __repr__(self) -> str:
         return f"StorageClient(protocol={self.protocol}, storage_root={self.storage_root}, base_url={self.base_url}, overwrite={self.overwrite}), url_signer={self.url_signer})"

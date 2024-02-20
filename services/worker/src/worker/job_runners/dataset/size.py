@@ -41,7 +41,7 @@ def compute_sizes_response(dataset: str) -> tuple[DatasetSizeResponse, float]:
     Returns:
         `tuple[DatasetSizeResponse, float]`: An object with the sizes_response and the progress.
     """
-    logging.info(f"get 'dataset-size' for {dataset=}")
+    logging.info(f"compute 'dataset-size' for {dataset=}")
 
     config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
     content = config_names_best_response.response["content"]

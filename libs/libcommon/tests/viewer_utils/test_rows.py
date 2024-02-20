@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from datasets import Dataset
 
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.exceptions import TooBigContentError
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.rows import create_first_rows_response
@@ -152,7 +153,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
                 get_rows_content=get_dataset_rows_content(dataset=dataset),
                 min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
                 rows_max_bytes=rows_max_bytes,
-                rows_max_number=100,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                 rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
                 columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
             )
@@ -168,7 +169,7 @@ def test_create_first_rows_response_truncation_on_audio_or_image(
             get_rows_content=get_dataset_rows_content(dataset=dataset),
             min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
             rows_max_bytes=rows_max_bytes,
-            rows_max_number=100,
+            rows_max_number=MAX_NUM_ROWS_PER_PAGE,
             rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
             columns_max_number=DEFAULT_COLUMNS_MAX_NUMBER,
         )

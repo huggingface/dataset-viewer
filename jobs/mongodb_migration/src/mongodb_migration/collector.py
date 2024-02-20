@@ -60,6 +60,9 @@ from mongodb_migration.migrations._20231106193200_cache_add_partial_field_in_spl
 )
 from mongodb_migration.migrations._20240104085000_cache_add_retries import MigrationAddRetriesToCacheResponse
 from mongodb_migration.migrations._20240109160700_cache_add_failed_runs import MigrationAddFailedRunsToCacheResponse
+from mongodb_migration.migrations._20240112164500_cache_add_partial_field_in_split_descriptive_statistics import (
+    MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse,
+)
 from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import (
     MigrationAddTagsToHubCacheCacheResponse,
 )
@@ -308,5 +311,9 @@ class MigrationsCollector:
             MigrationAddTagsToHubCacheCacheResponse(
                 version="20240206153000",
                 description="add the 'tags' fields to dataset-hub-cache",
+            ),
+            MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(
+                version="20240216111500",
+                description="add 'partial' field to split-descriptive-statistics cache records",
             ),
         ]

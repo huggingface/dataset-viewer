@@ -58,7 +58,7 @@ def compute_config_names_response(
     Returns:
         `DatasetConfigNamesResponse`: An object with the list of config names.
     """
-    logging.info(f"get 'dateset-config-names' for {dataset=}")
+    logging.info(f"compute 'dataset-config-names' for {dataset=}")
     # get the list of splits in streaming mode
     try:
         config_name_items: list[ConfigNameItem] = [

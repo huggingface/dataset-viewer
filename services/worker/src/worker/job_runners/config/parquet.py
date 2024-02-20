@@ -29,7 +29,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
     Returns:
         `ConfigParquetResponse`: An object with the parquet_response (list of parquet files).
     """
-    logging.info(f"get 'config-parquet' for {dataset=} {config=}")
+    logging.info(f"compute 'config-parquet' for {dataset=} {config=}")
 
     previous_step = "config-parquet-and-info"
     config_parquet_and_info_best_response = get_previous_step_or_raise(

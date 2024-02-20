@@ -4,6 +4,7 @@
 import logging
 
 from fsspec.implementations.http import HTTPFileSystem
+from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import JobInfo, RowsContent, SplitFirstRowsResponse
 from libcommon.exceptions import (
     ParquetResponseEmptyError,
@@ -33,7 +34,7 @@ def compute_first_rows_response(
     columns_max_number: int,
     indexer: Indexer,
 ) -> SplitFirstRowsResponse:
-    logging.info(f"get 'split-first-rows-from-parquet' for {dataset=} {config=} {split=}")
+    logging.info(f"compute 'split-first-rows-from-parquet' for {dataset=} {config=} {split=}")
 
     try:
         rows_index = indexer.get_rows_index(
@@ -118,8 +119,8 @@ class SplitFirstRowsFromParquetJobRunner(SplitJobRunner):
                 storage_client=self.storage_client,
                 min_cell_bytes=self.first_rows_config.min_cell_bytes,
                 rows_max_bytes=self.first_rows_config.max_bytes,
-                rows_max_number=self.first_rows_config.max_number,
                 rows_min_number=self.first_rows_config.min_number,
+                rows_max_number=MAX_NUM_ROWS_PER_PAGE,
                 columns_max_number=self.first_rows_config.columns_max_number,
                 indexer=self.indexer,
             )
