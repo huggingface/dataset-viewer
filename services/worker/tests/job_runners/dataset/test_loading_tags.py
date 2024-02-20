@@ -7,7 +7,6 @@ from typing import Any
 
 import fsspec
 import pytest
-from datasets import NamedSplit
 from fsspec.implementations.dirfs import DirFileSystem
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -305,7 +304,7 @@ def test_compute_error(
             "parquet",
             {
                 "default": {
-                    "train": ["hf://datasets/tatsu-lab/alpaca/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet"]
+                    "train": ["data/train-00000-of-00001-a09b74b3ef9c3b56.parquet"]
                 }
             },
         ),
@@ -315,7 +314,7 @@ def test_compute_error(
             {
                 "default": {
                     "train": [
-                        "hf://datasets/christopherthompson81/quant_exploration/quant_exploration.json"
+                        "quant_exploration.json"
                     ]
                 }
             },
@@ -323,7 +322,7 @@ def test_compute_error(
         (
             "teknium/openhermes",
             "json",
-            {"default": {"train": ["hf://datasets/teknium/openhermes/openhermes.json"]}},
+            {"default": {"train": ["openhermes.json"]}},
         ),
         (
             "cnn_dailymail",

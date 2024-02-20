@@ -115,15 +115,13 @@ def get_builder_configs_with_simplified_data_files(
             data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
             config.data_files = DataFilesPatternsDict(
                 {
-                    split: (
+                    str(split): (
                         simplify_data_files_patterns(
                             data_files_patterns=config.data_files[split],
                             base_path=base_path,
                             download_config=download_config,
                             allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
                         )
-                        if len(data_files[split]) > 1
-                        else data_files[split]
                     )
                     for split in data_files
                 }
@@ -166,6 +164,9 @@ def simplify_data_files_patterns(
             )
         except FileNotFoundError:
             continue
+        if len(resolved_data_files) == 1:
+            # resolved paths are absolute
+            return [resolved_data_files[0][len(base_path) + 1:]]
         if resolved_data_files:
             # Do we get the same files if we replace the '[0-9]' symbols by '*' in the pattern ?
             if "[0-9]" * 5 in pattern:
@@ -309,13 +310,13 @@ def get_python_loading_method_for_mlcroissant_library(
 
 PANDAS_CODE = """import pandas as pd
 
-df = {function}("{data_file}"{args})"""
+df = {function}("hf://datasets/{dataset}/{data_file}"{args})"""
 
 
 PANDAS_CODE_SPLITS = """import pandas as pd
 
 splits = {splits}
-df = {function}(splits["{first_split}"{args}])"""
+df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"{args}])"""
 
 
 DASK_CODE = """import dask.dataframe as dd
