@@ -7,6 +7,7 @@ from typing import Any
 
 import fsspec
 import pytest
+from datasets import NamedSplit
 from fsspec.implementations.dirfs import DirFileSystem
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -14,7 +15,10 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from pytest import TempPathFactory
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.loading_tags import DatasetLoadingTagsJobRunner
+from worker.job_runners.dataset.loading_tags import (
+    DatasetLoadingTagsJobRunner,
+    get_builder_configs_with_simplified_data_files,
+)
 
 from ..utils import REVISION_NAME, UpstreamResponse
 
@@ -170,7 +174,7 @@ EXPECTED_WEBDATASET = (
 )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFileSystem]:
     hf = tmp_path_factory.mktemp("hf")
 
@@ -246,6 +250,7 @@ def get_job_runner(
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
     dataset: str,
     upstream_responses: list[UpstreamResponse],
     expected: Any,
@@ -273,6 +278,7 @@ def test_compute(
 def test_compute_error(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
+    mock_hffs: fsspec.AbstractFileSystem,
     dataset: str,
     upstream_responses: list[UpstreamResponse],
     expectation: Any,
@@ -282,3 +288,74 @@ def test_compute_error(
     job_runner = get_job_runner(dataset, app_config)
     with expectation:
         job_runner.compute()
+
+
+@pytest.mark.real_dataset
+@pytest.mark.parametrize(
+    "dataset,module_name,expected_simplified_data_files",
+    [
+        (
+            "Anthropic/hh-rlhf",
+            "json",
+            {"default": {"test": ["**/*/test.jsonl.gz"], "train": ["**/*/train.jsonl.gz"]}},
+        ),
+        ("laion/conceptual-captions-12m-webdataset", "webdataset", {"default": {"train": ["**/*.tar"]}}),
+        (
+            "tatsu-lab/alpaca",
+            "parquet",
+            {
+                "default": {
+                    "train": ["hf://datasets/tatsu-lab/alpaca/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet"]
+                }
+            },
+        ),
+        (
+            "christopherthompson81/quant_exploration",
+            "json",
+            {
+                "default": {
+                    "train": [
+                        "hf://datasets/christopherthompson81/quant_exploration/quant_exploration.json"
+                    ]
+                }
+            },
+        ),
+        (
+            "teknium/openhermes",
+            "json",
+            {"default": {"train": ["hf://datasets/teknium/openhermes/openhermes.json"]}},
+        ),
+        (
+            "cnn_dailymail",
+            "parquet",
+            {
+                "1.0.0": {"test": ["1.0.0/test-*"], "train": ["1.0.0/train-*"], "validation": ["1.0.0/validation-*"]},
+                "2.0.0": {"test": ["2.0.0/test-*"], "train": ["2.0.0/train-*"], "validation": ["2.0.0/validation-*"]},
+                "3.0.0": {"test": ["3.0.0/test-*"], "train": ["3.0.0/train-*"], "validation": ["3.0.0/validation-*"]},
+            },
+        ),
+        (
+            "lmsys/toxic-chat",
+            "csv",
+            {
+                "toxicchat0124": {
+                    "test": ["data/0124/toxic-chat_annotation_test.csv"],
+                    "train": ["data/0124/toxic-chat_annotation_train.csv"],
+                },
+                "toxicchat1123": {
+                    "test": ["data/1123/toxic-chat_annotation_test.csv"],
+                    "train": ["data/1123/toxic-chat_annotation_train.csv"],
+                },
+            },
+        ),
+    ],
+)
+def test_simplify_data_files_patterns(
+    use_hub_prod_endpoint: pytest.MonkeyPatch,
+    dataset: str,
+    module_name: str,
+    expected_simplified_data_files: dict[str, dict[str, list[str]]],
+) -> None:
+    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name)
+    simplified_data_files: dict[str, dict[str, list[str]]] = {config.name: config.data_files for config in configs}
+    assert simplified_data_files == expected_simplified_data_files
