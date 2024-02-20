@@ -116,9 +116,6 @@ def compute_split_duckdb_index_response(
 ) -> SplitDuckdbIndex:
     logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
 
-    if os.path.isfile(cli_path):
-        raise RuntimeError(f"cli_path is not a valid file location {cli_path=}")
-
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
     parquet_metadata_best_response = get_previous_step_or_raise(
