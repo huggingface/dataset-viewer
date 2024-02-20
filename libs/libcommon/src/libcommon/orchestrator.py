@@ -901,7 +901,7 @@ def finish_job(
 
 
 def has_pending_ancestor_jobs(
-    dataset: str, processing_step_names: list[str], processing_graph: ProcessingGraph = processing_graph
+    dataset: str, processing_step_name: str, processing_graph: ProcessingGraph = processing_graph
 ) -> bool:
     """
     Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
@@ -917,7 +917,7 @@ def has_pending_ancestor_jobs(
 
     Args:
         dataset (`str`): The name of the dataset.
-        processing_step_names (`list[str]`): The processing step names (artifacts) to check.
+        processing_step_name (`str`): The processing step name (artifact) to check.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
@@ -926,18 +926,15 @@ def has_pending_ancestor_jobs(
     Returns:
         `bool`: True if any of the artifact could exist, False otherwise.
     """
-    job_types: set[str] = set()
-    for processing_step_name in processing_step_names:
-        processing_step = processing_graph.get_processing_step(processing_step_name)
-        ancestors = processing_graph.get_ancestors(processing_step_name)
-        job_types.add(processing_step.job_type)
-        job_types.update(ancestor.job_type for ancestor in ancestors)
-    logging.debug(f"looking at ancestor jobs of {processing_step_names}: {list(job_types)}")
+    processing_step = processing_graph.get_processing_step(processing_step_name)
+    ancestors = processing_graph.get_ancestors(processing_step_name)
+    job_types = [ancestor.job_type for ancestor in ancestors] + [processing_step.job_type]
+    logging.debug(f"looking at ancestor jobs of {processing_step_name}: {job_types}")
     # check if a pending job exists for the artifact or one of its ancestors
     # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
     # is good enough.
-    return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
+    return Queue().has_pending_jobs(dataset=dataset, job_types=job_types)
 
 
 def get_revision(dataset: str) -> Optional[str]:
