@@ -991,23 +991,19 @@ RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTE
 
 
 @pytest.mark.parametrize(
-    "cache_kinds,response_spec_by_kind,expected_names",
+    "response_spec_by_kind,expected_names",
     [
-        ([], {}, []),
-        ([CACHE_KIND_A], {}, []),
-        ([CACHE_KIND_A], {CACHE_KIND_A: RESPONSE_ERROR}, []),
-        ([CACHE_KIND_A], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: RESPONSE_ERROR}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: RESPONSE_ERROR, CACHE_KIND_B: RESPONSE_ERROR}, []),
+        ({}, []),
+        ({CACHE_KIND_A: RESPONSE_ERROR}, []),
+        ({CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ({CACHE_KIND_B: NAMES_RESPONSE_OK}, []),
     ],
 )
 def test_fetch_names(
-    cache_kinds: list[str],
     response_spec_by_kind: Mapping[str, Mapping[str, Any]],
     expected_names: list[str],
 ) -> None:
+    cache_kind = CACHE_KIND_A
     for kind, response_spec in response_spec_by_kind.items():
         upsert_response(
             kind=kind,
@@ -1022,7 +1018,7 @@ def test_fetch_names(
         fetch_names(
             dataset=DATASET_NAME,
             config=CONFIG_NAME_1,
-            cache_kinds=cache_kinds,
+            cache_kind=cache_kind,
             names_field=NAMES_FIELD,
             name_field=NAME_FIELD,
         )

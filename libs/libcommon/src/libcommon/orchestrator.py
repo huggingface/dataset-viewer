@@ -367,7 +367,7 @@ class AfterJobPlan(Plan):
                     config_names = fetch_names(
                         dataset=self.dataset,
                         config=None,
-                        cache_kinds=[DATASET_CONFIG_NAMES_KIND],
+                        cache_kind=DATASET_CONFIG_NAMES_KIND,
                         names_field="config_names",
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -380,7 +380,7 @@ class AfterJobPlan(Plan):
                     split_names = fetch_names(
                         dataset=self.dataset,
                         config=config,
-                        cache_kinds=[CONFIG_SPLIT_NAMES_KIND],
+                        cache_kind=CONFIG_SPLIT_NAMES_KIND,
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
