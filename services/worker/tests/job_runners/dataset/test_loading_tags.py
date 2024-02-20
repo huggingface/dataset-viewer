@@ -98,15 +98,15 @@ EXPECTED_PARQUET = (
                         "config_name": "default",
                         "arguments": {
                             "splits": {
-                                "test": "hf://datasets/parquet-dataset/test.parquet",
-                                "train": "hf://datasets/parquet-dataset/train.parquet",
+                                "test": "test.parquet",
+                                "train": "train.parquet",
                             }
                         },
                         "code": (
                             "import pandas as pd\n"
                             "\n"
-                            "splits = {'train': 'hf://datasets/parquet-dataset/train.parquet', 'test': 'hf://datasets/parquet-dataset/test.parquet'}\n"
-                            'df = pd.read_parquet(splits["train"])'
+                            "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
+                            'df = pd.read_parquet("hf://datasets/parquet-dataset/" + splits["train"])'
                         ),
                     }
                 ],
