@@ -60,16 +60,4 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
-        run: poetry run python -m pytest -s --cov=./ --cov-report=xml:./coverage.xml --cov-report=term tests
-      - name: Prepare codecov flag (slash "/" is not allowed)
-        id: remove-slash
-        run: |
-          dir="${{ inputs.working-directory }}"
-          echo "codecov_flag=${dir/\//_}" >> $GITHUB_ENV
-      - uses: codecov/codecov-action@v4
-        with:
-          working-directory: ${{ inputs.working-directory }}
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          flags: ${{ env.codecov_flag }}
-          token: ${{ secrets.CODECOV_TOKEN }} # required in v4
+        run: poetry run python -m pytest -s
