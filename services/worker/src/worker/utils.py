@@ -20,7 +20,7 @@ from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
@@ -251,7 +251,7 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
 def get_split_names(dataset: str, config: str) -> set[str]:
     split_names_best_response = get_previous_step_or_raise(
-        kinds=CONFIG_SPLIT_NAMES_KINDS, dataset=dataset, config=config
+        kinds=[CONFIG_SPLIT_NAMES_KIND], dataset=dataset, config=config
     )
 
     split_names_content = split_names_best_response.response["content"]

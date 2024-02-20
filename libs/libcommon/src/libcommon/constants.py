@@ -52,14 +52,14 @@ CONFIG_HAS_VIEWER_KINDS = ["config-size"]
 CONFIG_INFO_KINDS = ["config-info"]
 CONFIG_PARQUET_METADATA_KINDS = ["config-parquet-metadata"]
 CONFIG_PARQUET_AND_METADATA_KINDS = ["config-parquet", "config-parquet-metadata"]
-CONFIG_SPLIT_NAMES_KINDS = ["config-split-names-from-info", "config-split-names-from-streaming"]
+CONFIG_SPLIT_NAMES_KIND = "config-split-names-from-streaming"
 DATASET_CONFIG_NAMES_KINDS = ["dataset-config-names"]
 DATASET_INFO_KIND = "dataset-info"
 SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
 SPLIT_HAS_PREVIEW_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
 SPLIT_HAS_SEARCH_KINDS = ["split-duckdb-index"]
 PARALLEL_STEPS_LISTS = [
-    CONFIG_SPLIT_NAMES_KINDS,
+    [CONFIG_SPLIT_NAMES_KIND],
     SPLIT_HAS_PREVIEW_KINDS,
 ]
 

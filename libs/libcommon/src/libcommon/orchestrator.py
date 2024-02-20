@@ -11,7 +11,7 @@ import pandas as pd
 
 from libcommon.constants import (
     CONFIG_INFO_KINDS,
-    CONFIG_SPLIT_NAMES_KINDS,
+    CONFIG_SPLIT_NAMES_KIND,
     DATASET_CONFIG_NAMES_KINDS,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
@@ -380,7 +380,7 @@ class AfterJobPlan(Plan):
                     split_names = fetch_names(
                         dataset=self.dataset,
                         config=config,
-                        cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
+                        cache_kinds=[CONFIG_SPLIT_NAMES_KIND],
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)

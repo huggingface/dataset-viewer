@@ -8,7 +8,7 @@ from typing import Optional
 import pandas as pd
 
 from libcommon.constants import (
-    CONFIG_SPLIT_NAMES_KINDS,
+    CONFIG_SPLIT_NAMES_KIND,
     DATASET_CONFIG_NAMES_KINDS,
     ERROR_CODES_TO_RETRY,
     MAX_FAILED_RUNS,
@@ -214,7 +214,7 @@ class ConfigState:
             self.split_names = fetch_names(
                 dataset=self.dataset,
                 config=self.config,
-                cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
+                cache_kinds=[CONFIG_SPLIT_NAMES_KIND],
                 names_field="splits",
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
