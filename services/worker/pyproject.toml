@@ -80,7 +80,6 @@ markers = [
 source = ["worker"]
 
 [tool.mypy]
-exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
