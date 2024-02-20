@@ -40,8 +40,8 @@ def compute_parquet_response(dataset: str) -> tuple[DatasetParquetResponse, floa
     """
     logging.info(f"compute 'dataset-parquet' for {dataset=}")
 
-    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
-    content = config_names_best_response.response["content"]
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    content = config_names_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 

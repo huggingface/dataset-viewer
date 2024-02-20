@@ -212,9 +212,9 @@ def check_config_exists(dataset: str, config: str) -> None:
     """
     Check if dataset has a provided config. Dataset's configs are taken from 'dataset-config-names' step's cache.
     """
-    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
     try:
-        configs_content = config_names_best_response.response["content"]["config_names"]
+        configs_content = config_names_response.response["content"]["config_names"]
     except Exception as e:
         raise PreviousStepFormatError(
             "Previous steps 'dataset-config-names' did not return the expected content.",
@@ -250,11 +250,9 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
 
 def get_split_names(dataset: str, config: str) -> set[str]:
-    split_names_best_response = get_previous_step_or_raise(
-        kind=CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config
-    )
+    split_names_response = get_previous_step_or_raise(kind=CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
 
-    split_names_content = split_names_best_response.response["content"]
+    split_names_content = split_names_response.response["content"]
     if "splits" not in split_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
 

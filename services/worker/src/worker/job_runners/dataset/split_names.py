@@ -39,9 +39,9 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
     """
     logging.info(f"compute 'dataset-split-names' for {dataset=}")
 
-    # Get the config names from the previous steps
-    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
-    content = config_names_best_response.response["content"]
+    # Get the config names from the previous step
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    content = config_names_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("'dataset-config-names' did not return the expected content: 'config_names'.")
     config_names = [config_name_item["config"] for config_name_item in content["config_names"]]
@@ -64,7 +64,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
                 pending.append(FullConfigItem({"dataset": dataset, "config": config}))
                 continue
             if response["http_status"] != HTTPStatus.OK:
-                logging.debug(f"No successful response found in the previous steps {CONFIG_SPLIT_NAMES_KIND}.")
+                logging.debug(f"No successful response found in the previous step {CONFIG_SPLIT_NAMES_KIND}.")
                 failed.append(
                     FailedConfigItem(
                         {

@@ -516,12 +516,12 @@ def compute_descriptive_statistics_response(
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
-    parquet_metadata_best_response = get_previous_step_or_raise(
+    parquet_metadata_response = get_previous_step_or_raise(
         kind=config_parquet_metadata_step,
         dataset=dataset,
         config=config,
     )
-    content_parquet_metadata = parquet_metadata_best_response.response["content"]
+    content_parquet_metadata = parquet_metadata_response.response["content"]
     try:
         split_parquet_files = [
             parquet_file
