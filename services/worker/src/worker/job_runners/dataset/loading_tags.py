@@ -82,7 +82,7 @@ def get_builder_configs_with_simplified_data_files(
     download_config = DownloadConfig(token=hf_token)
     try:
         dataset_readme_path = cached_path(
-            hf_hub_url(dataset, getattr(datasets.config, "REPOCARD_FILENAME", "README.md")),
+            hf_hub_url(dataset, datasets.config.REPOCARD_FILENAME),
             download_config=download_config,
         )
         dataset_card_data = DatasetCard.load(Path(dataset_readme_path)).data
@@ -90,7 +90,7 @@ def get_builder_configs_with_simplified_data_files(
         dataset_card_data = DatasetCardData()
     try:
         standalone_yaml_path = cached_path(
-            hf_hub_url(dataset, getattr(datasets.config, "REPOYAML_FILENAME", ".huggingface.yaml")),
+            hf_hub_url(dataset, datasets.config.REPOYAML_FILENAME),
             download_config=download_config,
         )
         with open(standalone_yaml_path, "r", encoding="utf-8") as f:
@@ -243,20 +243,17 @@ def simplify_data_files_patterns(
 
 DATASETS_CODE = """from datasets import load_dataset
 
-ds = load_dataset("{dataset}")
-"""
+ds = load_dataset("{dataset}")"""
 
 DATASETS_CODE_CONFIGS = """from datasets import load_dataset
 
-ds = load_dataset("{dataset}", "{config_name}")
-"""
+ds = load_dataset("{dataset}", "{config_name}")"""
 
 
 MLCROISSANT_CODE_RECORD_SETS = """from mlcroissant import Dataset
 
 ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={dataset}")
-records = ds.records("{record_set}")
-"""
+records = ds.records("{record_set}")"""
 
 
 def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dict[str, Any]]) -> PythonLoadingMethod:

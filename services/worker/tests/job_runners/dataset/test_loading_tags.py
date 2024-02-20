@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from http import HTTPStatus
 from typing import Any
 
+import fsspec
 import pytest
+from fsspec.implementations.dirfs import DirFileSystem
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CachedArtifactError, upsert_response
+from pytest import TempPathFactory
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.loading_tags import DatasetLoadingTagsJobRunner
@@ -24,40 +27,173 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 
 GetJobRunner = Callable[[str, AppConfig], DatasetLoadingTagsJobRunner]
 
-DATASET = "dataset"
+PARQUET_DATASET = "parquet-dataset"
+WEBDATASET_DATASET = "webdataset-dataset"
+ERROR_DATASET = "error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
-    dataset=DATASET,
+    dataset=PARQUET_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"dataset_info": {"default": {"builder_name": "parquet"}}},
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
-    dataset=DATASET,
+    dataset=WEBDATASET_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"dataset_info": {"default": {"builder_name": "webdataset"}}},
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "webdataset"}}},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
-    dataset=DATASET,
+    dataset=ERROR_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
     progress=0.0,
 )
 EXPECTED_PARQUET = (
-    {"tags": ["croissant"]},
+    {
+        "tags": ["croissant", "hf_datasets", "pandas"],
+        "python_loading_methods": [
+            {
+                "function": "Dataset",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default"},
+                        "code": (
+                            "from mlcroissant "
+                            "import Dataset\n"
+                            "\n"
+                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset")\n'
+                            'records = ds.records("default")'
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "load_dataset",
+                "library": "datasets",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("parquet-dataset")'),
+                    }
+                ],
+            },
+            {
+                "function": "pd.read_parquet",
+                "library": "pandas",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {
+                            "splits": {
+                                "test": "hf://datasets/parquet-dataset/test.parquet",
+                                "train": "hf://datasets/parquet-dataset/train.parquet",
+                            }
+                        },
+                        "code": (
+                            "import pandas as pd\n"
+                            "\n"
+                            "splits = {'train': 'hf://datasets/parquet-dataset/train.parquet', 'test': 'hf://datasets/parquet-dataset/test.parquet'}\n"
+                            'df = pd.read_parquet(splits["train"])'
+                        ),
+                    }
+                ],
+            },
+        ],
+    },
     1.0,
 )
 EXPECTED_WEBDATASET = (
-    {"tags": ["croissant", "webdataset"]},
+    {
+        "tags": ["croissant", "hf_datasets", "webdataset"],
+        "python_loading_methods": [
+            {
+                "function": "Dataset",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default"},
+                        "code": (
+                            "from mlcroissant import Dataset\n"
+                            "\n"
+                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=webdataset-dataset")\n'
+                            'records = ds.records("default")'
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "load_dataset",
+                "library": "datasets",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": ('from datasets import load_dataset\n\nds = load_dataset("webdataset-dataset")'),
+                    }
+                ],
+            },
+            {
+                "function": "wds.WebDataset",
+                "library": "webdataset",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"splits": {"train": "**/*.tar"}},
+                        "code": (
+                            "import webdataset as wds\n"
+                            "from huggingface_hub import HfFileSystem, get_token, hf_hub_url\n"
+                            "\n"
+                            "fs = HfFileSystem()\n"
+                            'files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/webdataset-dataset/**/*.tar")]\n'
+                            'urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]\n'
+                            "urls = f\"pipe: curl -s -L -H 'Authorization:Bearer {get_token()}' {'::'.join(urls)}\"\n"
+                            "\n"
+                            "ds = wds.WebDataset(urls).decode()"
+                        ),
+                    }
+                ],
+            },
+        ],
+    },
     1.0,
 )
+
+
+@pytest.fixture(autouse=True)
+def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFileSystem]:
+    hf = tmp_path_factory.mktemp("hf")
+
+    (hf / "datasets" / PARQUET_DATASET).mkdir(parents=True)
+    (hf / "datasets" / PARQUET_DATASET / "train.parquet").touch()
+    (hf / "datasets" / PARQUET_DATASET / "test.parquet").touch()
+
+    (hf / "datasets" / WEBDATASET_DATASET).mkdir(parents=True)
+    (hf / "datasets" / WEBDATASET_DATASET / "0000.tar").touch()
+    (hf / "datasets" / WEBDATASET_DATASET / "0001.tar").touch()
+    (hf / "datasets" / WEBDATASET_DATASET / "0002.tar").touch()
+    (hf / "datasets" / WEBDATASET_DATASET / "0003.tar").touch()
+
+    class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
+        protocol = "hf"
+
+        def __init__(self, path: str = str(hf), target_protocol: str = "local", **kwargs: dict[str, Any]) -> None:
+            super().__init__(path=path, target_protocol=target_protocol, **kwargs)
+
+    HfFileSystem = fsspec.get_filesystem_class("hf")
+    fsspec.register_implementation("hf", MockHfFileSystem, clobber=True)
+    yield MockHfFileSystem()
+    fsspec.register_implementation("hf", HfFileSystem, clobber=True)
 
 
 @pytest.fixture
@@ -89,15 +225,17 @@ def get_job_runner(
 
 
 @pytest.mark.parametrize(
-    "upstream_responses,expected",
+    "dataset,upstream_responses,expected",
     [
         (
+            PARQUET_DATASET,
             [
                 UPSTREAM_RESPONSE_INFO_PARQUET,
             ],
             EXPECTED_PARQUET,
         ),
         (
+            WEBDATASET_DATASET,
             [
                 UPSTREAM_RESPONSE_INFO_WEBDATASET,
             ],
@@ -108,10 +246,10 @@ def get_job_runner(
 def test_compute(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
+    dataset: str,
     upstream_responses: list[UpstreamResponse],
     expected: Any,
 ) -> None:
-    dataset = DATASET
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)
@@ -121,9 +259,10 @@ def test_compute(
 
 
 @pytest.mark.parametrize(
-    "upstream_responses,expectation",
+    "dataset,upstream_responses,expectation",
     [
         (
+            ERROR_DATASET,
             [
                 UPSTREAM_RESPONSE_INFD_ERROR,
             ],
@@ -134,10 +273,10 @@ def test_compute(
 def test_compute_error(
     app_config: AppConfig,
     get_job_runner: GetJobRunner,
+    dataset: str,
     upstream_responses: list[UpstreamResponse],
     expectation: Any,
 ) -> None:
-    dataset = DATASET
     for upstream_response in upstream_responses:
         upsert_response(**upstream_response)
     job_runner = get_job_runner(dataset, app_config)

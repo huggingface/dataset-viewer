@@ -84,6 +84,7 @@ CacheableErrorCode = Literal[
     "DatasetNotFoundError",
     "DatasetScriptError",
     "DatasetWithScriptNotSupportedError",
+    "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DiskError",
