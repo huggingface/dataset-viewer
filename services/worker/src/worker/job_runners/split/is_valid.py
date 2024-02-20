@@ -3,7 +3,7 @@
 
 import logging
 
-from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_DUCKDB_INDEX, SPLIT_HAS_PREVIEW_KINDS
+from libcommon.constants import CONFIG_HAS_VIEWER_KIND, SPLIT_DUCKDB_INDEX, SPLIT_HAS_PREVIEW_KIND
 from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -39,13 +39,13 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         dataset=dataset,
         config=config,
         split=None,
-        kinds=CONFIG_HAS_VIEWER_KINDS,
+        kinds=[CONFIG_HAS_VIEWER_KIND],
     )
     preview = has_any_successful_response(
         dataset=dataset,
         config=config,
         split=split,
-        kinds=SPLIT_HAS_PREVIEW_KINDS,
+        kinds=[SPLIT_HAS_PREVIEW_KIND],
     )
 
     try:

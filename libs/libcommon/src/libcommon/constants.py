@@ -48,18 +48,18 @@ EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 
 # Arrays are not immutable, we have to take care of not modifying them
 # Anyway: in all this file, we allow constant reassignment (no use of Final)
-CONFIG_HAS_VIEWER_KINDS = ["config-size"]
+CONFIG_HAS_VIEWER_KIND = "config-size"
 CONFIG_INFO_KIND = "config-info"
 CONFIG_PARQUET_METADATA_KIND = "config-parquet-metadata"
 CONFIG_SPLIT_NAMES_KIND = "config-split-names-from-streaming"
 DATASET_CONFIG_NAMES_KIND = "dataset-config-names"
 DATASET_INFO_KIND = "dataset-info"
 SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
-SPLIT_HAS_PREVIEW_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
+SPLIT_HAS_PREVIEW_KIND = "split-first-rows-from-streaming"
 SPLIT_DUCKDB_INDEX = "split-duckdb-index"
 PARALLEL_STEPS_LISTS = [
     [CONFIG_SPLIT_NAMES_KIND],
-    SPLIT_HAS_PREVIEW_KINDS,
+    [SPLIT_HAS_PREVIEW_KIND],
 ]
 
 CROISSANT_MAX_CONFIGS = 100
