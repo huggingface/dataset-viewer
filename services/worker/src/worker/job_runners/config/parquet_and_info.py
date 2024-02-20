@@ -1119,7 +1119,7 @@ def compute_config_parquet_and_info_response(
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"
-    config_names_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset)
 
     config_names_content = config_names_best_response.response["content"]
     if "config_names" not in config_names_content:

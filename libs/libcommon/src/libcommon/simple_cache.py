@@ -604,10 +604,22 @@ def get_best_response(
 
 
 def get_previous_step_or_raise(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
 ) -> BestResponse:
-    """Get the previous step from the cache, or raise an exception if it failed."""
-    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
+    """
+    Get the previous step from the cache, or raise an exception if it failed.
+
+    Args:
+        kind (`str`): The kind of the cache entry.
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name.
+        split (`str`, *optional*): The split name.
+
+    Returns:
+        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
+          including a cache miss (error code: `CachedResponseNotFound`)
+    """
+    best_response = get_best_response(kinds=[kind], dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         raise CachedArtifactNotFoundError(kind=best_response.kind, dataset=dataset, config=config, split=split)
     if best_response.response["http_status"] != HTTPStatus.OK:

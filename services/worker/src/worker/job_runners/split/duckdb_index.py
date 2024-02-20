@@ -127,7 +127,7 @@ def compute_split_duckdb_index_response(
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
     parquet_metadata_best_response = get_previous_step_or_raise(
-        kinds=[config_parquet_metadata_step],
+        kind=config_parquet_metadata_step,
         dataset=dataset,
         config=config,
     )

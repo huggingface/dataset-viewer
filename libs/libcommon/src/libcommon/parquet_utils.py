@@ -15,7 +15,7 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.constants import CONFIG_PARQUET_METADATA_KINDS
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -358,7 +358,7 @@ class RowsIndex:
             # get the list of parquet files
             with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
                 result = get_previous_step_or_raise(
-                    kinds=CONFIG_PARQUET_METADATA_KINDS,
+                    kind=CONFIG_PARQUET_METADATA_KIND,
                     dataset=self.dataset,
                     config=self.config,
                     split=None,

@@ -40,7 +40,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
     logging.info(f"compute 'dataset-split-names' for {dataset=}")
 
     # Get the config names from the previous steps
-    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
     content = config_names_best_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("'dataset-config-names' did not return the expected content: 'config_names'.")

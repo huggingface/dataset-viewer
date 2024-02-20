@@ -47,7 +47,7 @@ def compute_image_url_columns(
 
     # get the first rows from previous job
     upstream_response = get_previous_step_or_raise(
-        kinds=["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
+        kind="split-first-rows-from-streaming",
         dataset=dataset,
         config=config,
         split=split,

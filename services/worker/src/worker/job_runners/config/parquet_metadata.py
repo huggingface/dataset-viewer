@@ -87,7 +87,7 @@ def compute_parquet_metadata_response(
     """
     logging.info(f"compute 'config-parquet-metadata' for {dataset=} {config=}")
 
-    config_parquet_best_response = get_previous_step_or_raise(kinds=["config-parquet"], dataset=dataset, config=config)
+    config_parquet_best_response = get_previous_step_or_raise(kind="config-parquet", dataset=dataset, config=config)
     try:
         parquet_files_content = config_parquet_best_response.response["content"]["parquet_files"]
         parquet_file_items: list[SplitHubFile] = [

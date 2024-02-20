@@ -3,7 +3,7 @@
 
 import logging
 
-from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_HAS_PREVIEW_KINDS, SPLIT_HAS_SEARCH_KINDS
+from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_DUCKDB_INDEX, SPLIT_HAS_PREVIEW_KINDS
 from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -50,7 +50,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
 
     try:
         duckdb_response = get_previous_step_or_raise(
-            kinds=SPLIT_HAS_SEARCH_KINDS,
+            kind=SPLIT_DUCKDB_INDEX,
             dataset=dataset,
             config=config,
             split=split,

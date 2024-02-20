@@ -18,7 +18,7 @@ def compute_opt_in_out_urls_count_response(
     logging.info(f"compute 'split-opt-in-out-urls-count' for {dataset=} {config=} {split=}")
 
     opt_in_out_urls_scan = get_previous_step_or_raise(
-        kinds=["split-opt-in-out-urls-scan"], dataset=dataset, config=config, split=split
+        kind="split-opt-in-out-urls-scan", dataset=dataset, config=config, split=split
     )
 
     try:

@@ -33,7 +33,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     logging.info(f"compute 'config-size' for {dataset=} {config=}")
 
     dataset_info_best_response = get_previous_step_or_raise(
-        kinds=["config-parquet-and-info"], dataset=dataset, config=config
+        kind="config-parquet-and-info", dataset=dataset, config=config
     )
     content = dataset_info_best_response.response["content"]
     if "dataset_info" not in content:

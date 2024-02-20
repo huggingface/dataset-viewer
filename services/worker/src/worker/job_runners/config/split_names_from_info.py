@@ -36,7 +36,7 @@ def compute_split_names_from_info_response(dataset: str, config: str) -> SplitsL
         `SplitsList`: An object with the list of split names for the dataset and config.
     """
     logging.info(f"compute 'config-split-names-from-info' for {dataset=} {config=}")
-    config_info_best_response = get_previous_step_or_raise(kinds=["config-info"], dataset=dataset, config=config)
+    config_info_best_response = get_previous_step_or_raise(kind="config-info", dataset=dataset, config=config)
 
     try:
         splits_content = config_info_best_response.response["content"]["dataset_info"]["splits"]

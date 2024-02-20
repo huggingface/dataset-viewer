@@ -38,7 +38,7 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
     """
     logging.info(f"compute 'dataset-loading-tags' for {dataset=}")
 
-    dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
+    dataset_info_best_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     http_status = dataset_info_best_response.response["http_status"]
     tags: list[DatasetLoadingTag] = []
     if http_status == HTTPStatus.OK:

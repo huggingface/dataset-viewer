@@ -162,7 +162,7 @@ def compute_opt_in_out_urls_scan_response(
 
     # get image url columns from previous job
     upstream_response = get_previous_step_or_raise(
-        kinds=["split-image-url-columns"],
+        kind="split-image-url-columns",
         dataset=dataset,
         config=config,
         split=split,

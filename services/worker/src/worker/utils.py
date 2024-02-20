@@ -212,7 +212,7 @@ def check_config_exists(dataset: str, config: str) -> None:
     """
     Check if dataset has a provided config. Dataset's configs are taken from 'dataset-config-names' step's cache.
     """
-    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
     try:
         configs_content = config_names_best_response.response["content"]["config_names"]
     except Exception as e:
@@ -232,7 +232,7 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
     """
     check_config_exists(dataset, config)
     split_names_best_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
+        kind="config-split-names-from-streaming", dataset=dataset, config=config
     )
     try:
         splits_content = split_names_best_response.response["content"]["splits"]
@@ -251,7 +251,7 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
 def get_split_names(dataset: str, config: str) -> set[str]:
     split_names_best_response = get_previous_step_or_raise(
-        kinds=[CONFIG_SPLIT_NAMES_KIND], dataset=dataset, config=config
+        kind=CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config
     )
 
     split_names_content = split_names_best_response.response["content"]

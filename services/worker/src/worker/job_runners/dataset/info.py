@@ -38,7 +38,7 @@ def compute_dataset_info_response(dataset: str) -> tuple[DatasetInfoResponse, fl
     """
     logging.info(f"compute 'dataset-info' for {dataset=}")
 
-    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
+    config_names_best_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
     content = config_names_best_response.response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
