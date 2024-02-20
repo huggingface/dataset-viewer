@@ -131,7 +131,7 @@ def compute_split_duckdb_index_response(
         dataset=dataset,
         config=config,
     )
-    content_parquet_metadata = parquet_metadata_response.response["content"]
+    content_parquet_metadata = parquet_metadata_response["content"]
     try:
         split_parquet_files = [
             parquet_file

@@ -53,7 +53,7 @@ def compute_image_url_columns(
         split=split,
     )
     try:
-        first_rows_response = upstream_response.response
+        first_rows_response = upstream_response
         upstream_response_content = SplitFirstRowsResponse(
             dataset=dataset,
             config=config,

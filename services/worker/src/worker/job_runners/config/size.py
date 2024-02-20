@@ -33,7 +33,7 @@ def compute_config_size_response(dataset: str, config: str) -> ConfigSizeRespons
     logging.info(f"compute 'config-size' for {dataset=} {config=}")
 
     dataset_info_response = get_previous_step_or_raise(kind="config-parquet-and-info", dataset=dataset, config=config)
-    content = dataset_info_response.response["content"]
+    content = dataset_info_response["content"]
     if "dataset_info" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
     if not isinstance(content["dataset_info"], dict):

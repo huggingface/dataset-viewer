@@ -33,7 +33,7 @@ def compute_parquet_response(dataset: str, config: str) -> ConfigParquetResponse
 
     previous_step = "config-parquet-and-info"
     config_parquet_and_info_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset, config=config)
-    content = config_parquet_and_info_response.response["content"]
+    content = config_parquet_and_info_response["content"]
 
     try:
         parquet_files = [

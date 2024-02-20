@@ -1121,7 +1121,7 @@ def compute_config_parquet_and_info_response(
     previous_step = "dataset-config-names"
     config_names_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset)
 
-    config_names_content = config_names_response.response["content"]
+    config_names_content = config_names_response["content"]
     if "config_names" not in config_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 

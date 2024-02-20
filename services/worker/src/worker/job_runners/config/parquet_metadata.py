@@ -89,19 +89,19 @@ def compute_parquet_metadata_response(
 
     config_parquet_response = get_previous_step_or_raise(kind="config-parquet", dataset=dataset, config=config)
     try:
-        parquet_files_content = config_parquet_response.response["content"]["parquet_files"]
+        parquet_files_content = config_parquet_response["content"]["parquet_files"]
         parquet_file_items: list[SplitHubFile] = [
             parquet_file_item for parquet_file_item in parquet_files_content if parquet_file_item["config"] == config
         ]
         if not parquet_file_items:
             raise ParquetResponseEmptyError("No parquet files found.")
-        content = config_parquet_response.response["content"]
+        content = config_parquet_response["content"]
         if "features" in content and isinstance(content["features"], dict):
             features = content["features"]  # config-parquet version<6 didn't have features
         else:
             # (July 23) we can remove this later and raise an error instead (can be None for backward compatibility)
             features = None
-        partial = config_parquet_response.response["content"]["partial"]
+        partial = config_parquet_response["content"]["partial"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.") from e
 

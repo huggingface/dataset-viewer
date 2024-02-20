@@ -41,7 +41,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
 
     # Get the config names from the previous step
     config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
-    content = config_names_response.response["content"]
+    content = config_names_response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("'dataset-config-names' did not return the expected content: 'config_names'.")
     config_names = [config_name_item["config"] for config_name_item in content["config_names"]]

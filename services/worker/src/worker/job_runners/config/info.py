@@ -30,7 +30,7 @@ def compute_config_info_response(dataset: str, config: str) -> ConfigInfoRespons
 
     previous_step = "config-parquet-and-info"
     dataset_info_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset, config=config)
-    content = dataset_info_response.response["content"]
+    content = dataset_info_response["content"]
     try:
         config_info = content["dataset_info"]
         partial = content["partial"]

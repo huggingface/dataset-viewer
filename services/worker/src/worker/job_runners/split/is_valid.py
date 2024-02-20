@@ -55,7 +55,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
             config=config,
             split=split,
         )
-        search_content = duckdb_response.response["content"]
+        search_content = duckdb_response["content"]
         filter = True
         search = search_content["has_fts"]
     except Exception:
