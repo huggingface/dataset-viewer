@@ -302,22 +302,12 @@ def test_compute_error(
         (
             "tatsu-lab/alpaca",
             "parquet",
-            {
-                "default": {
-                    "train": ["data/train-00000-of-00001-a09b74b3ef9c3b56.parquet"]
-                }
-            },
+            {"default": {"train": ["data/train-00000-of-00001-a09b74b3ef9c3b56.parquet"]}},
         ),
         (
             "christopherthompson81/quant_exploration",
             "json",
-            {
-                "default": {
-                    "train": [
-                        "quant_exploration.json"
-                    ]
-                }
-            },
+            {"default": {"train": ["quant_exploration.json"]}},
         ),
         (
             "teknium/openhermes",

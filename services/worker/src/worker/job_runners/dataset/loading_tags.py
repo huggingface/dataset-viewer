@@ -166,7 +166,7 @@ def simplify_data_files_patterns(
             continue
         if len(resolved_data_files) == 1:
             # resolved paths are absolute
-            return [resolved_data_files[0][len(base_path) + 1:]]
+            return [resolved_data_files[0][len(base_path) + 1 :]]
         if resolved_data_files:
             # Do we get the same files if we replace the '[0-9]' symbols by '*' in the pattern ?
             if "[0-9]" * 5 in pattern:
