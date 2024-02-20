@@ -7,7 +7,7 @@ from libcommon.constants import CONFIG_HAS_VIEWER_KIND, SPLIT_DUCKDB_INDEX, SPLI
 from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
-    has_any_successful_response,
+    is_successful_response,
 )
 
 from worker.config import AppConfig
@@ -35,17 +35,17 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
     """
     logging.info(f"compute 'split-is-valid' response for {dataset=}")
 
-    viewer = has_any_successful_response(
+    viewer = is_successful_response(
         dataset=dataset,
         config=config,
         split=None,
-        kinds=[CONFIG_HAS_VIEWER_KIND],
+        kind=CONFIG_HAS_VIEWER_KIND,
     )
-    preview = has_any_successful_response(
+    preview = is_successful_response(
         dataset=dataset,
         config=config,
         split=split,
-        kinds=[SPLIT_HAS_PREVIEW_KIND],
+        kind=SPLIT_HAS_PREVIEW_KIND,
     )
 
     try:

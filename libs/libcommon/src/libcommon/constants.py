@@ -57,10 +57,6 @@ DATASET_INFO_KIND = "dataset-info"
 SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
 SPLIT_HAS_PREVIEW_KIND = "split-first-rows-from-streaming"
 SPLIT_DUCKDB_INDEX = "split-duckdb-index"
-PARALLEL_STEPS_LISTS = [
-    [CONFIG_SPLIT_NAMES_KIND],
-    [SPLIT_HAS_PREVIEW_KIND],
-]
 
 CROISSANT_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100

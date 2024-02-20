@@ -33,7 +33,7 @@ from libcommon.simple_cache import (
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
-    has_any_successful_response,
+    is_successful_response,
     upsert_response,
 )
 from libcommon.utils import get_datetime
@@ -369,11 +369,7 @@ def test_big_row() -> None:
         )
 
 
-def test_has_any_successful_response_empty() -> None:
-    assert not has_any_successful_response(dataset="dataset", kinds=[])
-
-
-def test_has_any_successful_response_two_valid_datasets() -> None:
+def test_is_successful_response_two_valid_datasets() -> None:
     kind = CACHE_KIND
     other_kind = "other_kind"
     dataset_a = DATASET_NAME_A
@@ -394,74 +390,9 @@ def test_has_any_successful_response_two_valid_datasets() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert has_any_successful_response(dataset=dataset_a, kinds=[kind])
-    assert has_any_successful_response(dataset=dataset_b, kinds=[kind])
-    assert not has_any_successful_response(dataset=dataset_b, kinds=[other_kind])
-    assert has_any_successful_response(dataset=dataset_b, kinds=[kind, other_kind])
-
-
-def test_has_any_successful_response_two_valid_kinds() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    upsert_response(
-        kind=kind_a, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
-    )
-    upsert_response(
-        kind=kind_b, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
-    )
-    assert has_any_successful_response(dataset=dataset, kinds=[kind_a, kind_b])
-
-
-def test_has_any_successful_response_at_least_one_valid_response() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config = "test_config"
-    upsert_response(
-        kind=kind_a,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config,
-        content={},
-        http_status=HTTPStatus.OK,
-    )
-    upsert_response(
-        kind=kind_b,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    assert has_any_successful_response(dataset=dataset, config=config, kinds=[kind_a, kind_b])
-
-
-def test_has_any_successful_response_only_invalid_responses() -> None:
-    kind = CACHE_KIND
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(
-        kind=kind,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config_a,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    upsert_response(
-        kind=kind,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config_b,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    assert not has_any_successful_response(dataset=dataset, kinds=[kind])
+    assert is_successful_response(dataset=dataset_a, kind=kind)
+    assert is_successful_response(dataset=dataset_b, kind=kind)
+    assert not is_successful_response(dataset=dataset_b, kind=other_kind)
 
 
 def test_count_by_status_and_error_code() -> None:

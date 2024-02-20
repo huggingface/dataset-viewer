@@ -247,4 +247,3 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
 #     with pytest.raises(CustomError) as exc_info:
 #         job_manager.raise_if_parallel_response_exists(parallel_step_name=stepA)
 #     assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-#     assert exc_info.value.code == "ResponseAlreadyComputedError"

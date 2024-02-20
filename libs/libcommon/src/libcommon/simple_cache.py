@@ -369,12 +369,6 @@ def get_response_without_content(
     }
 
 
-def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
-    return get_response_without_content(
-        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
-    )
-
-
 class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
     failed_runs: int
@@ -583,12 +577,25 @@ def get_all_datasets() -> set[str]:
     return set(CachedResponseDocument.objects().distinct("dataset"))
 
 
-def has_any_successful_response(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> bool:
+def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+    """
+    Check if the response is successful.
+
+    Args:
+        kind (`str`): The kind of the cache entry.
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name.
+        split (`str`, *optional*): The split name.
+
+    Raises:
+        [~`mongoengine.DoesNotExist`]: If the response does not exist.
+
+    Returns:
+        `bool`: True if the response is successful, False otherwise.
+    """
     return (
         CachedResponseDocument.objects(
-            dataset=dataset, config=config, split=split, kind__in=kinds, http_status=HTTPStatus.OK
+            dataset=dataset, config=config, split=split, kind=kind, http_status=HTTPStatus.OK
         ).count()
         > 0
     )
