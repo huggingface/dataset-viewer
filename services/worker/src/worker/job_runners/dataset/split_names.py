@@ -55,7 +55,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
         total = 0
         for config in config_names:
             total += 1
-            best_response = get_best_response(CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
+            best_response = get_best_response([CONFIG_SPLIT_NAMES_KIND], dataset=dataset, config=config)
             if best_response.response["error_code"] == "CachedResponseNotFound":
                 logging.debug(
                     "No response (successful or erroneous) found in cache for the previous step"
