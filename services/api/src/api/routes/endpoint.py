@@ -16,7 +16,7 @@ from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
-    get_cache_entry_from_steps,
+    get_cache_entry_from_step,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
@@ -144,8 +144,8 @@ def create_endpoint(
                             content=HARD_CODED_OPT_IN_OUT_URLS[dataset], max_age=max_age_long, revision=revision
                         )
 
-                    result = get_cache_entry_from_steps(
-                        processing_step_names=[processing_step.name],
+                    result = get_cache_entry_from_step(
+                        processing_step_name=processing_step.name,
                         dataset=dataset,
                         config=config,
                         split=split,

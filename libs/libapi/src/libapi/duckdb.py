@@ -11,14 +11,14 @@ from typing import Optional
 import anyio
 from anyio import Path
 from huggingface_hub import hf_hub_download
-from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KINDS
+from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KIND
 from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
 from libcommon.storage_client import StorageClient
 
-from libapi.utils import get_cache_entry_from_steps
+from libapi.utils import get_cache_entry_from_step
 
 REPO_TYPE = "dataset"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
@@ -103,8 +103,8 @@ def get_cache_entry_from_duckdb_index_job(
     blocked_datasets: list[str],
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
-    return get_cache_entry_from_steps(
-        processing_step_names=SPLIT_DUCKDB_INDEX_KINDS,
+    return get_cache_entry_from_step(
+        processing_step_name=SPLIT_DUCKDB_INDEX_KIND,
         dataset=dataset,
         config=config,
         split=split,

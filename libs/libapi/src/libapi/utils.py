@@ -137,8 +137,8 @@ def try_backfill_dataset_then_raise(
     )
 
 
-def get_cache_entry_from_steps(
-    processing_step_names: list[str],
+def get_cache_entry_from_step(
+    processing_step_name: str,
     dataset: str,
     config: Optional[str],
     split: Optional[str],
@@ -148,9 +148,19 @@ def get_cache_entry_from_steps(
     hf_timeout_seconds: Optional[float] = None,
     storage_clients: Optional[list[StorageClient]] = None,
 ) -> CacheEntry:
-    """Gets the cache from the first successful step in the processing steps list.
-    If no successful result is found, it will return the last one even if it's an error,
-    Checks if job is still in progress by each processing step in case of no entry found.
+    """Gets the cache from a processing step.
+    Checks if job is still in progress if the entry has not been found.
+
+    Args:
+        processing_step_name (`str`): the name of the processing step
+        dataset (`str`): the dataset name
+        config (`str`, *optional*): the config name
+        split (`str`, *optional*): the split name
+        hf_endpoint (`str`): the Hub endpoint
+        blocked_datasets (`list[str]`): the list of blocked datasets
+        hf_token (`str`, *optional*): the Hugging Face token
+        hf_timeout_seconds (`float`, *optional*): the Hugging Face timeout in seconds
+        storage_clients (`list[StorageClient]`, *optional*): the list of storage clients
 
     Raises:
         [~`utils.ResponseNotFoundError`]:
@@ -161,10 +171,10 @@ def get_cache_entry_from_steps(
     Returns:
         `CacheEntry`: the cached record
     """
-    best_response = get_best_response(kinds=processing_step_names, dataset=dataset, config=config, split=split)
+    best_response = get_best_response(kinds=[processing_step_name], dataset=dataset, config=config, split=split)
     if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
         try_backfill_dataset_then_raise(
-            processing_step_names=processing_step_names,
+            processing_step_names=[processing_step_name],
             dataset=dataset,
             hf_endpoint=hf_endpoint,
             blocked_datasets=blocked_datasets,
