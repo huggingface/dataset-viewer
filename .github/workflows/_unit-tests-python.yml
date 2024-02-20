@@ -65,7 +65,7 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
-          DUCKDB_INDEX_CLI_PATH: duckdb
+          DUCKDB_INDEX_CLI_PATH: ${{ github.workspace }}/duckdb
         run: |
           pwd
           poetry run python -m pytest -s
