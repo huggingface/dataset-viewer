@@ -511,16 +511,6 @@ files = [
 ]
 
 [[package]]
-name = "cbor"
-version = "1.0.0"
-description = "RFC 7049 - Concise Binary Object Representation"
-optional = false
-python-versions = "*"
-files = [
-    {file = "cbor-1.0.0.tar.gz", hash = "sha256:13225a262ddf5615cbd9fd55a76a0d53069d18b07d2e9f19c39e6acb8609bbb6"},
-]
-
-[[package]]
 name = "certifi"
 version = "2023.7.22"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -5157,23 +5147,6 @@ torch-vision = ["Pillow (>=10.0.1,<=15.0)", "torchvision"]
 torchhub = ["filelock", "huggingface-hub (>=0.19.3,<1.0)", "importlib-metadata", "numpy (>=1.17)", "packaging (>=20.0)", "protobuf", "regex (!=2019.12.17)", "requests", "sentencepiece (>=0.1.91,!=0.1.92)", "tokenizers (>=0.14,<0.19)", "torch (>=1.10,!=1.12.0)", "tqdm (>=4.27)"]
 video = ["av (==9.2.0)", "decord (==0.6.0)"]
 vision = ["Pillow (>=10.0.1,<=15.0)"]
-
-[[package]]
-name = "trec-car-tools"
-version = "2.5.4"
-description = "Support tools for TREC CAR participants. Also see trec-car.cs.unh.edu"
-optional = false
-python-versions = ">=3.6"
-files = []
-develop = false
-
-[package.dependencies]
-cbor = ">=1.0.0"
-numpy = ">=1.11.2"
-
-[package.source]
-type = "directory"
-url = "vendors/trec-car-tools/python3"
 
 [[package]]
 name = "typer"
