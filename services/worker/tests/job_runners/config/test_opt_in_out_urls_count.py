@@ -192,7 +192,7 @@ def get_job_runner(
             {},
             [],
             [],
-            "CachedArtifactError",
+            "CachedArtifactNotFoundError",
             None,
             True,
         ),
