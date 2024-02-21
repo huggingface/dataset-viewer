@@ -107,7 +107,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             "/filter",
             endpoint=create_filter_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
-                target_revision=app_config.duckdb_index.target_revision,
+                target_revision="refs/convert/parquet",  # TODO: Change to app_config.duckdb_index.target_revision once all split-duckdb-index-010 entries have been computed
                 cached_assets_storage_client=cached_assets_storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
