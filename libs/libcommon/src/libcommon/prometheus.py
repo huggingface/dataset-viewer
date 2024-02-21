@@ -139,6 +139,8 @@ class StepProfiler:
             If None, default values from Prometheus are used.
     """
 
+    DEFAULT_BUCKETS = Histogram.DEFAULT_BUCKETS
+
     def __init__(
         self, method: str, step: str, context: Optional[str] = None, buckets: Optional[Sequence[float]] = None
     ):
@@ -146,7 +148,7 @@ class StepProfiler:
         self.step = step
         self.context = str(context)
         self.before_time = time.perf_counter()
-        self.buckets = buckets if buckets else Histogram.DEFAULT_BUCKETS
+        self.buckets = buckets if buckets else self.DEFAULT_BUCKETS
 
     def __enter__(self: T) -> T:
         return self

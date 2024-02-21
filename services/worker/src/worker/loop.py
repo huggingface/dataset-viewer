@@ -10,7 +10,7 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
-from libcommon.constants import SPLIT_DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
+from libcommon.constants import DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
 from libcommon.dtos import JobInfo
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import (
@@ -125,7 +125,7 @@ class Loop:
                 return False
 
         buckets = (
-            SPLIT_DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
+            DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
             if job_info["type"] == "split-descriptive-statistics"
             else None
         )
