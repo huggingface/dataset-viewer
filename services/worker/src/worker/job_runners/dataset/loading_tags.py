@@ -27,6 +27,7 @@ from datasets.utils.hub import hf_hub_url
 from datasets.utils.metadata import MetadataConfigs
 from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
+from libcommon.croissant_utils import get_record_set
 from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError, PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -276,16 +277,6 @@ def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dic
     }
 
 
-def _get_record_set(dataset: str, config_name: str) -> str:
-    # Identical keys are not supported in Croissant
-    # The current workaround that is used in /croissant endpoint
-    # is to prefix the config name with `record_set_` if necessary.
-    if dataset != config_name:
-        return config_name
-    else:
-        return f"record_set_{config_name}"
-
-
 def get_python_loading_method_for_mlcroissant_library(
     dataset: str, infos: list[dict[str, Any]], partial: bool
 ) -> PythonLoadingMethod:
@@ -297,13 +288,13 @@ def get_python_loading_method_for_mlcroissant_library(
             {
                 "config_name": info["config_name"],
                 "arguments": {
-                    "record_set": _get_record_set(dataset=dataset, config_name=info["config_name"]),
+                    "record_set": get_record_set(dataset=dataset, config_name=info["config_name"]),
                     "partial": partial,
                 },
                 "code": (
                     MLCROISSANT_CODE_RECORD_SETS.format(
                         dataset=dataset,
-                        record_set=_get_record_set(dataset=dataset, config_name=info["config_name"]),
+                        record_set=get_record_set(dataset=dataset, config_name=info["config_name"]),
                         comment=comment,
                     )
                 ),
