@@ -42,7 +42,7 @@ from libcommon.storage import StrPath
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DuckDbIndexConfig
-from worker.dtos import CompleteJobResult, SplitDuckdbIndexWithVersion
+from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
@@ -121,7 +121,7 @@ def compute_split_duckdb_index_response(
     extensions_directory: Optional[str],
     committer_hf_token: Optional[str],
     parquet_metadata_directory: StrPath,
-) -> SplitDuckdbIndexWithVersion:
+) -> SplitDuckdbIndex:
     logging.info(f"compute 'split-duckdb-index' for {dataset=} {config=} {split=}")
 
     # get parquet urls and dataset_info
@@ -304,7 +304,7 @@ def compute_split_duckdb_index_response(
     # we added the __hf_index_id column for the index
     features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
-    return SplitDuckdbIndexWithVersion(
+    return SplitDuckdbIndex(
         dataset=dataset,
         config=config,
         split=split,
@@ -346,7 +346,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
 
     @staticmethod
     def get_job_type() -> str:
-        return "split-duckdb-index-010"  # TODO: Change to split-duckdb-index once all entries have been computed
+        return "split-duckdb-index"
 
     def compute(self) -> CompleteJobResult:
         if self.cache_subdirectory is None:

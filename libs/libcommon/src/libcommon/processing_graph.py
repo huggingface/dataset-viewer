@@ -557,7 +557,7 @@ specification: ProcessingGraphSpecification = {
             "split-first-rows-from-streaming",
             "split-duckdb-index",
         ],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "config-is-valid": {
@@ -624,21 +624,10 @@ specification: ProcessingGraphSpecification = {
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
     },
-    "split-duckdb-index-010": {
-        "input_type": "split",
-        "triggered_by": [
-            "config-split-names-from-info",
-            "config-split-names-from-streaming",
-            "config-parquet-metadata",
-        ],
-        "job_runner_version": 1,
-        "difficulty": 70,
-        "bonus_difficulty_if_dataset_is_big": 20,
-    },
     "config-duckdb-index-size": {
         "input_type": "config",
         "triggered_by": ["split-duckdb-index"],
-        "job_runner_version": 1,
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-duckdb-index-size": {

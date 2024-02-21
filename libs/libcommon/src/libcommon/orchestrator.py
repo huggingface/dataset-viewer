@@ -758,7 +758,7 @@ def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
     # note that it's not as important as the assets, because generally, we want to delete a dataset
     # in datasets-server because the repository does not exist anymore on the Hub, so: the other files
-    # don't exist anymore either (they were in refs/convert/parquet).
+    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb).
     # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
     # and the user is not pro anymore, etc.)
 

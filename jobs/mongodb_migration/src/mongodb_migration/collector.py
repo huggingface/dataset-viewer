@@ -316,4 +316,13 @@ class MigrationsCollector:
                 version="20240216111500",
                 description="add 'partial' field to split-descriptive-statistics cache records",
             ),
+            CacheDeletionMigration(
+                cache_kind="split-duckdb-index",
+                version="20240221134400",
+            ),
+            CacheRenamingMigration(
+                cache_kind="split-duckdb-index-010",
+                new_cache_kind="split-duckdb-index",
+                version="20240221134500",
+            ),
         ]

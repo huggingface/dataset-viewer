@@ -18,9 +18,7 @@ from libcommon.config import (
 )
 
 DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_TARGET_REVISION = (
-    "refs/convert/parquet"
-)  # TODO: Change to refs/convert/duckdb once all split-duckdb-index-010 entries have been computed
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
 
 
 @dataclass(frozen=True)
