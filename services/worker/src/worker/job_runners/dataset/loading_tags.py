@@ -70,7 +70,7 @@ def get_builder_configs_with_simplified_data_files(
     ```python
     >>> configs = get_builder_configs_with_simplified_data_files("Anthropic/hh-rlhf", "json")
     >>> configs[0].data_files
-    {NamedSplit('train'): ['**/*/train.jsonl.gz'], NamedSplit('test'): ['**/*/test.jsonl.gz']}
+    {'train': ['**/*/train.jsonl.gz'], 'test': ['**/*/test.jsonl.gz']}
     ```
 
     which has simpler and better looking glob patterns that what `datasets` uses by default that look like **/*[-._ 0-9/]train[-._ 0-9/]**
@@ -252,7 +252,7 @@ ds = load_dataset("{dataset}", "{config_name}")"""
 
 
 MLCROISSANT_CODE_RECORD_SETS = """from mlcroissant import Dataset
-
+{comment}
 ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={dataset}")
 records = ds.records("{record_set}")"""
 
@@ -287,19 +287,24 @@ def _get_record_set(dataset: str, config_name: str) -> str:
 
 
 def get_python_loading_method_for_mlcroissant_library(
-    dataset: str, infos: list[dict[str, Any]]
+    dataset: str, infos: list[dict[str, Any]], partial: bool
 ) -> PythonLoadingMethod:
+    comment = "\n# The Croissant metadata exposes the first 5GB of this dataset" if partial else ""
     return {
         "library": "mlcroissant",
         "function": "Dataset",
         "loading_codes": [
             {
                 "config_name": info["config_name"],
-                "arguments": {"record_set": _get_record_set(dataset=dataset, config_name=info["config_name"])},
+                "arguments": {
+                    "record_set": _get_record_set(dataset=dataset, config_name=info["config_name"]),
+                    "partial": partial,
+                },
                 "code": (
                     MLCROISSANT_CODE_RECORD_SETS.format(
                         dataset=dataset,
                         record_set=_get_record_set(dataset=dataset, config_name=info["config_name"]),
+                        comment=comment,
                     )
                 ),
             }
@@ -610,13 +615,16 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
         try:
             content = dataset_info_best_response.response["content"]
             infos = list(islice(content["dataset_info"].values(), LOADING_METHODS_MAX_CONFIGS))
+            partial = content["partial"]
         except KeyError as e:
             raise PreviousStepFormatError(
                 "Previous step 'dataset-info' did not return the expected content.", e
             ) from e
     if infos:
         # mlcroissant library
-        python_loading_methods.append(get_python_loading_method_for_mlcroissant_library(dataset, infos))
+        python_loading_methods.append(
+            get_python_loading_method_for_mlcroissant_library(dataset, infos, partial=partial)
+        )
         tags.append("croissant")
         # datasets library
         python_loading_methods.append(get_python_loading_method_for_datasets_library(dataset, infos))

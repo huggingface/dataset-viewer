@@ -39,7 +39,7 @@ UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     dataset=PARQUET_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}},
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
@@ -47,7 +47,7 @@ UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
     dataset=WEBDATASET_DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "webdataset"}}},
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "webdataset"}}, "partial": False},
     progress=1.0,
 )
 UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
@@ -68,7 +68,7 @@ EXPECTED_PARQUET = (
                 "loading_codes": [
                     {
                         "config_name": "default",
-                        "arguments": {"record_set": "default"},
+                        "arguments": {"record_set": "default", "partial": False},
                         "code": (
                             "from mlcroissant "
                             "import Dataset\n"
@@ -125,7 +125,7 @@ EXPECTED_WEBDATASET = (
                 "loading_codes": [
                     {
                         "config_name": "default",
-                        "arguments": {"record_set": "default"},
+                        "arguments": {"record_set": "default", "partial": False},
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
