@@ -19,6 +19,7 @@ from libcommon.simple_cache import (
 from worker.config import AppConfig
 from worker.job_runners.config.split_names import (
     ConfigSplitNamesJobRunner,
+    compute_split_names_from_info_response,
     compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
@@ -122,9 +123,10 @@ def get_job_runner(
         ),
     ],
 )
-def test_compute_from_info(
-    app_config: AppConfig,
-    get_job_runner: GetJobRunner,
+def test_compute_split_names_from_info_response(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
     dataset: str,
     upstream_status: HTTPStatus,
     upstream_content: Any,
@@ -140,31 +142,24 @@ def test_compute_from_info(
         content=upstream_content,
         http_status=upstream_status,
     )
-    job_runner = get_job_runner(dataset, config, app_config)
 
     if error_code:
         with pytest.raises(Exception) as e:
-            job_runner.compute()
+            compute_split_names_from_info_response(dataset, config)
         assert e.typename == error_code
     else:
-        assert job_runner.compute().content == content
+        assert compute_split_names_from_info_response(dataset, config) == content
 
 
-def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> None:
+def test_doesnotexist(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> None:
     dataset = "non_existent"
     config = "non_existent"
-    worker = get_job_runner(dataset, config, app_config)
     with pytest.raises(CachedArtifactNotFoundError):
-        worker.compute()
-
-
-def test_compute_from_streaming(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset = hub_public_csv
-    config, _ = get_default_config_split()
-    job_runner = get_job_runner(dataset, config, app_config)
-    response = job_runner.compute()
-    content = response.content
-    assert len(content["splits"]) == 1
+        compute_split_names_from_info_response(dataset, config)
 
 
 @pytest.mark.parametrize(
@@ -238,3 +233,12 @@ def test_compute_split_names_from_streaming_response_raises(
         compute_split_names_from_streaming_response(
             hub_public_manual_download, "default", hf_token=app_config.common.hf_token, dataset_scripts_allow_list=[]
         )
+
+
+def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
+    dataset = hub_public_csv
+    config, _ = get_default_config_split()
+    job_runner = get_job_runner(dataset, config, app_config)
+    response = job_runner.compute()
+    content = response.content
+    assert len(content["splits"]) == 1
