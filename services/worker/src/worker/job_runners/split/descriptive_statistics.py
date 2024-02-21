@@ -5,17 +5,16 @@ import enum
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 import numpy as np
 import polars as pl
-from datasets import ClassLabel, Features
+from datasets import Features
 from huggingface_hub import hf_hub_download
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
     FeaturesResponseEmptyError,
-    NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PreviousStepFormatError,
     StatisticsComputationError,
@@ -28,7 +27,6 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from requests.exceptions import ReadTimeout
-from tqdm import tqdm
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
@@ -207,14 +205,7 @@ def compute_histogram(
     )
 
 
-def compute_numerical_statistics(
-    df: pl.dataframe.frame.DataFrame,
-    column_name: str,
-    n_bins: int,
-    n_samples: int,
-    column_type: ColumnType,
-) -> NumericalStatisticsItem:
-    logging.debug(f"Compute min, max, mean, median, std and proportion of null values for {column_name=}. ")
+def compute_min_max_median_std_nan_count(df, column_name, n_samples):
     col_stats = dict(
         min=pl.all().min(),
         max=pl.all().max(),
@@ -231,145 +222,154 @@ def compute_numerical_statistics(
         .unnest("stats")
     )
     minimum, maximum, mean, median, std, nan_count = stats[column_name].to_list()
+    minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     nan_count = int(nan_count)
-
-    if column_type == ColumnType.FLOAT:
-        minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
-    elif column_type == ColumnType.INT:
-        mean, median, std = np.round([mean, median, std], DECIMALS).tolist()
-        minimum, maximum = int(minimum), int(maximum)
-    else:
-        raise ValueError(f"Incorrect column type of {column_name=}: {column_type}")
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
-    logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
-
-    hist = compute_histogram(
-        df,
-        column_name=column_name,
-        column_type=column_type,
-        min_value=minimum,
-        max_value=maximum,
-        n_bins=n_bins,
-        n_samples=n_samples - nan_count,
-    )
-
-    return NumericalStatisticsItem(
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-        min=minimum,
-        max=maximum,
-        mean=mean,
-        median=median,
-        std=std,
-        histogram=hist,
-    )
-
-
-def compute_class_label_statistics(
-    df: pl.dataframe.frame.DataFrame,
-    column_name: str,
-    class_label_feature: ClassLabel,
-    n_samples: int,
-) -> CategoricalStatisticsItem:
-    nan_count = df[column_name].null_count()
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-
-    ids2counts: dict[int, int] = dict(df[column_name].value_counts().rows())
-    no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
-    no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
-
-    num_classes = len(class_label_feature.names)
-    labels2counts: dict[str, int] = {
-        class_label_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
-    }
-    n_unique = df[column_name].n_unique()
-    logging.debug(
-        f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=} " f"{n_unique=} {labels2counts=}"
-    )
-
-    if n_unique > num_classes + int(no_label_count > 0) + int(nan_count > 0):
-        raise StatisticsComputationError(
-            f"Got unexpected result for ClassLabel {column_name=}: "
-            f" number of unique values is greater than provided by feature metadata. "
-            f" {n_unique=}, {class_label_feature=}, {no_label_count=}, {nan_count=}. "
-        )
-
-    return CategoricalStatisticsItem(
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-        no_label_count=no_label_count,
-        no_label_proportion=no_label_proportion,
-        n_unique=num_classes,
-        frequencies=labels2counts,
-    )
-
-
-def compute_bool_statistics(
-    df: pl.dataframe.frame.DataFrame,
-    column_name: str,
-    n_samples: int,
-) -> BoolStatisticsItem:
-    nan_count = df[column_name].null_count()
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-    values2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
-    # exclude counts of None values from frequencies if exist:
-    values2counts.pop(None, None)  # type: ignore
-
-    return BoolStatisticsItem(
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-        frequencies={str(key): freq for key, freq in values2counts.items()},
-    )
-
-
-def compute_list_statistics(
-    df: pl.dataframe.frame.DataFrame,
-    column_name: str,
-    n_bins: int,
-    n_samples: int,
-) -> NumericalStatisticsItem:
-    nan_count = int(df[column_name].null_count())
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
 
-    df_without_na = df.select(pl.col(column_name)).drop_nulls()
-    lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(f"{column_name}_len"))
-    lengths_stats = dict(
-        **compute_numerical_statistics(
-            df=lengths_df,
-            column_name=f"{column_name}_len",
-            n_bins=n_bins,
-            n_samples=n_samples - nan_count,
-            column_type=ColumnType.INT,
-        )
-    )
-    lengths_stats.pop("nan_count")
-    lengths_stats.pop("nan_proportion")
-
-    return NumericalStatisticsItem(
-        **lengths_stats,
-        nan_count=nan_count,
-        nan_proportion=nan_proportion,
-    )
+    return minimum, maximum, mean, median, std, nan_count, nan_proportion
 
 
-def compute_string_statistics(
-    df: pl.dataframe.frame.DataFrame,
-    column_name: str,
-    n_bins: int,
-    n_samples: int,
-    dtype: Optional[str],
-) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-    if dtype != "large_string":
-        n_unique = df[column_name].n_unique()
-        nan_count = df[column_name].null_count()
+class Column:
+
+    def __init__(self,
+                 feature_name: str,
+                 data: pl.DataFrame,
+                 # feature_info: Optional[dict] = None,
+                 ):
+        self.name = feature_name
+        self.data = data  # ! bevare: data in-memory
+
+    # @abstractmethod
+    def compute_statistics(self, *args, **kwargs) -> StatisticsPerColumnItem:
+        raise NotImplementedError
+
+
+class ClassLabelColumn(Column):
+
+    def compute_statistics(self, n_bins, n_samples, dataset_feature: dict, **kwargs) -> StatisticsPerColumnItem:
+        datasets_feature = Features.from_dict({self.name: dataset_feature})[self.name]
+        nan_count = self.data[self.name].null_count()
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
 
-        if n_unique <= MAX_NUM_STRING_LABELS:
-            labels2counts: dict[str, int] = dict(df[column_name].value_counts().rows())
+        ids2counts: dict[int, int] = dict(self.data[self.name].value_counts().rows())
+        no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
+        no_label_proportion = np.round(no_label_count / n_samples, DECIMALS).item() if no_label_count != 0 else 0.0
+
+        num_classes = len(datasets_feature.names)
+        labels2counts: dict[str, int] = {
+            datasets_feature.int2str(cat_id): ids2counts.get(cat_id, 0) for cat_id in range(num_classes)
+        }
+        n_unique = self.data[self.name].n_unique()
+        logging.debug(
+            f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=} " f"{n_unique=} {labels2counts=}"
+        )
+
+        if n_unique > num_classes + int(no_label_count > 0) + int(nan_count > 0):
+            raise StatisticsComputationError(
+                f"Got unexpected result for ClassLabel {self.name=}: "
+                f" number of unique values is greater than provided by feature metadata. "
+                f" {n_unique=}, {datasets_feature=}, {no_label_count=}, {nan_count=}. "
+            )
+
+        stats = CategoricalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            no_label_count=no_label_count,
+            no_label_proportion=no_label_proportion,
+            n_unique=num_classes,
+            frequencies=labels2counts,
+        )
+
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.CLASS_LABEL,
+            column_statistics=stats,
+        )
+
+
+class FloatColumn(Column):
+
+    def compute_statistics(self, n_bins, n_samples, **kwargs) -> StatisticsPerColumnItem:
+        minimum, maximum, mean, median, std, nan_count, nan_proportion = compute_min_max_median_std_nan_count(self.data, self.name, n_samples)
+        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
+
+        hist = compute_histogram(
+            self.data,
+            column_name=self.name,
+            column_type=ColumnType.FLOAT,
+            min_value=minimum,
+            max_value=maximum,
+            n_bins=n_bins,
+            n_samples=n_samples - nan_count,
+        )
+
+        stats = NumericalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            min=minimum,
+            max=maximum,
+            mean=mean,
+            median=median,
+            std=std,
+            histogram=hist,
+        )
+
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.FLOAT,
+            column_statistics=stats,
+        )
+
+
+class IntColumn(Column):
+
+    def compute_statistics(self, n_bins, n_samples, **kwargs) -> StatisticsPerColumnItem:
+        logging.info(f"Compute statistics for integer column {self.name} with polars. ")
+        minimum, maximum, mean, median, std, nan_count, nan_proportion = compute_min_max_median_std_nan_count(self.data, self.name, n_samples)
+        minimum, maximum = int(minimum), int(maximum)
+
+        hist = compute_histogram(
+            self.data,
+            column_name=self.name,
+            column_type=ColumnType.INT,
+            min_value=minimum,
+            max_value=maximum,
+            n_bins=n_bins,
+            n_samples=n_samples - nan_count,
+        )
+
+        stats = NumericalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            min=minimum,
+            max=maximum,
+            mean=mean,
+            median=median,
+            std=std,
+            histogram=hist,
+        )
+
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.INT,
+            column_statistics=stats,
+        )
+
+
+class StringColumn(Column):
+
+    def compute_statistics(self, n_bins, n_samples, **kwargs) -> StatisticsPerColumnItem:
+        # TODO: count n_unique only on the first parquet file?
+        n_unique = self.data[self.name].n_unique()
+        nan_count = self.data[self.name].null_count()
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+
+        if n_unique <= MAX_NUM_STRING_LABELS:  # TODO: make relative
+            labels2counts: dict[str, int] = dict(self.data[self.name].value_counts().rows())
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
-            return CategoricalStatisticsItem(
+            stats = CategoricalStatisticsItem(
                 nan_count=nan_count,
                 nan_proportion=nan_proportion,
                 no_label_count=0,
@@ -377,130 +377,79 @@ def compute_string_statistics(
                 n_unique=len(labels2counts),
                 frequencies=labels2counts,
             )
-
-    lengths_df = df.select(pl.col(column_name)).with_columns(
-        pl.col(column_name).str.len_chars().alias(f"{column_name}_len")
-    )
-    return compute_numerical_statistics(
-        df=lengths_df,
-        column_name=f"{column_name}_len",
-        n_bins=n_bins,
-        n_samples=n_samples,
-        column_type=ColumnType.INT,
-    )
-
-
-def compute_descriptive_statistics_for_features(
-    path: Path,
-    string_features: Optional[dict[str, dict[str, Any]]],
-    class_label_features: Optional[dict[str, dict[str, Any]]],
-    numerical_features: Optional[dict[str, dict[str, Any]]],
-    bool_features: Optional[dict[str, dict[str, Any]]],
-    list_features: Optional[dict[str, dict[str, Any]]],
-    histogram_num_bins: int,
-    num_examples: int,
-) -> list[StatisticsPerColumnItem]:
-    stats = []
-
-    if string_features:
-        logging.info(f"Compute statistics for string columns {string_features} with polars. ")
-        for feature_name, feature in tqdm(string_features.items()):
-            logging.info(f"Compute for string column '{feature_name}'")
-            df = pl.read_parquet(path, columns=[feature_name])
-            string_column_stats = compute_string_statistics(
-                df,
-                feature_name,
-                n_bins=histogram_num_bins,
-                n_samples=num_examples,
-                dtype=feature.get("dtype"),
-            )
-            stats.append(
-                StatisticsPerColumnItem(
-                    column_name=feature_name,
-                    column_type=ColumnType.STRING_LABEL
-                    if "frequencies" in string_column_stats
-                    else ColumnType.STRING_TEXT,
-                    column_statistics=string_column_stats,
-                )
+            return StatisticsPerColumnItem(
+                column_name=self.name,
+                column_type=ColumnType.STRING_LABEL,
+                column_statistics=stats,
             )
 
-    if class_label_features:
-        logging.info(f"Compute statistics for categorical columns {class_label_features} with polars. ")
-        class_label_features = Features.from_dict(class_label_features)
-        for feature_name, feature in tqdm(class_label_features.items()):  # type: ignore
-            logging.info(f"Compute statistics for ClassLabel feature '{feature_name}'")
-            df = pl.read_parquet(path, columns=[feature_name])
-            cat_column_stats: CategoricalStatisticsItem = compute_class_label_statistics(
-                df,
-                feature_name,
-                class_label_feature=feature,
-                n_samples=num_examples,
-            )
-            stats.append(
-                StatisticsPerColumnItem(
-                    column_name=feature_name,
-                    column_type=ColumnType.CLASS_LABEL,
-                    column_statistics=cat_column_stats,
-                )
-            )
+        lengths_column_name = f"{self.name}_len"
+        lengths_df = self.data.select(pl.col(self.name)).with_columns(
+            pl.col(self.name).str.len_chars().alias(lengths_column_name)
+        )
+        lengths_column = IntColumn(lengths_column_name, lengths_df)
+        length_stats = lengths_column.compute_statistics(
+            n_bins=n_bins,
+            n_samples=n_samples,
+        )["column_statistics"]
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.STRING_TEXT,
+            column_statistics=length_stats,
+        )
 
-    if numerical_features:
-        logging.info(f"Compute statistics for numerical columns {numerical_features} with polars. ")
-        for feature_name, feature in tqdm(numerical_features.items()):
-            logging.info(f"Compute for numerical column '{feature_name}'")
-            column_type = ColumnType.FLOAT if feature["dtype"] in FLOAT_DTYPES else ColumnType.INT
-            df = pl.read_parquet(path, columns=[feature_name])
-            numerical_column_stats = compute_numerical_statistics(
-                df,
-                column_name=feature_name,
-                n_bins=histogram_num_bins,
-                n_samples=num_examples,
-                column_type=column_type,
-            )
-            stats.append(
-                StatisticsPerColumnItem(
-                    column_name=feature_name,
-                    column_type=column_type,
-                    column_statistics=numerical_column_stats,
-                )
-            )
 
-    if bool_features:
-        logging.info(f"Compute statistics for boolean columns {bool_features} with polars. ")
-        for feature_name, feature in tqdm(bool_features.items()):
-            df = pl.read_parquet(path, columns=[feature_name])
-            bool_column_stats = compute_bool_statistics(
-                df,
-                column_name=feature_name,
-                n_samples=num_examples,
-            )
-            stats.append(
-                StatisticsPerColumnItem(
-                    column_name=feature_name,
-                    column_type=ColumnType.BOOL,
-                    column_statistics=bool_column_stats,
-                )
-            )
+class BoolColumn(Column):
 
-    if list_features:
-        logging.info(f"Compute statistics for list columns {list_features} with polars. ")
-        for feature_name, feature in tqdm(list_features.items()):
-            df = pl.read_parquet(path, columns=[feature_name])
-            list_column_stats = compute_list_statistics(
-                df,
-                column_name=feature_name,
-                n_bins=histogram_num_bins,
-                n_samples=num_examples,
-            )
-            stats.append(
-                StatisticsPerColumnItem(
-                    column_name=feature_name,
-                    column_type=ColumnType.LIST,
-                    column_statistics=list_column_stats,
-                )
-            )
+    def compute_statistics(self, n_bins, n_samples, **kwargs) -> StatisticsPerColumnItem:
+        # df = pl.read_parquet(self.path, columns=[self.name])
+        nan_count = self.data[self.name].null_count()
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        values2counts: dict[str, int] = dict(self.data[self.name].value_counts().rows())
+        # exclude counts of None values from frequencies if exist:
+        values2counts.pop(None, None)  # type: ignore
 
-    return stats
+        stats = BoolStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            frequencies={str(key): freq for key, freq in sorted(values2counts.items())},
+        )
+
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.BOOL,
+            column_statistics=stats,
+        )
+
+
+class ListColumn(Column):
+
+    def compute_statistics(self, n_bins, n_samples, **kwargs) -> StatisticsPerColumnItem:
+        nan_count = self.data[self.name].null_count()
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+        df_without_na = self.data.select(pl.col(self.name)).drop_nulls()
+
+        lengths_column_name = f"{self.name}_len"
+        lengths_df = df_without_na.with_columns(pl.col(self.name).list.len().alias(lengths_column_name))
+        lengths_column = IntColumn(lengths_column_name, lengths_df)
+        lengths_stats = lengths_column.compute_statistics(n_bins=n_bins, n_samples=n_samples - nan_count)["column_statistics"]
+        lengths_stats.pop("nan_count")
+        lengths_stats.pop("nan_proportion")
+
+        stats = NumericalStatisticsItem(
+            **lengths_stats,
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+        )
+
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.LIST,
+            column_statistics=stats,
+        )
+
+
+SupportedColumns = type[Union[IntColumn, FloatColumn, ClassLabelColumn, StringColumn, BoolColumn, ListColumn]]
 
 
 def compute_descriptive_statistics_response(
@@ -627,55 +576,39 @@ def compute_descriptive_statistics_response(
         local_parquet_glob_path, columns=[pl.scan_parquet(local_parquet_glob_path).columns[0]]
     ).shape[0]
 
-    class_label_features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if isinstance(feature, dict) and feature.get("_type") == "ClassLabel"
-    }
-    numerical_features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in NUMERICAL_DTYPES
-    }
-    string_features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES
-    }
-    bool_features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if isinstance(feature, dict) and feature.get("_type") == "Value" and feature.get("dtype") == "bool"
-    }
-    list_features = {
-        feature_name: feature
-        for feature_name, feature in features.items()
-        if isinstance(feature, list)
-        or isinstance(feature, dict)
-        and feature.get("_type") == "Sequence"  # TODO: can also be Sequence
-    }
-    if not class_label_features and not numerical_features and not string_features and not list_features:
-        raise NoSupportedFeaturesError(
-            "No columns for statistics computation found. Currently supported feature types are: "
-            f"{NUMERICAL_DTYPES}, {STRING_DTYPES} and ClassLabel. "
-        )
+    def feature_type(dataset_feature) -> Optional[SupportedColumns]:
+        if isinstance(dataset_feature, dict):
+            if dataset_feature.get("_type") == "ClassLabel":
+                return ClassLabelColumn
+            if dataset_feature.get("_type") == "Value" and dataset_feature.get("dtype") in INTEGER_DTYPES:
+                return IntColumn
+            if dataset_feature.get("_type") == "Value" and dataset_feature.get("dtype") in FLOAT_DTYPES:
+                return FloatColumn
+            if dataset_feature.get("_type") == "Value" and dataset_feature.get("dtype") in STRING_DTYPES:
+                return StringColumn
+            if dataset_feature.get("_type") == "Value" and dataset_feature.get("dtype") == "bool":
+                return BoolColumn
+            if dataset_feature.get("_type") == "Sequence":
+                return ListColumn
+        if isinstance(dataset_feature, list):
+            return ListColumn
 
-    logging.info(f"Compute statistics for {dataset=} {config=} {split=} with polars. ")
-
-    stats = compute_descriptive_statistics_for_features(
-        path=local_parquet_glob_path,
-        string_features=string_features,
-        class_label_features=class_label_features,
-        numerical_features=numerical_features,
-        bool_features=bool_features,
-        list_features=list_features,
-        num_examples=num_examples,
-        histogram_num_bins=histogram_num_bins,
-    )
+    all_stats = []
+    for feature_name, feature in features.items():
+        stats_feature_type = feature_type(feature)
+        if stats_feature_type:
+            data = pl.read_parquet(local_parquet_glob_path, columns=[feature_name])
+            stats_feature = stats_feature_type(feature_name, data)
+            column_stats = stats_feature.compute_statistics(
+                n_bins=histogram_num_bins,
+                n_samples=num_examples,
+                dataset_feature=feature,
+            )
+            all_stats.append(column_stats)
 
     return SplitDescriptiveStatisticsResponse(
         num_examples=num_examples,
-        statistics=sorted(stats, key=lambda x: x["column_name"]),
+        statistics=sorted(all_stats, key=lambda x: x["column_name"]),
         partial=partial,
     )
 
