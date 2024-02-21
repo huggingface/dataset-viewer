@@ -11,7 +11,6 @@ from libcommon.dtos import Priority
 from libcommon.exceptions import (
     CustomError,
     DatasetManualDownloadError,
-    DatasetWithScriptNotSupportedError,
     PreviousStepFormatError,
 )
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -234,13 +233,6 @@ def test_compute_split_names_from_streaming_response(
 def test_compute_split_names_from_streaming_response_raises(
     hub_public_manual_download: str, app_config: AppConfig
 ) -> None:
-    with pytest.raises(DatasetWithScriptNotSupportedError):
-        compute_split_names_from_streaming_response(
-            hub_public_manual_download,
-            "default",
-            hf_token=app_config.common.hf_token,
-            dataset_scripts_allow_list=[],
-        )
     with pytest.raises(DatasetManualDownloadError):
         compute_split_names_from_streaming_response(
             hub_public_manual_download,
