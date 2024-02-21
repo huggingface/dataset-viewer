@@ -30,10 +30,3 @@ test:
 	PROMETHEUS_MULTIPROC_DIR=/tmp/search.prometheus $(POETRY) run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/search.prometheus
 	$(MAKE) down
-
-.PHONY: coverage
-coverage:
-	$(MAKE) down
-	$(MAKE) up
-	$(POETRY) run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
-	$(MAKE) down

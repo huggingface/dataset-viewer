@@ -47,7 +47,6 @@ torch = [
     { url = "https://download.pytorch.org/whl/torch-1.13.1-cp39-cp39-manylinux2014_aarch64.whl", markers = "sys_platform == 'linux' and platform_machine == 'aarch64'"},
 ]
 transformers = "^4.36.0"
-trec-car-tools = { path = "vendors/trec-car-tools/python3" }
 typer = "^0.4.2"
 uvicorn = "^0.20.0"
 wget = "^3.2"
@@ -61,7 +60,6 @@ pandas-stubs = "^1.5.3"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-asyncio = "^0.21.0"
-pytest-cov = "^2.12.1"
 ruff = "^0.1.3"
 types-pillow = "^9.5.0.4"
 types-psutil = "^5.9.5"
@@ -77,11 +75,7 @@ markers = [
     "wip: tests being developed"
 ]
 
-[tool.coverage.run]
-source = ["worker"]
-
 [tool.mypy]
-exclude = 'vendors'
 strict = true
 
 [[tool.mypy.overrides]]
