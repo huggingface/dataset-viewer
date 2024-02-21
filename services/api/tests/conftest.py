@@ -50,7 +50,7 @@ def endpoint_config(monkeypatch_session: MonkeyPatch) -> EndpointConfig:
                 "dataset": "dataset-split-names",
                 "config": "config-split-names",
             },
-            "/first-rows": {"split": "split-first-rows-from-streaming"},
+            "/first-rows": {"split": "split-first-rows"},
             "/parquet": {"config": "config-parquet"},
         }
     )

@@ -67,7 +67,7 @@ class EndpointConfig:
                 "dataset": "dataset-split-names",
                 "config": "config-split-names",
             },
-            "/first-rows": {"split": "split-first-rows-from-streaming"},
+            "/first-rows": {"split": "split-first-rows"},
             "/parquet": {
                 "dataset": "dataset-parquet",
                 "config": "config-parquet",

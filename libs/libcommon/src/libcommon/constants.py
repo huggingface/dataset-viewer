@@ -55,7 +55,7 @@ CONFIG_SPLIT_NAMES_KIND = "config-split-names"
 DATASET_CONFIG_NAMES_KIND = "dataset-config-names"
 DATASET_INFO_KIND = "dataset-info"
 SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
-SPLIT_HAS_PREVIEW_KIND = "split-first-rows-from-streaming"
+SPLIT_HAS_PREVIEW_KIND = "split-first-rows"
 SPLIT_DUCKDB_INDEX = "split-duckdb-index"
 
 CROISSANT_MAX_CONFIGS = 100

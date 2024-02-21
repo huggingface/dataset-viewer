@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pyarrow.parquet as pq
 import pytest
 from datasets import Dataset
+from datasets.packaged_modules import csv
 from fsspec import AbstractFileSystem
 from libcommon.dtos import Priority
 from libcommon.exceptions import CustomError
@@ -21,19 +22,32 @@ from libcommon.storage_client import StorageClient
 from libcommon.utils import get_json_size
 
 from worker.config import AppConfig
-from worker.job_runners.split.first_rows_from_parquet import (
-    SplitFirstRowsFromParquetJobRunner,
-)
+from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
+from worker.resources import LibrariesResource
 
 from ...constants import ASSETS_BASE_URL
+from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
 
-GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsFromParquetJobRunner]
+GetJobRunner = Callable[[str, str, str, AppConfig], SplitFirstRowsJobRunner]
+
+
+@pytest.fixture
+def ds() -> Dataset:
+    return Dataset.from_dict({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
+
+
+@pytest.fixture
+def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
+    with tmpfs.open("config/train/0000.parquet", "wb") as f:
+        ds.to_parquet(f)
+    yield tmpfs
 
 
 @pytest.fixture
 def get_job_runner(
     parquet_metadata_directory: StrPath,
+    libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
     tmp_path: Path,
@@ -43,7 +57,7 @@ def get_job_runner(
         config: str,
         split: str,
         app_config: AppConfig,
-    ) -> SplitFirstRowsFromParquetJobRunner:
+    ) -> SplitFirstRowsJobRunner:
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -61,9 +75,9 @@ def get_job_runner(
             http_status=HTTPStatus.OK,
         )
 
-        return SplitFirstRowsFromParquetJobRunner(
+        return SplitFirstRowsJobRunner(
             job_info={
-                "type": SplitFirstRowsFromParquetJobRunner.get_job_type(),
+                "type": SplitFirstRowsJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": REVISION_NAME,
@@ -75,6 +89,7 @@ def get_job_runner(
                 "difficulty": 50,
             },
             app_config=app_config,
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
             parquet_metadata_directory=parquet_metadata_directory,
             storage_client=StorageClient(
                 protocol="file",
@@ -87,28 +102,18 @@ def get_job_runner(
     return _get_job_runner
 
 
-@pytest.fixture
-def ds() -> Dataset:
-    return Dataset.from_dict({"col1": [1, 2, 3], "col2": ["a", "b", "c"]})
-
-
-@pytest.fixture
-def ds_fs(ds: Dataset, tmpfs: AbstractFileSystem) -> Generator[AbstractFileSystem, None, None]:
-    with tmpfs.open("config/train/0000.parquet", "wb") as f:
-        ds.to_parquet(f)
-    yield tmpfs
-
-
 @pytest.mark.parametrize(
     "rows_max_bytes,columns_max_number,has_parquet_files,error_code",
     [
         (0, 10, True, "TooBigContentError"),  # too small limit, even with truncation
         (1_000, 1, True, "TooManyColumnsError"),  # too small columns limit
         (1_000, 10, True, None),
-        (1_000, 10, False, "ParquetResponseEmptyError"),
+        # "ParquetResponseEmptyError" -> triggers first-rows from streaming which fails with a
+        # different error ("InfoError")
+        (1_000, 10, False, "InfoError"),
     ],
 )
-def test_compute(
+def test_compute_from_parquet(
     ds: Dataset,
     ds_fs: AbstractFileSystem,
     parquet_metadata_directory: StrPath,
@@ -216,83 +221,92 @@ def test_compute(
 
 
 @pytest.mark.parametrize(
-    "rows_max_bytes,rows_min_number,rows_max_number,truncated",
+    "name,use_token,exception_name",
     [
-        (1_000, 10, 100, False),  # no truncation
-        (1_000, 1, 2, True),  # returns 2 rows at max, while the split has 3 rows
-        (250, 1, 100, True),  # does not return the 3 rows, because it would be more than the max bytes
+        ("public", False, None),
+        ("audio", False, None),
+        ("image", False, None),
+        ("images_list", False, None),
+        ("jsonl", False, None),
+        ("gated", True, None),
+        ("private", True, None),
+        # should we really test the following cases?
+        # The assumption is that the dataset exists and is accessible with the token
+        ("gated", False, "InfoError"),
+        ("private", False, "InfoError"),
     ],
 )
-def test_from_parquet_truncation(
-    ds: Dataset,
-    ds_fs: AbstractFileSystem,
+def test_number_rows(
+    hub_responses_public: HubDatasetTest,
+    hub_responses_audio: HubDatasetTest,
+    hub_responses_image: HubDatasetTest,
+    hub_responses_images_list: HubDatasetTest,
+    hub_reponses_jsonl: HubDatasetTest,
+    hub_responses_gated: HubDatasetTest,
+    hub_responses_private: HubDatasetTest,
+    hub_responses_empty: HubDatasetTest,
+    hub_responses_does_not_exist_config: HubDatasetTest,
+    hub_responses_does_not_exist_split: HubDatasetTest,
     get_job_runner: GetJobRunner,
+    name: str,
+    use_token: bool,
+    exception_name: str,
     app_config: AppConfig,
-    rows_max_bytes: int,
-    rows_min_number: int,
-    rows_max_number: int,
-    truncated: bool,
 ) -> None:
-    dataset, config, split = "dataset", "config", "split"
-    parquet_file = ds_fs.open("config/train/0000.parquet")
-    fake_url = (
-        "https://fake.huggingface.co/datasets/dataset/resolve/refs%2Fconvert%2Fparquet/config/train/0000.parquet"
-    )
-    fake_metadata_subpath = "fake-parquet-metadata/dataset/config/train/0000.parquet"
+    # no parquet-metadata entry available -> the job runner will use the streaming approach
 
-    config_parquet_metadata_content = {
-        "parquet_files_metadata": [
-            {
-                "dataset": dataset,
-                "config": config,
-                "split": split,
-                "url": fake_url,  # noqa: E501
-                "filename": "0000.parquet",
-                "size": parquet_file.size,
-                "num_rows": len(ds),
-                "parquet_metadata_subpath": fake_metadata_subpath,
-            }
-        ]
+    # temporary patch to remove the effect of
+    # https://github.com/huggingface/datasets/issues/4875#issuecomment-1280744233
+    # note: it fixes the tests, but it does not fix the bug in the "real world"
+    if hasattr(csv, "_patched_for_streaming") and csv._patched_for_streaming:
+        csv._patched_for_streaming = False
+
+    hub_datasets = {
+        "public": hub_responses_public,
+        "audio": hub_responses_audio,
+        "image": hub_responses_image,
+        "images_list": hub_responses_images_list,
+        "jsonl": hub_reponses_jsonl,
+        "gated": hub_responses_gated,
+        "private": hub_responses_private,
+        "empty": hub_responses_empty,
+        "does_not_exist_config": hub_responses_does_not_exist_config,
+        "does_not_exist_split": hub_responses_does_not_exist_split,
     }
-
-    upsert_response(
-        kind="config-parquet-metadata",
-        dataset=dataset,
-        dataset_git_revision=REVISION_NAME,
-        config=config,
-        content=config_parquet_metadata_content,
-        http_status=HTTPStatus.OK,
+    dataset = hub_datasets[name]["name"]
+    expected_first_rows_response = hub_datasets[name]["first_rows_response"]
+    config, split = get_default_config_split()
+    job_runner = get_job_runner(
+        dataset,
+        config,
+        split,
+        app_config if use_token else replace(app_config, common=replace(app_config.common, hf_token=None)),
     )
 
-    parquet_metadata = pq.read_metadata(ds_fs.open("config/train/0000.parquet"))
-    with patch("libcommon.parquet_utils.HTTPFile", return_value=parquet_file), patch(
-        "pyarrow.parquet.read_metadata", return_value=parquet_metadata
-    ), patch("pyarrow.parquet.read_schema", return_value=ds.data.schema), patch(
-        "worker.job_runners.split.first_rows_from_parquet.MAX_NUM_ROWS_PER_PAGE", rows_max_number
-    ):
-        job_runner = get_job_runner(
-            dataset,
-            config,
-            split,
-            replace(
-                app_config,
-                common=replace(app_config.common, hf_token=None),
-                first_rows=replace(
-                    app_config.first_rows,
-                    min_number=rows_min_number,
-                    max_bytes=rows_max_bytes,
-                    min_cell_bytes=10,
-                    columns_max_number=1_000,
-                ),
-            ),
-        )
+    if exception_name is None:
+        job_runner.validate()
+        result = job_runner.compute().content
+        assert result == expected_first_rows_response
+    else:
+        with pytest.raises(Exception) as exc_info:
+            job_runner.validate()
+            job_runner.compute()
+        assert exc_info.typename == exception_name
 
-        response = job_runner.compute().content
-        assert response
-        assert response["truncated"] == truncated
-        assert response["rows"]
-        # testing file has 3 rows see config/train/0000.parquet file
-        if truncated:
-            assert len(response["rows"]) < 3
-        else:
-            assert len(response["rows"]) == 3
+
+def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
+    # no parquet-metadata entry available -> the job runner will use the streaming approach
+
+    dataset = hub_public_csv
+    config, split = get_default_config_split()
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    response = job_runner.compute()
+    assert response
+    content = response.content
+    assert content
+    assert content["features"][0]["feature_idx"] == 0
+    assert content["features"][0]["name"] == "col_1"
+    assert content["features"][0]["type"]["_type"] == "Value"
+    assert content["features"][0]["type"]["dtype"] == "int64"  # <---|
+    assert content["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
+    assert content["features"][2]["type"]["dtype"] == "float64"  # <-|

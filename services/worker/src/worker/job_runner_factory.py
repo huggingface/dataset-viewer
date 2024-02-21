@@ -45,12 +45,7 @@ from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
 from worker.job_runners.split.duckdb_index_0_8_1 import (
     SplitDuckDbIndex081JobRunner,  # TODO: Remove once all split-duckdb-index-010 have been computed
 )
-from worker.job_runners.split.first_rows_from_parquet import (
-    SplitFirstRowsFromParquetJobRunner,
-)
-from worker.job_runners.split.first_rows_from_streaming import (
-    SplitFirstRowsFromStreamingJobRunner,
-)
+from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.is_valid import SplitIsValidJobRunner
 from worker.job_runners.split.opt_in_out_urls_count import (
@@ -101,11 +96,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
             )
-        if job_type == SplitFirstRowsFromStreamingJobRunner.get_job_type():
-            return SplitFirstRowsFromStreamingJobRunner(
+        if job_type == SplitFirstRowsJobRunner.get_job_type():
+            return SplitFirstRowsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
                 hf_datasets_cache=self.hf_datasets_cache,
+                parquet_metadata_directory=self.parquet_metadata_directory,
                 storage_client=self.storage_client,
             )
         if job_type == ConfigParquetAndInfoJobRunner.get_job_type():
@@ -154,13 +150,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return DatasetSplitNamesJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
-            )
-        if job_type == SplitFirstRowsFromParquetJobRunner.get_job_type():
-            return SplitFirstRowsFromParquetJobRunner(
-                job_info=job_info,
-                app_config=self.app_config,
-                parquet_metadata_directory=self.parquet_metadata_directory,
-                storage_client=self.storage_client,
             )
         if job_type == SplitIsValidJobRunner.get_job_type():
             return SplitIsValidJobRunner(
@@ -256,7 +245,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
         supported_job_types = [
             DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesJobRunner.get_job_type(),
-            SplitFirstRowsFromStreamingJobRunner.get_job_type(),
+            SplitFirstRowsJobRunner.get_job_type(),
             ConfigParquetAndInfoJobRunner.get_job_type(),
             ConfigParquetJobRunner.get_job_type(),
             DatasetParquetJobRunner.get_job_type(),
@@ -264,7 +253,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             ConfigInfoJobRunner.get_job_type(),
             DatasetSizeJobRunner.get_job_type(),
             ConfigSizeJobRunner.get_job_type(),
-            SplitFirstRowsFromParquetJobRunner.get_job_type(),
             SplitIsValidJobRunner.get_job_type(),
             ConfigIsValidJobRunner.get_job_type(),
             DatasetIsValidJobRunner.get_job_type(),

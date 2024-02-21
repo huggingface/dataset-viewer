@@ -457,9 +457,9 @@ specification: ProcessingGraphSpecification = {
         "job_runner_version": 1,
         "difficulty": 50,
     },
-    "split-first-rows-from-streaming": {
+    "split-first-rows": {
         "input_type": "split",
-        "triggered_by": "config-split-names",
+        "triggered_by": ["config-split-names", "config-parquet-metadata"],
         "job_runner_version": 4,
         "difficulty": 70,
     },
@@ -480,12 +480,6 @@ specification: ProcessingGraphSpecification = {
         "triggered_by": "config-parquet",
         "job_runner_version": 2,
         "difficulty": 50,
-    },
-    "split-first-rows-from-parquet": {
-        "input_type": "split",
-        "triggered_by": "config-parquet-metadata",
-        "job_runner_version": 3,
-        "difficulty": 40,
     },
     "dataset-parquet": {
         "input_type": "dataset",
@@ -541,12 +535,7 @@ specification: ProcessingGraphSpecification = {
     },
     "split-is-valid": {
         "input_type": "split",
-        "triggered_by": [
-            "config-size",
-            "split-first-rows-from-parquet",
-            "split-first-rows-from-streaming",
-            "split-duckdb-index",
-        ],
+        "triggered_by": ["config-size", "split-first-rows", "split-duckdb-index"],
         "job_runner_version": 2,
         "difficulty": 20,
     },
@@ -570,7 +559,7 @@ specification: ProcessingGraphSpecification = {
     },
     "split-image-url-columns": {
         "input_type": "split",
-        "triggered_by": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"],
+        "triggered_by": "split-first-rows",
         "job_runner_version": 1,
         "difficulty": 40,
     },
