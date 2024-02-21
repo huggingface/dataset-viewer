@@ -45,6 +45,7 @@ export CLOUDFRONT_KEY_PAIR_ID := K3814DK2QUJ71H
 export S3_REGION_NAME := us-east-1
 # S3_ACCESS_KEY_ID       <- secret
 # S3_SECRET_ACCESS_KEY   <- secret
+export DUCKDB_INDEX_CLI_PATH := /src/services/worker/duckdb
 
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml

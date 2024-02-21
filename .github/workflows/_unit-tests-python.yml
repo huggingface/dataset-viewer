@@ -36,12 +36,16 @@ jobs:
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
         run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config poppler-utils
+      - name: Download DUCKB_CLI
+        run: |
+          curl -LO https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip
+          unzip duckdb_cli-linux-amd64.zip
       - name: Install dependencies
         # "poetry env use" is required: https://github.com/actions/setup-python/issues/374#issuecomment-1088938718
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: launch mongo
+      - name: Launch mongo
         env:
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
@@ -60,4 +64,5 @@ jobs:
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+          DUCKDB_INDEX_CLI_PATH: ${{ github.workspace }}/${{ inputs.working-directory }}/duckdb
         run: poetry run python -m pytest -s
