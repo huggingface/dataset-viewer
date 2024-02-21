@@ -113,9 +113,11 @@ def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entr
         )
         migration.up()
 
-        entries = db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG)
         assert (
-            list({k: v for k, v in entry.items() if k not in ["_id", "dataset", "config"]} for entry in entries)
+            list(
+                {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config"]}
+                for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG)
+            )
             == expected_entries
         )
 
