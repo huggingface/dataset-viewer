@@ -24,13 +24,13 @@ class MigrationMergeConfigSplitNamesResponses(Migration):
       2. if 'config-split-names-from-info' is the only entry, rename 'kind' to 'config-split-names'
       3. else, if 'config-split-names-from-info' is a success, rename 'kind' to 'config-split-names'
         and delete 'config-split-names-from-streaming'
-      2. else, if 'config-split-names-from-streaming' exists, rename 'kind' to 'config-split-names'
+      4. else, if 'config-split-names-from-streaming' exists, rename 'kind' to 'config-split-names'
         and delete 'config-split-names-from-info'
 
     Stats on 2024-02-21:
-    1. 122,357 entries will be removed (47% of 256,754 entries)
-    2. 124,748 entries will come from 'config-split-names-from-streaming' (48% of 256,754 entries)
-    2. 6,404 entries will come from 'config-split-names-from-info' (2% of 256,754 entries)
+    - 122,357 'ResponseAlreadyComputedError' entries will be removed (47% of 256,754 entries)
+    - ~124,748 entries will come from 'config-split-names-from-streaming' (48% of 256,754 entries)
+    - ~6,404 entries will come from 'config-split-names-from-info' (2% of 256,754 entries)
 
     We do it with a loop, even if it's longer than an aggregation, but it's less risky and more readable.
     """

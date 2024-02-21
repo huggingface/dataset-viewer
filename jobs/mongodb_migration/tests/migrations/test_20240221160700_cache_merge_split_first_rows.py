@@ -8,14 +8,14 @@ from libcommon.resources import MongoResource
 from mongoengine.connection import get_db
 
 from mongodb_migration.migration import IrreversibleMigrationError
-from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names import (
-    INFO,
+from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows import (
     MERGED,
+    PARQUET,
     STREAMING,
-    MigrationMergeConfigSplitNamesResponses,
+    MigrationMergeSplitFirstRowsResponses,
 )
 
-DATASET_CONFIG = {"dataset": "dataset", "config": "config"}
+DATASET_CONFIG_SPLIT = {"dataset": "dataset", "config": "config", "split": "split"}
 ERROR_CODE_OK = "SomeErrorCodeOK"
 ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
 
@@ -26,49 +26,49 @@ ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
         ([], []),
         # one successful entry: keep it
         ([{"kind": STREAMING, "http_status": 200}], [{"kind": MERGED, "http_status": 200, "content": STREAMING}]),
-        ([{"kind": INFO, "http_status": 200}], [{"kind": MERGED, "http_status": 200, "content": INFO}]),
+        ([{"kind": PARQUET, "http_status": 200}], [{"kind": MERGED, "http_status": 200, "content": PARQUET}]),
         # one failed entry: keep it (with or without error_code)
         ([{"kind": STREAMING, "http_status": 500}], [{"kind": MERGED, "http_status": 500, "content": STREAMING}]),
-        ([{"kind": INFO, "http_status": 500}], [{"kind": MERGED, "http_status": 500, "content": INFO}]),
+        ([{"kind": PARQUET, "http_status": 500}], [{"kind": MERGED, "http_status": 500, "content": PARQUET}]),
         (
             [{"kind": STREAMING, "http_status": 500, "error_code": ERROR_CODE_OK, "content": STREAMING}],
             [{"kind": MERGED, "http_status": 500, "error_code": ERROR_CODE_OK, "content": STREAMING}],
         ),
         (
-            [{"kind": INFO, "http_status": 500, "error_code": ERROR_CODE_OK, "content": INFO}],
-            [{"kind": MERGED, "http_status": 500, "error_code": ERROR_CODE_OK, "content": INFO}],
+            [{"kind": PARQUET, "http_status": 500, "error_code": ERROR_CODE_OK, "content": PARQUET}],
+            [{"kind": MERGED, "http_status": 500, "error_code": ERROR_CODE_OK, "content": PARQUET}],
         ),
         # one "ResponseAlreadyComputedError" entry: remove it
         ([{"kind": STREAMING, "http_status": 500, "error_code": ERROR_CODE_NOT_OK}], []),
-        ([{"kind": INFO, "http_status": 500, "error_code": ERROR_CODE_NOT_OK}], []),
-        # successful info entry: keep it
+        ([{"kind": PARQUET, "http_status": 500, "error_code": ERROR_CODE_NOT_OK}], []),
+        # successful parquet entry: keep it
         (
-            [{"kind": INFO, "http_status": 200}, {"kind": STREAMING, "http_status": 200}],
-            [{"kind": MERGED, "http_status": 200, "content": INFO}],
+            [{"kind": PARQUET, "http_status": 200}, {"kind": STREAMING, "http_status": 200}],
+            [{"kind": MERGED, "http_status": 200, "content": PARQUET}],
         ),
         (
-            [{"kind": INFO, "http_status": 200}, {"kind": STREAMING, "http_status": 500}],
-            [{"kind": MERGED, "http_status": 200, "content": INFO}],
+            [{"kind": PARQUET, "http_status": 200}, {"kind": STREAMING, "http_status": 500}],
+            [{"kind": MERGED, "http_status": 200, "content": PARQUET}],
         ),
         (
             [
-                {"kind": INFO, "http_status": 200},
+                {"kind": PARQUET, "http_status": 200},
                 {"kind": STREAMING, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
             ],
-            [{"kind": MERGED, "http_status": 200, "content": INFO}],
+            [{"kind": MERGED, "http_status": 200, "content": PARQUET}],
         ),
-        # erroneous info entry: keep the streaming one
+        # erroneous parquet entry: keep the streaming one
         (
-            [{"kind": INFO, "http_status": 500}, {"kind": STREAMING, "http_status": 200}],
+            [{"kind": PARQUET, "http_status": 500}, {"kind": STREAMING, "http_status": 200}],
             [{"kind": MERGED, "http_status": 200, "content": STREAMING}],
         ),
         (
-            [{"kind": INFO, "http_status": 500}, {"kind": STREAMING, "http_status": 500}],
+            [{"kind": PARQUET, "http_status": 500}, {"kind": STREAMING, "http_status": 500}],
             [{"kind": MERGED, "http_status": 500, "content": STREAMING}],
         ),
         (
             [
-                {"kind": INFO, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
+                {"kind": PARQUET, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
                 {"kind": STREAMING, "http_status": 500},
             ],
             [{"kind": MERGED, "http_status": 500, "content": STREAMING}],
@@ -76,7 +76,7 @@ ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
         # both "ResponseAlreadyComputedError" entries: remove them
         (
             [
-                {"kind": INFO, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
+                {"kind": PARQUET, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
                 {"kind": STREAMING, "http_status": 500, "error_code": ERROR_CODE_NOT_OK},
             ],
             [],
@@ -84,24 +84,24 @@ ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
     ],
 )
 def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entries: list[dict[str, Any]]) -> None:
-    with MongoResource(database="test_cache_merge_config_split_names", host=mongo_host, mongoengine_alias="cache"):
+    with MongoResource(database="test_cache_merge_split_first_rows", host=mongo_host, mongoengine_alias="cache"):
         db = get_db(CACHE_MONGOENGINE_ALIAS)
 
         if entries:
             db[CACHE_COLLECTION_RESPONSES].insert_many(
-                entry | DATASET_CONFIG | {"content": entry["kind"]} for entry in entries
+                entry | DATASET_CONFIG_SPLIT | {"content": entry["kind"]} for entry in entries
             )
 
-        migration = MigrationMergeConfigSplitNamesResponses(
-            version="20240221103200",
-            description="merge 'config-split-names-from-streaming' and 'config-split-names-from-info' responses to 'config-split-names'",
+        migration = MigrationMergeSplitFirstRowsResponses(
+            version="20240221160700",
+            description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
         )
         migration.up()
 
         assert (
             list(
-                {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config"]}
-                for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG)
+                {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config", "split"]}
+                for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG_SPLIT)
             )
             == expected_entries
         )

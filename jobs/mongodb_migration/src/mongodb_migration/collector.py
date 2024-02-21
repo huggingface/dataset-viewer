@@ -69,6 +69,9 @@ from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache im
 from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names import (
     MigrationMergeConfigSplitNamesResponses,
 )
+from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows import (
+    MigrationMergeSplitFirstRowsResponses,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -322,5 +325,9 @@ class MigrationsCollector:
             MigrationMergeConfigSplitNamesResponses(
                 version="20240221103200",
                 description="merge 'config-split-names-from-streaming' and 'config-split-names-from-info' responses to 'config-split-names'",
+            ),
+            MigrationMergeSplitFirstRowsResponses(
+                version="20240221160700",
+                description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
             ),
         ]
