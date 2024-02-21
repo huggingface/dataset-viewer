@@ -47,7 +47,6 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
 )
 from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
-
 from worker.job_runners.split.first_rows_from_parquet import (
     SplitFirstRowsFromParquetJobRunner,
 )
