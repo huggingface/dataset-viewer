@@ -613,11 +613,7 @@ specification: ProcessingGraphSpecification = {
     },
     "split-duckdb-index-010": {
         "input_type": "split",
-        "triggered_by": [
-            "config-split-names-from-info",
-            "config-split-names-from-streaming",
-            "config-parquet-metadata",
-        ],
+        "triggered_by": ["config-split-names", "config-parquet-metadata"],
         "job_runner_version": 1,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
