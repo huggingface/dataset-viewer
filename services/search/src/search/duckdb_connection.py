@@ -2,7 +2,7 @@ from typing import Any
 
 import duckdb
 
-LOAD_FTS_SAFE_COMMAND = "LOAD 'fts'; SET enable_external_access=false; SET lock_configuration=true;"
+LOAD_FTS_SAFE_COMMAND = "INSTALL 'fts'; LOAD 'fts'; SET enable_external_access=false; SET lock_configuration=true;"
 
 
 def duckdb_connect(**kwargs: Any) -> duckdb.DuckDBPyConnection:
