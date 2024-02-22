@@ -24,9 +24,14 @@ from worker.job_runners.split.descriptive_statistics import (
     DECIMALS,
     MAX_NUM_STRING_LABELS,
     NO_LABEL_VALUE,
+    BoolColumn,
+    ClassLabelColumn,
     ColumnType,
+    FloatColumn,
+    IntColumn,
+    ListColumn,
     SplitDescriptiveStatisticsJobRunner,
-    BoolColumn, ClassLabelColumn, ListColumn, IntColumn, FloatColumn, StringColumn,
+    StringColumn,
     generate_bins,
 )
 from worker.resources import LibrariesResource
@@ -456,7 +461,6 @@ def test_float_statistics(
         "int__only_one_value_nan_column",
     ],
 )
-
 def test_int_statistics(
     column_name: str,
     descriptive_statistics_expected: dict,  # type: ignore
@@ -511,6 +515,8 @@ def test_string_statistics(
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
+
+
 #
 #
 @pytest.mark.parametrize(
@@ -711,6 +717,7 @@ def test_compute(
             expected_column_response = expected[column_response["column_name"]]
 
             from pprint import pprint
+
             print()
             pprint(expected_column_response)
             print()
