@@ -84,10 +84,10 @@ class MigrationMergeConfigSplitNamesResponses(Migration):
             "Ensure that no 'config-split-names-from-streaming' and 'config-split-names-from-info' entries exist"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": {"$in": [STREAMING, INFO]}}) > 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": {"$in": [STREAMING, INFO]}}) > 0:
             raise ValueError(
                 "Some 'config-split-names-from-streaming' and 'config-split-names-from-info' entries still exist"
             )
         logging.info("Check 'config-split-names' responses exist")
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": MERGED}) == 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": MERGED}) == 0:
             raise ValueError("No 'config-split-names' entries exist")
