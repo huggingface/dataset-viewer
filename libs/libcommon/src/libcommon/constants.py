@@ -41,6 +41,7 @@ ERROR_CODES_TO_RETRY = {
     "ExternalServerError",
     "JobManagerCrashedError",
     "LockedDatasetTimeoutError",
+    "PreviousStepStillProcessingError",
     "StreamingRowsError",
 }
 
