@@ -85,10 +85,10 @@ class MigrationMergeSplitFirstRowsResponses(Migration):
             "Ensure that no 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' entries exist"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": {"$in": [STREAMING, PARQUET]}}) > 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": {"$in": [STREAMING, PARQUET]}}) > 0:
             raise ValueError(
                 "Some 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' entries still exist"
             )
         logging.info("Check 'split-first-rows' responses exist")
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": MERGED}) == 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": MERGED}) == 0:
             raise ValueError("No 'split-first-rows' entries exist")
