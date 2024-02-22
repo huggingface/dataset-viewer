@@ -587,7 +587,7 @@ specification: ProcessingGraphSpecification = {
     },
     "config-duckdb-index-size": {
         "input_type": "config",
-        "triggered_by": ["split-duckdb-index"],
+        "triggered_by": "split-duckdb-index",
         "job_runner_version": 2,
         "difficulty": 20,
     },

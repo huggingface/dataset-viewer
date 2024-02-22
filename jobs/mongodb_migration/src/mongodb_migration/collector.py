@@ -332,11 +332,16 @@ class MigrationsCollector:
             ),
             CacheDeletionMigration(
                 cache_kind="split-duckdb-index",
-                version="20240221134400",
+                version="20240222172400",
             ),
             CacheRenamingMigration(
                 cache_kind="split-duckdb-index-010",
                 new_cache_kind="split-duckdb-index",
-                version="20240221134500",
+                version="20240222172500",
+            ),
+            QueueRenamingMigration(
+                job_type="split-duckdb-index-010",
+                new_job_type="split-duckdb-index",
+                version="20240222172600",
             ),
         ]
