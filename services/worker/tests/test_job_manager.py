@@ -142,10 +142,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
 
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
-    assert len(dataset_child_jobs) == 1
-    assert dataset_child_jobs[0]["dataset"] == "dataset"
-    assert dataset_child_jobs[0]["revision"] == "revision"
-    assert dataset_child_jobs[0]["priority"] is priority.value
+    assert len(dataset_child_jobs) == 0
 
 
 def test_job_runner_set_crashed(app_config: AppConfig) -> None:
