@@ -703,7 +703,7 @@ class limit_parquet_writes:
                 super().write_table(pa_table, row_group_size=row_group_size)
 
         def limited_generator(
-            generator: Callable[..., Generator[T, None, None]]
+            generator: Callable[..., Generator[T, None, None]],
         ) -> Callable[..., Generator[T, None, None]]:
             """Stop the underlying generator once we reach the maximum dataset size"""
 
