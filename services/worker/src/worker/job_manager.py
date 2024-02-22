@@ -14,7 +14,6 @@ from libcommon.exceptions import (
     JobManagerCrashedError,
     JobManagerExceededMaximumDurationError,
     PreviousStepStillProcessingError,
-    ResponseAlreadyComputedError,
     TooBigContentError,
     UnexpectedError,
 )
@@ -23,8 +22,6 @@ from libcommon.processing_graph import processing_graph
 from libcommon.simple_cache import (
     CachedArtifactError,
     CachedArtifactNotFoundError,
-    CacheEntryDoesNotExistError,
-    get_response_without_content_params,
 )
 from libcommon.utils import orjson_dumps
 
@@ -118,29 +115,6 @@ class JobManager:
     def finish(self, job_result: JobResult) -> None:
         finish_job(job_result=job_result)
 
-    def raise_if_parallel_response_exists(self, parallel_step_name: str) -> None:
-        try:
-            parallel_job_version = processing_graph.get_processing_step_by_job_type(
-                parallel_step_name
-            ).job_runner_version
-            existing_response = get_response_without_content_params(
-                kind=parallel_step_name,
-                job_params=self.job_params,
-            )
-
-            if (
-                existing_response["http_status"] == HTTPStatus.OK
-                and existing_response["job_runner_version"] == parallel_job_version
-                and existing_response["progress"] == 1.0  # completed response
-                and existing_response["dataset_git_revision"] == self.job_params["revision"]
-            ):
-                raise ResponseAlreadyComputedError(
-                    f"Response has already been computed and stored in cache kind: {parallel_step_name}. Compute will"
-                    " be skipped."
-                )
-        except CacheEntryDoesNotExistError:
-            logging.debug(f"no cache found for {parallel_step_name}.")
-
     def process(
         self,
     ) -> JobResult:
@@ -148,9 +122,6 @@ class JobManager:
         try:
             try:
                 self.job_runner.pre_compute()
-                for parallel_step_name in self.job_runner.parallel_step_names:
-                    self.raise_if_parallel_response_exists(parallel_step_name=parallel_step_name)
-
                 job_result = self.job_runner.compute()
                 content = job_result.content
 

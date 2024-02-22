@@ -20,7 +20,7 @@ from libapi.utils import (
     get_json_ok_response,
     try_backfill_dataset_then_raise,
 )
-from libcommon.constants import CONFIG_PARQUET_AND_METADATA_KINDS
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.parquet_utils import Indexer, TooBigRows
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CachedArtifactError, CachedArtifactNotFoundError
@@ -112,7 +112,7 @@ def create_rows_endpoint(
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):
                         try_backfill_dataset_then_raise(
-                            processing_step_names=CONFIG_PARQUET_AND_METADATA_KINDS,
+                            processing_step_name=CONFIG_PARQUET_METADATA_KIND,
                             dataset=dataset,
                             hf_endpoint=hf_endpoint,
                             hf_timeout_seconds=hf_timeout_seconds,

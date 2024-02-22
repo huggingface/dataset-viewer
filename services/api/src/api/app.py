@@ -87,7 +87,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
             endpoint_name,
             endpoint=create_endpoint(
                 endpoint_name=endpoint_name,
-                steps_by_input_type=steps_by_input_type,
+                step_by_input_type=step_by_input_type,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
@@ -101,7 +101,7 @@ def create_app_with_config(app_config: AppConfig, endpoint_config: EndpointConfi
                 storage_clients=storage_clients,
             ),
         )
-        for endpoint_name, steps_by_input_type in endpoints_definition.steps_by_input_type_and_endpoint.items()
+        for endpoint_name, step_by_input_type in endpoints_definition.step_by_input_type_and_endpoint.items()
     ] + [
         Route(
             "/croissant",

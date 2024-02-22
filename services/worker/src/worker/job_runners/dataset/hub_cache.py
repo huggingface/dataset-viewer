@@ -28,8 +28,8 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     """
     logging.info(f"compute 'dataset-hub-cache' for {dataset=}")
 
-    is_valid_response = get_previous_step_or_raise(kinds=["dataset-is-valid"], dataset=dataset)
-    content = is_valid_response.response["content"]
+    is_valid_response = get_previous_step_or_raise(kind="dataset-is-valid", dataset=dataset)
+    content = is_valid_response["content"]
     if (
         "preview" not in content
         or not isinstance(content["preview"], bool)
@@ -41,10 +41,10 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         )
     preview = content["preview"]
     viewer = content["viewer"]
-    is_valid_progress = is_valid_response.response["progress"]
+    is_valid_progress = is_valid_response["progress"]
 
-    size_response = get_previous_step_or_raise(kinds=["dataset-size"], dataset=dataset)
-    content = size_response.response["content"]
+    size_response = get_previous_step_or_raise(kind="dataset-size", dataset=dataset)
+    content = size_response["content"]
     if (
         "partial" not in content
         or not isinstance(content["partial"], bool)
@@ -59,14 +59,14 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     partial = content["partial"]
     num_rows = content["size"]["dataset"]["num_rows"]
-    size_progress = size_response.response["progress"]
+    size_progress = size_response["progress"]
 
     progress = min((p for p in [is_valid_progress, size_progress] if p is not None), default=0.0)
 
     tags: list[DatasetLoadingTag] = []
     try:
-        loading_tags_response = get_previous_step_or_raise(kinds=["dataset-loading-tags"], dataset=dataset)
-        tags = loading_tags_response.response["content"]["tags"]
+        loading_tags_response = get_previous_step_or_raise(kind="dataset-loading-tags", dataset=dataset)
+        tags = loading_tags_response["content"]["tags"]
     except CachedArtifactNotFoundError:
         logging.info(f"Missing 'dataset-loading-tags' response for {dataset=}")
     except KeyError:

@@ -47,7 +47,7 @@ JOB_TYPE = "job_type"
 DIFFICULTY = 50
 
 STEP_DATASET_A = "dataset-config-names"
-STEP_CONFIG_B = "config-split-names-from-streaming"
+STEP_CONFIG_B = "config-split-names"
 STEP_SPLIT_C = "split-c"
 PROCESSING_GRAPH = ProcessingGraph(
     {
@@ -97,7 +97,7 @@ ARTIFACT_DG = f"{STEP_DG},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DH = f"{STEP_DH},{DATASET_NAME},{REVISION_NAME}"
 ARTIFACT_DI = f"{STEP_DI},{DATASET_NAME},{REVISION_NAME}"
 
-STEP_CA = "config-split-names-from-streaming"
+STEP_CA = "config-split-names"
 STEP_CB = "config-zb"
 
 ARTIFACT_CA_1 = f"{STEP_CA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_1}"

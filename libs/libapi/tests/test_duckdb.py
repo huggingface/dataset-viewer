@@ -20,7 +20,7 @@ async def test_get_index_file_location_and_download_if_missing(
 
     dataset = "dataset"
     revision = "revision"
-    target_revision = "refs/convert/parquet"
+    target_revision = "refs/convert/duckdb"
     config = "config"
     split = "split"
     default_filename = "index.duckdb"

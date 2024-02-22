@@ -28,6 +28,12 @@ WORKDIR /src
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+
+# Remove this section when all split-duckdb-index-010 entries have been computed
+RUN wget https://github.com/duckdb/duckdb/releases/download/v0.8.1/duckdb_cli-linux-amd64.zip -O duckdb_0_8_1.zip
+RUN unzip duckdb_0_8_1.zip -d ./services/worker
+RUN rm duckdb_0_8_1.zip
+
 WORKDIR /src/services/worker/
 RUN poetry install --no-cache
 COPY services/worker/src ./src

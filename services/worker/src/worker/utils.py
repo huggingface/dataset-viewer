@@ -20,7 +20,7 @@ from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import RepositoryNotFoundError
-from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS, EXTERNAL_DATASET_SCRIPT_PATTERN
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, EXTERNAL_DATASET_SCRIPT_PATTERN
 from libcommon.dtos import RowsContent
 from libcommon.exceptions import (
     ConfigNotFoundError,
@@ -212,9 +212,9 @@ def check_config_exists(dataset: str, config: str) -> None:
     """
     Check if dataset has a provided config. Dataset's configs are taken from 'dataset-config-names' step's cache.
     """
-    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
     try:
-        configs_content = config_names_best_response.response["content"]["config_names"]
+        configs_content = config_names_response["content"]["config_names"]
     except Exception as e:
         raise PreviousStepFormatError(
             "Previous steps 'dataset-config-names' did not return the expected content.",
@@ -227,21 +227,16 @@ def check_config_exists(dataset: str, config: str) -> None:
 
 def check_split_exists(dataset: str, config: str, split: str) -> None:
     """
-    Check if dataset has a provided split in a provided config. Dataset's splits are taken from the best response
-    of 'config-split-names-from-streaming' and 'config-split-names-from-info' steps' cache.
+    Check if dataset has a provided split in a provided config. Dataset's splits are taken from 'config-split-names'
+      step's cache.
     """
     check_config_exists(dataset, config)
-    split_names_best_response = get_previous_step_or_raise(
-        kinds=["config-split-names-from-streaming", "config-split-names-from-info"], dataset=dataset, config=config
-    )
+    split_names_response = get_previous_step_or_raise(kind="config-split-names", dataset=dataset, config=config)
     try:
-        splits_content = split_names_best_response.response["content"]["splits"]
+        splits_content = split_names_response["content"]["splits"]
     except Exception as e:
         raise PreviousStepFormatError(
-            (
-                "Previous steps 'config-split-names-from-streaming' and 'config-split-names-from-info did not return"
-                " the expected content."
-            ),
+            "Previous step 'config-split-names' did not return" " the expected content.",
             e,
         ) from e
 
@@ -250,11 +245,9 @@ def check_split_exists(dataset: str, config: str, split: str) -> None:
 
 
 def get_split_names(dataset: str, config: str) -> set[str]:
-    split_names_best_response = get_previous_step_or_raise(
-        kinds=CONFIG_SPLIT_NAMES_KINDS, dataset=dataset, config=config
-    )
+    split_names_response = get_previous_step_or_raise(kind=CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
 
-    split_names_content = split_names_best_response.response["content"]
+    split_names_content = split_names_response["content"]
     if "splits" not in split_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'splits'.")
 

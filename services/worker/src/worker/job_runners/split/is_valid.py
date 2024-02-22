@@ -3,11 +3,11 @@
 
 import logging
 
-from libcommon.constants import CONFIG_HAS_VIEWER_KINDS, SPLIT_HAS_PREVIEW_KINDS, SPLIT_HAS_SEARCH_KINDS
+from libcommon.constants import CONFIG_HAS_VIEWER_KIND, SPLIT_HAS_PREVIEW_KIND, SPLIT_HAS_SEARCH_KIND
 from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
-    has_any_successful_response,
+    is_successful_response,
 )
 
 from worker.config import AppConfig
@@ -35,27 +35,27 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
     """
     logging.info(f"compute 'split-is-valid' response for {dataset=}")
 
-    viewer = has_any_successful_response(
+    viewer = is_successful_response(
         dataset=dataset,
         config=config,
         split=None,
-        kinds=CONFIG_HAS_VIEWER_KINDS,
+        kind=CONFIG_HAS_VIEWER_KIND,
     )
-    preview = has_any_successful_response(
+    preview = is_successful_response(
         dataset=dataset,
         config=config,
         split=split,
-        kinds=SPLIT_HAS_PREVIEW_KINDS,
+        kind=SPLIT_HAS_PREVIEW_KIND,
     )
 
     try:
         duckdb_response = get_previous_step_or_raise(
-            kinds=SPLIT_HAS_SEARCH_KINDS,
+            kind=SPLIT_HAS_SEARCH_KIND,
             dataset=dataset,
             config=config,
             split=split,
         )
-        search_content = duckdb_response.response["content"]
+        search_content = duckdb_response["content"]
         filter = True
         search = search_content["has_fts"]
     except Exception:
