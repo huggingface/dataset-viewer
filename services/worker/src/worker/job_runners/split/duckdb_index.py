@@ -20,6 +20,7 @@ from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
+    DUCKDB_VERSION,
 )
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
@@ -64,7 +65,6 @@ CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_T
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
-DUCKDB_VERSION = "0.10.0"
 
 
 def get_indexable_columns(features: Features) -> list[str]:
