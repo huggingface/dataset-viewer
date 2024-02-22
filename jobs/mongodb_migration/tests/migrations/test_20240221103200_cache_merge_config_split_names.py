@@ -10,6 +10,7 @@ from mongoengine.connection import get_db
 from mongodb_migration.migration import IrreversibleMigrationError
 from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names import (
     INFO,
+    JOB_RUNNER_VERSION,
     MERGED,
     STREAMING,
     MigrationMergeConfigSplitNamesResponses,
@@ -18,6 +19,7 @@ from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names
 DATASET_CONFIG = {"dataset": "dataset", "config": "config"}
 ERROR_CODE_OK = "SomeErrorCodeOK"
 ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
+OLD_JOB_RUNNER_VERSION = JOB_RUNNER_VERSION - 1
 
 
 @pytest.mark.parametrize(
@@ -89,7 +91,8 @@ def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entr
 
         if entries:
             db[CACHE_COLLECTION_RESPONSES].insert_many(
-                entry | DATASET_CONFIG | {"content": entry["kind"]} for entry in entries
+                entry | DATASET_CONFIG | {"content": entry["kind"], "job_runner_version": OLD_JOB_RUNNER_VERSION}
+                for entry in entries
             )
 
         migration = MigrationMergeConfigSplitNamesResponses(
@@ -98,13 +101,10 @@ def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entr
         )
         migration.up()
 
-        assert (
-            list(
-                {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config"]}
-                for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG)
-            )
-            == expected_entries
-        )
+        assert list(
+            {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config"]}
+            for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG)
+        ) == list(entry | {"job_runner_version": JOB_RUNNER_VERSION} for entry in expected_entries)
 
         with pytest.raises(IrreversibleMigrationError):
             migration.down()
