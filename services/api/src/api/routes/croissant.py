@@ -77,6 +77,7 @@ def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
     """Removes None values in the first depth of a dict."""
     return {k: v for k, v in json.items() if v is not None}
 
+
 def get_croissant_from_dataset_infos(
     dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool
 ) -> Mapping[str, Any]:
@@ -175,49 +176,51 @@ def get_croissant_from_dataset_infos(
                 "field": fields,
             }
         )
-    return _remove_none_values({
-        "@context": {
-            "@language": "en",
-            "@vocab": "https://schema.org/",
-            "column": "ml:column",
-            "data": {
-                "@id": "ml:data",
-                "@type": "@json",
+    return _remove_none_values(
+        {
+            "@context": {
+                "@language": "en",
+                "@vocab": "https://schema.org/",
+                "column": "ml:column",
+                "data": {
+                    "@id": "ml:data",
+                    "@type": "@json",
+                },
+                "dataType": {
+                    "@id": "ml:dataType",
+                    "@type": "@vocab",
+                },
+                "extract": "ml:extract",
+                "field": "ml:field",
+                "fileProperty": "ml:fileProperty",
+                "format": "ml:format",
+                "includes": "ml:includes",
+                "isEnumeration": "ml:isEnumeration",
+                "jsonPath": "ml:jsonPath",
+                "ml": "http://mlcommons.org/schema/",
+                "parentField": "ml:parentField",
+                "path": "ml:path",
+                "recordSet": "ml:recordSet",
+                "references": "ml:references",
+                "regex": "ml:regex",
+                "repeated": "ml:repeated",
+                "replace": "ml:replace",
+                "sc": "https://schema.org/",
+                "separator": "ml:separator",
+                "source": "ml:source",
+                "subField": "ml:subField",
+                "transform": "ml:transform",
             },
-            "dataType": {
-                "@id": "ml:dataType",
-                "@type": "@vocab",
-            },
-            "extract": "ml:extract",
-            "field": "ml:field",
-            "fileProperty": "ml:fileProperty",
-            "format": "ml:format",
-            "includes": "ml:includes",
-            "isEnumeration": "ml:isEnumeration",
-            "jsonPath": "ml:jsonPath",
-            "ml": "http://mlcommons.org/schema/",
-            "parentField": "ml:parentField",
-            "path": "ml:path",
-            "recordSet": "ml:recordSet",
-            "references": "ml:references",
-            "regex": "ml:regex",
-            "repeated": "ml:repeated",
-            "replace": "ml:replace",
-            "sc": "https://schema.org/",
-            "separator": "ml:separator",
-            "source": "ml:source",
-            "subField": "ml:subField",
-            "transform": "ml:transform",
-        },
-        "@type": "sc:Dataset",
-        "name": _escape_name(dataset, names),
-        "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
-        "identifier": identifier,
-        "license": _license,
-        "url": f"https://huggingface.co/datasets/{dataset}",
-        "distribution": distribution,
-        "recordSet": record_set,
-    })
+            "@type": "sc:Dataset",
+            "name": _escape_name(dataset, names),
+            "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
+            "identifier": identifier,
+            "license": _license,
+            "url": f"https://huggingface.co/datasets/{dataset}",
+            "distribution": distribution,
+            "recordSet": record_set,
+        }
+    )
 
 
 def _get_full_jsonld_parameter(request: Request) -> bool:

@@ -9,7 +9,7 @@ squad_info = {
     "citation": '@article{2016arXiv160605250R,\n       author = {{Rajpurkar}, Pranav and {Zhang}, Jian and {Lopyrev},\n                 Konstantin and {Liang}, Percy},\n        title = "{SQuAD: 100,000+ Questions for Machine Comprehension of Text}",\n      journal = {arXiv e-prints},\n         year = 2016,\n          eid = {arXiv:1606.05250},\n        pages = {arXiv:1606.05250},\narchivePrefix = {arXiv},\n       eprint = {1606.05250},\n}\n',
     "homepage": "https://rajpurkar.github.io/SQuAD-explorer/",
     "license": ["mit"],
-    "tags":["foo", "doi:hf/123456789","region:us"],
+    "tags": ["foo", "doi:hf/123456789", "region:us"],
     "features": {
         "id": {"dtype": "string", "_type": "Value"},
         "title": {"dtype": "string", "_type": "Value"},
