@@ -28,7 +28,7 @@ def cache_mongo_resource_autouse(cache_mongo_resource: CacheMongoResource) -> Ca
     "level,job_type,expected_job_runner",
     [
         ("dataset", "dataset-config-names", "DatasetConfigNamesJobRunner"),
-        ("split", "split-first-rows-from-streaming", "SplitFirstRowsFromStreamingJobRunner"),
+        ("split", "split-first-rows", "SplitFirstRowsJobRunner"),
         ("config", "config-parquet-and-info", "ConfigParquetAndInfoJobRunner"),
         ("config", "config-parquet", "ConfigParquetJobRunner"),
         ("dataset", "dataset-parquet", "DatasetParquetJobRunner"),
@@ -89,7 +89,7 @@ def test_create_job_runner(
 
     if level == "split":
         upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,

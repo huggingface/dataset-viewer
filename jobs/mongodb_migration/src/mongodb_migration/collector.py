@@ -66,6 +66,12 @@ from mongodb_migration.migrations._20240112164500_cache_add_partial_field_in_spl
 from mongodb_migration.migrations._20240206153000_cache_add_tags_in_hub_cache import (
     MigrationAddTagsToHubCacheCacheResponse,
 )
+from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names import (
+    MigrationMergeConfigSplitNamesResponses,
+)
+from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows import (
+    MigrationMergeSplitFirstRowsResponses,
+)
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
     QueueRenamingMigration,
@@ -315,6 +321,14 @@ class MigrationsCollector:
             MigrationAddPartialToSplitDescriptiveStatisticsCacheResponse(
                 version="20240216111500",
                 description="add 'partial' field to split-descriptive-statistics cache records",
+            ),
+            MigrationMergeConfigSplitNamesResponses(
+                version="20240221103200",
+                description="merge 'config-split-names-from-streaming' and 'config-split-names-from-info' responses to 'config-split-names'",
+            ),
+            MigrationMergeSplitFirstRowsResponses(
+                version="20240221160700",
+                description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
             ),
             CacheDeletionMigration(
                 cache_kind="split-duckdb-index",

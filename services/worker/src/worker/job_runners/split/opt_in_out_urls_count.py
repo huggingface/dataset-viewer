@@ -17,12 +17,12 @@ def compute_opt_in_out_urls_count_response(
 ) -> OptInOutUrlsCountResponse:
     logging.info(f"compute 'split-opt-in-out-urls-count' for {dataset=} {config=} {split=}")
 
-    opt_in_out_urls_scan = get_previous_step_or_raise(
-        kinds=["split-opt-in-out-urls-scan"], dataset=dataset, config=config, split=split
+    opt_in_out_urls_scan_response = get_previous_step_or_raise(
+        kind="split-opt-in-out-urls-scan", dataset=dataset, config=config, split=split
     )
 
     try:
-        content = opt_in_out_urls_scan.response["content"]
+        content = opt_in_out_urls_scan_response["content"]
         opt_in_out_urls_count = OptInOutUrlsCountResponse(
             has_urls_columns=content["has_urls_columns"],
             num_opt_in_urls=content["num_opt_in_urls"],

@@ -46,9 +46,9 @@ class AppConfig:
         )
 
 
-ProcessingStepNamesByInputType = Mapping[InputType, list[str]]
+ProcessingStepNameByInputType = Mapping[InputType, str]
 
-ProcessingStepNamesByInputTypeAndEndpoint = Mapping[str, ProcessingStepNamesByInputType]
+ProcessingStepNameByInputTypeAndEndpoint = Mapping[str, ProcessingStepNameByInputType]
 
 
 @dataclass(frozen=True)
@@ -61,35 +61,33 @@ class EndpointConfig:
     (dataset, config, split)
     """
 
-    processing_step_names_by_input_type_and_endpoint: ProcessingStepNamesByInputTypeAndEndpoint = field(
+    processing_step_name_by_input_type_and_endpoint: ProcessingStepNameByInputTypeAndEndpoint = field(
         default_factory=lambda: {
             "/splits": {
-                "dataset": [
-                    "dataset-split-names",
-                ],
-                "config": ["config-split-names-from-streaming", "config-split-names-from-info"],
+                "dataset": "dataset-split-names",
+                "config": "config-split-names",
             },
-            "/first-rows": {"split": ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]},
+            "/first-rows": {"split": "split-first-rows"},
             "/parquet": {
-                "dataset": ["dataset-parquet"],
-                "config": ["config-parquet"],
+                "dataset": "dataset-parquet",
+                "config": "config-parquet",
             },
-            "/info": {"dataset": ["dataset-info"], "config": ["config-info"]},
+            "/info": {"dataset": "dataset-info", "config": "config-info"},
             "/size": {
-                "dataset": ["dataset-size"],
-                "config": ["config-size"],
+                "dataset": "dataset-size",
+                "config": "config-size",
             },
             "/opt-in-out-urls": {
-                "dataset": ["dataset-opt-in-out-urls-count"],
-                "config": ["config-opt-in-out-urls-count"],
-                "split": ["split-opt-in-out-urls-count"],
+                "dataset": "dataset-opt-in-out-urls-count",
+                "config": "config-opt-in-out-urls-count",
+                "split": "split-opt-in-out-urls-count",
             },
             "/is-valid": {
-                "dataset": ["dataset-is-valid"],
-                "config": ["config-is-valid"],
-                "split": ["split-is-valid"],
+                "dataset": "dataset-is-valid",
+                "config": "config-is-valid",
+                "split": "split-is-valid",
             },
-            "/statistics": {"split": ["split-descriptive-statistics"]},
+            "/statistics": {"split": "split-descriptive-statistics"},
         }
     )
 

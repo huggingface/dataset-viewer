@@ -10,9 +10,9 @@ from typing import Optional, Union
 import pandas as pd
 
 from libcommon.constants import (
-    CONFIG_INFO_KINDS,
-    CONFIG_SPLIT_NAMES_KINDS,
-    DATASET_CONFIG_NAMES_KINDS,
+    CONFIG_INFO_KIND,
+    CONFIG_SPLIT_NAMES_KIND,
+    DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
@@ -24,9 +24,9 @@ from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
     delete_dataset_responses,
     fetch_names,
-    get_best_response,
     get_cache_entries_df,
     get_response_metadata,
+    get_response_or_missing_error,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
@@ -273,7 +273,7 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_best_response(kinds=CONFIG_INFO_KINDS, dataset=dataset, config=config).response
+    resp = get_response_or_missing_error(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
@@ -367,7 +367,7 @@ class AfterJobPlan(Plan):
                     config_names = fetch_names(
                         dataset=self.dataset,
                         config=None,
-                        cache_kinds=DATASET_CONFIG_NAMES_KINDS,
+                        cache_kind=DATASET_CONFIG_NAMES_KIND,
                         names_field="config_names",
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -380,7 +380,7 @@ class AfterJobPlan(Plan):
                     split_names = fetch_names(
                         dataset=self.dataset,
                         config=config,
-                        cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
+                        cache_kind=CONFIG_SPLIT_NAMES_KIND,
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -901,7 +901,7 @@ def finish_job(
 
 
 def has_pending_ancestor_jobs(
-    dataset: str, processing_step_names: list[str], processing_graph: ProcessingGraph = processing_graph
+    dataset: str, processing_step_name: str, processing_graph: ProcessingGraph = processing_graph
 ) -> bool:
     """
     Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
@@ -917,7 +917,7 @@ def has_pending_ancestor_jobs(
 
     Args:
         dataset (`str`): The name of the dataset.
-        processing_step_names (`list[str]`): The processing step names (artifacts) to check.
+        processing_step_name (`str`): The processing step name (artifact) to check.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
@@ -926,18 +926,15 @@ def has_pending_ancestor_jobs(
     Returns:
         `bool`: True if any of the artifact could exist, False otherwise.
     """
-    job_types: set[str] = set()
-    for processing_step_name in processing_step_names:
-        processing_step = processing_graph.get_processing_step(processing_step_name)
-        ancestors = processing_graph.get_ancestors(processing_step_name)
-        job_types.add(processing_step.job_type)
-        job_types.update(ancestor.job_type for ancestor in ancestors)
-    logging.debug(f"looking at ancestor jobs of {processing_step_names}: {list(job_types)}")
+    processing_step = processing_graph.get_processing_step(processing_step_name)
+    ancestors = processing_graph.get_ancestors(processing_step_name)
+    job_types = [ancestor.job_type for ancestor in ancestors] + [processing_step.job_type]
+    logging.debug(f"looking at ancestor jobs of {processing_step_name}: {job_types}")
     # check if a pending job exists for the artifact or one of its ancestors
     # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
     # is good enough.
-    return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
+    return Queue().has_pending_jobs(dataset=dataset, job_types=job_types)
 
 
 def get_revision(dataset: str) -> Optional[str]:
