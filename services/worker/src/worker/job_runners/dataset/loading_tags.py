@@ -38,12 +38,12 @@ def compute_loading_tags_response(dataset: str) -> DatasetLoadingTagsResponse:
     """
     logging.info(f"compute 'dataset-loading-tags' for {dataset=}")
 
-    dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
-    http_status = dataset_info_best_response.response["http_status"]
+    dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
+    http_status = dataset_info_response["http_status"]
     tags: list[DatasetLoadingTag] = []
     if http_status == HTTPStatus.OK:
         try:
-            content = dataset_info_best_response.response["content"]
+            content = dataset_info_response["content"]
             infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
             if infos:
                 tags.append("croissant")

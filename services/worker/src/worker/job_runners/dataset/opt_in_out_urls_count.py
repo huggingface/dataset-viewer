@@ -18,8 +18,8 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_opt_in_out_urls_count_response(dataset: str) -> tuple[OptInOutUrlsCountResponse, float]:
     logging.info(f"compute 'dataset-opt-in-out-urls-count' for {dataset=}")
 
-    config_names_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
-    content = config_names_response.response["content"]
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    content = config_names_response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 

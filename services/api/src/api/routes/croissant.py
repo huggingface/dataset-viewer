@@ -16,12 +16,12 @@ from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
-    get_cache_entry_from_steps,
+    get_cache_entry_from_step,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KINDS
+from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
@@ -271,8 +271,8 @@ def create_croissant_endpoint(
                     )
                 # getting result based on processing steps
                 with StepProfiler(method="croissant_endpoint", step="get info cache entry", context=context):
-                    info_result = get_cache_entry_from_steps(
-                        processing_step_names=DATASET_INFO_KINDS,
+                    info_result = get_cache_entry_from_step(
+                        processing_step_name=DATASET_INFO_KIND,
                         dataset=dataset,
                         config=None,
                         split=None,
