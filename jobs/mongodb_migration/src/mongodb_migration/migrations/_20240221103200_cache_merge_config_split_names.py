@@ -11,6 +11,7 @@ from mongodb_migration.migration import IrreversibleMigrationError, Migration
 STREAMING = "config-split-names-from-streaming"
 INFO = "config-split-names-from-info"
 MERGED = "config-split-names"
+JOB_RUNNER_VERSION = 3
 
 
 # connection already occurred in the main.py (caveat: we use globals)
@@ -56,15 +57,24 @@ class MigrationMergeConfigSplitNamesResponses(Migration):
                 }
             )
             if streaming_entry is None:
-                db[CACHE_COLLECTION_RESPONSES].update_one({"_id": info_entry["_id"]}, {"$set": {"kind": MERGED}})
+                db[CACHE_COLLECTION_RESPONSES].update_one(
+                    {"_id": info_entry["_id"]}, {"$set": {"kind": MERGED, "job_runner_version": JOB_RUNNER_VERSION}}
+                )
             elif info_entry["http_status"] == 200:
-                db[CACHE_COLLECTION_RESPONSES].update_one({"_id": info_entry["_id"]}, {"$set": {"kind": MERGED}})
+                db[CACHE_COLLECTION_RESPONSES].update_one(
+                    {"_id": info_entry["_id"]}, {"$set": {"kind": MERGED, "job_runner_version": JOB_RUNNER_VERSION}}
+                )
                 db[CACHE_COLLECTION_RESPONSES].delete_one({"_id": streaming_entry["_id"]})
             else:
-                db[CACHE_COLLECTION_RESPONSES].update_one({"_id": streaming_entry["_id"]}, {"$set": {"kind": MERGED}})
+                db[CACHE_COLLECTION_RESPONSES].update_one(
+                    {"_id": streaming_entry["_id"]},
+                    {"$set": {"kind": MERGED, "job_runner_version": JOB_RUNNER_VERSION}},
+                )
                 db[CACHE_COLLECTION_RESPONSES].delete_one({"_id": info_entry["_id"]})
         logging.info("Update the remaning 'config-split-names-from-streaming' entries to 'config-split-names'")
-        db[CACHE_COLLECTION_RESPONSES].update_many({"kind": STREAMING}, {"$set": {"kind": MERGED}})
+        db[CACHE_COLLECTION_RESPONSES].update_many(
+            {"kind": STREAMING}, {"$set": {"kind": MERGED, "job_runner_version": JOB_RUNNER_VERSION}}
+        )
 
     def down(self) -> None:
         raise IrreversibleMigrationError("This migration does not support rollback")
@@ -74,10 +84,10 @@ class MigrationMergeConfigSplitNamesResponses(Migration):
             "Ensure that no 'config-split-names-from-streaming' and 'config-split-names-from-info' entries exist"
         )
         db = get_db(CACHE_MONGOENGINE_ALIAS)
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": {"$in": [STREAMING, INFO]}}) > 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": {"$in": [STREAMING, INFO]}}) > 0:
             raise ValueError(
                 "Some 'config-split-names-from-streaming' and 'config-split-names-from-info' entries still exist"
             )
         logging.info("Check 'config-split-names' responses exist")
-        if db[CACHE_COLLECTION_RESPONSES].count({"kind": MERGED}) == 0:
+        if db[CACHE_COLLECTION_RESPONSES].count_documents({"kind": MERGED}) == 0:
             raise ValueError("No 'config-split-names' entries exist")
