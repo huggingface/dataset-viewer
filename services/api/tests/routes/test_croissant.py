@@ -8,7 +8,8 @@ squad_info = {
     "description": "Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the corresponding reading passage, or the question might be unanswerable.\n",
     "citation": '@article{2016arXiv160605250R,\n       author = {{Rajpurkar}, Pranav and {Zhang}, Jian and {Lopyrev},\n                 Konstantin and {Liang}, Percy},\n        title = "{SQuAD: 100,000+ Questions for Machine Comprehension of Text}",\n      journal = {arXiv e-prints},\n         year = 2016,\n          eid = {arXiv:1606.05250},\n        pages = {arXiv:1606.05250},\narchivePrefix = {arXiv},\n       eprint = {1606.05250},\n}\n',
     "homepage": "https://rajpurkar.github.io/SQuAD-explorer/",
-    "license": "",
+    "license": ["mit"],
+    "tags": ["foo", "doi:hf/123456789", "region:us"],
     "features": {
         "id": {"dtype": "string", "_type": "Value"},
         "title": {"dtype": "string", "_type": "Value"},
@@ -70,6 +71,15 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert isinstance(squad_info["features"], dict)
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
     assert "1 skipped column: answers" in croissant["recordSet"][0]["description"]
+    assert croissant["license"] == ["mit"]
+    assert croissant["identifier"] == "hf/123456789"
+
+    # If the parameter doesn't exist, it is not kept:
+    del squad_info["license"]
+    croissant = get_croissant_from_dataset_infos(
+        "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=False
+    )
+    assert "license" not in croissant
 
 
 MAX_COLUMNS = 3
