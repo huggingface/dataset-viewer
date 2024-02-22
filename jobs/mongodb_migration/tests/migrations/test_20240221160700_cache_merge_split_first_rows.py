@@ -9,6 +9,7 @@ from mongoengine.connection import get_db
 
 from mongodb_migration.migration import IrreversibleMigrationError
 from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows import (
+    JOB_RUNNER_VERSION,
     MERGED,
     PARQUET,
     STREAMING,
@@ -18,6 +19,7 @@ from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows i
 DATASET_CONFIG_SPLIT = {"dataset": "dataset", "config": "config", "split": "split"}
 ERROR_CODE_OK = "SomeErrorCodeOK"
 ERROR_CODE_NOT_OK = "ResponseAlreadyComputedError"
+OLD_JOB_RUNNER_VERSION = JOB_RUNNER_VERSION - 1
 
 
 @pytest.mark.parametrize(
@@ -89,7 +91,8 @@ def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entr
 
         if entries:
             db[CACHE_COLLECTION_RESPONSES].insert_many(
-                entry | DATASET_CONFIG_SPLIT | {"content": entry["kind"]} for entry in entries
+                entry | DATASET_CONFIG_SPLIT | {"content": entry["kind"], "job_runner_version": OLD_JOB_RUNNER_VERSION}
+                for entry in entries
             )
 
         migration = MigrationMergeSplitFirstRowsResponses(
@@ -98,13 +101,10 @@ def test_migration(mongo_host: str, entries: list[dict[str, Any]], expected_entr
         )
         migration.up()
 
-        assert (
-            list(
-                {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config", "split"]}
-                for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG_SPLIT)
-            )
-            == expected_entries
-        )
+        assert list(
+            {k: v for k, v in entry.items() if k not in ["_id", "dataset", "config", "split"]}
+            for entry in db[CACHE_COLLECTION_RESPONSES].find(DATASET_CONFIG_SPLIT)
+        ) == list(entry | {"job_runner_version": JOB_RUNNER_VERSION} for entry in expected_entries)
 
         with pytest.raises(IrreversibleMigrationError):
             migration.down()
