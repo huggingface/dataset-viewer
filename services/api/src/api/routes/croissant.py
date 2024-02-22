@@ -3,7 +3,7 @@ import re
 from collections.abc import Mapping
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Features, Image, Value
 from libapi.authentication import auth_check
@@ -63,7 +63,7 @@ def _escape_name(name: str, names: set[str]) -> str:
     return escaped_name
 
 
-def _extract_doi_tag(info: Mapping[str, Any]) -> str | None:
+def _extract_doi_tag(info: Mapping[str, Any]) -> Union[str, None]:
     """Extracts https://huggingface.co/docs/hub/en/doi."""
     tags = info.get("tags", [])
     if isinstance(tags, list):
