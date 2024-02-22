@@ -26,11 +26,7 @@ from worker.job_runners.split.descriptive_statistics import (
     NO_LABEL_VALUE,
     ColumnType,
     SplitDescriptiveStatisticsJobRunner,
-    compute_bool_statistics,
-    compute_class_label_statistics,
-    compute_list_statistics,
-    compute_numerical_statistics,
-    compute_string_statistics,
+    BoolColumn, ClassLabelColumn, ListColumn, IntColumn, FloatColumn, StringColumn,
     generate_bins,
 )
 from worker.resources import LibrariesResource
@@ -421,13 +417,6 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
 @pytest.mark.parametrize(
     "column_name",
     [
-        "int__column",
-        "int__nan_column",
-        "int__negative_column",
-        "int__cross_zero_column",
-        "int__large_values_column",
-        "int__only_one_value_column",
-        "int__only_one_value_nan_column",
         "float__column",
         "float__nan_column",
         "float__negative_column",
@@ -437,28 +426,55 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
         "float__only_one_value_nan_column",
     ],
 )
-def test_numerical_statistics(
+def test_float_statistics(
     column_name: str,
     descriptive_statistics_expected: dict,  # type: ignore
     datasets: Mapping[str, Dataset],
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_numerical_statistics(
-        df=pl.from_dict(data),
-        column_name=column_name,
+    computed = FloatColumn(column_name, pl.from_dict(data))._compute_statistics(
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
-        column_type=ColumnType.INT if column_name.startswith("int__") else ColumnType.FLOAT,
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
     assert computed_hist["hist"] == expected_hist["hist"]
     assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
     assert pytest.approx(computed) == expected
     assert computed["nan_count"] == expected["nan_count"]
-    if column_name.startswith("int__"):
-        assert computed["min"] == expected["min"]
-        assert computed["max"] == expected["max"]
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    [
+        "int__column",
+        "int__nan_column",
+        "int__negative_column",
+        "int__cross_zero_column",
+        "int__large_values_column",
+        "int__only_one_value_column",
+        "int__only_one_value_nan_column",
+    ],
+)
+
+def test_int_statistics(
+    column_name: str,
+    descriptive_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+) -> None:
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    data = datasets["descriptive_statistics"].to_dict()
+    computed = IntColumn(column_name, pl.from_dict(data))._compute_statistics(
+        n_bins=N_BINS,
+        n_samples=len(data[column_name]),
+    )
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
+    assert computed_hist["hist"] == expected_hist["hist"]
+    assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
+    assert pytest.approx(computed) == expected
+    assert computed["nan_count"] == expected["nan_count"]
+    assert computed["min"] == expected["min"]
+    assert computed["max"] == expected["max"]
 
 
 @pytest.mark.parametrize(
@@ -484,12 +500,9 @@ def test_string_statistics(
     else:
         expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_string_statistics(
-        df=pl.from_dict(data),
-        column_name=column_name,
+    computed = StringColumn(column_name, pl.from_dict(data))._compute_statistics(
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
-        dtype="large_string" if "_large_string_" in column_name else None,
     )
     if column_name.startswith("string_text__"):
         expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
@@ -498,8 +511,8 @@ def test_string_statistics(
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
-
-
+#
+#
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -518,11 +531,10 @@ def test_class_label_statistics(
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_class_label_statistics(
-        df=pl.from_dict(data),
-        column_name=column_name,
+    computed = ClassLabelColumn(column_name, pl.from_dict(data))._compute_statistics(
+        n_bins=N_BINS,
         n_samples=len(data[column_name]),
-        class_label_feature=class_label_feature,
+        feature_dict={"_type": "ClassLabel", "names": class_label_feature.names},
     )
     assert expected == computed
 
@@ -541,9 +553,8 @@ def test_bool_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_bool_statistics(
-        df=pl.from_dict(data),
-        column_name=column_name,
+    computed = BoolColumn(column_name, pl.from_dict(data))._compute_statistics(
+        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     assert computed == expected
@@ -565,11 +576,9 @@ def test_list_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = compute_list_statistics(
-        df=pl.from_dict(data),
-        column_name=column_name,
-        n_samples=len(data[column_name]),
+    computed = ListColumn(column_name, pl.from_dict(data))._compute_statistics(
         n_bins=N_BINS,
+        n_samples=len(data[column_name]),
     )
     assert computed == expected
 
@@ -700,6 +709,13 @@ def test_compute(
 
         for column_response in response:  # type: ignore
             expected_column_response = expected[column_response["column_name"]]
+
+            from pprint import pprint
+            print()
+            pprint(expected_column_response)
+            print()
+            pprint(column_response)
+
             assert column_response["column_name"] == expected_column_response["column_name"]
             assert column_response["column_type"] == expected_column_response["column_type"]
             column_response_stats = column_response["column_statistics"]
