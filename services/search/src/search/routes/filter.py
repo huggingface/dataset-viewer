@@ -21,7 +21,7 @@ from libapi.request import (
     get_request_parameter_length,
     get_request_parameter_offset,
 )
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
     get_json_api_error_response,
@@ -188,7 +188,7 @@ def execute_filter_query(
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
-            columns="*" if columns == "*" else ",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
+            columns="*" if columns == "*" else ",".join([f'"{column}"' for column in columns]),
             where=where,
             limit=limit,
             offset=offset,

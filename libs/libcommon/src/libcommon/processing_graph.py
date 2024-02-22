@@ -536,7 +536,7 @@ specification: ProcessingGraphSpecification = {
     "split-is-valid": {
         "input_type": "split",
         "triggered_by": ["config-size", "split-first-rows", "split-duckdb-index"],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "config-is-valid": {

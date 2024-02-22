@@ -11,7 +11,7 @@ import pyarrow as pa
 import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import create_response
 from libcommon.storage_client import StorageClient
 
 from search.config import AppConfig
@@ -81,7 +81,7 @@ def test_execute_filter_query(index_file_location: str, columns: Union[list[str]
     assert num_rows_total == 2
     expected = pa.Table.from_pydict({"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]})
     if isinstance(columns, list):
-        for column in set(expected.column_names) - set([ROW_IDX_COLUMN] + columns):
+        for column in set(expected.column_names) - set(columns):
             expected = expected.drop(column)
     assert pa_table == expected
 

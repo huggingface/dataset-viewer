@@ -42,7 +42,6 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
 )
 from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
-
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.is_valid import SplitIsValidJobRunner
