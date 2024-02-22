@@ -268,26 +268,26 @@ def test_set_revision_handle_existing_jobs(
 
 
 @pytest.mark.parametrize(
-    "processing_graph,pending_artifacts,processing_step_names,expected_has_pending_ancestor_jobs",
+    "processing_graph,pending_artifacts,processing_step_name,expected_has_pending_ancestor_jobs",
     [
-        (PROCESSING_GRAPH_ONE_STEP, [ARTIFACT_DA], [STEP_DA], True),
-        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DA, ARTIFACT_DB], [STEP_DA], True),
-        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DB], [STEP_DD], True),
-        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DD], [STEP_DC], False),
-        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DA], [STEP_CB], True),
-        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DE], [STEP_CB], False),
+        (PROCESSING_GRAPH_ONE_STEP, [ARTIFACT_DA], STEP_DA, True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DA, ARTIFACT_DB], STEP_DA, True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DB], STEP_DD, True),
+        (PROCESSING_GRAPH_GENEALOGY, [ARTIFACT_DD], STEP_DC, False),
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DA], STEP_CB, True),
+        (PROCESSING_GRAPH_FAN_IN_OUT, [ARTIFACT_DE], STEP_CB, False),
     ],
 )
 def test_has_pending_ancestor_jobs(
     processing_graph: ProcessingGraph,
     pending_artifacts: list[str],
-    processing_step_names: list[str],
+    processing_step_name: str,
     expected_has_pending_ancestor_jobs: bool,
 ) -> None:
     Queue().create_jobs([artifact_id_to_job_info(artifact) for artifact in pending_artifacts])
     assert (
         has_pending_ancestor_jobs(
-            dataset=DATASET_NAME, processing_step_names=processing_step_names, processing_graph=processing_graph
+            dataset=DATASET_NAME, processing_step_name=processing_step_name, processing_graph=processing_graph
         )
         == expected_has_pending_ancestor_jobs
     )
@@ -327,7 +327,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -
     processing_graph = ProcessingGraph(
         {
             "dataset_step": {"input_type": "dataset"},
-            "config-split-names-from-streaming": {
+            "config-split-names": {
                 "input_type": "config",
                 "triggered_by": "dataset_step",
             },
@@ -348,7 +348,7 @@ def test_after_job_plan_gives_bonus_difficulty(is_big: bool, failed_runs: int) -
         },
         min_bytes_for_bonus_difficulty=1000,
     )
-    job_info = artifact_id_to_job_info("config-split-names-from-streaming,dataset_name,revision_hash,config_name")
+    job_info = artifact_id_to_job_info("config-split-names,dataset_name,revision_hash,config_name")
     upsert_response_params(
         # inputs
         kind=job_info["type"],

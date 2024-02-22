@@ -105,6 +105,8 @@
   value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
   value: "/tmp/duckdb-extensions"
+- name: DUCKDB_INDEX_CLI_PATH
+  value: "/src/services/worker/duckdb"
 # specific to 'split-descriptive-statistics'
 - name: DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
   value: {{ .Values.descriptiveStatistics.histogramNumBins | quote }}

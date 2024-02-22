@@ -30,7 +30,7 @@ SPLIT_1 = "split1"
 SPLIT_2 = "split2"
 
 UPSTREAM_RESPONSE_SPLIT_NAMES: UpstreamResponse = UpstreamResponse(
-    kind="config-split-names-from-streaming",
+    kind="config-split-names",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,

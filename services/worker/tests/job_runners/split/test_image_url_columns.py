@@ -40,7 +40,7 @@ def get_job_runner(
         )
 
         upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,
@@ -194,7 +194,7 @@ def test_compute(
         app_config,
     )
     upsert_response(
-        kind="split-first-rows-from-streaming",
+        kind="split-first-rows",
         dataset=dataset,
         config=config,
         split=split,
@@ -239,7 +239,7 @@ def test_compute_failed(
     )
     if dataset != "doesnotexist":
         upsert_response(
-            kind="split-first-rows-from-streaming",
+            kind="split-first-rows",
             dataset=dataset,
             config=config,
             split=split,

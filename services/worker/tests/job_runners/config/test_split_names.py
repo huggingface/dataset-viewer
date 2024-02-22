@@ -4,16 +4,26 @@
 from collections.abc import Callable
 from dataclasses import replace
 from http import HTTPStatus
+from typing import Any
 
 import pytest
 from libcommon.dtos import Priority
-from libcommon.exceptions import CustomError, DatasetManualDownloadError
+from libcommon.exceptions import (
+    CustomError,
+    DatasetManualDownloadError,
+    PreviousStepFormatError,
+)
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.simple_cache import upsert_response
+from libcommon.simple_cache import (
+    CachedArtifactError,
+    CachedArtifactNotFoundError,
+    upsert_response,
+)
 
 from worker.config import AppConfig
-from worker.job_runners.config.split_names_from_streaming import (
-    ConfigSplitNamesFromStreamingJobRunner,
+from worker.job_runners.config.split_names import (
+    ConfigSplitNamesJobRunner,
+    compute_split_names_from_info_response,
     compute_split_names_from_streaming_response,
 )
 from worker.resources import LibrariesResource
@@ -21,7 +31,7 @@ from worker.resources import LibrariesResource
 from ...fixtures.hub import HubDatasetTest, get_default_config_split
 from ..utils import REVISION_NAME
 
-GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesFromStreamingJobRunner]
+GetJobRunner = Callable[[str, str, AppConfig], ConfigSplitNamesJobRunner]
 
 
 @pytest.fixture
@@ -34,7 +44,7 @@ def get_job_runner(
         dataset: str,
         config: str,
         app_config: AppConfig,
-    ) -> ConfigSplitNamesFromStreamingJobRunner:
+    ) -> ConfigSplitNamesJobRunner:
         upsert_response(
             kind="dataset-config-names",
             dataset=dataset,
@@ -43,9 +53,9 @@ def get_job_runner(
             http_status=HTTPStatus.OK,
         )
 
-        return ConfigSplitNamesFromStreamingJobRunner(
+        return ConfigSplitNamesJobRunner(
             job_info={
-                "type": ConfigSplitNamesFromStreamingJobRunner.get_job_type(),
+                "type": ConfigSplitNamesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "revision": REVISION_NAME,
@@ -63,13 +73,97 @@ def get_job_runner(
     return _get_job_runner
 
 
-def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
-    dataset = hub_public_csv
-    config, _ = get_default_config_split()
-    job_runner = get_job_runner(dataset, config, app_config)
-    response = job_runner.compute()
-    content = response.content
-    assert len(content["splits"]) == 1
+@pytest.mark.parametrize(
+    "dataset,upstream_status,upstream_content,error_code,content",
+    [
+        (
+            "ok",
+            HTTPStatus.OK,
+            {
+                "dataset_info": {
+                    "splits": {
+                        "train": {"name": "train", "dataset_name": "ok"},
+                        "validation": {"name": "validation", "dataset_name": "ok"},
+                        "test": {"name": "test", "dataset_name": "ok"},
+                    },
+                }
+            },
+            None,
+            {
+                "splits": [
+                    {"dataset": "ok", "config": "config_name", "split": "train"},
+                    {"dataset": "ok", "config": "config_name", "split": "validation"},
+                    {"dataset": "ok", "config": "config_name", "split": "test"},
+                ]
+            },
+        ),
+        (
+            "upstream_fail",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            {"error": "error"},
+            CachedArtifactError.__name__,
+            None,
+        ),
+        (
+            "without_dataset_info",
+            HTTPStatus.OK,
+            {"some_column": "wrong_format"},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+        (
+            "without_config_name",
+            HTTPStatus.OK,
+            {"dataset_info": "wrong_format"},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+        (
+            "without_splits",
+            HTTPStatus.OK,
+            {"dataset_info": {"config_name": "wrong_format"}},
+            PreviousStepFormatError.__name__,
+            None,
+        ),
+    ],
+)
+def test_compute_split_names_from_info_response(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+    dataset: str,
+    upstream_status: HTTPStatus,
+    upstream_content: Any,
+    error_code: str,
+    content: Any,
+) -> None:
+    config = "config_name"
+    upsert_response(
+        kind="config-info",
+        dataset=dataset,
+        dataset_git_revision=REVISION_NAME,
+        config=config,
+        content=upstream_content,
+        http_status=upstream_status,
+    )
+
+    if error_code:
+        with pytest.raises(Exception) as e:
+            compute_split_names_from_info_response(dataset, config)
+        assert e.typename == error_code
+    else:
+        assert compute_split_names_from_info_response(dataset, config) == content
+
+
+def test_doesnotexist(
+    libraries_resource: LibrariesResource,
+    cache_mongo_resource: CacheMongoResource,
+    queue_mongo_resource: QueueMongoResource,
+) -> None:
+    dataset = "non_existent"
+    config = "non_existent"
+    with pytest.raises(CachedArtifactNotFoundError):
+        compute_split_names_from_info_response(dataset, config)
 
 
 @pytest.mark.parametrize(
@@ -141,5 +235,17 @@ def test_compute_split_names_from_streaming_response_raises(
 ) -> None:
     with pytest.raises(DatasetManualDownloadError):
         compute_split_names_from_streaming_response(
-            hub_public_manual_download, "default", hf_token=app_config.common.hf_token, dataset_scripts_allow_list=[]
+            hub_public_manual_download,
+            "default",
+            hf_token=app_config.common.hf_token,
+            dataset_scripts_allow_list=[hub_public_manual_download],
         )
+
+
+def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str) -> None:
+    dataset = hub_public_csv
+    config, _ = get_default_config_split()
+    job_runner = get_job_runner(dataset, config, app_config)
+    response = job_runner.compute()
+    content = response.content
+    assert len(content["splits"]) == 1

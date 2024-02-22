@@ -11,7 +11,7 @@ aiohttp = "^3.9.1"
 aiolimiter = "^1.0.0"
 bs4 = "^0.0.1"
 conllu = "^4.5.2"
-duckdb = "^0.8.1"
+duckdb = "^0.10.0"
 environs = "^9.5.0"
 gdown = "^4.6.3"
 kenlm = { git = "https://github.com/kpu/kenlm", branch = "master" }
