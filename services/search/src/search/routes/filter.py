@@ -4,7 +4,7 @@
 import logging
 import re
 from http import HTTPStatus
-from typing import Literal, Optional, Union
+from typing import Optional
 
 import anyio
 import duckdb
@@ -21,7 +21,7 @@ from libapi.request import (
     get_request_parameter_length,
     get_request_parameter_offset,
 )
-from libapi.response import ROW_IDX_COLUMN, create_response
+from libapi.response import create_response
 from libapi.utils import (
     Endpoint,
     get_json_api_error_response,
@@ -135,25 +135,13 @@ def create_filter_endpoint(
                         hf_token=hf_token,
                     )
                 with StepProfiler(method="filter_endpoint", step="get features"):
-                    # Features can be missing in old cache entries,
-                    # but in this case it's ok to get them from the Arrow schema.
-                    # Indded at one point we refreshed all the datasets that need the features
-                    # to be cached (i.e. image and audio datasets).
-                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
-                        duckdb_index_cache_entry["content"]["features"], dict
-                    ):
-                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
-                    else:
-                        features = None
+                    # in split-duckdb-index we always add the ROW_IDX_COLUMN column
+                    # see https://github.com/huggingface/datasets-server/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+                    features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
-                    supported_columns: Union[list[str], Literal["*"]]
-                    unsupported_columns: list[str]
-                    if features:
-                        supported_columns, unsupported_columns = get_supported_unsupported_columns(
-                            features,
-                        )
-                    else:
-                        supported_columns, unsupported_columns = "*", []
+                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                        features,
+                    )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         execute_filter_query, index_file_location, supported_columns, where, length, offset
@@ -184,11 +172,11 @@ def create_filter_endpoint(
 
 
 def execute_filter_query(
-    index_file_location: str, columns: Union[list[str], Literal["*"]], where: str, limit: int, offset: int
+    index_file_location: str, columns: list[str], where: str, limit: int, offset: int
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
-            columns="*" if columns == "*" else ",".join([f'"{column}"' for column in [ROW_IDX_COLUMN] + columns]),
+            columns=",".join([f'"{column}"' for column in columns]),
             where=where,
             limit=limit,
             offset=offset,
