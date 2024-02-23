@@ -4,11 +4,8 @@
 import pytest
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
-    CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
-    METRICS_MONGOENGINE_ALIAS,
     QUEUE_COLLECTION_JOBS,
-    QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
 )
 from libcommon.dtos import Status
@@ -20,7 +17,6 @@ from pytest import raises
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
-    MetricsDeletionMigration,
     MigrationDeleteJobsByStatus,
     MigrationQueueDeleteTTLIndex,
     MigrationRemoveFieldFromCache,
@@ -85,38 +81,6 @@ def test_queue_deletion_migration(mongo_host: str) -> None:
         assert not db[QUEUE_COLLECTION_JOBS].find_one({"type": job_type})  # Ensure 0 records with old type
 
         db[QUEUE_COLLECTION_JOBS].drop()
-
-
-def test_metrics_deletion_migration(mongo_host: str) -> None:
-    step_name = job_type = cache_kind = "step_name"
-    with MongoResource(
-        database="test_metrics_delete_migration",
-        host=mongo_host,
-        mongoengine_alias=METRICS_MONGOENGINE_ALIAS,
-    ):
-        db = get_db(METRICS_MONGOENGINE_ALIAS)
-        db[QUEUE_METRICS_COLLECTION].insert_many([{"queue": job_type, "status": "waiting", "total": 0}])
-        db[CACHE_METRICS_COLLECTION].insert_many([{"kind": cache_kind, "http_status": 400, "total": 0}])
-        assert db[QUEUE_METRICS_COLLECTION].find_one(
-            {"queue": job_type}
-        )  # Ensure there is at least one record to delete
-        assert db[CACHE_METRICS_COLLECTION].find_one(
-            {"kind": cache_kind}
-        )  # Ensure there is at least one record to delete
-
-        migration = MetricsDeletionMigration(
-            job_type=job_type,
-            cache_kind=cache_kind,
-            version="20230505180300",
-            description=f"delete the queue and cache metrics for step '{step_name}'",
-        )
-        migration.up()
-
-        assert not db[QUEUE_METRICS_COLLECTION].find_one({"queue": job_type})  # Ensure 0 records after deletion
-        assert not db[CACHE_METRICS_COLLECTION].find_one({"kind": cache_kind})  # Ensure 0 records after deletion
-
-        db[QUEUE_METRICS_COLLECTION].drop()
-        db[CACHE_METRICS_COLLECTION].drop()
 
 
 @pytest.mark.skip(reason="obsolete, queue collection does not have 'finished_at' field")

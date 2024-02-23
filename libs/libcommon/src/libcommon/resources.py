@@ -11,7 +11,6 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 from libcommon.constants import (
     CACHE_MONGOENGINE_ALIAS,
-    METRICS_MONGOENGINE_ALIAS,
     QUEUE_MONGOENGINE_ALIAS,
 )
 
@@ -140,16 +139,3 @@ class QueueMongoResource(MongoResource):
     """
 
     mongoengine_alias: str = field(default=QUEUE_MONGOENGINE_ALIAS, init=False)
-
-
-@dataclass
-class MetricsMongoResource(MongoResource):
-    """
-    A resource that represents a connection to the metrics mongo database.
-
-    Args:
-        database (`str`): The name of the mongo database.
-        host (`str`): The host of the mongo database. It must start with ``mongodb://`` or ``mongodb+srv://``.
-    """
-
-    mongoengine_alias: str = field(default=METRICS_MONGOENGINE_ALIAS, init=False)
