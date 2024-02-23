@@ -406,9 +406,7 @@ def test_count_by_status_and_error_code() -> None:
         http_status=HTTPStatus.OK,
     )
 
-    assert get_responses_count_by_kind_status_and_error_code() == [
-        {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1}
-    ]
+    assert get_responses_count_by_kind_status_and_error_code() == {(CACHE_KIND, 200, None): 1}
 
     upsert_response(
         kind="test_kind2",
@@ -425,8 +423,8 @@ def test_count_by_status_and_error_code() -> None:
 
     metrics = get_responses_count_by_kind_status_and_error_code()
     assert len(metrics) == 2
-    assert {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1} in metrics
-    assert {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1} in metrics
+    assert metrics[(CACHE_KIND, 200, None)] == 1
+    assert metrics[("test_kind2", 500, "error_code")] == 1
 
 
 def test_get_cache_reports() -> None:

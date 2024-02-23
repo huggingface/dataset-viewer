@@ -1081,20 +1081,12 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         [~`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        [~`libcommon.exceptions.DatasetTooBigFromDatasetsError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-          sizes given by the datasets library.
-        [~`libcommon.exceptions.DatasetTooBigFromHubError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-          files sizes given by the Hub.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configurations could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]:
             If the dataset has too many external files to be converted to parquet
-        [~`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]:
-            If the dataset is too big external files be converted to parquet
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
