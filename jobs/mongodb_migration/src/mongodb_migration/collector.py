@@ -1,11 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import (
-    CACHE_METRICS_COLLECTION,
-    METRICS_MONGOENGINE_ALIAS,
-    QUEUE_METRICS_COLLECTION,
-)
+from libcommon.constants import CACHE_METRICS_COLLECTION, QUEUE_METRICS_COLLECTION
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
@@ -275,13 +271,13 @@ class MigrationsCollector:
             MigrationDropCollection(
                 version="20230811063600",
                 description="drop cache metrics collection",
-                alias=METRICS_MONGOENGINE_ALIAS,
+                alias="metrics",
                 collection_name=CACHE_METRICS_COLLECTION,
             ),
             MigrationDropCollection(
                 version="20230814121400",
                 description="drop queue metrics collection",
-                alias=METRICS_MONGOENGINE_ALIAS,
+                alias="metrics",
                 collection_name=QUEUE_METRICS_COLLECTION,
             ),
             MigrationAddHasFTSToSplitDuckdbIndexCacheResponse(
