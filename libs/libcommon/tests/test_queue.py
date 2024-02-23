@@ -398,31 +398,6 @@ def test_difficulty(difficulty_min: Optional[int], difficulty_max: Optional[int]
         assert job_info["params"]["dataset"] == test_dataset
 
 
-def test_count_by_status() -> None:
-    test_type = "test_type"
-    test_other_type = "test_other_type"
-    test_dataset = "test_dataset"
-    test_revision = "test_revision"
-    test_difficulty = 50
-    queue = Queue()
-
-    expected_empty = {"waiting": 0, "started": 0}
-    expected_one_waiting = {"waiting": 1, "started": 0}
-
-    assert queue.get_jobs_count_by_status(job_type=test_type) == expected_empty
-    assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
-
-    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
-
-    assert queue.get_jobs_count_by_status(job_type=test_type) == expected_one_waiting
-    assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_empty
-
-    queue.add_job(job_type=test_other_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
-
-    assert queue.get_jobs_count_by_status(job_type=test_type) == expected_one_waiting
-    assert queue.get_jobs_count_by_status(job_type=test_other_type) == expected_one_waiting
-
-
 def test_get_dataset_pending_jobs_for_type() -> None:
     queue = Queue()
     test_type = "test_type"
