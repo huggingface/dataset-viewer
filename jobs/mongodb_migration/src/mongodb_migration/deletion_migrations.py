@@ -23,8 +23,8 @@ from mongodb_migration.migration import (
 class MetricsDeletionMigration(Migration):
     def __init__(self, job_type: str, cache_kind: str, version: str, description: Optional[str] = None):
         if not description:
-            description = "[deprecated] no-op"
-        super().__init__(job_type=job_type, cache_kind=cache_kind, version=version, description=description)
+            description = f"[deprecated] no-op migration for job type '{job_type}' and cache kind '{cache_kind}'"
+        super().__init__(version=version, description=description)
 
     def up(self) -> None:
         logging.info("[deprecated] no-op")
