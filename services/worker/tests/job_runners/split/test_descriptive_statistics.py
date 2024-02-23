@@ -294,9 +294,7 @@ def count_expected_statistics_for_numerical_column(
     }
 
 
-def count_expected_statistics_for_list_column(
-    column: pd.Series,  # type: ignore
-) -> dict:
+def count_expected_statistics_for_list_column(column: pd.Series) -> dict:  # type: ignore
     lengths_column = column.map(lambda x: len(x) if x is not None else None)
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
@@ -438,7 +436,9 @@ def test_float_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = FloatColumn(column_name, pl.from_dict(data))._compute_statistics(
+    computed = FloatColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
@@ -468,7 +468,9 @@ def test_int_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = IntColumn(column_name, pl.from_dict(data))._compute_statistics(
+    computed = IntColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
@@ -504,7 +506,9 @@ def test_string_statistics(
     else:
         expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics"].to_dict()
-    computed = StringColumn(column_name, pl.from_dict(data))._compute_statistics(
+    computed = StringColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
@@ -537,8 +541,9 @@ def test_class_label_statistics(
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ClassLabelColumn(column_name, pl.from_dict(data))._compute_statistics(
-        n_bins=N_BINS,
+    computed = ClassLabelColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_samples=len(data[column_name]),
         feature_dict={"_type": "ClassLabel", "names": class_label_feature.names},
     )
@@ -559,8 +564,9 @@ def test_bool_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = BoolColumn(column_name, pl.from_dict(data))._compute_statistics(
-        n_bins=N_BINS,
+    computed = BoolColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_samples=len(data[column_name]),
     )
     assert computed == expected
@@ -582,7 +588,9 @@ def test_list_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ListColumn(column_name, pl.from_dict(data))._compute_statistics(
+    computed = ListColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=column_name,
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
@@ -593,10 +601,10 @@ def test_list_statistics(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
-        # ("descriptive_statistics_string_text", None),
-        # ("descriptive_statistics_string_text_partial", None),
-        # ("gated", None),
-        # ("audio", "NoSupportedFeaturesError"),
+        ("descriptive_statistics_string_text", None),
+        ("descriptive_statistics_string_text_partial", None),
+        ("gated", None),
+        ("audio", "NoSupportedFeaturesError"),
     ],
 )
 def test_compute(
