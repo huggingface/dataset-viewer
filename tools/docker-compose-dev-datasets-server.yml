@@ -129,6 +129,7 @@ services:
       - ../services/search/src:/src/services/search/src
     environment:
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
+      DUCKDB_INDEX_EXTENSIONS_DIRECTORY: ${DUCKDB_INDEX_EXTENSIONS_DIRECTORY-/tmp/duckdb-extensions}
       # prometheus
       PROMETHEUS_MULTIPROC_DIR: ${PROMETHEUS_MULTIPROC_DIR-}
       # uvicorn
