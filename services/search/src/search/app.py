@@ -101,6 +101,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                extensions_directory=app_config.duckdb_index.extensions_directory,
             ),
         ),
         Route(
@@ -119,6 +120,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                extensions_directory=app_config.duckdb_index.extensions_directory,
             ),
         ),
     ]

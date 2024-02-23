@@ -14,6 +14,7 @@ The service can be configured using environment variables. They are grouped by s
 
 - `DUCKDB_INDEX_CACHE_DIRECTORY`: directory where the temporal duckdb index files are downloaded. Defaults to empty.
 - `DUCKDB_INDEX_TARGET_REVISION`: the git revision of the dataset where the index file is stored in the dataset repository.
+- `DUCKDB_INDEX_EXTENSIONS_DIRECTORY`: directory where the duckdb extensions will be downloaded. Defaults to empty.
 
 ### API service
 
