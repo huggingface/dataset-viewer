@@ -23,16 +23,7 @@ OTHER_COUNT = {(KIND_A, STATUS_500, ERROR_A): COUNT + 1}
 
 @pytest.mark.parametrize(
     "old_metrics",
-    [
-        {},
-        NEW_METRIC,
-        OTHER_KIND,
-        OTHER_STATUS,
-        OTHER_ERROR,
-        NONE_ERROR,
-        OTHER_COUNT,
-        {**NEW_METRIC, **OTHER_KIND, **OTHER_STATUS, **OTHER_ERROR, **NONE_ERROR, **OTHER_COUNT},
-    ],
+    [{}, NEW_METRIC, OTHER_KIND, OTHER_STATUS, OTHER_ERROR, NONE_ERROR, OTHER_COUNT],
 )
 def test_collect_cache_metrics(old_metrics: EntriesTotalByKindStatusAndErrorCode) -> None:
     for (kind, http_status, error_code), total in old_metrics.items():

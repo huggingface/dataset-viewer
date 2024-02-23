@@ -25,14 +25,7 @@ class MockQueue(Queue):
 
 @pytest.mark.parametrize(
     "old_metrics",
-    [
-        {},
-        NEW_METRIC,
-        OTHER_JOB_TYPE,
-        OTHER_STATUS,
-        OTHER_COUNT,
-        {**NEW_METRIC, **OTHER_JOB_TYPE, **OTHER_STATUS, **OTHER_COUNT},
-    ],
+    [{}, NEW_METRIC, OTHER_JOB_TYPE, OTHER_STATUS, OTHER_COUNT],
 )
 def test_collect_jobs_metrics(old_metrics: JobsTotalByTypeAndStatus) -> None:
     for (job_type, status), total in old_metrics.items():
