@@ -12,7 +12,6 @@ DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY = "job_runner"
 DUCKDB_VERSION = "0.10.0"
 CACHE_METRICS_COLLECTION = "cacheTotalMetric"
 QUEUE_METRICS_COLLECTION = "jobTotalMetric"
-METRICS_MONGOENGINE_ALIAS = "metrics"
 QUEUE_COLLECTION_JOBS = "jobsBlue"
 QUEUE_COLLECTION_LOCKS = "locks"
 QUEUE_MONGOENGINE_ALIAS = "queue"
@@ -42,6 +41,7 @@ ERROR_CODES_TO_RETRY = {
     "ExternalServerError",
     "JobManagerCrashedError",
     "LockedDatasetTimeoutError",
+    "PreviousStepStillProcessingError",
     "StreamingRowsError",
 }
 
