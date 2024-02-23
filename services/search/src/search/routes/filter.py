@@ -70,6 +70,7 @@ def create_filter_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    extensions_directory: Optional[str] = None,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -144,7 +145,13 @@ def create_filter_endpoint(
                     )
                 with StepProfiler(method="filter_endpoint", step="execute filter query"):
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
-                        execute_filter_query, index_file_location, supported_columns, where, length, offset
+                        execute_filter_query,
+                        index_file_location,
+                        supported_columns,
+                        where,
+                        length,
+                        offset,
+                        extensions_directory,
                     )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = await create_response(
@@ -172,9 +179,14 @@ def create_filter_endpoint(
 
 
 def execute_filter_query(
-    index_file_location: str, columns: list[str], where: str, limit: int, offset: int
+    index_file_location: str,
+    columns: list[str],
+    where: str,
+    limit: int,
+    offset: int,
+    extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
-    with duckdb_connect(database=index_file_location) as con:
+    with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
             columns=",".join([f'"{column}"' for column in columns]),
             where=where,
