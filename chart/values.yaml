@@ -174,10 +174,6 @@ queue:
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
-metrics:
-  # Name of the mongo db database used to store metrics
-  mongoDatabase: "datasets_server_metrics"
-
 worker:
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"

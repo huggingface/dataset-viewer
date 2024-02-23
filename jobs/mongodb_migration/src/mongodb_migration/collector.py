@@ -1,11 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import (
-    CACHE_METRICS_COLLECTION,
-    METRICS_MONGOENGINE_ALIAS,
-    QUEUE_METRICS_COLLECTION,
-)
+from libcommon.constants import CACHE_METRICS_COLLECTION, QUEUE_METRICS_COLLECTION
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
@@ -71,6 +67,9 @@ from mongodb_migration.migrations._20240221103200_cache_merge_config_split_names
 )
 from mongodb_migration.migrations._20240221160700_cache_merge_split_first_rows import (
     MigrationMergeSplitFirstRowsResponses,
+)
+from mongodb_migration.migrations._20240221160800_cache_set_updated_at_to_root_step import (
+    MigrationSetUpdatedAtToOldestStep,
 )
 from mongodb_migration.renaming_migrations import (
     CacheRenamingMigration,
@@ -275,13 +274,13 @@ class MigrationsCollector:
             MigrationDropCollection(
                 version="20230811063600",
                 description="drop cache metrics collection",
-                alias=METRICS_MONGOENGINE_ALIAS,
+                alias="metrics",
                 collection_name=CACHE_METRICS_COLLECTION,
             ),
             MigrationDropCollection(
                 version="20230814121400",
                 description="drop queue metrics collection",
-                alias=METRICS_MONGOENGINE_ALIAS,
+                alias="metrics",
                 collection_name=QUEUE_METRICS_COLLECTION,
             ),
             MigrationAddHasFTSToSplitDuckdbIndexCacheResponse(
@@ -329,5 +328,9 @@ class MigrationsCollector:
             MigrationMergeSplitFirstRowsResponses(
                 version="20240221160700",
                 description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
+            ),
+            MigrationSetUpdatedAtToOldestStep(
+                version="20240221160800",
+                description="set 'updated_at' of the root step to all the cache entries for each dataset",
             ),
         ]

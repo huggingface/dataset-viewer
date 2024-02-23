@@ -6,11 +6,8 @@ from abc import ABC, abstractmethod
 
 from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
-    CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
-    METRICS_MONGOENGINE_ALIAS,
     QUEUE_COLLECTION_JOBS,
-    QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
 )
 
@@ -67,16 +64,5 @@ class BaseCacheMigration(Migration):
 
 class CacheMigration(BaseCacheMigration):
     def __init__(self, cache_kind: str, version: str, description: str):
-        self.cache_kind = cache_kind
-        super().__init__(version=version, description=description)
-
-
-class MetricsMigration(Migration):
-    MONGOENGINE_ALIAS: str = METRICS_MONGOENGINE_ALIAS
-    COLLECTION_JOB_TOTAL_METRIC: str = QUEUE_METRICS_COLLECTION
-    COLLECTION_CACHE_TOTAL_METRIC: str = CACHE_METRICS_COLLECTION
-
-    def __init__(self, job_type: str, cache_kind: str, version: str, description: str):
-        self.job_type = job_type
         self.cache_kind = cache_kind
         super().__init__(version=version, description=description)
