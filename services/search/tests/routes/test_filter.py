@@ -4,7 +4,6 @@
 import os
 from collections.abc import Generator
 from pathlib import Path
-from typing import Literal, Union
 
 import duckdb
 import pyarrow as pa
@@ -72,17 +71,19 @@ def test_validate_where_parameter_raises(where: str) -> None:
         validate_where_parameter(where)
 
 
-@pytest.mark.parametrize("columns", ["*", ["name", "age"]])
-def test_execute_filter_query(index_file_location: str, columns: Union[list[str], Literal["*"]]) -> None:
+@pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
+def test_execute_filter_query(index_file_location: str, columns: list[str]) -> None:
+    # in split-duckdb-index we always add the ROW_IDX_COLUMN column
+    # see https://github.com/huggingface/datasets-server/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+    columns.append(ROW_IDX_COLUMN)
     where, limit, offset = "gender='female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
         index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
     )
     assert num_rows_total == 2
-    expected = pa.Table.from_pydict({"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]})
-    if isinstance(columns, list):
-        for column in set(expected.column_names) - set([ROW_IDX_COLUMN] + columns):
-            expected = expected.drop(column)
+    expected = pa.Table.from_pydict(
+        {"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]}
+    ).select(columns)
     assert pa_table == expected
 
 

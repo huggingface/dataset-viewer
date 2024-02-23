@@ -266,9 +266,6 @@ DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES = 100_000_000
 DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
 DUCKDB_INDEX_URL_TEMPLATE = "/datasets/%s/resolve/%s/%s"
 DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
-DUCKDB_INDEX_CLI_PATH = (
-    "/src/services/worker/duckdb"
-)  # TODO: Remove once all split-duckdb-index-010 entries have been computed
 
 
 @dataclass(frozen=True)
@@ -280,7 +277,6 @@ class DuckDbIndexConfig:
     url_template: str = DUCKDB_INDEX_URL_TEMPLATE
     max_split_size_bytes: int = DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
     extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
-    cli_path: str = DUCKDB_INDEX_CLI_PATH
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -294,7 +290,6 @@ class DuckDbIndexConfig:
                 url_template=env.str(name="URL_TEMPLATE", default=DUCKDB_INDEX_URL_TEMPLATE),
                 max_split_size_bytes=env.int(name="MAX_SPLIT_SIZE_BYTES", default=DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
-                cli_path=env.str(name="CLI_PATH", default=DUCKDB_INDEX_CLI_PATH),
             )
 
 

@@ -19,6 +19,7 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.constants import DUCKDB_VERSION
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -31,7 +32,6 @@ from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobR
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
     CREATE_TABLE_COMMANDS,
-    DUCKDB_VERSION,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
@@ -70,7 +70,7 @@ def get_job_runner(
         )
 
         upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,

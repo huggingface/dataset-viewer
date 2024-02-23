@@ -9,9 +9,9 @@ DESCRIPTIVE_STATISTICS_CACHE_APPNAME = "datasets_server_descriptive_statistics"
 DUCKDB_INDEX_CACHE_APPNAME = "datasets_server_duckdb_index"
 DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
 DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY = "job_runner"
+DUCKDB_VERSION = "0.10.0"
 CACHE_METRICS_COLLECTION = "cacheTotalMetric"
 QUEUE_METRICS_COLLECTION = "jobTotalMetric"
-METRICS_MONGOENGINE_ALIAS = "metrics"
 QUEUE_COLLECTION_JOBS = "jobsBlue"
 QUEUE_COLLECTION_LOCKS = "locks"
 QUEUE_MONGOENGINE_ALIAS = "queue"
@@ -41,6 +41,7 @@ ERROR_CODES_TO_RETRY = {
     "ExternalServerError",
     "JobManagerCrashedError",
     "LockedDatasetTimeoutError",
+    "PreviousStepStillProcessingError",
     "StreamingRowsError",
 }
 
@@ -48,20 +49,15 @@ EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 
 # Arrays are not immutable, we have to take care of not modifying them
 # Anyway: in all this file, we allow constant reassignment (no use of Final)
-CONFIG_HAS_VIEWER_KINDS = ["config-size"]
-CONFIG_INFO_KINDS = ["config-info"]
-CONFIG_PARQUET_METADATA_KINDS = ["config-parquet-metadata"]
-CONFIG_PARQUET_AND_METADATA_KINDS = ["config-parquet", "config-parquet-metadata"]
-CONFIG_SPLIT_NAMES_KINDS = ["config-split-names-from-info", "config-split-names-from-streaming"]
-DATASET_CONFIG_NAMES_KINDS = ["dataset-config-names"]
-DATASET_INFO_KINDS = ["dataset-info"]
-SPLIT_DUCKDB_INDEX_KINDS = ["split-duckdb-index"]
-SPLIT_HAS_PREVIEW_KINDS = ["split-first-rows-from-streaming", "split-first-rows-from-parquet"]
-SPLIT_HAS_SEARCH_KINDS = ["split-duckdb-index"]
-PARALLEL_STEPS_LISTS = [
-    CONFIG_SPLIT_NAMES_KINDS,
-    SPLIT_HAS_PREVIEW_KINDS,
-]
+CONFIG_HAS_VIEWER_KIND = "config-size"
+CONFIG_INFO_KIND = "config-info"
+CONFIG_PARQUET_METADATA_KIND = "config-parquet-metadata"
+CONFIG_SPLIT_NAMES_KIND = "config-split-names"
+DATASET_CONFIG_NAMES_KIND = "dataset-config-names"
+DATASET_INFO_KIND = "dataset-info"
+SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
+SPLIT_HAS_PREVIEW_KIND = "split-first-rows"
+SPLIT_HAS_SEARCH_KIND = "split-duckdb-index"
 
 CROISSANT_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100

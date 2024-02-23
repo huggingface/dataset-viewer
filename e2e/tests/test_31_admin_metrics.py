@@ -25,8 +25,8 @@ def test_metrics() -> None:
 
     # the queue metrics are computed each time a job is created and processed
     # they should exists at least for some of jobs types
-    for queue in ["dataset-config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
-        # eg. 'queue_jobs_total{pid="10",queue="split-first-rows-from-streaming",status="started"}'
+    for queue in ["dataset-config-names", "split-first-rows", "dataset-parquet"]:
+        # eg. 'queue_jobs_total{pid="10",queue="split-first-rows",status="started"}'
         assert has_metric(
             name="queue_jobs_total",
             labels={"pid": "[0-9]*", "queue": queue, "status": "started"},
@@ -35,7 +35,7 @@ def test_metrics() -> None:
 
     # the cache metrics are computed each time a job is processed
     # they should exists at least for some of cache kinds
-    for cache_kind in ["dataset-config-names", "split-first-rows-from-streaming", "dataset-parquet"]:
+    for cache_kind in ["dataset-config-names", "split-first-rows", "dataset-parquet"]:
         # cache should have been filled by the previous tests
         # eg. 'responses_in_cache_total{error_code="None",http_status="200",path="dataset-config-names",pid="10"}'
         assert has_metric(
