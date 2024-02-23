@@ -238,6 +238,12 @@ def compute_min_max_median_std_nan_count(
     return minimum, maximum, mean, median, std, nan_count, nan_proportion
 
 
+def value_counts(data: pl.DataFrame, column_name: str) -> dict[Any, Any]:
+    """Compute counts of distinct values in a column of a dataframe."""
+
+    return dict(data[column_name].value_counts().rows())
+
+
 class Column:
     """Abstract class to compute stats for columns of all supported data types."""
 
@@ -258,12 +264,6 @@ class Column:
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
         raise NotImplementedError
-
-
-def value_counts(data: pl.DataFrame, column_name: str) -> dict[Any, Any]:
-    """Compute counts of distinct values in a column in data dataframe."""
-
-    return dict(data[column_name].value_counts().rows())  # type: ignore
 
 
 class ClassLabelColumn(Column):
@@ -674,6 +674,7 @@ def compute_descriptive_statistics_response(
 
                 if dataset_feature.get("dtype") == "bool":
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+        return None
 
     all_stats = []
     for feature_name, feature in features.items():

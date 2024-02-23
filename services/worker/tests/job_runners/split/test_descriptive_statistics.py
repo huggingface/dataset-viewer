@@ -575,10 +575,14 @@ def test_bool_statistics(
 @pytest.mark.parametrize(
     "column_name",
     [
-        "list__column",
-        "list__nan_column",
+        "list__int_column",
+        "list__int_nan_column",
+        "list__string_column",
+        "list__string_nan_column",
         "list__sequence_column",
         "list__sequence_nan_column",
+        "list__sequence_of_sequence_column",
+        "list__sequence_of_sequence_nan_column",
     ],
 )
 def test_list_statistics(
