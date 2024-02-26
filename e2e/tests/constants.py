@@ -21,6 +21,7 @@ DATA = [
         "col_3": 0.0,
         "col_4": "B",
         "col_5": True,
+        "col_6": [0, 1, 2],
     },
     {
         "col_1": "Vader turns round and round in circles as his ship spins into space.",
@@ -28,6 +29,7 @@ DATA = [
         "col_3": 1.0,
         "col_4": "B",
         "col_5": False,
+        "col_6": [0, 1, 2, 3],
     },
     {
         "col_1": "We count thirty Rebel ships, Lord Vader.",
@@ -35,6 +37,7 @@ DATA = [
         "col_3": 2.0,
         "col_4": "A",
         "col_5": True,
+        "col_6": [0, 1, 2, 3, None],
     },
     {
         "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
@@ -42,5 +45,6 @@ DATA = [
         "col_3": 3.0,
         "col_4": "B",
         "col_5": None,
+        "col_6": None,
     },
 ]

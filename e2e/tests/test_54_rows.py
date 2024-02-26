@@ -31,6 +31,7 @@ def test_rows_endpoint(normal_user_public_dataset: str) -> None:
             "col_3": 1.0,
             "col_4": "B",
             "col_5": False,
+            "col_6": [0, 1, 2, 3],
         },
         "truncated_cells": [],
     }, rows[0]
@@ -40,6 +41,7 @@ def test_rows_endpoint(normal_user_public_dataset: str) -> None:
         {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
         {"feature_idx": 3, "name": "col_4", "type": {"dtype": "string", "_type": "Value"}},
         {"feature_idx": 4, "name": "col_5", "type": {"dtype": "bool", "_type": "Value"}},
+        {"feature_idx": 5, "name": "col_5", "type": [{"dtype": "int", "_type": "Value"}]},
     ], features
 
 

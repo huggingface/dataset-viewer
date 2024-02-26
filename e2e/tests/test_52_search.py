@@ -39,6 +39,7 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
             "col_3": 2.0,
             "col_4": "A",
             "col_5": True,
+            "col_6": [0, 1, 2, 3, None],
         },
         "truncated_cells": [],
     }, rows[0]
@@ -50,6 +51,7 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
             "col_3": 3.0,
             "col_4": "B",
             "col_5": None,
+            "col_6": None,
         },
         "truncated_cells": [],
     }, rows[1]
@@ -59,6 +61,7 @@ def test_search_endpoint(normal_user_public_dataset: str) -> None:
         {"feature_idx": 2, "name": "col_3", "type": {"dtype": "float64", "_type": "Value"}},
         {"feature_idx": 3, "name": "col_4", "type": {"dtype": "string", "_type": "Value"}},
         {"feature_idx": 4, "name": "col_5", "type": {"dtype": "bool", "_type": "Value"}},
+        {"feature_idx": 5, "name": "col_5", "type": [{"dtype": "int", "_type": "Value"}]},
     ], features
 
 
