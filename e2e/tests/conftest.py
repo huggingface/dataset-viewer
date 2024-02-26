@@ -21,7 +21,7 @@ def ensure_services_are_up() -> None:
 def csv_path(tmp_path_factory: TempPathFactory) -> str:
     path = str(tmp_path_factory.mktemp("data") / "dataset.csv")
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["col_1", "col_2", "col_3", "col_4", "col_5"])
+        writer = csv.DictWriter(f, fieldnames=["col_1", "col_2", "col_3", "col_4", "col_5", "col_6"])
         writer.writeheader()
         for item in DATA:
             writer.writerow(item)
