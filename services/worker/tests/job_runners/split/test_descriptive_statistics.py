@@ -579,6 +579,8 @@ def test_bool_statistics(
         "list__int_nan_column",
         "list__string_column",
         "list__string_nan_column",
+        "list__dict_column",
+        "list__dict_nan_column",
         "list__sequence_column",
         "list__sequence_nan_column",
         "list__sequence_of_sequence_column",
