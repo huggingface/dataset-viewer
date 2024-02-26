@@ -31,6 +31,8 @@ style:
 	$(POETRY) run ruff check --fix src
 	$(POETRY) run ruff check --fix tests --ignore=ARG
 	$(POETRY) run ruff format src tests
+	$(POETRY) run mypy tests src
+	$(POETRY) run bandit -r src
 
 .PHONY: pip-audit
 pip-audit:

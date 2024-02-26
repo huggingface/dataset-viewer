@@ -156,11 +156,11 @@ class MigrationsCollector:
                 cache_kind="/parquet-and-dataset-info",
                 version="20230427121500",
             ),
-            MigrationQueueDeleteTTLIndex(
-                version="20230428145000",
-                description="delete the TTL index on the 'finished_at' field in the queue database",
-                field_name="finished_at",
-            ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="20230428145000",
+            #     description="delete the TTL index on the 'finished_at' field in the queue database",
+            #     field_name="finished_at",
+            # ),
             CacheDeletionMigration(
                 cache_kind="dataset-split-names-from-streaming",
                 version="20230428175100",
@@ -201,9 +201,9 @@ class MigrationsCollector:
             MigrationQueueAddRevisionToJob(
                 version="20230516101500", description="add 'revision' field to jobs in queue database"
             ),
-            MigrationQueueDeleteIndexWithoutRevision(
-                version="20230516101600", description="remove index without revision"
-            ),
+            # MigrationQueueDeleteIndexWithoutRevision(
+            #     version="20230516101600", description="remove index without revision"
+            # ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-streaming",
                 new_cache_kind="config-split-names-from-streaming",
@@ -219,13 +219,13 @@ class MigrationsCollector:
                 cache_kind="/split-names-from-streaming",
                 version="20230522094400",
             ),
-            MigrationQueueDeleteTTLIndex(
-                version="20230523171700",
-                description=(
-                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
-                ),
-                field_name="finished_at",
-            ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="20230523171700",
+            #     description=(
+            #         "delete the TTL index on the 'finished_at' field in the queue database to update its TTL value"
+            #     ),
+            #     field_name="finished_at",
+            # ),
             CacheRenamingMigration(
                 cache_kind="/split-names-from-dataset-info",
                 new_cache_kind="config-split-names-from-info",
@@ -250,20 +250,20 @@ class MigrationsCollector:
                 version="20230524192300",
             ),
             MetricsDeletionMigration(job_type="/config-names", cache_kind="/config-names", version="20230524192400"),
-            MigrationQueueDeleteTTLIndex(
-                version="20230607154800",
-                description=(
-                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
-                ),
-                field_name="finished_at",
-            ),
-            MigrationQueueDeleteTTLIndex(
-                version="202306201100",
-                description=(
-                    "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
-                ),
-                field_name="finished_at",
-            ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="20230607154800",
+            #     description=(
+            #         "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
+            #     ),
+            #     field_name="finished_at",
+            # ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="202306201100",
+            #     description=(
+            #         "delete the TTL index on the 'finished_at' field in the queue database to update its TTL condition"
+            #     ),
+            #     field_name="finished_at",
+            # ),
             MigrationAddOwnerToQueueLock(
                 version="20230622131800", description="add 'owner' field copying the job_id value"
             ),
@@ -296,11 +296,11 @@ class MigrationsCollector:
                 version="20231201074900",
                 description="delete jobs with success, error and cancelled status",
             ),
-            MigrationQueueDeleteTTLIndex(
-                version="20231201112000",
-                description="delete the TTL index on the 'finished_at' field in the queue database",
-                field_name="finished_at",
-            ),
+            # MigrationQueueDeleteTTLIndex(
+            #     version="20231201112000",
+            #     description="delete the TTL index on the 'finished_at' field in the queue database",
+            #     field_name="finished_at",
+            # ),
             MigrationRemoveFieldFromJob(
                 field_name="finished_at", version="20231201112600", description="remove 'finished_at' field from queue"
             ),
@@ -321,14 +321,14 @@ class MigrationsCollector:
                 version="20240216111500",
                 description="add 'partial' field to split-descriptive-statistics cache records",
             ),
-            MigrationMergeConfigSplitNamesResponses(
-                version="20240221103200",
-                description="merge 'config-split-names-from-streaming' and 'config-split-names-from-info' responses to 'config-split-names'",
-            ),
-            MigrationMergeSplitFirstRowsResponses(
-                version="20240221160700",
-                description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
-            ),
+            # MigrationMergeConfigSplitNamesResponses(
+            #     version="20240221103200",
+            #     description="merge 'config-split-names-from-streaming' and 'config-split-names-from-info' responses to 'config-split-names'",
+            # ),
+            # MigrationMergeSplitFirstRowsResponses(
+            #     version="20240221160700",
+            #     description="merge 'split-first-rows-from-streaming' and 'split-first-rows-from-parquet' responses to 'split-first-rows'",
+            # ),
             MigrationSetUpdatedAtToOldestStep(
                 version="20240221160800",
                 description="set 'updated_at' of the root step to all the cache entries for each dataset",

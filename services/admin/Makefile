@@ -7,6 +7,16 @@ export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests
 
+#export MONGO_PORT=27017
+#export CACHE_MONGO_URL=mongodb://localhost:${MONGO_PORT}
+#export QUEUE_MONGO_URL=mongodb://localhost:${MONGO_PORT}
+#export DATABASE_MIGRATIONS_MONGO_URL=mongodb://localhost:${MONGO_PORT}
+#export WORKER_STATE_FILE_PATH=worker.json
+#export LOG_LEVEL=DEBUG
+#export PARQUET_AND_INFO_COMMITTER_HF_TOKEN="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"
+#export ADMIN_UVICORN_PORT=8100
+#export ASSETS_STORAGE_ROOT=/home/polina/.cache/storage
+
 include ../../tools/Python.mk
 include ../../tools/Docker.mk
 
