@@ -38,6 +38,7 @@ from worker.dtos import CompleteJobResult
 from worker.job_manager import JobManager
 from worker.job_runners.config.parquet_and_info import (
     ConfigParquetAndInfoJobRunner,
+    ParquetFile,
     ParquetFileValidator,
     TooBigRowGroupsError,
     _is_too_big_from_datasets,
@@ -834,3 +835,22 @@ def test_resolve_trust_remote_code() -> None:
         )
         is False
     )
+
+
+@pytest.mark.parametrize(
+    "config,split,shard_idx,num_shards,partial,expected_path_in_repo",
+    [
+        ("config", "split", 0, 1, False, "config/split/0000.parquet"),
+        ("config", "split", 0, 1, True, "config/partial-split/0000.parquet"),
+        ("config", "split", 9999, 10_000, False, "config/split/9999.parquet"),
+        ("config", "split", 9999, 10_001, False, "config/split-part0/9999.parquet"),
+        ("config", "split", 10_000, 10_001, False, "config/split-part1/0000.parquet"),
+        ("config", "split", 99_999, 100_000, False, "config/split-part9/9999.parquet"),
+    ],
+)
+def test_parquet_file_path_in_repo(
+    config: str, split: str, shard_idx: int, num_shards: int, partial: bool, expected_path_in_repo: str
+) -> None:
+    parquet_file = ParquetFile(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
+    assert parquet_file.path_in_repo == expected_path_in_repo
+    assert parse_repo_filename(parquet_file.path_in_repo) == (config, split)

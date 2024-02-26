@@ -26,6 +26,10 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 # We also use this prefix for the DuckDB index file name
 PARTIAL_PREFIX = "partial-"
 
+# For paths like "en/train-part0/0000.parquet", "en/train-part1/0000.parquet" up to "en/train-part9/9999.parquet".
+# Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+PART_SUFFIX = "-part{}"
+
 
 class EmptyParquetMetadataError(Exception):
     pass
