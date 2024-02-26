@@ -583,6 +583,8 @@ def test_bool_statistics(
         "list__dict_nan_column",
         "list__sequence_column",
         "list__sequence_nan_column",
+        "list__sequence_dict_column",
+        "list__sequence_dict_nan_column",
         "list__sequence_of_sequence_column",
         "list__sequence_of_sequence_nan_column",
     ],
