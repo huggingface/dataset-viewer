@@ -33,7 +33,7 @@ def csv_path(tmp_path_factory: TempPathFactory) -> str:
 def json_path(tmp_path_factory: TempPathFactory) -> str:
     path = str(tmp_path_factory.mktemp("data") / "dataset.json")
     with open(path, "w", newline="") as f:
-        json.dump(DATA_JSON)
+        json.dump(DATA_JSON, f)
     return path
 
 
@@ -45,7 +45,9 @@ def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
 
 @pytest.fixture(scope="session")
 def normal_user_public_json_dataset(json_path: str) -> Iterator[str]:
-    with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/json_data.json": json_path}) as dataset:
+    with tmp_dataset(
+        namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/json_data.json": json_path}
+    ) as dataset:
         yield dataset
 
 
