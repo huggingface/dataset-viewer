@@ -11,4 +11,3 @@ services:
       retries: 10
       start_period: 20s
       start_interval: 2s
-    network_mode: "host"

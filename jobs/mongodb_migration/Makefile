@@ -1,7 +1,6 @@
 # environment variables for the commands (docker compose, poetry)
 export COMPOSE_PROJECT_NAME := mongodb_migration
-#export MONGO_PORT := 27070
-export MONGO_PORT := 27017
+export MONGO_PORT := 27070
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export DATABASE_MIGRATIONS_MONGO_URL := mongodb://localhost:${MONGO_PORT}
@@ -14,6 +13,4 @@ include ../../tools/Docker.mk
 
 .PHONY: run
 run:
-	make up
 	$(POETRY) run python src/mongodb_migration/main.py
-	mongoku start

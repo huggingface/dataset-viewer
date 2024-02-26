@@ -6,17 +6,6 @@ export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests
-#export MONGO_PORT=27017
-#export CACHE_MONGO_URL=mongodb://localhost:${MONGO_PORT}
-#export QUEUE_MONGO_URL=mongodb://localhost:${MONGO_PORT}
-#export DATABASE_MIGRATIONS_MONGO_URL=mongodb://localhost:${MONGO_PORT}
-#export LOG_LEVEL=DEBUG
-#export ASSETS_STORAGE_ROOT=/home/polina/.cache/storage/cached-assets
-#export CACHED_ASSETS_STORAGE_ROOT=/home/polina/.cache/storage/cached-assets
-export API_HF_TIMEOUT_SECONDS=150
-
-#export PARQUET_AND_INFO_COMMITTER_HF_TOKEN="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"
-
 
 include ../../tools/Python.mk
 include ../../tools/Docker.mk
