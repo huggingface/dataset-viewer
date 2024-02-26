@@ -727,19 +727,12 @@ def test_compute(
 
         for column_response in response:  # type: ignore
             expected_column_response = expected[column_response["column_name"]]
-
-            from pprint import pprint
-
-            print()
-            pprint(expected_column_response)
-            print()
-            pprint(column_response)
-
             assert column_response["column_name"] == expected_column_response["column_name"]
             assert column_response["column_type"] == expected_column_response["column_type"]
             column_response_stats = column_response["column_statistics"]
             expected_column_response_stats = expected_column_response["column_statistics"]
             assert column_response_stats.keys() == expected_column_response_stats.keys()
+
             if column_response["column_type"] in [
                 ColumnType.FLOAT,
                 ColumnType.INT,
