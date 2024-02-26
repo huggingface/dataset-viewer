@@ -4,9 +4,9 @@
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
+def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = normal_user_public_dataset
+    dataset = normal_user_public_json_dataset
     config, split = get_default_config_split()
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
