@@ -90,7 +90,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
             endpoint=create_search_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
                 cached_assets_storage_client=cached_assets_storage_client,
-                target_revision="refs/convert/parquet",  # TODO: Change to app_config.duckdb_index.target_revision once all split-duckdb-index-010 entries have been computed
+                target_revision=app_config.duckdb_index.target_revision,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
                 blocked_datasets=app_config.common.blocked_datasets,
@@ -101,13 +101,14 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                extensions_directory=app_config.duckdb_index.extensions_directory,
             ),
         ),
         Route(
             "/filter",
             endpoint=create_filter_endpoint(
                 duckdb_index_file_directory=duckdb_index_cache_directory,
-                target_revision="refs/convert/parquet",  # TODO: Change to app_config.duckdb_index.target_revision once all split-duckdb-index-010 entries have been computed
+                target_revision=app_config.duckdb_index.target_revision,
                 cached_assets_storage_client=cached_assets_storage_client,
                 hf_endpoint=app_config.common.hf_endpoint,
                 hf_token=app_config.common.hf_token,
@@ -119,6 +120,7 @@ def create_app_with_config(app_config: AppConfig) -> Starlette:
                 max_age_long=app_config.api.max_age_long,
                 max_age_short=app_config.api.max_age_short,
                 storage_clients=storage_clients,
+                extensions_directory=app_config.duckdb_index.extensions_directory,
             ),
         ),
     ]

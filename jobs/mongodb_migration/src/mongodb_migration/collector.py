@@ -333,4 +333,18 @@ class MigrationsCollector:
                 version="20240221160800",
                 description="set 'updated_at' of the root step to all the cache entries for each dataset",
             ),
+            CacheDeletionMigration(
+                version="20240223090800",
+                cache_kind="split-duckdb-index",
+            ),
+            CacheRenamingMigration(
+                version="20240223090900",
+                cache_kind="split-duckdb-index-010",
+                new_cache_kind="split-duckdb-index",
+            ),
+            QueueRenamingMigration(
+                version="20240223091000",
+                job_type="split-duckdb-index-010",
+                new_job_type="split-duckdb-index",
+            ),
         ]

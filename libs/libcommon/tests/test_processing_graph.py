@@ -113,7 +113,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index", "split-duckdb-index-010"],
+            ["split-first-rows", "split-duckdb-index"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),

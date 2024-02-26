@@ -42,9 +42,6 @@ from worker.job_runners.split.descriptive_statistics import (
     SplitDescriptiveStatisticsJobRunner,
 )
 from worker.job_runners.split.duckdb_index import SplitDuckDbIndexJobRunner
-from worker.job_runners.split.duckdb_index_0_8_1 import (
-    SplitDuckDbIndex081JobRunner,  # TODO: Remove once all split-duckdb-index-010 have been computed
-)
 from worker.job_runners.split.first_rows import SplitFirstRowsJobRunner
 from worker.job_runners.split.image_url_columns import SplitImageUrlColumnsJobRunner
 from worker.job_runners.split.is_valid import SplitIsValidJobRunner
@@ -201,15 +198,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
 
-        if (
-            job_type == SplitDuckDbIndex081JobRunner.get_job_type()
-        ):  # TODO: Remove once all split-duckdb-index-010 have been computed
-            return SplitDuckDbIndex081JobRunner(  # TODO: Remove once all split-duckdb-index-010 have been computed
-                job_info=job_info,
-                app_config=self.app_config,
-                duckdb_index_cache_directory=self.duckdb_index_cache_directory,
-                parquet_metadata_directory=self.parquet_metadata_directory,
-            )
         if job_type == SplitDuckDbIndexJobRunner.get_job_type():
             return SplitDuckDbIndexJobRunner(
                 job_info=job_info,
@@ -261,7 +249,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             SplitOptInOutUrlsCountJobRunner.get_job_type(),
             ConfigOptInOutUrlsCountJobRunner.get_job_type(),
             DatasetOptInOutUrlsCountJobRunner.get_job_type(),
-            SplitDuckDbIndex081JobRunner.get_job_type(),  # TODO: Remove once all split-duckdb-index-010 have been computed
             SplitDuckDbIndexJobRunner.get_job_type(),
             SplitDescriptiveStatisticsJobRunner.get_job_type(),
             ConfigDuckdbIndexSizeJobRunner.get_job_type(),

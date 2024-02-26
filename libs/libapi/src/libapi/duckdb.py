@@ -11,7 +11,7 @@ from typing import Optional
 import anyio
 from anyio import Path
 from huggingface_hub import hf_hub_download
-from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KIND
+from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, DUCKDB_VERSION, SPLIT_DUCKDB_INDEX_KIND
 from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
@@ -65,7 +65,7 @@ def get_download_folder(root_directory: StrPath, dataset: str, revision: str, co
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
-    return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{subdirectory}"
+    return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{DUCKDB_VERSION}/{subdirectory}"
 
 
 def download_index_file(
