@@ -703,7 +703,7 @@ class limit_parquet_writes:
                 super().write_table(pa_table, row_group_size=row_group_size)
 
         def limited_generator(
-            generator: Callable[..., Generator[T, None, None]]
+            generator: Callable[..., Generator[T, None, None]],
         ) -> Callable[..., Generator[T, None, None]]:
             """Stop the underlying generator once we reach the maximum dataset size"""
 
@@ -1081,20 +1081,12 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         [~`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        [~`libcommon.exceptions.DatasetTooBigFromDatasetsError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-          sizes given by the datasets library.
-        [~`libcommon.exceptions.DatasetTooBigFromHubError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-          files sizes given by the Hub.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configurations could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]:
             If the dataset has too many external files to be converted to parquet
-        [~`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]:
-            If the dataset is too big external files be converted to parquet
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
@@ -1119,9 +1111,9 @@ def compute_config_parquet_and_info_response(
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"
-    config_names_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset)
+    config_names_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset)
 
-    config_names_content = config_names_best_response.response["content"]
+    config_names_content = config_names_response["content"]
     if "config_names" not in config_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 

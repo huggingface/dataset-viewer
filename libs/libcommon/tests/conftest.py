@@ -45,17 +45,6 @@ def queue_mongo_host(env: Env) -> str:
         raise ValueError("QUEUE_MONGO_URL is not set") from e
 
 
-@fixture(scope="session")
-def metrics_mongo_host(env: Env) -> str:
-    try:
-        url = env.str(name="METRICS_MONGO_URL")
-        if not isinstance(url, str):
-            raise ValueError("METRICS_MONGO_URL is not set")
-        return url
-    except Exception as e:
-        raise ValueError("METRICS_MONGO_URL is not set") from e
-
-
 @fixture
 def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
     database = "datasets_server_queue_test"

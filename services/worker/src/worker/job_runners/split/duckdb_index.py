@@ -20,6 +20,7 @@ from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
+    DUCKDB_VERSION,
 )
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
@@ -54,8 +55,6 @@ from worker.utils import (
 )
 
 DATASET_TYPE = "dataset"
-STRING_FEATURE_DTYPE = "string"
-VALUE_FEATURE_TYPE = "Value"
 DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
@@ -63,8 +62,7 @@ CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
-INSTALL_EXTENSION_COMMAND = "INSTALL '{extension}';"
-LOAD_EXTENSION_COMMAND = "LOAD '{extension}';"
+INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 
@@ -114,6 +112,7 @@ def compute_split_duckdb_index_response(
     split: str,
     duckdb_index_file_directory: Path,
     target_revision: str,
+    source_revision: str,
     hf_endpoint: str,
     commit_message: str,
     url_template: str,
@@ -127,12 +126,12 @@ def compute_split_duckdb_index_response(
 
     # get parquet urls and dataset_info
     config_parquet_metadata_step = "config-parquet-metadata"
-    parquet_metadata_best_response = get_previous_step_or_raise(
-        kinds=[config_parquet_metadata_step],
+    parquet_metadata_response = get_previous_step_or_raise(
+        kind=config_parquet_metadata_step,
         dataset=dataset,
         config=config,
     )
-    content_parquet_metadata = parquet_metadata_best_response.response["content"]
+    content_parquet_metadata = parquet_metadata_response["content"]
     try:
         split_parquet_files = [
             parquet_file
@@ -184,7 +183,7 @@ def compute_split_duckdb_index_response(
         retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
         retry_download_hub_file(
             repo_type=REPO_TYPE,
-            revision=target_revision,
+            revision=source_revision,
             repo_id=dataset,
             filename=f"{config}/{split_directory}/{parquet_file}",
             local_dir=duckdb_index_file_directory,
@@ -206,8 +205,7 @@ def compute_split_duckdb_index_response(
         if extensions_directory is not None:
             con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
 
-        con.execute(INSTALL_EXTENSION_COMMAND.format(extension="fts"))
-        con.execute(LOAD_EXTENSION_COMMAND.format(extension="fts"))
+        con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)
@@ -324,6 +322,7 @@ def compute_split_duckdb_index_response(
         partial=partial,
         num_rows=num_rows,
         num_bytes=num_bytes,
+        duckdb_version=DUCKDB_VERSION,
     )
 
 
@@ -366,6 +365,7 @@ class SplitDuckDbIndexJobRunner(SplitJobRunnerWithCache):
                 committer_hf_token=self.duckdb_index_config.committer_hf_token,
                 hf_endpoint=self.app_config.common.hf_endpoint,
                 target_revision=self.duckdb_index_config.target_revision,
+                source_revision=self.app_config.parquet_and_info.target_revision,
                 max_split_size_bytes=self.duckdb_index_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )

@@ -948,7 +948,7 @@ def hub_responses_descriptive_statistics_string_text(
 
 @pytest.fixture
 def hub_responses_descriptive_statistics_parquet_builder(
-    hub_public_descriptive_statistics_parquet_builder: str
+    hub_public_descriptive_statistics_parquet_builder: str,
 ) -> HubDatasetTest:
     return {
         "name": hub_public_descriptive_statistics_parquet_builder,

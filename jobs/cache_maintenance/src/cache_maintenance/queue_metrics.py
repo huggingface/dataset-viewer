@@ -3,23 +3,31 @@
 
 import logging
 
-from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobTotalMetricDocument, Queue
 
 
 def collect_queue_metrics() -> None:
-    logging.info("collecting queue metrics")
-    queue = Queue()
-    for processing_step in processing_graph.get_processing_steps():
-        job_type = processing_step.job_type
-        for status, new_total in queue.get_jobs_count_by_status(job_type=job_type).items():
-            query_set = JobTotalMetricDocument.objects(job_type=job_type, status=status)
-            current_metric = query_set.first()
-            if current_metric is not None:
-                current_total = current_metric.total
-                logging.info(
-                    f"{job_type=} {status=} current_total={current_total} new_total="
-                    f"{new_total} difference={int(new_total)-current_total}"  # type: ignore
-                )
-            query_set.upsert_one(total=new_total)
-    logging.info("queue metrics have been collected")
+    """
+    Collects queue metrics and updates the queue metrics in the database.
+
+    The obsolete queue metrics are deleted, and the new ones are inserted or updated.
+
+    We don't delete everything, then create everything, because the /metrics endpoint could be called at the same time,
+    and the metrics would be inconsistent.
+    """
+    logging.info("updating queue metrics")
+
+    new_metric_by_id = Queue().get_jobs_total_by_type_and_status()
+    new_ids = set(new_metric_by_id.keys())
+    old_ids = set((metric.job_type, metric.status) for metric in JobTotalMetricDocument.objects())
+    to_delete = old_ids - new_ids
+
+    for job_type, status in to_delete:
+        JobTotalMetricDocument.objects(job_type=job_type, status=status).delete()
+        logging.info(f"{job_type=} {status=} has been deleted")
+
+    for (job_type, status), total in new_metric_by_id.items():
+        JobTotalMetricDocument.objects(job_type=job_type, status=status).upsert_one(total=total)
+        logging.info(f"{job_type=} {status=}: {total=} has been inserted")
+
+    logging.info("queue metrics have been updated")

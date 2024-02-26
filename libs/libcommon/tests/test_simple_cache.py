@@ -24,7 +24,6 @@ from libcommon.simple_cache import (
     delete_dataset_responses,
     delete_response,
     fetch_names,
-    get_best_response,
     get_cache_reports,
     get_cache_reports_with_content,
     get_dataset_responses_without_content_for_kind,
@@ -34,7 +33,7 @@ from libcommon.simple_cache import (
     get_response_with_details,
     get_response_without_content,
     get_responses_count_by_kind_status_and_error_code,
-    has_any_successful_response,
+    is_successful_response,
     upsert_response,
 )
 from libcommon.utils import get_datetime
@@ -370,11 +369,7 @@ def test_big_row() -> None:
         )
 
 
-def test_has_any_successful_response_empty() -> None:
-    assert not has_any_successful_response(dataset="dataset", kinds=[])
-
-
-def test_has_any_successful_response_two_valid_datasets() -> None:
+def test_is_successful_response_two_valid_datasets() -> None:
     kind = CACHE_KIND
     other_kind = "other_kind"
     dataset_a = DATASET_NAME_A
@@ -395,74 +390,9 @@ def test_has_any_successful_response_two_valid_datasets() -> None:
         content={},
         http_status=HTTPStatus.OK,
     )
-    assert has_any_successful_response(dataset=dataset_a, kinds=[kind])
-    assert has_any_successful_response(dataset=dataset_b, kinds=[kind])
-    assert not has_any_successful_response(dataset=dataset_b, kinds=[other_kind])
-    assert has_any_successful_response(dataset=dataset_b, kinds=[kind, other_kind])
-
-
-def test_has_any_successful_response_two_valid_kinds() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    upsert_response(
-        kind=kind_a, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
-    )
-    upsert_response(
-        kind=kind_b, dataset=dataset, dataset_git_revision=dataset_git_revision, content={}, http_status=HTTPStatus.OK
-    )
-    assert has_any_successful_response(dataset=dataset, kinds=[kind_a, kind_b])
-
-
-def test_has_any_successful_response_at_least_one_valid_response() -> None:
-    kind_a = "test_kind_a"
-    kind_b = "test_kind_b"
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config = "test_config"
-    upsert_response(
-        kind=kind_a,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config,
-        content={},
-        http_status=HTTPStatus.OK,
-    )
-    upsert_response(
-        kind=kind_b,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    assert has_any_successful_response(dataset=dataset, config=config, kinds=[kind_a, kind_b])
-
-
-def test_has_any_successful_response_only_invalid_responses() -> None:
-    kind = CACHE_KIND
-    dataset = DATASET_NAME
-    dataset_git_revision = REVISION_NAME
-    config_a = "test_config_a"
-    config_b = "test_config_b"
-    upsert_response(
-        kind=kind,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config_a,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    upsert_response(
-        kind=kind,
-        dataset=dataset,
-        dataset_git_revision=dataset_git_revision,
-        config=config_b,
-        content={},
-        http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
-    assert not has_any_successful_response(dataset=dataset, kinds=[kind])
+    assert is_successful_response(dataset=dataset_a, kind=kind)
+    assert is_successful_response(dataset=dataset_b, kind=kind)
+    assert not is_successful_response(dataset=dataset_b, kind=other_kind)
 
 
 def test_count_by_status_and_error_code() -> None:
@@ -476,9 +406,7 @@ def test_count_by_status_and_error_code() -> None:
         http_status=HTTPStatus.OK,
     )
 
-    assert get_responses_count_by_kind_status_and_error_code() == [
-        {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1}
-    ]
+    assert get_responses_count_by_kind_status_and_error_code() == {(CACHE_KIND, 200, None): 1}
 
     upsert_response(
         kind="test_kind2",
@@ -495,8 +423,8 @@ def test_count_by_status_and_error_code() -> None:
 
     metrics = get_responses_count_by_kind_status_and_error_code()
     assert len(metrics) == 2
-    assert {"kind": CACHE_KIND, "http_status": 200, "error_code": None, "count": 1} in metrics
-    assert {"kind": "test_kind2", "http_status": 500, "error_code": "error_code", "count": 1} in metrics
+    assert metrics[(CACHE_KIND, 200, None)] == 1
+    assert metrics[("test_kind2", 500, "error_code")] == 1
 
 
 def test_get_cache_reports() -> None:
@@ -796,124 +724,6 @@ class EntrySpec(TypedDict):
     progress: Optional[float]
 
 
-@pytest.mark.parametrize(
-    "selected_entries,kinds,dataset,config,best_entry",
-    [
-        # Best means:
-        # - the first success response with progress=1.0 is returned
-        (["ok1"], ["kind1"], "dataset", None, "ok1"),
-        (["ok_config1"], ["kind1"], "dataset", "config", "ok_config1"),
-        (["ok1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok1"),
-        (["ok1", "ok2"], ["kind2", "kind1"], "dataset", None, "ok2"),
-        (["partial1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
-        (["error1", "ok2"], ["kind1", "kind2"], "dataset", None, "ok2"),
-        # - if no success response with progress=1.0 is found, the success response with the highest progress is
-        #  returned
-        (["partial1", "partial2"], ["kind1", "kind2"], "dataset", None, "partial2"),
-        (["partial1", "error2"], ["kind1", "kind2"], "dataset", None, "partial1"),
-        # - if no success response is found, the first error response is returned
-        (["error1", "error2"], ["kind1", "kind2"], "dataset", None, "error1"),
-        (["error1", "error2"], ["kind2", "kind1"], "dataset", None, "error2"),
-        # - if no response is found, an error response is returned
-        ([], ["kind1"], "dataset", None, "cache_miss"),
-        (["ok_config1"], ["kind1"], "dataset", None, "cache_miss"),
-        (["ok1"], ["kind1"], "dataset", "config", "cache_miss"),
-    ],
-)
-def test_get_best_response(
-    selected_entries: list[str], kinds: list[str], dataset: str, config: Optional[str], best_entry: str
-) -> None:
-    # arrange
-    entries: dict[str, EntrySpec] = {
-        "ok1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "ok2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "partial1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 0,
-        },
-        "partial2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.OK,
-            "progress": 0.5,
-        },
-        "ok_config1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": "config",
-            "http_status": HTTPStatus.OK,
-            "progress": 1.0,
-        },
-        "error1": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.INTERNAL_SERVER_ERROR,
-            "progress": 1.0,
-        },
-        "error2": {
-            "kind": "kind2",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.NOT_FOUND,
-            "progress": 1.0,
-        },
-        "cache_miss": {
-            "kind": "kind1",
-            "dataset": "dataset",
-            "dataset_git_revision": REVISION_NAME,
-            "config": None,
-            "http_status": HTTPStatus.NOT_FOUND,
-            "progress": None,
-        },
-    }
-
-    for entry in selected_entries:
-        upsert_response(
-            kind=entries[entry]["kind"],
-            dataset=entries[entry]["dataset"],
-            dataset_git_revision=entries[entry]["dataset_git_revision"],
-            config=entries[entry]["config"],
-            http_status=entries[entry]["http_status"],
-            progress=entries[entry]["progress"],
-            content={"error": "some_error"} if (entries[entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value) else {},
-        )
-
-    # act
-    best_response = get_best_response(kinds, dataset, config)
-
-    # assert
-    assert best_response.kind == entries[best_entry]["kind"]
-    assert ("error" in best_response.response["content"]) is (
-        entries[best_entry]["http_status"] >= HTTPStatus.BAD_REQUEST.value
-    )
-    assert best_response.response["http_status"] == entries[best_entry]["http_status"].value
-    assert best_response.response["progress"] == entries[best_entry]["progress"]
-
-
 def test_cached_artifact_error() -> None:
     dataset = "dataset"
     config = "config"
@@ -991,23 +801,19 @@ RESPONSE_ERROR = ResponseSpec(content=CONTENT_ERROR, http_status=HTTPStatus.INTE
 
 
 @pytest.mark.parametrize(
-    "cache_kinds,response_spec_by_kind,expected_names",
+    "response_spec_by_kind,expected_names",
     [
-        ([], {}, []),
-        ([CACHE_KIND_A], {}, []),
-        ([CACHE_KIND_A], {CACHE_KIND_A: RESPONSE_ERROR}, []),
-        ([CACHE_KIND_A], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: RESPONSE_ERROR}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: NAMES_RESPONSE_OK, CACHE_KIND_B: NAMES_RESPONSE_OK}, NAMES),
-        ([CACHE_KIND_A, CACHE_KIND_B], {CACHE_KIND_A: RESPONSE_ERROR, CACHE_KIND_B: RESPONSE_ERROR}, []),
+        ({}, []),
+        ({CACHE_KIND_A: RESPONSE_ERROR}, []),
+        ({CACHE_KIND_A: NAMES_RESPONSE_OK}, NAMES),
+        ({CACHE_KIND_B: NAMES_RESPONSE_OK}, []),
     ],
 )
 def test_fetch_names(
-    cache_kinds: list[str],
     response_spec_by_kind: Mapping[str, Mapping[str, Any]],
     expected_names: list[str],
 ) -> None:
+    cache_kind = CACHE_KIND_A
     for kind, response_spec in response_spec_by_kind.items():
         upsert_response(
             kind=kind,
@@ -1022,7 +828,7 @@ def test_fetch_names(
         fetch_names(
             dataset=DATASET_NAME,
             config=CONFIG_NAME_1,
-            cache_kinds=cache_kinds,
+            cache_kind=cache_kind,
             names_field=NAMES_FIELD,
             name_field=NAME_FIELD,
         )

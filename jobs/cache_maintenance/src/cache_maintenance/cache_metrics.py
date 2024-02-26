@@ -10,20 +10,30 @@ from libcommon.simple_cache import (
 
 
 def collect_cache_metrics() -> None:
-    logging.info("collecting cache metrics")
-    for metric in get_responses_count_by_kind_status_and_error_code():
-        kind = metric["kind"]
-        http_status = metric["http_status"]
-        error_code = metric["error_code"]
-        new_total = metric["count"]
+    """
+    Collects cache metrics and updates the cache metrics in the database.
 
-        query_set = CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code)
-        current_metric = query_set.first()
-        if current_metric is not None:
-            current_total = current_metric.total
-            logging.info(
-                f"{kind=} {http_status=} {error_code=}  current_total={current_total} new_total="
-                f"{new_total} difference={new_total-current_total}"
-            )
-        query_set.upsert_one(total=metric["count"])
-    logging.info("cache metrics have been collected")
+    The obsolete cache metrics are deleted, and the new ones are inserted or updated.
+
+    We don't delete everything, then create everything, because the /metrics endpoint could be called at the same time,
+    and the metrics would be inconsistent.
+    """
+    logging.info("updating cache metrics")
+    new_metric_by_id = get_responses_count_by_kind_status_and_error_code()
+    new_ids = set(new_metric_by_id.keys())
+    old_ids = set(
+        (metric.kind, metric.http_status, metric.error_code) for metric in CacheTotalMetricDocument.objects()
+    )
+    to_delete = old_ids - new_ids
+
+    for kind, http_status, error_code in to_delete:
+        CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).delete()
+        logging.info(f"{kind=} {http_status=} {error_code=} has been deleted")
+
+    for (kind, http_status, error_code), total in new_metric_by_id.items():
+        CacheTotalMetricDocument.objects(kind=kind, http_status=http_status, error_code=error_code).upsert_one(
+            total=total
+        )
+        logging.info(f"{kind=} {http_status=} {error_code=}: {total=} has been inserted")
+
+    logging.info("cache metrics have been updated")

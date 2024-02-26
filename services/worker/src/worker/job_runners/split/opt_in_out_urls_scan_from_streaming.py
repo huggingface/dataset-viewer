@@ -162,13 +162,13 @@ def compute_opt_in_out_urls_scan_response(
 
     # get image url columns from previous job
     upstream_response = get_previous_step_or_raise(
-        kinds=["split-image-url-columns"],
+        kind="split-image-url-columns",
         dataset=dataset,
         config=config,
         split=split,
     )
     try:
-        image_url_columns_response = upstream_response.response
+        image_url_columns_response = upstream_response
         image_url_columns = image_url_columns_response["content"]["columns"]
     except KeyError as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
