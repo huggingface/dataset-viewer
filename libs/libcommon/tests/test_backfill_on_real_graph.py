@@ -56,6 +56,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-parquet,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
+                "dataset-croissant,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -92,6 +93,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-parquet,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
+                "dataset-croissant,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -111,6 +113,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-compatible-libraries,dataset,revision",
                 "dataset-modalities,dataset,revision",
                 "dataset-split-names,dataset,revision",
+                "dataset-croissant,dataset,revision",
             ]
         },
         # thus: no new task
@@ -173,6 +176,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-parquet,dataset,revision",
                 "dataset-size,dataset,revision",
                 "dataset-split-names,dataset,revision",
+                "dataset-croissant,dataset,revision",
             ],
             "cache_is_error_to_retry": [],
             "cache_is_job_runner_obsolete": [],
@@ -191,6 +195,7 @@ def test_plan_job_creation_and_termination() -> None:
                 "dataset-compatible-libraries,dataset,revision",
                 "dataset-modalities,dataset,revision",
                 "dataset-split-names,dataset,revision",
+                "dataset-croissant,dataset,revision",
             ]
         },
         tasks=["CreateJobs,18"],
