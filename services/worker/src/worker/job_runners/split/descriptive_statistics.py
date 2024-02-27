@@ -244,6 +244,12 @@ def value_counts(data: pl.DataFrame, column_name: str) -> dict[Any, Any]:
     return dict(data[column_name].value_counts().rows())
 
 
+def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -> tuple[int, float]:
+    nan_count = data[column_name].null_count()
+    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+    return nan_count, nan_proportion
+
+
 class Column:
     """Abstract class to compute stats for columns of all supported data types."""
 
@@ -271,13 +277,12 @@ class ClassLabelColumn(Column):
         super().__init__(*args, **kwargs)
         self.feature_dict = feature_dict
 
-    @classmethod
+    @staticmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
+        data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
     ) -> CategoricalStatisticsItem:
         datasets_feature = Features.from_dict({column_name: feature_dict})[column_name]
-        nan_count = data[column_name].null_count()
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
 
         ids2counts: dict[int, int] = value_counts(data, column_name)
         no_label_count = ids2counts.pop(NO_LABEL_VALUE, 0)
@@ -417,8 +422,7 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
         # TODO: count n_unique only on the first parquet file?
         n_unique = data[column_name].n_unique()
-        nan_count = data[column_name].null_count()
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
 
         if n_unique <= MAX_NUM_STRING_LABELS:  # TODO: make relative
             labels2counts: dict[str, int] = value_counts(data, column_name)
@@ -454,8 +458,7 @@ class BoolColumn(Column):
     @staticmethod
     def _compute_statistics(data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
         # df = pl.read_parquet(self.path, columns=[self.name])
-        nan_count = data[column_name].null_count()
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         values2counts: dict[str, int] = value_counts(data, column_name)
         # exclude counts of None values from frequencies if exist:
         values2counts.pop(None, None)  # type: ignore
@@ -484,8 +487,7 @@ class ListColumn(Column):
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
-        nan_count = data[column_name].null_count()
-        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
 
         lengths_column_name = f"{column_name}_len"
