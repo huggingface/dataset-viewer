@@ -705,6 +705,10 @@ class DatasetBackfillPlan(Plan):
                 difficulty = artifact_state.processing_step.difficulty
                 if isinstance(artifact_state.config, str) and is_big(config=artifact_state.config):
                     difficulty += artifact_state.processing_step.bonus_difficulty_if_dataset_is_big
+                if artifact_state.cache_state.cache_entry_metadata is not None:
+                    failed_runs = artifact_state.cache_state.cache_entry_metadata["failed_runs"]
+                # increase difficulty according to number of failed runs
+                difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
