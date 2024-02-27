@@ -251,6 +251,12 @@ class DatasetModalitiesResponse(TypedDict):
     modalities: list[DatasetModality]
 
 
+class DatasetCroissantResponse(TypedDict):
+    croissant: Mapping[str, Any]
+    truncated_configs: bool
+    partial: bool
+
+
 class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
