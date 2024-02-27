@@ -4,7 +4,7 @@
 import logging
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -88,7 +88,7 @@ MAX_COLUMNS = 1_000
 # ^ same value as the default for FIRST_ROWS_COLUMNS_MAX_NUMBER (see services/worker)
 
 
-def truncate_features_from_croissant_response(content: dict) -> None:
+def truncate_features_from_croissant_response(content: Mapping[str, Any]) -> None:
     """Truncate the features from a croissant response to avoid returning a large response."""
     if "croissant" in content and isinstance(content["croissant"], dict):
         if "recordSet" in content["croissant"] and isinstance(content["croissant"]["recordSet"], list):
@@ -145,9 +145,7 @@ def create_endpoint(
                     )
                     processing_step = step_by_input_type[input_type]
                     # full: only used in /croissant
-                    full = get_request_parameter(request, "full", default="true")
-                    if full.lower() == "false":
-                        full = False
+                    full = get_request_parameter(request, "full", default="true").lower() != "false"
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
                     await auth_check(
