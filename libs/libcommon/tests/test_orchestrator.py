@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 import pytest
 
-from libcommon.constants import DEFAULT_DIFFICULTY_MAX, DIFFICULTY_BONUS_BY_FAILED_RUNS
 from libcommon.dtos import JobOutput, JobResult, Priority, Status
 from libcommon.orchestrator import AfterJobPlan, finish_job, has_pending_ancestor_jobs, remove_dataset, set_revision
 from libcommon.processing_graph import Artifact, ProcessingGraph
