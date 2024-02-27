@@ -846,11 +846,19 @@ def test_resolve_trust_remote_code() -> None:
         ("config", "split", 9999, 10_001, False, "config/split-part0/9999.parquet"),
         ("config", "split", 10_000, 10_001, False, "config/split-part1/0000.parquet"),
         ("config", "split", 99_999, 100_000, False, "config/split-part9/9999.parquet"),
+        ("config", "split_ending_with_part1", 0, 1, False, "config/split_ending_with_part1/0000.parquet"),
+        ("config", "split", 0, 100_001, False, None),
     ],
 )
 def test_parquet_file_path_in_repo(
-    config: str, split: str, shard_idx: int, num_shards: int, partial: bool, expected_path_in_repo: str
+    config: str, split: str, shard_idx: int, num_shards: int, partial: bool, expected_path_in_repo: Optional[str]
 ) -> None:
-    parquet_file = ParquetFile(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
-    assert parquet_file.path_in_repo == expected_path_in_repo
-    assert parse_repo_filename(parquet_file.path_in_repo) == (config, split)
+    if expected_path_in_repo:
+        parquet_file = ParquetFile(
+            config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial
+        )
+        assert parquet_file.path_in_repo == expected_path_in_repo
+        assert parse_repo_filename(parquet_file.path_in_repo) == (config, split)
+    else:
+        with pytest.raises(ValueError):
+            ParquetFile(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
