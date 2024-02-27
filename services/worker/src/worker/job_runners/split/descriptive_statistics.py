@@ -281,6 +281,7 @@ class ClassLabelColumn(Column):
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
     ) -> CategoricalStatisticsItem:
+        logging.info(f"Compute statistics for ClassLabel column {column_name} with polars. ")
         datasets_feature = Features.from_dict({column_name: feature_dict})[column_name]
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
 
@@ -331,6 +332,7 @@ class FloatColumn(Column):
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
+        logging.info(f"Compute statistics for float column {column_name} with polars. ")
         minimum, maximum, mean, median, std, nan_count, nan_proportion = compute_min_max_median_std_nan_count(
             data, column_name, n_samples
         )
@@ -420,6 +422,7 @@ class StringColumn(Column):
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
+        logging.info(f"Compute statistics for string column {column_name} with polars. ")
         # TODO: count n_unique only on the first parquet file?
         n_unique = data[column_name].n_unique()
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
@@ -457,6 +460,7 @@ class StringColumn(Column):
 class BoolColumn(Column):
     @staticmethod
     def _compute_statistics(data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
+        logging.info(f"Compute statistics for boolean column {column_name} with polars. ")
         # df = pl.read_parquet(self.path, columns=[self.name])
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         values2counts: dict[str, int] = value_counts(data, column_name)
@@ -487,6 +491,7 @@ class ListColumn(Column):
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
+        logging.info(f"Compute statistics for list/Sequence column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
 
@@ -691,6 +696,8 @@ def compute_descriptive_statistics_response(
             "No columns for statistics computation found. Currently supported feature types are: "
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, list/Sequence and bool. "
         )
+
+    logging.info(f"Computing for {dataset=} {config=} {split=} finished. ")
 
     return SplitDescriptiveStatisticsResponse(
         num_examples=num_examples,
