@@ -86,6 +86,7 @@ from worker.utils import (
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
+MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
 
 T = TypeVar("T")
@@ -104,6 +105,11 @@ class ParquetFile:
         self.shard_idx = shard_idx
         self.num_shards = num_shards
         self.partial = partial
+
+        if num_shards > MAX_FILES_PER_REPOSITORY:
+            raise ValueError(
+                f"Too many parquet files: {num_shards}. Maximum per repository is {MAX_FILES_PER_REPOSITORY}."
+            )
 
     @property
     def path_in_repo(self) -> str:
