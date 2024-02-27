@@ -14,7 +14,6 @@ from libcommon.constants import (
     CONFIG_SPLIT_NAMES_KIND,
     DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
-    DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
 from libcommon.dtos import JobInfo, JobResult, Priority
 from libcommon.processing_graph import ProcessingGraph, ProcessingStep, ProcessingStepDoesNotExist, processing_graph
