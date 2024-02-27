@@ -435,7 +435,7 @@ class AfterJobPlan(Plan):
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
-            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + self.failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
+            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
