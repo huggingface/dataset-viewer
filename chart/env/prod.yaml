@@ -192,13 +192,30 @@ backfill:
     level: "debug"
   action: "backfill"
   schedule: "45 21 * * *"
-  # every four hours
+  # every day
   nodeSelector:
     role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
-      memory: "4Gi"
+      memory: "1Gi"
+    limits:
+      cpu: 2
+      memory: "8Gi"
+
+backfillRetryableErrors:
+  enabled: true
+  log:
+    level: "debug"
+  action: "backfill-retryable-errors"
+  schedule: "*/20 * * * *"
+  # every 20 minutes hours
+  nodeSelector:
+    role-datasets-server: "true"
+  resources:
+    requests:
+      cpu: 1
+      memory: "1Gi"
     limits:
       cpu: 2
       memory: "8Gi"

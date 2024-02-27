@@ -7,7 +7,7 @@ from typing import Optional
 
 from libcommon.dtos import Priority
 from libcommon.operations import OperationsStatistics, backfill_dataset
-from libcommon.simple_cache import get_all_datasets
+from libcommon.simple_cache import get_all_datasets, get_datasets_with_retryable_errors
 from libcommon.storage_client import StorageClient
 
 
@@ -35,7 +35,7 @@ class BackfillStatistics:
         )
 
 
-def backfill_cache(
+def backfill_all_datasets(
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -43,11 +43,44 @@ def backfill_cache(
 ) -> None:
     logging.info("backfill datasets in the database and delete non-supported ones")
     datasets_in_database = get_all_datasets()
-    logging.info(f"analyzing {len(datasets_in_database)} datasets in the database")
-    statistics = BackfillStatistics(num_total_datasets=len(datasets_in_database))
+    backfill_datasets(
+        dataset_names=datasets_in_database,
+        hf_endpoint=hf_endpoint,
+        blocked_datasets=blocked_datasets,
+        hf_token=hf_token,
+        storage_clients=storage_clients,
+    )
+
+
+def backfill_retryable_errors(
+    hf_endpoint: str,
+    blocked_datasets: list[str],
+    hf_token: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
+) -> None:
+    logging.info("backfill datasets that have a retryable error")
+    dataset_names = get_datasets_with_retryable_errors()
+    backfill_datasets(
+        dataset_names=dataset_names,
+        hf_endpoint=hf_endpoint,
+        blocked_datasets=blocked_datasets,
+        hf_token=hf_token,
+        storage_clients=storage_clients,
+    )
+
+
+def backfill_datasets(
+    dataset_names: list[str],
+    hf_endpoint: str,
+    blocked_datasets: list[str],
+    hf_token: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
+) -> None:
+    logging.info(f"analyzing {len(dataset_names)} datasets in the database")
+    statistics = BackfillStatistics(num_total_datasets=len(dataset_names))
     log_batch = 100
 
-    for dataset in datasets_in_database:
+    for dataset in dataset_names:
         try:
             statistics.add(
                 BackfillStatistics(

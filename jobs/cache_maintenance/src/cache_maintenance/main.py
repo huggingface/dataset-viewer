@@ -10,7 +10,7 @@ from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.storage import init_dir
 from libcommon.storage_client import StorageClient
 
-from cache_maintenance.backfill import backfill_cache
+from cache_maintenance.backfill import backfill_all_datasets, backfill_retryable_errors
 from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.clean_directory import clean_directory
 from cache_maintenance.config import JobConfig
@@ -36,7 +36,7 @@ def run_job() -> None:
         ) as queue_resource,
     ):
         start_time = datetime.now()
-        if action == "backfill":
+        if action in ("backfill", "backfill-retryable-errors"):
             if not cache_resource.is_available():
                 logging.warning(
                     "The connection to the cache database could not be established. The action is skipped."
@@ -61,12 +61,20 @@ def run_job() -> None:
                 s3_config=job_config.s3,
                 # no need to specify a url_signer
             )
-            backfill_cache(
-                hf_endpoint=job_config.common.hf_endpoint,
-                hf_token=job_config.common.hf_token,
-                blocked_datasets=job_config.common.blocked_datasets,
-                storage_clients=[cached_assets_storage_client, assets_storage_client],
-            )
+            if action == "backfill":
+                backfill_all_datasets(
+                    hf_endpoint=job_config.common.hf_endpoint,
+                    hf_token=job_config.common.hf_token,
+                    blocked_datasets=job_config.common.blocked_datasets,
+                    storage_clients=[cached_assets_storage_client, assets_storage_client],
+                )
+            else:
+                backfill_retryable_errors(
+                    hf_endpoint=job_config.common.hf_endpoint,
+                    hf_token=job_config.common.hf_token,
+                    blocked_datasets=job_config.common.blocked_datasets,
+                    storage_clients=[cached_assets_storage_client, assets_storage_client],
+                )
         elif action == "clean-directory":
             directory_path = init_dir(directory=job_config.directory_cleaning.cache_directory)
             folder_pattern = f"{directory_path}/{job_config.directory_cleaning.subfolder_pattern}"
