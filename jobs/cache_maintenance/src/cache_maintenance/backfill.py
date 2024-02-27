@@ -70,7 +70,7 @@ def backfill_retryable_errors(
 
 
 def backfill_datasets(
-    dataset_names: list[str],
+    dataset_names: set[str],
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
