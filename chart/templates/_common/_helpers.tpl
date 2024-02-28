@@ -104,6 +104,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-cache-metrics-collector"
 app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 {{- end -}}
 
+{{- define "labels.backfillRetryableErrors" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-backfill-retryable-errors"
+{{- end -}}
+
 {{- define "labels.cleanDuckdbIndexCache" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-cache"

@@ -5,6 +5,7 @@
 Available actions:
 
 - `backfill`: backfill the cache (i.e. create jobs to add the missing entries or update the outdated entries)
+- `backfill-retryable-errors`: backfill the cache for retryable errors
 - `collect-cache-metrics`: compute and store the cache metrics
 - `collect-queue-metrics`: compute and store the queue metrics
 - `clean-directory`: clean obsolete files/directories for a given path
@@ -15,7 +16,7 @@ Available actions:
 
 The script can be configured using environment variables. They are grouped by scope.
 
-- `CACHE_MAINTENANCE_ACTION`: the action to launch, among `backfill`, `collect-cache-metrics`, `collect-queue-metrics`, `clean-directory` and `post-messages`. Defaults to `skip`.
+- `CACHE_MAINTENANCE_ACTION`: the action to launch, among `backfill`, `backfill-retryable-errors`, `collect-cache-metrics`, `collect-queue-metrics`, `clean-directory` and `post-messages`. Defaults to `skip`.
 
 ### Backfill job configurations
 

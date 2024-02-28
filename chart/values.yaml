@@ -325,6 +325,21 @@ backfill:
       cpu: 0
   tolerations: []
 
+backfillRetryableErrors:
+  enabled: false
+  log:
+    level: "info"
+  action: "backfill-retryable-errors"
+  schedule: "*/10 * * * *"
+  # every 10 minutes
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
 cleanHfDatasetsCache:
   enabled: true
   log:
