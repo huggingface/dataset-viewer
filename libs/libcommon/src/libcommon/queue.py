@@ -275,7 +275,7 @@ class WorkerSizeJobsCountDocument(Document):
     created_at = DateTimeField(default=get_datetime)
 
     @staticmethod
-    def get_worker_size(difficulty: int) -> str:
+    def get_worker_size(difficulty: int) -> WorkerSize:
         if difficulty <= 40:
             return WorkerSize.light
         if difficulty <= 70:
