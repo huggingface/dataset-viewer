@@ -253,7 +253,7 @@ class JobTotalMetricDocument(Document):
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
-class WorkerSizeJobCountDocument(Document):
+class WorkerSizeJobsCountDocument(Document):
     """Metric that counts the number of (waiting) jobs per worker size.
 
     A worker size is defined by the job difficulties it handles. We hardcode
@@ -285,7 +285,7 @@ class WorkerSizeJobCountDocument(Document):
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [("worker_size")],
     }
-    objects = QuerySetManager["WorkerSizeJobCountDocument"]()
+    objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
 
 
 def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
@@ -296,8 +296,8 @@ def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: in
         inc__total=increase_by,
     )
     if status == Status.WAITING:
-        worker_size = WorkerSizeJobCountDocument.get_worker_size(difficulty=difficulty)
-        WorkerSizeJobCountDocument.objects(worker_size=worker_size).update(
+        worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
+        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
             upsert=True,
             write_concern={"w": "majority", "fsync": True},
             read_concern={"level": "majority"},
@@ -317,7 +317,7 @@ def update_metrics_for_type(job_type: str, previous_status: str, new_status: str
     if job_type is not None:
         decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
         increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
-        # ^ this does not affect WorkerSizeJobCountDocument, so we don't pass the job difficulty
+        # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
 
 
 class _TTL(IntEnum):
@@ -1132,5 +1132,5 @@ def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     JobDocument.drop_collection()  # type: ignore
     JobTotalMetricDocument.drop_collection()  # type: ignore
-    WorkerSizeJobCountDocument.drop_collection()  # type: ignore
+    WorkerSizeJobsCountDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore

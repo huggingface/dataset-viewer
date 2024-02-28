@@ -22,7 +22,7 @@ from libcommon.queue import (
     JobTotalMetricDocument,
     Lock,
     Queue,
-    WorkerSizeJobCountDocument,
+    WorkerSizeJobsCountDocument,
     lock,
 )
 from libcommon.resources import QueueMongoResource
@@ -50,7 +50,7 @@ def test_add_job() -> None:
     # get the queue
     queue = Queue()
     assert JobTotalMetricDocument.objects().count() == 0
-    assert WorkerSizeJobCountDocument.objects().count() == 0
+    assert WorkerSizeJobsCountDocument.objects().count() == 0
     # add a job
     job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert_metric(job_type=test_type, status=Status.WAITING, total=1)
