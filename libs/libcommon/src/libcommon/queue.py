@@ -7,7 +7,7 @@ import logging
 import time
 import types
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from enum import IntEnum
 from itertools import groupby
@@ -78,9 +78,7 @@ class JobDict(TypedDict):
     last_heartbeat: Optional[datetime]
 
 
-class CountByStatus(TypedDict):
-    waiting: int
-    started: int
+JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
 
 
 class DumpByPendingStatus(TypedDict):
@@ -983,32 +981,33 @@ class Queue:
         return JobDocument.objects(**filters, dataset=dataset).count() > 0
 
     # special reports
-    def count_jobs(self, status: Status, job_type: str) -> int:
-        """Count the number of jobs with a given status and the given type.
-
-        Args:
-            status (`Status`): status of the jobs
-            job_type (`str`): job type
+    def get_jobs_total_by_type_and_status(self) -> JobsTotalByTypeAndStatus:
+        """Count the number of jobs by job type and status.
 
         Returns:
-            `int`: the number of jobs with the given status and the given type.
+            an object with the total of jobs by job type and status.
+            Keys are a tuple (job_type, status), and values are the total of jobs.
         """
-        return JobDocument.objects(type=job_type, status=status.value).count()
-
-    def get_jobs_count_by_status(self, job_type: str) -> CountByStatus:
-        """Count the number of jobs by status for a given job type.
-
-        Returns:
-            `CountByStatus`: a dictionary with the number of jobs for each status
-        """
-        # ensure that all the statuses are present, even if equal to zero
-        # note: we repeat the values instead of looping on Status because we don't know how to get the types right
-        # in mypy
-        # result: CountByStatus = {s.value: jobs(status=s.value).count() for s in Status} # <- doesn't work in mypy
-        # see https://stackoverflow.com/a/67292548/7351594
         return {
-            "waiting": self.count_jobs(status=Status.WAITING, job_type=job_type),
-            "started": self.count_jobs(status=Status.STARTED, job_type=job_type),
+            (metric["job_type"], metric["status"]): metric["total"]
+            for metric in JobDocument.objects().aggregate(
+                [
+                    {"$sort": {"type": 1, "status": 1}},
+                    {
+                        "$group": {
+                            "_id": {"type": "$type", "status": "$status"},
+                            "total": {"$sum": 1},
+                        }
+                    },
+                    {
+                        "$project": {
+                            "job_type": "$_id.type",
+                            "status": "$_id.status",
+                            "total": "$total",
+                        }
+                    },
+                ]
+            )
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:

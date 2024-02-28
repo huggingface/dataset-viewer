@@ -16,10 +16,7 @@ services:
       # queue
       QUEUE_MONGO_URL: ${QUEUE_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
       QUEUE_MONGO_DATABASE: ${QUEUE_MONGO_DATABASE-datasets_server_queue}
-      # metrics
-      METRICS_MONGO_URL: ${METRICS_MONGO_URL-mongodb://${DEV_MONGO_HOST-host.docker.internal}:${MONGO_PORT-27017}}
-      METRICS_MONGO_DATABASE: ${METRICS_MONGO_DATABASE-datasets_server_metrics}
-    # assets
+      # assets
       ASSETS_BASE_URL: ${ASSETS_BASE_URL} # <- must be set, no default value. If local, set to work with the reverse-proxy, like http://localhost:${PORT_REVERSE_PROXY-8000}/assets
       ASSETS_STORAGE_ROOT: ${ASSETS_STORAGE_ROOT-/storage/assets}
       ASSETS_STORAGE_PROTOCOL: ${ASSETS_STORAGE_PROTOCOL-file}

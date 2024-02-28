@@ -3,7 +3,7 @@ import re
 from collections.abc import Mapping
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from datasets import ClassLabel, Features, Image, Value
 from libapi.authentication import auth_check
@@ -16,12 +16,12 @@ from libapi.request import get_request_parameter
 from libapi.utils import (
     Endpoint,
     are_valid_parameters,
-    get_cache_entry_from_steps,
+    get_cache_entry_from_step,
     get_json_api_error_response,
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KINDS
+from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
@@ -63,6 +63,21 @@ def _escape_name(name: str, names: set[str]) -> str:
     return escaped_name
 
 
+def _extract_doi_tag(info: Mapping[str, Any]) -> Union[str, None]:
+    """Extracts https://huggingface.co/docs/hub/en/doi."""
+    tags = info.get("tags", [])
+    if isinstance(tags, list):
+        for tag in tags:
+            if isinstance(tag, str) and tag.startswith("doi:"):
+                return tag.replace("doi:", "", 1)
+    return None
+
+
+def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Removes None values in the first depth of a dict."""
+    return {k: v for k, v in json.items() if v is not None}
+
+
 def get_croissant_from_dataset_infos(
     dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool
 ) -> Mapping[str, Any]:
@@ -78,9 +93,13 @@ def get_croissant_from_dataset_infos(
             "sha256": "https://github.com/mlcommons/croissant/issues/80",
         }
     ]
+    identifier = None
+    _license = None
     record_set = []
     for info in infos:
         description_body = ""
+        _license = info.get("license")
+        identifier = _extract_doi_tag(info)
         config = info["config_name"]
         features = Features.from_dict(info["features"])
         fields: list[dict[str, Any]] = []
@@ -157,47 +176,51 @@ def get_croissant_from_dataset_infos(
                 "field": fields,
             }
         )
-    return {
-        "@context": {
-            "@language": "en",
-            "@vocab": "https://schema.org/",
-            "column": "ml:column",
-            "data": {
-                "@id": "ml:data",
-                "@type": "@json",
+    return _remove_none_values(
+        {
+            "@context": {
+                "@language": "en",
+                "@vocab": "https://schema.org/",
+                "column": "ml:column",
+                "data": {
+                    "@id": "ml:data",
+                    "@type": "@json",
+                },
+                "dataType": {
+                    "@id": "ml:dataType",
+                    "@type": "@vocab",
+                },
+                "extract": "ml:extract",
+                "field": "ml:field",
+                "fileProperty": "ml:fileProperty",
+                "format": "ml:format",
+                "includes": "ml:includes",
+                "isEnumeration": "ml:isEnumeration",
+                "jsonPath": "ml:jsonPath",
+                "ml": "http://mlcommons.org/schema/",
+                "parentField": "ml:parentField",
+                "path": "ml:path",
+                "recordSet": "ml:recordSet",
+                "references": "ml:references",
+                "regex": "ml:regex",
+                "repeated": "ml:repeated",
+                "replace": "ml:replace",
+                "sc": "https://schema.org/",
+                "separator": "ml:separator",
+                "source": "ml:source",
+                "subField": "ml:subField",
+                "transform": "ml:transform",
             },
-            "dataType": {
-                "@id": "ml:dataType",
-                "@type": "@vocab",
-            },
-            "extract": "ml:extract",
-            "field": "ml:field",
-            "fileProperty": "ml:fileProperty",
-            "format": "ml:format",
-            "includes": "ml:includes",
-            "isEnumeration": "ml:isEnumeration",
-            "jsonPath": "ml:jsonPath",
-            "ml": "http://mlcommons.org/schema/",
-            "parentField": "ml:parentField",
-            "path": "ml:path",
-            "recordSet": "ml:recordSet",
-            "references": "ml:references",
-            "regex": "ml:regex",
-            "repeated": "ml:repeated",
-            "replace": "ml:replace",
-            "sc": "https://schema.org/",
-            "separator": "ml:separator",
-            "source": "ml:source",
-            "subField": "ml:subField",
-            "transform": "ml:transform",
-        },
-        "@type": "sc:Dataset",
-        "name": _escape_name(dataset, names),
-        "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
-        "url": f"https://huggingface.co/datasets/{dataset}",
-        "distribution": distribution,
-        "recordSet": record_set,
-    }
+            "@type": "sc:Dataset",
+            "name": _escape_name(dataset, names),
+            "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
+            "identifier": identifier,
+            "license": _license,
+            "url": f"https://huggingface.co/datasets/{dataset}",
+            "distribution": distribution,
+            "recordSet": record_set,
+        }
+    )
 
 
 def _get_full_jsonld_parameter(request: Request) -> bool:
@@ -248,8 +271,8 @@ def create_croissant_endpoint(
                     )
                 # getting result based on processing steps
                 with StepProfiler(method="croissant_endpoint", step="get info cache entry", context=context):
-                    info_result = get_cache_entry_from_steps(
-                        processing_step_names=DATASET_INFO_KINDS,
+                    info_result = get_cache_entry_from_step(
+                        processing_step_name=DATASET_INFO_KIND,
                         dataset=dataset,
                         config=None,
                         split=None,

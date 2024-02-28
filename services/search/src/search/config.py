@@ -18,13 +18,15 @@ from libcommon.config import (
 )
 
 DUCKDB_INDEX_CACHE_DIRECTORY = None
-DUCKDB_INDEX_TARGET_REVISION = "refs/convert/parquet"
+DUCKDB_INDEX_TARGET_REVISION = "refs/convert/duckdb"
+DUCKDB_INDEX_EXTENSIONS_DIRECTORY: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class DuckDbIndexConfig:
     cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
     target_revision: str = DUCKDB_INDEX_TARGET_REVISION
+    extensions_directory: Optional[str] = DUCKDB_INDEX_EXTENSIONS_DIRECTORY
 
     @classmethod
     def from_env(cls) -> "DuckDbIndexConfig":
@@ -33,6 +35,7 @@ class DuckDbIndexConfig:
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
+                extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
             )
 
 

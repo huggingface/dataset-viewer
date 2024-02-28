@@ -3,7 +3,6 @@
 
 import types
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from http import HTTPStatus
@@ -370,12 +369,6 @@ def get_response_without_content(
     }
 
 
-def get_response_without_content_params(kind: str, job_params: JobParams) -> CacheEntryWithoutContent:
-    return get_response_without_content(
-        kind=kind, dataset=job_params["dataset"], config=job_params["config"], split=job_params["split"]
-    )
-
-
 class CacheEntryMetadata(CacheEntryWithoutContent):
     updated_at: datetime
     failed_runs: int
@@ -549,89 +542,60 @@ def get_response_or_missing_error(
     return response
 
 
-@dataclass
-class BestResponse:
-    kind: str
-    response: CacheEntryWithDetails
-
-
-def get_best_response(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> BestResponse:
+def get_previous_step_or_raise(
+    kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None
+) -> CacheEntryWithDetails:
     """
-    Get the best response from a list of cache kinds.
-
-    Best means:
-    - the first success response with the highest progress,
-    - else: the first error response (including cache miss)
+    Get the previous step from the cache, or raise an exception if it failed.
 
     Args:
-        kinds (`list[str]`):
-            A non-empty list of cache kinds to look responses for.
-        dataset (`str`):
-            A namespace (user or an organization) and a repo name separated by a `/`.
-        config (`str`, *optional*):
-            A config name.
-        split (`str`, *optional*):
-            A split name.
+        kind (`str`): The kind of the cache entry.
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name.
+        split (`str`, *optional*): The split name.
+
     Returns:
-        `BestResponse`: The best response (object with fields: kind and response). The response can be an error,
+        `CacheEntryWithDetails`: The response. It can be an error,
           including a cache miss (error code: `CachedResponseNotFound`)
     """
-    if not kinds:
-        raise ValueError("kinds must be a non-empty list")
-    best_response_candidates = [
-        BestResponse(
-            kind=kind, response=get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
-        )
-        for kind in kinds
-    ]
-    max_index = 0
-    max_value = float("-inf")
-    for index, candidate in enumerate(best_response_candidates):
-        if candidate.response["http_status"] >= HTTPStatus.BAD_REQUEST.value:
-            # only the first error response is considered
-            continue
-        value = (
-            0.0
-            if candidate.response["progress"] is None or candidate.response["progress"] < 0.0
-            else candidate.response["progress"]
-        )
-        if value > max_value:
-            max_value = value
-            max_index = index
-    return best_response_candidates[max_index]
-
-
-def get_previous_step_or_raise(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> BestResponse:
-    """Get the previous step from the cache, or raise an exception if it failed."""
-    best_response = get_best_response(kinds=kinds, dataset=dataset, config=config, split=split)
-    if "error_code" in best_response.response and best_response.response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
-        raise CachedArtifactNotFoundError(kind=best_response.kind, dataset=dataset, config=config, split=split)
-    if best_response.response["http_status"] != HTTPStatus.OK:
+    response = get_response_or_missing_error(kind=kind, dataset=dataset, config=config, split=split)
+    if "error_code" in response and response["error_code"] == CACHED_RESPONSE_NOT_FOUND:
+        raise CachedArtifactNotFoundError(kind=kind, dataset=dataset, config=config, split=split)
+    if response["http_status"] != HTTPStatus.OK:
         raise CachedArtifactError(
             message="The previous step failed.",
-            kind=best_response.kind,
+            kind=kind,
             dataset=dataset,
             config=config,
             split=split,
-            cache_entry_with_details=best_response.response,
+            cache_entry_with_details=response,
         )
-    return best_response
+    return response
 
 
 def get_all_datasets() -> set[str]:
     return set(CachedResponseDocument.objects().distinct("dataset"))
 
 
-def has_any_successful_response(
-    kinds: list[str], dataset: str, config: Optional[str] = None, split: Optional[str] = None
-) -> bool:
+def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
+    """
+    Check if the response is successful.
+
+    Args:
+        kind (`str`): The kind of the cache entry.
+        dataset (`str`): The dataset name.
+        config (`str`, *optional*): The config name.
+        split (`str`, *optional*): The split name.
+
+    Raises:
+        [~`mongoengine.DoesNotExist`]: If the response does not exist.
+
+    Returns:
+        `bool`: True if the response is successful, False otherwise.
+    """
     return (
         CachedResponseDocument.objects(
-            dataset=dataset, config=config, split=split, kind__in=kinds, http_status=HTTPStatus.OK
+            dataset=dataset, config=config, split=split, kind=kind, http_status=HTTPStatus.OK
         ).count()
         > 0
     )
@@ -640,50 +604,38 @@ def has_any_successful_response(
 # admin /metrics endpoint
 
 
-class CountEntry(TypedDict):
-    kind: str
-    http_status: int
-    error_code: Optional[str]
-    count: int
+EntriesTotalByKindStatusAndErrorCode = Mapping[tuple[str, int, Optional[str]], int]
 
 
-def format_group(group: dict[str, Any]) -> CountEntry:
-    kind = group["kind"]
-    if not isinstance(kind, str):
-        raise TypeError("kind must be a str")
-    http_status = group["http_status"]
-    if not isinstance(http_status, int):
-        raise TypeError("http_status must be an int")
-    error_code = group["error_code"]
-    if not isinstance(error_code, str) and error_code is not None:
-        raise TypeError("error_code must be a str or None")
-    count = group["count"]
-    if not isinstance(count, int):
-        raise TypeError("count must be an int")
-    return {"kind": kind, "http_status": http_status, "error_code": error_code, "count": count}
+def get_responses_count_by_kind_status_and_error_code() -> EntriesTotalByKindStatusAndErrorCode:
+    """Count the number of cache entries by kind, http status and error code.
 
-
-def get_responses_count_by_kind_status_and_error_code() -> list[CountEntry]:
-    groups = CachedResponseDocument.objects().aggregate(
-        [
-            {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
-            {
-                "$group": {
-                    "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
-                    "count": {"$sum": 1},
-                }
-            },
-            {
-                "$project": {
-                    "kind": "$_id.kind",
-                    "http_status": "$_id.http_status",
-                    "error_code": "$_id.error_code",
-                    "count": "$count",
-                }
-            },
-        ]
-    )
-    return [format_group(group) for group in groups]
+    Returns:
+        an object with the total of jobs by kind, http_status and error_code.
+        Keys are a tuple (kind, http_status, error_code), and values are the total of jobs.
+    """
+    return {
+        (metric["kind"], metric["http_status"], metric["error_code"]): metric["total"]
+        for metric in CachedResponseDocument.objects().aggregate(
+            [
+                {"$sort": {"kind": 1, "http_status": 1, "error_code": 1}},
+                {
+                    "$group": {
+                        "_id": {"kind": "$kind", "http_status": "$http_status", "error_code": "$error_code"},
+                        "total": {"$sum": 1},
+                    }
+                },
+                {
+                    "$project": {
+                        "kind": "$_id.kind",
+                        "http_status": "$_id.http_status",
+                        "error_code": "$_id.error_code",
+                        "total": "$total",
+                    }
+                },
+            ]
+        )
+    }
 
 
 # /cache-reports/... endpoints
@@ -947,9 +899,7 @@ def has_some_cache(dataset: str) -> bool:
     return get_cache_count_for_dataset(dataset) > 0
 
 
-def fetch_names(
-    dataset: str, config: Optional[str], cache_kinds: list[str], names_field: str, name_field: str
-) -> list[str]:
+def fetch_names(dataset: str, config: Optional[str], cache_kind: str, names_field: str, name_field: str) -> list[str]:
     """
     Fetch a list of names from the cache database.
 
@@ -958,8 +908,7 @@ def fetch_names(
     Args:
         dataset (`str`): The dataset name.
         config (`str`, *optional*): The config name. Only needed for split names.
-        cache_kinds (`list[str]`): The cache kinds to fetch, eg ["dataset-config-names"],
-          or ["config-split-names-from-streaming", "config-split-names-from-info"].
+        cache_kind (`str`): The cache kind to fetch, eg "dataset-config-names".
         names_field (`str`): The name of the field containing the list of names, eg: "config_names", or "splits".
         name_field (`str`): The name of the field containing the name, eg: "config", or "split".
 
@@ -968,8 +917,8 @@ def fetch_names(
     """
     try:
         names = []
-        best_response = get_best_response(kinds=cache_kinds, dataset=dataset, config=config)
-        for name_item in best_response.response["content"][names_field]:
+        response = get_response_or_missing_error(kind=cache_kind, dataset=dataset, config=config)
+        for name_item in response["content"][names_field]:
             name = name_item[name_field]
             if not isinstance(name, str):
                 raise ValueError(f"Invalid name: {name}, type should be str, got: {type(name)}")

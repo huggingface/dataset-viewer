@@ -36,17 +36,8 @@ UPSTREAM_RESPONSE_CONFIG_SIZE: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.OK,
     content={},
 )
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-parquet",
-    dataset=DATASET,
-    dataset_git_revision=REVISION_NAME,
-    config=CONFIG,
-    split=SPLIT,
-    http_status=HTTPStatus.OK,
-    content={},
-)
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-streaming",
+UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS: UpstreamResponse = UpstreamResponse(
+    kind="split-first-rows",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
@@ -80,17 +71,8 @@ UPSTREAM_RESPONSE_CONFIG_SIZE_ERROR: UpstreamResponse = UpstreamResponse(
     http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
     content={},
 )
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-parquet",
-    dataset=DATASET,
-    dataset_git_revision=REVISION_NAME,
-    config=CONFIG,
-    split=SPLIT,
-    http_status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    content={},
-)
-UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR: UpstreamResponse = UpstreamResponse(
-    kind="split-first-rows-from-streaming",
+UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_ERROR: UpstreamResponse = UpstreamResponse(
+    kind="split-first-rows",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     config=CONFIG,
@@ -153,7 +135,7 @@ def get_job_runner(
         )
 
         upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,
@@ -186,8 +168,7 @@ def get_job_runner(
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_SIZE,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX,
             ],
             EXPECTED_ALL_OK,
@@ -195,23 +176,20 @@ def get_job_runner(
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_SIZE_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
             ],
             EXPECTED_PREVIEW_OK,
         ),
         (
             [
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
             ],
             EXPECTED_PREVIEW_OK,
         ),
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_SIZE,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX,
             ],
             EXPECTED_ALL_OK,
@@ -219,8 +197,7 @@ def get_job_runner(
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_SIZE,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_ERROR,
             ],
             EXPECTED_VIEWER_OK,
         ),
@@ -245,8 +222,7 @@ def get_job_runner(
         (
             [
                 UPSTREAM_RESPONSE_CONFIG_SIZE_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_PARQUET_ERROR,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_FROM_STREAMING_ERROR,
+                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS_ERROR,
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ERROR,
             ],
             EXPECTED_ERROR,

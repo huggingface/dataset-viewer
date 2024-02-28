@@ -4,10 +4,10 @@
 import logging
 from http import HTTPStatus
 
-from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
+from libcommon.constants import CONFIG_SPLIT_NAMES_KIND
 from libcommon.dtos import FullConfigItem, FullSplitItem
 from libcommon.exceptions import PreviousStepFormatError
-from libcommon.simple_cache import get_best_response, get_previous_step_or_raise
+from libcommon.simple_cache import get_previous_step_or_raise, get_response_or_missing_error
 
 from worker.dtos import (
     DatasetSplitNamesResponse,
@@ -20,7 +20,7 @@ from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitNamesResponse, float]:
     """
     Get the response of 'dataset-split-names' for one specific dataset on huggingface.co
-    computed from responses cached in 'config-split-names-from-info' or 'config-split-names-from-streaming' steps.
+    computed from response cached in 'config-split-names' step.
 
     Args:
         dataset (`str`):
@@ -39,9 +39,9 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
     """
     logging.info(f"compute 'dataset-split-names' for {dataset=}")
 
-    # Get the config names from the previous steps
-    config_names_best_response = get_previous_step_or_raise(kinds=["dataset-config-names"], dataset=dataset)
-    content = config_names_best_response.response["content"]
+    # Get the config names from the previous step
+    config_names_response = get_previous_step_or_raise(kind="dataset-config-names", dataset=dataset)
+    content = config_names_response["content"]
     if "config_names" not in content:
         raise PreviousStepFormatError("'dataset-config-names' did not return the expected content: 'config_names'.")
     config_names = [config_name_item["config"] for config_name_item in content["config_names"]]
@@ -55,22 +55,22 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
         total = 0
         for config in config_names:
             total += 1
-            best_response = get_best_response(CONFIG_SPLIT_NAMES_KINDS, dataset=dataset, config=config)
-            if best_response.response["error_code"] == "CachedResponseNotFound":
+            response = get_response_or_missing_error(CONFIG_SPLIT_NAMES_KIND, dataset=dataset, config=config)
+            if response["error_code"] == "CachedResponseNotFound":
                 logging.debug(
-                    "No response (successful or erroneous) found in cache for the previous steps"
-                    f" '{CONFIG_SPLIT_NAMES_KINDS}' for this dataset."
+                    "No response (successful or erroneous) found in cache for the previous step"
+                    f" '{CONFIG_SPLIT_NAMES_KIND}' for this dataset."
                 )
                 pending.append(FullConfigItem({"dataset": dataset, "config": config}))
                 continue
-            if best_response.response["http_status"] != HTTPStatus.OK:
-                logging.debug(f"No successful response found in the previous steps {CONFIG_SPLIT_NAMES_KINDS}.")
+            if response["http_status"] != HTTPStatus.OK:
+                logging.debug(f"No successful response found in the previous step {CONFIG_SPLIT_NAMES_KIND}.")
                 failed.append(
                     FailedConfigItem(
                         {
                             "dataset": dataset,
                             "config": config,
-                            "error": best_response.response["content"],
+                            "error": response["content"],
                         }
                     )
                 )
@@ -78,7 +78,7 @@ def compute_dataset_split_names_response(dataset: str) -> tuple[DatasetSplitName
             splits.extend(
                 [
                     FullSplitItem({"dataset": dataset, "config": config, "split": split_content["split"]})
-                    for split_content in best_response.response["content"]["splits"]
+                    for split_content in response["content"]["splits"]
                 ]
             )
     except Exception as e:

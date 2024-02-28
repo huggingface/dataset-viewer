@@ -15,7 +15,7 @@ from fsspec.implementations.http import HTTPFile, HTTPFileSystem
 from huggingface_hub import HfFileSystem
 from pyarrow.lib import ArrowInvalid
 
-from libcommon.constants import CONFIG_PARQUET_METADATA_KINDS
+from libcommon.constants import CONFIG_PARQUET_METADATA_KIND
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
@@ -25,6 +25,10 @@ from libcommon.viewer_utils.features import get_supported_unsupported_columns
 # "-" is not allowed is split names so we use it in the prefix to avoid collisions.
 # We also use this prefix for the DuckDB index file name
 PARTIAL_PREFIX = "partial-"
+
+# For paths like "en/train-part0/0000.parquet", "en/train-part1/0000.parquet" up to "en/train-part9/9999.parquet".
+# Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+PART_SUFFIX = "-part{}"
 
 
 class EmptyParquetMetadataError(Exception):
@@ -357,14 +361,14 @@ class RowsIndex:
         with StepProfiler(method="rows_index._init_parquet_index", step="all"):
             # get the list of parquet files
             with StepProfiler(method="rows_index._init_parquet_index", step="get list of parquet files for split"):
-                result = get_previous_step_or_raise(
-                    kinds=CONFIG_PARQUET_METADATA_KINDS,
+                response = get_previous_step_or_raise(
+                    kind=CONFIG_PARQUET_METADATA_KIND,
                     dataset=self.dataset,
                     config=self.config,
                     split=None,
                 )
-                self.revision = result.response["dataset_git_revision"]
-                content = result.response["content"]
+                self.revision = response["dataset_git_revision"]
+                content = response["content"]
                 if content.get("features"):  # config-parquet-metadata version<2 didn't have features
                     features = Features.from_dict(content["features"])
                 else:

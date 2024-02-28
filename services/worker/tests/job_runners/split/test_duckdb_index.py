@@ -19,6 +19,7 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from libcommon.constants import DUCKDB_VERSION
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -69,7 +70,7 @@ def get_job_runner(
         )
 
         upsert_response(
-            kind="config-split-names-from-streaming",
+            kind="config-split-names",
             dataset=dataset,
             dataset_git_revision=REVISION_NAME,
             config=config,
@@ -343,6 +344,7 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
+        assert content["duckdb_version"] == DUCKDB_VERSION
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)

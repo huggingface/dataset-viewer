@@ -10,7 +10,7 @@ python = "3.9.18"
 environs = "^9.5.0"
 httpx = "^0.25.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
-orjson = "^3.8.6"
+orjson = "^3.9.15"
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
 starlette = "^0.37.1"
 starlette-prometheus = "^0.9.0"
@@ -22,7 +22,7 @@ mypy = "^1.8.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
 pytest-httpserver = "^1.0.6"
-ruff = "^0.1.3"
+ruff = "^0.2.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

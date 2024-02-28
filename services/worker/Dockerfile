@@ -28,6 +28,7 @@ WORKDIR /src
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+
 WORKDIR /src/services/worker/
 RUN poetry install --no-cache
 COPY services/worker/src ./src
