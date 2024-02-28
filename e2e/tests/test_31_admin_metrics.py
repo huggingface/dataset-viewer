@@ -35,8 +35,11 @@ def test_metrics() -> None:
 
     # the queue metrics are computed each time a job is created and processed
     # they should exists at least for some of jobs types
-    for worker_size in ["light", "medium", "heavy"]:
-        # eg. 'worker_size_jobs_count{pid="10",worker_size="heavy"}'
+    for worker_size in [
+        "light",
+        "medium",
+    ]:  # "heavy" is not used in the tests, and should not be present at this point
+        # eg. 'worker_size_jobs_count{pid="10",worker_size="light"}'
         assert has_metric(
             name="worker_size_jobs_count",
             labels={"pid": "[0-9]*", "worker_size": worker_size},
