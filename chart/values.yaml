@@ -330,8 +330,8 @@ backfillRetryableErrors:
   log:
     level: "info"
   action: "backfill-retryable-errors"
-  schedule: "*/20 * * * *"
-  # every 20 minutes
+  schedule: "*/10 * * * *"
+  # every 10 minutes
   nodeSelector: {}
   resources:
     requests:
