@@ -525,7 +525,7 @@ specification: ProcessingGraphSpecification = {
     },
     "split-descriptive-statistics": {
         "input_type": "split",
-        "triggered_by": "config-split-names",
+        "triggered_by": ["config-split-names", "config-parquet-metadata"],
         "job_runner_version": 3,
         "difficulty": 70,
         "bonus_difficulty_if_dataset_is_big": 20,
