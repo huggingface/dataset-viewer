@@ -4,6 +4,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional, Union
 
@@ -435,7 +436,7 @@ class AfterJobPlan(Plan):
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
-            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + self.failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
+            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
@@ -689,9 +690,27 @@ class DatasetBackfillPlan(Plan):
             + list(self.cache_status.cache_is_job_runner_obsolete.values())
             + list(self.cache_status.cache_has_different_git_revision.values())
         )
+
+        @lru_cache
+        def is_big(config: str) -> bool:
+            num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config)
+            if num_bytes is None:
+                return False
+            else:
+                return num_bytes > self.processing_graph.min_bytes_for_bonus_difficulty
+
         for artifact_state in artifact_states:
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
+                difficulty = artifact_state.processing_step.difficulty
+                if isinstance(artifact_state.config, str) and is_big(config=artifact_state.config):
+                    difficulty += artifact_state.processing_step.bonus_difficulty_if_dataset_is_big
+                if artifact_state.cache_state.cache_entry_metadata is not None:
+                    failed_runs = artifact_state.cache_state.cache_entry_metadata["failed_runs"]
+                else:
+                    failed_runs = 0
+                # increase difficulty according to number of failed runs
+                difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -703,7 +722,7 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": artifact_state.processing_step.difficulty,
+                        "difficulty": difficulty,
                     }
                 )
             else:
