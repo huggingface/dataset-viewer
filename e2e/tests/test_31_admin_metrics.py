@@ -33,6 +33,16 @@ def test_metrics() -> None:
             metric_names=metric_names,
         ), f"queue_jobs_total - queue={queue} found in {metrics}"
 
+    # the queue metrics are computed each time a job is created and processed
+    # they should exists at least for some of jobs types
+    for worker_size in ["light", "medium", "heavy"]:
+        # eg. 'worker_size_jobs_count{pid="10",worker_size="heavy"}'
+        assert has_metric(
+            name="worker_size_jobs_count",
+            labels={"pid": "[0-9]*", "worker_size": worker_size},
+            metric_names=metric_names,
+        ), f"worker_size_jobs_count - worker_size={worker_size} found in {metrics}"
+
     # the cache metrics are computed each time a job is processed
     # they should exists at least for some of cache kinds
     for cache_kind in ["dataset-config-names", "split-first-rows", "dataset-parquet"]:
