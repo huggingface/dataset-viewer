@@ -12,7 +12,7 @@ from datasets import Dataset
 from libcommon.dtos import JobInfo, Priority, RowsContent
 from libcommon.orchestrator import DatasetBackfillPlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
-from libcommon.queue import JobTotalMetricDocument, Queue, WorkerTypeJobCountDocument
+from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobCountDocument
 from libcommon.simple_cache import upsert_response
 from libcommon.viewer_utils.rows import GetRowsContent
 
@@ -383,8 +383,8 @@ def assert_metric(job_type: str, status: str, total: int) -> None:
     assert metric.total == total
 
 
-def assert_worker_type_jobs_count(worker_type: str, jobs_count: int) -> None:
-    metric = WorkerTypeJobCountDocument.objects(worker_type=worker_type).first()
+def assert_worker_size_jobs_count(worker_size: str, jobs_count: int) -> None:
+    metric = WorkerSizeJobCountDocument.objects(worker_size=worker_size).first()
     assert metric is not None, metric
     assert metric.jobs_count == jobs_count, metric.jobs_count
 

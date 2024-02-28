@@ -36,7 +36,7 @@ from libcommon.constants import (
     TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
     WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
-from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerType
+from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -253,39 +253,39 @@ class JobTotalMetricDocument(Document):
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
-class WorkerTypeJobCountDocument(Document):
-    """Metric that counts the number of (waiting) jobs per worker type.
+class WorkerSizeJobCountDocument(Document):
+    """Metric that counts the number of (waiting) jobs per worker size.
 
-    A worker type is defined by the job difficulties it handles. We hardcode
+    A worker size is defined by the job difficulties it handles. We hardcode
         - light: difficulty <= 40
         - medium: 40 < difficulty <= 70
         - heavy: 70 < difficulty
 
     Args:
-        worker_type (`WorkerType`): worker type
+        worker_size (`WorkerSize`): worker size
         jobs_count (`int`): jobs count
         created_at (`datetime`): when the metric has been created.
     """
 
     id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
-    worker_type = EnumField(WorkerType, required=True, unique=True)
+    worker_size = EnumField(WorkerSize, required=True, unique=True)
     jobs_count = IntField(required=True, default=0)
     created_at = DateTimeField(default=get_datetime)
 
     @staticmethod
-    def get_worker_type(difficulty: int) -> str:
+    def get_worker_size(difficulty: int) -> str:
         if difficulty <= 40:
-            return WorkerType.LIGHT
+            return WorkerSize.LIGHT
         if difficulty <= 70:
-            return WorkerType.MEDIUM
-        return WorkerType.HEAVY
+            return WorkerSize.MEDIUM
+        return WorkerSize.HEAVY
 
     meta = {
         "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
-        "indexes": [("worker_type")],
+        "indexes": [("worker_size")],
     }
-    objects = QuerySetManager["WorkerTypeJobCountDocument"]()
+    objects = QuerySetManager["WorkerSizeJobCountDocument"]()
 
 
 def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
@@ -296,8 +296,8 @@ def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: in
         inc__total=increase_by,
     )
     if status == Status.WAITING:
-        worker_type = WorkerTypeJobCountDocument.get_worker_type(difficulty=difficulty)
-        WorkerTypeJobCountDocument.objects(worker_type=worker_type).update(
+        worker_size = WorkerSizeJobCountDocument.get_worker_size(difficulty=difficulty)
+        WorkerSizeJobCountDocument.objects(worker_size=worker_size).update(
             upsert=True,
             write_concern={"w": "majority", "fsync": True},
             read_concern={"level": "majority"},
@@ -317,7 +317,7 @@ def update_metrics_for_type(job_type: str, previous_status: str, new_status: str
     if job_type is not None:
         decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
         increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
-        # ^ this does not affect WorkerTypeJobCountDocument, so we don't pass the job difficulty
+        # ^ this does not affect WorkerSizeJobCountDocument, so we don't pass the job difficulty
 
 
 class _TTL(IntEnum):
@@ -1132,5 +1132,5 @@ def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     JobDocument.drop_collection()  # type: ignore
     JobTotalMetricDocument.drop_collection()  # type: ignore
-    WorkerTypeJobCountDocument.drop_collection()  # type: ignore
+    WorkerSizeJobCountDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore
