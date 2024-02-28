@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
-from libcommon.constants import CACHE_METRICS_COLLECTION, QUEUE_METRICS_COLLECTION
+from libcommon.constants import CACHE_METRICS_COLLECTION, TYPE_AND_STATUS_JOB_COUNTS_COLLECTION
 
 from mongodb_migration.deletion_migrations import (
     CacheDeletionMigration,
@@ -281,7 +281,7 @@ class MigrationsCollector:
                 version="20230814121400",
                 description="drop queue metrics collection",
                 alias="metrics",
-                collection_name=QUEUE_METRICS_COLLECTION,
+                collection_name=TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
             ),
             MigrationAddHasFTSToSplitDuckdbIndexCacheResponse(
                 version="20230926095900",

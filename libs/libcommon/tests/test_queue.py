@@ -15,19 +15,20 @@ import pytest
 import pytz
 
 from libcommon.constants import QUEUE_TTL_SECONDS
-from libcommon.dtos import Priority, Status
+from libcommon.dtos import Priority, Status, WorkerType
 from libcommon.queue import (
     EmptyQueueError,
     JobDocument,
     JobTotalMetricDocument,
     Lock,
     Queue,
+    WorkerTypeJobCountDocument,
     lock,
 )
 from libcommon.resources import QueueMongoResource
 from libcommon.utils import get_datetime
 
-from .utils import assert_metric
+from .utils import assert_metric, assert_worker_type_jobs_count
 
 
 def get_old_datetime() -> datetime:
@@ -49,14 +50,17 @@ def test_add_job() -> None:
     # get the queue
     queue = Queue()
     assert JobTotalMetricDocument.objects().count() == 0
+    assert WorkerTypeJobCountDocument.objects().count() == 0
     # add a job
     job1 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert_metric(job_type=test_type, status=Status.WAITING, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=1)
 
     # a second call adds a second waiting job
     job2 = queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=test_difficulty)
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     assert_metric(job_type=test_type, status=Status.WAITING, total=2)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=2)
 
     # get and start a job the second one should have been picked
     job_info = queue.start_job()
@@ -69,6 +73,7 @@ def test_add_job() -> None:
     # it should have deleted the other waiting jobs for the same unicity_id
     assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=0)
 
     # and the first job should have been deleted
     assert JobDocument.objects(pk=job1.pk).count() == 0
@@ -79,6 +84,7 @@ def test_add_job() -> None:
     assert job3.status == Status.WAITING
     assert_metric(job_type=test_type, status=Status.WAITING, total=1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=1)
 
     with pytest.raises(EmptyQueueError):
         # but: it's not possible to start two jobs with the same arguments
@@ -89,22 +95,26 @@ def test_add_job() -> None:
     assert queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
     assert_metric(job_type=test_type, status=Status.WAITING, total=1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=0)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=1)
 
     # process the third job
     job_info = queue.start_job()
     other_job_id = ("1" if job_info["job_id"][0] == "0" else "0") + job_info["job_id"][1:]
     assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=0)
 
     # trying to finish another job fails silently (with a log)
     queue.finish_job(job_id=other_job_id)
     assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=0)
 
     # finish it
     queue.finish_job(job_id=job_info["job_id"])
     assert_metric(job_type=test_type, status=Status.WAITING, total=0)
     assert_metric(job_type=test_type, status=Status.STARTED, total=0)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=0)
 
     # the queue is empty
     assert not queue.is_job_in_process(job_type=test_type, dataset=test_dataset, revision=test_revision)
@@ -136,6 +146,7 @@ def test_delete_waiting_jobs_by_job_id(
         job = queue.add_job(job_type=test_type, dataset=job_id, revision="test_revision", difficulty=test_difficulty)
         waiting_jobs += 1
         assert_metric(job_type=test_type, status=Status.WAITING, total=waiting_jobs)
+        assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=waiting_jobs)
         if job_id in job_ids_to_delete:
             real_job_id = job.info()["job_id"]
             real_job_ids_to_delete.append(real_job_id)
@@ -143,10 +154,12 @@ def test_delete_waiting_jobs_by_job_id(
             # delete the job, in order to simulate that it did never exist (we just wanted a valid job_id)
             job.delete()
     assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs))
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=len(all_jobs))
 
     queue.start_job()
     assert_metric(job_type=test_type, status=Status.WAITING, total=len(all_jobs) - 1)
     assert_metric(job_type=test_type, status=Status.STARTED, total=1)
+    assert_worker_type_jobs_count(worker_type=WorkerType.MEDIUM, jobs_count=len(all_jobs) - 1)
     deleted_number = queue.delete_waiting_jobs_by_job_id(job_ids=real_job_ids_to_delete)
     assert deleted_number == expected_deleted_number
 
@@ -364,7 +377,9 @@ def test_job_types_only(
         (None, 60, False),
         (40, None, False),
         (40, 60, False),
-        (50, 50, False),
+        (40, 50, False),
+        (50, 50, True),
+        (50, 60, True),
         (None, 40, True),
         (60, None, True),
         (60, 60, True),

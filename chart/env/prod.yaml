@@ -417,7 +417,7 @@ workers:
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 100
-    workerDifficultyMin: 0
+    workerDifficultyMin: 70
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -437,7 +437,7 @@ workers:
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 70
-    workerDifficultyMin: 0
+    workerDifficultyMin: 40
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
