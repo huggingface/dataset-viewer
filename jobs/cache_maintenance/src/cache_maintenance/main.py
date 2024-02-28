@@ -15,7 +15,7 @@ from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.clean_directory import clean_directory
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import post_messages
-from cache_maintenance.queue_metrics import collect_queue_metrics
+from cache_maintenance.queue_metrics import collect_queue_metrics, collect_worker_size_jobs_count
 
 
 def run_job() -> None:
@@ -81,6 +81,7 @@ def run_job() -> None:
                 )
                 return
             collect_queue_metrics()
+            collect_worker_size_jobs_count()
         elif action == "collect-cache-metrics":
             if not cache_resource.is_available():
                 logging.warning(
