@@ -209,7 +209,7 @@ backfillRetryableErrors:
     level: "debug"
   action: "backfill-retryable-errors"
   schedule: "*/20 * * * *"
-  # every 20 minutes hours
+  # every 20 minutes
   nodeSelector:
     role-datasets-server: "true"
   resources:
