@@ -428,6 +428,20 @@ def test_get_jobs_total_by_type_and_status() -> None:
     assert queue.get_jobs_total_by_type_and_status() == {(test_type, "waiting"): 1, (test_other_type, "waiting"): 1}
 
 
+def test_get_jobs_count_by_worker_size() -> None:
+    test_type = "test_type"
+    test_other_type = "test_other_type"
+    test_dataset = "test_dataset"
+    test_revision = "test_revision"
+    queue = Queue()
+
+    assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 0, "light": 0}
+    queue.add_job(job_type=test_type, dataset=test_dataset, revision=test_revision, difficulty=50)
+    assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 1, "light": 0}
+    queue.add_job(job_type=test_other_type, dataset=test_dataset, revision=test_revision, difficulty=10)
+    assert queue.get_jobs_count_by_worker_size() == {"heavy": 0, "medium": 1, "light": 1}
+
+
 def test_get_dataset_pending_jobs_for_type() -> None:
     queue = Queue()
     test_type = "test_type"

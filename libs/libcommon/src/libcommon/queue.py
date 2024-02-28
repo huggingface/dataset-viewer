@@ -1068,9 +1068,9 @@ class Queue:
             Keys are worker_size, and values are the jobs count.
         """
         return {
-            WorkerSize.heavy.name: WorkerSizeJobsCountDocument(difficulty__lte=100, difficulty__gt=70).count(),
-            WorkerSize.medium.name: WorkerSizeJobsCountDocument(difficulty__lte=70, difficulty__gt=40).count(),
-            WorkerSize.light.name: WorkerSizeJobsCountDocument(difficulty__lte=40, difficulty__gt=0).count(),
+            WorkerSize.heavy.name: JobDocument.objects(difficulty__lte=100, difficulty__gt=70).count(),
+            WorkerSize.medium.name: JobDocument.objects(difficulty__lte=70, difficulty__gt=40).count(),
+            WorkerSize.light.name: JobDocument.objects(difficulty__lte=40, difficulty__gt=0).count(),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
