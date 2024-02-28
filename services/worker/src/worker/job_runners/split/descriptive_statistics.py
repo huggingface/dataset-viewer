@@ -209,8 +209,8 @@ def compute_histogram(
     )
 
 
-def compute_min_max_median_std_nan_count(
-    df: pl.DataFrame, column_name: str, n_samples: int
+def min_max_median_std_nan_count_proportion(
+    data: pl.DataFrame, column_name: str, n_samples: int
 ) -> tuple[float, float, float, float, float, int, float]:
     """
     Compute minimum, maximum, median, standard deviation, number of nan samples and their proportion in column data.
@@ -226,7 +226,7 @@ def compute_min_max_median_std_nan_count(
     stats_names = pl.Series(col_stats.keys())
     stats_expressions = [pl.struct(stat) for stat in col_stats.values()]
     stats = (
-        df.select(pl.col(column_name))
+        data.select(pl.col(column_name))
         .select(name=stats_names, stats=pl.concat_list(stats_expressions).flatten())
         .unnest("stats")
     )
@@ -333,7 +333,7 @@ class FloatColumn(Column):
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
         logging.info(f"Compute statistics for float column {column_name} with polars. ")
-        minimum, maximum, mean, median, std, nan_count, nan_proportion = compute_min_max_median_std_nan_count(
+        minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
             data, column_name, n_samples
         )
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
@@ -378,7 +378,7 @@ class IntColumn(Column):
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
         logging.info(f"Compute statistics for integer column {column_name} with polars. ")
-        minimum, maximum, mean, median, std, nan_count, nan_proportion = compute_min_max_median_std_nan_count(
+        minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
             data, column_name, n_samples
         )
         minimum, maximum = int(minimum), int(maximum)
