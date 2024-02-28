@@ -29,9 +29,9 @@ class Priority(str, enum.Enum):
 
 
 class WorkerSize(str, enum.Enum):
-    HEAVY = "heavy"
-    MEDIUM = "medium"
-    LIGHT = "light"
+    heavy = "heavy"
+    medium = "medium"
+    light = "light"
 
 
 class JobParams(TypedDict):

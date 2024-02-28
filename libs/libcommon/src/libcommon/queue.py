@@ -81,6 +81,8 @@ class JobDict(TypedDict):
 
 JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
 
+JobsCountByWorkerSize = Mapping[str, int]
+
 
 class DumpByPendingStatus(TypedDict):
     waiting: list[JobDict]
@@ -275,10 +277,10 @@ class WorkerSizeJobsCountDocument(Document):
     @staticmethod
     def get_worker_size(difficulty: int) -> str:
         if difficulty <= 40:
-            return WorkerSize.LIGHT
+            return WorkerSize.light
         if difficulty <= 70:
-            return WorkerSize.MEDIUM
-        return WorkerSize.HEAVY
+            return WorkerSize.medium
+        return WorkerSize.heavy
 
     meta = {
         "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
@@ -1056,6 +1058,19 @@ class Queue:
                     },
                 ]
             )
+        }
+
+    def get_jobs_count_by_worker_size(self) -> JobsCountByWorkerSize:
+        """Count the number of jobs by worker size.
+
+        Returns:
+            an object with the total of jobs by worker size.
+            Keys are worker_size, and values are the jobs count.
+        """
+        return {
+            WorkerSize.heavy.name: WorkerSizeJobsCountDocument(difficulty__lte=100, difficulty__gt=70).count(),
+            WorkerSize.medium.name: WorkerSizeJobsCountDocument(difficulty__lte=70, difficulty__gt=40).count(),
+            WorkerSize.light.name: WorkerSizeJobsCountDocument(difficulty__lte=40, difficulty__gt=0).count(),
         }
 
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
