@@ -3,7 +3,6 @@
 
 import os
 import time
-from collections.abc import Sequence
 from types import TracebackType
 from typing import Any, Optional, TypeVar
 
@@ -17,6 +16,7 @@ from prometheus_client import (
 from prometheus_client.multiprocess import MultiProcessCollector
 from psutil import disk_usage
 
+from libcommon.constants import LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS
 from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.simple_cache import CacheTotalMetricDocument
 from libcommon.storage import StrPath
@@ -85,7 +85,13 @@ PARQUET_METADATA_DISK_USAGE = Gauge(
 METHOD_STEPS_PROCESSING_TIME = Histogram(
     "method_steps_processing_time_seconds",
     "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
-    ["method", "step", "context", "buckets"],
+    ["method", "step", "context"],
+)
+METHOD_LONG_STEPS_PROCESSING_TIME = Histogram(
+    "method_long_steps_processing_time_seconds",
+    "Histogram of the processing time of specific long steps in methods for a given context (in seconds)",
+    ["method", "step", "context"],
+    buckets=LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS,
 )
 
 
@@ -146,20 +152,14 @@ class StepProfiler:
         method (`str`): The name of the method.
         step (`str`): The name of the step.
         context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
-        buckets (`Sequence[float]`, *optional*): An optional sequense of histogram bin edges to log step's duration.
-            If None, default values from Prometheus are used.
     """
 
-    DEFAULT_BUCKETS = Histogram.DEFAULT_BUCKETS
-
-    def __init__(
-        self, method: str, step: str, context: Optional[str] = None, buckets: Optional[Sequence[float]] = None
-    ):
+    def __init__(self, method: str, step: str, context: Optional[str] = None, histogram: Optional[Histogram] = None):
+        self.histogram = METHOD_STEPS_PROCESSING_TIME if histogram is None else histogram
         self.method = method
         self.step = step
         self.context = str(context)
         self.before_time = time.perf_counter()
-        self.buckets = buckets if buckets else self.DEFAULT_BUCKETS
 
     def __enter__(self: T) -> T:
         return self
@@ -171,9 +171,13 @@ class StepProfiler:
         traceback: Optional[TracebackType],
     ) -> None:
         after_time = time.perf_counter()
-        METHOD_STEPS_PROCESSING_TIME.labels(
+        self.histogram.labels(
             method=self.method,
             step=self.step,
             context=self.context,
-            buckets=self.buckets,
         ).observe(after_time - self.before_time)
+
+
+class LongStepProfiler(StepProfiler):
+    def __init__(self, method: str, step: str, context: Optional[str] = None):
+        super().__init__(method, step, context, histogram=METHOD_LONG_STEPS_PROCESSING_TIME)
