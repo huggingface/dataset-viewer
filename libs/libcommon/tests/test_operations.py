@@ -346,7 +346,7 @@ def test_2274_only_one_entry(
         }
         finish_job(job_result=job_result)
 
-        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 6
+        assert len(queue.get_pending_jobs_df(dataset=dataset)) == 7
         assert len(get_cache_entries_df(dataset=dataset)) == 1
 
         # let's delete all the jobs, to get in the same state as the bug

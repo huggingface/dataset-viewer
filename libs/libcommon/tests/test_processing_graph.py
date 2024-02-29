@@ -55,6 +55,7 @@ def test_graph() -> None:
             [
                 "config-split-names",
                 "config-parquet-and-info",
+                "dataset-duckdb-index-size",
                 "dataset-opt-in-out-urls-count",
                 "dataset-split-names",
                 "dataset-parquet",
@@ -78,11 +79,10 @@ def test_graph() -> None:
         (
             "config-split-names",
             [
+                "config-duckdb-index-size",
                 "config-opt-in-out-urls-count",
                 "split-first-rows",
                 "dataset-split-names",
-                "split-duckdb-index",
-                "split-duckdb-index-010",
                 "split-descriptive-statistics",
                 "config-is-valid",
             ],
@@ -268,20 +268,18 @@ def test_graph() -> None:
         (
             "split-duckdb-index",
             ["config-duckdb-index-size", "split-is-valid"],
-            ["config-split-names", "config-parquet-metadata"],
+            ["config-parquet-metadata"],
             [
-                "config-split-names",
                 "config-parquet",
                 "config-parquet-and-info",
                 "config-parquet-metadata",
-                "config-info",
                 "dataset-config-names",
             ],
         ),
         (
             "config-duckdb-index-size",
             ["dataset-duckdb-index-size"],
-            ["split-duckdb-index"],
+            ["split-duckdb-index", "config-split-names"],
             [
                 "config-split-names",
                 "config-parquet",
@@ -295,7 +293,7 @@ def test_graph() -> None:
         (
             "dataset-duckdb-index-size",
             [],
-            ["config-duckdb-index-size"],
+            ["config-duckdb-index-size", "dataset-config-names"],
             [
                 "config-duckdb-index-size",
                 "config-split-names",
