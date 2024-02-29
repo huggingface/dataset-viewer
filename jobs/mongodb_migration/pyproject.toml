@@ -15,8 +15,7 @@ bandit = "^1.7.4"
 mypy = "^1.8.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
-pytest-cov = "^2.12.1"
-ruff = "^0.1.3"
+ruff = "^0.2.1"
 
 [build-system]
 build-backend = "poetry.core.masonry.api"
@@ -27,9 +26,6 @@ filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "wip: tests being developed"
 ]
-
-[tool.coverage.run]
-source = ["mongodb_migration"]
 
 [tool.mypy]
 strict = true

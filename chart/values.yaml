@@ -174,10 +174,6 @@ queue:
   # Name of the mongo db database used to store the jobs queue
   mongoDatabase: "datasets_server_queue"
 
-metrics:
-  # Name of the mongo db database used to store metrics
-  mongoDatabase: "datasets_server_metrics"
-
 worker:
   # maximum size in bytes of the response content computed by a worker
   contentMaxBytes: "10_000_000"
@@ -272,8 +268,8 @@ duckDBIndex:
   cacheDirectory: "/storage/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
-  # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/parquet`.
-  targetRevision: "refs/convert/parquet"
+  # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/duckdb`.
+  targetRevision: "refs/convert/duckdb"
   # the URL template to build the duckdb index file URL. Defaults to `/datasets/%s/resolve/%s/%s`.
   urlTemplate: "/datasets/%s/resolve/%s/%s"
   # the maximum size of the split parquets.
@@ -321,6 +317,21 @@ backfill:
   action: "backfill"
   schedule: "0 */3 * * *"
   # every 3 hours
+  nodeSelector: {}
+  resources:
+    requests:
+      cpu: 0
+    limits:
+      cpu: 0
+  tolerations: []
+
+backfillRetryableErrors:
+  enabled: false
+  log:
+    level: "info"
+  action: "backfill-retryable-errors"
+  schedule: "*/10 * * * *"
+  # every 10 minutes
   nodeSelector: {}
   resources:
     requests:

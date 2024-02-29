@@ -67,7 +67,7 @@ from libcommon.exceptions import (
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
 )
-from libcommon.parquet_utils import PARTIAL_PREFIX
+from libcommon.parquet_utils import PART_SUFFIX, PARTIAL_PREFIX
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from tqdm.contrib.concurrent import thread_map
@@ -86,6 +86,7 @@ from worker.utils import (
 
 DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
+MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
 
 T = TypeVar("T")
@@ -98,30 +99,50 @@ def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
 
 
 class ParquetFile:
-    def __init__(
-        self, local_file: str, local_dir: str, config: str, split: str, shard_idx: int, partial: bool = False
-    ):
-        if not local_file.startswith(local_dir):
-            raise ValueError(f"{local_file} is not in {local_dir}")
-        if shard_idx >= MAX_FILES_PER_DIRECTORY:
-            raise DatasetWithTooManyParquetFilesError(
-                "The dataset has too many parquet files and can't be uploaded in the parquet directory "
-                f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
-            )
-        self.local_file = local_file
-        self.local_dir = local_dir
+    def __init__(self, config: str, split: str, shard_idx: int, num_shards: int, partial: bool = False):
         self.config = config
         self.split = split
         self.shard_idx = shard_idx
+        self.num_shards = num_shards
         self.partial = partial
+
+        if num_shards > MAX_FILES_PER_REPOSITORY:
+            raise ValueError(
+                f"Too many parquet files: {num_shards}. Maximum per repository is {MAX_FILES_PER_REPOSITORY}."
+            )
 
     @property
     def path_in_repo(self) -> str:
         # For paths like "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
         partial_prefix = PARTIAL_PREFIX if self.partial else ""
+        # For paths like "en/train-part0/0000.parquet", "en/train-part1/0000.parquet" up to "en/train-part9/9999.parquet".
+        # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
+        part_suffix = (
+            PART_SUFFIX.format(self.shard_idx // MAX_FILES_PER_DIRECTORY)
+            if self.num_shards > MAX_FILES_PER_DIRECTORY
+            else ""
+        )
         # Using 4 digits is ok since MAX_FILES_PER_DIRECTORY == 10_000
-        return f"{self.config}/{partial_prefix}{self.split}/{self.shard_idx:04d}.parquet"
+        return f"{self.config}/{partial_prefix}{self.split}{part_suffix}/{self.shard_idx % MAX_FILES_PER_DIRECTORY:04d}.parquet"
+
+
+class LocalParquetFile(ParquetFile):
+    def __init__(
+        self,
+        local_file: str,
+        local_dir: str,
+        config: str,
+        split: str,
+        shard_idx: int,
+        num_shards: int,
+        partial: bool = False,
+    ):
+        super().__init__(config=config, split=split, shard_idx=shard_idx, num_shards=num_shards, partial=partial)
+        if not local_file.startswith(local_dir):
+            raise ValueError(f"{local_file} is not in {local_dir}")
+        self.local_file = local_file
+        self.local_dir = local_dir
 
 
 filename_pattern = re.compile("^[0-9]{4}\\.parquet$")
@@ -136,6 +157,10 @@ def parse_repo_filename(filename: str) -> tuple[str, str]:
     config, split, _ = parts
     if split.startswith(PARTIAL_PREFIX):
         split = split[len(PARTIAL_PREFIX) :]  # noqa: E203
+    if split[-1] in "0123456789":
+        part_suffix = PART_SUFFIX.format(split[-1])
+        if split.endswith(part_suffix):
+            split = split[: -len(part_suffix)]  # noqa: E203
     return config, split
 
 
@@ -512,10 +537,14 @@ def copy_parquet_files(builder: DatasetBuilder) -> list[CommitOperationCopy]:
             src_revision, src_path_in_repo = data_file.split("@")[1].split("/", 1)
             src_revision = unquote(src_revision)
             src_path_in_repo = unquote(src_path_in_repo)
-            path_in_repo = f"{builder.config.name}/{split}/{shard_idx:04d}.parquet"
+            parquet_file = ParquetFile(
+                config=builder.config.name, split=split, shard_idx=shard_idx, num_shards=len(data_files[split])
+            )
             parquet_operations.append(
                 CommitOperationCopy(
-                    src_path_in_repo=src_path_in_repo, path_in_repo=path_in_repo, src_revision=src_revision
+                    src_path_in_repo=src_path_in_repo,
+                    path_in_repo=parquet_file.path_in_repo,
+                    src_revision=src_revision,
                 )
             )
     return parquet_operations
@@ -703,7 +732,7 @@ class limit_parquet_writes:
                 super().write_table(pa_table, row_group_size=row_group_size)
 
         def limited_generator(
-            generator: Callable[..., Generator[T, None, None]]
+            generator: Callable[..., Generator[T, None, None]],
         ) -> Callable[..., Generator[T, None, None]]:
             """Stop the underlying generator once we reach the maximum dataset size"""
 
@@ -737,12 +766,12 @@ class limit_parquet_writes:
         return self.exit_stack.close()
 
 
-def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False) -> list[ParquetFile]:
+def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False) -> list[LocalParquetFile]:
     """List the parquet files generated by `builder.download_and_prepare` in the `builder.cache_dir`."""
     if not builder.info.splits:
         raise EmptyDatasetError("No split found after generating parquet files")
     split_dict = builder.info.splits
-    local_parquet_files: list[ParquetFile] = []
+    local_parquet_files: list[LocalParquetFile] = []
     for split, split_info in split_dict.items():
         # We know the `datasets` library uses a template for the shards names:
         # - {builder.dataset_name}-{split}.parquet if there is only one shard
@@ -752,7 +781,7 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
         filename = f"{builder.dataset_name}-{split}{filename_suffix}.parquet"
         local_parquet_files.extend(
             [
-                ParquetFile(
+                LocalParquetFile(
                     local_file=os.path.join(
                         builder.cache_dir,
                         filename.format(shard_idx=shard_idx),
@@ -761,6 +790,7 @@ def list_generated_parquet_files(builder: DatasetBuilder, partial: bool = False)
                     config=builder.config.name,
                     split=split,
                     shard_idx=shard_idx,
+                    num_shards=num_shards,
                     partial=partial,
                 )
                 for shard_idx in range(num_shards)
@@ -1081,20 +1111,12 @@ def compute_config_parquet_and_info_response(
           If one of the commits could not be created on the Hub.
         [~`libcommon.exceptions.DatasetManualDownloadError`]:
           If the dataset requires manual download.
-        [~`libcommon.exceptions.DatasetTooBigFromDatasetsError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the configs
-          sizes given by the datasets library.
-        [~`libcommon.exceptions.DatasetTooBigFromHubError`]:
-          If the dataset is too big to be converted to parquet, as measured by the sum of the repository
-          files sizes given by the Hub.
         [~`libcommon.exceptions.EmptyDatasetError`]:
           The dataset is empty.
         [~`libcommon.exceptions.ConfigNamesError`]:
           If the list of configurations could not be obtained using the datasets library.
         [~`libcommon.exceptions.DatasetWithTooManyExternalFilesError`]:
             If the dataset has too many external files to be converted to parquet
-        [~`libcommon.exceptions.DatasetWithTooBigExternalFilesError`]:
-            If the dataset is too big external files be converted to parquet
         [~`libcommon.exceptions.UnsupportedExternalFilesError`]:
             If we failed to get the external files sizes to make sure we can convert the dataset to parquet
         [~`libcommon.exceptions.ExternalFilesSizeRequestHTTPError`]:
@@ -1119,9 +1141,9 @@ def compute_config_parquet_and_info_response(
 
     logging.info(f"getting config names for {dataset=}")
     previous_step = "dataset-config-names"
-    config_names_best_response = get_previous_step_or_raise(kinds=[previous_step], dataset=dataset)
+    config_names_response = get_previous_step_or_raise(kind=previous_step, dataset=dataset)
 
-    config_names_content = config_names_best_response.response["content"]
+    config_names_content = config_names_response["content"]
     if "config_names" not in config_names_content:
         raise PreviousStepFormatError("Previous step did not return the expected content: 'config_names'.")
 

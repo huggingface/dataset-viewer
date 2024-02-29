@@ -60,8 +60,10 @@ FTS_COMMAND = (
 logger = logging.getLogger(__name__)
 
 
-def full_text_search(index_file_location: str, query: str, offset: int, length: int) -> tuple[int, pa.Table]:
-    with duckdb_connect(database=index_file_location) as con:
+def full_text_search(
+    index_file_location: str, query: str, offset: int, length: int, extensions_directory: Optional[str] = None
+) -> tuple[int, pa.Table]:
+    with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
         count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
         num_rows_total = count_result[0][0]  # it will always return a non-empty list with one element in a tuple
         logging.debug(f"got {num_rows_total=} results for {query=}")
@@ -128,6 +130,7 @@ def create_search_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    extensions_directory: Optional[str] = None,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -200,7 +203,7 @@ def create_search_endpoint(
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
-                        full_text_search, index_file_location, query, offset, length
+                        full_text_search, index_file_location, query, offset, length, extensions_directory
                     )
 
                 with StepProfiler(method="search_endpoint", step="create response"):

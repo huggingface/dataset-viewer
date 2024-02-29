@@ -3,7 +3,6 @@ export COMPOSE_PROJECT_NAME := admin
 export MONGO_PORT := 27030
 export CACHE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 export QUEUE_MONGO_URL := mongodb://localhost:${MONGO_PORT}
-export METRICS_MONGO_URL := mongodb://localhost:${MONGO_PORT}
 # makefile variables
 DOCKER_COMPOSE := ../../tools/docker-compose-mongo.yml
 TEST_PATH ?= tests
@@ -30,11 +29,4 @@ test:
 	mkdir /tmp/admin.prometheus
 	PROMETHEUS_MULTIPROC_DIR=/tmp/admin.prometheus $(POETRY) run python -m pytest -vv -x -k "test_metrics" ${ADDOPTS} $(TEST_PATH)
 	rm -rf /tmp/admin.prometheus
-	$(MAKE) down
-
-.PHONY: coverage
-coverage:
-	$(MAKE) down
-	$(MAKE) up
-	$(POETRY) run python -m pytest -s --cov --cov-report xml:coverage.xml --cov-report=term $(TEST_PATH)
 	$(MAKE) down

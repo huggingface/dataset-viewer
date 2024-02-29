@@ -1,9 +1,7 @@
 from http import HTTPStatus
 
 import pytest
-from libcommon.constants import CONFIG_SPLIT_NAMES_KINDS
 from libcommon.dtos import JobInfo, Priority, Status
-from libcommon.exceptions import CustomError
 from libcommon.processing_graph import processing_graph
 from libcommon.queue import JobDocument, Queue
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -144,10 +142,7 @@ def test_backfill(priority: Priority, app_config: AppConfig) -> None:
 
     child = processing_graph.get_children("dataset-config-names").pop()
     dataset_child_jobs = queue.get_dump_with_status(job_type=child.job_type, status=Status.WAITING)
-    assert len(dataset_child_jobs) == 1
-    assert dataset_child_jobs[0]["dataset"] == "dataset"
-    assert dataset_child_jobs[0]["revision"] == "revision"
-    assert dataset_child_jobs[0]["priority"] is priority.value
+    assert len(dataset_child_jobs) == 0
 
 
 def test_job_runner_set_crashed(app_config: AppConfig) -> None:
@@ -198,54 +193,3 @@ def test_job_runner_set_crashed(app_config: AppConfig) -> None:
     assert response.details == expected_error
     assert response.failed_runs == failed_runs + 1
     # TODO: check if it stores the correct dataset git sha and job version when it's implemented
-
-
-def test_raise_if_parallel_response_exists(app_config: AppConfig) -> None:
-    [stepA, stepB] = CONFIG_SPLIT_NAMES_KINDS
-    dataset = "dataset"
-    revision = "revision"
-    config = "config"
-    split = None
-    upsert_response(
-        kind=stepA,
-        dataset=dataset,
-        config=config,
-        split=split,
-        content={},
-        dataset_git_revision=revision,
-        job_runner_version=processing_graph.get_processing_step(stepA).job_runner_version,
-        progress=1.0,
-        http_status=HTTPStatus.OK,
-    )
-
-    job_info = JobInfo(
-        job_id="job_id",
-        type=stepB,
-        params={
-            "dataset": dataset,
-            "revision": revision,
-            "config": config,
-            "split": split,
-        },
-        priority=Priority.NORMAL,
-        difficulty=50,
-    )
-
-    class DummyConfigJobRunner(DatasetJobRunner):
-        @staticmethod
-        def get_job_type() -> str:
-            return stepB
-
-        def compute(self) -> CompleteJobResult:
-            return CompleteJobResult({})
-
-    job_runner = DummyConfigJobRunner(
-        job_info=job_info,
-        app_config=app_config,
-    )
-
-    job_manager = JobManager(job_info=job_info, app_config=app_config, job_runner=job_runner)
-    with pytest.raises(CustomError) as exc_info:
-        job_manager.raise_if_parallel_response_exists(parallel_step_name=stepA)
-    assert exc_info.value.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
-    assert exc_info.value.code == "ResponseAlreadyComputedError"

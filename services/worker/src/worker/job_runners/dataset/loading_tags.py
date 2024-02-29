@@ -596,15 +596,15 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     """
     logging.info(f"compute 'dataset-loading-tags' for {dataset=}")
 
-    dataset_info_best_response = get_previous_step_or_raise(kinds=["dataset-info"], dataset=dataset)
-    http_status = dataset_info_best_response.response["http_status"]
+    dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
+    http_status = dataset_info_response["http_status"]
     tags: list[DatasetLoadingTag] = []
     python_loading_methods: list[PythonLoadingMethod] = []
     infos: list[dict[str, Any]] = []
     builder_name: Optional[str] = None
     if http_status == HTTPStatus.OK:
         try:
-            content = dataset_info_best_response.response["content"]
+            content = dataset_info_response.response["content"]
             infos = list(islice(content["dataset_info"].values(), LOADING_METHODS_MAX_CONFIGS))
             partial = content["partial"]
         except KeyError as e:

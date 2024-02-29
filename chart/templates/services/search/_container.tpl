@@ -35,6 +35,8 @@
     value: {{ .Values.duckDBIndex.targetRevision | quote }}
   - name: DUCKDB_INDEX_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
+  - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
+    value: "/tmp/duckdb-extensions"
   volumeMounts:
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   securityContext:

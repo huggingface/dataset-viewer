@@ -4,15 +4,16 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from functools import lru_cache
 from http import HTTPStatus
 from typing import Optional, Union
 
 import pandas as pd
 
 from libcommon.constants import (
-    CONFIG_INFO_KINDS,
-    CONFIG_SPLIT_NAMES_KINDS,
-    DATASET_CONFIG_NAMES_KINDS,
+    CONFIG_INFO_KIND,
+    CONFIG_SPLIT_NAMES_KIND,
+    DATASET_CONFIG_NAMES_KIND,
     DEFAULT_DIFFICULTY_MAX,
     DIFFICULTY_BONUS_BY_FAILED_RUNS,
 )
@@ -24,9 +25,9 @@ from libcommon.simple_cache import (
     CacheEntryDoesNotExistError,
     delete_dataset_responses,
     fetch_names,
-    get_best_response,
     get_cache_entries_df,
     get_response_metadata,
+    get_response_or_missing_error,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
@@ -273,7 +274,7 @@ class Plan:
 
 
 def get_num_bytes_from_config_infos(dataset: str, config: str, split: Optional[str] = None) -> Optional[int]:
-    resp = get_best_response(kinds=CONFIG_INFO_KINDS, dataset=dataset, config=config).response
+    resp = get_response_or_missing_error(kind=CONFIG_INFO_KIND, dataset=dataset, config=config)
     if "dataset_info" in resp["content"] and isinstance(resp["content"]["dataset_info"], dict):
         dataset_info = resp["content"]["dataset_info"]
         if split is None:
@@ -367,7 +368,7 @@ class AfterJobPlan(Plan):
                     config_names = fetch_names(
                         dataset=self.dataset,
                         config=None,
-                        cache_kinds=DATASET_CONFIG_NAMES_KINDS,
+                        cache_kind=DATASET_CONFIG_NAMES_KIND,
                         names_field="config_names",
                         name_field="config",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -380,7 +381,7 @@ class AfterJobPlan(Plan):
                     split_names = fetch_names(
                         dataset=self.dataset,
                         config=config,
-                        cache_kinds=CONFIG_SPLIT_NAMES_KINDS,
+                        cache_kind=CONFIG_SPLIT_NAMES_KIND,
                         names_field="splits",
                         name_field="split",
                     )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
@@ -435,7 +436,7 @@ class AfterJobPlan(Plan):
             if self.num_bytes is not None and self.num_bytes >= self.processing_graph.min_bytes_for_bonus_difficulty:
                 difficulty += next_processing_step.bonus_difficulty_if_dataset_is_big
             # increase difficulty according to number of failed runs
-            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + self.failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
+            difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty)
             self.job_infos_to_create.append(
                 {
                     "job_id": "not used",  # TODO: remove this field
@@ -689,9 +690,27 @@ class DatasetBackfillPlan(Plan):
             + list(self.cache_status.cache_is_job_runner_obsolete.values())
             + list(self.cache_status.cache_has_different_git_revision.values())
         )
+
+        @lru_cache
+        def is_big(config: str) -> bool:
+            num_bytes = get_num_bytes_from_config_infos(dataset=self.dataset, config=config)
+            if num_bytes is None:
+                return False
+            else:
+                return num_bytes > self.processing_graph.min_bytes_for_bonus_difficulty
+
         for artifact_state in artifact_states:
             valid_pending_jobs_df = artifact_state.job_state.valid_pending_jobs_df
             if valid_pending_jobs_df.empty:
+                difficulty = artifact_state.processing_step.difficulty
+                if isinstance(artifact_state.config, str) and is_big(config=artifact_state.config):
+                    difficulty += artifact_state.processing_step.bonus_difficulty_if_dataset_is_big
+                if artifact_state.cache_state.cache_entry_metadata is not None:
+                    failed_runs = artifact_state.cache_state.cache_entry_metadata["failed_runs"]
+                else:
+                    failed_runs = 0
+                # increase difficulty according to number of failed runs
+                difficulty = min(DEFAULT_DIFFICULTY_MAX, difficulty + failed_runs * DIFFICULTY_BONUS_BY_FAILED_RUNS)
                 job_infos_to_create.append(
                     {
                         "job_id": "not used",
@@ -703,7 +722,7 @@ class DatasetBackfillPlan(Plan):
                             "split": artifact_state.split,
                         },
                         "priority": self.priority,
-                        "difficulty": artifact_state.processing_step.difficulty,
+                        "difficulty": difficulty,
                     }
                 )
             else:
@@ -758,7 +777,7 @@ def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] 
     # TODO: delete the other files: metadata parquet, parquet, duckdb index, etc
     # note that it's not as important as the assets, because generally, we want to delete a dataset
     # in datasets-server because the repository does not exist anymore on the Hub, so: the other files
-    # don't exist anymore either (they were in refs/convert/parquet).
+    # don't exist anymore either (they were in refs/convert/parquet or refs/convert/duckdb).
     # Only exception I see is when we stop supporting a dataset (blocked, disabled viewer, private dataset
     # and the user is not pro anymore, etc.)
 
@@ -901,7 +920,7 @@ def finish_job(
 
 
 def has_pending_ancestor_jobs(
-    dataset: str, processing_step_names: list[str], processing_graph: ProcessingGraph = processing_graph
+    dataset: str, processing_step_name: str, processing_graph: ProcessingGraph = processing_graph
 ) -> bool:
     """
     Check if the processing steps, or one of their ancestors, have a pending job, ie. if artifacts could exist
@@ -917,7 +936,7 @@ def has_pending_ancestor_jobs(
 
     Args:
         dataset (`str`): The name of the dataset.
-        processing_step_names (`list[str]`): The processing step names (artifacts) to check.
+        processing_step_name (`str`): The processing step name (artifact) to check.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Raises:
@@ -926,18 +945,15 @@ def has_pending_ancestor_jobs(
     Returns:
         `bool`: True if any of the artifact could exist, False otherwise.
     """
-    job_types: set[str] = set()
-    for processing_step_name in processing_step_names:
-        processing_step = processing_graph.get_processing_step(processing_step_name)
-        ancestors = processing_graph.get_ancestors(processing_step_name)
-        job_types.add(processing_step.job_type)
-        job_types.update(ancestor.job_type for ancestor in ancestors)
-    logging.debug(f"looking at ancestor jobs of {processing_step_names}: {list(job_types)}")
+    processing_step = processing_graph.get_processing_step(processing_step_name)
+    ancestors = processing_graph.get_ancestors(processing_step_name)
+    job_types = [ancestor.job_type for ancestor in ancestors] + [processing_step.job_type]
+    logging.debug(f"looking at ancestor jobs of {processing_step_name}: {job_types}")
     # check if a pending job exists for the artifact or one of its ancestors
     # note that we cannot know if the ancestor is really for the artifact (ie: ancestor is for config1,
     # while we look for config2,split1). Looking in this detail would be too complex, this approximation
     # is good enough.
-    return Queue().has_pending_jobs(dataset=dataset, job_types=list(job_types))
+    return Queue().has_pending_jobs(dataset=dataset, job_types=job_types)
 
 
 def get_revision(dataset: str) -> Optional[str]:

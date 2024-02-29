@@ -6,8 +6,8 @@ authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-duckdb = "^0.8.1"
-gradio = "^4.17.0"
+duckdb = "^0.10.0"
+gradio = "^4.19.2"
 libcommon = { path = "../../libs/libcommon", develop=true }
 matplotlib = "^3.7.0"
 pygraphviz = "~1.10"

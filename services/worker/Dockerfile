@@ -25,10 +25,10 @@ RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
 WORKDIR /src
-COPY services/worker/vendors ./services/worker/vendors/
 COPY services/worker/poetry.lock ./services/worker/poetry.lock
 COPY services/worker/pyproject.toml ./services/worker/pyproject.toml
 COPY libs/libcommon ./libs/libcommon
+
 WORKDIR /src/services/worker/
 RUN poetry install --no-cache
 COPY services/worker/src ./src
