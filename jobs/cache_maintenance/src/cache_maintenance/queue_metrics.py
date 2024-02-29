@@ -3,7 +3,7 @@
 
 import logging
 
-from libcommon.queue import JobTotalMetricDocument, Queue
+from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobsCountDocument
 
 
 def collect_queue_metrics() -> None:
@@ -31,3 +31,30 @@ def collect_queue_metrics() -> None:
         logging.info(f"{job_type=} {status=}: {total=} has been inserted")
 
     logging.info("queue metrics have been updated")
+
+
+def collect_worker_size_jobs_count() -> None:
+    """
+    Collects worker_size_jobs_count metrics and updates them in the database.
+
+    The obsolete metrics are deleted, and the new ones are inserted or updated.
+
+    We don't delete everything, then create everything, because the /metrics endpoint could be called at the same time,
+    and the metrics would be inconsistent.
+    """
+    logging.info("updating worker_size_jobs_count metrics")
+
+    new_metric_by_worker_size = Queue().get_jobs_count_by_worker_size()
+    new_ids = set(worker_size for worker_size in new_metric_by_worker_size.keys())
+    old_ids = set(metric.worker_size.value for metric in WorkerSizeJobsCountDocument.objects())
+    to_delete = old_ids - new_ids
+
+    for worker_size in to_delete:
+        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).delete()
+        logging.info(f"{worker_size=} has been deleted")
+
+    for worker_size, jobs_count in new_metric_by_worker_size.items():
+        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).upsert_one(jobs_count=jobs_count)
+        logging.info(f"{worker_size=}: {jobs_count=} has been inserted")
+
+    logging.info("worker_size_jobs_count metrics have been updated")

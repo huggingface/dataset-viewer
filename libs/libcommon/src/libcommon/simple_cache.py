@@ -29,6 +29,7 @@ from libcommon.constants import (
     CACHE_COLLECTION_RESPONSES,
     CACHE_METRICS_COLLECTION,
     CACHE_MONGOENGINE_ALIAS,
+    ERROR_CODES_TO_RETRY,
 )
 from libcommon.dtos import JobParams
 from libcommon.utils import get_datetime
@@ -575,6 +576,10 @@ def get_previous_step_or_raise(
 
 def get_all_datasets() -> set[str]:
     return set(CachedResponseDocument.objects().distinct("dataset"))
+
+
+def get_datasets_with_retryable_errors() -> set[str]:
+    return set(CachedResponseDocument.objects(error_code__in=list(ERROR_CODES_TO_RETRY)).distinct("dataset"))
 
 
 def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
