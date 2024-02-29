@@ -4,11 +4,11 @@
 from typing import Optional
 
 import pytest
+from libcommon.prometheus import StepProfiler
 from starlette.testclient import TestClient
 
 from rows.app import create_app_with_config
 from rows.config import AppConfig
-from libcommon.prometheus import StepProfiler
 
 DEFAULT_BUCKETS_STRING = str(StepProfiler.DEFAULT_BUCKETS)
 
