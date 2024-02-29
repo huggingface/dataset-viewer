@@ -52,27 +52,29 @@ squad_info = {
 }
 
 
-@pytest.mark.parametrize("use_croissant_1_0", [True, False])
-def test_get_croissant_from_dataset_infos(use_croissant_1_0: bool) -> None:
+@pytest.mark.parametrize("isV1", [True, False])
+def test_get_croissant_from_dataset_infos(isV1: bool) -> None:
     croissant = get_croissant_from_dataset_infos(
         "user/squad with space",
         [squad_info, squad_info],
         partial=False,
         full_jsonld=False,
-        use_croissant_1_0=use_croissant_1_0,
+        isV1=isV1,
     )
     assert "@context" in croissant
     assert "@type" in croissant
     assert "name" in croissant
-    if use_croissant_1_0:
+    if isV1:
         assert "conformsTo" in croissant
     assert croissant["name"] == "user_squad_with_space"
     assert "distribution" in croissant
-    if use_croissant_1_0:
+    assert croissant["distribution"]
+    if isV1:
         for distribution in croissant["distribution"]:
             assert "@id" in distribution
     assert "recordSet" in croissant
-    if use_croissant_1_0:
+    assert croissant["recordSet"]
+    if isV1:
         for record_set in croissant["recordSet"]:
             assert "@id" in record_set
     # column "answers" is not supported (nested)

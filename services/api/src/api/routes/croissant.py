@@ -78,7 +78,7 @@ def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
     return {k: v for k, v in json.items() if v is not None}
 
 def get_croissant_from_dataset_infos(
-    dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool, croissant_1_0: bool
+    dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool, isV1: bool
 ) -> Mapping[str, Any]:
     repo_name = "repo"
     names: set[str] = set(repo_name)
@@ -86,7 +86,7 @@ def get_croissant_from_dataset_infos(
         _remove_none_values(
             {
                 "@type": "sc:FileObject",
-                "name": repo_name if croissant_1_0 else None,
+                "name": repo_name if isV1 else None,
                 "description": "The Hugging Face git repository.",
                 "contentUrl": f"https://huggingface.co/datasets/{dataset}/tree/refs%2Fconvert%2Fparquet",
                 "encodingFormat": "git+https",
@@ -110,7 +110,7 @@ def get_croissant_from_dataset_infos(
             _remove_none_values(
                 {
                     "@type": "sc:FileSet",
-                    "@id": distribution_name if croissant_1_0 else None,
+                    "@id": distribution_name if isV1 else None,
                     "name": distribution_name,
                     "containedIn": repo_name,
                     "encodingFormat": "application/x-parquet",
@@ -125,15 +125,19 @@ def get_croissant_from_dataset_infos(
                 break
             fields_names: set[str] = set()
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
+                if isV1:
+                    source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+                else:
+                    source = {"distribution": distribution_name, "extract": {"column": column}}
                 fields.append(
                     _remove_none_values(
                         {
                             "@type": "ml:Field",
-                            "@id": _escape_name(column, fields_names) if croissant_1_0 else None,
+                            "@id": _escape_name(column, fields_names) if isV1 else None,
                             "name": _escape_name(column, fields_names),
                             "description": f"Column '{column}' from the Hugging Face parquet file.",
                             "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
-                            "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+                            "source": source,
                         }
                     )
                 )
@@ -142,7 +146,7 @@ def get_croissant_from_dataset_infos(
                     _remove_none_values(
                         {
                             "@type": "ml:Field",
-                            "@id": _escape_name(column, fields_names) if croissant_1_0 else None,
+                            "@id": _escape_name(column, fields_names) if isV1 else None,
                             "name": _escape_name(column, fields_names),
                             "description": f"Image column '{column}' from the Hugging Face parquet file.",
                             "dataType": "sc:ImageObject",
@@ -159,7 +163,7 @@ def get_croissant_from_dataset_infos(
                     _remove_none_values(
                         {
                             "@type": "ml:Field",
-                            "@id": _escape_name(column, fields_names) if croissant_1_0 else None,
+                            "@id": _escape_name(column, fields_names) if isV1 else None,
                             "name": _escape_name(column, fields_names),
                             "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
                             + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
@@ -185,62 +189,63 @@ def get_croissant_from_dataset_infos(
             _remove_none_values(
                 {
                     "@type": "ml:RecordSet",
-                    "@id": _escape_name(record_set_name, names) if croissant_1_0 else None,
+                    "@id": _escape_name(record_set_name, names) if isV1 else None,
                     "name": _escape_name(record_set_name, names),
                     "description": description,
                     "field": fields,
                 }
             )
         )
+    prefix = "ml" if isV1 else "cr"
     return _remove_none_values(
         {
             "@context": {
                 "@language": "en",
                 "@vocab": "https://schema.org/",
-                "citeAs": "cr:citeAs",
-                "column": "cr:column",
+                "citeAs": f"{prefix}:citeAs",
+                "column": f"{prefix}:column",
                 "conformsTo": "dct:conformsTo",
                 "cr": "http://mlcommons.org/croissant/",
                 "data": {
-                    "@id": "cr:data",
+                    "@id": f"{prefix}:data",
                     "@type": "@json"
                 },
                 "dataBiases": "cr:dataBiases",
                 "dataCollection": "cr:dataCollection",
                 "dataType": {
-                    "@id": "cr:dataType",
+                    "@id": f"{prefix}:dataType",
                     "@type": "@vocab"
                 },
                 "dct": "http://purl.org/dc/terms/",
-                "extract": "cr:extract",
-                "field": "cr:field",
-                "fileProperty": "cr:fileProperty",
-                "fileObject": "cr:fileObject",
-                "fileSet": "cr:fileSet",
-                "format": "cr:format",
-                "includes": "cr:includes",
-                "isEnumeration": "cr:isEnumeration",
-                "isLiveDataset": "cr:isLiveDataset",
-                "jsonPath": "cr:jsonPath",
-                "key": "cr:key",
-                "md5": "cr:md5",
-                "parentField": "cr:parentField",
-                "path": "cr:path",
-                "personalSensitiveInformation": "cr:personalSensitiveInformation",
-                "recordSet": "cr:recordSet",
-                "references": "cr:references",
-                "regex": "cr:regex",
-                "repeated": "cr:repeated",
-                "replace": "cr:replace",
+                "extract": f"{prefix}:extract",
+                "field": f"{prefix}:field",
+                "fileProperty": f"{prefix}:fileProperty",
+                "fileObject": f"{prefix}:fileObject",
+                "fileSet": f"{prefix}:fileSet",
+                "format": f"{prefix}:format",
+                "includes": f"{prefix}:includes",
+                "isEnumeration": f"{prefix}:isEnumeration",
+                "isLiveDataset": f"{prefix}:isLiveDataset",
+                "jsonPath": f"{prefix}:jsonPath",
+                "key": f"{prefix}:key",
+                "md5": f"{prefix}:md5",
+                "parentField": f"{prefix}:parentField",
+                "path": f"{prefix}:path",
+                "personalSensitiveInformation": f"{prefix}:personalSensitiveInformation",
+                "recordSet": f"{prefix}:recordSet",
+                "references": f"{prefix}:references",
+                "regex": f"{prefix}:regex",
+                "repeated": f"{prefix}:repeated",
+                "replace": f"{prefix}:replace",
                 "sc": "https://schema.org/",
-                "separator": "cr:separator",
-                "source": "cr:source",
-                "subField": "cr:subField",
-                "transform": "cr:transform"
+                "separator": f"{prefix}:separator",
+                "source": f"{prefix}:source",
+                "subField": f"{prefix}:subField",
+                "transform": f"{prefix}:transform",
             },
             "@type": "sc:Dataset",
             "name": _escape_name(dataset, names),
-            "conformsTo": "http://mlcommons.org/croissant/1.0" if croissant_1_0 else None,
+            "conformsTo": "http://mlcommons.org/croissant/1.0" if isV1 else None,
             "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
             "identifier": identifier,
             "license": _license,
@@ -259,10 +264,10 @@ def _get_full_jsonld_parameter(request: Request) -> bool:
     return True
 
 
-def _get_use_croissant_1_0(request: Request) -> bool:
+def _get_isV1(request: Request) -> bool:
     """Whether the output follows Croissant 1.0 or 0.8. Defaults to True."""
-    use_croissant_1_0 = get_request_parameter(request, "use_croissant_1_0", default="true")
-    if use_croissant_1_0.lower() == "false":
+    isV1 = get_request_parameter(request, "isV1", default="true")
+    if isV1.lower() == "false":
         return False
     return True
 
@@ -291,7 +296,7 @@ def create_croissant_endpoint(
                     context=context,
                 ):
                     full_jsonld = _get_full_jsonld_parameter(request)
-                    croissant_1_0 = _get_use_croissant_1_0(request)
+                    isV1 = _get_isV1(request)
                     dataset = get_request_parameter(request, "dataset")
                     logging.debug(f"endpoint={endpoint_name} dataset={dataset}")
                     if not are_valid_parameters([dataset]):
@@ -332,7 +337,7 @@ def create_croissant_endpoint(
                             infos=infos,
                             partial=partial,
                             full_jsonld=full_jsonld,
-                            croissant_1_0=croissant_1_0,
+                            isV1=isV1,
                         )
                     with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)
