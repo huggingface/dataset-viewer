@@ -187,7 +187,8 @@ PROCESSING_GRAPH_FAN_IN_OUT = ProcessingGraph(
         STEP_DE: {"input_type": "dataset", "triggered_by": STEP_CA},  # fan-in (C -> D)
         STEP_CB: {"input_type": "config", "triggered_by": STEP_SA},  # fan-in (S -> C)
         STEP_DF: {"input_type": "dataset", "triggered_by": STEP_SA},  # fan-in (S -> D)
-    }
+    },
+    check_one_of_parents_is_same_or_higher_level=False,
 )
 
 # Graph to test parallel steps (ie. two steps that compute the same thing, and abort if the other already exists)

@@ -62,3 +62,31 @@ SPLIT_HAS_SEARCH_KIND = "split-duckdb-index"
 
 CROISSANT_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100
+
+DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS = (
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.075,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    25.0,
+    50.0,
+    75.0,
+    100.0,
+    250.0,
+    500.0,
+    750.0,
+    1000.0,
+    2500.0,
+    5000.0,
+    float("inf"),
+)

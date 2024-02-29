@@ -39,6 +39,31 @@ def guard_int(x: Any) -> int:
     raise ValueError(f"Invalid int: {x}")
 
 
+def check_one_of_parents_is_same_or_higher_level(processing_graph: ProcessingGraph) -> None:
+    first_steps = processing_graph.get_first_processing_steps()
+    for step in processing_graph.get_topologically_ordered_processing_steps():
+        parents = processing_graph.get_parents(step.name)
+        if parents:
+            parent_input_types = [p.input_type for p in parents]
+            if step.input_type == "dataset":
+                if "dataset" not in parent_input_types:
+                    raise ValueError(
+                        f"Step {step.name} is a dataset-level step but none of its parents are dataset-level."
+                    )
+            elif step.input_type == "config":
+                if "dataset" not in parent_input_types and "config" not in parent_input_types:
+                    raise ValueError(
+                        f"Step {step.name} is a config-level step but none of its parents are config-level or dataset-level."
+                    )
+            # no need to check for splits
+        else:
+            # probably redundant checks
+            if step not in first_steps:
+                raise ValueError(f"Step {step.name} has not parents, but is not a root step.")
+            if step.input_type != "dataset":
+                raise ValueError(f"Step {step.name} is a root step but is not a dataset-level step.")
+
+
 class ProcessingStepSpecification(TypedDict, total=False):
     input_type: InputType
     triggered_by: Union[list[str], str, None]
@@ -115,7 +140,11 @@ class ProcessingGraph:
     The graph can have multiple roots.
 
     Args:
-        specification (ProcessingGraphSpecification): The specification of the graph.
+        specification (`ProcessingGraphSpecification`): The specification of the graph.
+        min_bytes_for_bonus_difficulty (`int`, *optional*, defaults to `MIN_BYTES_FOR_BONUS_DIFFICULTY`): The minimum
+            number of bytes for a dataset to be considered big and get the bonus difficulty.
+        check_one_of_parents_is_same_or_higher_level (`bool`, *optional*, defaults to `True`): Whether to check that
+            one of the parents of a processing step is of the same input type or a higher input type.
 
     Raises:
         [`ValueError`]: If the graph is not a DAG.
@@ -126,6 +155,7 @@ class ProcessingGraph:
 
     specification: ProcessingGraphSpecification
     min_bytes_for_bonus_difficulty: int = MIN_BYTES_FOR_BONUS_DIFFICULTY
+    check_one_of_parents_is_same_or_higher_level: bool = True
 
     _nx_graph: nx.DiGraph = field(init=False)
     _processing_steps: Mapping[str, ProcessingStep] = field(init=False)
@@ -193,6 +223,8 @@ class ProcessingGraph:
         self._alphabetically_ordered_processing_steps = [
             self.get_processing_step(processing_step_name) for processing_step_name in sorted(_nx_graph.nodes())
         ]
+        if self.check_one_of_parents_is_same_or_higher_level:
+            check_one_of_parents_is_same_or_higher_level(self)
 
     def get_processing_step(self, processing_step_name: str) -> ProcessingStep:
         """
@@ -451,6 +483,10 @@ class Artifact:
         return dataset, revision, config, split, prefix
 
 
+# Note: apart from the root steps:
+# - every dataset-level step should be triggered by at least one dataset-level step
+# - every config-level step should be triggered by at least one dataset-level or config-level step
+# to be sure the steps are processed even if a dataset has no configs, or if a config has no splits.
 specification: ProcessingGraphSpecification = {
     "dataset-config-names": {
         "input_type": "dataset",
@@ -459,7 +495,10 @@ specification: ProcessingGraphSpecification = {
     },
     "split-first-rows": {
         "input_type": "split",
-        "triggered_by": ["config-split-names", "config-parquet-metadata"],
+        "triggered_by": [
+            "config-split-names",  # to compute with streaming when possible
+            "config-parquet-metadata",  # to compute with parquet
+        ],
         "job_runner_version": 4,
         "difficulty": 70,
     },
@@ -483,7 +522,10 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-parquet": {
         "input_type": "dataset",
-        "triggered_by": "config-parquet",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-parquet",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
@@ -495,13 +537,19 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-info": {
         "input_type": "dataset",
-        "triggered_by": "config-info",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-info",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
     "config-split-names": {
         "input_type": "config",
-        "triggered_by": ["dataset-config-names", "config-info"],
+        "triggered_by": [
+            "dataset-config-names",  # compute with streaming
+            "config-info",  # compute from parquet conversion
+        ],
         "job_runner_version": 3,
         "difficulty": 60,
     },
@@ -513,13 +561,19 @@ specification: ProcessingGraphSpecification = {
     },
     "dataset-size": {
         "input_type": "dataset",
-        "triggered_by": "config-size",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-size",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-split-names": {
         "input_type": "dataset",
-        "triggered_by": "config-split-names",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-split-names",
+        ],
         "job_runner_version": 3,
         "difficulty": 20,
     },
@@ -532,19 +586,29 @@ specification: ProcessingGraphSpecification = {
     },
     "split-is-valid": {
         "input_type": "split",
-        "triggered_by": ["config-size", "split-first-rows", "split-duckdb-index"],
+        "triggered_by": [
+            "config-size",
+            "split-first-rows",
+            "split-duckdb-index",
+        ],
         "job_runner_version": 3,
         "difficulty": 20,
     },
     "config-is-valid": {
         "input_type": "config",
-        "triggered_by": "split-is-valid",
+        "triggered_by": [
+            "config-split-names",  # required in case the config has no splits (error in previous step)
+            "split-is-valid",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-is-valid": {
         "input_type": "dataset",
-        "triggered_by": "config-is-valid",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-is-valid",
+        ],
         "job_runner_version": 6,
         "difficulty": 20,
     },
@@ -568,13 +632,19 @@ specification: ProcessingGraphSpecification = {
     },
     "config-opt-in-out-urls-count": {
         "input_type": "config",
-        "triggered_by": "split-opt-in-out-urls-count",
+        "triggered_by": [
+            "config-split-names",  # required in case the config has no splits (error in previous step)
+            "split-opt-in-out-urls-count",
+        ],
         "job_runner_version": 3,
         "difficulty": 20,
     },
     "dataset-opt-in-out-urls-count": {
         "input_type": "dataset",
-        "triggered_by": "config-opt-in-out-urls-count",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-opt-in-out-urls-count",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
@@ -587,19 +657,29 @@ specification: ProcessingGraphSpecification = {
     },
     "config-duckdb-index-size": {
         "input_type": "config",
-        "triggered_by": "split-duckdb-index",
+        "triggered_by": [
+            "config-split-names",  # required in case the config has no splits (error in previous step)
+            "split-duckdb-index",
+        ],
         "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-duckdb-index-size": {
         "input_type": "dataset",
-        "triggered_by": "config-duckdb-index-size",
+        "triggered_by": [
+            "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
+            "config-duckdb-index-size",
+        ],
         "job_runner_version": 1,
         "difficulty": 20,
     },
     "dataset-hub-cache": {
         "input_type": "dataset",
-        "triggered_by": ["dataset-is-valid", "dataset-size", "dataset-loading-tags"],
+        "triggered_by": [
+            "dataset-is-valid",
+            "dataset-size",
+            "dataset-loading-tags",
+        ],
         "job_runner_version": 1,
         "difficulty": 20,
     },
