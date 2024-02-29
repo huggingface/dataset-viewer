@@ -10,6 +10,7 @@ from typing import Optional, TypedDict
 
 import orjson
 from filelock import FileLock
+from libcommon.constants import DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
 from libcommon.dtos import JobInfo
 from libcommon.prometheus import StepProfiler
 from libcommon.queue import (
@@ -123,7 +124,12 @@ class Loop:
                 logging.debug(e)
                 return False
 
-        with StepProfiler("loop", "run_job", job_info["type"]):
+        buckets = (
+            DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
+            if job_info["type"] == "split-descriptive-statistics"
+            else None
+        )
+        with StepProfiler("loop", "run_job", job_info["type"], buckets=buckets):
             job_runner = self.job_runner_factory.create_job_runner(job_info)
             job_manager = JobManager(job_info=job_info, app_config=self.app_config, job_runner=job_runner)
             job_result = job_manager.run_job()
