@@ -12,7 +12,6 @@ import pytest
 import pytest_asyncio
 import uvicorn
 from httpx_sse import aconnect_sse
-from libcommon.prometheus import StepProfiler
 from libcommon.resources import CacheMongoResource
 from libcommon.simple_cache import delete_response, upsert_response
 from starlette.applications import Starlette
@@ -24,8 +23,6 @@ from sse_api.constants import HUB_CACHE_KIND
 from .uvicorn_server import UvicornServer
 
 REVISION_NAME = "revision"
-
-DEFAULT_BUCKETS_STRING = str(StepProfiler.DEFAULT_BUCKETS)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -87,9 +84,7 @@ async def test_metrics(client: httpx.AsyncClient) -> None:
     # the metrics should contain at least the following
     starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/metrics"}'
     steps_processing_time_metric = (
-        'method_steps_processing_time_seconds_sum{buckets="'
-        + DEFAULT_BUCKETS_STRING
-        + '",context="None",method="healthcheck_endpoint",step="all"}'
+        'method_steps_processing_time_seconds_sum{context="None",method="healthcheck_endpoint",step="all"}'
     )
     for name in [starlette_requests_metric, steps_processing_time_metric]:
         assert name in metrics, metrics

@@ -4,13 +4,10 @@
 from typing import Optional
 
 import pytest
-from libcommon.prometheus import StepProfiler
 from starlette.testclient import TestClient
 
 from rows.app import create_app_with_config
 from rows.config import AppConfig
-
-DEFAULT_BUCKETS_STRING = str(StepProfiler.DEFAULT_BUCKETS)
 
 
 @pytest.fixture(scope="module")
@@ -93,9 +90,7 @@ def test_metrics(client: TestClient) -> None:
     # the metrics should contain at least the following
     starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/metrics"}'
     steps_processing_time_metric = (
-        'method_steps_processing_time_seconds_sum{buckets="'
-        + DEFAULT_BUCKETS_STRING
-        + '",context="None",method="healthcheck_endpoint",step="all"}'
+        'method_steps_processing_time_seconds_sum{context="None",method="healthcheck_endpoint",step="all"}'
     )
     for name in [starlette_requests_metric, steps_processing_time_metric]:
         assert name in metrics, metrics
