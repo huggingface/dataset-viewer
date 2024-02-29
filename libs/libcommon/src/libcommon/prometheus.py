@@ -16,7 +16,8 @@ from prometheus_client import (
 from prometheus_client.multiprocess import MultiProcessCollector
 from psutil import disk_usage
 
-from libcommon.queue import JobTotalMetricDocument
+from libcommon.constants import LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS
+from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.simple_cache import CacheTotalMetricDocument
 from libcommon.storage import StrPath
 
@@ -43,6 +44,12 @@ QUEUE_JOBS_TOTAL = Gauge(
     name="queue_jobs_total",
     documentation="Number of jobs in the queue",
     labelnames=["queue", "status"],
+    multiprocess_mode="liveall",
+)
+WORKER_SIZE_JOBS_COUNT = Gauge(
+    name="worker_size_jobs_count",
+    documentation="Number of jobs per worker size",
+    labelnames=["worker_size"],
     multiprocess_mode="liveall",
 )
 RESPONSES_IN_CACHE_TOTAL = Gauge(
@@ -80,11 +87,22 @@ METHOD_STEPS_PROCESSING_TIME = Histogram(
     "Histogram of the processing time of specific steps in methods for a given context (in seconds)",
     ["method", "step", "context"],
 )
+METHOD_LONG_STEPS_PROCESSING_TIME = Histogram(
+    "method_long_steps_processing_time_seconds",
+    "Histogram of the processing time of specific long steps in methods for a given context (in seconds)",
+    ["method", "step", "context"],
+    buckets=LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS,
+)
 
 
 def update_queue_jobs_total() -> None:
     for job_metric in JobTotalMetricDocument.objects():
         QUEUE_JOBS_TOTAL.labels(queue=job_metric.job_type, status=job_metric.status).set(job_metric.total)
+
+
+def update_worker_size_jobs_count() -> None:
+    for jobs_count in WorkerSizeJobsCountDocument.objects():
+        WORKER_SIZE_JOBS_COUNT.labels(worker_size=jobs_count.worker_size.value).set(jobs_count.jobs_count)
 
 
 def update_responses_in_cache_total() -> None:
@@ -136,7 +154,8 @@ class StepProfiler:
         context (`str`, *optional*): An optional string that adds context. If None, the label "None" is used.
     """
 
-    def __init__(self, method: str, step: str, context: Optional[str] = None):
+    def __init__(self, method: str, step: str, context: Optional[str] = None, histogram: Optional[Histogram] = None):
+        self.histogram = METHOD_STEPS_PROCESSING_TIME if histogram is None else histogram
         self.method = method
         self.step = step
         self.context = str(context)
@@ -152,6 +171,13 @@ class StepProfiler:
         traceback: Optional[TracebackType],
     ) -> None:
         after_time = time.perf_counter()
-        METHOD_STEPS_PROCESSING_TIME.labels(method=self.method, step=self.step, context=self.context).observe(
-            after_time - self.before_time
-        )
+        self.histogram.labels(
+            method=self.method,
+            step=self.step,
+            context=self.context,
+        ).observe(after_time - self.before_time)
+
+
+class LongStepProfiler(StepProfiler):
+    def __init__(self, method: str, step: str, context: Optional[str] = None):
+        super().__init__(method, step, context, histogram=METHOD_LONG_STEPS_PROCESSING_TIME)

@@ -90,9 +90,10 @@ def test_metrics(client: TestClient) -> None:
     }
 
     # the metrics should contain at least the following
-    for name in [
-        'starlette_requests_total{method="GET",path_template="/metrics"}',
-        'method_steps_processing_time_seconds_sum{context="None",method="healthcheck_endpoint",step="all"}',
-    ]:
+    starlette_requests_metric = 'starlette_requests_total{method="GET",path_template="/metrics"}'
+    steps_processing_time_metric = (
+        'method_steps_processing_time_seconds_sum{context="None",method="healthcheck_endpoint",step="all"}'
+    )
+    for name in [starlette_requests_metric, steps_processing_time_metric]:
         assert name in metrics, metrics
         assert metrics[name] > 0, metrics

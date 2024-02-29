@@ -11,7 +11,8 @@ DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
 DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY = "job_runner"
 DUCKDB_VERSION = "0.10.0"
 CACHE_METRICS_COLLECTION = "cacheTotalMetric"
-QUEUE_METRICS_COLLECTION = "jobTotalMetric"
+TYPE_AND_STATUS_JOB_COUNTS_COLLECTION = "jobTotalMetric"
+WORKER_TYPE_JOB_COUNTS_COLLECTION = "workerTypeJobCounts"
 QUEUE_COLLECTION_JOBS = "jobsBlue"
 QUEUE_COLLECTION_LOCKS = "locks"
 QUEUE_MONGOENGINE_ALIAS = "queue"
@@ -61,3 +62,31 @@ SPLIT_HAS_SEARCH_KIND = "split-duckdb-index"
 
 CROISSANT_MAX_CONFIGS = 100
 MAX_NUM_ROWS_PER_PAGE = 100
+
+LONG_DURATION_PROMETHEUS_HISTOGRAM_BUCKETS = (
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.075,
+    0.1,
+    0.25,
+    0.5,
+    0.75,
+    1.0,
+    2.5,
+    5.0,
+    7.5,
+    10.0,
+    25.0,
+    50.0,
+    75.0,
+    100.0,
+    250.0,
+    500.0,
+    750.0,
+    1000.0,
+    2500.0,
+    5000.0,
+    float("inf"),
+)
