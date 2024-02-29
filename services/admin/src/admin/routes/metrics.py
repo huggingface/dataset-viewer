@@ -12,6 +12,7 @@ from libcommon.prometheus import (
     update_parquet_metadata_disk_usage,
     update_queue_jobs_total,
     update_responses_in_cache_total,
+    update_worker_size_jobs_count,
 )
 from libcommon.storage import StrPath
 from prometheus_client import CONTENT_TYPE_LATEST
@@ -30,6 +31,7 @@ def create_metrics_endpoint(
     async def metrics_endpoint(_: Request) -> Response:
         logging.info("/metrics")
         update_queue_jobs_total()
+        update_worker_size_jobs_count()
         update_responses_in_cache_total()
         # TODO: Update disk usage from fsspec
         update_descriptive_statistics_disk_usage(directory=descriptive_statistics_directory)

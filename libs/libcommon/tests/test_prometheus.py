@@ -7,12 +7,14 @@ from typing import Optional
 from libcommon.prometheus import (
     QUEUE_JOBS_TOTAL,
     RESPONSES_IN_CACHE_TOTAL,
+    WORKER_SIZE_JOBS_COUNT,
     Prometheus,
     StepProfiler,
     update_queue_jobs_total,
     update_responses_in_cache_total,
+    update_worker_size_jobs_count,
 )
-from libcommon.queue import JobTotalMetricDocument
+from libcommon.queue import JobTotalMetricDocument, WorkerSizeJobsCountDocument
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import CacheTotalMetricDocument
 
@@ -148,24 +150,16 @@ def test_cache_metrics(cache_mongo_resource: CacheMongoResource) -> None:
     collection.insert_one(cache_metric)
 
     metrics = get_metrics()
-    assert (
-        metrics.forge_metric_key(
-            name="responses_in_cache_total",
-            content={"error_code": "None", "http_status": "200", "kind": "dummy"},
-        )
-        not in metrics.metrics
+    key = metrics.forge_metric_key(
+        name="responses_in_cache_total",
+        content={"error_code": "None", "http_status": "200", "kind": "dummy"},
     )
+    assert key not in metrics.metrics
 
     update_responses_in_cache_total()
 
     metrics = get_metrics()
-    assert (
-        metrics.forge_metric_key(
-            name="responses_in_cache_total",
-            content={"error_code": "None", "http_status": "200", "kind": "dummy"},
-        )
-        in metrics.metrics
-    )
+    assert key in metrics.metrics
 
 
 def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
@@ -181,24 +175,40 @@ def test_queue_metrics(queue_mongo_resource: QueueMongoResource) -> None:
     collection.insert_one(job_metric)
 
     metrics = get_metrics()
-    assert (
-        metrics.forge_metric_key(
-            name="queue_jobs_total",
-            content={"queue": "dummy", "status": "waiting"},
-        )
-        not in metrics.metrics
+    key = metrics.forge_metric_key(
+        name="queue_jobs_total",
+        content={"queue": "dummy", "status": "waiting"},
     )
+    assert key not in metrics.metrics
 
     update_queue_jobs_total()
 
     metrics = get_metrics()
-    assert (
-        metrics.forge_metric_key(
-            name="queue_jobs_total",
-            content={"queue": "dummy", "status": "waiting"},
-        )
-        in metrics.metrics
+    assert key in metrics.metrics
+
+
+def test_worker_size_jobs_count(queue_mongo_resource: QueueMongoResource) -> None:
+    WORKER_SIZE_JOBS_COUNT.clear()
+
+    metric = {
+        "worker_size": "heavy",
+        "jobs_count": 1,
+    }
+
+    collection = WorkerSizeJobsCountDocument._get_collection()
+    collection.insert_one(metric)
+
+    metrics = get_metrics()
+    key = metrics.forge_metric_key(
+        name="worker_size_jobs_count",
+        content={"worker_size": "heavy"},
     )
+    assert key not in metrics.metrics
+
+    update_worker_size_jobs_count()
+
+    metrics = get_metrics()
+    assert key in metrics.metrics
 
 
 def test_process_metrics() -> None:
