@@ -35,11 +35,11 @@ from libcommon.simple_cache import (
 
 from worker.dtos import (
     CompleteJobResult,
-    DatasetLoadingTag,
+    DatasetLibrary,
     DatasetLoadingTagsResponse,
-    DatasetPythonLibrary,
+    DatasetTag,
     LoadingCode,
-    PythonLoadingMethod,
+    LoadingMethod,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
@@ -258,8 +258,9 @@ ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={d
 records = ds.records("{record_set}")"""
 
 
-def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dict[str, Any]]) -> PythonLoadingMethod:
+def get_loading_methods_for_datasets_library(dataset: str, infos: list[dict[str, Any]]) -> LoadingMethod:
     return {
+        "language": "python",
         "library": "datasets",
         "function": "load_dataset",
         "loading_codes": [
@@ -277,11 +278,12 @@ def get_python_loading_method_for_datasets_library(dataset: str, infos: list[dic
     }
 
 
-def get_python_loading_method_for_mlcroissant_library(
+def get_loading_methods_for_mlcroissant_library(
     dataset: str, infos: list[dict[str, Any]], partial: bool
-) -> PythonLoadingMethod:
+) -> LoadingMethod:
     comment = "\n# The Croissant metadata exposes the first 5GB of this dataset" if partial else ""
     return {
+        "language": "python",
         "library": "mlcroissant",
         "function": "Dataset",
         "loading_codes": [
@@ -350,8 +352,8 @@ urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(
 ds = {function}(urls).decode()"""
 
 
-def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetPythonLibrary
+def get_loading_methods_for_json(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -408,11 +410,11 @@ def get_python_loading_method_for_json(dataset: str, hf_token: Optional[str]) ->
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
-    return {"library": library, "function": function, "loading_codes": loading_codes}
+    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetPythonLibrary
+def get_loading_methods_for_csv(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -468,11 +470,11 @@ def get_python_loading_method_for_csv(dataset: str, hf_token: Optional[str]) -> 
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
-    return {"library": library, "function": function, "loading_codes": loading_codes}
+    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetPythonLibrary
+def get_loading_methods_for_parquet(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
         if any(len(data_files) != 1 for data_files in config.data_files.values()):
@@ -523,11 +525,11 @@ def get_python_loading_method_for_parquet(dataset: str, hf_token: Optional[str])
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                 )
-    return {"library": library, "function": function, "loading_codes": loading_codes}
+    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_python_loading_method_for_webdataset(dataset: str, hf_token: Optional[str]) -> PythonLoadingMethod:
-    library: DatasetPythonLibrary
+def get_loading_methods_for_webdataset(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+    library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(
         dataset, module_name="webdataset", hf_token=hf_token
     )
@@ -557,21 +559,14 @@ def get_python_loading_method_for_webdataset(dataset: str, hf_token: Optional[st
                 splits=loading_code["arguments"]["splits"],
                 first_split=next(iter(loading_code["arguments"]["splits"])),
             )
-    return {"library": library, "function": function, "loading_codes": loading_codes}
+    return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-get_python_loading_method_for_builder: dict[str, Callable[[str, Optional[str]], PythonLoadingMethod]] = {
-    "webdataset": get_python_loading_method_for_webdataset,
-    "json": get_python_loading_method_for_json,
-    "csv": get_python_loading_method_for_csv,
-    "parquet": get_python_loading_method_for_parquet,
-}
-
-
-loading_tag_for_library: dict[DatasetPythonLibrary, DatasetLoadingTag] = {
-    "webdataset": "webdataset",
-    "pandas": "pandas",
-    "dask": "dask",
+get_loading_method_for_builder: dict[str, Callable[[str, Optional[str]], LoadingMethod]] = {
+    "webdataset": get_loading_methods_for_webdataset,
+    "json": get_loading_methods_for_json,
+    "csv": get_loading_methods_for_csv,
+    "parquet": get_loading_methods_for_parquet,
 }
 
 
@@ -598,13 +593,14 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
 
     dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     http_status = dataset_info_response["http_status"]
-    tags: list[DatasetLoadingTag] = []
-    python_loading_methods: list[PythonLoadingMethod] = []
+    tags: list[DatasetTag] = []
+    libraries: list[DatasetLibrary] = []
+    loading_methods: list[LoadingMethod] = []
     infos: list[dict[str, Any]] = []
     builder_name: Optional[str] = None
     if http_status == HTTPStatus.OK:
         try:
-            content = dataset_info_response.response["content"]
+            content = dataset_info_response["content"]
             infos = list(islice(content["dataset_info"].values(), LOADING_METHODS_MAX_CONFIGS))
             partial = content["partial"]
         except KeyError as e:
@@ -613,24 +609,22 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
             ) from e
     if infos:
         # mlcroissant library
-        python_loading_methods.append(
-            get_python_loading_method_for_mlcroissant_library(dataset, infos, partial=partial)
-        )
+        loading_methods.append(get_loading_methods_for_mlcroissant_library(dataset, infos, partial=partial))
         tags.append("croissant")
+        libraries.append("mlcroissant")
         # datasets library
-        python_loading_methods.append(get_python_loading_method_for_datasets_library(dataset, infos))
-        tags.append("hf_datasets")
+        loading_methods.append(get_loading_methods_for_datasets_library(dataset, infos))
+        libraries.append("datasets")
         # pandas or dask or webdataset library
         builder_name = infos[0]["builder_name"]
-        if builder_name in get_python_loading_method_for_builder:
+        if builder_name in get_loading_method_for_builder:
             try:
-                python_loading_method = get_python_loading_method_for_builder[builder_name](dataset, hf_token)
-                if python_loading_method["library"] in loading_tag_for_library:
-                    tags.append(loading_tag_for_library[python_loading_method["library"]])
-                python_loading_methods.append(python_loading_method)
+                loading_method = get_loading_method_for_builder[builder_name](dataset, hf_token)
+                libraries.append(loading_method["library"])
+                loading_methods.append(loading_method)
             except NotImplementedError:
                 pass
-    return DatasetLoadingTagsResponse(tags=tags, python_loading_methods=python_loading_methods)
+    return DatasetLoadingTagsResponse(tags=tags, libraries=libraries, loading_methods=loading_methods)
 
 
 class DatasetLoadingTagsJobRunner(DatasetJobRunner):

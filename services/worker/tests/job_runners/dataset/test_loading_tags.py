@@ -60,10 +60,12 @@ UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
 )
 EXPECTED_PARQUET = (
     {
-        "tags": ["croissant", "hf_datasets", "pandas"],
-        "python_loading_methods": [
+        "tags": ["croissant"],
+        "libraries": ["mlcroissant", "datasets", "pandas"],
+        "loading_methods": [
             {
                 "function": "Dataset",
+                "language": "python",
                 "library": "mlcroissant",
                 "loading_codes": [
                     {
@@ -81,6 +83,7 @@ EXPECTED_PARQUET = (
             },
             {
                 "function": "load_dataset",
+                "language": "python",
                 "library": "datasets",
                 "loading_codes": [
                     {
@@ -92,6 +95,7 @@ EXPECTED_PARQUET = (
             },
             {
                 "function": "pd.read_parquet",
+                "language": "python",
                 "library": "pandas",
                 "loading_codes": [
                     {
@@ -117,10 +121,12 @@ EXPECTED_PARQUET = (
 )
 EXPECTED_WEBDATASET = (
     {
-        "tags": ["croissant", "hf_datasets", "webdataset"],
-        "python_loading_methods": [
+        "tags": ["croissant"],
+        "libraries": ["mlcroissant", "datasets", "webdataset"],
+        "loading_methods": [
             {
                 "function": "Dataset",
+                "language": "python",
                 "library": "mlcroissant",
                 "loading_codes": [
                     {
@@ -137,6 +143,7 @@ EXPECTED_WEBDATASET = (
             },
             {
                 "function": "load_dataset",
+                "language": "python",
                 "library": "datasets",
                 "loading_codes": [
                     {
@@ -148,6 +155,7 @@ EXPECTED_WEBDATASET = (
             },
             {
                 "function": "wds.WebDataset",
+                "language": "python",
                 "library": "webdataset",
                 "loading_codes": [
                     {

@@ -218,8 +218,9 @@ class IsValidResponse(TypedDict):
     filter: bool
 
 
-DatasetLoadingTag = Literal["croissant", "webdataset", "hf_datasets", "pandas", "dask"]
-DatasetPythonLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
+DatasetTag = Literal["croissant"]
+DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
+ProgrammingLanguage = Literal["python"]
 
 
 class LoadingCode(TypedDict):
@@ -228,15 +229,17 @@ class LoadingCode(TypedDict):
     code: str
 
 
-class PythonLoadingMethod(TypedDict):
-    library: DatasetPythonLibrary
+class LoadingMethod(TypedDict):
+    language: ProgrammingLanguage
+    library: DatasetLibrary
     function: str
     loading_codes: list[LoadingCode]
 
 
 class DatasetLoadingTagsResponse(TypedDict):
-    tags: list[DatasetLoadingTag]
-    python_loading_methods: list[PythonLoadingMethod]
+    tags: list[DatasetTag]
+    libraries: list[DatasetLibrary]
+    loading_methods: list[LoadingMethod]
 
 
 class DatasetHubCacheResponse(TypedDict):
@@ -244,7 +247,8 @@ class DatasetHubCacheResponse(TypedDict):
     viewer: bool
     partial: bool
     num_rows: int
-    tags: list[DatasetLoadingTag]
+    tags: list[DatasetTag]
+    libraries: list[DatasetLibrary]
 
 
 class DatasetParquetResponse(TypedDict):
