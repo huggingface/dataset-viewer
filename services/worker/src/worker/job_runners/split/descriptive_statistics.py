@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import enum
+import functools
 import logging
 import os
 from pathlib import Path
@@ -264,6 +265,22 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
     return nan_count, nan_proportion
 
 
+def raise_with_column_name(func):
+    """
+    Wraps error from Column._compute_statistics so that we always keep information about which
+    column caused an error.
+    """
+
+    @functools.wraps(func)
+    def _compute_statistics_wrapper(data: pl.DataFrame, column_name: str, n_samples: int, **kwargs: Any) -> Any:
+        try:
+            return func(data, column_name, n_samples, **kwargs)
+        except Exception as error:
+            raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
+
+    return _compute_statistics_wrapper
+
+
 class Column:
     """Abstract class to compute stats for columns of all supported data types."""
 
@@ -277,7 +294,9 @@ class Column:
 
     @staticmethod
     def _compute_statistics(
-        *args: Any,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
         **kwargs: Any,
     ) -> SupportedStatistics:
         raise NotImplementedError
@@ -292,6 +311,7 @@ class ClassLabelColumn(Column):
         self.feature_dict = feature_dict
 
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
     ) -> CategoricalStatisticsItem:
@@ -343,6 +363,7 @@ class FloatColumn(Column):
         self.n_bins = n_bins
 
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
@@ -399,6 +420,7 @@ class IntColumn(Column):
         self.n_bins = n_bins
 
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
@@ -455,6 +477,7 @@ class StringColumn(Column):
         self.n_bins = n_bins
 
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
@@ -494,6 +517,7 @@ class StringColumn(Column):
 
 class BoolColumn(Column):
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
         logging.info(f"Compute statistics for boolean column {column_name} with polars. ")
         # df = pl.read_parquet(self.path, columns=[self.name])
@@ -523,6 +547,7 @@ class ListColumn(Column):
         self.n_bins = n_bins
 
     @staticmethod
+    @raise_with_column_name
     def _compute_statistics(
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:

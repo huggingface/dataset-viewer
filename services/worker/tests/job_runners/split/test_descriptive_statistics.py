@@ -12,6 +12,7 @@ import polars as pl
 import pytest
 from datasets import ClassLabel, Dataset
 from libcommon.dtos import Priority
+from libcommon.exceptions import StatisticsComputationError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -77,6 +78,30 @@ def test_generate_bins(
         assert pytest.approx(bins) == expected_bins
     else:
         assert bins == expected_bins
+
+
+# test raise_with_column_name decorator works
+def test_error_contains_column_name(
+    datasets: Mapping[str, Dataset],
+) -> None:
+    correct_column_name = "float__column"
+    data = datasets["descriptive_statistics"].to_dict()
+    _ = FloatColumn._compute_statistics(
+        data=pl.from_dict(data),
+        column_name=correct_column_name,
+        n_bins=N_BINS,
+        n_samples=len(data[correct_column_name]),
+    )  # should not raise
+
+    incorrect_column_name = "random_column"
+    with pytest.raises(StatisticsComputationError) as e:
+        _ = FloatColumn._compute_statistics(  # internal error happens here
+            data=pl.from_dict(data),
+            column_name=incorrect_column_name,
+            n_bins=N_BINS,
+            n_samples=len(next(iter(data.values()))),
+        )
+    assert f"Error for column={incorrect_column_name}: error" in str(e.value)
 
 
 @pytest.fixture
