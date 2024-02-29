@@ -260,6 +260,17 @@ def count_expected_statistics_for_numerical_column(
     )
     n_samples = column.shape[0]
     nan_count = column.isna().sum()
+    if nan_count == n_samples:
+        return {
+            "nan_count": n_samples,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        }
     if dtype is ColumnType.FLOAT:
         if minimum == maximum:
             hist, bin_edges = np.array([column[~column.isna()].count()]), np.array([minimum, maximum])
@@ -363,7 +374,10 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
             column_stats = count_expected_statistics_for_string_column(column_data)
         elif column_type in [ColumnType.FLOAT, ColumnType.INT]:
             column_stats = count_expected_statistics_for_numerical_column(column_data, dtype=column_type)
-            if sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]:
+            if (
+                column_stats["histogram"]
+                and sum(column_stats["histogram"]["hist"]) != df.shape[0] - column_stats["nan_count"]
+            ):
                 raise ValueError(column_name, column_stats)
         elif column_type is ColumnType.CLASS_LABEL:
             column_stats = count_expected_statistics_for_categorical_column(
@@ -422,6 +436,7 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
     [
         "float__column",
         "float__nan_column",
+        "float__all_nan_column",
         "float__negative_column",
         "float__cross_zero_column",
         "float__large_values_column",
@@ -443,8 +458,9 @@ def test_float_statistics(
         n_samples=len(data[column_name]),
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
-    assert computed_hist["hist"] == expected_hist["hist"]
-    assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
+    if computed_hist:
+        assert computed_hist["hist"] == expected_hist["hist"]
+        assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
     assert pytest.approx(computed) == expected
     assert computed["nan_count"] == expected["nan_count"]
 
@@ -464,10 +480,10 @@ def test_float_statistics(
 )
 def test_int_statistics(
     column_name: str,
-    # descriptive_statistics_expected: dict,  # type: ignore
+    descriptive_statistics_expected: dict,  # type: ignore
     datasets: Mapping[str, Dataset],
 ) -> None:
-    # expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
+    expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
     computed = IntColumn._compute_statistics(
         data=pl.from_dict(data),
@@ -476,13 +492,14 @@ def test_int_statistics(
         n_samples=len(data[column_name]),
     )
     print(computed)
-    # expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
-    # assert computed_hist["hist"] == expected_hist["hist"]
-    # assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
-    # assert pytest.approx(computed) == expected
-    # assert computed["nan_count"] == expected["nan_count"]
-    # assert computed["min"] == expected["min"]
-    # assert computed["max"] == expected["max"]
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
+    if computed_hist:
+        assert computed_hist["hist"] == expected_hist["hist"]
+        assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
+    assert pytest.approx(computed) == expected
+    assert computed["nan_count"] == expected["nan_count"]
+    assert computed["min"] == expected["min"]
+    assert computed["max"] == expected["max"]
 
 
 @pytest.mark.parametrize(
@@ -494,6 +511,7 @@ def test_int_statistics(
         "string_text__large_string_nan_column",
         "string_label__column",
         "string_label__nan_column",
+        "string_label__all_nan_column",
     ],
 )
 def test_string_statistics(
@@ -516,23 +534,23 @@ def test_string_statistics(
     )
     if column_name.startswith("string_text__"):
         expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
-        assert expected_hist["hist"] == computed_hist["hist"]
-        assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
+        assert expected_hist["hist"] == computed_hist["hist"]  # type: ignore
+        assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])  # type: ignore
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
 
 
-#
-#
 @pytest.mark.parametrize(
     "column_name",
     [
         "class_label__column",
         "class_label__nan_column",
+        "class_label__all_nan_column",
         "class_label__less_classes_column",
         "class_label__string_column",
         "class_label__string_nan_column",
+        "class_label__string_all_nan_column",
     ],
 )
 def test_class_label_statistics(
@@ -557,6 +575,7 @@ def test_class_label_statistics(
     [
         "bool__column",
         "bool__nan_column",
+        "bool__all_nan_column",
     ],
 )
 def test_bool_statistics(
@@ -579,16 +598,22 @@ def test_bool_statistics(
     [
         "list__int_column",
         "list__int_nan_column",
+        "list__int_all_nan_column",
         "list__string_column",
         "list__string_nan_column",
+        "list__string_all_nan_column",
         "list__dict_column",
         "list__dict_nan_column",
+        "list__dict_all_nan_column",
         "list__sequence_column",
         "list__sequence_nan_column",
+        "list__sequence_all_nan_column",
         "list__sequence_dict_column",
         "list__sequence_dict_nan_column",
+        "list__sequence_dict_all_nan_column",
         "list__sequence_of_sequence_column",
         "list__sequence_of_sequence_nan_column",
+        "list__sequence_of_sequence_all_nan_column",
     ],
 )
 def test_list_statistics(
@@ -749,8 +774,9 @@ def test_compute(
                     column_response_stats.pop("histogram"),
                     expected_column_response_stats.pop("histogram"),
                 )
-                assert hist["hist"] == expected_hist["hist"]
-                assert pytest.approx(hist["bin_edges"]) == expected_hist["bin_edges"]
+                if expected_hist:
+                    assert hist["hist"] == expected_hist["hist"]
+                    assert pytest.approx(hist["bin_edges"]) == expected_hist["bin_edges"]
                 assert column_response_stats["nan_count"] == expected_column_response_stats["nan_count"]
                 assert pytest.approx(column_response_stats) == expected_column_response_stats
                 if column_response["column_type"] is ColumnType.INT:

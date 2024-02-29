@@ -67,12 +67,12 @@ class Histogram(TypedDict):
 class NumericalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
-    min: Optional[float]
+    min: Optional[float]  # might be None in very rare cases when the whole column is only None values
     max: Optional[float]
     mean: Optional[float]
     median: Optional[float]
     std: Optional[float]
-    histogram: Histogram
+    histogram: Optional[Histogram]
 
 
 class CategoricalStatisticsItem(TypedDict):
@@ -351,6 +351,17 @@ class FloatColumn(Column):
             data, column_name, n_samples
         )
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
+        if nan_count == n_samples:  # all values are None
+            return NumericalStatisticsItem(
+                nan_count=n_samples,
+                nan_proportion=1.0,
+                min=None,
+                max=None,
+                mean=None,
+                median=None,
+                std=None,
+                histogram=None,
+            )
 
         hist = compute_histogram(
             data,
@@ -407,9 +418,7 @@ class IntColumn(Column):
                 histogram=None,
             )
 
-        if minimum and maximum:
-            minimum, maximum = int(minimum), int(maximum)
-
+        minimum, maximum = int(minimum), int(maximum)
         hist = compute_histogram(
             data,
             column_name=column_name,
@@ -451,11 +460,10 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
         logging.info(f"Compute statistics for string column {column_name} with polars. ")
         # TODO: count n_unique only on the first parquet file?
-        n_unique = data[column_name].n_unique()
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
-
+        n_unique = data[column_name].n_unique()
         if n_unique <= MAX_NUM_STRING_LABELS:  # TODO: make relative
-            labels2counts: dict[str, int] = value_counts(data, column_name)
+            labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
             labels2counts.pop(None, None)  # type: ignore
@@ -520,6 +528,17 @@ class ListColumn(Column):
     ) -> NumericalStatisticsItem:
         logging.info(f"Compute statistics for list/Sequence column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
+        if nan_count == n_samples:
+            return NumericalStatisticsItem(
+                nan_count=n_samples,
+                nan_proportion=1.0,
+                min=None,
+                max=None,
+                mean=None,
+                median=None,
+                std=None,
+                histogram=None,
+            )
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
 
         lengths_column_name = f"{column_name}_len"

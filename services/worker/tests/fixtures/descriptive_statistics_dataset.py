@@ -120,6 +120,10 @@ def long_text_nan_column() -> list[Optional[str]]:
     return texts  # type: ignore
 
 
+def nan_column() -> list[None]:
+    return [None] * 20
+
+
 statistics_dataset = Dataset.from_dict(
     {
         "string_label__column": [
@@ -166,9 +170,10 @@ statistics_dataset = Dataset.from_dict(
             None,
             "cat",
         ],
+        "string_label__all_nan_column": nan_column(),
         "int__column": [0, 0, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 5, 5, 5, 6, 7, 8, 8, 8],
         "int__nan_column": [0, None, 1, None, 2, None, 2, None, 4, None, 5, None, 5, 5, 5, 6, 7, 8, 8, 8],
-        "int__all_nan_column": [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
+        "int__all_nan_column": nan_column(),
         "int__only_one_value_column": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         "int__only_one_value_nan_column": [
             0,
@@ -236,6 +241,7 @@ statistics_dataset = Dataset.from_dict(
             9.7,
             9.9,
         ],
+        "float__all_nan_column": nan_column(),
         "class_label__column": [
             0,
             1,
@@ -302,6 +308,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             0,
         ],
+        "class_label__all_nan_column": nan_column(),
         "class_label__string_column": [
             "cat",
             "dog",
@@ -346,6 +353,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             "cat",
         ],
+        "class_label__string_all_nan_column": nan_column(),
         "float__negative_column": [
             -7.221,
             -5.333,
@@ -566,6 +574,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             None,
         ],
+        "bool__all_nan_column": nan_column(),
         "list__int_column": [
             [1],
             [1],
@@ -610,6 +619,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
+        "list__int_all_nan_column": nan_column(),
         "list__string_column": [
             ["cat"],
             ["cat"],
@@ -654,6 +664,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
+        "list__string_all_nan_column": nan_column(),
         "list__dict_column": [
             [{"author": "cat", "content": "mouse", "likes": 5}],
             [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
@@ -806,6 +817,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
+        "list__dict_all_nan_column": nan_column(),
         "list__sequence_column": [
             [1],
             [1],
@@ -850,6 +862,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
+        "list__sequence_all_nan_column": nan_column(),
         "list__sequence_dict_column": [
             [{"author": "cat", "content": "mouse", "likes": 5}],
             [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
@@ -1002,6 +1015,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
+        "list__sequence_dict_all_nan_column": nan_column(),
         "list__sequence_of_sequence_column": [
             [["cat"]],
             [["cat"]],
@@ -1046,11 +1060,13 @@ statistics_dataset = Dataset.from_dict(
             [[]],
             [[]],
         ],
+        "list__sequence_of_sequence_all_nan_column": nan_column(),
     },
     features=Features(
         {
             "string_label__column": Value("string"),
             "string_label__nan_column": Value("string"),
+            "string_label__all_nan_column": Value("string"),
             "int__column": Value("int32"),
             "int__nan_column": Value("int32"),
             "int__all_nan_column": Value("int32"),
@@ -1061,6 +1077,7 @@ statistics_dataset = Dataset.from_dict(
             "int__only_one_value_nan_column": Value("int32"),
             "float__column": Value("float32"),
             "float__nan_column": Value("float32"),
+            "float__all_nan_column": Value("float32"),
             "float__negative_column": Value("float64"),
             "float__cross_zero_column": Value("float32"),
             "float__large_values_column": Value("float32"),
@@ -1068,29 +1085,42 @@ statistics_dataset = Dataset.from_dict(
             "float__only_one_value_nan_column": Value("float32"),
             "class_label__column": ClassLabel(names=["cat", "dog"]),
             "class_label__nan_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__all_nan_column": ClassLabel(names=["cat", "dog"]),
             "class_label__less_classes_column": ClassLabel(names=["cat", "dog"]),  # but only "cat" is in set
             "class_label__string_column": ClassLabel(names=["cat", "dog"]),
             "class_label__string_nan_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__string_all_nan_column": ClassLabel(names=["cat", "dog"]),
             "bool__column": Value("bool"),
             "bool__nan_column": Value("bool"),
+            "bool__all_nan_column": Value("bool"),
             "list__int_column": [Value("int32")],
             "list__int_nan_column": [Value("int32")],
+            "list__int_all_nan_column": [Value("int32")],
             "list__string_column": [Value("string")],
             "list__string_nan_column": [Value("string")],
+            "list__string_all_nan_column": [Value("string")],
             "list__dict_column": [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}],
             "list__dict_nan_column": [
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ],
+            "list__dict_all_nan_column": [
+                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
+            ],
             "list__sequence_column": Sequence(Value("int64")),
             "list__sequence_nan_column": Sequence(Value("int64")),
+            "list__sequence_all_nan_column": Sequence(Value("int64")),
             "list__sequence_dict_column": [
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ],
             "list__sequence_dict_nan_column": [
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ],
+            "list__sequence_dict_all_nan_column": [
+                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
+            ],
             "list__sequence_of_sequence_column": Sequence(Sequence(Value("string"))),
             "list__sequence_of_sequence_nan_column": Sequence(Sequence(Value("string"))),
+            "list__sequence_of_sequence_all_nan_column": Sequence(Sequence(Value("string"))),
         }
     ),
 )
