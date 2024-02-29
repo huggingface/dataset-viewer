@@ -40,9 +40,10 @@ def guard_int(x: Any) -> int:
 
 
 def check_one_of_parents_is_same_or_higher_level(processing_graph: ProcessingGraph) -> None:
+    first_steps = processing_graph.get_first_processing_steps()
     for step in processing_graph.get_topologically_ordered_processing_steps():
         parents = processing_graph.get_parents(step.name)
-        if len(parents) > 0:
+        if parents:
             parent_input_types = [p.input_type for p in parents]
             if step.input_type == "dataset":
                 if "dataset" not in parent_input_types:
@@ -55,6 +56,12 @@ def check_one_of_parents_is_same_or_higher_level(processing_graph: ProcessingGra
                         f"Step {step.name} is a config-level step but none of its parents are config-level or dataset-level."
                     )
             # no need to check for splits
+        else:
+            # probably redundant checks
+            if step not in first_steps:
+                raise ValueError(f"Step {step.name} has not parents, but is not a root step.")
+            if step.input_type != "dataset":
+                raise ValueError(f"Step {step.name} is a root step but is not a dataset-level step.")
 
 
 class ProcessingStepSpecification(TypedDict, total=False):
