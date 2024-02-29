@@ -21,7 +21,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
-from libcommon.constants import CROISSANT_MAX_CONFIGS
+from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KIND
 from libcommon.croissant_utils import get_record_set
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
