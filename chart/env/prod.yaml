@@ -192,13 +192,30 @@ backfill:
     level: "debug"
   action: "backfill"
   schedule: "45 21 * * *"
-  # every four hours
+  # every day
   nodeSelector:
     role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
-      memory: "4Gi"
+      memory: "1Gi"
+    limits:
+      cpu: 2
+      memory: "8Gi"
+
+backfillRetryableErrors:
+  enabled: true
+  log:
+    level: "debug"
+  action: "backfill-retryable-errors"
+  schedule: "*/30 * * * *"
+  # every 30 minutes
+  nodeSelector:
+    role-datasets-server: "true"
+  resources:
+    requests:
+      cpu: 1
+      memory: "1Gi"
     limits:
       cpu: 2
       memory: "8Gi"
@@ -229,10 +246,6 @@ cleanStatsCache:
   expiredTimeIntervalSeconds: 10_800 # 3 hours
 
 postMessages:
-  nodeSelector:
-    role-datasets-server: "true"
-
-deleteObsoleteCache:
   nodeSelector:
     role-datasets-server: "true"
 
@@ -417,7 +430,7 @@ workers:
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 100
-    workerDifficultyMin: 0
+    workerDifficultyMin: 70
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:
@@ -437,7 +450,7 @@ workers:
     uvicornNumWorkers: "1"
     uvicornPort: 8080
     workerDifficultyMax: 70
-    workerDifficultyMin: 0
+    workerDifficultyMin: 40
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     nodeSelector:

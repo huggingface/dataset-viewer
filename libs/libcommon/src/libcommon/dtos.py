@@ -28,6 +28,12 @@ class Priority(str, enum.Enum):
     LOW = "low"
 
 
+class WorkerSize(str, enum.Enum):
+    heavy = "heavy"
+    medium = "medium"
+    light = "light"
+
+
 class JobParams(TypedDict):
     dataset: str
     revision: str

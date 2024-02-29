@@ -32,10 +32,11 @@ from libcommon.constants import (
     LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH,
     QUEUE_COLLECTION_JOBS,
     QUEUE_COLLECTION_LOCKS,
-    QUEUE_METRICS_COLLECTION,
     QUEUE_MONGOENGINE_ALIAS,
+    TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
+    WORKER_TYPE_JOB_COUNTS_COLLECTION,
 )
-from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status
+from libcommon.dtos import FlatJobInfo, JobInfo, Priority, Status, WorkerSize
 from libcommon.utils import get_datetime, inputs_to_string
 
 # START monkey patching ### hack ###
@@ -80,6 +81,8 @@ class JobDict(TypedDict):
 
 JobsTotalByTypeAndStatus = Mapping[tuple[str, str], int]
 
+JobsCountByWorkerSize = Mapping[str, int]
+
 
 class DumpByPendingStatus(TypedDict):
     waiting: list[JobDict]
@@ -109,7 +112,7 @@ class NoWaitingJobError(Exception):
 class JobQueryFilters(TypedDict, total=False):
     type__nin: list[str]
     type__in: list[str]
-    difficulty__gte: int
+    difficulty__gt: int
     difficulty__lte: int
 
 
@@ -132,7 +135,7 @@ class JobDocument(Document):
         namespace (`str`): The dataset namespace (user or organization) if any, else the dataset name (canonical name).
         priority (`Priority`, *optional*): The priority of the job. Defaults to Priority.LOW.
         status (`Status`, *optional*): The status of the job. Defaults to Status.WAITING.
-        difficulty (`int`): The difficulty of the job: 0=easy, 100=hard as a convention.
+        difficulty (`int`): The difficulty of the job: 1=easy, 100=hard as a convention (strictly positive integer).
         created_at (`datetime`): The creation date of the job.
         started_at (`datetime`, *optional*): When the job has started.
         last_heartbeat (`datetime`, *optional*): Last time the running job got a heartbeat from the worker.
@@ -245,34 +248,78 @@ class JobTotalMetricDocument(Document):
     created_at = DateTimeField(default=get_datetime)
 
     meta = {
-        "collection": QUEUE_METRICS_COLLECTION,
+        "collection": TYPE_AND_STATUS_JOB_COUNTS_COLLECTION,
         "db_alias": QUEUE_MONGOENGINE_ALIAS,
         "indexes": [("job_type", "status")],
     }
     objects = QuerySetManager["JobTotalMetricDocument"]()
 
 
-def _update_metrics(job_type: str, status: str, increase_by: int) -> None:
+class WorkerSizeJobsCountDocument(Document):
+    """Metric that counts the number of (waiting) jobs per worker size.
+
+    A worker size is defined by the job difficulties it handles. We hardcode
+        - light: difficulty <= 40
+        - medium: 40 < difficulty <= 70
+        - heavy: 70 < difficulty
+
+    Args:
+        worker_size (`WorkerSize`): worker size
+        jobs_count (`int`): jobs count
+        created_at (`datetime`): when the metric has been created.
+    """
+
+    id = ObjectIdField(db_field="_id", primary_key=True, default=ObjectId)
+    worker_size = EnumField(WorkerSize, required=True, unique=True)
+    jobs_count = IntField(required=True, default=0)
+    created_at = DateTimeField(default=get_datetime)
+
+    @staticmethod
+    def get_worker_size(difficulty: int) -> WorkerSize:
+        if difficulty <= 40:
+            return WorkerSize.light
+        if difficulty <= 70:
+            return WorkerSize.medium
+        return WorkerSize.heavy
+
+    meta = {
+        "collection": WORKER_TYPE_JOB_COUNTS_COLLECTION,
+        "db_alias": QUEUE_MONGOENGINE_ALIAS,
+        "indexes": [("worker_size")],
+    }
+    objects = QuerySetManager["WorkerSizeJobsCountDocument"]()
+
+
+def _update_metrics(job_type: str, status: str, increase_by: int, difficulty: int) -> None:
     JobTotalMetricDocument.objects(job_type=job_type, status=status).update(
         upsert=True,
         write_concern={"w": "majority", "fsync": True},
         read_concern={"level": "majority"},
         inc__total=increase_by,
     )
+    if status == Status.WAITING:
+        worker_size = WorkerSizeJobsCountDocument.get_worker_size(difficulty=difficulty)
+        WorkerSizeJobsCountDocument.objects(worker_size=worker_size).update(
+            upsert=True,
+            write_concern={"w": "majority", "fsync": True},
+            read_concern={"level": "majority"},
+            inc__jobs_count=increase_by,
+        )
 
 
-def increase_metric(job_type: str, status: str) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT)
+def increase_metric(job_type: str, status: str, difficulty: int) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_INCREASE_AMOUNT, difficulty=difficulty)
 
 
-def decrease_metric(job_type: str, status: str) -> None:
-    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT)
+def decrease_metric(job_type: str, status: str, difficulty: int) -> None:
+    _update_metrics(job_type=job_type, status=status, increase_by=DEFAULT_DECREASE_AMOUNT, difficulty=difficulty)
 
 
-def update_metrics_for_type(job_type: str, previous_status: str, new_status: str) -> None:
+def update_metrics_for_type(job_type: str, previous_status: str, new_status: str, difficulty: int) -> None:
     if job_type is not None:
-        decrease_metric(job_type=job_type, status=previous_status)
-        increase_metric(job_type=job_type, status=new_status)
+        decrease_metric(job_type=job_type, status=previous_status, difficulty=difficulty)
+        increase_metric(job_type=job_type, status=new_status, difficulty=difficulty)
+        # ^ this does not affect WorkerSizeJobsCountDocument, so we don't pass the job difficulty
 
 
 class _TTL(IntEnum):
@@ -484,7 +531,7 @@ class Queue:
         Returns:
             `JobDocument`: the new job added to the queue
         """
-        increase_metric(job_type=job_type, status=Status.WAITING)
+        increase_metric(job_type=job_type, status=Status.WAITING, difficulty=difficulty)
         return JobDocument(
             type=job_type,
             dataset=dataset,
@@ -536,7 +583,7 @@ class Queue:
                 for job_info in job_infos
             ]
             for job in jobs:
-                increase_metric(job_type=job.type, status=Status.WAITING)
+                increase_metric(job_type=job.type, status=Status.WAITING, difficulty=job.difficulty)
             job_ids = JobDocument.objects.insert(jobs, load_bulk=False)
             return len(job_ids)
         except Exception:
@@ -556,7 +603,7 @@ class Queue:
         try:
             existing = JobDocument.objects(pk__in=job_ids, status=Status.WAITING)
             for job in existing.all():
-                decrease_metric(job_type=job.type, status=job.status)
+                decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
             deleted_jobs = existing.delete()
             return 0 if deleted_jobs is None else deleted_jobs
         except Exception:
@@ -600,7 +647,7 @@ class Queue:
         if job_types_only:
             filters["type__in"] = job_types_only
         if difficulty_min is not None and difficulty_min > DEFAULT_DIFFICULTY_MIN:
-            filters["difficulty__gte"] = difficulty_min
+            filters["difficulty__gt"] = difficulty_min
         if difficulty_max is not None and difficulty_max < DEFAULT_DIFFICULTY_MAX:
             filters["difficulty__lte"] = difficulty_max
         started_jobs = JobDocument.objects(status=Status.STARTED, **filters)
@@ -746,7 +793,10 @@ class Queue:
                 ):
                     raise AlreadyStartedJobError(f"job {job.unicity_id} has been started by another worker")
                 update_metrics_for_type(
-                    job_type=first_job.type, previous_status=Status.WAITING, new_status=Status.STARTED
+                    job_type=first_job.type,
+                    previous_status=Status.WAITING,
+                    new_status=Status.STARTED,
+                    difficulty=first_job.difficulty,
                 )
                 # and delete the other waiting jobs, if any
                 self.delete_waiting_jobs_by_job_id(job_ids=[job.pk for job in waiting_jobs if job.pk != first_job.pk])
@@ -891,7 +941,7 @@ class Queue:
         except StartedJobError as e:
             logging.error(f"job {job_id} has not the expected format for a started job. Aborting: {e}")
             return False
-        decrease_metric(job_type=job.type, status=job.status)
+        decrease_metric(job_type=job.type, status=job.status, difficulty=job.difficulty)
         job.delete()
         release_locks(owner=job_id)
         # ^ bug: the lock owner is not set to the job id anymore when calling start_job()!
@@ -908,10 +958,10 @@ class Queue:
             `int`: the number of deleted jobs
         """
         jobs = JobDocument.objects(dataset=dataset, status=Status.WAITING)
-        previous_status = [(job.type, job.status, job.unicity_id) for job in jobs.all()]
+        previous_status = [(job.type, job.status, job.unicity_id, job.difficulty) for job in jobs.all()]
         num_deleted_jobs = jobs.delete()
-        for job_type, status, unicity_id in previous_status:
-            decrease_metric(job_type=job_type, status=status)
+        for job_type, status, unicity_id, difficulty in previous_status:
+            decrease_metric(job_type=job_type, status=status, difficulty=difficulty)
             release_lock(key=unicity_id)
         return 0 if num_deleted_jobs is None else num_deleted_jobs
 
@@ -1010,6 +1060,19 @@ class Queue:
             )
         }
 
+    def get_jobs_count_by_worker_size(self) -> JobsCountByWorkerSize:
+        """Count the number of jobs by worker size.
+
+        Returns:
+            an object with the total of jobs by worker size.
+            Keys are worker_size, and values are the jobs count.
+        """
+        return {
+            WorkerSize.heavy.name: JobDocument.objects(difficulty__lte=100, difficulty__gt=70).count(),
+            WorkerSize.medium.name: JobDocument.objects(difficulty__lte=70, difficulty__gt=40).count(),
+            WorkerSize.light.name: JobDocument.objects(difficulty__lte=40, difficulty__gt=0).count(),
+        }
+
     def get_dump_with_status(self, status: Status, job_type: str) -> list[JobDict]:
         """Get the dump of the jobs with a given status and a given type.
 
@@ -1084,4 +1147,5 @@ def _clean_queue_database() -> None:
     """Delete all the jobs in the database"""
     JobDocument.drop_collection()  # type: ignore
     JobTotalMetricDocument.drop_collection()  # type: ignore
+    WorkerSizeJobsCountDocument.drop_collection()  # type: ignore
     Lock.drop_collection()  # type: ignore
