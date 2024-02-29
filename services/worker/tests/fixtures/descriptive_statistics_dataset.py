@@ -168,6 +168,7 @@ statistics_dataset = Dataset.from_dict(
         ],
         "int__column": [0, 0, 1, 1, 2, 2, 2, 3, 4, 4, 5, 5, 5, 5, 5, 6, 7, 8, 8, 8],
         "int__nan_column": [0, None, 1, None, 2, None, 2, None, 4, None, 5, None, 5, 5, 5, 6, 7, 8, 8, 8],
+        "int__all_nan_column": [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None],
         "int__only_one_value_column": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         "int__only_one_value_nan_column": [
             0,
@@ -1052,6 +1053,7 @@ statistics_dataset = Dataset.from_dict(
             "string_label__nan_column": Value("string"),
             "int__column": Value("int32"),
             "int__nan_column": Value("int32"),
+            "int__all_nan_column": Value("int32"),
             "int__negative_column": Value("int32"),
             "int__cross_zero_column": Value("int32"),
             "int__large_values_column": Value("int32"),

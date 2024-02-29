@@ -67,11 +67,11 @@ class Histogram(TypedDict):
 class NumericalStatisticsItem(TypedDict):
     nan_count: int
     nan_proportion: float
-    min: float
-    max: float
-    mean: float
-    median: float
-    std: float
+    min: Optional[float]
+    max: Optional[float]
+    mean: Optional[float]
+    median: Optional[float]
+    std: Optional[float]
     histogram: Histogram
 
 
@@ -231,6 +231,20 @@ def min_max_median_std_nan_count_proportion(
         .unnest("stats")
     )
     minimum, maximum, mean, median, std, nan_count = stats[column_name].to_list()
+    if any(statistic is None for statistic in [minimum, maximum, mean, median, std]):
+        # this should be possible only if all values are none
+        if not all(statistic is None for statistic in [minimum, maximum, mean, median, std]):
+            raise StatisticsComputationError(
+                f"Unexpected result for {column_name=}: "
+                f"Some measures among {minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all of them. "
+            )
+        if nan_count != n_samples:
+            raise StatisticsComputationError(
+                f"Unexpected result for {column_name=}: "
+                f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all values in column are None. "
+            )
+        return minimum, maximum, mean, median, std, nan_count, 1.0
+
     minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
     nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
     nan_count = int(nan_count)
@@ -381,7 +395,20 @@ class IntColumn(Column):
         minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
             data, column_name, n_samples
         )
-        minimum, maximum = int(minimum), int(maximum)
+        if nan_count == n_samples:  # all values are None
+            return NumericalStatisticsItem(
+                nan_count=n_samples,
+                nan_proportion=1.0,
+                min=None,
+                max=None,
+                mean=None,
+                median=None,
+                std=None,
+                histogram=None,
+            )
+
+        if minimum and maximum:
+            minimum, maximum = int(minimum), int(maximum)
 
         hist = compute_histogram(
             data,
