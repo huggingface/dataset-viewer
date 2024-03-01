@@ -229,7 +229,7 @@ class LoadingCode(TypedDict):
     code: str
 
 
-class LoadingMethod(TypedDict):
+class CompatibleLibrary(TypedDict):
     language: ProgrammingLanguage
     library: DatasetLibrary
     function: str
@@ -238,8 +238,7 @@ class LoadingMethod(TypedDict):
 
 class DatasetLoadingTagsResponse(TypedDict):
     tags: list[DatasetTag]
-    libraries: list[DatasetLibrary]
-    loading_methods: list[LoadingMethod]
+    libraries: list[CompatibleLibrary]
 
 
 class DatasetHubCacheResponse(TypedDict):

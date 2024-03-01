@@ -62,7 +62,7 @@ EXPECTED_PARQUET = (
     {
         "tags": ["croissant"],
         "libraries": ["mlcroissant", "datasets", "pandas"],
-        "loading_methods": [
+        "compatible_libraries": [
             {
                 "function": "Dataset",
                 "language": "python",
@@ -123,7 +123,7 @@ EXPECTED_WEBDATASET = (
     {
         "tags": ["croissant"],
         "libraries": ["mlcroissant", "datasets", "webdataset"],
-        "loading_methods": [
+        "compatible_libraries": [
             {
                 "function": "Dataset",
                 "language": "python",

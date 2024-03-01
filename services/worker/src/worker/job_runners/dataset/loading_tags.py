@@ -34,12 +34,12 @@ from libcommon.simple_cache import (
 )
 
 from worker.dtos import (
+    CompatibleLibrary,
     CompleteJobResult,
     DatasetLibrary,
     DatasetLoadingTagsResponse,
     DatasetTag,
     LoadingCode,
-    LoadingMethod,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
@@ -258,7 +258,7 @@ ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={d
 records = ds.records("{record_set}")"""
 
 
-def get_loading_methods_for_datasets_library(dataset: str, infos: list[dict[str, Any]]) -> LoadingMethod:
+def get_hf_datasets_compatible_library(dataset: str, infos: list[dict[str, Any]]) -> CompatibleLibrary:
     return {
         "language": "python",
         "library": "datasets",
@@ -278,9 +278,7 @@ def get_loading_methods_for_datasets_library(dataset: str, infos: list[dict[str,
     }
 
 
-def get_loading_methods_for_mlcroissant_library(
-    dataset: str, infos: list[dict[str, Any]], partial: bool
-) -> LoadingMethod:
+def get_mlcroissant_compatible_library(dataset: str, infos: list[dict[str, Any]], partial: bool) -> CompatibleLibrary:
     comment = "\n# The Croissant metadata exposes the first 5GB of this dataset" if partial else ""
     return {
         "language": "python",
@@ -352,7 +350,7 @@ urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(
 ds = {function}(urls).decode()"""
 
 
-def get_loading_methods_for_json(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
@@ -413,7 +411,7 @@ def get_loading_methods_for_json(dataset: str, hf_token: Optional[str]) -> Loadi
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_loading_methods_for_csv(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
@@ -473,7 +471,7 @@ def get_loading_methods_for_csv(dataset: str, hf_token: Optional[str]) -> Loadin
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_loading_methods_for_parquet(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
@@ -528,7 +526,7 @@ def get_loading_methods_for_parquet(dataset: str, hf_token: Optional[str]) -> Lo
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_loading_methods_for_webdataset(dataset: str, hf_token: Optional[str]) -> LoadingMethod:
+def get_compatible_libraries_for_webdataset(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(
         dataset, module_name="webdataset", hf_token=hf_token
@@ -562,11 +560,11 @@ def get_loading_methods_for_webdataset(dataset: str, hf_token: Optional[str]) ->
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-get_loading_method_for_builder: dict[str, Callable[[str, Optional[str]], LoadingMethod]] = {
-    "webdataset": get_loading_methods_for_webdataset,
-    "json": get_loading_methods_for_json,
-    "csv": get_loading_methods_for_csv,
-    "parquet": get_loading_methods_for_parquet,
+get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str]], CompatibleLibrary]] = {
+    "webdataset": get_compatible_libraries_for_webdataset,
+    "json": get_compatible_libraries_for_json,
+    "csv": get_compatible_libraries_for_csv,
+    "parquet": get_compatible_libraries_for_parquet,
 }
 
 
@@ -594,8 +592,7 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     http_status = dataset_info_response["http_status"]
     tags: list[DatasetTag] = []
-    libraries: list[DatasetLibrary] = []
-    loading_methods: list[LoadingMethod] = []
+    libraries: list[CompatibleLibrary] = []
     infos: list[dict[str, Any]] = []
     builder_name: Optional[str] = None
     if http_status == HTTPStatus.OK:
@@ -609,22 +606,19 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
             ) from e
     if infos:
         # mlcroissant library
-        loading_methods.append(get_loading_methods_for_mlcroissant_library(dataset, infos, partial=partial))
+        libraries.append(get_mlcroissant_compatible_library(dataset, infos, partial=partial))
         tags.append("croissant")
-        libraries.append("mlcroissant")
         # datasets library
-        loading_methods.append(get_loading_methods_for_datasets_library(dataset, infos))
-        libraries.append("datasets")
+        libraries.append(get_hf_datasets_compatible_library(dataset, infos))
         # pandas or dask or webdataset library
         builder_name = infos[0]["builder_name"]
-        if builder_name in get_loading_method_for_builder:
+        if builder_name in get_compatible_library_for_builder:
             try:
-                loading_method = get_loading_method_for_builder[builder_name](dataset, hf_token)
-                libraries.append(loading_method["library"])
-                loading_methods.append(loading_method)
+                compatible_library = get_compatible_library_for_builder[builder_name](dataset, hf_token)
+                libraries.append(compatible_library)
             except NotImplementedError:
                 pass
-    return DatasetLoadingTagsResponse(tags=tags, libraries=libraries, loading_methods=loading_methods)
+    return DatasetLoadingTagsResponse(tags=tags, libraries=libraries)
 
 
 class DatasetLoadingTagsJobRunner(DatasetJobRunner):
