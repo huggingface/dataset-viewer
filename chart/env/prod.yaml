@@ -442,7 +442,7 @@ workers:
       maxReplicas: 20
       targets:
         - targetQueueName: "worker_size_jobs_count"
-          targetQueueLength: 10
+          targetQueueLength: 30
           targetWorkerSize: "heavy"
     resources:
       requests:
@@ -470,7 +470,7 @@ workers:
       maxReplicas: 20
       targets:
         - targetQueueName: "worker_size_jobs_count"
-          targetQueueLength: 10
+          targetQueueLength: 30
           targetWorkerSize: "medium"
     resources:
       requests:
@@ -498,7 +498,7 @@ workers:
       maxReplicas: 20
       targets:
         - targetQueueName: "worker_size_jobs_count"
-          targetQueueLength: 10
+          targetQueueLength: 30
           targetWorkerSize: "light"
     resources:
       requests:
