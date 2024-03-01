@@ -84,6 +84,7 @@ CacheableErrorCode = Literal[
     "DatasetNotFoundError",
     "DatasetScriptError",
     "DatasetWithScriptNotSupportedError",
+    "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
     "DiskError",
@@ -556,3 +557,12 @@ class DatasetInBlockListError(NotSupportedError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetInBlockListError", cause, False)
+
+
+class DatasetWithTooComplexDataFilesPatternsError(CacheableError):
+    """We don't show code snippets for datasets with too complex data files patterns (that we didn't manage to simplify)."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "DatasetWithTooComplexDataFilesPatternsError", cause, True
+        )
