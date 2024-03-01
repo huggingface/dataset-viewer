@@ -686,6 +686,8 @@ workers:
     uvicornPort: 8080
     nodeSelector: {}
     replicas: 1
+    autoscaling:
+      enabled: false
     resources:
       requests:
         cpu: 0

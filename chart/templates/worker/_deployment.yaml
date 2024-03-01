@@ -11,7 +11,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
+  {{- if not .workerValues.autoscaling.enabled }}
   replicas: {{ .workerValues.replicas }}
+  {{- end }}
   revisionHistoryLimit: 10
   selector:
     matchLabels: {{ include "labels.worker" . | nindent 6 }}
