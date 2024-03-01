@@ -760,7 +760,6 @@ def test_compute(
         http_status=HTTPStatus.OK,
         content=config_parquet_metadata,
     )
-
     job_runner = get_job_runner(dataset, config, split, app_config)
     job_runner.pre_compute()
     if expected_error_code:

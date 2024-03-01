@@ -5,6 +5,7 @@ import enum
 import functools
 import logging
 import os
+from collections import Counter
 from pathlib import Path
 from typing import Any, Optional, Protocol, TypedDict, Union
 
@@ -266,9 +267,7 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
 
 
 class _ComputeStatisticsFuncT(Protocol):
-    def __call__(
-        self, data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any
-    ) -> SupportedStatistics:
+    def __call__(self, data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any) -> Any:
         ...
 
 
@@ -339,7 +338,7 @@ class ClassLabelColumn(Column):
         }
         n_unique = data[column_name].n_unique()
         logging.debug(
-            f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=} " f"{n_unique=} {labels2counts=}"
+            f"{nan_count=} {nan_proportion=} {no_label_count=} {no_label_proportion=}, {n_unique=} {labels2counts=}"
         )
 
         if n_unique > num_classes + int(no_label_count > 0) + int(nan_count > 0):
@@ -438,6 +437,7 @@ class IntColumn(Column):
         minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
             data, column_name, n_samples
         )
+        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
         if nan_count == n_samples:  # all values are None
             return NumericalStatisticsItem(
                 nan_count=n_samples,
@@ -513,7 +513,10 @@ class StringColumn(Column):
         lengths_df = data.select(pl.col(column_name)).with_columns(
             pl.col(column_name).str.len_chars().alias(lengths_column_name)
         )
-        return IntColumn._compute_statistics(lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples)
+        lengths_stats: NumericalStatisticsItem = IntColumn._compute_statistics(
+            lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples
+        )
+        return lengths_stats
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
         stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
@@ -535,7 +538,7 @@ class BoolColumn(Column):
         values2counts: dict[str, int] = value_counts(data, column_name)
         # exclude counts of None values from frequencies if exist:
         values2counts.pop(None, None)  # type: ignore
-
+        logging.debug(f"{nan_count=} {nan_proportion=} {values2counts=}")
         return BoolStatisticsItem(
             nan_count=nan_count,
             nan_proportion=nan_proportion,
@@ -764,13 +767,29 @@ def compute_descriptive_statistics_response(
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
         return None
 
-    all_stats = []
+    columns: list[SupportedColumns] = []
+    all_stats: list[StatisticsPerColumnItem] = []
     for feature_name, feature in features.items():
-        column = _column_from_feature(feature_name, feature)
-        if column:
-            data = pl.read_parquet(local_parquet_glob_path, columns=[feature_name])
-            column_stats = column.compute_and_prepare_response(data)
-            all_stats.append(column_stats)
+        if (column := _column_from_feature(feature_name, feature)) is not None:
+            columns.append(column)
+
+    if not columns:
+        raise NoSupportedFeaturesError(
+            "No columns for statistics computation found. Currently supported feature types are: "
+            f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, list/Sequence and bool. "
+        )
+
+    column_names_str = ", ".join([column.name for column in columns])
+    column_counts = Counter([column.__class__.__name__ for column in columns])
+    logging.info(
+        f"Computing statistics for {len(columns)} columns: {column_names_str},"
+        f"\nColumn types counts: {column_counts}. "
+    )
+
+    for column in columns:
+        data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+        column_stats = column.compute_and_prepare_response(data)
+        all_stats.append(column_stats)
 
     if not all_stats:
         raise NoSupportedFeaturesError(
@@ -778,7 +797,7 @@ def compute_descriptive_statistics_response(
             f"{NUMERICAL_DTYPES}, {STRING_DTYPES}, ClassLabel, list/Sequence and bool. "
         )
 
-    logging.info(f"Computing for {dataset=} {config=} {split=} finished. ")
+    logging.info(f"Computing for {dataset=} {config=} {split=} finished. {len(all_stats)} columns processed. ")
 
     return SplitDescriptiveStatisticsResponse(
         num_examples=num_examples,
