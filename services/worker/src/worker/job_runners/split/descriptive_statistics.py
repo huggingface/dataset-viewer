@@ -6,7 +6,7 @@ import functools
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Optional, Protocol, TypedDict, Union
 
 import numpy as np
 import polars as pl
@@ -265,16 +265,25 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
     return nan_count, nan_proportion
 
 
-def raise_with_column_name(func):
+class _ComputeStatisticsFuncT(Protocol):
+    def __call__(
+        self, data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any
+    ) -> SupportedStatistics:
+        ...
+
+
+def raise_with_column_name(func: _ComputeStatisticsFuncT) -> _ComputeStatisticsFuncT:
     """
-    Wraps error from Column._compute_statistics so that we always keep information about which
+    Wraps error from Column._compute_statistics() so that we always keep information about which
     column caused an error.
     """
 
     @functools.wraps(func)
-    def _compute_statistics_wrapper(data: pl.DataFrame, column_name: str, n_samples: int, **kwargs: Any) -> Any:
+    def _compute_statistics_wrapper(
+        data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any
+    ) -> Any:
         try:
-            return func(data, column_name, n_samples, **kwargs)
+            return func(data, column_name, n_samples, *args, **kwargs)
         except Exception as error:
             raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
 
@@ -297,6 +306,7 @@ class Column:
         data: pl.DataFrame,
         column_name: str,
         n_samples: int,
+        *args: Any,
         **kwargs: Any,
     ) -> SupportedStatistics:
         raise NotImplementedError
@@ -349,7 +359,7 @@ class ClassLabelColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, self.feature_dict)
+        stats = self._compute_statistics(data, self.name, self.n_samples, feature_dict=self.feature_dict)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.CLASS_LABEL,
@@ -406,7 +416,7 @@ class FloatColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, self.n_bins)
+        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.FLOAT,
@@ -463,7 +473,7 @@ class IntColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, self.n_bins)
+        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.INT,
@@ -506,7 +516,7 @@ class StringColumn(Column):
         return IntColumn._compute_statistics(lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples)
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, self.n_bins)
+        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
         string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -584,7 +594,7 @@ class ListColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, self.n_bins)
+        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.LIST,
