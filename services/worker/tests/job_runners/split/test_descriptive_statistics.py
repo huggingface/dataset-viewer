@@ -482,7 +482,7 @@ def test_float_statistics(
         n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
-    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
     if computed_hist:
         assert computed_hist["hist"] == expected_hist["hist"]
         assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
@@ -517,7 +517,7 @@ def test_int_statistics(
         n_samples=len(data[column_name]),
     )
     print(computed)
-    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
+    expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
     if computed_hist:
         assert computed_hist["hist"] == expected_hist["hist"]
         assert pytest.approx(computed_hist["bin_edges"]) == expected_hist["bin_edges"]
@@ -558,9 +558,9 @@ def test_string_statistics(
         n_samples=len(data[column_name]),
     )
     if column_name.startswith("string_text__"):
-        expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")  # type: ignore
-        assert expected_hist["hist"] == computed_hist["hist"]  # type: ignore
-        assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])  # type: ignore
+        expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
+        assert expected_hist["hist"] == computed_hist["hist"]
+        assert expected_hist["bin_edges"] == pytest.approx(computed_hist["bin_edges"])
         assert expected == pytest.approx(computed)
     else:
         assert expected == computed
