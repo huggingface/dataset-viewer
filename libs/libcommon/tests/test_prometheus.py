@@ -1,15 +1,14 @@
 import os
 import time
-from collections.abc import Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Optional
 
-from libcommon.constants import DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS
 from libcommon.prometheus import (
     QUEUE_JOBS_TOTAL,
     RESPONSES_IN_CACHE_TOTAL,
     WORKER_SIZE_JOBS_COUNT,
+    LongStepProfiler,
     Prometheus,
     StepProfiler,
     update_queue_jobs_total,
@@ -50,7 +49,7 @@ def test_prometheus() -> None:
         assert name not in metrics, metrics
 
 
-def create_key(suffix: str, labels: dict[str, Sequence[object]], le: Optional[str] = None) -> str:
+def create_key(suffix: str, labels: dict[str, str], le: Optional[str] = None) -> str:
     items = list(labels.items())
     if le:
         items.append(("le", le))
@@ -65,9 +64,8 @@ def check_histogram_metric(
     context: str,
     events: int,
     duration: float,
-    buckets: Sequence[float],
 ) -> None:
-    labels = {"context": context, "method": method, "step": step, "buckets": buckets}
+    labels = {"context": context, "method": method, "step": step}
     assert metrics[create_key("count", labels)] == events, metrics
     assert metrics[create_key("bucket", labels, le="+Inf")] == events, metrics
     assert metrics[create_key("bucket", labels, le="1.0")] == events, metrics
@@ -84,15 +82,7 @@ def test_step_profiler() -> None:
     with StepProfiler(method=method, step=step_all):
         time.sleep(duration)
     metrics = parse_metrics(Prometheus().getLatestContent())
-    check_histogram_metric(
-        metrics=metrics,
-        method=method,
-        step=step_all,
-        context=context,
-        events=1,
-        duration=duration,
-        buckets=StepProfiler.DEFAULT_BUCKETS,
-    )
+    check_histogram_metric(metrics=metrics, method=method, step=step_all, context=context, events=1, duration=duration)
 
 
 def test_step_profiler_with_custom_buckets() -> None:
@@ -100,18 +90,10 @@ def test_step_profiler_with_custom_buckets() -> None:
     method = "test_step_profiler"
     step_all = "all"
     context = "None"
-    with StepProfiler(method=method, step=step_all, buckets=DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS):
+    with LongStepProfiler(method=method, step=step_all):
         time.sleep(duration)
     metrics = parse_metrics(Prometheus().getLatestContent())
-    check_histogram_metric(
-        metrics=metrics,
-        method=method,
-        step=step_all,
-        context=context,
-        events=1,
-        duration=duration,
-        buckets=DESCRIPTIVE_STATISTICS_PROMETHEUS_HISTOGRAM_BUCKETS,
-    )
+    check_histogram_metric(metrics=metrics, method=method, step=step_all, context=context, events=1, duration=duration)
 
 
 def test_nested_step_profiler() -> None:
@@ -140,25 +122,12 @@ def test_nested_step_profiler() -> None:
         context=context,
         events=1,
         duration=duration_1a + duration_1b + duration_2,
-        buckets=StepProfiler.DEFAULT_BUCKETS,
     )
     check_histogram_metric(
-        metrics=metrics,
-        method=method,
-        step=step_1,
-        context=context_1,
-        events=2,
-        duration=duration_1a + duration_1b,
-        buckets=StepProfiler.DEFAULT_BUCKETS,
+        metrics=metrics, method=method, step=step_1, context=context_1, events=2, duration=duration_1a + duration_1b
     )
     check_histogram_metric(
-        metrics=metrics,
-        method=method,
-        step=step_2,
-        context=context_2,
-        events=1,
-        duration=duration_2,
-        buckets=StepProfiler.DEFAULT_BUCKETS,
+        metrics=metrics, method=method, step=step_2, context=context_2, events=1, duration=duration_2
     )
 
 
