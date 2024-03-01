@@ -7,7 +7,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  labels: {{ include "labels.worker" . | nindent 4 }}
+  labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 4 }}
   name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
   namespace: {{ .Release.Namespace }}
 spec:
@@ -31,15 +31,17 @@ spec:
   minReplicas: {{ .workerValues.autoscaling.minReplicas }}
   maxReplicas: {{ .workerValues.autoscaling.maxReplicas }}
   metrics:
+    {{- range $index, $target := .workerValues.autoscaling.targets }}
     - type: External
       external:
         metric:
-          name: {{ .workerValues.autoscaling.targetQueueName | quote }}
+          name: {{ $target.targetQueueName | quote }}
           selector:
             matchLabels:
-              worker_size: {{ .workerValues.deployName | quote }}
+              worker_size: {{ $target.targetWorkerSize | quote }}
         target:
-          value: {{ .workerValues.autoscaling.targetQueueLength | int }}
+          value: {{ $target.targetQueueLength | int }}
           type: Value
+    {{- end }}
 {{- end }}
 {{- end -}}
