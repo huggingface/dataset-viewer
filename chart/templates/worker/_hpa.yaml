@@ -7,7 +7,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  labels: {{ include "labels.worker" . | nindent 4 }}
+  labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 4 }}
   name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
   namespace: {{ .Release.Namespace }}
 spec:
