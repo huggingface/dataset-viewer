@@ -126,7 +126,7 @@ persistence:
     existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
-  enabled: false
+  enabled: true
 
 mongodb:
   enabled: false
