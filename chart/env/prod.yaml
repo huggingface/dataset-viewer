@@ -436,6 +436,12 @@ workers:
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 4
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 20
+      targetQueueName: "worker_size_jobs_count"
+      targetQueueLength: 10
     resources:
       requests:
         cpu: 8
@@ -456,6 +462,12 @@ workers:
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 10
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 20
+      targetQueueName: "worker_size_jobs_count"
+      targetQueueLength: 10
     resources:
       requests:
         cpu: 2
@@ -476,6 +488,12 @@ workers:
     nodeSelector:
       role-datasets-server-worker-light: "true"
     replicas: 4
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 20
+      targetQueueName: "worker_size_jobs_count"
+      targetQueueLength: 10
     resources:
       requests:
         cpu: 200m
