@@ -83,7 +83,6 @@ def test_graph() -> None:
                 "config-opt-in-out-urls-count",
                 "split-first-rows",
                 "dataset-split-names",
-                "split-descriptive-statistics",
                 "config-is-valid",
             ],
             ["dataset-config-names", "config-info"],
@@ -124,7 +123,7 @@ def test_graph() -> None:
         ),
         (
             "config-parquet-metadata",
-            ["split-first-rows", "split-duckdb-index"],
+            ["split-first-rows", "split-duckdb-index", "split-descriptive-statistics"],
             ["config-parquet"],
             ["dataset-config-names", "config-parquet-and-info", "config-parquet"],
         ),
@@ -308,12 +307,12 @@ def test_graph() -> None:
         (
             "split-descriptive-statistics",
             [],
-            ["config-split-names"],
+            ["config-parquet-metadata"],
             [
-                "dataset-config-names",
+                "config-parquet-metadata",
+                "config-parquet",
                 "config-parquet-and-info",
-                "config-info",
-                "config-split-names",
+                "dataset-config-names",
             ],
         ),
         (
