@@ -61,8 +61,7 @@ UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
 EXPECTED_PARQUET = (
     {
         "tags": ["croissant"],
-        "libraries": ["mlcroissant", "datasets", "pandas"],
-        "compatible_libraries": [
+        "libraries": [
             {
                 "function": "Dataset",
                 "language": "python",
@@ -122,8 +121,7 @@ EXPECTED_PARQUET = (
 EXPECTED_WEBDATASET = (
     {
         "tags": ["croissant"],
-        "libraries": ["mlcroissant", "datasets", "webdataset"],
-        "compatible_libraries": [
+        "libraries": [
             {
                 "function": "Dataset",
                 "language": "python",
