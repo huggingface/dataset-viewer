@@ -46,7 +46,7 @@ RETRY_ON: tuple[type[Exception]] = (Exception,)
 class retry:
     """retries with an increasing sleep before every attempt"""
 
-    def __init__(self, sleeps: Sequence[int] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
+    def __init__(self, sleeps: Sequence[float] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
         self.sleeps = sleeps
         self.on = on
 
