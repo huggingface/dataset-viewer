@@ -135,4 +135,5 @@ async def test_create_response(ds: Dataset, app_config: AppConfig, storage_clien
         "num_rows_total": 4,
         "num_rows_per_page": 100,
         "partial": False,
+        "truncated": False,
     }
