@@ -394,7 +394,7 @@ def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
     rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly rows_max_number rows
     return RowsContent(
-        rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number, truncated=False
+        rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number, truncated_columns=[]
     )
 
 

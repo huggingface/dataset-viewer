@@ -138,16 +138,16 @@ class RowGroupReader:
     def read(self, columns: list[str]) -> pa.Table:
         return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
 
-    def read_truncated_binary(self, columns: list[str], max_binary_length: int) -> tuple[pa.Table, bool]:
+    def read_truncated_binary(self, columns: list[str], max_binary_length: int) -> tuple[pa.Table, list[str]]:
         pa_table = self.parquet_file.read_row_group(i=self.group_id, columns=columns)
-        truncated = False
+        truncated_columns: list[str] = []
         if max_binary_length:
             for field_idx, field in enumerate(pa_table.schema):
                 if field.type == pa.binary() and pa_table[field_idx].nbytes > max_binary_length:
                     truncated_array = pc.binary_slice(pa_table[field_idx], 0, max_binary_length // len(pa_table))
                     pa_table = pa_table.set_column(field_idx, field, truncated_array)
-                    truncated = True
-        return pa_table, truncated
+                    truncated_columns.append(field.name)
+        return pa_table, truncated_columns
 
     def read_size(self, columns: Optional[Iterable[str]] = None) -> int:
         if columns is None:
@@ -185,7 +185,7 @@ class ParquetIndexWithMetadata:
             self.httpfs_session = self.httpfs._session
         self.num_rows_total = sum(self.num_rows)
 
-    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, bool]:
+    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
         Note that this implementation will always read at least one row group, to get the list of columns and always
@@ -205,12 +205,12 @@ class ParquetIndexWithMetadata:
 
         Returns:
             `pa.Table`: The requested rows.
-            `bool`: Whether binary columns are truncated.
+            `list[strl]: List of truncated columns.
         """
         all_columns = set(self.features)
         binary_columns = set(column for column, feature in self.features.items() if feature == Value("binary"))
         if not binary_columns:
-            return self.query(offset=offset, length=length), False
+            return self.query(offset=offset, length=length), []
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
         ):
@@ -268,7 +268,7 @@ class ParquetIndexWithMetadata:
             if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
                 if offset < 0:
                     raise IndexError("Offset must be non-negative")
-                return parquet_files[0].read(), False
+                return parquet_files[0].read(), []
 
             last_row_in_parquet = row_group_offsets[-1] - 1
             first_row = min(parquet_offset, last_row_in_parquet)
@@ -308,18 +308,18 @@ class ParquetIndexWithMetadata:
             )
             try:
                 pa_tables: list[pa.Table] = []
-                truncated = False
+                truncated_columns: set[str] = set()
                 for i in range(first_row_group_id, last_row_group_id + 1):
-                    rg_pa_table, rg_truncated = row_group_readers[i].read_truncated_binary(
+                    rg_pa_table, rg_truncated_columns = row_group_readers[i].read_truncated_binary(
                         self.supported_columns, max_binary_length=max_binary_length
                     )
                     pa_tables.append(rg_pa_table)
-                    truncated |= rg_truncated
+                    truncated_columns &= set(rg_truncated_columns)
                 pa_table = pa.concat_tables(pa_tables)
             except ArrowInvalid as err:
                 raise SchemaMismatchError("Parquet files have different schema.", err)
             first_row_in_pa_table = row_group_offsets[first_row_group_id - 1] if first_row_group_id > 0 else 0
-            return pa_table.slice(parquet_offset - first_row_in_pa_table, length), truncated
+            return pa_table.slice(parquet_offset - first_row_in_pa_table, length), list(truncated_columns)
 
     def query(self, offset: int, length: int) -> pa.Table:
         """Query the parquet files
@@ -571,7 +571,7 @@ class RowsIndex:
 
     # note that this cache size is global for the class, not per instance
     @lru_cache(maxsize=1)
-    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, bool]:
+    def query_truncated_binary(self, offset: int, length: int) -> tuple[pa.Table, list[str]]:
         """Query the parquet files
 
         Note that this implementation will always read at least one row group, to get the list of columns and always
@@ -583,7 +583,7 @@ class RowsIndex:
 
         Returns:
             `pa.Table`: The requested rows.
-            `bool`: Whether binary columns are truncated.
+            `list[str]`: List of truncated columns.
         """
         logging.info(
             f"Query {type(self.parquet_index).__name__} for dataset={self.dataset}, config={self.config},"

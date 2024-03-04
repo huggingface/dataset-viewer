@@ -163,11 +163,12 @@ def create_first_rows_response(
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
         columns_to_keep_untruncated=columns_to_keep_untruncated,
+        truncated_columns=rows_content.truncated_columns,
     )
 
     response = response_features_only
     response["rows"] = row_items
-    response["truncated"] = (not rows_content.all_fetched) or rows_content.truncated or truncated
+    response["truncated"] = (not rows_content.all_fetched) or bool(rows_content.truncated_columns) or truncated
 
     # return the response
     return response
