@@ -642,6 +642,7 @@ def fill_builder_info(
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
+    logging.info("Start validation of parquet files.")
     for split in data_files:
         split = str(split)  # in case it's a NamedSplit
         try:
@@ -655,8 +656,10 @@ def fill_builder_info(
                 data_files[split],
                 unit="pq",
                 disable=True,
+                max_workers=4,
             )
             parquet_files, sizes = zip(*parquet_files_and_sizes)
+            logging.info(f"{len(parquet_files)} parquet files are valid for copy. ")
         except ParquetValidationError:
             raise
         except Exception as e:
@@ -1035,6 +1038,7 @@ def commit_parquet_conversion(
         parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
     )
     operations = delete_operations + parquet_operations
+    logging.info(f"{len(operations)} git operations to do for {dataset=} {config=}.")
     return create_commits(
         committer_hf_api,
         repo_id=dataset,
@@ -1162,6 +1166,7 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
+        logging.info(f"Loading {dataset=} {config=} builder. ")
         builder = load_dataset_builder(
             path=dataset,
             name=config,
@@ -1186,12 +1191,18 @@ def compute_config_parquet_and_info_response(
     partial = False
     if is_parquet_builder_with_hub_files(builder):
         try:
+            logging.info(f"{dataset=} {config=} is already in parquet, validating and copying original parquet files.")
             parquet_operations = copy_parquet_files(builder)
+            logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
             fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
+            logging.info(
+                f"Parquet files of {dataset=} {config=} has too big row groups, "
+                f"reconverting it with row groups size={max_row_group_byte_size_for_copy}"
+            )
             writer_batch_size = get_writer_batch_size_from_row_group_size(
                 num_rows=err.num_rows,
                 row_group_byte_size=err.row_group_byte_size,
@@ -1217,11 +1228,17 @@ def compute_config_parquet_and_info_response(
             max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
         ):
+            logging.info(
+                f"{dataset=} {config=} is too big to be fully converted, "
+                f"converting first {max_dataset_size_bytes} bytes."
+            )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
+
         else:
             parquet_operations = convert_to_parquet(builder)
+        logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
 
     try:
         with lock.git_branch(
@@ -1240,6 +1257,7 @@ def compute_config_parquet_and_info_response(
             )
 
             # commit the parquet files
+            logging.info(f"Commiting parquet files for {dataset=} {config=}.")
             commit_parquet_conversion(
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,
