@@ -93,7 +93,7 @@ def create_rows_endpoint(
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
                             truncated: bool = False
-                            if dataset.startswith("Major-TOM/"):
+                            if dataset == "Major-TOM/Core-S2L2A":
                                 pa_table, truncated = rows_index.query_truncated_binary(offset=offset, length=length)
                             else:
                                 pa_table = rows_index.query(offset=offset, length=length)

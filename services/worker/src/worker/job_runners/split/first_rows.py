@@ -99,7 +99,7 @@ def compute_first_rows_from_parquet_response(
     def get_rows_content(rows_max_number: int) -> RowsContent:
         try:
             truncated: bool = False
-            if dataset.startswith("Major-TOM/"):
+            if dataset == "Major-TOM/Core-S2L2A":
                 pa_table, truncated = rows_index.query_truncated_binary(offset=0, length=rows_max_number)
             else:
                 pa_table = rows_index.query(offset=0, length=rows_max_number)
