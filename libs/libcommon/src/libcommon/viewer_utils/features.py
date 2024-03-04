@@ -70,7 +70,7 @@ def image(
     if isinstance(value, dict) and value.get("bytes"):
         value = PILImage.open(BytesIO(value["bytes"]))
     elif isinstance(value, bytes):
-        value = PILImage.open(value)
+        value = PILImage.open(BytesIO(value))
     elif (
         isinstance(value, dict)
         and "path" in value
