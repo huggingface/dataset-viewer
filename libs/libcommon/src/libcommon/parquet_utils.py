@@ -134,6 +134,7 @@ def get_num_parquet_files_to_process(
 class RowGroupReader:
     parquet_file: pq.ParquetFile
     group_id: int
+    features: Features
 
     def read(self, columns: list[str]) -> pa.Table:
         return self.parquet_file.read_row_group(i=self.group_id, columns=columns)
@@ -143,7 +144,7 @@ class RowGroupReader:
         truncated_columns: list[str] = []
         if max_binary_length:
             for field_idx, field in enumerate(pa_table.schema):
-                if field.type == pa.binary() and pa_table[field_idx].nbytes > max_binary_length:
+                if self.features[field.name] == Value("binary") and pa_table[field_idx].nbytes > max_binary_length:
                     truncated_array = pc.binary_slice(pa_table[field_idx], 0, max_binary_length // len(pa_table))
                     pa_table = pa_table.set_column(field_idx, field, truncated_array)
                     truncated_columns.append(field.name)
@@ -260,7 +261,7 @@ class ParquetIndexWithMetadata:
                 ]
             )
             row_group_readers = [
-                RowGroupReader(parquet_file=parquet_file, group_id=group_id)
+                RowGroupReader(parquet_file=parquet_file, group_id=group_id, features=self.features)
                 for parquet_file in parquet_files
                 for group_id in range(parquet_file.metadata.num_row_groups)
             ]
@@ -392,7 +393,7 @@ class ParquetIndexWithMetadata:
                 ]
             )
             row_group_readers = [
-                RowGroupReader(parquet_file=parquet_file, group_id=group_id)
+                RowGroupReader(parquet_file=parquet_file, group_id=group_id, features=self.features)
                 for parquet_file in parquet_files
                 for group_id in range(parquet_file.metadata.num_row_groups)
             ]
