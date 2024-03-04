@@ -656,6 +656,7 @@ def fill_builder_info(
                 data_files[split],
                 unit="pq",
                 disable=True,
+                max_workers=8,
             )
             parquet_files, sizes = zip(*parquet_files_and_sizes)
             logging.info(f"{len(parquet_files)} parquet files are valid for copy. ")
