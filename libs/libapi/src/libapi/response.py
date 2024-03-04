@@ -25,6 +25,7 @@ async def create_response(
     num_rows_total: int,
     partial: bool,
     use_row_idx_column: bool = False,
+    truncated: bool = False
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -52,4 +53,5 @@ async def create_response(
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
         "partial": partial,
+        "truncated": truncated
     }

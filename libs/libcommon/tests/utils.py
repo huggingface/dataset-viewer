@@ -393,7 +393,7 @@ def assert_worker_size_jobs_count(worker_size: str, jobs_count: int) -> None:
 def get_rows_content(rows_max_number: int, dataset: Dataset) -> RowsContent:
     rows_plus_one = list(itertools.islice(dataset, rows_max_number + 1))
     # ^^ to be able to detect if a split has exactly rows_max_number rows
-    return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number)
+    return RowsContent(rows=rows_plus_one[:rows_max_number], all_fetched=len(rows_plus_one) <= rows_max_number, truncated=False)
 
 
 def get_dataset_rows_content(dataset: Dataset) -> GetRowsContent:

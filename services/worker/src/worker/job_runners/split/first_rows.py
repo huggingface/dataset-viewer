@@ -98,9 +98,13 @@ def compute_first_rows_from_parquet_response(
     # get the rows
     def get_rows_content(rows_max_number: int) -> RowsContent:
         try:
-            pa_table = rows_index.query(offset=0, length=rows_max_number)
+            truncated: bool = False
+            if dataset.startswith("Major-TOM/"):
+                pa_table, truncated = rows_index.query_truncated_binary(offset=0, length=rows_max_number)
+            else:
+                pa_table = rows_index.query(offset=0, length=rows_max_number)
             return RowsContent(
-                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number
+                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number, truncated=truncated
             )
         except TooBigRows as err:
             raise TooBigContentError(str(err))

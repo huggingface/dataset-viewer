@@ -15,6 +15,7 @@ Row = dict[str, Any]
 class RowsContent:
     rows: list[Row]
     all_fetched: bool
+    truncated: bool
 
 
 class Status(str, enum.Enum):
@@ -104,6 +105,7 @@ class PaginatedResponse(TypedDict):
     num_rows_total: int
     num_rows_per_page: int
     partial: bool
+    truncated: bool
 
 
 class DatasetItem(TypedDict):
