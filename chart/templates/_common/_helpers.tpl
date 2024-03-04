@@ -89,6 +89,11 @@ app.kubernetes.io/component: "{{ include "name" . }}-storage-admin"
 app.kubernetes.io/component: "{{ include "name" . }}-mongodb-migration"
 {{- end -}}
 
+{{- define "labels.deleteDuckdbIndexes" -}}
+{{ include "hf.labels.commons" . }}
+app.kubernetes.io/component: "{{ include "name" . }}-delete-duckdb-indexes"
+{{- end -}}
+
 {{- define "labels.queueMetricsCollector" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-queue-metrics-collector"
