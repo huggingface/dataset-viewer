@@ -55,5 +55,4 @@ async def create_response(
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,
         "partial": partial,
-        "truncated": bool(truncated_columns),
     }

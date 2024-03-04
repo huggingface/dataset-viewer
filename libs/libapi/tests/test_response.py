@@ -48,7 +48,6 @@ async def test_create_response(storage_client: StorageClient) -> None:
     assert response["num_rows_total"] == 10
     assert response["num_rows_per_page"] == 100
     assert response["partial"] is False
-    assert response["truncated"] is False
 
 
 async def test_create_response_with_row_idx_column(storage_client: StorageClient) -> None:
@@ -75,7 +74,6 @@ async def test_create_response_with_row_idx_column(storage_client: StorageClient
     assert response["num_rows_total"] == 10
     assert response["num_rows_per_page"] == 100
     assert response["partial"] is False
-    assert response["truncated"] is False
 
 
 async def test_create_response_with_image(image_path: str, storage_client: StorageClient) -> None:
@@ -111,7 +109,6 @@ async def test_create_response_with_image(image_path: str, storage_client: Stora
         }
     ]
     assert response["partial"] is False
-    assert response["truncated"] is False
     assert storage_client.exists(image_key)
     image = PILImage.open(f"{storage_client.storage_root}/{image_key}")
     assert image is not None
