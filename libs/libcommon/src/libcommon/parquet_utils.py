@@ -303,12 +303,15 @@ class ParquetIndexWithMetadata:
 
         with StepProfiler(method="parquet_index_with_metadata.query_truncated_binary", step="read the row groups"):
             # This is a simple heuristic of how much we need to truncate binary data
-            max_binary_length = max(int(
-                (self.max_arrow_data_in_memory - in_memory_max_non_binary_size)
-                / (last_row_group_id + 1 - first_row_group_id)
-                / len(binary_columns)
-                / 2  # we divide more in case the row groups are not evenly distributed
-            ), 20)  # we use a minimum length to not end up with too empty cells
+            max_binary_length = max(
+                int(
+                    (self.max_arrow_data_in_memory - in_memory_max_non_binary_size)
+                    / (last_row_group_id + 1 - first_row_group_id)
+                    / len(binary_columns)
+                    / 2  # we divide more in case the row groups are not evenly distributed
+                ),
+                20,
+            )  # we use a minimum length to not end up with too empty cells
             try:
                 pa_tables: list[pa.Table] = []
                 truncated_columns: set[str] = set()
