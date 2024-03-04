@@ -21,9 +21,7 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
         dataset=dataset,
     )
     content = filter_response.json()
-    assert sorted(content) == sorted(
-        ["rows", "features", "num_rows_total", "num_rows_per_page", "partial", "truncated"]
-    )
+    assert sorted(content) == sorted(["rows", "features", "num_rows_total", "num_rows_per_page", "partial"])
     rows = content["rows"]
     features = content["features"]
     num_rows_total = content["num_rows_total"]
