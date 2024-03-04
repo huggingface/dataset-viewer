@@ -193,8 +193,8 @@ class ParquetIndexWithMetadata:
 
         This is the same as query() except that:
 
-        - it computes a maximum size to allocate to binary data in step "parquet_index_with_metadata.row_groups_size_check"
-        - it uses `read_truncated_binary()` in step "parquet_index_with_metadata.query".
+        - it computes a maximum size to allocate to binary data in step "parquet_index_with_metadata.row_groups_size_check_truncated_binary"
+        - it uses `read_truncated_binary()` in step "parquet_index_with_metadata.query_truncated_binary".
 
         Args:
             offset (`int`): The first row to read.
@@ -279,7 +279,8 @@ class ParquetIndexWithMetadata:
             )
 
         with StepProfiler(
-            method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
+            method="parquet_index_with_metadata.row_groups_size_check_truncated_binary",
+            step="check if the rows can fit in memory",
         ):
             in_memory_max_non_binary_size = sum(
                 [
@@ -300,12 +301,14 @@ class ParquetIndexWithMetadata:
                     f" {size_str(in_memory_max_size)} (max={size_str(self.max_arrow_data_in_memory)})"
                 )
 
-        with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
-            max_binary_length = int(
+        with StepProfiler(method="parquet_index_with_metadata.query_truncated_binary", step="read the row groups"):
+            # This is a simple heuristic of how much we need to truncate binary data
+            max_binary_length = max(int(
                 (self.max_arrow_data_in_memory - in_memory_max_non_binary_size)
                 / (last_row_group_id + 1 - first_row_group_id)
                 / len(binary_columns)
-            )
+                / 2  # we divide more in case the row groups are not evenly distributed
+            ), 20)  # we use a minimum length to not end up with too empty cells
             try:
                 pa_tables: list[pa.Table] = []
                 truncated_columns: set[str] = set()
@@ -314,7 +317,7 @@ class ParquetIndexWithMetadata:
                         self.supported_columns, max_binary_length=max_binary_length
                     )
                     pa_tables.append(rg_pa_table)
-                    truncated_columns &= set(rg_truncated_columns)
+                    truncated_columns |= set(rg_truncated_columns)
                 pa_table = pa.concat_tables(pa_tables)
             except ArrowInvalid as err:
                 raise SchemaMismatchError("Parquet files have different schema.", err)
