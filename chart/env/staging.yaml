@@ -126,7 +126,7 @@ persistence:
     existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
-  enabled: false
+  enabled: true
 
 mongodb:
   enabled: false
@@ -291,6 +291,17 @@ workers:
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     replicas: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "heavy"
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "medium"
     resources:
       requests:
         cpu: 100m
@@ -308,6 +319,14 @@ workers:
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     replicas: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "light"
     resources:
       requests:
         cpu: 100m

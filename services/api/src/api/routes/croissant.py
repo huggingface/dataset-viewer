@@ -22,6 +22,7 @@ from libapi.utils import (
     get_json_ok_response,
 )
 from libcommon.constants import CROISSANT_MAX_CONFIGS, DATASET_INFO_KIND
+from libcommon.croissant_utils import get_record_set
 from libcommon.prometheus import StepProfiler
 from libcommon.storage_client import StorageClient
 from starlette.requests import Request
@@ -157,7 +158,7 @@ def get_croissant_from_dataset_infos(
                 )
             else:
                 skipped_columns.append(column)
-        record_set_name = config if config != dataset else f"record_set_{config}"
+        record_set_name = get_record_set(dataset=dataset, config_name=config)
         description = f"{dataset} - '{config}' subset"
         if partial:
             description += " (first 5GB)"

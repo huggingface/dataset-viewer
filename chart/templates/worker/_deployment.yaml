@@ -6,20 +6,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels: {{ include "labels.worker" . | nindent 4 }}
+  labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 4 }}
   name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
   namespace: {{ .Release.Namespace }}
 spec:
   progressDeadlineSeconds: 600
+  {{- if not .workerValues.autoscaling.enabled }}
   replicas: {{ .workerValues.replicas }}
+  {{- end }}
   revisionHistoryLimit: 10
   selector:
-    matchLabels: {{ include "labels.worker" . | nindent 6 }}
+    matchLabels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 6 }}
   strategy:
     type: Recreate
   template:
     metadata:
-      labels: {{ include "labels.worker" . | nindent 8 }}
+      labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 8 }}
     spec:
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}

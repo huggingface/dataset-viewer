@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2022 The HuggingFace Authors.
+
+{{- define "podMonitorWorker" -}}
+{{- if .Values.monitoring.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 4 }}
+  name: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
+  namespace: {{ .Release.Namespace }}
+spec:
+  podMetricsEndpoints:
+    - path: /metrics
+      port: http
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels: {{ include "labels.worker" (merge (dict "workerValues" .workerValues) $ ) | nindent 6 }}
+{{- end }}
+{{- end -}}

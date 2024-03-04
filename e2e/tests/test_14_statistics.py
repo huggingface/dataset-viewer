@@ -4,9 +4,9 @@
 from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
-def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
+def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
     # TODO: add dataset with various splits, or various configs
-    dataset = normal_user_public_dataset
+    dataset = normal_user_public_json_dataset
     config, split = get_default_config_split()
     statistics_response = poll_until_ready_and_assert(
         relative_url=f"/statistics?dataset={dataset}&config={config}&split={split}",
@@ -22,18 +22,18 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
     partial = content["partial"]
 
     assert isinstance(statistics, list), statistics
-    assert len(statistics) == 5
+    assert len(statistics) == 6
     assert num_examples == 4
     assert partial is False
 
-    first_column = statistics[0]
-    assert "column_name" in first_column
-    assert "column_statistics" in first_column
-    assert "column_type" in first_column
-    assert first_column["column_name"] == "col_1"
-    assert first_column["column_type"] == "string_label"
-    assert isinstance(first_column["column_statistics"], dict)
-    assert first_column["column_statistics"] == {
+    string_label_column = statistics[0]
+    assert "column_name" in string_label_column
+    assert "column_statistics" in string_label_column
+    assert "column_type" in string_label_column
+    assert string_label_column["column_name"] == "col_1"
+    assert string_label_column["column_type"] == "string_label"
+    assert isinstance(string_label_column["column_statistics"], dict)
+    assert string_label_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
         "no_label_count": 0,
@@ -47,14 +47,14 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
         },
     }
 
-    second_column = statistics[1]
-    assert "column_name" in second_column
-    assert "column_statistics" in second_column
-    assert "column_type" in second_column
-    assert second_column["column_name"] == "col_2"
-    assert second_column["column_type"] == "int"
-    assert isinstance(second_column["column_statistics"], dict)
-    assert second_column["column_statistics"] == {
+    int_column = statistics[1]
+    assert "column_name" in int_column
+    assert "column_statistics" in int_column
+    assert "column_type" in int_column
+    assert int_column["column_name"] == "col_2"
+    assert int_column["column_type"] == "int"
+    assert isinstance(int_column["column_statistics"], dict)
+    assert int_column["column_statistics"] == {
         "histogram": {"bin_edges": [0, 1, 2, 3, 3], "hist": [1, 1, 1, 1]},
         "max": 3,
         "mean": 1.5,
@@ -65,14 +65,14 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
         "std": 1.29099,
     }
 
-    third_column = statistics[2]
-    assert "column_name" in third_column
-    assert "column_statistics" in third_column
-    assert "column_type" in third_column
-    assert third_column["column_name"] == "col_3"
-    assert third_column["column_type"] == "float"
-    assert isinstance(third_column["column_statistics"], dict)
-    assert third_column["column_statistics"] == {
+    float_column = statistics[2]
+    assert "column_name" in float_column
+    assert "column_statistics" in float_column
+    assert "column_type" in float_column
+    assert float_column["column_name"] == "col_3"
+    assert float_column["column_type"] == "float"
+    assert isinstance(float_column["column_statistics"], dict)
+    assert float_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
         "min": 0.0,
@@ -86,14 +86,14 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
         },
     }
 
-    fourth_column = statistics[3]
-    assert "column_name" in fourth_column
-    assert "column_statistics" in fourth_column
-    assert "column_type" in fourth_column
-    assert fourth_column["column_name"] == "col_4"
-    assert fourth_column["column_type"] == "string_label"
-    assert isinstance(fourth_column["column_statistics"], dict)
-    assert fourth_column["column_statistics"] == {
+    string_label_column2 = statistics[3]
+    assert "column_name" in string_label_column2
+    assert "column_statistics" in string_label_column2
+    assert "column_type" in string_label_column2
+    assert string_label_column2["column_name"] == "col_4"
+    assert string_label_column2["column_type"] == "string_label"
+    assert isinstance(string_label_column2["column_statistics"], dict)
+    assert string_label_column2["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
         "no_label_count": 0,
@@ -105,18 +105,39 @@ def test_statistics_endpoint(normal_user_public_dataset: str) -> None:
         },
     }
 
-    fifth_column = statistics[4]
-    assert "column_name" in fifth_column
-    assert "column_statistics" in fifth_column
-    assert "column_type" in fifth_column
-    assert fifth_column["column_name"] == "col_5"
-    assert fifth_column["column_type"] == "bool"
-    assert isinstance(fifth_column["column_statistics"], dict)
-    assert fifth_column["column_statistics"] == {
+    bool_column = statistics[4]
+    assert "column_name" in bool_column
+    assert "column_statistics" in bool_column
+    assert "column_type" in bool_column
+    assert bool_column["column_name"] == "col_5"
+    assert bool_column["column_type"] == "bool"
+    assert isinstance(bool_column["column_statistics"], dict)
+    assert bool_column["column_statistics"] == {
         "nan_count": 1,
         "nan_proportion": 0.25,
         "frequencies": {
             "True": 2,
             "False": 1,
+        },
+    }
+
+    list_column = statistics[5]
+    assert "column_name" in list_column
+    assert "column_statistics" in list_column
+    assert "column_type" in list_column
+    assert list_column["column_name"] == "col_6"
+    assert list_column["column_type"] == "list"
+    assert isinstance(list_column["column_statistics"], dict)
+    assert list_column["column_statistics"] == {
+        "nan_count": 1,
+        "nan_proportion": 0.25,
+        "min": 3,
+        "max": 5,
+        "mean": 4.0,
+        "median": 4,
+        "std": 1.0,
+        "histogram": {
+            "hist": [1, 1, 1],
+            "bin_edges": [3, 4, 5, 5],
         },
     }

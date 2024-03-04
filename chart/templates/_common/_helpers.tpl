@@ -171,7 +171,7 @@ app.kubernetes.io/component: "{{ include "name" . }}-sse-api"
 
 {{- define "labels.worker" -}}
 {{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-worker"
+app.kubernetes.io/component: "{{ include "name" . }}-worker-{{ .workerValues.deployName }}"
 {{- end -}}
 
 {{/*
