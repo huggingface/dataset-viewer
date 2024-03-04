@@ -579,7 +579,7 @@ def retry_and_validate_get_parquet_file_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> tuple[pq.ParquetFile, int]:
     try:
-        sleeps = [1, 1, 1, 10, 10, 10]
+        sleeps = [0.2, 1, 1, 10, 10, 10]
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
         if validate:
             validate(pf)
@@ -656,7 +656,6 @@ def fill_builder_info(
                 data_files[split],
                 unit="pq",
                 disable=True,
-                max_workers=4,
             )
             parquet_files, sizes = zip(*parquet_files_and_sizes)
             logging.info(f"{len(parquet_files)} parquet files are valid for copy. ")
