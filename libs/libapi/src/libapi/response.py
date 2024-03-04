@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import pyarrow as pa
 from datasets import Features
@@ -25,6 +26,7 @@ async def create_response(
     num_rows_total: int,
     partial: bool,
     use_row_idx_column: bool = False,
+    truncated_columns: Optional[list[str]] = None,
 ) -> PaginatedResponse:
     if set(pa_table.column_names).intersection(set(unsupported_columns)):
         raise RuntimeError(
@@ -48,6 +50,7 @@ async def create_response(
             features=features,
             unsupported_columns=unsupported_columns,
             row_idx_column=ROW_IDX_COLUMN if use_row_idx_column else None,
+            truncated_columns=truncated_columns,
         ),
         "num_rows_total": num_rows_total,
         "num_rows_per_page": MAX_NUM_ROWS_PER_PAGE,

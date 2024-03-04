@@ -15,6 +15,7 @@ Row = dict[str, Any]
 class RowsContent:
     rows: list[Row]
     all_fetched: bool
+    truncated_columns: list[str]
 
 
 class Status(str, enum.Enum):

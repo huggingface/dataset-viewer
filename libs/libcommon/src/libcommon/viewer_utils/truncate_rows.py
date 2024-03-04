@@ -100,6 +100,7 @@ def create_truncated_row_items(
     rows_max_bytes: int,
     rows_min_number: int,
     columns_to_keep_untruncated: list[str],
+    truncated_columns: list[str],
 ) -> tuple[list[RowItem], bool]:
     """
     Truncate the rows to fit within the restrictions, and prepare them as RowItems.
@@ -124,6 +125,7 @@ def create_truncated_row_items(
             The size accounts for the comma separators between rows.
         rows_min_number (`int`): the minimum number of rows to keep.
         columns_to_keep_untruncated (`list[str]`): the list of columns to keep untruncated.
+        truncated_columns (`list[str]`): list of columns that are already truncated.
 
     Returns:
         `tuple[list[RowItem], bool]`:
@@ -142,6 +144,7 @@ def create_truncated_row_items(
     # 1. first get the first rows_min_number rows
     for row_idx, row in enumerate(rows[:rows_min_number]):
         row_item = to_row_item(row_idx=row_idx, row=row)
+        row_item["truncated_cells"] = truncated_columns
         rows_bytes += get_json_size(row_item) + COMMA_SIZE
         row_items.append(row_item)
 

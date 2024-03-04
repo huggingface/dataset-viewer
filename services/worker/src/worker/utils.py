@@ -108,7 +108,7 @@ def get_rows(
         logging.debug(f"all the rows in the split have been fetched ({len(rows_plus_one)})")
     else:
         logging.debug(f"the rows in the split have been truncated ({rows_max_number} rows)")
-    return RowsContent(rows=rows, all_fetched=all_fetched)
+    return RowsContent(rows=rows, all_fetched=all_fetched, truncated_columns=[])
 
 
 def get_rows_or_raise(
