@@ -104,7 +104,9 @@ def compute_first_rows_from_parquet_response(
             else:
                 pa_table = rows_index.query(offset=0, length=rows_max_number)
             return RowsContent(
-                rows=pa_table.to_pylist(), all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number, truncated=truncated
+                rows=pa_table.to_pylist(),
+                all_fetched=rows_index.parquet_index.num_rows_total <= rows_max_number,
+                truncated=truncated,
             )
         except TooBigRows as err:
             raise TooBigContentError(str(err))

@@ -1,9 +1,10 @@
 import asyncio
 import logging
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Iterable, Literal, Optional, TypedDict, Union
+from typing import Literal, Optional, TypedDict, Union
 
 import numpy as np
 import pyarrow as pa
@@ -191,7 +192,7 @@ class ParquetIndexWithMetadata:
         have the same schema, even if the requested rows are invalid (out of range).
 
         This is the same as query() except that:
-        
+
         - it computes a maximum size to allocate to binary data in step "parquet_index_with_metadata.row_groups_size_check"
         - it uses `read_truncated_binary()` in step "parquet_index_with_metadata.query".
 
@@ -209,7 +210,7 @@ class ParquetIndexWithMetadata:
         all_columns = set(self.features)
         binary_columns = set(column for column, feature in self.features.items() if feature == Value("binary"))
         if not binary_columns:
-            return self.query(offste=offset, length=length), False
+            return self.query(offset=offset, length=length), False
         with StepProfiler(
             method="parquet_index_with_metadata.query", step="get the parquet files than contain the requested rows"
         ):
@@ -267,7 +268,7 @@ class ParquetIndexWithMetadata:
             if len(row_group_offsets) == 0 or row_group_offsets[-1] == 0:  # if the dataset is empty
                 if offset < 0:
                     raise IndexError("Offset must be non-negative")
-                return parquet_files[0].read()
+                return parquet_files[0].read(), False
 
             last_row_in_parquet = row_group_offsets[-1] - 1
             first_row = min(parquet_offset, last_row_in_parquet)
@@ -281,10 +282,16 @@ class ParquetIndexWithMetadata:
             method="parquet_index_with_metadata.row_groups_size_check", step="check if the rows can fit in memory"
         ):
             in_memory_max_non_binary_size = sum(
-                [row_group_readers[i].read_size(columns=all_columns - binary_columns) for i in range(first_row_group_id, last_row_group_id + 1)]
+                [
+                    row_group_readers[i].read_size(columns=all_columns - binary_columns)
+                    for i in range(first_row_group_id, last_row_group_id + 1)
+                ]
             )
             in_memory_max_binary_size = max(
-                [row_group_readers[i].read_size(columns=binary_columns) for i in range(first_row_group_id, last_row_group_id + 1)]
+                [
+                    row_group_readers[i].read_size(columns=binary_columns)
+                    for i in range(first_row_group_id, last_row_group_id + 1)
+                ]
             )
             in_memory_max_size = in_memory_max_non_binary_size + in_memory_max_binary_size
             if in_memory_max_size > self.max_arrow_data_in_memory:
@@ -294,12 +301,18 @@ class ParquetIndexWithMetadata:
                 )
 
         with StepProfiler(method="parquet_index_with_metadata.query", step="read the row groups"):
-            max_binary_length = int((self.max_arrow_data_in_memory - in_memory_max_non_binary_size) / (last_row_group_id + 1 - first_row_group_id) / len(binary_columns))
+            max_binary_length = int(
+                (self.max_arrow_data_in_memory - in_memory_max_non_binary_size)
+                / (last_row_group_id + 1 - first_row_group_id)
+                / len(binary_columns)
+            )
             try:
                 pa_tables: list[pa.Table] = []
                 truncated = False
                 for i in range(first_row_group_id, last_row_group_id + 1):
-                    rg_pa_table, rg_truncated = row_group_readers[i].read_truncated_binary(self.supported_columns, max_binary_length=max_binary_length)
+                    rg_pa_table, rg_truncated = row_group_readers[i].read_truncated_binary(
+                        self.supported_columns, max_binary_length=max_binary_length
+                    )
                     pa_tables.append(rg_pa_table)
                     truncated |= rg_truncated
                 pa_table = pa.concat_tables(pa_tables)
