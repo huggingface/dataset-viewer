@@ -15,7 +15,7 @@ def delete_indexes(
     hf_token: Optional[str] = None,
     committer_hf_token: Optional[str] = None,
 ) -> None:
-    logging.info("delete old duckdb index files from refs/convert/parquet")
+    logging.info(f"delete old duckdb index files from {target_revision}")
     dataset_names = get_all_datasets()
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
@@ -23,7 +23,7 @@ def delete_indexes(
     num_analyzed_datasets = 0
     num_untouched_datasets = 0
     num_error_datasets = 0
-    success_datasets = 0
+    num_successful_datasets = 0
     log_batch = 100
 
     def get_log() -> str:
@@ -31,6 +31,7 @@ def delete_indexes(
             f"{num_analyzed_datasets} analyzed datasets (total: {num_total_datasets} datasets): "
             f"{num_untouched_datasets} already ok ({100 * num_untouched_datasets / num_analyzed_datasets:.2f}%), "
             f"{num_error_datasets} raised an exception ({100 * num_error_datasets / num_analyzed_datasets:.2f}%). "
+            f"{num_successful_datasets} have been cleaned old duckdb files ({100 * num_successful_datasets / num_analyzed_datasets:.2f}%). "
         )
 
     for dataset in dataset_names:
@@ -55,7 +56,7 @@ def delete_indexes(
         except Exception as e:
             logging.error(e)
             num_error_datasets += 1
-        success_datasets += 1
+        num_successful_datasets += 1
         if num_analyzed_datasets % log_batch == 0:
             logging.info(get_log())
     logging.info(get_log())
