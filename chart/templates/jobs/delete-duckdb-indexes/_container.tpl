@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright 2023 The HuggingFace Authors.
+# Copyright 2024 The HuggingFace Authors.
 
 {{- define "containerDeleteDuckdbIndexes" -}}
 - name: "{{ include "name" . }}-delete-duckdb-indexes"
@@ -12,9 +12,9 @@
     {{ include "envCache" . | nindent 2 }}
     {{ include "envCommon" . | nindent 2 }}
   - name: CACHE_MAINTENANCE_ACTION
-    value: {{ .Values.postMessages.action | quote }}
+    value: {{ .Values.deleteDuckdbIndexes.action | quote }}
   - name: LOG_LEVEL
-    value: {{ .Values.postMessages.log.level | quote }}
+    value: {{ .Values.deleteDuckdbIndexes.log.level | quote }}
   - name: COMMITTER_HF_TOKEN
     {{- if .Values.secrets.appParquetConverterHfToken.fromSecret }}
     valueFrom:

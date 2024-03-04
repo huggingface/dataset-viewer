@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
-{{- if and .Values.images.jobs.cacheMaintenance .Values.deleteDuckdbIndexes.enabled }}
+{{- if and .Values.images.jobs.cacheMaintenance }}
 apiVersion: batch/v1
 kind: Job
 metadata:

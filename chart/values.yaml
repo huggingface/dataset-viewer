@@ -312,6 +312,9 @@ mongodbMigration:
 # --- jobs (post-install/upgrade hooks) ---
 
 deleteDuckdbIndexes:
+  log:
+    level: "info"
+  action: "delete-duckdb-indexes"
   nodeSelector: {}
   resources:
     requests:

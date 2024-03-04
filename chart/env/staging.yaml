@@ -165,6 +165,8 @@ mongodbMigration:
 # --- jobs (post-install/upgrade hooks) ---
 
 deleteDuckdbIndexes:
+  log:
+    level: "debug"
   resources:
     requests:
       cpu: 100m
