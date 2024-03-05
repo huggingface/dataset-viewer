@@ -41,7 +41,7 @@ from worker.dtos import (
     DatasetTag,
     LoadingCode,
 )
-from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
 
 NON_WORD_GLOB_SEPARATOR = f"[{NON_WORDS_CHARS}/]"
 NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", "\.").replace("/", "\/")
@@ -621,7 +621,7 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
     return DatasetLoadingTagsResponse(tags=tags, libraries=libraries)
 
 
-class DatasetLoadingTagsJobRunner(DatasetJobRunner):
+class DatasetLoadingTagsJobRunner(DatasetJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
         return "dataset-loading-tags"

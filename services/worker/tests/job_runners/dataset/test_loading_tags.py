@@ -18,6 +18,7 @@ from worker.job_runners.dataset.loading_tags import (
     DatasetLoadingTagsJobRunner,
     get_builder_configs_with_simplified_data_files,
 )
+from worker.resources import LibrariesResource
 
 from ..utils import REVISION_NAME, UpstreamResponse
 
@@ -207,6 +208,7 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
 
 @pytest.fixture
 def get_job_runner(
+    libraries_resource: LibrariesResource,
     cache_mongo_resource: CacheMongoResource,
     queue_mongo_resource: QueueMongoResource,
 ) -> GetJobRunner:
@@ -228,6 +230,7 @@ def get_job_runner(
                 "difficulty": 20,
             },
             app_config=app_config,
+            hf_datasets_cache=libraries_resource.hf_datasets_cache,
         )
 
     return _get_job_runner
