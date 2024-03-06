@@ -1081,7 +1081,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool", "list"]
       },
       "Histogram": {
         "type": "object",
@@ -1105,13 +1105,7 @@
         "type": "object",
         "required": [
           "nan_count",
-          "nan_proportion",
-          "min",
-          "max",
-          "mean",
-          "median",
-          "std",
-          "histogram"
+          "nan_proportion"
         ],
         "properties": {
           "nan_count": {
@@ -1121,23 +1115,21 @@
             "type": "number"
           },
           "min": {
-            "type": "number"
+            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
           },
           "max": {
-            "type": "number"
+            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
           },
           "mean": {
-            "type": "number"
+            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
           },
           "median": {
-            "type": "number"
+            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
           },
           "std": {
-            "type": "number"
+            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
           },
-          "histogram": {
-            "$ref": "#/components/schemas/Histogram"
-          }
+          "histogram": { "anyOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
         }
       },
       "CategoricalStatisticsItem": {
@@ -1185,17 +1177,7 @@
           }
         }
       },
-      "StatisticsPerColumnItem": {
-        "type": "object",
-        "required": ["column_name", "column_type", "column_statistics"],
-        "properties": {
-          "column_name": {
-            "type": "string"
-          },
-          "column_type": {
-            "$ref": "#/components/schemas/ColumnType"
-          },
-          "column_statistics": {
+      "SupportedStatistics": {
             "oneOf": [
               {
                 "$ref": "#/components/schemas/NumericalStatisticsItem"
@@ -1207,6 +1189,19 @@
                 "$ref": "#/components/schemas/BoolStatisticsItem"
               }
             ]
+          },
+      "StatisticsPerColumnItem": {
+        "type": "object",
+        "required": ["column_name", "column_type", "column_statistics"],
+        "properties": {
+          "column_name": {
+            "type": "string"
+          },
+          "column_type": {
+            "$ref": "#/components/schemas/ColumnType"
+          },
+          "column_statistics": {
+                "$ref": "#/components/schemas/SupportedStatistics"
           }
         }
       },
