@@ -1105,7 +1105,13 @@
         "type": "object",
         "required": [
           "nan_count",
-          "nan_proportion"
+          "nan_proportion",
+          "min",
+          "max",
+          "mean",
+          "median",
+          "std",
+          "histogram"
         ],
         "properties": {
           "nan_count": {
