@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 The HuggingFace Authors.
+
+{{- if .Values.images.jobs.cacheMaintenance }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels: {{ include "labels.deleteDuckdbIndexes" . | nindent 4 }}
+  name: "{{ include "name" . }}-job-delete-duckdb-indexes"
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels: {{ include "labels.deleteDuckdbIndexes" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- include "dnsConfig" . | nindent 6 }}
+      {{- include "image.imagePullSecrets" . | nindent 6 }}
+      containers: {{ include "containerDeleteDuckdbIndexes" . | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.deleteDuckdbIndexes.nodeSelector | nindent 8 }}
+      tolerations: {{ toYaml .Values.deleteDuckdbIndexes.tolerations | nindent 8 }}
+      securityContext: {{ include "securityContext" . | nindent 8 }}
+  backoffLimit: 0
+{{- end}}

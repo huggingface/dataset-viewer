@@ -185,6 +185,17 @@ mongodbMigration:
     limits:
       cpu: 1
 
+# --- jobs (post-install/upgrade hooks) ---
+
+deleteDuckdbIndexes:
+  nodeSelector:
+    role-datasets-server: "true"
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+
 # --- cron jobs  ---
 backfill:
   enabled: true
