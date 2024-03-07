@@ -23,6 +23,8 @@ from ..job_runners.utils import REVISION_NAME
 DATASET = "dataset"
 hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
+ANOTHER_CONFIG_NAME = "another_config_name"  # starts with "a" to be able to test ordre wrt "default" config
+
 
 def get_default_config_split() -> tuple[str, str]:
     config = "default"
@@ -106,11 +108,21 @@ def create_hub_dataset_repo(
     dataset: Optional[Dataset] = None,
     private: bool = False,
     gated: Optional[str] = None,
+    configs: Optional[dict[str, Dataset]] = None,
 ) -> str:
     dataset_name = f"{prefix}-{int(time.time() * 10e3)}"
     repo_id = f"{CI_USER}/{dataset_name}"
     if dataset is not None:
         dataset.push_to_hub(repo_id=repo_id, private=private, token=CI_USER_TOKEN, embed_external_files=True)
+    elif configs is not None:
+        for config_name, dataset in configs.items():
+            dataset.push_to_hub(
+                repo_id=repo_id,
+                private=private,
+                token=CI_USER_TOKEN,
+                embed_external_files=True,
+                config_name=config_name,
+            )
     else:
         hf_api.create_repo(repo_id=repo_id, token=CI_USER_TOKEN, repo_type=DATASET, private=private)
     if gated:
@@ -269,8 +281,8 @@ def hub_public_legacy_configs(dataset_script_with_two_configs_path: str) -> Iter
 
 
 @pytest.fixture(scope="session")
-def hub_public_n_configs(dataset_script_with_n_configs_path: str) -> Iterator[str]:
-    repo_id = create_hub_dataset_repo(prefix="n_configs", file_paths=[dataset_script_with_n_configs_path])
+def hub_public_legacy_n_configs(dataset_script_with_n_configs_path: str) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="legacy_n_configs", file_paths=[dataset_script_with_n_configs_path])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -307,6 +319,20 @@ def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterat
 def hub_public_descriptive_statistics_string_text(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
         prefix="descriptive_statistics_string_text", dataset=datasets["descriptive_statistics_string_text"]
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_public_n_configs_with_default(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    default_config_name, _ = get_default_config_split()
+    repo_id = create_hub_dataset_repo(
+        prefix="n_configs",
+        configs={
+            default_config_name: datasets["descriptive_statistics"],
+            ANOTHER_CONFIG_NAME: datasets["descriptive_statistics_string_text"],
+        },
     )
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
@@ -350,15 +376,29 @@ HubDatasets = Mapping[str, HubDatasetTest]
 
 
 def create_config_names_response(dataset: str) -> Any:
-    config, _ = get_default_config_split()
-    return {
-        "config_names": [
-            {
-                "dataset": dataset,
-                "config": config,
-            }
-        ]
-    }
+    default_config_name, _ = get_default_config_split()
+    if "n_configs" in dataset:
+        return {
+            "config_names": [
+                {
+                    "dataset": dataset,
+                    "config": default_config_name,  # default config first
+                },
+                {
+                    "dataset": dataset,
+                    "config": ANOTHER_CONFIG_NAME,
+                },
+            ]
+        }
+    else:
+        return {
+            "config_names": [
+                {
+                    "dataset": dataset,
+                    "config": default_config_name,
+                }
+            ]
+        }
 
 
 def create_splits_response(dataset: str) -> Any:
@@ -954,6 +994,19 @@ def hub_responses_descriptive_statistics_parquet_builder(
         "name": hub_public_descriptive_statistics_parquet_builder,
         "config_names_response": create_config_names_response(hub_public_descriptive_statistics_parquet_builder),
         "splits_response": create_splits_response(hub_public_descriptive_statistics_parquet_builder),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_n_configs_with_default(
+    hub_public_n_configs_with_default: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_n_configs_with_default,
+        "config_names_response": create_config_names_response(hub_public_n_configs_with_default),
+        "splits_response": None,
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }
