@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from datasets import get_dataset_config_names
+from datasets import get_dataset_config_names, get_dataset_default_config_name
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
 from libcommon.exceptions import (
     ConfigNamesError,
@@ -61,16 +61,24 @@ def compute_config_names_response(
     logging.info(f"compute 'dataset-config-names' for {dataset=}")
     # get the list of splits in streaming mode
     try:
+        trust_remote_code = resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list)
+        default_config_name: Optional[str] = None
+        config_names = get_dataset_config_names(
+            path=dataset,
+            token=hf_token,
+            trust_remote_code=trust_remote_code,
+        )
+        if len(config_names) > 1:
+            default_config_name = get_dataset_default_config_name(
+                path=dataset,
+                token=hf_token,
+                trust_remote_code=trust_remote_code,
+            )
         config_name_items: list[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
             for config in sorted(
-                get_dataset_config_names(
-                    path=dataset,
-                    token=hf_token,
-                    trust_remote_code=resolve_trust_remote_code(
-                        dataset=dataset, allow_list=dataset_scripts_allow_list
-                    ),
-                )
+                config_names,
+                key=lambda config_name: (config_name != default_config_name, config_name),  # default config first
             )
         ]
     except _EmptyDatasetError as err:
