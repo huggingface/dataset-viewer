@@ -77,12 +77,13 @@ def test_compute_too_many_configs(
     )
 
     with patch("worker.job_runners.dataset.config_names.get_dataset_config_names", return_value=configs):
-        if error_code:
-            with pytest.raises(CustomError) as exc_info:
-                job_runner.compute()
-            assert exc_info.value.code == error_code
-        else:
-            assert job_runner.compute() is not None
+        with patch("worker.job_runners.dataset.config_names.get_dataset_default_config_name", return_value=None):
+            if error_code:
+                with pytest.raises(CustomError) as exc_info:
+                    job_runner.compute()
+                assert exc_info.value.code == error_code
+            else:
+                assert job_runner.compute() is not None
 
 
 @pytest.mark.parametrize(
