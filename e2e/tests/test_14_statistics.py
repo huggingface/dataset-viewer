@@ -36,6 +36,7 @@ def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
         "nan_count": 0,
         "nan_proportion": 0.0,
         "min": 23,
+        "max": 70,
         "mean": 50.25,
         "median": 54.0,
         "std": 22.75046,
