@@ -35,15 +35,15 @@ def delete_indexes(
         )
 
     for dataset in dataset_names:
-        target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
-        all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
-        files_to_delete = [file for file in all_repo_files if file.endswith(".duckdb")]
-        num_analyzed_datasets += 1
-        if not files_to_delete:
-            num_untouched_datasets += 1
-            continue
-        delete_operations = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
         try:
+            target_dataset_info = hf_api.dataset_info(repo_id=dataset, revision=target_revision, files_metadata=False)
+            all_repo_files: set[str] = {f.rfilename for f in target_dataset_info.siblings}
+            files_to_delete = [file for file in all_repo_files if file.endswith(".duckdb")]
+            num_analyzed_datasets += 1
+            if not files_to_delete:
+                num_untouched_datasets += 1
+                continue
+            delete_operations = [CommitOperationDelete(path_in_repo=file) for file in files_to_delete]
             logging.info(f"deleting duckdb index files for {dataset=} {files_to_delete}")
             committer_hf_api.create_commit(
                 repo_id=dataset,
