@@ -236,7 +236,7 @@ class CompatibleLibrary(TypedDict):
     loading_codes: list[LoadingCode]
 
 
-class DatasetLoadingTagsResponse(TypedDict):
+class DatasetCompatibleLibrariesResponse(TypedDict):
     tags: list[DatasetTag]
     libraries: list[CompatibleLibrary]
 

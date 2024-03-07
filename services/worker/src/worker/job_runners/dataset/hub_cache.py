@@ -66,14 +66,14 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
     try:
-        loading_tags_response = get_previous_step_or_raise(kind="dataset-loading-tags", dataset=dataset)
-        tags = loading_tags_response["content"]["tags"]
-        libraries = loading_tags_response["content"]["libraries"]
+        compatible_libraries_response = get_previous_step_or_raise(kind="dataset-compatible-libraries", dataset=dataset)
+        tags = compatible_libraries_response["content"]["tags"]
+        libraries = compatible_libraries_response["content"]["libraries"]
     except CachedArtifactNotFoundError:
-        logging.info(f"Missing 'dataset-loading-tags' response for {dataset=}")
+        logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
         raise PreviousStepFormatError(
-            "Previous step 'dataset-loading-tags' did not return the expected content: 'tags''."
+            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags''."
         )
 
     return (
