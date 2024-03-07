@@ -39,9 +39,13 @@ from worker.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
 REPO_TYPE = "dataset"
 
 DECIMALS = 5
-# the maximum number of unique values in a string column so that it is considered to be a category,
+
+# the maximum proportion of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
-MAX_NUM_STRING_LABELS = 30
+# for example, 30 unique values in 100 samples -> strings
+# 30 unique values in 1000 samples -> category
+MAX_PROPORTION_STRING_LABELS = 0.3
+
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
 
@@ -495,7 +499,7 @@ class StringColumn(Column):
         # TODO: count n_unique only on the first parquet file?
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
-        if n_unique <= MAX_NUM_STRING_LABELS:  # TODO: make relative
+        if n_unique / n_samples < MAX_PROPORTION_STRING_LABELS:
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
