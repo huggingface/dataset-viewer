@@ -24,6 +24,7 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.config.size import ConfigSizeJobRunner
 from worker.job_runners.config.split_names import ConfigSplitNamesJobRunner
+from worker.job_runners.dataset.compatible_libraries import DatasetCompatibleLibrariesJobRunner
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
 from worker.job_runners.dataset.duckdb_index_size import (
     DatasetDuckdbIndexSizeJobRunner,
@@ -31,7 +32,6 @@ from worker.job_runners.dataset.duckdb_index_size import (
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
-from worker.job_runners.dataset.compatible_libraries import DatasetCompatibleLibrariesJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
     DatasetOptInOutUrlsCountJobRunner,
 )

@@ -36,8 +36,8 @@ from libcommon.simple_cache import (
 from worker.dtos import (
     CompatibleLibrary,
     CompleteJobResult,
-    DatasetLibrary,
     DatasetCompatibleLibrariesResponse,
+    DatasetLibrary,
     DatasetTag,
     LoadingCode,
 )
@@ -568,7 +568,9 @@ get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str]], Com
 }
 
 
-def compute_compatible_libraries_response(dataset: str, hf_token: Optional[str] = None) -> DatasetCompatibleLibrariesResponse:
+def compute_compatible_libraries_response(
+    dataset: str, hf_token: Optional[str] = None
+) -> DatasetCompatibleLibrariesResponse:
     """
     Get the response of 'dataset-compatible-libraries' for one specific dataset on huggingface.co.
 

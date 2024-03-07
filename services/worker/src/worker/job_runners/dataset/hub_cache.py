@@ -66,7 +66,9 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
     try:
-        compatible_libraries_response = get_previous_step_or_raise(kind="dataset-compatible-libraries", dataset=dataset)
+        compatible_libraries_response = get_previous_step_or_raise(
+            kind="dataset-compatible-libraries", dataset=dataset
+        )
         tags = compatible_libraries_response["content"]["tags"]
         libraries = compatible_libraries_response["content"]["libraries"]
     except CachedArtifactNotFoundError:
