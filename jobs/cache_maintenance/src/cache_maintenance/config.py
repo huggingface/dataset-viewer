@@ -64,7 +64,6 @@ class DirectoryCleaning:
 
 
 CACHE_MAINTENANCE_ACTION = None
-COMMITTER_HF_TOKEN = None
 
 
 @dataclass(frozen=True)
@@ -76,7 +75,6 @@ class JobConfig:
     directory_cleaning: DirectoryCleaning = field(default_factory=DirectoryCleaning)
     discussions: DiscussionsConfig = field(default_factory=DiscussionsConfig)
     action: Optional[str] = CACHE_MAINTENANCE_ACTION
-    commiter_hf_token: Optional[str] = COMMITTER_HF_TOKEN
     s3: S3Config = field(default_factory=S3Config)
     assets: AssetsConfig = field(default_factory=AssetsConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
@@ -93,7 +91,6 @@ class JobConfig:
             directory_cleaning=DirectoryCleaning.from_env(),
             discussions=DiscussionsConfig.from_env(),
             action=env.str(name="CACHE_MAINTENANCE_ACTION", default=CACHE_MAINTENANCE_ACTION),
-            commiter_hf_token=env.str(name="COMMITTER_HF_TOKEN", default=COMMITTER_HF_TOKEN),
             s3=S3Config.from_env(),
             assets=AssetsConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
