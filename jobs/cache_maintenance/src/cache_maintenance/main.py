@@ -15,7 +15,6 @@ from cache_maintenance.cache_metrics import collect_cache_metrics
 from cache_maintenance.clean_directory import clean_directory
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import post_messages
-from cache_maintenance.duckdb_indexes import delete_indexes
 from cache_maintenance.queue_metrics import collect_queue_metrics, collect_worker_size_jobs_count
 
 
@@ -109,18 +108,6 @@ def run_job() -> None:
                 bot_associated_user_name=job_config.discussions.bot_associated_user_name,
                 bot_token=job_config.discussions.bot_token,
                 parquet_revision=job_config.discussions.parquet_revision,
-            )
-        elif action == "delete-duckdb-indexes":
-            if not cache_resource.is_available():
-                logging.warning(
-                    "The connection to the cache database could not be established. The action is skipped."
-                )
-                return
-            delete_indexes(
-                hf_endpoint=job_config.common.hf_endpoint,
-                target_revision="refs/convert/parquet",
-                hf_token=job_config.common.hf_token,
-                committer_hf_token=job_config.commiter_hf_token,
             )
         elif action == "skip":
             pass
