@@ -260,8 +260,10 @@ parquetMetadata:
   storageDirectory: "/storage/parquet-metadata"
 
 duckDBIndex:
-  # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
+  # Directory on the shared storage (used to cache the duckdb files for /filter and /search)
   cacheDirectory: "/storage/duckdb-index"
+  # Directory on the worker (used temporarily to prepare the duckdb indexes before sending to the Hub)
+  workerDirectory: "/tmp/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
   # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/duckdb`.
@@ -371,24 +373,6 @@ cleanDuckdbIndexDownloads:
   # the time interval at which cached downloaded data files will be considered as expired and will be deleted
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "downloads/*"
-
-cleanDuckdbIndexJobRunner:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "job_runner/*"
 
 postMessages:
   enabled: true

@@ -119,11 +119,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-cache"
 app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-downloads"
 {{- end -}}
 
-{{- define "labels.cleanDuckdbIndexJobRunner" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-job-runner"
-{{- end -}}
-
 {{- define "labels.postMessages" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-post-messages"
