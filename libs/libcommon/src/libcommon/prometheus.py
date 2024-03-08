@@ -64,12 +64,6 @@ DUCKDB_DISK_USAGE = Gauge(
     labelnames=["type"],
     multiprocess_mode="liveall",
 )
-HF_DATASETS_DISK_USAGE = Gauge(
-    name="hf_datasets_disk_usage",
-    documentation="Usage of the disk where the HF datasets library stores its cache (workers)",
-    labelnames=["type"],
-    multiprocess_mode="liveall",
-)
 PARQUET_METADATA_DISK_USAGE = Gauge(
     name="parquet_metadata_disk_usage",
     documentation="Usage of the disk where the parquet metadata are stored (workers, used by /rows)",
@@ -117,10 +111,6 @@ def update_disk_gauge(gauge: Gauge, directory: StrPath) -> None:
 
 def update_duckdb_disk_usage(directory: StrPath) -> None:
     update_disk_gauge(DUCKDB_DISK_USAGE, directory)
-
-
-def update_hf_datasets_disk_usage(directory: StrPath) -> None:
-    update_disk_gauge(HF_DATASETS_DISK_USAGE, directory)
 
 
 def update_parquet_metadata_disk_usage(directory: StrPath) -> None:

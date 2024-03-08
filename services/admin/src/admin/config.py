@@ -78,22 +78,6 @@ class AdminConfig:
             )
 
 
-DATASETS_BASED_HF_DATASETS_CACHE = None
-
-
-@dataclass(frozen=True)
-class DatasetsBasedConfig:
-    hf_datasets_cache: Optional[str] = DATASETS_BASED_HF_DATASETS_CACHE
-
-    @classmethod
-    def from_env(cls) -> "DatasetsBasedConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DATASETS_BASED_"):
-            return cls(
-                hf_datasets_cache=env.str(name="HF_DATASETS_CACHE", default=DATASETS_BASED_HF_DATASETS_CACHE),
-            )
-
-
 DUCKDB_INDEX_CACHE_DIRECTORY = None
 
 
@@ -117,7 +101,6 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
-    datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
     duckdb_index: DuckDBIndexConfig = field(default_factory=DuckDBIndexConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -132,7 +115,6 @@ class AppConfig:
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
-            datasets_based=DatasetsBasedConfig.from_env(),
             duckdb_index=DuckDBIndexConfig.from_env(),
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

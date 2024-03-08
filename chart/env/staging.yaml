@@ -118,8 +118,6 @@ secrets:
 persistence:
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
-  hfDatasetsCache:
-    existingClaim: "datasets-server-cache-pvc"
   parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 

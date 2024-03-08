@@ -7,15 +7,10 @@
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
-  {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   - mountPath: /volumes/duckdb-index
     mountPropagation: None
     name: volume-duckdb-index
-    readOnly: false
-  - mountPath: /volumes/hf-datasets-cache
-    mountPropagation: None
-    name: volume-hf-datasets-cache
     readOnly: false
   - mountPath: /volumes/parquet-metadata
     mountPropagation: None

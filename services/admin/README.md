@@ -31,7 +31,6 @@ The following environment variables are used to configure the Uvicorn server (`A
 
 ### Storage
 
-- `DATASETS_BASED_HF_DATASETS_CACHE`: storage directory where job runners that used `datasets` library store cache files.
 - `DUCKDB_INDEX_CACHE_DIRECTORY`: storage directory where `split-duckdb-index` job runner stores temporal downloaded parquet files.
 Same directory is used for /search and /filter endpoint for temporal duckdb index files are downloaded.  
 

@@ -123,8 +123,6 @@ secrets:
 persistence:
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
-  hfDatasetsCache:
-    existingClaim: "datasets-server-cache-pvc"
   parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 
@@ -233,11 +231,6 @@ cleanDuckdbIndexCache:
   nodeSelector:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
-
-cleanHfDatasetsCache:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
 
 cleanDuckdbIndexDownloads:
   nodeSelector:

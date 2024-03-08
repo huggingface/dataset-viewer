@@ -40,7 +40,6 @@
     value: {{ .workerValues.uvicornPort | quote }}
   volumeMounts:
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
-  {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false

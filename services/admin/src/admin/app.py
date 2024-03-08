@@ -8,7 +8,6 @@ from libcommon.processing_graph import processing_graph
 from libcommon.resources import CacheMongoResource, QueueMongoResource, Resource
 from libcommon.storage import (
     init_duckdb_index_cache_dir,
-    init_hf_datasets_cache_dir,
     init_parquet_metadata_dir,
 )
 from libcommon.storage_client import StorageClient
@@ -41,7 +40,6 @@ def create_app() -> Starlette:
     init_logging(level=app_config.log.level)
     # ^ set first to have logs as soon as possible
     duckdb_index_cache_directory = init_duckdb_index_cache_dir(directory=app_config.duckdb_index.cache_directory)
-    hf_datasets_cache_directory = init_hf_datasets_cache_dir(app_config.datasets_based.hf_datasets_cache)
     parquet_metadata_directory = init_parquet_metadata_dir(directory=app_config.parquet_metadata.storage_directory)
 
     cached_assets_storage_client = StorageClient(
@@ -86,7 +84,6 @@ def create_app() -> Starlette:
             "/metrics",
             endpoint=create_metrics_endpoint(
                 duckdb_directory=duckdb_index_cache_directory,
-                hf_datasets_directory=hf_datasets_cache_directory,
                 parquet_metadata_directory=parquet_metadata_directory,
             ),
         ),

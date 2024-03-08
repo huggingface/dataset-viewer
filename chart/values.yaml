@@ -147,8 +147,6 @@ gid: 3000
 persistence:
   duckDBIndex:
     existingClaim: ""
-  hfDatasetsCache:
-    existingClaim: ""
   parquetMetadata:
     existingClaim: ""
 
@@ -287,7 +285,7 @@ descriptiveStatistics:
 
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
-  cacheDirectory: "/storage/hf-datasets-cache"
+  cacheDirectory: "/tmp/hf-datasets-cache"
 
 discussions:
   # name of the Hub user associated with the Datasets Server bot app
@@ -337,24 +335,6 @@ backfillRetryableErrors:
     limits:
       cpu: 0
   tolerations: []
-
-cleanHfDatasetsCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "*/datasets/*"
 
 cleanDuckdbIndexCache:
   enabled: true
