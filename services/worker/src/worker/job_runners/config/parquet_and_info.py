@@ -651,11 +651,11 @@ def fill_builder_info(
     builder.info.dataset_size = 0
     logging.info("Start validation of parquet files.")
     num_examples = 0
-    for split in data_files:
+    for split, urls in data_files.items():
         split = str(split)  # in case it's a NamedSplit
+        first_url = urls[0]
         try:
             # try to read first file metadata to infer features schema
-            first_url = data_files[split][0]
             first_pf, first_pf_size = retry_and_validate_get_parquet_file_or_num_examples_and_size(
                 first_url,
                 hf_endpoint,
@@ -663,19 +663,18 @@ def fill_builder_info(
                 validate,
                 return_pf=True,
             )
-            if first_pf:
-                if builder.info.features is None:
-                    builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
-                first_row_group = first_pf.read_row_group(0)
-                compression_ratio = first_row_group.nbytes / first_row_group.num_rows
-                builder.info.download_size += first_pf_size
-                num_examples += first_pf.metadata.num_rows
+            if builder.info.features is None:
+                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
+            first_row_group = first_pf.read_row_group(0)
+            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
+            builder.info.download_size += first_pf_size
+            num_examples += first_pf.metadata.num_rows
         except ParquetValidationError:
             raise
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
-        if len(data_files[split][1:]) > 0:
+        if len(urls) > 1:
             try:
                 num_examples_and_sizes: list[tuple[int, int]] = thread_map(
                     functools.partial(
@@ -684,14 +683,13 @@ def fill_builder_info(
                         hf_token=hf_token,
                         validate=validate,
                     ),
-                    data_files[split][1:],
+                    urls[1:],
                     unit="pq",
                     disable=True,
                 )
                 num_examples_list, sizes = zip(*num_examples_and_sizes)
                 num_examples += sum(num_examples_list)
-                # size
-                logging.info(f"{len(num_examples_list) + 1} parquet files are valid for copy. ")
+                builder.info.download_size += sum(sizes)
             except ParquetValidationError:
                 raise
             except Exception as e:
@@ -702,6 +700,9 @@ def fill_builder_info(
                 builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
                 builder.info.download_size += sum(sizes)
                 builder.info.dataset_size += approx_num_bytes
+        logging.info(
+            f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
+        )
 
 
 class limit_parquet_writes:
