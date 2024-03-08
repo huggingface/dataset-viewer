@@ -575,15 +575,22 @@ def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str
     return pq.ParquetFile(f), f.size
 
 
-def retry_and_validate_get_parquet_file_and_size(
-    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+def retry_and_validate_get_parquet_file_or_num_examples_and_size(
+    url: str,
+    hf_endpoint: str,
+    hf_token: Optional[str],
+    validate: Optional[Callable[[pq.ParquetFile], None]],
+    return_pf: bool = False,
 ) -> tuple[pq.ParquetFile, int]:
     try:
         sleeps = [0.2, 1, 1, 10, 10, 10]
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
         if validate:
             validate(pf)
-        return pf, size
+        if return_pf:
+            return pf, size
+        return pf.metadata.num_rows, size
+
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
             raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
@@ -646,30 +653,45 @@ def fill_builder_info(
     for split in data_files:
         split = str(split)  # in case it's a NamedSplit
         try:
-            parquet_files_and_sizes: list[tuple[pq.ParquetFile, int]] = thread_map(
-                functools.partial(
-                    retry_and_validate_get_parquet_file_and_size,
-                    hf_endpoint=hf_endpoint,
-                    hf_token=hf_token,
-                    validate=validate,
-                ),
-                data_files[split],
-                unit="pq",
-                disable=True,
+            # try to read first file metadata to infer features schema
+            first_url = data_files[split][0]
+            first_pf, size = retry_and_validate_get_parquet_file_or_num_examples_and_size(
+                first_url,
+                hf_endpoint,
+                hf_token,
+                validate,
+                return_pf=True,
             )
-            parquet_files, sizes = zip(*parquet_files_and_sizes)
-            logging.info(f"{len(parquet_files)} parquet files are valid for copy. ")
+            if first_pf:
+                if builder.info.features is None:
+                    builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
+                first_row_group = first_pf.read_row_group(0)
+                compression_ratio = first_row_group.nbytes / first_row_group.num_rows
         except ParquetValidationError:
             raise
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
-        if parquet_files:
-            first_pf = parquet_files[0]
-            if builder.info.features is None:
-                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
-            first_row_group = first_pf.read_row_group(0)
-            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
-            num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+
+        try:
+            num_examples_and_sizes: list[tuple[pq.ParquetFile, int]] = thread_map(
+                functools.partial(
+                    retry_and_validate_get_parquet_file_or_num_examples_and_size,
+                    hf_endpoint=hf_endpoint,
+                    hf_token=hf_token,
+                    validate=validate,
+                ),
+                data_files[split][1:],
+                unit="pq",
+                disable=True,
+            )
+            num_examples_list, sizes = zip(*num_examples_and_sizes)
+            logging.info(f"{len(num_examples_list) + 1} parquet files are valid for copy. ")
+        except ParquetValidationError:
+            raise
+        except Exception as e:
+            raise FileSystemError(f"Could not read the parquet files: {e}") from e
+        if num_examples_list:
+            num_examples = sum(num_examples_list) + first_pf.metadata.num_rows
             approx_num_bytes = int(compression_ratio * num_examples)
             builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
             builder.info.download_size += sum(sizes)
