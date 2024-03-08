@@ -39,7 +39,6 @@
   - name: WORKER_UVICORN_PORT
     value: {{ .workerValues.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}

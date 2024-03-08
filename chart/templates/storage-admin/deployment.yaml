@@ -18,7 +18,6 @@ spec:
       labels: {{ include "labels.storageAdmin" . | nindent 8 }}
     spec:
       initContainers:
-        {{ include "initContainerDescriptiveStatistics" . | nindent 8 }}
         {{ include "initContainerDuckDBIndex" . | nindent 8 }}
         {{ include "initContainerHfDatasetsCache" . | nindent 8 }}
         {{ include "initContainerParquetMetadata" . | nindent 8 }}
@@ -26,7 +25,6 @@ spec:
       nodeSelector: {{ toYaml .Values.storageAdmin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.storageAdmin.tolerations | nindent 8 }}
       volumes:
-        {{ include "volumeDescriptiveStatistics" . | nindent 8 }}
         {{ include "volumeDuckDBIndex" . | nindent 8 }}
         {{ include "volumeHfDatasetsCache" . | nindent 8 }}
         {{ include "volumeParquetMetadata" . | nindent 8 }}

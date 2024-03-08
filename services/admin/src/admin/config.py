@@ -94,22 +94,6 @@ class DatasetsBasedConfig:
             )
 
 
-DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
-
-
-@dataclass(frozen=True)
-class DescriptiveStatisticsConfig:
-    cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
-
-    @classmethod
-    def from_env(cls) -> "DescriptiveStatisticsConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DESCRIPTIVE_STATISTICS_"):
-            return cls(
-                cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
-            )
-
-
 DUCKDB_INDEX_CACHE_DIRECTORY = None
 
 
@@ -134,7 +118,6 @@ class AppConfig:
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
     datasets_based: DatasetsBasedConfig = field(default_factory=DatasetsBasedConfig)
-    descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
     duckdb_index: DuckDBIndexConfig = field(default_factory=DuckDBIndexConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -150,7 +133,6 @@ class AppConfig:
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
             datasets_based=DatasetsBasedConfig.from_env(),
-            descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
             duckdb_index=DuckDBIndexConfig.from_env(),
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

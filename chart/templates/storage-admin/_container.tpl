@@ -6,14 +6,9 @@
   image: {{ include "services.storageAdmin.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
-  {{ include "volumeMountDescriptiveStatisticsRW" . | nindent 2 }}
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountHfDatasetsCacheRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
-  - mountPath: /volumes/descriptive-statistics
-    mountPropagation: None
-    name: volume-descriptive-statistics
-    readOnly: false
   - mountPath: /volumes/duckdb-index
     mountPropagation: None
     name: volume-duckdb-index

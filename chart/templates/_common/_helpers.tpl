@@ -129,11 +129,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-job-runner"
 app.kubernetes.io/component: "{{ include "name" . }}-clean-hf-datasets-cache"
 {{- end -}}
 
-{{- define "labels.cleanStatsCache" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-stats-cache"
-{{- end -}}
-
 {{- define "labels.postMessages" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-post-messages"
@@ -224,15 +219,6 @@ The duckdb-index/ subpath in EFS
 */}}
 {{- define "duckDBIndex.subpath" -}}
 {{- printf "%s/%s/%s/" .Chart.Name .Release.Name "duckdb-index" }}
-{{- end }}
-
-{{/*
-The stats-cache/ subpath in the EFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
-- in a subdirectory named as the Release, so that Releases will not share the same dir
-*/}}
-{{- define "descriptiveStatistics.subpath" -}}
-{{- printf "%s/%s/%s/" .Chart.Name .Release.Name "stats-cache" }}
 {{- end }}
 
 {{/*

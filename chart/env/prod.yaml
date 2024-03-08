@@ -121,8 +121,6 @@ secrets:
       secretName: "datasets-server-prod-secrets"
 
 persistence:
-  descriptiveStatistics:
-    existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
   hfDatasetsCache:
@@ -247,11 +245,6 @@ cleanDuckdbIndexDownloads:
   expiredTimeIntervalSeconds: 259_200 # 3 days
 
 cleanDuckdbIndexJobRunner:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
-
-cleanStatsCache:
   nodeSelector:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 10_800 # 3 hours
