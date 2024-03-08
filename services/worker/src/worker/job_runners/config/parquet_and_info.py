@@ -695,11 +695,10 @@ def fill_builder_info(
             except Exception as e:
                 raise FileSystemError(f"Could not read the parquet files: {e}") from e
 
-            if num_examples > 0:
-                approx_num_bytes = int(compression_ratio * num_examples)
-                builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
-                builder.info.download_size += sum(sizes)
-                builder.info.dataset_size += approx_num_bytes
+        if num_examples > 0:
+            approx_num_bytes = int(compression_ratio * num_examples)
+            builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
+            builder.info.dataset_size += approx_num_bytes
         logging.info(
             f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
         )
