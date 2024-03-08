@@ -309,20 +309,6 @@ mongodbMigration:
       cpu: 0
   tolerations: []
 
-# --- jobs (post-install/upgrade hooks) ---
-
-deleteDuckdbIndexes:
-  log:
-    level: "info"
-  action: "delete-duckdb-indexes"
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-
 # --- cron jobs  ---
 backfill:
   enabled: false
