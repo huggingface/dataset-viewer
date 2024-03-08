@@ -42,9 +42,9 @@ DECIMALS = 5
 
 # the maximum proportion of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
-# for example, 30 unique values in 100 samples -> strings
-# 30 unique values in 1000 samples -> category
-MAX_PROPORTION_STRING_LABELS = 0.3
+# for example, 16 unique values in 100 samples -> strings
+# 16 unique values in 1000 samples -> category
+MAX_PROPORTION_STRING_LABELS = 0.15
 
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
@@ -496,10 +496,9 @@ class StringColumn(Column):
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
         logging.info(f"Compute statistics for string column {column_name} with polars. ")
-        # TODO: count n_unique only on the first parquet file?
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
-        if n_unique / n_samples < MAX_PROPORTION_STRING_LABELS:
+        if n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS:
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
