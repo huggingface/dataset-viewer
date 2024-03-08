@@ -449,7 +449,7 @@ workers:
     replicas: 4
     autoscaling:
       enabled: true
-      minReplicas: 2
+      minReplicas: 4
       maxReplicas: 50
       targets:
         - targetQueueName: "worker_size_jobs_count"
@@ -477,11 +477,11 @@ workers:
     replicas: 10
     autoscaling:
       enabled: true
-      minReplicas: 2
+      minReplicas: 10
       maxReplicas: 100
       targets:
         - targetQueueName: "worker_size_jobs_count"
-          targetQueueLength: 100
+          targetQueueLength: 50
           targetWorkerSize: "medium"
     resources:
       requests:
@@ -505,11 +505,11 @@ workers:
     replicas: 4
     autoscaling:
       enabled: true
-      minReplicas: 2
+      minReplicas: 4
       maxReplicas: 50
       targets:
         - targetQueueName: "worker_size_jobs_count"
-          targetQueueLength: 100
+          targetQueueLength: 50
           targetWorkerSize: "light"
     resources:
       requests:
