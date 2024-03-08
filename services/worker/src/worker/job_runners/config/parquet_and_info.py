@@ -664,11 +664,11 @@ def fill_builder_info(
                 return_pf=True,
             )
             if builder.info.features is None:
-                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
-            first_row_group = first_pf.read_row_group(0)
+                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)  # type: ignore
+            first_row_group = first_pf.read_row_group(0)  # type: ignore
             compression_ratio = first_row_group.nbytes / first_row_group.num_rows
             builder.info.download_size += first_pf_size
-            num_examples += first_pf.metadata.num_rows
+            num_examples += first_pf.metadata.num_rows  # type: ignore
         except ParquetValidationError:
             raise
         except Exception as e:
