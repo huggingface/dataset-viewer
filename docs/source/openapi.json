@@ -1101,6 +1101,9 @@
           }
         }
       },
+      "NullableNumber": {
+        "oneOf": [{ "type": "number" }, { "type": "null" }]
+      },
       "NumericalStatisticsItem": {
         "type": "object",
         "required": [
@@ -1120,22 +1123,12 @@
           "nan_proportion": {
             "type": "number"
           },
-          "min": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "max": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "mean": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "median": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "std": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "histogram": { "anyOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
+          "min": { "$ref": "#/components/schemas/NullableNumber" },
+          "max": { "$ref": "#/components/schemas/NullableNumber" },
+          "mean": { "$ref": "#/components/schemas/NullableNumber" },
+          "median": { "$ref": "#/components/schemas/NullableNumber" },
+          "std": { "$ref": "#/components/schemas/NullableNumber" },
+          "histogram": { "oneOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
         }
       },
       "CategoricalStatisticsItem": {
