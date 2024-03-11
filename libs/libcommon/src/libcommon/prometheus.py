@@ -58,21 +58,9 @@ RESPONSES_IN_CACHE_TOTAL = Gauge(
     labelnames=["kind", "http_status", "error_code"],
     multiprocess_mode="liveall",
 )
-DESCRIPTIVE_STATISTICS_DISK_USAGE = Gauge(
-    name="descriptive_statistics_disk_usage",
-    documentation="Usage of the disk where the descriptive statistics temporary files are stored (workers)",
-    labelnames=["type"],
-    multiprocess_mode="liveall",
-)
 DUCKDB_DISK_USAGE = Gauge(
     name="duckdb_disk_usage",
     documentation="Usage of the disk where the temporary duckdb files are stored (/search)",
-    labelnames=["type"],
-    multiprocess_mode="liveall",
-)
-HF_DATASETS_DISK_USAGE = Gauge(
-    name="hf_datasets_disk_usage",
-    documentation="Usage of the disk where the HF datasets library stores its cache (workers)",
     labelnames=["type"],
     multiprocess_mode="liveall",
 )
@@ -121,16 +109,8 @@ def update_disk_gauge(gauge: Gauge, directory: StrPath) -> None:
     gauge.labels(type="percent").set(percent)
 
 
-def update_descriptive_statistics_disk_usage(directory: StrPath) -> None:
-    update_disk_gauge(DESCRIPTIVE_STATISTICS_DISK_USAGE, directory)
-
-
 def update_duckdb_disk_usage(directory: StrPath) -> None:
     update_disk_gauge(DUCKDB_DISK_USAGE, directory)
-
-
-def update_hf_datasets_disk_usage(directory: StrPath) -> None:
-    update_disk_gauge(HF_DATASETS_DISK_USAGE, directory)
 
 
 def update_parquet_metadata_disk_usage(directory: StrPath) -> None:

@@ -116,12 +116,8 @@ secrets:
       secretName: "datasets-server-staging-secrets"
 
 persistence:
-  descriptiveStatistics:
-    existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
-  hfDatasetsCache:
-    existingClaim: "datasets-server-cache-pvc"
   parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 
