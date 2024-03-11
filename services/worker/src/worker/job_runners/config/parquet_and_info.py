@@ -575,21 +575,22 @@ def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str
     return pq.ParquetFile(f), f.size
 
 
-def retry_and_validate_get_parquet_file_or_num_examples_and_size(
+def retry_and_validate_get_parquet_file_num_examples_and_size(
     url: str,
     hf_endpoint: str,
     hf_token: Optional[str],
     validate: Optional[Callable[[pq.ParquetFile], None]],
     return_pf: bool = False,
-) -> tuple[Union[pq.ParquetFile, int], int]:
+) -> tuple[int, int, Optional[pq.ParquetFile]]:
     try:
         sleeps = [0.2, 1, 1, 10, 10, 10]
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
         if validate:
             validate(pf)
         if return_pf:
-            return pf, size
-        return pf.metadata.num_rows, size
+            return pf.metadata.num_rows, size, pf
+        pf.close()
+        return pf.metadata.num_rows, size, None
 
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
@@ -656,19 +657,20 @@ def fill_builder_info(
         first_url = urls[0]
         try:
             # try to read first file metadata to infer features schema
-            first_pf, first_pf_size = retry_and_validate_get_parquet_file_or_num_examples_and_size(
+            first_pf_res: tuple[int, int, pq.ParquetFile] = retry_and_validate_get_parquet_file_num_examples_and_size(
                 first_url,
                 hf_endpoint,
                 hf_token,
                 validate,
                 return_pf=True,
             )
+            _, first_pf_size, first_pf = first_pf_res
             if builder.info.features is None:
-                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)  # type: ignore
-            first_row_group = first_pf.read_row_group(0)  # type: ignore
+                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
+            first_row_group = first_pf.read_row_group(0)
             compression_ratio = first_row_group.nbytes / first_row_group.num_rows
             builder.info.download_size += first_pf_size
-            num_examples += first_pf.metadata.num_rows  # type: ignore
+            num_examples += first_pf.metadata.num_rows
         except ParquetValidationError:
             raise
         except Exception as e:
@@ -678,7 +680,7 @@ def fill_builder_info(
             try:
                 num_examples_and_sizes: list[tuple[int, int]] = thread_map(
                     functools.partial(
-                        retry_and_validate_get_parquet_file_or_num_examples_and_size,
+                        retry_and_validate_get_parquet_file_num_examples_and_size,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         validate=validate,
@@ -687,7 +689,7 @@ def fill_builder_info(
                     unit="pq",
                     disable=True,
                 )
-                num_examples_list, sizes = zip(*num_examples_and_sizes)
+                num_examples_list, sizes, _ = zip(*num_examples_and_sizes)
                 num_examples += sum(num_examples_list)
                 builder.info.download_size += sum(sizes)
             except ParquetValidationError:
