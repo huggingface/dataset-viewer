@@ -1140,6 +1140,7 @@
       },
       "CategoricalStatisticsItem": {
         "type": "object",
+        "description": "note that fields 'no_label_count' and 'no_label_proportion' are not required, because some old entries still miss them, and we don't want to recompute all of them. See https://github.com/huggingface/datasets-server/issues/2573.",
         "required": ["nan_count", "nan_proportion", "n_unique", "frequencies"],
         "properties": {
           "nan_count": {
