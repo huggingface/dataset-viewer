@@ -686,7 +686,7 @@ def fill_builder_info(
 
         if len(urls) > 1:
             try:
-                num_examples_and_sizes: list[tuple[int, int]] = thread_map(
+                num_examples_and_sizes: list[tuple[int, int, None]] = thread_map(
                     functools.partial(
                         retry_and_validate_get_parquet_file_num_examples_and_size,
                         hf_endpoint=hf_endpoint,
