@@ -42,7 +42,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
-from huggingface_hub.hf_file_system import HfFileSystem
+from huggingface_hub.hf_file_system import HfFileSystem, HfFileSystemFile
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -569,12 +569,6 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> tuple[pq.ParquetFile, int]:
-    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-    f = fs.open(url)
-    return pq.ParquetFile(f), f.size
-
-
 def retry_and_validate_get_parquet_file_num_examples_and_size(
     url: str,
     hf_endpoint: str,
@@ -590,14 +584,20 @@ def retry_and_validate_get_parquet_file_num_examples_and_size(
     Returns:
         `tuple[int, int, Optional[pq.ParquetFile]]` - (num examples, size in bytes, parquet file or None)
     """
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+
+    def open_file(file_url: str) -> HfFileSystemFile:
+        return fs.open(file_url)
+
     try:
         sleeps = [0.2, 1, 1, 10, 10, 10]
-        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
+        f = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(open_file)(url)
+        pf, size = pq.ParquetFile(f), f.size
         if validate:
             validate(pf)
         if return_pf:
             return pf.metadata.num_rows, size, pf
-        pf.close()
+        f.close()
         return pf.metadata.num_rows, size, None
 
     except RuntimeError as err:
