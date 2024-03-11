@@ -5516,7 +5516,7 @@
                     "summary": "Statistics on numeric columns.",
                     "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=mstz/wine&config=wine&split=train.",
                     "value": {
-                      "num_examples": 6497,
+                      "num_examples": 6498,
                       "statistics": [
                         {
                           "column_name": "alcohol",

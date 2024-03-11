@@ -9,11 +9,11 @@ on:
       - main
     paths:
       - "docs/source/openapi.json"
-      - ".github/workflows/openapi.yml"
+      - ".github/workflows/openapi-spec.yml"
   pull_request:
     paths:
       - "docs/source/openapi.json"
-      - ".github/workflows/openapi.yml"
+      - ".github/workflows/openapi-spec.yml"
 env:
   python-version: 3.9.18
   poetry-version: "1.7.1"
@@ -45,3 +45,15 @@ jobs:
       - name: Check openapi spec
         run: |
           poetry run python -m openapi_spec_validator ../docs/source/openapi.json
+  check-openapi-spec-against-spectral:
+    name: Run Spectral
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository
+      - uses: actions/checkout@v4
+
+      # Run Spectral
+      - uses: stoplightio/spectral-action@latest
+        with:
+          file_glob: 'docs/openapi.json'
+          spectral_ruleset: '.spectral.yml'
