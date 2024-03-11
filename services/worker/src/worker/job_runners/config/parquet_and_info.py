@@ -582,6 +582,14 @@ def retry_and_validate_get_parquet_file_num_examples_and_size(
     validate: Optional[Callable[[pq.ParquetFile], None]],
     return_pf: bool = False,
 ) -> tuple[int, int, Optional[pq.ParquetFile]]:
+    """
+    Get number of examples in a parquet file at a given url, its size in bytes,
+    and optionally a file itself as a pq.ParquetFile object if `return_pf` is True (else None).
+    Also validate parquet file if validation function is passed with `validate` argument.
+
+    Returns:
+        `tuple[int, int, Optional[pq.ParquetFile]]` - (num examples, size in bytes, parquet file or None)
+    """
     try:
         sleeps = [0.2, 1, 1, 10, 10, 10]
         pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
