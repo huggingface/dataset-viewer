@@ -88,6 +88,7 @@ DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
+SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 T = TypeVar("T")
 
@@ -569,36 +570,51 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def retry_and_validate_get_parquet_file_num_examples_and_size(
-    url: str,
-    hf_endpoint: str,
-    hf_token: Optional[str],
-    validate: Optional[Callable[[pq.ParquetFile], None]],
-    return_pf: bool = False,
-) -> tuple[int, int, Optional[pq.ParquetFile]]:
+def open_file(file_url: str, hf_endpoint: str, hf_token: Optional[str]) -> HfFileSystemFile:
+    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
+    return fs.open(file_url)
+
+
+def retry_validate_get_parquet_file_and_size_or_raise(
+    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+) -> tuple[pq.ParquetFile, int]:
     """
-    Get number of examples in a parquet file at a given url, its size in bytes,
-    and optionally a file itself as a pq.ParquetFile object if `return_pf` is True (else None).
+    Get parquet file as a pq.ParquetFile at a given url, and its size in bytes.
     Also validate parquet file if validation function is passed with `validate` argument.
 
     Returns:
-        `tuple[int, int, Optional[pq.ParquetFile]]` - (num examples, size in bytes, parquet file or None)
+        `tuple[pq.ParquetFile, int]` - (parquet files, size in bytes)
     """
-    fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-
-    def open_file(file_url: str) -> HfFileSystemFile:
-        return fs.open(file_url)
-
     try:
-        sleeps = [0.2, 1, 1, 10, 10, 10]
-        f = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(open_file)(url)
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
         if validate:
             validate(pf)
-        if return_pf:
-            return pf.metadata.num_rows, size, pf
+        return pf, size
+
+    except RuntimeError as err:
+        if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
+            raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        else:
+            raise err
+
+
+def retry_validate_get_num_examples_and_size_or_raise(
+    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+) -> tuple[int, int]:
+    """
+    Same as above but do not return pq.ParquetFile instance but num examples in it and size in bytes.
+
+    Returns:
+        `tuple[int, int]` - (num examples, size in bytes)
+    """
+    try:
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        pf, size = pq.ParquetFile(f), f.size
+        if validate:
+            validate(pf)
         f.close()
-        return pf.metadata.num_rows, size, None
+        return pf.metadata.num_rows, size
 
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
@@ -610,7 +626,7 @@ def retry_and_validate_get_parquet_file_num_examples_and_size(
 class ParquetFileValidator:
     """
     Validate the Parquet files before they are copied to the target revision.
-    In particular we check that the row group size is not too big, otherwise the dataset viewer
+    In particular, we check that the row group size is not too big, otherwise the dataset viewer
     doesn't work correctly.
 
     Note: we only validate the first parquet files (default 5 first files).
@@ -665,14 +681,12 @@ def fill_builder_info(
         first_url = urls[0]
         try:
             # try to read first file metadata to infer features schema
-            first_pf_res: tuple[int, int, pq.ParquetFile] = retry_and_validate_get_parquet_file_num_examples_and_size(
+            first_pf, first_pf_size = retry_validate_get_parquet_file_and_size_or_raise(
                 first_url,
                 hf_endpoint,
                 hf_token,
                 validate,
-                return_pf=True,
             )
-            _, first_pf_size, first_pf = first_pf_res
             if builder.info.features is None:
                 builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
             first_row_group = first_pf.read_row_group(0)
@@ -688,7 +702,7 @@ def fill_builder_info(
             try:
                 num_examples_and_sizes: list[tuple[int, int, None]] = thread_map(
                     functools.partial(
-                        retry_and_validate_get_parquet_file_num_examples_and_size,
+                        retry_validate_get_num_examples_and_size_or_raise,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         validate=validate,
@@ -697,7 +711,7 @@ def fill_builder_info(
                     unit="pq",
                     disable=True,
                 )
-                num_examples_list, sizes, _ = zip(*num_examples_and_sizes)
+                num_examples_list, sizes = zip(*num_examples_and_sizes)
                 num_examples += sum(num_examples_list)
                 builder.info.download_size += sum(sizes)
             except ParquetValidationError:
