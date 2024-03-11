@@ -575,7 +575,7 @@ def open_file(file_url: str, hf_endpoint: str, hf_token: Optional[str]) -> HfFil
     return fs.open(file_url)
 
 
-def retry_validate_get_parquet_file_and_size_or_raise(
+def retry_validate_get_parquet_file_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> tuple[pq.ParquetFile, int]:
     """
@@ -599,7 +599,7 @@ def retry_validate_get_parquet_file_and_size_or_raise(
             raise err
 
 
-def retry_validate_get_num_examples_and_size_or_raise(
+def retry_validate_get_num_examples_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> tuple[int, int]:
     """
@@ -681,7 +681,7 @@ def fill_builder_info(
         first_url = urls[0]
         try:
             # try to read first file metadata to infer features schema
-            first_pf, first_pf_size = retry_validate_get_parquet_file_and_size_or_raise(
+            first_pf, first_pf_size = retry_validate_get_parquet_file_and_size(
                 first_url,
                 hf_endpoint,
                 hf_token,
@@ -702,7 +702,7 @@ def fill_builder_info(
             try:
                 num_examples_and_sizes: list[tuple[int, int]] = thread_map(
                     functools.partial(
-                        retry_validate_get_num_examples_and_size_or_raise,
+                        retry_validate_get_num_examples_and_size,
                         hf_endpoint=hf_endpoint,
                         hf_token=hf_token,
                         validate=validate,
