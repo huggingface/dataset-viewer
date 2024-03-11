@@ -603,7 +603,8 @@ def retry_validate_get_num_examples_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
 ) -> tuple[int, int]:
     """
-    Same as above but do not return pq.ParquetFile instance but num examples in it and size in bytes.
+    Get number of examples in a parquet file at a given url, and its size in bytes.
+    Also validate parquet file if validation function is passed with `validate` argument.
 
     Returns:
         `tuple[int, int]` - (num examples, size in bytes)
