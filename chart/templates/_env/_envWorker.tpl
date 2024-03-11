@@ -102,7 +102,7 @@
 - name: DUCKDB_INDEX_MAX_SPLIT_SIZE_BYTES
   value: {{ .Values.duckDBIndex.maxSplitSizeBytes | quote }}
 - name: DUCKDB_INDEX_CACHE_DIRECTORY
-  value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
+  value: {{ .Values.duckDBIndex.workerDirectory | quote }}
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
   value: "/tmp/duckdb-extensions"
 # specific to 'split-descriptive-statistics'

@@ -577,7 +577,7 @@ def launch_job_runner(job_runner_args: JobRunnerArgs) -> CompleteJobResult:
 
 
 def test_concurrency(
-    hub_public_n_configs: str,
+    hub_public_legacy_n_configs: str,
     app_config: AppConfig,
     tmp_path: Path,
     get_dataset_config_names_job_runner: GetDatasetConfigNamesJobRunner,
@@ -591,7 +591,7 @@ def test_concurrency(
     Ideally we would try for both quick and slow jobs.
     """
     app_config = replace(app_config, common=replace(app_config.common, dataset_scripts_allow_list=["*"]))
-    repo_id = hub_public_n_configs
+    repo_id = hub_public_legacy_n_configs
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT, token=CI_USER_TOKEN)
     revision = hf_api.dataset_info(repo_id=repo_id, files_metadata=False).sha
     if revision is None:
