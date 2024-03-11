@@ -19,7 +19,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Audio, Features, Image, Value, load_dataset_builder
+from datasets import Audio, Features, Image, Value, load_dataset, load_dataset_builder
 from datasets.packaged_modules.generator.generator import (
     Generator as ParametrizedGeneratorBasedBuilder,
 )
@@ -797,6 +797,35 @@ def test_fill_builder_info(
         fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
         expected_info = hub_responses_big["parquet_and_info_response"]["dataset_info"]
         assert expected_info == asdict(builder.info)
+
+
+def test_fill_builder_info_multiple_parquets(
+    hub_public_three_parquet_files_builder: str,
+    app_config: AppConfig,
+    tmp_path: Path,
+    three_parquet_files_paths: list[str],
+) -> None:
+    cache_dir = str(tmp_path / "test_fill_builder_info_multiple_files")
+    name = hub_public_three_parquet_files_builder
+    builder = load_dataset_builder(name, cache_dir=cache_dir)
+    builder.info = datasets.info.DatasetInfo()
+    validate = ParquetFileValidator(max_row_group_byte_size=100_000).validate
+    fill_builder_info(builder, hf_endpoint=app_config.common.hf_endpoint, hf_token=None, validate=validate)
+
+    # load dataset with `load_dataset` to generate correct values for dataset info to compare
+    dataset = load_dataset("parquet", data_files=three_parquet_files_paths, split="train")
+    expected_info = dataset.info
+    actual_info = builder.info
+    assert expected_info.features == actual_info.features
+    assert expected_info.download_size == actual_info.download_size
+    # uncompressed dataset size is approximate
+    # since we estimate approximate compression ratio by reading only first row group
+    assert expected_info.dataset_size == pytest.approx(actual_info.dataset_size, 300)
+
+    assert set(expected_info.splits) == set(actual_info.splits)
+    for split_name, split_info in expected_info.splits.items():
+        assert split_info.num_examples == actual_info.splits[split_name].num_examples
+        assert split_info.num_bytes == pytest.approx(actual_info.splits[split_name].num_bytes, 300)
 
 
 @pytest.mark.parametrize(
