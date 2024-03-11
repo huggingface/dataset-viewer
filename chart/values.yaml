@@ -145,11 +145,7 @@ uid: 1000
 gid: 3000
 
 persistence:
-  descriptiveStatistics:
-    existingClaim: ""
   duckDBIndex:
-    existingClaim: ""
-  hfDatasetsCache:
     existingClaim: ""
   parquetMetadata:
     existingClaim: ""
@@ -264,8 +260,10 @@ parquetMetadata:
   storageDirectory: "/storage/parquet-metadata"
 
 duckDBIndex:
-  # Directory on the shared storage (used temporarily to prepare the duckdb indexes before sending to the Hub)
+  # Directory on the shared storage (used to cache the duckdb files for /filter and /search)
   cacheDirectory: "/storage/duckdb-index"
+  # Directory on the worker (used temporarily to prepare the duckdb indexes before sending to the Hub)
+  workerDirectory: "/tmp/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
   commitMessage: "Update duckdb index files"
   # the git revision of the dataset where to store the duckdb index file. Defaults to `refs/convert/duckdb`.
@@ -280,8 +278,8 @@ rowsIndex:
   maxArrowDataInMemory: "300_000_000"
 
 descriptiveStatistics:
-  # Directory on the shared storage (used temporarily to download dataset locally in .parquet to compute statistics)
-  cacheDirectory: "/storage/stats-cache"
+  # Directory used temporarily to download dataset locally in .parquet to compute statistics
+  cacheDirectory: "/tmp/stats-cache"
   # fixed number of bins for histogram count
   histogramNumBins: 10
   # the maximum size of the split parquets.
@@ -289,7 +287,7 @@ descriptiveStatistics:
 
 hfDatasetsCache:
   # Directory where the HF datasets cache data will be stored
-  cacheDirectory: "/storage/hf-datasets-cache"
+  cacheDirectory: "/tmp/hf-datasets-cache"
 
 discussions:
   # name of the Hub user associated with the Datasets Server bot app
@@ -340,24 +338,6 @@ backfillRetryableErrors:
       cpu: 0
   tolerations: []
 
-cleanHfDatasetsCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "*/datasets/*"
-
 cleanDuckdbIndexCache:
   enabled: true
   log:
@@ -393,41 +373,6 @@ cleanDuckdbIndexDownloads:
   # the time interval at which cached downloaded data files will be considered as expired and will be deleted
   expiredTimeIntervalSeconds: 600
   subfolderPattern: "downloads/*"
-
-cleanDuckdbIndexJobRunner:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "job_runner/*"
-
-cleanStatsCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "*"
 
 postMessages:
   enabled: true

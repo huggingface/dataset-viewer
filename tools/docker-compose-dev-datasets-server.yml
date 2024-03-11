@@ -34,7 +34,6 @@ services:
       - storage:${STORAGE_DIRECTORY-/storage}:rw
       - duckdb-index:${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}:ro
       - parquet-metadata:${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}:ro
-      - descriptive-statistics:${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}:ro
       # volumes to local source directory for development
       - ../services/admin/src:/src/services/admin/src
     extends:
@@ -54,7 +53,6 @@ services:
       ADMIN_UVICORN_HOSTNAME: 0.0.0.0 # required for docker compose
       ADMIN_UVICORN_NUM_WORKERS: ${ADMIN_UVICORN_NUM_WORKERS-2}
       ADMIN_UVICORN_PORT: ${ADMIN_UVICORN_PORT-8081}
-      DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY: ${DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY-/stats-cache}
       DUCKDB_INDEX_CACHE_DIRECTORY: ${DUCKDB_INDEX_CACHE_DIRECTORY-/duckdb-index}
       PARQUET_METADATA_STORAGE_DIRECTORY: ${PARQUET_METADATA_STORAGE_DIRECTORY-/parquet_metadata}
     depends_on:
