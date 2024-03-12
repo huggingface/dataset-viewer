@@ -51,76 +51,50 @@ The endpoint response is a JSON with the `dataset_info` key. Its structure and c
 
 ```json
 {
-   "dataset_info":{
-      "description":"",
-      "citation":"",
-      "homepage":"",
-      "license":"",
-      "features":{
-         "plot_id":{
-            "dtype":"string",
-            "_type":"Value"
-         },
-         "plot":{
-            "dtype":"string",
-            "_type":"Value"
-         },
-         "title":{
-            "dtype":"string",
-            "_type":"Value"
-         },
-         "question_id":{
-            "dtype":"string",
-            "_type":"Value"
-         },
-         "question":{
-            "dtype":"string",
-            "_type":"Value"
-         },
-         "answers":{
-            "feature":{
-               "dtype":"string",
-               "_type":"Value"
-            },
-            "_type":"Sequence"
-         },
-         "no_answer":{
-            "dtype":"bool",
-            "_type":"Value"
-         }
+  "dataset_info": {
+    "description": "",
+    "citation": "",
+    "homepage": "",
+    "license": "",
+    "features": {
+      "plot_id": { "dtype": "string", "_type": "Value" },
+      "plot": { "dtype": "string", "_type": "Value" },
+      "title": { "dtype": "string", "_type": "Value" },
+      "question_id": { "dtype": "string", "_type": "Value" },
+      "question": { "dtype": "string", "_type": "Value" },
+      "answers": {
+        "feature": { "dtype": "string", "_type": "Value" },
+        "_type": "Sequence"
       },
-      "builder_name":"parquet",
-      "dataset_name":"duorc",
-      "config_name":"SelfRC",
-      "version":{
-         "version_str":"0.0.0",
-         "major":0,
-         "minor":0,
-         "patch":0
+      "no_answer": { "dtype": "bool", "_type": "Value" }
+    },
+    "builder_name": "parquet",
+    "dataset_name": "duorc",
+    "config_name": "SelfRC",
+    "version": { "version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0 },
+    "splits": {
+      "train": {
+        "name": "train",
+        "num_bytes": 248966361,
+        "num_examples": 60721,
+        "dataset_name": null
       },
-      "splits":{
-         "train":{
-            "name":"train",
-            "num_bytes":248966361,
-            "num_examples":60721,
-            "dataset_name":null
-         },
-         "validation":{
-            "name":"validation",
-            "num_bytes":56359392,
-            "num_examples":12961,
-            "dataset_name":null
-         },
-         "test":{
-            "name":"test",
-            "num_bytes":51022318,
-            "num_examples":12559,
-            "dataset_name":null
-         }
+      "validation": {
+        "name": "validation",
+        "num_bytes": 56359392,
+        "num_examples": 12961,
+        "dataset_name": null
       },
-      "download_size":21001846,
-      "dataset_size":356348071
-   },
-   "partial":false
+      "test": {
+        "name": "test",
+        "num_bytes": 51022318,
+        "num_examples": 12559,
+        "dataset_name": null
+      }
+    },
+    "download_size": 21001846,
+    "dataset_size": 356348071
+  },
+  "partial": false
 }
 ```

@@ -4078,8 +4078,8 @@
                   "$ref": "#/components/schemas/ParquetResponse"
                 },
                 "examples": {
-                  "duorc": {
-                    "summary": "duorc: six parquet files, one per split",
+                  "ibm/duorc": {
+                    "summary": "ibm/duorc: six parquet files, one per split",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc",
                     "value": {
                       "parquet_files": [

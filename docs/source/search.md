@@ -71,7 +71,7 @@ The endpoint response is a JSON containing two keys (same format as [`/rows`](./
 
 The rows are ordered by the row index, and the text strings matching the query are not highlighted.
 
-For example, here are the `features` and the slice 150-151 of matching `rows` of the `duorc`/`SelfRC` train split for the query `dog`:
+For example, here are the `features` and the slice 150-151 of matching `rows` of the `ibm/duorc`/`SelfRC` train split for the query `dog`:
 
 ```json
 {
