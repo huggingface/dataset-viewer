@@ -30,19 +30,19 @@ def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
     assert "column_statistics" in string_label_column
     assert "column_type" in string_label_column
     assert string_label_column["column_name"] == "col_1"
-    assert string_label_column["column_type"] == "string_text"
+    assert string_label_column["column_type"] == "string_label"  # 4 unique values -> label
     assert isinstance(string_label_column["column_statistics"], dict)
     assert string_label_column["column_statistics"] == {
         "nan_count": 0,
         "nan_proportion": 0.0,
-        "min": 23,
-        "max": 70,
-        "mean": 50.25,
-        "median": 54.0,
-        "std": 22.75046,
-        "histogram": {
-            "hist": [1, 0, 0, 1, 0, 0, 0, 0, 0, 2],
-            "bin_edges": [23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 70],
+        "no_label_count": 0,
+        "no_label_proportion": 0.0,
+        "n_unique": 4,
+        "frequencies": {
+            "There goes another one.": 1,
+            "Vader turns round and round in circles as his ship spins into space.": 1,
+            "We count thirty Rebel ships, Lord Vader.": 1,
+            "The wingman spots the pirateship coming at him and warns the Dark Lord": 1,
         },
     }
 
