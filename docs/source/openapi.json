@@ -1178,7 +1178,7 @@
         }
       },
       "SupportedStatistics": {
-            "oneOf": [
+            "anyOf": [
               {
                 "$ref": "#/components/schemas/NumericalStatisticsItem"
               },
