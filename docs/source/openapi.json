@@ -1120,26 +1120,17 @@
           "nan_proportion": {
             "type": "number"
           },
-          "min": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "max": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "mean": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "median": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "std": {
-            "type": { "anyOf": [{ "type": "number" }, { "type": "null" }] }
-          },
-          "histogram": { "anyOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
+          "min": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "max": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "mean": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "median": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "std": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "histogram": { "oneOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
         }
       },
       "CategoricalStatisticsItem": {
         "type": "object",
+        "description": "note that fields 'no_label_count' and 'no_label_proportion' are not required, because some old entries still miss them, and we don't want to recompute all of them. See https://github.com/huggingface/datasets-server/issues/2573.",
         "required": ["nan_count", "nan_proportion", "n_unique", "frequencies"],
         "properties": {
           "nan_count": {
@@ -1184,7 +1175,7 @@
         }
       },
       "SupportedStatistics": {
-            "oneOf": [
+            "anyOf": [
               {
                 "$ref": "#/components/schemas/NumericalStatisticsItem"
               },
