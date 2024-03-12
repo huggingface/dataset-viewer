@@ -855,9 +855,12 @@ def test_resolve_trust_remote_code() -> None:
         resolve_trust_remote_code("lhoestq/demo1", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"])
         is True
     )
-    assert resolve_trust_remote_code("squad", allow_list=[]) is False
-    assert resolve_trust_remote_code("squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is True
-    assert resolve_trust_remote_code("squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"]) is True
+    assert resolve_trust_remote_code("rajpurkar/squad", allow_list=[]) is False
+    assert resolve_trust_remote_code("rajpurkar/squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}"]) is True
+    assert (
+        resolve_trust_remote_code("rajpurkar/squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/s*"])
+        is True
+    )
     assert (
         resolve_trust_remote_code(
             "lhoestq/custom_squad", allow_list=["{{ALL_DATASETS_WITH_NO_NAMESPACE}}", "lhoestq/d*"]

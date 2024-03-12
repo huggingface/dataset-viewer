@@ -751,7 +751,7 @@ class limit_parquet_writes:
     Example of usage:
 
     ```python
-    builder = load_dataset_builder("squad")
+    builder = load_dataset_builder("rajpurkar/squad")
     max_dataset_size_bytes = 10_000_000
     with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
         builder.download_and_prepare(file_format="parquet")
@@ -762,7 +762,7 @@ class limit_parquet_writes:
     the full dataset:
 
     ```python
-    builder = load_dataset_builder("squad")
+    builder = load_dataset_builder("rajpurkar/squad")
     max_dataset_size_bytes = 10_000_000
     dl_manager = StreamingDownloadManager(...)
     for split_generator in builder._split_generators(dl_manager):
