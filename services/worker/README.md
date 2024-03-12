@@ -348,7 +348,7 @@ As bin edges for integer values also must be integers, bin size is counted as `n
 
 ##### string_label
 
-If the number of unique values in a column (within requested split) is <= `MAX_NUM_STRING_LABELS` (currently 30), the column is considered to be a category and the categories counts are computed.
+If the proportion of unique values in a column (within requested split) is <= `MAX_PROPORTION_STRING_LABELS` (currently 0.2) and the number of unique values is <= `MAX_NUM_STRING_LABELS` (currently 1000), the column is considered to be a category and the categories counts are computed. If the proportion on unique values is > `MAX_PROPORTION_STRING_LABELS` but the number of unique values is <= `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`, it is still treated as category.
 
 <details><summary>examples: </summary>
 <p>
@@ -377,7 +377,7 @@ If the number of unique values in a column (within requested split) is <= `MAX_N
 
 ##### string_text
 
-If the number of unique values in a column (within requested split) is > `MAX_NUM_STRING_LABELS` (currently 30), the column is considered to be text and the distribution of text **lengths** is computed.
+If a string column doesn't satisfy the conditions to be considered a category (see above), it is considered to be text and the distribution of text **lengths** is computed.
 
 <details><summary>example: </summary>
 <p>

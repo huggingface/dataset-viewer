@@ -5,7 +5,6 @@ from .utils import get_default_config_split, poll_until_ready_and_assert
 
 
 def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
-    # TODO: add dataset with various splits, or various configs
     dataset = normal_user_public_json_dataset
     config, split = get_default_config_split()
     statistics_response = poll_until_ready_and_assert(
@@ -31,7 +30,7 @@ def test_statistics_endpoint(normal_user_public_json_dataset: str) -> None:
     assert "column_statistics" in string_label_column
     assert "column_type" in string_label_column
     assert string_label_column["column_name"] == "col_1"
-    assert string_label_column["column_type"] == "string_label"
+    assert string_label_column["column_type"] == "string_label"  # 4 unique values -> label
     assert isinstance(string_label_column["column_statistics"], dict)
     assert string_label_column["column_statistics"] == {
         "nan_count": 0,
