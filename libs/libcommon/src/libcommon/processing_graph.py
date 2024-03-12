@@ -591,7 +591,7 @@ specification: ProcessingGraphSpecification = {
             "split-first-rows",
             "split-duckdb-index",
         ],
-        "job_runner_version": 3,
+        "job_runner_version": 4,
         "difficulty": 20,
     },
     "config-is-valid": {
@@ -600,7 +600,7 @@ specification: ProcessingGraphSpecification = {
             "config-split-names",  # required in case the config has no splits (error in previous step)
             "split-is-valid",
         ],
-        "job_runner_version": 2,
+        "job_runner_version": 3,
         "difficulty": 20,
     },
     "dataset-is-valid": {
@@ -609,7 +609,7 @@ specification: ProcessingGraphSpecification = {
             "dataset-config-names",  # required in case the dataset has no configs (error in previous step)
             "config-is-valid",
         ],
-        "job_runner_version": 6,
+        "job_runner_version": 7,
         "difficulty": 20,
     },
     "split-image-url-columns": {
