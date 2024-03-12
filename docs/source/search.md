@@ -15,7 +15,7 @@ The text is searched in the columns of type `string`, even if the values are nes
 
 The `/search` endpoint accepts five query parameters:
 
-- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 - `query`: the text to search

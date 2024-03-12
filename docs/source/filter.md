@@ -12,7 +12,7 @@ This guide shows you how to use Datasets Server's `/filter` endpoint to filter r
 Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/filterRows).
 
 The `/filter` endpoint accepts the following query parameters:
-- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 - `where`: the filter condition

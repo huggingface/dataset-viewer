@@ -46,7 +46,7 @@ def test_webhook_untrusted(
 ) -> None:
     payload = {
         "event": "add",
-        "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"},
+        "repo": {"type": "dataset", "name": "nyu-mll/glue", "gitalyUid": "123", "headSha": "revision"},
         "scope": "repo",
     }
     response = real_client.post("/webhook", json=payload)
@@ -57,7 +57,7 @@ def test_webhook_untrusted(
 def test_webhook_trusted(real_client: TestClient) -> None:
     payload = {
         "event": "add",
-        "repo": {"type": "dataset", "name": "glue", "gitalyUid": "123", "headSha": "revision"},
+        "repo": {"type": "dataset", "name": "nyu-mll/glue", "gitalyUid": "123", "headSha": "revision"},
         "scope": "repo",
     }
     response = real_client.post("/webhook", json=payload, headers={"x-webhook-secret": API_HF_WEBHOOK_SECRET})

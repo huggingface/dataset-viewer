@@ -1400,9 +1400,9 @@
           "type": "string"
         },
         "examples": {
-          "glue": {
+          "mnist": {
             "summary": "A canonical dataset",
-            "value": "glue"
+            "value": "mnist"
           },
           "Helsinki-NLP/tatoeba_mt": {
             "summary": "A namespaced dataset",
@@ -1420,7 +1420,7 @@
         },
         "examples": {
           "cola": {
-            "summary": "A subset of the glue dataset",
+            "summary": "A subset of the nyu-mll/glue dataset",
             "value": "cola"
           },
           "yangdong/ecqa": {
@@ -1461,7 +1461,7 @@
         },
         "examples": {
           "cola": {
-            "summary": "A subset of the glue dataset",
+            "summary": "A subset of the nyu-mll/glue dataset",
             "value": "cola"
           },
           "yangdong/ecqa": {
@@ -4864,12 +4864,12 @@
                   },
                   "config metadata": {
                     "summary": "metadata for a dataset config",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "dataset_info": {
-                        "description": "GLUE, the General Language Understanding Evaluation benchmark\n(https://gluebenchmark.com/) is a collection of resources for training,\nevaluating, and analyzing natural language understanding systems.\n\n",
-                        "citation": "\n@inproceedings{wang2019glue,\n  title={{GLUE}: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding},\n  author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R.},\n  note={In the Proceedings of ICLR.},\n  year={2019}\n}\n",
-                        "homepage": "https://gluebenchmark.com/diagnostics",
+                        "description": "",
+                        "citation": "",
+                        "homepage": "",
                         "license": "",
                         "features": {
                           "premise": { "dtype": "string", "_type": "Value" },
@@ -4880,32 +4880,20 @@
                           },
                           "idx": { "dtype": "int32", "_type": "Value" }
                         },
-                        "builder_name": "glue",
+                        "builder_name": "parquet",
+                        "dataset_name": "glue",
                         "config_name": "ax",
-                        "version": {
-                          "version_str": "1.0.0",
-                          "description": "",
-                          "major": 1,
-                          "minor": 0,
-                          "patch": 0
-                        },
+                        "version": { "version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0 },
                         "splits": {
                           "test": {
                             "name": "test",
-                            "num_bytes": 237694,
+                            "num_bytes": 243791,
                             "num_examples": 1104,
-                            "dataset_name": "glue"
+                            "dataset_name": null
                           }
                         },
-                        "download_checksums": {
-                          "https://dl.fbaipublicfiles.com/glue/data/AX.tsv": {
-                            "num_bytes": 222257,
-                            "checksum": null
-                          }
-                        },
-                        "download_size": 222257,
-                        "dataset_size": 237694,
-                        "size_in_bytes": 459951
+                        "download_size": 80767,
+                        "dataset_size": 243791
                       },
                       "partial": false
                     }
@@ -5127,11 +5115,11 @@
                   },
                   "config size": {
                     "summary": "size of a dataset config",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "size": {
                         "config": {
-                          "dataset": "glue",
+                          "dataset": "nyu-mll/glue",
                           "config": "ax",
                           "num_bytes_original_files": 222257,
                           "num_bytes_parquet_files": 80767,
@@ -5141,7 +5129,7 @@
                         },
                         "splits": [
                           {
-                            "dataset": "glue",
+                            "dataset": "nyu-mll/glue",
                             "config": "ax",
                             "split": "test",
                             "num_bytes_parquet_files": 80767,
@@ -5814,9 +5802,9 @@
                       "partial": false
                     }
                   },
-                  "A split (glue) with a string (text) column": {
+                  "A split (nyu-mll/glue) with a string (text) column": {
                     "summary": "Statistics on a string column. The column 'hypothesis' contains more than 30 different strings, so the statistics are a histogram of the string lengths.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=glue&config=ax&split=test.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=ax&split=test.",
                     "value": {
                       "num_examples": 1104,
                       "statistics": [

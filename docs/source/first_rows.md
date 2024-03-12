@@ -8,7 +8,7 @@ This guide shows you how to use Datasets Server's `/first-rows` endpoint to prev
 
 The `/first-rows` endpoint accepts three query parameters:
 
-- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 
