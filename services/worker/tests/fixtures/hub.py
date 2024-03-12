@@ -339,7 +339,7 @@ def hub_public_n_configs_with_default(datasets: Mapping[str, Dataset]) -> Iterat
 
 
 @pytest.fixture(scope="session")
-def parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]) -> list[str]:
+def two_parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]) -> list[str]:
     # split "descriptive_statistics_string_text" dataset into two parquet files
     dataset = datasets["descriptive_statistics_string_text"]
     path1 = str(tmp_path_factory.mktemp("data") / "0.parquet")
@@ -356,10 +356,38 @@ def parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapp
 
 
 @pytest.fixture(scope="session")
-def hub_public_descriptive_statistics_parquet_builder(parquet_files_paths: list[str]) -> Iterator[str]:
+def hub_public_descriptive_statistics_parquet_builder(two_parquet_files_paths: list[str]) -> Iterator[str]:
     # to test partial stats, pushing "descriptive_statistics_string_text" dataset split into two parquet files
     # stats will be computed only on the first file (first 50 samples)
-    repo_id = create_hub_dataset_repo(prefix="parquet_builder", file_paths=parquet_files_paths)
+    repo_id = create_hub_dataset_repo(prefix="parquet_builder", file_paths=two_parquet_files_paths)
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def three_parquet_files_paths(tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]) -> list[str]:
+    dataset = datasets["descriptive_statistics_string_text"]
+    path1 = str(tmp_path_factory.mktemp("data") / "0.parquet")
+    data1 = Dataset.from_dict(dataset[:30])
+    with open(path1, "wb") as f:
+        data1.to_parquet(f)
+
+    path2 = str(tmp_path_factory.mktemp("data") / "1.parquet")
+    data2 = Dataset.from_dict(dataset[30:60])
+    with open(path2, "wb") as f:
+        data2.to_parquet(f)
+
+    path3 = str(tmp_path_factory.mktemp("data") / "2.parquet")
+    data3 = Dataset.from_dict(dataset[60:])
+    with open(path3, "wb") as f:
+        data3.to_parquet(f)
+
+    return [path1, path2, path3]
+
+
+@pytest.fixture(scope="session")
+def hub_public_three_parquet_files_builder(three_parquet_files_paths: list[str]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="parquet_builder_three_files", file_paths=three_parquet_files_paths)
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
