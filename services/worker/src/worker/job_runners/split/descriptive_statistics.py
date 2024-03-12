@@ -503,10 +503,8 @@ class StringColumn(Column):
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
         if (
-            n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS
-            and n_unique <= MAX_NUM_STRING_LABELS
-            or n_unique <= n_bins
-        ):
+            n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
+        ) or n_unique <= n_bins:
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
