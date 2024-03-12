@@ -3,7 +3,12 @@
 
 import logging
 
-from libcommon.constants import CONFIG_HAS_VIEWER_KIND, SPLIT_HAS_PREVIEW_KIND, SPLIT_HAS_SEARCH_KIND
+from libcommon.constants import (
+    CONFIG_HAS_VIEWER_KIND,
+    SPLIT_HAS_PREVIEW_KIND,
+    SPLIT_HAS_SEARCH_KIND,
+    SPLIT_HAS_STATISTICS_KIND,
+)
 from libcommon.dtos import JobInfo
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -31,7 +36,7 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         split (`str`):
             A split name.
     Returns:
-        `IsValidResponse`: The response (viewer, preview, search, filter).
+        `IsValidResponse`: The response (viewer, preview, search, filter, statistics).
     """
     logging.info(f"compute 'split-is-valid' response for {dataset=}")
 
@@ -62,7 +67,14 @@ def compute_is_valid_response(dataset: str, config: str, split: str) -> IsValidR
         filter = False
         search = False
 
-    return IsValidResponse(viewer=viewer, preview=preview, search=search, filter=filter)
+    statistics = is_successful_response(
+        dataset=dataset,
+        config=config,
+        split=split,
+        kind=SPLIT_HAS_STATISTICS_KIND,
+    )
+
+    return IsValidResponse(viewer=viewer, preview=preview, search=search, filter=filter, statistics=statistics)
 
 
 class SplitIsValidJobRunner(SplitJobRunner):

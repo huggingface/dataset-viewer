@@ -94,6 +94,7 @@ with gr.Blocks() as demo:
                             "Viewer": [],
                             "Search": [],
                             "Filter": [],
+                            "Statistics": [],
                         }
                     )
                 )
@@ -106,6 +107,7 @@ with gr.Blocks() as demo:
                             "Viewer": [],
                             "Search": [],
                             "Filter": [],
+                            "Statistics": [],
                         }
                     )
                 )

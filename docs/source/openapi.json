@@ -782,6 +782,9 @@
           },
           "filter": {
             "type": "boolean"
+          },
+          "statistics": {
+            "type": "boolean"
           }
         }
       },
@@ -4572,7 +4575,7 @@
     "/is-valid": {
       "get": {
         "summary": "Check if a dataset is valid",
-        "description": "Returns the capabilities of the dataset: show a preview of the 100 first rows, show the viewer for all the rows, search the rows. Use the optional config and split parameters to filter the response.",
+        "description": "Returns the capabilities of the dataset: show a preview of the 100 first rows, show the viewer for all the rows, search/filter the rows, have statistics. Use the optional config and split parameters to filter the response.",
         "externalDocs": {
           "description": "See Valid datasets (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/valid"
@@ -4620,12 +4623,13 @@
                 "examples": {
                   "all the capabilities": {
                     "summary": "valid dataset",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   },
                   "only preview": {
@@ -4635,7 +4639,8 @@
                       "preview": true,
                       "viewer": false,
                       "search": false,
-                      "filter": false
+                      "filter": false,
+                      "statistics": false
                     }
                   },
                   "no capabilities": {
@@ -4645,27 +4650,30 @@
                       "preview": false,
                       "viewer": false,
                       "search": false,
-                      "filter": false
+                      "filter": false,
+                      "statistics": false
                     }
                   },
                   "all the capabilities, for a config": {
                     "summary": "valid config",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   },
                   "all the capabilities, for a split": {
                     "summary": "valid split",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax&split=test",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue&config=ax&split=test",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   }
                 }

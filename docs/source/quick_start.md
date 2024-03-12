@@ -153,10 +153,10 @@ curl https://datasets-server.huggingface.co/is-valid?dataset=rotten_tomatoes \
 </curl>
 </inferencesnippet>
 
-This returns whether the dataset provides a preview (see /first-rows), the viewer (see /rows), the search (see /search) and the filter (see /filter):
+This returns whether the dataset provides a preview (see /first-rows), the viewer (see /rows), the search (see /search) and the filter (see /filter), and statistics (see /statistics):
 
 ```json
-{ "preview": true, "viewer": true, "search": true, "filter": true }
+{ "preview": true, "viewer": true, "search": true, "filter": true, "statistics": true }
 ```
 
 ## List configurations and splits

@@ -63,6 +63,15 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA: UpstreamResponse = UpstreamRespo
     http_status=HTTPStatus.OK,
     content={"has_fts": False},
 )
+UPSTREAM_RESPONSE_SPLIT_DESCRIPTIVE_STATISTICS: UpstreamResponse = UpstreamResponse(
+    kind="split-descriptive-statistics",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    config=CONFIG,
+    split=SPLIT,
+    http_status=HTTPStatus.OK,
+    content={},
+)
 UPSTREAM_RESPONSE_CONFIG_SIZE_ERROR: UpstreamResponse = UpstreamResponse(
     kind="config-size",
     dataset=DATASET,
@@ -90,27 +99,31 @@ UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
 )
 EXPECTED_ERROR = (
-    {"viewer": False, "preview": False, "search": False, "filter": False},
+    {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": False},
     1.0,
 )
 EXPECTED_VIEWER_OK = (
-    {"viewer": True, "preview": False, "search": False, "filter": False},
+    {"viewer": True, "preview": False, "search": False, "filter": False, "statistics": False},
     1.0,
 )
 EXPECTED_PREVIEW_OK = (
-    {"viewer": False, "preview": True, "search": False, "filter": False},
+    {"viewer": False, "preview": True, "search": False, "filter": False, "statistics": False},
     1.0,
 )
 EXPECTED_FILTER_OK = (
-    {"viewer": False, "preview": False, "search": False, "filter": True},
+    {"viewer": False, "preview": False, "search": False, "filter": True, "statistics": False},
     1.0,
 )
 EXPECTED_SEARCH_OK = (
-    {"viewer": False, "preview": False, "search": True, "filter": True},
+    {"viewer": False, "preview": False, "search": True, "filter": True, "statistics": False},
+    1.0,
+)
+EXPECTED_STATISTICS_OK = (
+    {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": True},
     1.0,
 )
 EXPECTED_ALL_OK = (
-    {"viewer": True, "preview": True, "search": True, "filter": True},
+    {"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
     1.0,
 )
 
@@ -170,6 +183,7 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_CONFIG_SIZE,
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX,
+                UPSTREAM_RESPONSE_SPLIT_DESCRIPTIVE_STATISTICS,
             ],
             EXPECTED_ALL_OK,
         ),
@@ -185,14 +199,6 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
             ],
             EXPECTED_PREVIEW_OK,
-        ),
-        (
-            [
-                UPSTREAM_RESPONSE_CONFIG_SIZE,
-                UPSTREAM_RESPONSE_SPLIT_FIRST_ROWS,
-                UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX,
-            ],
-            EXPECTED_ALL_OK,
         ),
         (
             [
@@ -218,6 +224,12 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_SPLIT_DUCKDB_INDEX_ONLY_DATA,
             ],
             EXPECTED_FILTER_OK,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_SPLIT_DESCRIPTIVE_STATISTICS,
+            ],
+            EXPECTED_STATISTICS_OK,
         ),
         (
             [
@@ -252,4 +264,10 @@ def test_doesnotexist(app_config: AppConfig, get_job_runner: GetJobRunner) -> No
     dataset, config, split = "doesnotexist", "doesnotexist", "doesnotexist"
     job_runner = get_job_runner(dataset, config, split, app_config)
     compute_result = job_runner.compute()
-    assert compute_result.content == {"viewer": False, "preview": False, "search": False, "filter": False}
+    assert compute_result.content == {
+        "viewer": False,
+        "preview": False,
+        "search": False,
+        "filter": False,
+        "statistics": False,
+    }

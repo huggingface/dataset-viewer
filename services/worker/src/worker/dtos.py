@@ -216,6 +216,7 @@ class IsValidResponse(TypedDict):
     viewer: bool
     search: bool
     filter: bool
+    statistics: bool
 
 
 DatasetTag = Literal["croissant"]
