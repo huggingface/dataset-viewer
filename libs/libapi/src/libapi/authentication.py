@@ -21,13 +21,10 @@ class RequestAuth(httpx.Auth):
     """Attaches input Request authentication headers to the given Request object."""
 
     def __init__(self, request: Optional[Request]) -> None:
-        self.cookie = request.headers.get("cookie") if request else None
         self.authorization = request.headers.get("authorization") if request else None
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         # modify and yield the request
-        if self.cookie:
-            request.headers["cookie"] = self.cookie
         if self.authorization:
             request.headers["authorization"] = self.authorization
         yield request
@@ -66,7 +63,7 @@ async def auth_check(
           which will be replaced with the dataset name, for example: https://huggingface.co/api/datasets/%s/auth-check
           The authentication service must return 200, 401, 403 or 404.
           If None, the dataset is always authorized.
-        request (`Request`, *optional*): the request which optionally bears authentication headers: "cookie",
+        request (`Request`, *optional*): the request which optionally bears authentication headers:
           "authorization" or "X-Api-Key"
         hf_jwt_public_keys (`list[str]`, *optional*): the public keys to use to decode the JWT token
         hf_jwt_algorithm (`str`): the algorithm to use to decode the JWT token
