@@ -1776,12 +1776,12 @@
                     }
                   },
                   "splits for a single config": {
-                    "summary": "emotion has two configs. Setting config=unsplit only returns the splits for this config.",
-                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=emotion&config=unsplit.",
+                    "summary": "dair-ai/emotion has two configs. Setting config=unsplit only returns the splits for this config.",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=dair-ai/emotion&config=unsplit.",
                     "value": {
                       "splits": [
                         {
-                          "dataset": "emotion",
+                          "dataset": "dair-ai/emotion",
                           "config": "unsplit",
                           "split": "train"
                         }
