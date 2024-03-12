@@ -59,6 +59,7 @@ DATASET_INFO_KIND = "dataset-info"
 SPLIT_DUCKDB_INDEX_KIND = "split-duckdb-index"
 SPLIT_HAS_PREVIEW_KIND = "split-first-rows"
 SPLIT_HAS_SEARCH_KIND = "split-duckdb-index"
+SPLIT_HAS_STATISTICS_KIND = "split-descriptive-statistics"
 
 CROISSANT_MAX_CONFIGS = 100
 LOADING_METHODS_MAX_CONFIGS = 100

@@ -32,7 +32,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
           If the content of the previous step has not the expected format.
 
     Returns:
-        `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter) and the progress.
+        `tuple[IsValidResponse, float]`: The response (viewer, preview, search, filter, statistics) and the progress.
     """
     logging.info(f"compute 'config-is-valid' response for {dataset=} {config=}")
 
@@ -40,6 +40,7 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
     viewer = False
     search = False
     filter = False
+    statistics = False
     try:
         total = 0
         pending = 0
@@ -59,12 +60,13 @@ def compute_is_valid_response(dataset: str, config: str) -> tuple[IsValidRespons
             viewer = viewer or split_is_valid_content["viewer"]
             search = search or split_is_valid_content["search"]
             filter = filter or split_is_valid_content["filter"]
+            statistics = statistics or split_is_valid_content["statistics"]
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
     progress = (total - pending) / total if total else 1.0
     return (
-        IsValidResponse(preview=preview, viewer=viewer, search=search, filter=filter),
+        IsValidResponse(preview=preview, viewer=viewer, search=search, filter=filter, statistics=statistics),
         progress,
     )
 
