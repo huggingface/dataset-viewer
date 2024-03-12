@@ -4347,110 +4347,113 @@
                   },
                   "partial parquet export": {
                     "summary": "c4 (en): the parquet export is partial (first 5GB)",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=c4&config=en",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/c4&config=en",
                     "value": {
                       "parquet_files": [
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
                           "filename": "0000.parquet",
-                          "size": 309207547
+                          "size": 312302655
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
                           "filename": "0001.parquet",
-                          "size": 308665905
+                          "size": 314250060
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
                           "filename": "0002.parquet",
-                          "size": 309066442
+                          "size": 312268050
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
                           "filename": "0003.parquet",
-                          "size": 309257276
+                          "size": 312065965
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
                           "filename": "0004.parquet",
-                          "size": 309040649
+                          "size": 308599130
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
                           "filename": "0005.parquet",
-                          "size": 308850445
+                          "size": 312308752
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
                           "filename": "0006.parquet",
-                          "size": 308432549
+                          "size": 313118966
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
                           "filename": "0007.parquet",
-                          "size": 308621018
+                          "size": 313275039
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
                           "filename": "0008.parquet",
-                          "size": 309109536
+                          "size": 312402829
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
                           "filename": "0009.parquet",
-                          "size": 300817682
+                          "size": 273854946
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0000.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-validation/0000.parquet",
                           "filename": "0000.parquet",
-                          "size": 308896113
+                          "size": 311994499
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0001.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-validation/0001.parquet",
                           "filename": "0001.parquet",
-                          "size": 200085262
+                          "size": 197281279
                         }
                       ],
-                      "pending": [],
-                      "failed": [],
+                      "features": {
+                        "text": { "dtype": "string", "_type": "Value" },
+                        "timestamp": { "dtype": "string", "_type": "Value" },
+                        "url": { "dtype": "string", "_type": "Value" }
+                      },
                       "partial": true
-                    }
+                    }                    
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
@@ -5023,8 +5026,8 @@
         "summary": "Get the size of a dataset.",
         "description": "Returns the size (number of rows, storage) of the dataset. Use the optional config parameter to filter the response.",
         "externalDocs": {
-          "description": "See size (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See size in the Hub docs.",
+          "url": "https://huggingface.co/docs/datasets-server/size"
         },
         "operationId": "getSize",
         "security": [
@@ -5455,8 +5458,8 @@
         "summary": "Descriptive statistics of a split's columns",
         "description": "Returns descriptive statistics, such as min, max, average, histogram, of the columns of a split.",
         "externalDocs": {
-          "description": "See statistics (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See statistics (Hub docs).",
+          "url": "https://huggingface.co/docs/datasets-server/statistics"
         },
         "operationId": "getStatistics",
         "security": [
@@ -5894,9 +5897,9 @@
                       "partial": false
                     }
                   },
-                  "A split (hellaswag) with a string (label) column": {
+                  "A split (Rowan/hellaswag) with a string (label) column": {
                     "summary": "Statistics on a string column. The column 'label' contains less than 30 different strings, so each string is considered as a label, and the statistics are a count per label.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=hellaswag&config=default&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=Rowan/hellaswag&config=default&split=train.",
                     "value": {
                       "num_examples": 39905,
                       "statistics": [
