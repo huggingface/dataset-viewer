@@ -392,6 +392,38 @@ def hub_public_three_parquet_files_builder(three_parquet_files_paths: list[str])
     delete_hub_dataset_repo(repo_id=repo_id)
 
 
+@pytest.fixture(scope="session")
+def three_parquet_splits_paths(
+    tmp_path_factory: pytest.TempPathFactory, datasets: Mapping[str, Dataset]
+) -> Mapping[str, str]:
+    dataset = datasets["descriptive_statistics_string_text"]
+    path1 = str(tmp_path_factory.mktemp("data") / "train.parquet")
+    data1 = Dataset.from_dict(dataset[:30])
+    with open(path1, "wb") as f:
+        data1.to_parquet(f)
+
+    path2 = str(tmp_path_factory.mktemp("data") / "test.parquet")
+    data2 = Dataset.from_dict(dataset[30:60])
+    with open(path2, "wb") as f:
+        data2.to_parquet(f)
+
+    path3 = str(tmp_path_factory.mktemp("data") / "validation.parquet")
+    data3 = Dataset.from_dict(dataset[60:])
+    with open(path3, "wb") as f:
+        data3.to_parquet(f)
+
+    return {"train": path1, "test": path2, "validation": path3}
+
+
+@pytest.fixture(scope="session")
+def hub_public_three_parquet_splits_builder(three_parquet_splits_paths: Mapping[str, str]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="parquet_builder_three_splits", file_paths=three_parquet_splits_paths.values()
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
 class HubDatasetTest(TypedDict):
     name: str
     config_names_response: Any
