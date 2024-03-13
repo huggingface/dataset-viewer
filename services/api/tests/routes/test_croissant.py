@@ -55,16 +55,10 @@ v08_context = {
     "@language": "en",
     "@vocab": "https://schema.org/",
     "column": "ml:column",
-    "data": {
-      "@id": "ml:data",
-      "@type": "@json"
-    },
+    "data": {"@id": "ml:data", "@type": "@json"},
     "dataBiases": "ml:dataBiases",
     "dataCollection": "ml:dataCollection",
-    "dataType": {
-      "@id": "ml:dataType",
-      "@type": "@vocab"
-    },
+    "dataType": {"@id": "ml:dataType", "@type": "@vocab"},
     "dct": "http://purl.org/dc/terms/",
     "extract": "ml:extract",
     "field": "ml:field",
@@ -86,8 +80,8 @@ v08_context = {
     "separator": "ml:separator",
     "source": "ml:source",
     "subField": "ml:subField",
-    "transform": "ml:transform"
-  }
+    "transform": "ml:transform",
+}
 
 v1_context = {
     "@language": "en",
@@ -96,16 +90,10 @@ v1_context = {
     "column": "cr:column",
     "conformsTo": "dct:conformsTo",
     "cr": "http://mlcommons.org/croissant/",
-    "data": {
-      "@id": "cr:data",
-      "@type": "@json"
-    },
+    "data": {"@id": "cr:data", "@type": "@json"},
     "dataBiases": "cr:dataBiases",
     "dataCollection": "cr:dataCollection",
-    "dataType": {
-      "@id": "cr:dataType",
-      "@type": "@vocab"
-    },
+    "dataType": {"@id": "cr:dataType", "@type": "@vocab"},
     "dct": "http://purl.org/dc/terms/",
     "extract": "cr:extract",
     "field": "cr:field",
@@ -131,8 +119,8 @@ v1_context = {
     "separator": "cr:separator",
     "source": "cr:source",
     "subField": "cr:subField",
-    "transform": "cr:transform"
-  }
+    "transform": "cr:transform",
+}
 
 
 @pytest.mark.parametrize(["is_v1", "expected_context"], [[True, v1_context], [False, v08_context]])
@@ -177,8 +165,8 @@ def test_get_croissant_from_dataset_infos(is_v1, prefix):
     assert len(croissant["recordSet"][0]["field"]) == 4
     assert len(croissant["recordSet"][1]["field"]) == 4
     for field in croissant["recordSet"][0]["field"]:
-      assert field["@type"] == f"{prefix}:Field"
-      assert field["dataType"] == "sc:Text"
+        assert field["@type"] == f"{prefix}:Field"
+        assert field["dataType"] == "sc:Text"
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
 
     # Test distribution.
@@ -217,34 +205,38 @@ def test_get_v1_only_croissant_from_dataset_infos():
     )
     assert croissant["recordSet"][0]["@id"] == "record_set_user_squad_with_space"
     assert croissant["recordSet"][1]["@id"] == "record_set_user_squad_with_space_0"
-    for i, record_set in enumerate(croissant["recordSet"]):
-      for field in croissant["recordSet"][i]["field"]:
-        assert "source" in field
-        assert "fileSet" in field["source"]
-        assert "@id" in field["source"]["fileSet"]
-        assert field["source"]["fileSet"]["@id"]
-        assert "extract" in field["source"]
-        assert field["source"]["extract"]["column"] == field["@id"]
+    for i, _ in enumerate(croissant["recordSet"]):
+        for field in croissant["recordSet"][i]["field"]:
+            assert "source" in field
+            assert "fileSet" in field["source"]
+            assert "@id" in field["source"]["fileSet"]
+            assert field["source"]["fileSet"]["@id"]
+            assert "extract" in field["source"]
+            assert field["source"]["extract"]["column"] == field["@id"]
     for distribution in croissant["distribution"]:
         assert "@id" in distribution
         if "containedIn" in distribution:
-          assert "@id" in distribution["containedIn"]   
+            assert "@id" in distribution["containedIn"]
 
 
 MAX_COLUMNS = 3
 
 
 @pytest.mark.parametrize(
-    ("full_jsonld", "num_columns"),
+    ("full_jsonld", "num_columns", "is_v1"),
     [
-        (True, 4),
-        (False, MAX_COLUMNS),
+        (True, 4, True),
+        (False, MAX_COLUMNS, False),
     ],
 )
-def test_get_croissant_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int) -> None:
+def test_get_croissant_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int, is_v1: bool) -> None:
     with patch("api.routes.croissant.MAX_COLUMNS", MAX_COLUMNS):
         croissant = get_croissant_from_dataset_infos(
-            "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=full_jsonld
+            "user/squad with space",
+            [squad_info, squad_info],
+            partial=False,
+            full_jsonld=full_jsonld,
+            is_v1=is_v1,
         )
     assert len(croissant["recordSet"][0]["field"]) == num_columns
     assert full_jsonld or "max number of columns reached" in croissant["recordSet"][0]["description"]

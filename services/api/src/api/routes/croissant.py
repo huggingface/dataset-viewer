@@ -155,9 +155,9 @@ def get_croissant_from_dataset_infos(
                     }
                 else:
                     field_source = {
-                            "distribution": distribution_name,
-                            "extract": {"column": column},
-                            "transform": {"jsonPath": "bytes"},
+                        "distribution": distribution_name,
+                        "extract": {"column": column},
+                        "transform": {"jsonPath": "bytes"},
                     }
                 fields.append(
                     _remove_none_values(
@@ -218,51 +218,45 @@ def get_croissant_from_dataset_infos(
     prefix = "ml" if not is_v1 else "cr"
     context = _remove_none_values(
         {
-                "@language": "en",
-                "@vocab": "https://schema.org/",
-                "citeAs": "cr:citeAs" if is_v1 else None,
-                "column": f"{prefix}:column",
-                "conformsTo": "dct:conformsTo" if is_v1 else None,
-                "cr": "http://mlcommons.org/croissant/" if is_v1 else None,
-                "data": {
-                    "@id": f"{prefix}:data",
-                    "@type": "@json"
-                },
-                "dataBiases": f"{prefix}:dataBiases",
-                "dataCollection": f"{prefix}:dataCollection",
-                "dataType": {
-                    "@id": f"{prefix}:dataType",
-                    "@type": "@vocab"
-                },
-                "dct": "http://purl.org/dc/terms/",
-                "extract": f"{prefix}:extract",
-                "field": f"{prefix}:field",
-                "fileProperty": f"{prefix}:fileProperty",
-                "fileObject": "cr:fileObject" if is_v1 else None,
-                "fileSet": "cr:fileSet" if is_v1 else None,
-                "format": f"{prefix}:format",
-                "includes": f"{prefix}:includes",
-                "isEnumeration": f"{prefix}:isEnumeration",
-                "isLiveDataset": "cr:isLiveDataset" if is_v1 else None,
-                "jsonPath": f"{prefix}:jsonPath",
-                "ml": None if is_v1 else "http://mlcommons.org/schema/",
-                "key": "cr:key" if is_v1 else None,
-                "md5": "cr:md5" if is_v1 else None,
-                "parentField": f"{prefix}:parentField",
-                "path": f"{prefix}:path",
-                "personalSensitiveInformation": f"{prefix}:personalSensitiveInformation",
-                "recordSet": f"{prefix}:recordSet",
-                "references": f"{prefix}:references",
-                "regex": f"{prefix}:regex",
-                "repeated": f"{prefix}:repeated",
-                "replace": f"{prefix}:replace",
-                "sc": "https://schema.org/",
-                "separator": f"{prefix}:separator",
-                "source": f"{prefix}:source",
-                "subField": f"{prefix}:subField",
-                "transform": f"{prefix}:transform",
-            }
-      )
+            "@language": "en",
+            "@vocab": "https://schema.org/",
+            "citeAs": "cr:citeAs" if is_v1 else None,
+            "column": f"{prefix}:column",
+            "conformsTo": "dct:conformsTo" if is_v1 else None,
+            "cr": "http://mlcommons.org/croissant/" if is_v1 else None,
+            "data": {"@id": f"{prefix}:data", "@type": "@json"},
+            "dataBiases": f"{prefix}:dataBiases",
+            "dataCollection": f"{prefix}:dataCollection",
+            "dataType": {"@id": f"{prefix}:dataType", "@type": "@vocab"},
+            "dct": "http://purl.org/dc/terms/",
+            "extract": f"{prefix}:extract",
+            "field": f"{prefix}:field",
+            "fileProperty": f"{prefix}:fileProperty",
+            "fileObject": "cr:fileObject" if is_v1 else None,
+            "fileSet": "cr:fileSet" if is_v1 else None,
+            "format": f"{prefix}:format",
+            "includes": f"{prefix}:includes",
+            "isEnumeration": f"{prefix}:isEnumeration",
+            "isLiveDataset": "cr:isLiveDataset" if is_v1 else None,
+            "jsonPath": f"{prefix}:jsonPath",
+            "ml": None if is_v1 else "http://mlcommons.org/schema/",
+            "key": "cr:key" if is_v1 else None,
+            "md5": "cr:md5" if is_v1 else None,
+            "parentField": f"{prefix}:parentField",
+            "path": f"{prefix}:path",
+            "personalSensitiveInformation": f"{prefix}:personalSensitiveInformation",
+            "recordSet": f"{prefix}:recordSet",
+            "references": f"{prefix}:references",
+            "regex": f"{prefix}:regex",
+            "repeated": f"{prefix}:repeated",
+            "replace": f"{prefix}:replace",
+            "sc": "https://schema.org/",
+            "separator": f"{prefix}:separator",
+            "source": f"{prefix}:source",
+            "subField": f"{prefix}:subField",
+            "transform": f"{prefix}:transform",
+        }
+    )
     return _remove_none_values(
         {
             "@context": context,
