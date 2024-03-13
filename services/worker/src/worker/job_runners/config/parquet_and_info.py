@@ -681,8 +681,8 @@ def fill_builder_info(
     builder.info.download_size = 0
     builder.info.dataset_size = 0
     logging.info("Start validation of parquet files.")
-    num_examples = 0
     for split, urls in data_files.items():
+        num_examples = 0
         split = str(split)  # in case it's a NamedSplit
         first_url = urls[0]
         try:
