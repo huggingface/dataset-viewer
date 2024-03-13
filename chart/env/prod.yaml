@@ -121,12 +121,8 @@ secrets:
       secretName: "datasets-server-prod-secrets"
 
 persistence:
-  descriptiveStatistics:
-    existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
-  hfDatasetsCache:
-    existingClaim: "datasets-server-cache-pvc"
   parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 
@@ -185,6 +181,17 @@ mongodbMigration:
     limits:
       cpu: 1
 
+# --- jobs (post-install/upgrade hooks) ---
+
+deleteDuckdbIndexes:
+  nodeSelector:
+    role-datasets-server: "true"
+  resources:
+    requests:
+      cpu: 1
+    limits:
+      cpu: 1
+
 # --- cron jobs  ---
 backfill:
   enabled: true
@@ -225,25 +232,10 @@ cleanDuckdbIndexCache:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
 
-cleanHfDatasetsCache:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
-
 cleanDuckdbIndexDownloads:
   nodeSelector:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
-
-cleanDuckdbIndexJobRunner:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
-
-cleanStatsCache:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 10_800 # 3 hours
 
 postMessages:
   nodeSelector:
@@ -436,6 +428,14 @@ workers:
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 4
+    autoscaling:
+      enabled: true
+      minReplicas: 4
+      maxReplicas: 50
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 50
+          targetWorkerSize: "heavy"
     resources:
       requests:
         cpu: 8
@@ -456,6 +456,14 @@ workers:
     nodeSelector:
       role-datasets-server-worker: "true"
     replicas: 10
+    autoscaling:
+      enabled: true
+      minReplicas: 10
+      maxReplicas: 100
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 50
+          targetWorkerSize: "medium"
     resources:
       requests:
         cpu: 2
@@ -476,6 +484,14 @@ workers:
     nodeSelector:
       role-datasets-server-worker-light: "true"
     replicas: 4
+    autoscaling:
+      enabled: true
+      minReplicas: 4
+      maxReplicas: 50
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 50
+          targetWorkerSize: "light"
     resources:
       requests:
         cpu: 200m

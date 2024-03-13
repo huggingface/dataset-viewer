@@ -9,39 +9,23 @@ on:
       - main
     paths:
       - "docs/source/openapi.json"
-      - ".github/workflows/openapi.yml"
+      - ".github/workflows/openapi-spec.yml"
+      - ".spectral.yml"
   pull_request:
     paths:
       - "docs/source/openapi.json"
-      - ".github/workflows/openapi.yml"
-env:
-  python-version: 3.9.18
-  poetry-version: "1.7.1"
-  # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
-  POETRY_VIRTUALENVS_IN_PROJECT: false
-  working-directory: e2e
+      - ".github/workflows/openapi-spec.yml"
+      - ".spectral.yml"
 jobs:
-  check-openapi-spec:
-    defaults:
-      run:
-        shell: bash
-        working-directory: e2e
-    runs-on: "ubuntu-latest"
+  check-openapi-spec-against-spectral:
+    name: Run Spectral
+    runs-on: ubuntu-latest
     steps:
+      # Check out the repository
       - uses: actions/checkout@v4
-      - name: Install poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Use Python
-        uses: actions/setup-python@v5
+
+      # Run Spectral
+      - uses: stoplightio/spectral-action@latest
         with:
-          python-version: ${{ env.python-version }}
-          cache: "poetry"
-          cache-dependency-path: |
-            ${{ env.working-directory }}/poetry.lock
-      - name: Install dependencies
-        run: |
-          poetry env use "${{ env.python-version }}"
-          poetry install
-      - name: Check openapi spec
-        run: |
-          poetry run python -m openapi_spec_validator ../docs/source/openapi.json
+          file_glob: 'docs/source/openapi.json'
+          spectral_ruleset: '.spectral.yml'

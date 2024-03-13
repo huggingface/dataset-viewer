@@ -81,7 +81,7 @@ def test__get_asset_url_paths_from_first_rows(
 
     # no need for the rows in this test
     def get_fake_rows_content(rows_max_number: int) -> RowsContent:  # noqa: ARG001
-        return RowsContent(rows=[], all_fetched=False)
+        return RowsContent(rows=[], all_fetched=False, truncated_columns=[])
 
     first_rows = create_first_rows_response(
         dataset=dataset_name,

@@ -44,3 +44,7 @@ DATA = [
         "col_5": None,
     },
 ]
+
+list_column = [[0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, None], None]
+
+DATA_JSON = [{**line, "col_6": list_col_value} for line, list_col_value in zip(DATA, list_column)]

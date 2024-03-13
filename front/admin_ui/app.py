@@ -94,6 +94,7 @@ with gr.Blocks() as demo:
                             "Viewer": [],
                             "Search": [],
                             "Filter": [],
+                            "Statistics": [],
                         }
                     )
                 )
@@ -106,6 +107,7 @@ with gr.Blocks() as demo:
                             "Viewer": [],
                             "Search": [],
                             "Filter": [],
+                            "Statistics": [],
                         }
                     )
                 )
@@ -396,13 +398,20 @@ with gr.Blocks() as demo:
                     processing_step.job_type
                     for processing_step in processing_graph.get_topologically_ordered_processing_steps()
                 ]
+
                 def on_change_refresh_job_type(job_type):
                     return processing_graph.get_processing_step(job_type).difficulty
 
                 refresh_type = gr.Dropdown(
-                    job_types, multiselect=False, type="value", label="job type", value=job_types[0]
+                    job_types,
+                    multiselect=False,
+                    type="value",
+                    label="job type",
+                    value=job_types[0],
                 )
-                refresh_dataset_name = gr.Textbox(label="dataset", placeholder="c4")
+                refresh_dataset_name = gr.Textbox(
+                    label="dataset", placeholder="allenai/c4"
+                )
                 refresh_config_name = gr.Textbox(
                     label="config (optional)", placeholder="en"
                 )
@@ -413,8 +422,17 @@ with gr.Blocks() as demo:
                     "*you can select multiple values by separating them with commas, e.g. split='train, test'*"
                 )
 
-                refresh_difficulty = gr.Slider(0, 100, processing_graph.get_processing_step(job_types[0]).difficulty, step=10, interactive=True, label="difficulty")
-                refresh_type.change(on_change_refresh_job_type, refresh_type, refresh_difficulty)
+                refresh_difficulty = gr.Slider(
+                    0,
+                    100,
+                    processing_graph.get_processing_step(job_types[0]).difficulty,
+                    step=10,
+                    interactive=True,
+                    label="difficulty",
+                )
+                refresh_type.change(
+                    on_change_refresh_job_type, refresh_type, refresh_difficulty
+                )
 
                 refresh_priority = gr.Dropdown(
                     ["low", "normal", "high"],
@@ -549,7 +567,7 @@ with gr.Blocks() as demo:
                     outputs=delete_and_recreate_dataset_output,
                 )
             with gr.Tab("Dataset status"):
-                dataset_name = gr.Textbox(label="dataset", placeholder="c4")
+                dataset_name = gr.Textbox(label="dataset", placeholder="allenai/c4")
                 dataset_status_button = gr.Button("Get dataset status")
                 gr.Markdown("### Pending jobs")
                 jobs_table = gr.DataFrame()

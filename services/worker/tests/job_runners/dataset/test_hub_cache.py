@@ -63,19 +63,19 @@ UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": ["tag"]},
+    content={"tags": ["tag"], "libraries": ["library"]},
     progress=1.0,
 )
 EXPECTED_OK = (
-    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": []},
+    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": [], "libraries": []},
     0.2,
 )
 EXPECTED_NO_PROGRESS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": []},
+    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": [], "libraries": []},
     0.5,
 )
 EXPECTED_OK_WITH_TAGS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["tag"]},
+    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["tag"], "libraries": ["library"]},
     0.5,
 )
 

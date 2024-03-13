@@ -20,8 +20,7 @@ async def auth_check(
     Args:
         external_auth_url (`str`, *optional*): the URL of an external authentication service. If None, the dataset is always
           authorized.
-        request (`Request`, *optional*): the request which optionally bears authentication headers: "cookie" or
-          "authorization"
+        request (`Request`, *optional*): the request which optionally bears authentication header: "authorization"
         organization (`str`, *optional*): the organization name. If None, the dataset is always
           authorized.
         hf_timeout_seconds (`float`, *optional*): the timeout in seconds for the HTTP request to the external authentication

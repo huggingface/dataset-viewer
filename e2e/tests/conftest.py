@@ -2,13 +2,14 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import csv
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from pytest import TempPathFactory
 
-from .constants import DATA, NORMAL_USER, NORMAL_USER_TOKEN
+from .constants import DATA, DATA_JSON, NORMAL_USER, NORMAL_USER_TOKEN
 from .utils import poll, tmp_dataset
 
 
@@ -29,8 +30,24 @@ def csv_path(tmp_path_factory: TempPathFactory) -> str:
 
 
 @pytest.fixture(scope="session")
+def json_path(tmp_path_factory: TempPathFactory) -> str:
+    path = str(tmp_path_factory.mktemp("data") / "dataset.json")
+    with open(path, "w", newline="") as f:
+        json.dump(DATA_JSON, f)
+    return path
+
+
+@pytest.fixture(scope="session")
 def normal_user_public_dataset(csv_path: str) -> Iterator[str]:
     with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/csv_data.csv": csv_path}) as dataset:
+        yield dataset
+
+
+@pytest.fixture(scope="session")
+def normal_user_public_json_dataset(json_path: str) -> Iterator[str]:
+    with tmp_dataset(
+        namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, files={"data/json_data.json": json_path}
+    ) as dataset:
         yield dataset
 
 

@@ -46,7 +46,7 @@ UPSTREAM_RESPONSE_CONFIG_1_OK: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
-    content={"viewer": True, "preview": True, "search": True, "filter": True},
+    content={"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
 )
 UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -54,7 +54,7 @@ UPSTREAM_RESPONSE_CONFIG_1_OK_VIEWER: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     config=CONFIG_1,
     http_status=HTTPStatus.OK,
-    content={"viewer": True, "preview": False, "search": False, "filter": False},
+    content={"viewer": True, "preview": False, "search": False, "filter": False, "statistics": False},
 )
 UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -62,7 +62,7 @@ UPSTREAM_RESPONSE_CONFIG_2_OK_SEARCH: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     config=CONFIG_2,
     http_status=HTTPStatus.OK,
-    content={"viewer": False, "preview": False, "search": True, "filter": True},
+    content={"viewer": False, "preview": False, "search": True, "filter": True, "statistics": False},
 )
 UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -70,7 +70,7 @@ UPSTREAM_RESPONSE_CONFIG_2_OK: UpstreamResponse = UpstreamResponse(
     dataset_git_revision=REVISION_NAME,
     config=CONFIG_2,
     http_status=HTTPStatus.OK,
-    content={"viewer": True, "preview": True, "search": True, "filter": True},
+    content={"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
 )
 UPSTREAM_RESPONSE_CONFIG_1_ERROR: UpstreamResponse = UpstreamResponse(
     kind="config-is-valid",
@@ -89,23 +89,23 @@ UPSTREAM_RESPONSE_CONFIG_2_ERROR: UpstreamResponse = UpstreamResponse(
     content={},
 )
 EXPECTED_COMPLETED_ALL_FALSE = (
-    {"viewer": False, "preview": False, "search": False, "filter": False},
+    {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": False},
     1.0,
 )
 EXPECTED_ALL_MIXED = (
-    {"viewer": True, "preview": False, "search": True, "filter": True},
+    {"viewer": True, "preview": False, "search": True, "filter": True, "statistics": False},
     1.0,
 )
 EXPECTED_COMPLETED_ALL_TRUE = (
-    {"viewer": True, "preview": True, "search": True, "filter": True},
+    {"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
     1.0,
 )
 EXPECTED_PENDING_ALL_TRUE = (
-    {"viewer": True, "preview": True, "search": True, "filter": True},
+    {"viewer": True, "preview": True, "search": True, "filter": True, "statistics": True},
     0.5,
 )
 EXPECTED_PENDING_ALL_FALSE = (
-    {"viewer": False, "preview": False, "search": False, "filter": False},
+    {"viewer": False, "preview": False, "search": False, "filter": False, "statistics": False},
     0.0,
 )
 

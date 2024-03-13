@@ -42,7 +42,7 @@ from huggingface_hub._commit_api import (
     CommitOperationDelete,
 )
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
-from huggingface_hub.hf_file_system import HfFileSystem
+from huggingface_hub.hf_file_system import HfFileSystem, HfFileSystemFile
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
@@ -88,6 +88,7 @@ DATASET_TYPE = "dataset"
 MAX_FILES_PER_DIRECTORY = 10_000  # hf hub limitation
 MAX_FILES_PER_REPOSITORY = 100_000  # hf hub limitation
 MAX_OPERATIONS_PER_COMMIT = 500
+SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 T = TypeVar("T")
 
@@ -569,21 +570,58 @@ class TooBigRowGroupsError(ParquetValidationError):
         self.row_group_byte_size = row_group_byte_size
 
 
-def get_parquet_file_and_size(url: str, hf_endpoint: str, hf_token: Optional[str]) -> tuple[pq.ParquetFile, int]:
+def open_file(file_url: str, hf_endpoint: str, hf_token: Optional[str]) -> HfFileSystemFile:
     fs = HfFileSystem(endpoint=hf_endpoint, token=hf_token)
-    f = fs.open(url)
-    return pq.ParquetFile(f), f.size
+    return fs.open(file_url)
 
 
-def retry_and_validate_get_parquet_file_and_size(
+def retry_validate_get_num_examples_and_size(
     url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
-) -> tuple[pq.ParquetFile, int]:
+) -> tuple[int, int]:
+    """
+    Get number of examples in a parquet file at a given url, and its size in bytes.
+    Also validate parquet file if validation function is passed with `validate` argument.
+
+    Returns:
+        `tuple[int, int]` - (num examples, size in bytes)
+    """
     try:
-        sleeps = [1, 1, 1, 10, 10, 10]
-        pf, size = retry(on=[pa.ArrowInvalid], sleeps=sleeps)(get_parquet_file_and_size)(url, hf_endpoint, hf_token)
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        pf, size = pq.ParquetFile(f), f.size
         if validate:
             validate(pf)
-        return pf, size
+        f.close()
+        return pf.metadata.num_rows, size
+
+    except RuntimeError as err:
+        if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
+            raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
+        else:
+            raise err
+
+
+def retry_validate_get_features_num_examples_size_and_compression_ratio(
+    url: str, hf_endpoint: str, hf_token: Optional[str], validate: Optional[Callable[[pq.ParquetFile], None]]
+) -> tuple[Features, int, int, int]:
+    """
+    Get parquet file as a pq.ParquetFile at a given url, and its size in bytes.
+    Also validate parquet file if validation function is passed with `validate` argument.
+
+    Returns:
+        `tuple[pq.ParquetFile, int]` - (parquet files, size in bytes)
+    """
+    try:
+        f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
+        pf, size = pq.ParquetFile(f), f.size
+        if validate:
+            validate(pf)
+        features = Features.from_arrow_schema(pf.schema_arrow)
+        first_row_group = pf.read_row_group(0)
+        compression_ratio = first_row_group.nbytes / first_row_group.num_rows
+        num_examples = pf.metadata.num_rows
+        f.close()
+        return features, num_examples, size, compression_ratio
+
     except RuntimeError as err:
         if err.__cause__ and isinstance(err.__cause__, pa.ArrowInvalid):
             raise NotAParquetFileError(f"Not a parquet file: '{url}'") from err.__cause__
@@ -594,7 +632,7 @@ def retry_and_validate_get_parquet_file_and_size(
 class ParquetFileValidator:
     """
     Validate the Parquet files before they are copied to the target revision.
-    In particular we check that the row group size is not too big, otherwise the dataset viewer
+    In particular, we check that the row group size is not too big, otherwise the dataset viewer
     doesn't work correctly.
 
     Note: we only validate the first parquet files (default 5 first files).
@@ -642,36 +680,61 @@ def fill_builder_info(
     builder.info.splits = SplitDict()
     builder.info.download_size = 0
     builder.info.dataset_size = 0
-    for split in data_files:
+    logging.info("Start validation of parquet files.")
+    for split, urls in data_files.items():
+        num_examples = 0
         split = str(split)  # in case it's a NamedSplit
+        first_url = urls[0]
         try:
-            parquet_files_and_sizes: list[tuple[pq.ParquetFile, int]] = thread_map(
-                functools.partial(
-                    retry_and_validate_get_parquet_file_and_size,
-                    hf_endpoint=hf_endpoint,
-                    hf_token=hf_token,
-                    validate=validate,
-                ),
-                data_files[split],
-                unit="pq",
-                disable=True,
+            # try to read first file metadata to infer features schema
+            (
+                features,
+                first_num_examples,
+                first_size,
+                compression_ratio,
+            ) = retry_validate_get_features_num_examples_size_and_compression_ratio(
+                first_url,
+                hf_endpoint,
+                hf_token,
+                validate,
             )
-            parquet_files, sizes = zip(*parquet_files_and_sizes)
+            if builder.info.features is None:
+                builder.info.features = features
+            builder.info.download_size += first_size
+            num_examples += first_num_examples
         except ParquetValidationError:
             raise
         except Exception as e:
             raise FileSystemError(f"Could not read the parquet files: {e}") from e
-        if parquet_files:
-            first_pf = parquet_files[0]
-            if builder.info.features is None:
-                builder.info.features = Features.from_arrow_schema(first_pf.schema_arrow)
-            first_row_group = first_pf.read_row_group(0)
-            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
-            num_examples = sum(parquet_file.metadata.num_rows for parquet_file in parquet_files)
+
+        if len(urls) > 1:
+            try:
+                num_examples_and_sizes: list[tuple[int, int]] = thread_map(
+                    functools.partial(
+                        retry_validate_get_num_examples_and_size,
+                        hf_endpoint=hf_endpoint,
+                        hf_token=hf_token,
+                        validate=validate,
+                    ),
+                    urls[1:],
+                    unit="pq",
+                    disable=True,
+                )
+                num_examples_list, sizes = zip(*num_examples_and_sizes)
+                num_examples += sum(num_examples_list)
+                builder.info.download_size += sum(sizes)
+            except ParquetValidationError:
+                raise
+            except Exception as e:
+                raise FileSystemError(f"Could not read the parquet files: {e}") from e
+
+        if num_examples > 0:
             approx_num_bytes = int(compression_ratio * num_examples)
             builder.info.splits.add(SplitInfo(split, num_bytes=approx_num_bytes, num_examples=num_examples))
-            builder.info.download_size += sum(sizes)
             builder.info.dataset_size += approx_num_bytes
+        logging.info(
+            f"{sum(len(split_files) for split_files in data_files.values())} parquet files are valid for copy."
+        )
 
 
 class limit_parquet_writes:
@@ -688,7 +751,7 @@ class limit_parquet_writes:
     Example of usage:
 
     ```python
-    builder = load_dataset_builder("squad")
+    builder = load_dataset_builder("rajpurkar/squad")
     max_dataset_size_bytes = 10_000_000
     with limit_parquet_writes(builder, max_dataset_size_bytes=max_dataset_size_bytes) as limiter:
         builder.download_and_prepare(file_format="parquet")
@@ -699,7 +762,7 @@ class limit_parquet_writes:
     the full dataset:
 
     ```python
-    builder = load_dataset_builder("squad")
+    builder = load_dataset_builder("rajpurkar/squad")
     max_dataset_size_bytes = 10_000_000
     dl_manager = StreamingDownloadManager(...)
     for split_generator in builder._split_generators(dl_manager):
@@ -1035,6 +1098,7 @@ def commit_parquet_conversion(
         parquet_operations=parquet_operations, all_repo_files=all_repo_files, config_names=config_names, config=config
     )
     operations = delete_operations + parquet_operations
+    logging.info(f"{len(operations)} git operations to do for {dataset=} {config=}.")
     return create_commits(
         committer_hf_api,
         repo_id=dataset,
@@ -1162,6 +1226,7 @@ def compute_config_parquet_and_info_response(
 
     download_config = DownloadConfig(delete_extracted=True)
     try:
+        logging.info(f"Loading {dataset=} {config=} builder. ")
         builder = load_dataset_builder(
             path=dataset,
             name=config,
@@ -1186,12 +1251,18 @@ def compute_config_parquet_and_info_response(
     partial = False
     if is_parquet_builder_with_hub_files(builder):
         try:
+            logging.info(f"{dataset=} {config=} is already in parquet, validating and copying original parquet files.")
             parquet_operations = copy_parquet_files(builder)
+            logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
             fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
+            logging.info(
+                f"Parquet files of {dataset=} {config=} has too big row groups, "
+                f"reconverting it with row groups size={max_row_group_byte_size_for_copy}"
+            )
             writer_batch_size = get_writer_batch_size_from_row_group_size(
                 num_rows=err.num_rows,
                 row_group_byte_size=err.row_group_byte_size,
@@ -1217,11 +1288,17 @@ def compute_config_parquet_and_info_response(
             max_dataset_size_bytes=max_dataset_size_bytes,
             max_external_data_files=max_external_data_files,
         ):
+            logging.info(
+                f"{dataset=} {config=} is too big to be fully converted, "
+                f"converting first {max_dataset_size_bytes} bytes."
+            )
             parquet_operations, partial = stream_convert_to_parquet(
                 builder, max_dataset_size_bytes=max_dataset_size_bytes
             )
+
         else:
             parquet_operations = convert_to_parquet(builder)
+        logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
 
     try:
         with lock.git_branch(
@@ -1240,6 +1317,7 @@ def compute_config_parquet_and_info_response(
             )
 
             # commit the parquet files
+            logging.info(f"Commiting parquet files for {dataset=} {config=}.")
             commit_parquet_conversion(
                 hf_api=hf_api,
                 committer_hf_api=committer_hf_api,

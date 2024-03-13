@@ -163,6 +163,7 @@ def create_first_rows_response(
         rows_max_bytes=rows_max_bytes - surrounding_json_size,
         rows_min_number=rows_min_number,
         columns_to_keep_untruncated=columns_to_keep_untruncated,
+        truncated_columns=rows_content.truncated_columns,
     )
 
     response = response_features_only

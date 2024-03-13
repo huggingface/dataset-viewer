@@ -228,6 +228,7 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             return DatasetLoadingTagsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
+                hf_datasets_cache=self.hf_datasets_cache,
             )
 
         supported_job_types = [

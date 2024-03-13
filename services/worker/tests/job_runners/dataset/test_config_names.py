@@ -77,12 +77,13 @@ def test_compute_too_many_configs(
     )
 
     with patch("worker.job_runners.dataset.config_names.get_dataset_config_names", return_value=configs):
-        if error_code:
-            with pytest.raises(CustomError) as exc_info:
-                job_runner.compute()
-            assert exc_info.value.code == error_code
-        else:
-            assert job_runner.compute() is not None
+        with patch("worker.job_runners.dataset.config_names.get_dataset_default_config_name", return_value=None):
+            if error_code:
+                with pytest.raises(CustomError) as exc_info:
+                    job_runner.compute()
+                assert exc_info.value.code == error_code
+            else:
+                assert job_runner.compute() is not None
 
 
 @pytest.mark.parametrize(
@@ -93,6 +94,7 @@ def test_compute_too_many_configs(
         ("gated", True, None, None),
         ("private", True, None, None),
         ("empty", False, "EmptyDatasetError", "EmptyDatasetError"),
+        ("n_configs_with_default", False, None, None),
         # should we really test the following cases?
         # The assumption is that the dataset exists and is accessible with the token
         ("does_not_exist", False, "ConfigNamesError", "DatasetNotFoundError"),
@@ -100,13 +102,14 @@ def test_compute_too_many_configs(
         ("private", False, "ConfigNamesError", "DatasetNotFoundError"),
     ],
 )
-def test_compute_splits_response_simple_csv(
+def test_compute_splits_response(
     hub_responses_public: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_responses_gated: HubDatasetTest,
     hub_responses_private: HubDatasetTest,
     hub_responses_empty: HubDatasetTest,
     hub_responses_does_not_exist: HubDatasetTest,
+    hub_responses_n_configs_with_default: HubDatasetTest,
     get_job_runner: GetJobRunner,
     name: str,
     use_token: bool,
@@ -121,6 +124,7 @@ def test_compute_splits_response_simple_csv(
         "private": hub_responses_private,
         "empty": hub_responses_empty,
         "does_not_exist": hub_responses_does_not_exist,
+        "n_configs_with_default": hub_responses_n_configs_with_default,
     }
     dataset = hub_datasets[name]["name"]
     expected_configs_response = hub_datasets[name]["config_names_response"]

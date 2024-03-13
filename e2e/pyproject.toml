@@ -7,7 +7,6 @@ license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "3.9.18"
-openapi-spec-validator = "^0.5.5"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
@@ -25,9 +24,6 @@ requires = ["poetry-core>=1.0.0"]
 
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
-markers = [
-    "wip: tests being developed"
-]
 
 [tool.mypy]
 strict = true

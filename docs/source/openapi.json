@@ -782,6 +782,9 @@
           },
           "filter": {
             "type": "boolean"
+          },
+          "statistics": {
+            "type": "boolean"
           }
         }
       },
@@ -1081,7 +1084,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool", "list"]
       },
       "Histogram": {
         "type": "object",
@@ -1120,28 +1123,17 @@
           "nan_proportion": {
             "type": "number"
           },
-          "min": {
-            "type": "number"
-          },
-          "max": {
-            "type": "number"
-          },
-          "mean": {
-            "type": "number"
-          },
-          "median": {
-            "type": "number"
-          },
-          "std": {
-            "type": "number"
-          },
-          "histogram": {
-            "$ref": "#/components/schemas/Histogram"
-          }
+          "min": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "max": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "mean": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "median": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "std": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
+          "histogram": { "oneOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
         }
       },
       "CategoricalStatisticsItem": {
         "type": "object",
+        "description": "note that fields 'no_label_count' and 'no_label_proportion' are not required, because some old entries still miss them, and we don't want to recompute all of them. See https://github.com/huggingface/datasets-server/issues/2573.",
         "required": ["nan_count", "nan_proportion", "n_unique", "frequencies"],
         "properties": {
           "nan_count": {
@@ -1185,6 +1177,19 @@
           }
         }
       },
+      "SupportedStatistics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NumericalStatisticsItem"
+              },
+              {
+                "$ref": "#/components/schemas/CategoricalStatisticsItem"
+              },
+              {
+                "$ref": "#/components/schemas/BoolStatisticsItem"
+              }
+            ]
+          },
       "StatisticsPerColumnItem": {
         "type": "object",
         "required": ["column_name", "column_type", "column_statistics"],
@@ -1196,17 +1201,7 @@
             "$ref": "#/components/schemas/ColumnType"
           },
           "column_statistics": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/NumericalStatisticsItem"
-              },
-              {
-                "$ref": "#/components/schemas/CategoricalStatisticsItem"
-              },
-              {
-                "$ref": "#/components/schemas/BoolStatisticsItem"
-              }
-            ]
+                "$ref": "#/components/schemas/SupportedStatistics"
           }
         }
       },
@@ -1285,12 +1280,6 @@
       }
     },
     "securitySchemes": {
-      "CookieHuggingFace": {
-        "type": "apiKey",
-        "description": "The HuggingFace cookie. Get it by logging in to https://huggingface.co/. It can only be used from the huggingface.co domain, and can thus only be used by Hub features like the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer), for example.",
-        "name": "token",
-        "in": "cookie"
-      },
       "AuthorizationHuggingFaceApiToken": {
         "type": "http",
         "description": "The HuggingFace API token. Create a User Access Token with read access at https://huggingface.co/settings/tokens. You can also use an Organization API token. It gives access to the public datasets, to the [gated datasets](https://huggingface.co/docs/hub/datasets-gated) for which you have accepted the conditions, and to your private datasets if you're a [PRO user](https://huggingface.co/pricing) or if the dataset is under your [Enterprise Hub organization](https://huggingface.co/enterprise).",
@@ -1405,9 +1394,9 @@
           "type": "string"
         },
         "examples": {
-          "glue": {
+          "mnist": {
             "summary": "A canonical dataset",
-            "value": "glue"
+            "value": "mnist"
           },
           "Helsinki-NLP/tatoeba_mt": {
             "summary": "A namespaced dataset",
@@ -1425,7 +1414,7 @@
         },
         "examples": {
           "cola": {
-            "summary": "A subset of the glue dataset",
+            "summary": "A subset of the nyu-mll/glue dataset",
             "value": "cola"
           },
           "yangdong/ecqa": {
@@ -1466,7 +1455,7 @@
         },
         "examples": {
           "cola": {
-            "summary": "A subset of the glue dataset",
+            "summary": "A subset of the nyu-mll/glue dataset",
             "value": "cola"
           },
           "yangdong/ecqa": {
@@ -1706,9 +1695,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -1781,12 +1767,12 @@
                     }
                   },
                   "splits for a single config": {
-                    "summary": "emotion has two configs. Setting config=unsplit only returns the splits for this config.",
-                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=emotion&config=unsplit.",
+                    "summary": "dair-ai/emotion has two configs. Setting config=unsplit only returns the splits for this config.",
+                    "description": "Try with https://datasets-server.huggingface.co/splits?dataset=dair-ai/emotion&config=unsplit.",
                     "value": {
                       "splits": [
                         {
-                          "dataset": "emotion",
+                          "dataset": "dair-ai/emotion",
                           "config": "unsplit",
                           "split": "train"
                         }
@@ -2004,9 +1990,6 @@
         "operationId": "listFirstRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -2597,9 +2580,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -3003,9 +2983,6 @@
         "operationId": "searchRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -3411,9 +3388,6 @@
         "operationId": "filterRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -4049,9 +4023,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -4083,8 +4054,8 @@
                   "$ref": "#/components/schemas/ParquetResponse"
                 },
                 "examples": {
-                  "duorc": {
-                    "summary": "duorc: six parquet files, one per split",
+                  "ibm/duorc": {
+                    "summary": "ibm/duorc: six parquet files, one per split",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=ibm/duorc",
                     "value": {
                       "parquet_files": [
@@ -4352,110 +4323,113 @@
                   },
                   "partial parquet export": {
                     "summary": "c4 (en): the parquet export is partial (first 5GB)",
-                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=c4&config=en",
+                    "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=allenai/c4&config=en",
                     "value": {
                       "parquet_files": [
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0000.parquet",
                           "filename": "0000.parquet",
-                          "size": 309207547
+                          "size": 312302655
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0001.parquet",
                           "filename": "0001.parquet",
-                          "size": 308665905
+                          "size": 314250060
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0002.parquet",
                           "filename": "0002.parquet",
-                          "size": 309066442
+                          "size": 312268050
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0003.parquet",
                           "filename": "0003.parquet",
-                          "size": 309257276
+                          "size": 312065965
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0004.parquet",
                           "filename": "0004.parquet",
-                          "size": 309040649
+                          "size": 308599130
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0005.parquet",
                           "filename": "0005.parquet",
-                          "size": 308850445
+                          "size": 312308752
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0006.parquet",
                           "filename": "0006.parquet",
-                          "size": 308432549
+                          "size": 313118966
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0007.parquet",
                           "filename": "0007.parquet",
-                          "size": 308621018
+                          "size": 313275039
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0008.parquet",
                           "filename": "0008.parquet",
-                          "size": 309109536
+                          "size": 312402829
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "train",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-train/0009.parquet",
                           "filename": "0009.parquet",
-                          "size": 300817682
+                          "size": 273854946
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0000.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-validation/0000.parquet",
                           "filename": "0000.parquet",
-                          "size": 308896113
+                          "size": 311994499
                         },
                         {
-                          "dataset": "c4",
+                          "dataset": "allenai/c4",
                           "config": "en",
                           "split": "validation",
-                          "url": "https://huggingface.co/datasets/c4/resolve/refs%2Fconvert%2Fparquet/en/partial/validation/0001.parquet",
+                          "url": "https://huggingface.co/datasets/allenai/c4/resolve/refs%2Fconvert%2Fparquet/en/partial-validation/0001.parquet",
                           "filename": "0001.parquet",
-                          "size": 200085262
+                          "size": 197281279
                         }
                       ],
-                      "pending": [],
-                      "failed": [],
+                      "features": {
+                        "text": { "dtype": "string", "_type": "Value" },
+                        "timestamp": { "dtype": "string", "_type": "Value" },
+                        "url": { "dtype": "string", "_type": "Value" }
+                      },
                       "partial": true
-                    }
+                    }                    
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
@@ -4580,7 +4554,7 @@
     "/is-valid": {
       "get": {
         "summary": "Check if a dataset is valid",
-        "description": "Returns the capabilities of the dataset: show a preview of the 100 first rows, show the viewer for all the rows, search the rows. Use the optional config and split parameters to filter the response.",
+        "description": "Returns the capabilities of the dataset: show a preview of the 100 first rows, show the viewer for all the rows, search/filter the rows, have statistics. Use the optional config and split parameters to filter the response.",
         "externalDocs": {
           "description": "See Valid datasets (Hub docs)",
           "url": "https://huggingface.co/docs/datasets-server/valid"
@@ -4588,9 +4562,6 @@
         "operationId": "isValidDataset",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -4628,12 +4599,13 @@
                 "examples": {
                   "all the capabilities": {
                     "summary": "valid dataset",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   },
                   "only preview": {
@@ -4643,7 +4615,8 @@
                       "preview": true,
                       "viewer": false,
                       "search": false,
-                      "filter": false
+                      "filter": false,
+                      "statistics": false
                     }
                   },
                   "no capabilities": {
@@ -4653,27 +4626,30 @@
                       "preview": false,
                       "viewer": false,
                       "search": false,
-                      "filter": false
+                      "filter": false,
+                      "statistics": false
                     }
                   },
                   "all the capabilities, for a config": {
                     "summary": "valid config",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   },
                   "all the capabilities, for a split": {
                     "summary": "valid split",
-                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=glue&config=ax&split=test",
+                    "description": "Try with https://datasets-server.huggingface.co/is-valid?dataset=nyu-mll/glue&config=ax&split=test",
                     "value": {
                       "preview": true,
                       "viewer": true,
                       "search": true,
-                      "filter": true
+                      "filter": true,
+                      "statistics": true
                     }
                   }
                 }
@@ -4739,9 +4715,6 @@
         "operationId": "getInfo",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -4864,12 +4837,12 @@
                   },
                   "config metadata": {
                     "summary": "metadata for a dataset config",
-                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/info?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "dataset_info": {
-                        "description": "GLUE, the General Language Understanding Evaluation benchmark\n(https://gluebenchmark.com/) is a collection of resources for training,\nevaluating, and analyzing natural language understanding systems.\n\n",
-                        "citation": "\n@inproceedings{wang2019glue,\n  title={{GLUE}: A Multi-Task Benchmark and Analysis Platform for Natural Language Understanding},\n  author={Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R.},\n  note={In the Proceedings of ICLR.},\n  year={2019}\n}\n",
-                        "homepage": "https://gluebenchmark.com/diagnostics",
+                        "description": "",
+                        "citation": "",
+                        "homepage": "",
                         "license": "",
                         "features": {
                           "premise": { "dtype": "string", "_type": "Value" },
@@ -4880,32 +4853,20 @@
                           },
                           "idx": { "dtype": "int32", "_type": "Value" }
                         },
-                        "builder_name": "glue",
+                        "builder_name": "parquet",
+                        "dataset_name": "glue",
                         "config_name": "ax",
-                        "version": {
-                          "version_str": "1.0.0",
-                          "description": "",
-                          "major": 1,
-                          "minor": 0,
-                          "patch": 0
-                        },
+                        "version": { "version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0 },
                         "splits": {
                           "test": {
                             "name": "test",
-                            "num_bytes": 237694,
+                            "num_bytes": 243791,
                             "num_examples": 1104,
-                            "dataset_name": "glue"
+                            "dataset_name": null
                           }
                         },
-                        "download_checksums": {
-                          "https://dl.fbaipublicfiles.com/glue/data/AX.tsv": {
-                            "num_bytes": 222257,
-                            "checksum": null
-                          }
-                        },
-                        "download_size": 222257,
-                        "dataset_size": 237694,
-                        "size_in_bytes": 459951
+                        "download_size": 80767,
+                        "dataset_size": 243791
                       },
                       "partial": false
                     }
@@ -5035,15 +4996,12 @@
         "summary": "Get the size of a dataset.",
         "description": "Returns the size (number of rows, storage) of the dataset. Use the optional config parameter to filter the response.",
         "externalDocs": {
-          "description": "See size (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See size in the Hub docs.",
+          "url": "https://huggingface.co/docs/datasets-server/size"
         },
         "operationId": "getSize",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -5127,11 +5085,11 @@
                   },
                   "config size": {
                     "summary": "size of a dataset config",
-                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=glue&config=ax",
+                    "description": "Try with https://datasets-server.huggingface.co/size?dataset=nyu-mll/glue&config=ax",
                     "value": {
                       "size": {
                         "config": {
-                          "dataset": "glue",
+                          "dataset": "nyu-mll/glue",
                           "config": "ax",
                           "num_bytes_original_files": 222257,
                           "num_bytes_parquet_files": 80767,
@@ -5141,7 +5099,7 @@
                         },
                         "splits": [
                           {
-                            "dataset": "glue",
+                            "dataset": "nyu-mll/glue",
                             "config": "ax",
                             "split": "test",
                             "num_bytes_parquet_files": 80767,
@@ -5295,9 +5253,6 @@
         "operationId": "getOptInOutUrls",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -5467,15 +5422,12 @@
         "summary": "Descriptive statistics of a split's columns",
         "description": "Returns descriptive statistics, such as min, max, average, histogram, of the columns of a split.",
         "externalDocs": {
-          "description": "See statistics (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1664.",
-          "url": "https://huggingface.co/docs/datasets-server/"
+          "description": "See statistics (Hub docs).",
+          "url": "https://huggingface.co/docs/datasets-server/statistics"
         },
         "operationId": "getStatistics",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -5814,9 +5766,9 @@
                       "partial": false
                     }
                   },
-                  "A split (glue) with a string (text) column": {
+                  "A split (nyu-mll/glue) with a string (text) column": {
                     "summary": "Statistics on a string column. The column 'hypothesis' contains more than 30 different strings, so the statistics are a histogram of the string lengths.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=glue&config=ax&split=test.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=ax&split=test.",
                     "value": {
                       "num_examples": 1104,
                       "statistics": [
@@ -5906,9 +5858,9 @@
                       "partial": false
                     }
                   },
-                  "A split (hellaswag) with a string (label) column": {
+                  "A split (Rowan/hellaswag) with a string (label) column": {
                     "summary": "Statistics on a string column. The column 'label' contains less than 30 different strings, so each string is considered as a label, and the statistics are a count per label.",
-                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=hellaswag&config=default&split=train.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=Rowan/hellaswag&config=default&split=train.",
                     "value": {
                       "num_examples": 39905,
                       "statistics": [

@@ -92,7 +92,13 @@ def create_rows_endpoint(
                         revision = rows_index.revision
                     with StepProfiler(method="rows_endpoint", step="query the rows"):
                         try:
-                            pa_table = rows_index.query(offset=offset, length=length)
+                            truncated_columns: list[str] = []
+                            if dataset == "Major-TOM/Core-S2L2A":
+                                pa_table, truncated_columns = rows_index.query_truncated_binary(
+                                    offset=offset, length=length
+                                )
+                            else:
+                                pa_table = rows_index.query(offset=offset, length=length)
                         except TooBigRows as err:
                             raise TooBigContentError(str(err)) from None
                     with StepProfiler(method="rows_endpoint", step="transform to a list"):
@@ -108,6 +114,7 @@ def create_rows_endpoint(
                             unsupported_columns=rows_index.parquet_index.unsupported_columns,
                             partial=rows_index.parquet_index.partial,
                             num_rows_total=rows_index.parquet_index.num_rows_total,
+                            truncated_columns=truncated_columns,
                         )
                 except CachedArtifactNotFoundError:
                     with StepProfiler(method="rows_endpoint", step="try backfill dataset"):

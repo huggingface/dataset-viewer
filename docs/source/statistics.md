@@ -8,18 +8,18 @@ Datasets Server provides a `/statistics` endpoint for fetching some basic statis
 
 The `/statistics` endpoint requires three query parameters:
 
-- `dataset`: the dataset name, for example `glue`
+- `dataset`: the dataset name, for example `nyu-mll/glue`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 
-Let's get some stats for `glue` dataset, `cola` config, `train` split:
+Let's get some stats for `nyu-mll/glue` dataset, `cola` config, `train` split:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train"
+API_URL = "https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -31,7 +31,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train",
+        "https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -47,7 +47,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train \
+curl https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
@@ -173,8 +173,8 @@ Currently, statistics are supported for strings, float and integer numbers, and 
 * `float` - for float dtypes
 * `int` - for integer dtypes
 * `bool` - for boolean dtype
-* `string_label` - for string dtypes, if there are less than or equal to 30 unique values in a string column in a given split
-* `string_text` - for string dtypes, if there are more than 30 unique values in a string column in a given split
+* `string_label` - for string dtypes being treated as categories (see below)
+* `string_text` - for string dtypes if they do not represent categories (see below)
 
 ### `class_label`
 
@@ -339,7 +339,7 @@ The following measures are returned for bool data type:
 
 ### string_label
 
-If string column has less than or equal to 30 unique values within the requested split, it is considered to be a category. The following measures are returned:
+If the proportion of unique values in a string column within requested split is lower than or equal to 0.2 and the number of unique values is lower than 1000, or if the number of unique values is lower or equal to 10 (independently of the proportion), it is considered to be a category. The following measures are returned:
 
 * number and proportion of `null` values
 * number of unique values (excluding `null`)
@@ -372,7 +372,7 @@ If string column has less than or equal to 30 unique values within the requested
 
 ### string_text
 
-If string column has more than 30 unique values within the requested split, it is considered to be a column containing texts and response contains statistics over text lengths. The following measures are computed:
+If string column does not satisfy the conditions to be treated as a `string_label`, it is considered to be a column containing texts and response contains statistics over text lengths. The following measures are computed:
 
 * minimum, maximum, mean, and standard deviation of text lengths
 * number and proportion of `null` values

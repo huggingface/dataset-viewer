@@ -116,17 +116,13 @@ secrets:
       secretName: "datasets-server-staging-secrets"
 
 persistence:
-  descriptiveStatistics:
-    existingClaim: "datasets-server-statistics-pvc"
   duckDBIndex:
     existingClaim: "datasets-server-duckdb-pvc"
-  hfDatasetsCache:
-    existingClaim: "datasets-server-cache-pvc"
   parquetMetadata:
     existingClaim: "datasets-server-parquet-pvc"
 
 monitoring:
-  enabled: false
+  enabled: true
 
 mongodb:
   enabled: false
@@ -156,6 +152,17 @@ cachedAssets:
 # --- jobs (pre-install/upgrade hooks) ---
 
 mongodbMigration:
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      cpu: 1
+
+# --- jobs (post-install/upgrade hooks) ---
+
+deleteDuckdbIndexes:
+  log:
+    level: "debug"
   resources:
     requests:
       cpu: 100m
@@ -282,6 +289,17 @@ workers:
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     replicas: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "heavy"
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "medium"
     resources:
       requests:
         cpu: 100m
@@ -299,6 +317,14 @@ workers:
     workerJobTypesBlocked: ""
     workerJobTypesOnly: ""
     replicas: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targets:
+        - targetQueueName: "worker_size_jobs_count"
+          targetQueueLength: 2
+          targetWorkerSize: "light"
     resources:
       requests:
         cpu: 100m

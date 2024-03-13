@@ -15,7 +15,7 @@ The text is searched in the columns of type `string`, even if the values are nes
 
 The `/search` endpoint accepts five query parameters:
 
-- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 - `query`: the text to search
@@ -71,7 +71,7 @@ The endpoint response is a JSON containing two keys (same format as [`/rows`](./
 
 The rows are ordered by the row index, and the text strings matching the query are not highlighted.
 
-For example, here are the `features` and the slice 150-151 of matching `rows` of the `duorc`/`SelfRC` train split for the query `dog`:
+For example, here are the `features` and the slice 150-151 of matching `rows` of the `ibm/duorc`/`SelfRC` train split for the query `dog`:
 
 ```json
 {

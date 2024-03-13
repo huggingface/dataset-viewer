@@ -9,9 +9,9 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^42.0.4"
-datasets = {version = "^2.17.1", extras = ["audio", "vision"]}
+datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.20.1"
+huggingface-hub = "^0.21.3"
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -51,8 +51,7 @@ requires = ["poetry-core>=1.0.0"]
 [tool.pytest.ini_options]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
-    "real_dataset: tests on the Hub",
-    "wip: tests being developed"
+    "real_dataset: tests on the Hub"
 ]
 
 [tool.mypy]

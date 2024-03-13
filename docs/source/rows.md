@@ -21,7 +21,7 @@ or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingf
 
 The `/rows` endpoint accepts five query parameters:
 
-- `dataset`: the dataset name, for example `glue` or `mozilla-foundation/common_voice_10_0`
+- `dataset`: the dataset name, for example `nyu-mll/glue` or `mozilla-foundation/common_voice_10_0`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 - `offset`: the offset of the slice, for example `150`
@@ -159,7 +159,7 @@ Image and audio are represented by a URL that points to the file.
 
 Images are represented as a JSON object with three fields:
 
-- `src`: URL to the image file
+- `src`: URL to the image file. It's a [signed URL](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html) that expires after a certain time.
 - `height`: height (in pixels) of the image
 - `width`: width (in pixels) of the image
 
@@ -177,7 +177,7 @@ Here is an example of image, from the first row of the cifar100 dataset:
       "row_idx": 0,
       "row": {
         "img": {
-          "src": "https://datasets-server.huggingface.co/cached-assets/cifar100/--/main/--/cifar100/train/0/img/image.jpg",
+          "src": "https://datasets-server.huggingface.co/cached-assets/cifar100/--/aadb3af77e9048adbea6b47c21a81e47dd092ae5/--/cifar100/train/0/img/image.jpg?Expires=1710283469&Signature=A1v0cG07nuaBxYbuPR5EUZpJ9Se072SBDr4935gEsOESHGVyeqvd3qmvdsy1fuqbHk0dnx~p6MLtQ-hg3aCBOJ8eIJ5ItIoyYT4riJRuPQC0VFUb~b1maEwU8LRoXXuvrSysSz2QhBbC~ofv6cQudm~~bgGxXWAslDs180KnmPDsMU55ySsKyKQYNEkQKyuYvrGIJbFeg4lEps0f5CEwUstAwRAwlk~mzRpzUDBq7nJ~DcujTlllLv36nJX~too8mMnFn6dCn2nfGOFYwUiyYM73Czv-laLhVaIVUzcuJum90No~KNGzfYeFZpPqktA7MjCzRLf1gz5kA7wBqnY-8Q__&Key-Pair-Id=K3EI6M078Z3AC3",
           "height": 32,
           "width": 32
         },

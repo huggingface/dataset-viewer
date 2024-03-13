@@ -315,6 +315,7 @@ def test_create_truncated_row_items(
         min_cell_bytes=DEFAULT_MIN_CELL_BYTES,
         rows_min_number=DEFAULT_ROWS_MIN_NUMBER,
         columns_to_keep_untruncated=[],
+        truncated_columns=[],
     )
     assert len(truncated_row_items) == expected_num_rows_items
     assert truncated == expected_truncated

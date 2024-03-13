@@ -199,6 +199,7 @@ async def to_rows_list(
     unsupported_columns: list[str],
     storage_client: StorageClient,
     row_idx_column: Optional[str] = None,
+    truncated_columns: Optional[list[str]] = None,
 ) -> list[RowItem]:
     num_rows = pa_table.num_rows
     for idx, (column, feature) in enumerate(features.items()):
@@ -225,7 +226,7 @@ async def to_rows_list(
         {
             "row_idx": idx + offset if row_idx_column is None else row.pop(row_idx_column),
             "row": row,
-            "truncated_cells": [],
+            "truncated_cells": truncated_columns or [],
         }
         for idx, row in enumerate(transformed_rows)
     ]
