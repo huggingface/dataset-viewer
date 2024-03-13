@@ -418,7 +418,7 @@ def three_parquet_splits_paths(
 @pytest.fixture(scope="session")
 def hub_public_three_parquet_splits_builder(three_parquet_splits_paths: Mapping[str, str]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(
-        prefix="parquet_builder_three_splits", file_paths=three_parquet_splits_paths.values()
+        prefix="parquet_builder_three_splits", file_paths=list(three_parquet_splits_paths.values())
     )
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
