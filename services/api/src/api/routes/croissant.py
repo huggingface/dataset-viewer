@@ -129,9 +129,9 @@ def get_croissant_from_dataset_infos(
             fields_names: set[str] = set()
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
                 if is_v1:
-                    source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+                    field_source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
                 else:
-                    source = {"distribution": distribution_name, "extract": {"column": column}}
+                    field_source = {"distribution": distribution_name, "extract": {"column": column}}
                 field_name = _escape_name(column, fields_names)
                 fields.append(
                     _remove_none_values(
@@ -141,12 +141,24 @@ def get_croissant_from_dataset_infos(
                             "name": field_name,
                             "description": f"Column '{column}' from the Hugging Face parquet file.",
                             "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
-                            "source": source,
+                            "source": field_source,
                         }
                     )
                 )
             elif isinstance(feature, Image):
                 field_name = _escape_name(column, fields_names)
+                if is_v1:
+                    field_source = {
+                        "fileSet": {"@id": distribution_name},
+                        "extract": {"column": column},
+                        "transform": {"jsonPath": "bytes"},
+                    }
+                else:
+                    field_source = {
+                            "distribution": distribution_name,
+                            "extract": {"column": column},
+                            "transform": {"jsonPath": "bytes"},
+                    }
                 fields.append(
                     _remove_none_values(
                         {
@@ -155,16 +167,16 @@ def get_croissant_from_dataset_infos(
                             "name": field_name,
                             "description": f"Image column '{column}' from the Hugging Face parquet file.",
                             "dataType": "sc:ImageObject",
-                            "source": {
-                                "fileSet": {"@id": distribution_name},
-                                "extract": {"column": column},
-                                "transform": {"jsonPath": "bytes"},
-                            },
+                            "source": field_source,
                         }
                     )
                 )
             elif isinstance(feature, ClassLabel):
                 field_name = _escape_name(column, fields_names)
+                if is_v1:
+                    field_source = {"fileSet": {"@id": distribution_name}, "extract": {"column": column}}
+                else:
+                    field_source = {"distribution": distribution_name, "extract": {"column": column}}
                 fields.append(
                     _remove_none_values(
                         {
@@ -174,7 +186,7 @@ def get_croissant_from_dataset_infos(
                             "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
                             + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
                             "dataType": "sc:Integer",
-                            "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+                            "source": field_source,
                         }
                     )
                 )
@@ -275,7 +287,7 @@ def _get_full_jsonld_parameter(request: Request) -> bool:
     return True
 
 
-def _get_isV1(request: Request) -> bool:
+def _get_is_v1(request: Request) -> bool:
     """Whether the output follows Croissant 1.0 or 0.8. Defaults to True."""
     isV1 = get_request_parameter(request, "isV1", default="true")
     if isV1.lower() == "false":
@@ -307,7 +319,7 @@ def create_croissant_endpoint(
                     context=context,
                 ):
                     full_jsonld = _get_full_jsonld_parameter(request)
-                    isV1 = _get_isV1(request)
+                    isV1 = _get_is_v1(request)
                     dataset = get_request_parameter(request, "dataset")
                     logging.debug(f"endpoint={endpoint_name} dataset={dataset}")
                     if not are_valid_parameters([dataset]):
