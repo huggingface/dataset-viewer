@@ -348,7 +348,7 @@ def create_croissant_endpoint(
                             infos=infos,
                             partial=partial,
                             full_jsonld=full_jsonld,
-                            isV1=isV1,
+                            is_v1=isV1,
                         )
                     with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)
