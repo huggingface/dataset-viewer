@@ -193,7 +193,7 @@ def compute_histogram(
         hist_df_reverted = df.with_columns(pl.col(column_name).mul(-1).alias("reverse"))["reverse"].hist(
             bins=bins_edges_reverted
         )
-        hist_reverted = hist_df_reverted["reverse_count"].cast(int).to_list()
+        hist_reverted = hist_df_reverted["count"].cast(int).to_list()
         hist = hist_reverted[::-1]
         hist = [hist[0] + hist[1]] + hist[2:-2] + [hist[-2] + hist[-1]]
     else:
