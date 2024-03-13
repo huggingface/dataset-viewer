@@ -68,6 +68,7 @@ The response looks like this if a dataset is valid:
   "preview": true,
   "search": true,
   "filter": true,
+  "statistics": true,
 }
 ```
 
@@ -79,6 +80,7 @@ The response looks like this if a dataset is valid but /search is not available 
   "preview": true,
   "search": false,
   "filter": true,
+  "statistics": true,
 }
 ```
 
@@ -90,6 +92,19 @@ The response looks like this if a dataset is valid but /filter is not available 
   "preview": true,
   "search": true,
   "filter": false,
+  "statistics": true,
+}
+```
+
+Similarly, if the statistics are not available:
+
+```json
+{
+  "viewer": true,
+  "preview": true,
+  "search": true,
+  "filter": true,
+  "statistics": false,
 }
 ```
 
@@ -101,6 +116,7 @@ If only the first rows of a dataset are available, then the response looks like:
   "preview": true,
   "search": true,
   "filter": true,
+  "statistics": true,
 }
 ```
 
@@ -112,6 +128,7 @@ Finally, if the dataset is not valid at all, then the response is:
   "preview": false,
   "search": false,
   "filter": false,
+  "statistics": false,
 }
 ```
 

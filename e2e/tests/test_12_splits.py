@@ -10,7 +10,7 @@ from .utils import get, get_openapi_body_example, poll, poll_splits, post_refres
     "status,name,dataset,config,error_code",
     [
         #  (200, "all splits in a dataset", "ibm/duorc", None, None),
-        #  (200, "splits for a single config", "emotion", "unsplit", None)
+        #  (200, "splits for a single config", "dair-ai/emotion", "unsplit", None)
         (
             401,
             "inexistent dataset, and not authenticated",

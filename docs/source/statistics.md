@@ -8,18 +8,18 @@ Datasets Server provides a `/statistics` endpoint for fetching some basic statis
 
 The `/statistics` endpoint requires three query parameters:
 
-- `dataset`: the dataset name, for example `glue`
+- `dataset`: the dataset name, for example `nyu-mll/glue`
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 
-Let's get some stats for `glue` dataset, `cola` config, `train` split:
+Let's get some stats for `nyu-mll/glue` dataset, `cola` config, `train` split:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train"
+API_URL = "https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -31,7 +31,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train",
+        "https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -47,7 +47,7 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/statistics?dataset=glue&config=cola&split=train \
+curl https://datasets-server.huggingface.co/statistics?dataset=nyu-mll/glue&config=cola&split=train \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
