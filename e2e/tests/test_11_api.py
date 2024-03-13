@@ -23,6 +23,7 @@ from .utils import get_default_config_split, poll_until_ready_and_assert, tmp_da
 
 
 def get_auth_headers(auth_type: str) -> dict[str, str]:
+    # cookie authentication is not supported anymore
     return (
         {"Authorization": f"Bearer {NORMAL_USER_TOKEN}"}
         if auth_type == "token"
@@ -90,8 +91,8 @@ def normal_user_gated_dataset(csv_path: str) -> Iterator[str]:
     "auth_type,expected_status_code,expected_error_code",
     [
         (None, 401, "ExternalUnauthenticatedError"),
+        ("cookie", 401, "ExternalUnauthenticatedError"),
         ("token", 200, None),
-        ("cookie", 200, None),
     ],
 )
 def test_auth_gated(
@@ -120,8 +121,8 @@ def normal_user_private_dataset(csv_path: str) -> Iterator[str]:
     "auth_type,expected_status_code,expected_error_code",
     [
         (None, 401, "ExternalUnauthenticatedError"),
+        ("cookie", 401, "ExternalUnauthenticatedError"),
         ("token", 501, "NotSupportedPrivateRepositoryError"),
-        ("cookie", 501, "NotSupportedPrivateRepositoryError"),
     ],
 )
 def test_auth_private(

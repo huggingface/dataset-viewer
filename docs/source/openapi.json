@@ -1280,12 +1280,6 @@
       }
     },
     "securitySchemes": {
-      "CookieHuggingFace": {
-        "type": "apiKey",
-        "description": "The HuggingFace cookie. Get it by logging in to https://huggingface.co/. It can only be used from the huggingface.co domain, and can thus only be used by Hub features like the [dataset viewer](https://huggingface.co/docs/hub/datasets-viewer), for example.",
-        "name": "token",
-        "in": "cookie"
-      },
       "AuthorizationHuggingFaceApiToken": {
         "type": "http",
         "description": "The HuggingFace API token. Create a User Access Token with read access at https://huggingface.co/settings/tokens. You can also use an Organization API token. It gives access to the public datasets, to the [gated datasets](https://huggingface.co/docs/hub/datasets-gated) for which you have accepted the conditions, and to your private datasets if you're a [PRO user](https://huggingface.co/pricing) or if the dataset is under your [Enterprise Hub organization](https://huggingface.co/enterprise).",
@@ -1701,9 +1695,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -1999,9 +1990,6 @@
         "operationId": "listFirstRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -2592,9 +2580,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -2998,9 +2983,6 @@
         "operationId": "searchRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -3406,9 +3388,6 @@
         "operationId": "filterRows",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -4044,9 +4023,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -4584,9 +4560,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -4739,9 +4712,6 @@
         "operationId": "getInfo",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },
@@ -5042,9 +5012,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -5296,9 +5263,6 @@
         "security": [
           {},
           {
-            "CookieHuggingFace": []
-          },
-          {
             "AuthorizationHuggingFaceApiToken": []
           },
           {
@@ -5473,9 +5437,6 @@
         "operationId": "getStatistics",
         "security": [
           {},
-          {
-            "CookieHuggingFace": []
-          },
           {
             "AuthorizationHuggingFaceApiToken": []
           },

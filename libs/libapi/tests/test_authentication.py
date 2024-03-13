@@ -46,8 +46,7 @@ dataset_protected_without_access = "dataset_protected_without_access"
 dataset_inexistent = "dataset_inexistent"
 dataset_throttled = "dataset_throttled"
 
-cookie_ok = "cookie ok"
-cookie_wrong = "cookie wrong"
+cookie_is_not_supported_anymore = "cookie is not supported anymore"
 api_token_ok = "api token ok"
 api_token_wrong = "api token wrong"
 
@@ -75,7 +74,7 @@ def auth_callback(request: WerkzeugRequest) -> WerkzeugResponse:
     if dataset == dataset_public:
         # a public dataset always has read access
         return WerkzeugResponse(status=200)
-    if request.headers.get("cookie") != cookie_ok and request.headers.get("authorization") != f"Bearer {api_token_ok}":
+    if request.headers.get("authorization") != f"Bearer {api_token_ok}":
         # the user is not authenticated
         return WerkzeugResponse(status=401)
     if dataset == dataset_protected_with_access:
@@ -208,9 +207,8 @@ async def assert_auth_headers(
         ({}, does_not_raise()),
         ({"Authorization": f"Bearer {api_token_wrong}"}, does_not_raise()),
         ({"Authorization": api_token_ok}, does_not_raise()),
-        ({"Cookie": cookie_wrong}, does_not_raise()),
+        ({"Cookie": cookie_is_not_supported_anymore}, does_not_raise()),
         ({"Authorization": f"Bearer {api_token_ok}"}, does_not_raise()),
-        ({"Cookie": cookie_ok}, does_not_raise()),
         ({"X-Api-Key": get_jwt(dataset_public)}, does_not_raise()),
         ({"Authorization": f"Bearer {get_jwt(dataset_public)}"}, does_not_raise()),
     ],
@@ -231,9 +229,8 @@ async def test_external_auth_service_dataset_public(
         ({}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
-        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_is_not_supported_anymore}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_ok}"}, does_not_raise()),
-        ({"Cookie": cookie_ok}, does_not_raise()),
         ({"X-Api-Key": get_jwt(dataset_protected_with_access)}, does_not_raise()),
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_with_access)}"}, does_not_raise()),
     ],
@@ -256,9 +253,8 @@ async def test_external_auth_service_dataset_protected_with_access(
         ({}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
-        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_is_not_supported_anymore}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ExternalAuthenticatedError)),
-        ({"Cookie": cookie_ok}, pytest.raises(ExternalAuthenticatedError)),
         ({"X-Api-Key": get_jwt(dataset_protected_without_access)}, does_not_raise()),
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_protected_without_access)}"}, does_not_raise()),
     ],
@@ -281,9 +277,8 @@ async def test_external_auth_service_dataset_protected_without_access(
         ({}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
-        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_is_not_supported_anymore}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ExternalAuthenticatedError)),
-        ({"Cookie": cookie_ok}, pytest.raises(ExternalAuthenticatedError)),
         ({"X-Api-Key": get_jwt(dataset_inexistent)}, does_not_raise()),
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_inexistent)}"}, does_not_raise()),
     ],
@@ -304,9 +299,8 @@ async def test_external_auth_service_dataset_inexistent(
         ({}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_wrong}"}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": api_token_ok}, pytest.raises(ExternalUnauthenticatedError)),
-        ({"Cookie": cookie_wrong}, pytest.raises(ExternalUnauthenticatedError)),
+        ({"Cookie": cookie_is_not_supported_anymore}, pytest.raises(ExternalUnauthenticatedError)),
         ({"Authorization": f"Bearer {api_token_ok}"}, pytest.raises(ValueError)),
-        ({"Cookie": cookie_ok}, pytest.raises(ValueError)),
         ({"X-Api-Key": get_jwt(dataset_throttled)}, does_not_raise()),
         ({"Authorization": f"Bearer jwt:{get_jwt(dataset_throttled)}"}, does_not_raise()),
     ],
