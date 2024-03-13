@@ -219,9 +219,7 @@ def compute_histogram(
     )
 
 
-def min_max_median_std_nan_count_proportion(
-    data: pl.DataFrame, column_name: str, n_samples: int
-) -> tuple[float, float, float, float, float, int, float]:
+def min_max_mean_median_std(data: pl.DataFrame, column_name: str) -> tuple[float, float, float, float, float]:
     """
     Compute minimum, maximum, median, standard deviation, number of nan samples and their proportion in column data.
     """
@@ -231,7 +229,6 @@ def min_max_median_std_nan_count_proportion(
         mean=pl.all().mean(),
         median=pl.all().median(),
         std=pl.all().std(),
-        nan_count=pl.all().null_count(),
     )
     stats_names = pl.Series(col_stats.keys())
     stats_expressions = [pl.struct(stat) for stat in col_stats.values()]
@@ -240,7 +237,7 @@ def min_max_median_std_nan_count_proportion(
         .select(name=stats_names, stats=pl.concat_list(stats_expressions).flatten())
         .unnest("stats")
     )
-    minimum, maximum, mean, median, std, nan_count = stats[column_name].to_list()
+    minimum, maximum, mean, median, std = stats[column_name].to_list()
     if any(statistic is None for statistic in [minimum, maximum, mean, median, std]):
         # this should be possible only if all values are none
         if not all(statistic is None for statistic in [minimum, maximum, mean, median, std]):
@@ -248,18 +245,11 @@ def min_max_median_std_nan_count_proportion(
                 f"Unexpected result for {column_name=}: "
                 f"Some measures among {minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all of them. "
             )
-        if nan_count != n_samples:
-            raise StatisticsComputationError(
-                f"Unexpected result for {column_name=}: "
-                f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=} are None but not all values in column are None. "
-            )
-        return minimum, maximum, mean, median, std, nan_count, 1.0
+        return minimum, maximum, mean, median, std
 
     minimum, maximum, mean, median, std = np.round([minimum, maximum, mean, median, std], DECIMALS).tolist()
-    nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count else 0.0
-    nan_count = int(nan_count)
 
-    return minimum, maximum, mean, median, std, nan_count, nan_proportion
+    return minimum, maximum, mean, median, std
 
 
 def value_counts(data: pl.DataFrame, column_name: str) -> dict[Any, Any]:
@@ -385,10 +375,7 @@ class FloatColumn(Column):
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
         logging.info(f"Compute statistics for float column {column_name} with polars. ")
-        minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
-            data, column_name, n_samples
-        )
-        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
             return NumericalStatisticsItem(
                 nan_count=n_samples,
@@ -400,6 +387,8 @@ class FloatColumn(Column):
                 std=None,
                 histogram=None,
             )
+        minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
+        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
         hist = compute_histogram(
             data,
@@ -442,11 +431,8 @@ class IntColumn(Column):
         data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> NumericalStatisticsItem:
         logging.info(f"Compute statistics for integer column {column_name} with polars. ")
-        minimum, maximum, mean, median, std, nan_count, nan_proportion = min_max_median_std_nan_count_proportion(
-            data, column_name, n_samples
-        )
-        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
-        if nan_count == n_samples:  # all values are None
+        nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples=n_samples)
+        if nan_count == n_samples:
             return NumericalStatisticsItem(
                 nan_count=n_samples,
                 nan_proportion=1.0,
@@ -457,6 +443,9 @@ class IntColumn(Column):
                 std=None,
                 histogram=None,
             )
+
+        minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
+        logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
         minimum, maximum = int(minimum), int(maximum)
         hist = compute_histogram(
