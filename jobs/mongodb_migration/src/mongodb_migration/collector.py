@@ -347,4 +347,14 @@ class MigrationsCollector:
                 job_type="split-duckdb-index-010",
                 new_job_type="split-duckdb-index",
             ),
+            QueueRenamingMigration(
+                version="20240307191001",
+                job_type="dataset-loading-tags",
+                new_job_type="dataset-compatible-libraries",
+            ),
+            CacheRenamingMigration(
+                cache_kind="dataset-loading-tags",
+                new_cache_kind="dataset-compatible-libraries",
+                version="20240307191000",
+            ),
         ]

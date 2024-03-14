@@ -88,6 +88,7 @@ class EndpointConfig:
                 "split": "split-is-valid",
             },
             "/statistics": {"split": "split-descriptive-statistics"},
+            "/compatible-libraries": {"dataset": "dataset-compatible-libraries"},
         }
     )
 
