@@ -59,7 +59,7 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     progress=None,
 )
 UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
-    kind="dataset-loading-tags",
+    kind="dataset-compatible-libraries",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,

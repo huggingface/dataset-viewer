@@ -141,7 +141,7 @@ def test_graph() -> None:
         ),
         (
             "dataset-info",
-            ["dataset-loading-tags"],
+            ["dataset-compatible-libraries"],
             ["dataset-config-names", "config-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info"],
         ),
@@ -158,7 +158,7 @@ def test_graph() -> None:
             ["dataset-config-names", "config-parquet-and-info", "config-size"],
         ),
         (
-            "dataset-loading-tags",
+            "dataset-compatible-libraries",
             ["dataset-hub-cache"],
             ["dataset-info"],
             ["dataset-config-names", "config-parquet-and-info", "config-info", "dataset-info"],
@@ -318,7 +318,7 @@ def test_graph() -> None:
         (
             "dataset-hub-cache",
             [],
-            ["dataset-is-valid", "dataset-size", "dataset-loading-tags"],
+            ["dataset-is-valid", "dataset-size", "dataset-compatible-libraries"],
             [
                 "config-info",
                 "config-is-valid",
@@ -330,7 +330,7 @@ def test_graph() -> None:
                 "dataset-config-names",
                 "dataset-info",
                 "dataset-is-valid",
-                "dataset-loading-tags",
+                "dataset-compatible-libraries",
                 "dataset-size",
                 "split-duckdb-index",
                 "split-first-rows",
