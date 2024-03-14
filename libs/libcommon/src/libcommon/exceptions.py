@@ -311,7 +311,7 @@ class FileSystemError(CacheableError):
 
 
 class HfHubError(CacheableError):
-    """The HF Hub server is not responding or gave and error."""
+    """The HF Hub server is not responding or gave an error."""
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "HfHubError", cause, False)
