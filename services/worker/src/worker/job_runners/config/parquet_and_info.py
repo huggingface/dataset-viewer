@@ -1227,7 +1227,10 @@ def compute_config_parquet_and_info_response(
     download_config = DownloadConfig(delete_extracted=True)
     try:
         logging.info(f"Loading {dataset=} {config=} builder. ")
-        builder = load_dataset_builder(
+        retry_load_dataset_builder = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+            load_dataset_builder
+        )
+        builder = retry_load_dataset_builder(
             path=dataset,
             name=config,
             revision=source_revision,
