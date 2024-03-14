@@ -50,7 +50,7 @@ transformers = "^4.36.0"
 typer = "^0.4.2"
 uvicorn = "^0.20.0"
 wget = "^3.2"
-polars = ">=0.20.0"
+polars = "^0.19.15"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
