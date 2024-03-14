@@ -681,7 +681,12 @@ def struct_thread_panic_error_parquet_file(tmp_path_factory: pytest.TempPathFact
 
 
 def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file: str) -> None:
-    from polars import Float64, List, String, Struct
+    from polars import Float64, List, Struct
+
+    try:
+        from polars import String
+    except ImportError:
+        pass  # string type in polars <0.20 is called Utf8
 
     df = pl.read_parquet(struct_thread_panic_error_parquet_file)  # should not raise
     assert "conversations" in df
