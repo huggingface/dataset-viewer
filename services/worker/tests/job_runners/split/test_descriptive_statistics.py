@@ -39,7 +39,7 @@ from worker.job_runners.split.descriptive_statistics import (
 )
 from worker.resources import LibrariesResource
 
-from ...constants import CI_HUB_ENDPOINT, CI_USER, CI_USER_TOKEN
+from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
@@ -666,7 +666,7 @@ def test_list_statistics(
 
 @pytest.fixture
 def struct_thread_panic_error_parquet_file(tmp_path_factory: pytest.TempPathFactory) -> str:
-    repo_id = f"{CI_USER}/test_polars_panic_error"
+    repo_id = "__DUMMY_TRANSFORMERS_USER__/test_polars_panic_error"
     hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
 
     dir_name = tmp_path_factory.mktemp("data")
@@ -682,11 +682,7 @@ def struct_thread_panic_error_parquet_file(tmp_path_factory: pytest.TempPathFact
 
 def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file: str) -> None:
     from polars import Float64, List, Struct
-
-    try:
-        from polars import String
-    except ImportError:
-        pass  # string type in polars <0.20 is called Utf8
+    from polars import Utf8 as String  # string type in polars <0.20 is called Utf8, in 0.20 it's an alias to String
 
     df = pl.read_parquet(struct_thread_panic_error_parquet_file)  # should not raise
     assert "conversations" in df
