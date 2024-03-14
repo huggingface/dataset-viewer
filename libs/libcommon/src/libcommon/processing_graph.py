@@ -590,6 +590,7 @@ specification: ProcessingGraphSpecification = {
             "config-size",
             "split-first-rows",
             "split-duckdb-index",
+            "split-descriptive-statistics",
         ],
         "job_runner_version": 4,
         "difficulty": 20,
