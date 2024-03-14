@@ -11,6 +11,7 @@ import pandas as pd
 import polars as pl
 import pytest
 from datasets import ClassLabel, Dataset
+from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
 from libcommon.exceptions import StatisticsComputationError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -38,6 +39,7 @@ from worker.job_runners.split.descriptive_statistics import (
 )
 from worker.resources import LibrariesResource
 
+from ...constants import CI_HUB_ENDPOINT, CI_USER_TOKEN
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
@@ -660,6 +662,33 @@ def test_list_statistics(
         n_samples=len(data[column_name]),
     )
     assert computed == expected
+
+
+@pytest.fixture
+def struct_thread_panic_error_parquet_file(tmp_path_factory: pytest.TempPathFactory) -> str:
+    repo_id = "__DUMMY_TRANSFORMERS_USER__/test_polars_panic_error"
+    hf_api = HfApi(endpoint=CI_HUB_ENDPOINT)
+
+    dir_name = tmp_path_factory.mktemp("data")
+    hf_api.hf_hub_download(
+        repo_id=repo_id,
+        filename="test_polars_panic_error.parquet",
+        repo_type="dataset",
+        local_dir=dir_name,
+        token=CI_USER_TOKEN,
+    )
+    return str(dir_name / "test_polars_panic_error.parquet")
+
+
+def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file: str) -> None:
+    from polars import Float64, List, String, Struct
+
+    df = pl.read_parquet(struct_thread_panic_error_parquet_file)  # should not raise
+    assert "conversations" in df
+
+    conversations_schema = List(Struct({"from": String, "value": String, "weight": Float64}))
+    assert "conversations" in df.schema
+    assert df.schema["conversations"] == conversations_schema
 
 
 @pytest.mark.parametrize(
