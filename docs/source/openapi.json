@@ -769,7 +769,7 @@
       },
       "IsValidResponse": {
         "type": "object",
-        "required": ["preview", "viewer", "search", "filter"],
+        "required": ["preview", "viewer", "search", "filter", "statistics"],
         "properties": {
           "viewer": {
             "type": "boolean"
