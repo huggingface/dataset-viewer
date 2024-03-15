@@ -334,7 +334,15 @@ def count_expected_statistics_for_numerical_column(
 
 
 def count_expected_statistics_for_list_column(column: pd.Series) -> dict:  # type: ignore
-    lengths_column = column.map(lambda x: len(x) if x is not None else None)
+    if column.isnull().all():
+        lengths_column = pd.Series([None] * column.shape[0])
+        return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
+    column_without_na = column.dropna()
+    first_sample = column_without_na.iloc[0]
+    if isinstance(first_sample, dict):  # sequence is dict of lists
+        lengths_column = column.map(lambda x: len(next(iter(x.values()))) if x is not None else None)
+    else:
+        lengths_column = column.map(lambda x: len(x) if x is not None else None)
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
@@ -646,6 +654,8 @@ def test_bool_statistics(
         "list__sequence_of_sequence_column",
         "list__sequence_of_sequence_nan_column",
         "list__sequence_of_sequence_all_nan_column",
+        "list__sequence_dict_of_lists_column",
+        "list__sequence_dict_of_lists_nan_column",
     ],
 )
 def test_list_statistics(
