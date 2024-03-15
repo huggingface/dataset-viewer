@@ -29,6 +29,7 @@ from libcommon.parquet_utils import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from polars import List, Struct
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -578,7 +579,20 @@ class ListColumn(Column):
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
 
         lengths_column_name = f"{column_name}_len"
-        lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
+        column_schema = data.schema[column_name]
+        if isinstance(column_schema, List):
+            lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
+
+        elif isinstance(column_schema, Struct):
+            first_field_name, first_field = next(iter(column_schema.to_schema().items()))
+            if not isinstance(first_field, List):
+                raise ValueError  # not a sequence TODO custom error
+            lengths_df = df_without_na.with_columns(
+                pl.col(column_name).struct[first_field_name].list.len().alias(lengths_column_name)
+            )
+        else:
+            raise NotImplementedError  # TODO
+
         lengths_stats = IntColumn._compute_statistics(
             lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
         )
@@ -785,7 +799,12 @@ def compute_descriptive_statistics_response(
     )
 
     for column in columns:
-        data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+        try:
+            data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+        except Exception as err:
+            raise PolarsParquetReadError(
+                f"Error reading parquet file(s) at {local_parquet_glob_path=}, {column.name=}", err
+            ) from err
         column_stats = column.compute_and_prepare_response(data)
         all_stats.append(column_stats)
 
@@ -802,6 +821,10 @@ def compute_descriptive_statistics_response(
         statistics=sorted(all_stats, key=lambda x: x["column_name"]),
         partial=partial,
     )
+
+
+class PolarsParquetReadError(Exception):
+    pass
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
