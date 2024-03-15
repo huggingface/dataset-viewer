@@ -19,6 +19,8 @@ from libcommon.exceptions import (
     FeaturesResponseEmptyError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
+    PolarsParquetReadError,
+    PolarsSequenceSchemaError,
     PreviousStepFormatError,
     StatisticsComputationError,
 )
@@ -282,6 +284,8 @@ def raise_with_column_name(func: _ComputeStatisticsFuncT) -> _ComputeStatisticsF
     ) -> Any:
         try:
             return func(data, column_name, n_samples, *args, **kwargs)
+        except PolarsSequenceSchemaError as error:
+            raise error
         except Exception as error:
             raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
 
@@ -585,13 +589,17 @@ class ListColumn(Column):
 
         elif isinstance(column_schema, Struct):
             first_field_name, first_field = next(iter(column_schema.to_schema().items()))
-            if not isinstance(first_field, List):
-                raise ValueError  # not a sequence TODO custom error
+            if not isinstance(first_field, List):  # TODO: check all fields?
+                raise PolarsSequenceSchemaError(
+                    f"Error parsing {column_name=} {column_schema=}. Subfields of Struct must be Lists. "
+                )
             lengths_df = df_without_na.with_columns(
                 pl.col(column_name).struct[first_field_name].list.len().alias(lengths_column_name)
             )
         else:
-            raise NotImplementedError  # TODO
+            raise PolarsSequenceSchemaError(
+                f"Error parsing {column_name=} {column_schema=}. Column must be either Struct or List. "
+            )
 
         lengths_stats = IntColumn._compute_statistics(
             lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
@@ -801,10 +809,10 @@ def compute_descriptive_statistics_response(
     for column in columns:
         try:
             data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
-        except Exception as err:
+        except Exception as error:
             raise PolarsParquetReadError(
-                f"Error reading parquet file(s) at {local_parquet_glob_path=}, {column.name=}", err
-            ) from err
+                f"Error reading parquet file(s) at {local_parquet_glob_path=}, columns=[{column.name}]: {error}", error
+            )
         column_stats = column.compute_and_prepare_response(data)
         all_stats.append(column_stats)
 
@@ -821,10 +829,6 @@ def compute_descriptive_statistics_response(
         statistics=sorted(all_stats, key=lambda x: x["column_name"]),
         partial=partial,
     )
-
-
-class PolarsParquetReadError(Exception):
-    pass
 
 
 class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
