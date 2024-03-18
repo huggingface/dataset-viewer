@@ -588,17 +588,18 @@ class ListColumn(Column):
             lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
 
         elif isinstance(column_schema, Struct):
-            first_field_name, first_field = next(iter(column_schema.to_schema().items()))
-            if not isinstance(first_field, List):  # TODO: check all fields?
+            if not all(isinstance(field.dtype, List) for field in column_schema.fields):
                 raise PolarsSequenceSchemaError(
                     f"Error parsing {column_name=} {column_schema=}. Subfields of Struct must be Lists. "
                 )
+            first_field_name = column_schema.fields[0].name  # assuming all fields have equal lengths within a sample
             lengths_df = df_without_na.with_columns(
                 pl.col(column_name).struct[first_field_name].list.len().alias(lengths_column_name)
             )
         else:
             raise PolarsSequenceSchemaError(
-                f"Error parsing {column_name=} {column_schema=}. Column must be either Struct or List. "
+                f"Error parsing {column_name=} {column_schema=} {type(column_schema)=}. "
+                f"Column must be either Struct or List. "
             )
 
         lengths_stats = IntColumn._compute_statistics(
