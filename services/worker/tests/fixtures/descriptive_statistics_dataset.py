@@ -1151,7 +1151,6 @@ statistics_dataset = Dataset.from_dict(
             "list__dict_all_nan_column": [
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ],
-            "list__dict_of_lists_column": {"name": [Value("string")], "count": [Value("int16")]},
             "list__sequence_column": Sequence(Value("int64")),
             "list__sequence_nan_column": Sequence(Value("int64")),
             "list__sequence_all_nan_column": Sequence(Value("int64")),
