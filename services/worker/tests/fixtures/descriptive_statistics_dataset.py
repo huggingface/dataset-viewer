@@ -818,6 +818,28 @@ statistics_dataset = Dataset.from_dict(
             [],
         ],
         "list__dict_all_nan_column": nan_column(),
+        "list__dict_of_lists_column": [
+            {"name": ["cat"], "count": [1]},
+            {"name": ["cat"], "count": [1]},
+            {"name": ["cat"], "count": [1]},
+            {"name": ["cat", "sat"], "count": [1, 2]},
+            {"name": ["cat", "sat"], "count": [1, 2]},
+            {"name": ["cat", "sat"], "count": [1, 2]},
+            {"name": ["cat", "sat", "mat"], "count": [1, 2, 3]},
+            {"name": ["cat", "sat", "mat"], "count": [1, 2, 3]},
+            {"name": ["cat", "sat", "mat"], "count": [1, 2, 3]},
+            {"name": [], "count": []},
+            {"name": [], "count": []},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat", "none of that"], "count": [1, 2, 3, 4, 5, 6, 7]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat", "none of that"], "count": [1, 2, 3, 4, 5, 6, 7]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat", "none of that"], "count": [1, 2, 3, 4, 5, 6, 7]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+            {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
+        ],
         "list__sequence_column": [
             [1],
             [1],
@@ -1105,6 +1127,7 @@ statistics_dataset = Dataset.from_dict(
             None,
             {"name": ["cat", "sat", "mat", "blat", "flat", "hat"], "count": [1, 2, 3, 4, 5, 6]},
         ],
+        "list__sequence_dict_of_lists_all_nan_column": nan_column(),
     },
     features=Features(
         {
@@ -1150,18 +1173,19 @@ statistics_dataset = Dataset.from_dict(
             "list__dict_all_nan_column": [
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ],
+            "list__dict_of_lists_column": {"name": [Value("string")], "count": [Value("int16")]},
             "list__sequence_column": Sequence(Value("int64")),
             "list__sequence_nan_column": Sequence(Value("int64")),
             "list__sequence_all_nan_column": Sequence(Value("int64")),
-            "list__sequence_dict_column": [
+            "list__sequence_dict_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_dict_nan_column": [
+            ),
+            "list__sequence_dict_nan_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_dict_all_nan_column": [
+            ),
+            "list__sequence_dict_all_nan_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
+            ),
             "list__sequence_of_sequence_column": Sequence(Sequence(Value("string"))),
             "list__sequence_of_sequence_nan_column": Sequence(Sequence(Value("string"))),
             "list__sequence_of_sequence_all_nan_column": Sequence(Sequence(Value("string"))),
@@ -1169,6 +1193,9 @@ statistics_dataset = Dataset.from_dict(
                 feature={"name": Value("string"), "count": Value("int16")}
             ),
             "list__sequence_dict_of_lists_nan_column": Sequence(
+                feature={"name": Value("string"), "count": Value("int16")}
+            ),
+            "list__sequence_dict_of_lists_all_nan_column": Sequence(
                 feature={"name": Value("string"), "count": Value("int16")}
             ),
         }
