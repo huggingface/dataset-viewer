@@ -826,7 +826,7 @@ def test_compute(
 
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
-        assert len(response) == len(expected)  # type: ignore
+        assert len(response) == len(expected), set(expected) - set([res["column_name"] for res in response])  # type: ignore
         assert set([column_response["column_name"] for column_response in response]) == set(  # type: ignore
             expected
         )  # assert returned feature names are as expected
