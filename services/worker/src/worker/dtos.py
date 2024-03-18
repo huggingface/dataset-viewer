@@ -277,3 +277,13 @@ class DatasetSizeResponse(TypedDict):
     pending: list[PreviousJob]
     failed: list[PreviousJob]
     partial: bool
+
+
+Modality = Literal["image", "audio", "text", "tabular", "binary"]
+
+
+class DatasetModalitiesResponse(TypedDict):
+    modalities: list[Modality]
+    pending: list[PreviousJob]
+    failed: list[PreviousJob]
+    partial: bool
