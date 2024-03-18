@@ -8,6 +8,7 @@ from typing import Optional, TypedDict
 from urllib import parse
 
 from PIL import Image  # type: ignore
+from PIL import ImageOps  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
@@ -63,6 +64,7 @@ def create_image_file(
         filename=filename,
     )
     if storage_client.overwrite or not storage_client.exists(object_key):
+        image = ImageOps.exif_transpose(image)
         buffer = BytesIO()
         image.save(fp=buffer, format=format)
         buffer.seek(0)
