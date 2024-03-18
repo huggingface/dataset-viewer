@@ -7,8 +7,7 @@ from tempfile import NamedTemporaryFile
 from typing import Optional, TypedDict
 from urllib import parse
 
-from PIL import Image  # type: ignore
-from PIL import ImageOps  # type: ignore
+from PIL import Image, ImageOps  # type: ignore
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
