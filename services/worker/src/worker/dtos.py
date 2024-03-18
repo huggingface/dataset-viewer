@@ -279,7 +279,7 @@ class DatasetSizeResponse(TypedDict):
     partial: bool
 
 
-Modality = Literal["image", "audio", "text", "tabular", "binary"]
+Modality = Literal["image", "audio", "text"]
 
 
 class DatasetModalitiesResponse(TypedDict):

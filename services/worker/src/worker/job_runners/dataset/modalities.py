@@ -3,6 +3,8 @@
 
 import logging
 
+from datasets import Features, Audio, Image, Value, ClassLabel, Sequence
+from datasets.features.features import _visit, FeatureType
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -37,12 +39,27 @@ def compute_modalities_response(dataset: str) -> tuple[DatasetModalitiesResponse
 
     dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     content = dataset_info_response["content"]
-    if "dataset_info" not in content:
+    if "dataset_info" not in content or not isinstance(content["dataset_info"], dict):
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
 
     try:
         modalities: set[Modality] = set()
-        # TODO
+
+        def classify_modality(feature: FeatureType) -> None:
+            nonlocal modalities
+            if isinstance(feature, Audio):
+                modalities.add("audio")
+            elif isinstance(feature, Image):
+                modalities.add("image")
+            elif isinstance(feature, Value) and feature.dtype == "string":
+                modalities.add("text")
+            elif isinstance(feature, Value) and feature.dtype == "binary":
+                modalities.add("binary")
+        
+        for config_info in content["dataset_info"].values():
+            features = Features.from_dict(config_info["features"])
+            _visit(features, classify_modality)
+
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
