@@ -3,8 +3,8 @@
 
 import logging
 
-from datasets import Features, Audio, Image, Value, ClassLabel, Sequence
-from datasets.features.features import _visit, FeatureType
+from datasets import Audio, Features, Image, Value
+from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
     get_previous_step_or_raise,
@@ -53,9 +53,7 @@ def compute_modalities_response(dataset: str) -> tuple[DatasetModalitiesResponse
                 modalities.add("image")
             elif isinstance(feature, Value) and feature.dtype == "string":
                 modalities.add("text")
-            elif isinstance(feature, Value) and feature.dtype == "binary":
-                modalities.add("binary")
-        
+
         for config_info in content["dataset_info"].values():
             features = Features.from_dict(config_info["features"])
             _visit(features, classify_modality)
