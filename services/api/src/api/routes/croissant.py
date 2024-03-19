@@ -211,7 +211,6 @@ def get_croissant_from_dataset_infos(
         "fileSet": "cr:fileSet",
         "format": "cr:format",
         "includes": "cr:includes",
-        "isEnumeration": "cr:isEnumeration",
         "isLiveDataset": "cr:isLiveDataset",
         "jsonPath": "cr:jsonPath",
         "key": "cr:key",
