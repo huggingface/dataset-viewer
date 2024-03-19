@@ -63,7 +63,7 @@ UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": ["tag"], "libraries": ["library"]},
+    content={"tags": ["tag"], "libraries": [{"library": "library"}]},
     progress=1.0,
 )
 EXPECTED_OK = (
