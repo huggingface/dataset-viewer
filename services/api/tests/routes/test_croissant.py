@@ -161,7 +161,7 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert croissant["license"] == ["mit"]
     assert croissant["identifier"] == "hf/123456789"
 
-    # If the parameter doesn't exist, it is not kept:
+    # If the parameter doesn't exist, check that it is not kept:
     squad_licenseless_info = squad_info.copy()
     del squad_licenseless_info["license"]
     croissant = get_croissant_from_dataset_infos(
