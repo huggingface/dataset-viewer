@@ -119,7 +119,7 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert croissant["recordSet"]
     assert isinstance(croissant["recordSet"], list)
     assert len(croissant["recordSet"]) == 2
-    assert croissant["recordSet"][0]["@type"] == croissant["recordSet"][1]["@type"] == f"cr:RecordSet"
+    assert croissant["recordSet"][0]["@type"] == croissant["recordSet"][1]["@type"] == "cr:RecordSet"
     assert croissant["recordSet"][0]["name"] == "record_set_user_squad_with_space"
     assert croissant["recordSet"][1]["name"] == "record_set_user_squad_with_space_0"
     assert isinstance(croissant["recordSet"][0]["field"], list)
@@ -140,7 +140,7 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert len(croissant["recordSet"][0]["field"]) == 4
     assert len(croissant["recordSet"][1]["field"]) == 4
     for field in croissant["recordSet"][0]["field"]:
-        assert field["@type"] == f"cr:Field"
+        assert field["@type"] == "cr:Field"
         assert field["dataType"] == "sc:Text"
     assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
 
