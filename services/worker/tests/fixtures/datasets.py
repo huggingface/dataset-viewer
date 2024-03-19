@@ -141,6 +141,7 @@ def datasets() -> Mapping[str, Dataset]:
                         "http://testurl.test/test_image2.jpg",
                         "other",
                         "http://testurl.test/test_image3-optIn.png",
+                        None,
                     ]
                 },
                 dtype=pd.StringDtype(storage="python"),
