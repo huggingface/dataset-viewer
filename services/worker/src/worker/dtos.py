@@ -247,9 +247,6 @@ DatasetModality = Literal["image", "audio", "text"]
 
 class DatasetModalitiesResponse(TypedDict):
     modalities: list[DatasetModality]
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
-    partial: bool
 
 
 class DatasetHubCacheResponse(TypedDict):

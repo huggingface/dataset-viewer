@@ -11,14 +11,14 @@ from libcommon.simple_cache import (
 )
 
 from worker.dtos import (
+    CompleteJobResult,
     DatasetModalitiesResponse,
     DatasetModality,
-    JobResult,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
-def compute_modalities_response(dataset: str) -> tuple[DatasetModalitiesResponse, float]:
+def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
     """
     Get the response of 'dataset-modalities' for one specific dataset on huggingface.co.
 
@@ -61,16 +61,10 @@ def compute_modalities_response(dataset: str) -> tuple[DatasetModalitiesResponse
     except Exception as e:
         raise PreviousStepFormatError("Previous step did not return the expected content.", e) from e
 
-    return (
-        DatasetModalitiesResponse(
-            {
-                "modalities": sorted(modalities),
-                "pending": content["pending"],
-                "failed": content["failed"],
-                "partial": content["partial"],
-            }
-        ),
-        dataset_info_response["progress"] or 1.0,
+    return DatasetModalitiesResponse(
+        {
+            "modalities": sorted(modalities),
+        }
     )
 
 
@@ -79,6 +73,6 @@ class DatasetModalitiesJobRunner(DatasetJobRunner):
     def get_job_type() -> str:
         return "dataset-modalities"
 
-    def compute(self) -> JobResult:
-        response_content, progress = compute_modalities_response(dataset=self.dataset)
-        return JobResult(response_content, progress=progress)
+    def compute(self) -> CompleteJobResult:
+        response_content = compute_modalities_response(dataset=self.dataset)
+        return CompleteJobResult(response_content)
