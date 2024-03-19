@@ -12,8 +12,8 @@ from libcommon.simple_cache import (
 
 from worker.dtos import (
     DatasetModalitiesResponse,
+    DatasetModality,
     JobResult,
-    Modality,
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
@@ -43,7 +43,7 @@ def compute_modalities_response(dataset: str) -> tuple[DatasetModalitiesResponse
         raise PreviousStepFormatError("Previous step did not return the expected content: 'dataset_info'.")
 
     try:
-        modalities: set[Modality] = set()
+        modalities: set[DatasetModality] = set()
 
         def classify_modality(feature: FeatureType) -> None:
             nonlocal modalities

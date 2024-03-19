@@ -242,6 +242,16 @@ class DatasetCompatibleLibrariesResponse(TypedDict):
     libraries: list[CompatibleLibrary]
 
 
+DatasetModality = Literal["image", "audio", "text"]
+
+
+class DatasetModalitiesResponse(TypedDict):
+    modalities: list[DatasetModality]
+    pending: list[PreviousJob]
+    failed: list[PreviousJob]
+    partial: bool
+
+
 class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
@@ -249,6 +259,7 @@ class DatasetHubCacheResponse(TypedDict):
     num_rows: int
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
+    modalities: list[DatasetModality]
 
 
 class DatasetParquetResponse(TypedDict):
@@ -274,16 +285,6 @@ class DatasetSizeContent(TypedDict):
 
 class DatasetSizeResponse(TypedDict):
     size: DatasetSizeContent
-    pending: list[PreviousJob]
-    failed: list[PreviousJob]
-    partial: bool
-
-
-Modality = Literal["image", "audio", "text"]
-
-
-class DatasetModalitiesResponse(TypedDict):
-    modalities: list[Modality]
     pending: list[PreviousJob]
     failed: list[PreviousJob]
     partial: bool
