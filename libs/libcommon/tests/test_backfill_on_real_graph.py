@@ -64,7 +64,7 @@ def test_plan_job_creation_and_termination() -> None:
         # The queue is empty, so no step is in process.
         queue_status={"in_process": []},
         # The root dataset-level steps, as well as the "fan-in" steps, are ready to be backfilled.
-        tasks=["CreateJobs,10"],
+        tasks=["CreateJobs,11"],
     )
 
     dataset_backfill_plan.run()
