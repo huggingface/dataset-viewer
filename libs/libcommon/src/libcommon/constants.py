@@ -40,6 +40,7 @@ ERROR_CODES_TO_RETRY = {
     "ConnectionError",
     "CreateCommitError",
     "ExternalServerError",
+    "HfHubError",
     "JobManagerCrashedError",
     "LockedDatasetTimeoutError",
     "PreviousStepStillProcessingError",

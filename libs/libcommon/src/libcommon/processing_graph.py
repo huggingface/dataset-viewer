@@ -590,6 +590,7 @@ specification: ProcessingGraphSpecification = {
             "config-size",
             "split-first-rows",
             "split-duckdb-index",
+            "split-descriptive-statistics",
         ],
         "job_runner_version": 4,
         "difficulty": 20,
@@ -678,15 +679,15 @@ specification: ProcessingGraphSpecification = {
         "triggered_by": [
             "dataset-is-valid",
             "dataset-size",
-            "dataset-loading-tags",
+            "dataset-compatible-libraries",
         ],
         "job_runner_version": 1,
         "difficulty": 20,
     },
-    "dataset-loading-tags": {
+    "dataset-compatible-libraries": {
         "input_type": "dataset",
         "triggered_by": "dataset-info",
-        "job_runner_version": 1,
+        "job_runner_version": 2,
         "difficulty": 20,
     },
 }

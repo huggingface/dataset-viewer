@@ -63,6 +63,7 @@ from libcommon.exceptions import (
     ExternalFilesSizeRequestHTTPError,
     ExternalFilesSizeRequestTimeoutError,
     FileSystemError,
+    HfHubError,
     LockedDatasetTimeoutError,
     PreviousStepFormatError,
     UnsupportedExternalFilesError,
@@ -1227,7 +1228,10 @@ def compute_config_parquet_and_info_response(
     download_config = DownloadConfig(delete_extracted=True)
     try:
         logging.info(f"Loading {dataset=} {config=} builder. ")
-        builder = load_dataset_builder(
+        retry_load_dataset_builder = retry(on=[HfHubHTTPError], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(
+            load_dataset_builder
+        )
+        builder = retry_load_dataset_builder(
             path=dataset,
             name=config,
             revision=source_revision,
@@ -1247,6 +1251,8 @@ def compute_config_parquet_and_info_response(
         raise
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
+    except HfHubHTTPError as err:
+        raise HfHubError(f"Couldn't load dataset builder for {dataset=} {config=}.") from err
 
     partial = False
     if is_parquet_builder_with_hub_files(builder):

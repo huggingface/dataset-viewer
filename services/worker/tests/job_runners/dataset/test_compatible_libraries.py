@@ -14,8 +14,8 @@ from libcommon.simple_cache import CachedArtifactError, upsert_response
 from pytest import TempPathFactory
 
 from worker.config import AppConfig
-from worker.job_runners.dataset.loading_tags import (
-    DatasetLoadingTagsJobRunner,
+from worker.job_runners.dataset.compatible_libraries import (
+    DatasetCompatibleLibrariesJobRunner,
     get_builder_configs_with_simplified_data_files,
 )
 from worker.resources import LibrariesResource
@@ -29,7 +29,7 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
     pass
 
 
-GetJobRunner = Callable[[str, AppConfig], DatasetLoadingTagsJobRunner]
+GetJobRunner = Callable[[str, AppConfig], DatasetCompatibleLibrariesJobRunner]
 
 PARQUET_DATASET = "parquet-dataset"
 WEBDATASET_DATASET = "webdataset-dataset"
@@ -215,10 +215,10 @@ def get_job_runner(
     def _get_job_runner(
         dataset: str,
         app_config: AppConfig,
-    ) -> DatasetLoadingTagsJobRunner:
-        return DatasetLoadingTagsJobRunner(
+    ) -> DatasetCompatibleLibrariesJobRunner:
+        return DatasetCompatibleLibrariesJobRunner(
             job_info={
-                "type": DatasetLoadingTagsJobRunner.get_job_type(),
+                "type": DatasetCompatibleLibrariesJobRunner.get_job_type(),
                 "params": {
                     "dataset": dataset,
                     "config": None,

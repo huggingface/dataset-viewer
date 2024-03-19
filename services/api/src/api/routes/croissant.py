@@ -132,6 +132,7 @@ def get_croissant_from_dataset_infos(
             fields_names: set[str] = set()
             field_name = f"{record_set_name}/{_escape_name(column, fields_names)}"
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -143,6 +144,7 @@ def get_croissant_from_dataset_infos(
                     }
                 )
             elif isinstance(feature, Image):
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -158,6 +160,7 @@ def get_croissant_from_dataset_infos(
                     }
                 )
             elif isinstance(feature, ClassLabel):
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -181,6 +184,7 @@ def get_croissant_from_dataset_infos(
         if description_body:
             description += "\n\nAdditional information:"
             description += description_body
+        record_set_name = _escape_name(record_set_name, names)
         record_set.append(
             _remove_none_values(
                 {

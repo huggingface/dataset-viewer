@@ -144,7 +144,7 @@ def create_truncated_row_items(
     # 1. first get the first rows_min_number rows
     for row_idx, row in enumerate(rows[:rows_min_number]):
         row_item = to_row_item(row_idx=row_idx, row=row)
-        row_item["truncated_cells"] = truncated_columns
+        row_item["truncated_cells"] = list(truncated_columns)
         rows_bytes += get_json_size(row_item) + COMMA_SIZE
         row_items.append(row_item)
 

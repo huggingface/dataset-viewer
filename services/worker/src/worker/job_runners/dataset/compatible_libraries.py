@@ -36,8 +36,8 @@ from libcommon.simple_cache import (
 from worker.dtos import (
     CompatibleLibrary,
     CompleteJobResult,
+    DatasetCompatibleLibrariesResponse,
     DatasetLibrary,
-    DatasetLoadingTagsResponse,
     DatasetTag,
     LoadingCode,
 )
@@ -568,9 +568,11 @@ get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str]], Com
 }
 
 
-def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) -> DatasetLoadingTagsResponse:
+def compute_compatible_libraries_response(
+    dataset: str, hf_token: Optional[str] = None
+) -> DatasetCompatibleLibrariesResponse:
     """
-    Get the response of 'dataset-loading-tags' for one specific dataset on huggingface.co.
+    Get the response of 'dataset-compatible-libraries' for one specific dataset on huggingface.co.
 
     Args:
         dataset (`str`):
@@ -585,9 +587,9 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
             If the content of the previous step has not the expected format
 
     Returns:
-        `DatasetLoadingTagsResponse`: The dataset-loading-tags response (list of tags).
+        `DatasetCompatibleLibrariesResponse`: The dataset-compatible-libraries response (list of libraries and loading codes).
     """
-    logging.info(f"compute 'dataset-loading-tags' for {dataset=}")
+    logging.info(f"compute 'dataset-compatible-libraries' for {dataset=}")
 
     dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     http_status = dataset_info_response["http_status"]
@@ -618,16 +620,16 @@ def compute_loading_tags_response(dataset: str, hf_token: Optional[str] = None) 
                 libraries.append(compatible_library)
             except NotImplementedError:
                 pass
-    return DatasetLoadingTagsResponse(tags=tags, libraries=libraries)
+    return DatasetCompatibleLibrariesResponse(tags=tags, libraries=libraries)
 
 
-class DatasetLoadingTagsJobRunner(DatasetJobRunnerWithDatasetsCache):
+class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):
     @staticmethod
     def get_job_type() -> str:
-        return "dataset-loading-tags"
+        return "dataset-compatible-libraries"
 
     def compute(self) -> CompleteJobResult:
-        response_content = compute_loading_tags_response(
+        response_content = compute_compatible_libraries_response(
             dataset=self.dataset, hf_token=self.app_config.common.hf_token
         )
         return CompleteJobResult(response_content)

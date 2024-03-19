@@ -10,10 +10,6 @@
       "path": "../chart"
     },
     {
-      "name": "docs",
-      "path": "../docs"
-    },
-    {
       "name": "e2e",
       "path": "../e2e"
     },
@@ -73,7 +69,6 @@
   "settings": {
     "files.exclude": {
       "chart": true,
-      "docs": true,
       "e2e": true,
       "jobs": true,
       "libs": true,

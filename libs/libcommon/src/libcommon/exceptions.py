@@ -98,6 +98,7 @@ CacheableErrorCode = Literal[
     "FeaturesError",
     "FeaturesResponseEmptyError",
     "FileSystemError",
+    "HfHubError",
     "InfoError",
     "JobManagerCrashedError",
     "JobManagerExceededMaximumDurationError",
@@ -307,6 +308,13 @@ class FileSystemError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "FileSystemError", cause, False)
+
+
+class HfHubError(CacheableError):
+    """The HF Hub server is not responding or gave an error."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "HfHubError", cause, False)
 
 
 class InfoError(CacheableError):
