@@ -3,14 +3,17 @@
 
 import enum
 import functools
+import io
 import logging
 import os
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional, Protocol, TypedDict, Union
 
+import librosa
 import numpy as np
 import polars as pl
+import pyarrow.parquet as pq
 from datasets import Features
 from huggingface_hub import hf_hub_download
 from libcommon.dtos import JobInfo
@@ -30,6 +33,7 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from requests.exceptions import ReadTimeout
+from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
@@ -67,6 +71,7 @@ class ColumnType(str, enum.Enum):
     CLASS_LABEL = "class_label"
     STRING_LABEL = "string_label"
     STRING_TEXT = "string_text"
+    AUDIO = "audio"
 
 
 class Histogram(TypedDict):
@@ -603,7 +608,53 @@ class ListColumn(Column):
         )
 
 
-SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn]
+class AudioColumn:
+    def __init__(
+        self,
+        feature_name: str,
+        n_samples: int,
+        n_bins: int,
+    ):
+        self.name = feature_name
+        self.n_samples = n_samples
+        self.n_bins = n_bins
+
+    @staticmethod
+    def get_duration(example) -> float:
+        with io.BytesIO(example["bytes"]) as f:
+            return librosa.get_duration(path=f)
+
+    @staticmethod
+    @raise_with_column_name
+    def _compute_statistics(
+        parquet_dir: Path,
+        column_name: str,
+        n_samples: int,
+        n_bins: int,
+    ) -> NumericalStatisticsItem:
+        table = pq.read_table(parquet_dir, columns=[column_name])
+        data = table.to_pydict()[column_name]
+        durations = thread_map(AudioColumn.get_duration, data)
+        duration_df = pl.from_dict({column_name: durations})
+        return FloatColumn._compute_statistics(
+            data=duration_df,
+            column_name=column_name,
+            n_samples=n_samples,
+            n_bins=n_bins,
+        )
+
+    def compute_and_prepare_response(self, parquet_dir: Path) -> StatisticsPerColumnItem:
+        stats = self._compute_statistics(
+            parquet_dir=parquet_dir, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins
+        )
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.AUDIO,
+            column_statistics=stats,
+        )
+
+
+SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
 
 
 def compute_descriptive_statistics_response(
@@ -745,6 +796,11 @@ def compute_descriptive_statistics_response(
                     feature_name=dataset_feature_name, n_samples=num_examples, feature_dict=dataset_feature
                 )
 
+            if dataset_feature.get("_type") == "Audio":
+                return AudioColumn(
+                    feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
+                )
+
             if dataset_feature.get("_type") == "Value":
                 if dataset_feature.get("dtype") in INTEGER_DTYPES:
                     return IntColumn(
@@ -785,8 +841,11 @@ def compute_descriptive_statistics_response(
     )
 
     for column in columns:
-        data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
-        column_stats = column.compute_and_prepare_response(data)
+        if isinstance(column, AudioColumn):
+            column_stats = column.compute_and_prepare_response(local_parquet_directory)
+        else:
+            data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+            column_stats = column.compute_and_prepare_response(data)
         all_stats.append(column_stats)
 
     if not all_stats:
