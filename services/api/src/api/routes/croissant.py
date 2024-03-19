@@ -45,11 +45,11 @@ NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
 
 
 def _escape_name(name: str, names: set[str]) -> str:
-    """Escapes names in Croissant.
+    """Escapes names and IDs in Croissant.
 
     Reasons:
     - `/` are used in the syntax as delimiters. So we replace them.
-    - Two FileObject/FileSet/RecordSet/Fields cannot have the same name. So we append a postfix in case it happens.
+    - Two FileObject/FileSet/RecordSet/Fields cannot have the same ID. So we append a postfix in case it happens.
 
     Args:
         name: The initial non-escaped name.
@@ -85,14 +85,17 @@ def get_croissant_from_dataset_infos(
     repo_name = "repo"
     names: set[str] = set(repo_name)
     distribution = [
-        {
-            "@type": "sc:FileObject",
-            "name": repo_name,
-            "description": "The Hugging Face git repository.",
-            "contentUrl": f"https://huggingface.co/datasets/{dataset}/tree/refs%2Fconvert%2Fparquet",
-            "encodingFormat": "git+https",
-            "sha256": "https://github.com/mlcommons/croissant/issues/80",
-        }
+        _remove_none_values(
+            {
+                "@type": "sc:FileObject",
+                "@id": repo_name,
+                "name": repo_name,
+                "description": "The Hugging Face git repository.",
+                "contentUrl": f"https://huggingface.co/datasets/{dataset}/tree/refs%2Fconvert%2Fparquet",
+                "encodingFormat": "git+https",
+                "sha256": "https://github.com/mlcommons/croissant/issues/80",
+            }
+        )
     ]
     identifier = None
     _license = None
@@ -107,13 +110,16 @@ def get_croissant_from_dataset_infos(
         splits = list(info["splits"])
         distribution_name = _escape_name(f"parquet-files-for-config-{config}", names)
         distribution.append(
-            {
-                "@type": "sc:FileSet",
-                "name": distribution_name,
-                "containedIn": repo_name,
-                "encodingFormat": "application/x-parquet",
-                "includes": f"{config}/*/*.parquet",
-            }
+            _remove_none_values(
+                {
+                    "@type": "sc:FileSet",
+                    "@id": distribution_name,
+                    "name": distribution_name,
+                    "containedIn": {"@id": repo_name},
+                    "encodingFormat": "application/x-parquet",
+                    "includes": f"{config}/*/*.parquet",
+                }
+            )
         )
         skipped_columns = []
         for column, feature in features.items():
@@ -122,38 +128,44 @@ def get_croissant_from_dataset_infos(
                 break
             fields_names: set[str] = set()
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
-                        "@type": "ml:Field",
-                        "name": _escape_name(column, fields_names),
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
                         "description": f"Column '{column}' from the Hugging Face parquet file.",
                         "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
-                        "source": {"distribution": distribution_name, "extract": {"column": column}},
+                        "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
                     }
                 )
             elif isinstance(feature, Image):
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
-                        "@type": "ml:Field",
-                        "name": _escape_name(column, fields_names),
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
                         "description": f"Image column '{column}' from the Hugging Face parquet file.",
                         "dataType": "sc:ImageObject",
                         "source": {
-                            "distribution": distribution_name,
+                            "fileSet": {"@id": distribution_name},
                             "extract": {"column": column},
                             "transform": {"jsonPath": "bytes"},
                         },
                     }
                 )
             elif isinstance(feature, ClassLabel):
+                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
-                        "@type": "ml:Field",
-                        "name": _escape_name(column, fields_names),
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
                         "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
                         + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
                         "dataType": "sc:Integer",
-                        "source": {"distribution": distribution_name, "extract": {"column": column}},
+                        "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
                     }
                 )
             else:
@@ -169,51 +181,62 @@ def get_croissant_from_dataset_infos(
         if description_body:
             description += "\n\nAdditional information:"
             description += description_body
+        record_set_name = _escape_name(record_set_name, names)
         record_set.append(
-            {
-                "@type": "ml:RecordSet",
-                "name": _escape_name(record_set_name, names),
-                "description": description,
-                "field": fields,
-            }
+            _remove_none_values(
+                {
+                    "@type": "cr:RecordSet",
+                    "@id": record_set_name,
+                    "name": record_set_name,
+                    "description": description,
+                    "field": fields,
+                }
+            )
         )
+    context = {
+        "@language": "en",
+        "@vocab": "https://schema.org/",
+        "citeAs": "cr:citeAs",
+        "column": "cr:column",
+        "conformsTo": "dct:conformsTo",
+        "cr": "http://mlcommons.org/croissant/",
+        "data": {"@id": "cr:data", "@type": "@json"},
+        "dataBiases": "cr:dataBiases",
+        "dataCollection": "cr:dataCollection",
+        "dataType": {"@id": "cr:dataType", "@type": "@vocab"},
+        "dct": "http://purl.org/dc/terms/",
+        "extract": "cr:extract",
+        "field": "cr:field",
+        "fileProperty": "cr:fileProperty",
+        "fileObject": "cr:fileObject",
+        "fileSet": "cr:fileSet",
+        "format": "cr:format",
+        "includes": "cr:includes",
+        "isEnumeration": "cr:isEnumeration",
+        "isLiveDataset": "cr:isLiveDataset",
+        "jsonPath": "cr:jsonPath",
+        "key": "cr:key",
+        "md5": "cr:md5",
+        "parentField": "cr:parentField",
+        "path": "cr:path",
+        "personalSensitiveInformation": "cr:personalSensitiveInformation",
+        "recordSet": "cr:recordSet",
+        "references": "cr:references",
+        "regex": "cr:regex",
+        "repeated": "cr:repeated",
+        "replace": "cr:replace",
+        "sc": "https://schema.org/",
+        "separator": "cr:separator",
+        "source": "cr:source",
+        "subField": "cr:subField",
+        "transform": "cr:transform",
+    }
     return _remove_none_values(
         {
-            "@context": {
-                "@language": "en",
-                "@vocab": "https://schema.org/",
-                "column": "ml:column",
-                "data": {
-                    "@id": "ml:data",
-                    "@type": "@json",
-                },
-                "dataType": {
-                    "@id": "ml:dataType",
-                    "@type": "@vocab",
-                },
-                "extract": "ml:extract",
-                "field": "ml:field",
-                "fileProperty": "ml:fileProperty",
-                "format": "ml:format",
-                "includes": "ml:includes",
-                "isEnumeration": "ml:isEnumeration",
-                "jsonPath": "ml:jsonPath",
-                "ml": "http://mlcommons.org/schema/",
-                "parentField": "ml:parentField",
-                "path": "ml:path",
-                "recordSet": "ml:recordSet",
-                "references": "ml:references",
-                "regex": "ml:regex",
-                "repeated": "ml:repeated",
-                "replace": "ml:replace",
-                "sc": "https://schema.org/",
-                "separator": "ml:separator",
-                "source": "ml:source",
-                "subField": "ml:subField",
-                "transform": "ml:transform",
-            },
+            "@context": context,
             "@type": "sc:Dataset",
             "name": _escape_name(dataset, names),
+            "conformsTo": "http://mlcommons.org/croissant/1.0",
             "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
             "identifier": identifier,
             "license": _license,
@@ -292,7 +315,10 @@ def create_croissant_endpoint(
                     partial = content["partial"]
                     with StepProfiler(method="croissant_endpoint", step="generate croissant json", context=context):
                         croissant = get_croissant_from_dataset_infos(
-                            dataset=dataset, infos=infos, partial=partial, full_jsonld=full_jsonld
+                            dataset=dataset,
+                            infos=infos,
+                            partial=partial,
+                            full_jsonld=full_jsonld,
                         )
                     with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)

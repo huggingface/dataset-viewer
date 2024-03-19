@@ -52,32 +52,123 @@ squad_info = {
 }
 
 
+v1_context = {
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "data": {"@id": "cr:data", "@type": "@json"},
+    "dataBiases": "cr:dataBiases",
+    "dataCollection": "cr:dataCollection",
+    "dataType": {"@id": "cr:dataType", "@type": "@vocab"},
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isEnumeration": "cr:isEnumeration",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "personalSensitiveInformation": "cr:personalSensitiveInformation",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
+    "sc": "https://schema.org/",
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform",
+}
+
+
+def test_get_croissant_context_from_dataset_infos() -> None:
+    croissant = get_croissant_from_dataset_infos(
+        "user/squad with space",
+        [squad_info, squad_info],
+        partial=False,
+        full_jsonld=False,
+    )
+    assert croissant["@context"] == v1_context
+
+
 def test_get_croissant_from_dataset_infos() -> None:
     croissant = get_croissant_from_dataset_infos(
-        "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=False
+        "user/squad with space",
+        [squad_info, squad_info],
+        partial=False,
+        full_jsonld=False,
     )
     assert "@context" in croissant
     assert "@type" in croissant
     assert "name" in croissant
     assert croissant["name"] == "user_squad_with_space"
-    assert "distribution" in croissant
+
+    # Test recordSet.
     assert "recordSet" in croissant
-    # column "answers" is not supported (nested)
+    assert croissant["recordSet"]
     assert isinstance(croissant["recordSet"], list)
     assert len(croissant["recordSet"]) == 2
+    assert croissant["recordSet"][0]["@type"] == croissant["recordSet"][1]["@type"] == "cr:RecordSet"
     assert croissant["recordSet"][0]["name"] == "record_set_user_squad_with_space"
     assert croissant["recordSet"][1]["name"] == "record_set_user_squad_with_space_0"
     assert isinstance(croissant["recordSet"][0]["field"], list)
     assert isinstance(squad_info["features"], dict)
-    assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
     assert "1 skipped column: answers" in croissant["recordSet"][0]["description"]
+    assert croissant["recordSet"][0]["@id"] == "record_set_user_squad_with_space"
+    assert croissant["recordSet"][1]["@id"] == "record_set_user_squad_with_space_0"
+    for i, _ in enumerate(croissant["recordSet"]):
+        for field in croissant["recordSet"][i]["field"]:
+            assert "source" in field
+            assert "fileSet" in field["source"]
+            assert "@id" in field["source"]["fileSet"]
+            assert field["source"]["fileSet"]["@id"]
+            assert "extract" in field["source"]
+            assert field["source"]["extract"]["column"] == field["@id"]
+
+    # Test fields.
+    assert len(croissant["recordSet"][0]["field"]) == 4
+    assert len(croissant["recordSet"][1]["field"]) == 4
+    for field in croissant["recordSet"][0]["field"]:
+        assert field["@type"] == "cr:Field"
+        assert field["dataType"] == "sc:Text"
+    assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
+
+    # Test distribution.
+    assert "distribution" in croissant
+    assert croissant["distribution"]
+    assert isinstance(croissant["distribution"], list)
+    assert croissant["distribution"][0]["@type"] == "sc:FileObject"
+    assert croissant["distribution"][1]["@type"] == "sc:FileSet"
+    assert croissant["distribution"][2]["@type"] == "sc:FileSet"
+    assert croissant["distribution"][0]["name"] == "repo"
+    for distribution in croissant["distribution"]:
+        assert "@id" in distribution
+        if "containedIn" in distribution:
+            assert "@id" in distribution["containedIn"]
+
+    # Test others.
     assert croissant["license"] == ["mit"]
     assert croissant["identifier"] == "hf/123456789"
 
     # If the parameter doesn't exist, it is not kept:
-    del squad_info["license"]
+    squad_licenseless_info = squad_info.copy()
+    del squad_licenseless_info["license"]
     croissant = get_croissant_from_dataset_infos(
-        "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=False
+        "user/squad with space",
+        [squad_licenseless_info, squad_licenseless_info],
+        partial=False,
+        full_jsonld=False,
     )
     assert "license" not in croissant
 
@@ -95,7 +186,10 @@ MAX_COLUMNS = 3
 def test_get_croissant_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int) -> None:
     with patch("api.routes.croissant.MAX_COLUMNS", MAX_COLUMNS):
         croissant = get_croissant_from_dataset_infos(
-            "user/squad with space", [squad_info, squad_info], partial=False, full_jsonld=full_jsonld
+            "user/squad with space",
+            [squad_info, squad_info],
+            partial=False,
+            full_jsonld=full_jsonld,
         )
     assert len(croissant["recordSet"][0]["field"]) == num_columns
     assert full_jsonld or "max number of columns reached" in croissant["recordSet"][0]["description"]
