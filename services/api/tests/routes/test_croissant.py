@@ -134,7 +134,7 @@ def test_get_croissant_from_dataset_infos() -> None:
             assert "@id" in field["source"]["fileSet"]
             assert field["source"]["fileSet"]["@id"]
             assert "extract" in field["source"]
-            assert field["source"]["extract"]["column"] == field["@id"]
+            assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
     assert len(croissant["recordSet"][0]["field"]) == 4
@@ -148,9 +148,9 @@ def test_get_croissant_from_dataset_infos() -> None:
     assert "distribution" in croissant
     assert croissant["distribution"]
     assert isinstance(croissant["distribution"], list)
-    assert croissant["distribution"][0]["@type"] == "sc:FileObject"
-    assert croissant["distribution"][1]["@type"] == "sc:FileSet"
-    assert croissant["distribution"][2]["@type"] == "sc:FileSet"
+    assert croissant["distribution"][0]["@type"] == "cr:FileObject"
+    assert croissant["distribution"][1]["@type"] == "cr:FileSet"
+    assert croissant["distribution"][2]["@type"] == "cr:FileSet"
     assert croissant["distribution"][0]["name"] == "repo"
     for distribution in croissant["distribution"]:
         assert "@id" in distribution

@@ -87,7 +87,7 @@ def get_croissant_from_dataset_infos(
     distribution = [
         _remove_none_values(
             {
-                "@type": "sc:FileObject",
+                "@type": "cr:FileObject",
                 "@id": repo_name,
                 "name": repo_name,
                 "description": "The Hugging Face git repository.",
@@ -112,9 +112,10 @@ def get_croissant_from_dataset_infos(
         distribution.append(
             _remove_none_values(
                 {
-                    "@type": "sc:FileSet",
+                    "@type": "cr:FileSet",
                     "@id": distribution_name,
                     "name": distribution_name,
+                    "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
                     "containedIn": {"@id": repo_name},
                     "encodingFormat": "application/x-parquet",
                     "includes": f"{config}/*/*.parquet",
@@ -122,13 +123,15 @@ def get_croissant_from_dataset_infos(
             )
         )
         skipped_columns = []
+        record_set_name = get_record_set(dataset=dataset, config_name=config)
+        record_set_name = _escape_name(record_set_name, names)
         for column, feature in features.items():
             if len(fields) >= MAX_COLUMNS and not full_jsonld:
                 description_body += f"\n- {len(features) - MAX_COLUMNS} skipped column{'s' if len(features) - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
                 break
             fields_names: set[str] = set()
+            field_name = f"{record_set_name}/{_escape_name(column, fields_names)}"
             if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
-                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -140,7 +143,6 @@ def get_croissant_from_dataset_infos(
                     }
                 )
             elif isinstance(feature, Image):
-                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -156,7 +158,6 @@ def get_croissant_from_dataset_infos(
                     }
                 )
             elif isinstance(feature, ClassLabel):
-                field_name = _escape_name(column, fields_names)
                 fields.append(
                     {
                         "@type": "cr:Field",
@@ -170,7 +171,6 @@ def get_croissant_from_dataset_infos(
                 )
             else:
                 skipped_columns.append(column)
-        record_set_name = get_record_set(dataset=dataset, config_name=config)
         description = f"{dataset} - '{config}' subset"
         if partial:
             description += " (first 5GB)"
@@ -181,7 +181,6 @@ def get_croissant_from_dataset_infos(
         if description_body:
             description += "\n\nAdditional information:"
             description += description_body
-        record_set_name = _escape_name(record_set_name, names)
         record_set.append(
             _remove_none_values(
                 {
