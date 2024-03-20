@@ -3,7 +3,7 @@
 
 import logging
 
-from datasets import Audio, Features, Image, Value
+from datasets import Audio, Features, Image, Translation, TranslationVariableLanguages, Value
 from datasets.features.features import FeatureType, _visit
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import (
@@ -51,7 +51,9 @@ def compute_modalities_response(dataset: str) -> DatasetModalitiesResponse:
                 modalities.add("audio")
             elif isinstance(feature, Image):
                 modalities.add("image")
-            elif isinstance(feature, Value) and feature.dtype == "string":
+            elif isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+                modalities.add("text")
+            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
                 modalities.add("text")
 
         for config_info in content["dataset_info"].values():
