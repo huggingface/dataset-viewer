@@ -12,7 +12,8 @@ ENV PYTHONFAULTHANDLER=1 \
     # Versions:
     POETRY_VERSION=1.7.1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
-    PATH="$PATH:/root/.local/bin"
+    PATH="$PATH:/root/.local/bin" \
+    HF_HUB_ENABLE_HF_TRANSFER=1
 
 # System deps:
 RUN apt-get update \

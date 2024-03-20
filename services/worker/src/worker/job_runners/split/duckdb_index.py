@@ -177,8 +177,6 @@ def compute_split_duckdb_index_response(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
-    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     for parquet_file in parquet_file_names:
         retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
         retry_download_hub_file(

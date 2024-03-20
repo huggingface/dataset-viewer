@@ -32,6 +32,8 @@
   value: {{ .Values.firstRows.minNumber| quote }}
 - name: FIRST_ROWS_COLUMNS_MAX_NUMBER
   value: {{ .Values.firstRows.columnsMaxNumber| quote }}
+- name: HF_HUB_ENABLE_HF_TRANSFER
+  value: 1
 # specific to 'config-parquet-and-info' job runner
 - name: PARQUET_AND_INFO_COMMIT_MESSAGE
   value: {{ .Values.parquetAndInfo.commitMessage | quote }}

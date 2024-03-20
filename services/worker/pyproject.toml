@@ -51,6 +51,7 @@ typer = "^0.4.2"
 uvicorn = "^0.20.0"
 wget = "^3.2"
 polars = ">=0.20.0"
+huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

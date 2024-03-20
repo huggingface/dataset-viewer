@@ -704,7 +704,6 @@ def compute_descriptive_statistics_response(
     split_parquet_files = split_parquet_files[:num_parquet_files_to_process]
 
     # store data as local parquet files for fast querying
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.

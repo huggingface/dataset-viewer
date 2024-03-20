@@ -78,9 +78,6 @@ def download_index_file(
 ) -> None:
     logging.info(f"init_dir {index_folder}")
     init_dir(index_folder)
-
-    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     hf_hub_download(
         repo_type=REPO_TYPE,
         revision=target_revision,
