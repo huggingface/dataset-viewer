@@ -11,6 +11,7 @@ from worker.dtos import (
     DatasetFormat,
     DatasetHubCacheResponse,
     DatasetLibrary,
+    DatasetModality,
     DatasetTag,
     JobResult,
 )
@@ -73,6 +74,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
     formats: list[DatasetFormat] = []
+    modalities: list[DatasetModality] = []
     try:
         compatible_libraries_response = get_previous_step_or_raise(
             kind="dataset-compatible-libraries", dataset=dataset
@@ -85,7 +87,17 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
         raise PreviousStepFormatError(
-            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags''."
+            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags', 'libraries'."
+        )
+
+    try:
+        modalities_response = get_previous_step_or_raise(kind="dataset-modalities", dataset=dataset)
+        modalities = modalities_response["content"]["modalities"]
+    except CachedArtifactNotFoundError:
+        logging.info(f"Missing 'dataset-modalities' response for {dataset=}")
+    except KeyError:
+        raise PreviousStepFormatError(
+            "Previous step 'dataset-modalities' did not return the expected content: 'modalities'."
         )
 
     return (
@@ -97,6 +109,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             tags=tags,
             libraries=libraries,
             formats=formats,
+            modalities=modalities,
         ),
         progress,
     )

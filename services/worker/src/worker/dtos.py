@@ -244,6 +244,13 @@ class DatasetCompatibleLibrariesResponse(TypedDict):
     formats: list[DatasetFormat]
 
 
+DatasetModality = Literal["image", "audio", "text"]
+
+
+class DatasetModalitiesResponse(TypedDict):
+    modalities: list[DatasetModality]
+
+
 class DatasetHubCacheResponse(TypedDict):
     preview: bool
     viewer: bool
@@ -251,6 +258,7 @@ class DatasetHubCacheResponse(TypedDict):
     num_rows: int
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
+    modalities: list[DatasetModality]
     formats: list[DatasetFormat]
 
 
