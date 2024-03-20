@@ -46,7 +46,7 @@ async def opt_in_out_task(
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
     except Exception as err:
-        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}") from err
+        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=err) from err
     if "urls" not in spawning_response:
         raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'")
     opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
