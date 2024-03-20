@@ -14,6 +14,7 @@ orjson = "^3.9.15"
 pyjwt = { extras = ["crypto"], version = "^2.6.0" }
 starlette = "^0.37.1"
 starlette-prometheus = "^0.9.0"
+huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

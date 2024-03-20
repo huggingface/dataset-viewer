@@ -1177,6 +1177,7 @@ develop = true
 [package.dependencies]
 environs = "^9.5.0"
 httpx = "^0.25.0"
+huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 libcommon = {path = "../../libs/libcommon", develop = true}
 orjson = "^3.9.15"
 pyjwt = {version = "^2.6.0", extras = ["crypto"]}
