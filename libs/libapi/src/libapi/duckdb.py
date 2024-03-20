@@ -3,7 +3,6 @@
 
 import json
 import logging
-import os
 import re
 from hashlib import sha1
 from typing import Optional
