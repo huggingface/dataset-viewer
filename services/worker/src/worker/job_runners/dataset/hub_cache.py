@@ -6,7 +6,14 @@ import logging
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
 
-from worker.dtos import CompatibleLibrary, DatasetHubCacheResponse, DatasetLibrary, DatasetTag, JobResult
+from worker.dtos import (
+    CompatibleLibrary,
+    DatasetFormat,
+    DatasetHubCacheResponse,
+    DatasetLibrary,
+    DatasetTag,
+    JobResult,
+)
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -65,6 +72,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
+    formats: list[DatasetFormat] = []
     try:
         compatible_libraries_response = get_previous_step_or_raise(
             kind="dataset-compatible-libraries", dataset=dataset
@@ -72,6 +80,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         tags = compatible_libraries_response["content"]["tags"]
         compatible_libraries: list[CompatibleLibrary] = compatible_libraries_response["content"]["libraries"]
         libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
+        formats = compatible_libraries_response["content"].get("formats", [])
     except CachedArtifactNotFoundError:
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
@@ -87,6 +96,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             num_rows=num_rows,
             tags=tags,
             libraries=libraries,
+            formats=formats,
         ),
         progress,
     )

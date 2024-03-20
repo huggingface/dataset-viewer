@@ -221,6 +221,7 @@ class IsValidResponse(TypedDict):
 
 DatasetTag = Literal["croissant"]
 DatasetLibrary = Literal["mlcroissant", "webdataset", "datasets", "pandas", "dask"]
+DatasetFormat = Literal["json", "csv", "parquet", "imagefolder", "audiofolder", "webdataset", "text"]
 ProgrammingLanguage = Literal["python"]
 
 
@@ -240,6 +241,7 @@ class CompatibleLibrary(TypedDict):
 class DatasetCompatibleLibrariesResponse(TypedDict):
     tags: list[DatasetTag]
     libraries: list[CompatibleLibrary]
+    formats: list[DatasetFormat]
 
 
 class DatasetHubCacheResponse(TypedDict):
@@ -249,6 +251,7 @@ class DatasetHubCacheResponse(TypedDict):
     num_rows: int
     tags: list[DatasetTag]
     libraries: list[DatasetLibrary]
+    formats: list[DatasetFormat]
 
 
 class DatasetParquetResponse(TypedDict):

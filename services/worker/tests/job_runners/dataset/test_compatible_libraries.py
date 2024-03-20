@@ -51,7 +51,7 @@ UPSTREAM_RESPONSE_INFO_WEBDATASET: UpstreamResponse = UpstreamResponse(
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "webdataset"}}, "partial": False},
     progress=1.0,
 )
-UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
+UPSTREAM_RESPONSE_INFO_ERROR: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
     dataset=ERROR_DATASET,
     dataset_git_revision=REVISION_NAME,
@@ -62,6 +62,7 @@ UPSTREAM_RESPONSE_INFD_ERROR: UpstreamResponse = UpstreamResponse(
 EXPECTED_PARQUET = (
     {
         "tags": ["croissant"],
+        "formats": ["parquet"],
         "libraries": [
             {
                 "function": "Dataset",
@@ -122,6 +123,7 @@ EXPECTED_PARQUET = (
 EXPECTED_WEBDATASET = (
     {
         "tags": ["croissant"],
+        "formats": ["webdataset"],
         "libraries": [
             {
                 "function": "Dataset",
@@ -277,7 +279,7 @@ def test_compute(
         (
             ERROR_DATASET,
             [
-                UPSTREAM_RESPONSE_INFD_ERROR,
+                UPSTREAM_RESPONSE_INFO_ERROR,
             ],
             pytest.raises(CachedArtifactError),
         )
