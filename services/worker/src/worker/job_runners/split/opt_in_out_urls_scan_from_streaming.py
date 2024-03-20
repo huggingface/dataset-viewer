@@ -45,8 +45,8 @@ async def opt_in_out_task(
 ) -> tuple[list[Any], list[Any]]:
     try:
         spawning_response = await check_spawning(image_urls, session, semaphore, limiter, spawning_url)
-    except Exception:
-        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}")
+    except Exception as err:
+        raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}", cause=err) from err
     if "urls" not in spawning_response:
         raise ExternalServerError(message=f"Error when trying to connect to {spawning_url}: '{spawning_response}'")
     opt_in_urls_indices = [i for i in range(len(image_urls)) if spawning_response["urls"][i]["optIn"]]
@@ -224,7 +224,7 @@ def compute_opt_in_out_urls_scan_response(
 
     # get the urls
     num_scanned_rows = len(rows)
-    urls = [row[urls_column] for row in rows for urls_column in image_url_columns]
+    urls = [row[urls_column] if row[urls_column] else "" for row in rows for urls_column in image_url_columns]
 
     # scan the urls
     opt_in_urls_indices, opt_out_urls_indices = run(
