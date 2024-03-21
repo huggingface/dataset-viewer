@@ -8,6 +8,7 @@ from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_ste
 
 from worker.dtos import (
     CompatibleLibrary,
+    DatasetFormat,
     DatasetHubCacheResponse,
     DatasetLibrary,
     DatasetModality,
@@ -72,6 +73,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
+    formats: list[DatasetFormat] = []
     modalities: list[DatasetModality] = []
     try:
         compatible_libraries_response = get_previous_step_or_raise(
@@ -80,6 +82,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         tags = compatible_libraries_response["content"]["tags"]
         compatible_libraries: list[CompatibleLibrary] = compatible_libraries_response["content"]["libraries"]
         libraries = [compatible_library["library"] for compatible_library in compatible_libraries]
+        formats = compatible_libraries_response["content"].get("formats", [])
     except CachedArtifactNotFoundError:
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
@@ -105,6 +108,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             num_rows=num_rows,
             tags=tags,
             libraries=libraries,
+            formats=formats,
             modalities=modalities,
         ),
         progress,
