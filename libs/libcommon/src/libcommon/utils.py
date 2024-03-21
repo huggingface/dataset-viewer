@@ -204,7 +204,7 @@ def download_file_from_hub(
     force_download: bool = False,
     resume_download: bool = False,
 ) -> None:
-    # Force hf_trasnfer usage
+    # Force hf_transfer usage
     constants.HF_HUB_ENABLE_HF_TRANSFER = True
     logging.debug(f"Using {constants.HF_HUB_ENABLE_HF_TRANSFER} for hf_transfer")
     retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
