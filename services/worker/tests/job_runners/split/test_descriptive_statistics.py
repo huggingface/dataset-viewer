@@ -654,6 +654,12 @@ def test_bool_statistics(
         "list__sequence_of_sequence_bool_column",
         "list__sequence_of_sequence_bool_nan_column",
         "list__sequence_of_sequence_bool_all_nan_column",
+        "list__sequence_of_sequence_dict_column",
+        "list__sequence_of_sequence_dict_nan_column",
+        "list__sequence_of_sequence_dict_all_nan_column",
+        "list__sequence_of_list_dict_column",
+        "list__sequence_of_list_dict_nan_column",
+        "list__sequence_of_list_dict_all_nan_column",
     ],
 )
 def test_list_statistics(
