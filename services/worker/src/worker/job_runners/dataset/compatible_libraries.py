@@ -112,22 +112,21 @@ def get_builder_configs_with_simplified_data_files(
         base_path=base_path,
         download_config=download_config,
     )
-    if not metadata_configs:  # inferred patterns are ugly, so let's simplify them
-        for config in builder_configs:
-            data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
-            config.data_files = DataFilesPatternsDict(
-                {
-                    str(split): (
-                        simplify_data_files_patterns(
-                            data_files_patterns=config.data_files[split],
-                            base_path=base_path,
-                            download_config=download_config,
-                            allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
-                        )
+    for config in builder_configs:
+        data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+        config.data_files = DataFilesPatternsDict(
+            {
+                str(split): (
+                    simplify_data_files_patterns(
+                        data_files_patterns=config.data_files[split],
+                        base_path=base_path,
+                        download_config=download_config,
+                        allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
                     )
-                    for split in data_files
-                }
-            )
+                )
+                for split in data_files
+            }
+        )
     return builder_configs
 
 
