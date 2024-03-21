@@ -1177,7 +1177,6 @@ develop = true
 [package.dependencies]
 environs = "^9.5.0"
 httpx = "^0.25.0"
-huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 libcommon = {path = "../../libs/libcommon", develop = true}
 orjson = "^3.9.15"
 pyjwt = {version = "^2.6.0", extras = ["crypto"]}
@@ -1202,7 +1201,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.21.3"
+huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -3421,4 +3420,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "33c78f6d5e4440203de725f8484278ddaebd7f082446d496d69374a9bcc15213"
+content-hash = "675ce7359780cf03e327709df7f8d67e0b222b9ce07a2d2dea6d06755b2918de"

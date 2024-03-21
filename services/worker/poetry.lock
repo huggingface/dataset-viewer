@@ -1871,7 +1871,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.21.3"
+huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -5777,4 +5777,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "4a8df26c08e0344c8381d183c4d4dce207e576cbdde8bb19774d4a6bc87738f3"
+content-hash = "5d97174b82a2919fd35bad88ff4f75d9f006545884b7df1f528ba2bd71ab027d"

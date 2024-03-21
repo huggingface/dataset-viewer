@@ -1116,7 +1116,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-huggingface-hub = "^0.21.3"
+huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
@@ -3227,4 +3227,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "5f5e1d689bf75494ef49a3abca72196d077efb73d980dcfc499ab9cbbb224984"
+content-hash = "762c50caa657a47670ae1327b791293789e486734ce7f0f9ba5ac2b23598b34f"

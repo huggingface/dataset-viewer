@@ -14,7 +14,6 @@ libapi = {path = "../../libs/libapi", develop = true}
 soundfile = ">=0.12.1"
 uvicorn = "^0.20.0"
 watchdog = { extras = ["watchmedo"], version = "^2.2.1" }
-huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
