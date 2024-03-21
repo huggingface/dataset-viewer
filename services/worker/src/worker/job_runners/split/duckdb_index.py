@@ -9,7 +9,6 @@ from typing import Optional
 
 import duckdb
 from datasets.features.features import Features, FeatureType, Value, _visit
-from huggingface_hub import hf_hub_download
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -39,18 +38,16 @@ from libcommon.parquet_utils import (
 from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from requests.exceptions import ReadTimeout
+from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
-    HF_HUB_HTTP_ERROR_RETRY_SLEEPS,
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
     get_split_names,
     hf_hub_url,
-    retry,
 )
 
 DATASET_TYPE = "dataset"
@@ -177,15 +174,13 @@ def compute_split_duckdb_index_response(
         ) from e
 
     for parquet_file in parquet_file_names:
-        retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
-        retry_download_hub_file(
+        download_file_from_hub(
             repo_type=REPO_TYPE,
             revision=source_revision,
             repo_id=dataset,
             filename=f"{config}/{split_directory}/{parquet_file}",
             local_dir=duckdb_index_file_directory,
-            local_dir_use_symlinks=False,
-            token=hf_token,
+            hf_token=hf_token,
             cache_dir=duckdb_index_file_directory,
             force_download=True,
             resume_download=False,

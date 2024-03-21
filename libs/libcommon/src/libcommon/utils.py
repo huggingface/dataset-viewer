@@ -2,13 +2,20 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import base64
+import functools
+import logging
 import mimetypes
+import time
+from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatch
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, TypeVar, Union, cast
 
 import orjson
 import pandas as pd
+from huggingface_hub import constants, hf_hub_download
+from requests.exceptions import ReadTimeout  # type: ignore
 
 from libcommon.exceptions import DatasetInBlockListError
 
@@ -148,3 +155,68 @@ def raise_if_blocked(
                 "This dataset has been disabled for now. Please open an issue in"
                 " https://github.com/huggingface/datasets-server if you want this dataset to be supported."
             )
+
+
+FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
+RETRY_ON: tuple[type[Exception]] = (Exception,)
+
+
+class retry:
+    """retries with an increasing sleep before every attempt"""
+
+    def __init__(self, sleeps: Sequence[float] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
+        self.sleeps = sleeps
+        self.on = on
+
+    def __call__(self, func: FuncT) -> FuncT:
+        @functools.wraps(func)
+        def decorator(*args: Any, **kwargs: Any) -> Any:
+            attempt = 0
+            last_err = None
+            while attempt < len(self.sleeps):
+                try:
+                    """always sleep before calling the function. It will prevent rate limiting in the first place"""
+                    duration = self.sleeps[attempt]
+                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                    time.sleep(duration)
+                    return func(*args, **kwargs)
+                except tuple(self.on) as err:
+                    logging.info(f"Got a {type(err)}. Let's retry.")
+                    last_err = err
+                    attempt += 1
+            raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err
+
+        return cast(FuncT, decorator)
+
+
+HF_HUB_HTTP_ERROR_RETRY_SLEEPS = [1, 1, 1, 10, 10, 10]
+
+
+def download_file_from_hub(
+    repo_type: str,
+    revision: str,
+    repo_id: str,
+    filename: str,
+    local_dir: Union[str, Path],
+    hf_token: Optional[str],
+    cache_dir: Union[str, Path, None] = None,
+    force_download: bool = False,
+    resume_download: bool = False,
+) -> None:
+    # Force hf_trasnfer usage
+    constants.HF_HUB_ENABLE_HF_TRANSFER = True
+    logging.debug(f"Using {constants.HF_HUB_ENABLE_HF_TRANSFER} for hf_transfer")
+    retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
+    retry_download_hub_file(
+        repo_type=repo_type,
+        revision=revision,
+        repo_id=repo_id,
+        filename=filename,
+        local_dir=local_dir,
+        local_dir_use_symlinks=False,
+        token=hf_token,
+        force_download=force_download,
+        cache_dir=cache_dir,
+        resume_download=resume_download,
+    )

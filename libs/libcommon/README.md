@@ -71,7 +71,4 @@ Set environment variables to configure the connection to S3.
 
 ## Rows Index
 
-- `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`: The maximun number of row groups to be loaded in memory.
-
-## hf_transfer
-- `HF_HUB_ENABLE_HF_TRANSFER`: Flag to use [hf_transfer](https://github.com/huggingface/hf_transfer) library for faster uploads and downloads from the Hub.
+- `ROWS_INDEX_MAX_ARROW_DATA_IN_MEMORY`: The maximum number of row groups to be loaded in memory.
