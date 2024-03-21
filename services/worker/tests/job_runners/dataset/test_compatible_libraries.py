@@ -17,6 +17,7 @@ from worker.config import AppConfig
 from worker.job_runners.dataset.compatible_libraries import (
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs_with_simplified_data_files,
+    get_compatible_library_for_builder,
 )
 from worker.resources import LibrariesResource
 
@@ -329,9 +330,21 @@ def test_compute_error(
             "cnn_dailymail",
             "parquet",
             {
-                "1.0.0": {"test": ["1.0.0/test-*"], "train": ["1.0.0/train-*"], "validation": ["1.0.0/validation-*"]},
-                "2.0.0": {"test": ["2.0.0/test-*"], "train": ["2.0.0/train-*"], "validation": ["2.0.0/validation-*"]},
-                "3.0.0": {"test": ["3.0.0/test-*"], "train": ["3.0.0/train-*"], "validation": ["3.0.0/validation-*"]},
+                "1.0.0": {
+                    "test": ["1.0.0/test-00000-of-00001.parquet"],
+                    "train": ["1.0.0/train-*.parquet"],
+                    "validation": ["1.0.0/validation-00000-of-00001.parquet"],
+                },
+                "2.0.0": {
+                    "test": ["2.0.0/test-00000-of-00001.parquet"],
+                    "train": ["2.0.0/train-*.parquet"],
+                    "validation": ["2.0.0/validation-00000-of-00001.parquet"],
+                },
+                "3.0.0": {
+                    "test": ["3.0.0/test-00000-of-00001.parquet"],
+                    "train": ["3.0.0/train-*.parquet"],
+                    "validation": ["3.0.0/validation-00000-of-00001.parquet"],
+                },
             },
         ),
         (
@@ -359,3 +372,44 @@ def test_simplify_data_files_patterns(
     configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name)
     simplified_data_files: dict[str, dict[str, list[str]]] = {config.name: config.data_files for config in configs}
     assert simplified_data_files == expected_simplified_data_files
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    "dataset,module_name,expected_data_files,expected_library",
+    [
+        (
+            "rajpurkar/squad",
+            "parquet",
+            {
+                "train": ["plain_text/train-00000-of-00001.parquet"],
+                "validation": ["plain_text/validation-00000-of-00001.parquet"],
+            },
+            "pandas",
+        ),
+        (
+            "Anthropic/hh-rlhf",
+            "json",
+            {
+                "train": ["**/*/train.jsonl.gz"],
+                "test": ["**/*/test.jsonl.gz"],
+            },
+            "dask",
+        ),
+    ],
+)
+def test_get_builder_configs_with_simplified_data_files(
+    use_hub_prod_endpoint: pytest.MonkeyPatch,
+    dataset: str,
+    module_name: str,
+    expected_data_files: dict[str, list[str]],
+    expected_library: str,
+) -> None:
+    hf_token = None
+    configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name, hf_token=hf_token)
+    assert len(configs) == 1
+    config = configs[0]
+    assert config.data_files == expected_data_files
+    assert module_name in get_compatible_library_for_builder
+    compatible_library = get_compatible_library_for_builder[module_name](dataset, hf_token)
+    assert compatible_library["library"] == expected_library
