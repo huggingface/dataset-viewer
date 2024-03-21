@@ -330,9 +330,21 @@ def test_compute_error(
             "cnn_dailymail",
             "parquet",
             {
-                "1.0.0": {"test": ["1.0.0/test-*"], "train": ["1.0.0/train-*"], "validation": ["1.0.0/validation-*"]},
-                "2.0.0": {"test": ["2.0.0/test-*"], "train": ["2.0.0/train-*"], "validation": ["2.0.0/validation-*"]},
-                "3.0.0": {"test": ["3.0.0/test-*"], "train": ["3.0.0/train-*"], "validation": ["3.0.0/validation-*"]},
+                "1.0.0": {
+                    "test": ["1.0.0/test-00000-of-00001.parquet"],
+                    "train": ["1.0.0/train-*.parquet"],
+                    "validation": ["1.0.0/validation-00000-of-00001.parquet"],
+                },
+                "2.0.0": {
+                    "test": ["2.0.0/test-00000-of-00001.parquet"],
+                    "train": ["2.0.0/train-*.parquet"],
+                    "validation": ["2.0.0/validation-00000-of-00001.parquet"],
+                },
+                "3.0.0": {
+                    "test": ["3.0.0/test-00000-of-00001.parquet"],
+                    "train": ["3.0.0/train-*.parquet"],
+                    "validation": ["3.0.0/validation-00000-of-00001.parquet"],
+                },
             },
         ),
         (
