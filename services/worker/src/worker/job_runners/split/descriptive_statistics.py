@@ -31,7 +31,7 @@ from libcommon.parquet_utils import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
-from polars import List, Struct
+from polars import List
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -583,25 +583,7 @@ class ListColumn(Column):
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
 
         lengths_column_name = f"{column_name}_len"
-        column_schema = data.schema[column_name]
-        if isinstance(column_schema, List):
-            lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
-
-        elif isinstance(column_schema, Struct):
-            if not all(isinstance(field.dtype, List) for field in column_schema.fields):
-                raise PolarsSequenceSchemaError(
-                    f"Error parsing {column_name=} {column_schema=}. Subfields of Struct must be Lists. "
-                )
-            first_field_name = column_schema.fields[0].name  # assuming all fields have equal lengths within a sample
-            lengths_df = df_without_na.with_columns(
-                pl.col(column_name).struct[first_field_name].list.len().alias(lengths_column_name)
-            )
-        else:
-            raise PolarsSequenceSchemaError(
-                f"Error parsing {column_name=} {column_schema=} {type(column_schema)=}. "
-                f"Column must be either Struct or List. "
-            )
-
+        lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
         lengths_stats = IntColumn._compute_statistics(
             lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
         )
@@ -757,11 +739,16 @@ def compute_descriptive_statistics_response(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
     ) -> Optional[SupportedColumns]:
         if isinstance(dataset_feature, list):
+            # TODO: do I need the schema check here?
             return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
             if dataset_feature.get("_type") == "Sequence":
-                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
+                list_schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
+                if isinstance(list_schema, List):  # compute only if it's internally a list!
+                    return ListColumn(
+                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
+                    )
 
             if dataset_feature.get("_type") == "ClassLabel":
                 return ClassLabelColumn(
