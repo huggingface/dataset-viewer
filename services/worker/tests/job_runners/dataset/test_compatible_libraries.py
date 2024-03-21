@@ -65,24 +65,6 @@ EXPECTED_PARQUET = (
         "formats": ["parquet"],
         "libraries": [
             {
-                "function": "Dataset",
-                "language": "python",
-                "library": "mlcroissant",
-                "loading_codes": [
-                    {
-                        "config_name": "default",
-                        "arguments": {"record_set": "default", "partial": False},
-                        "code": (
-                            "from mlcroissant "
-                            "import Dataset\n"
-                            "\n"
-                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset")\n'
-                            'records = ds.records("default")'
-                        ),
-                    }
-                ],
-            },
-            {
                 "function": "load_dataset",
                 "language": "python",
                 "library": "datasets",
@@ -116,15 +98,6 @@ EXPECTED_PARQUET = (
                     }
                 ],
             },
-        ],
-    },
-    1.0,
-)
-EXPECTED_WEBDATASET = (
-    {
-        "tags": ["croissant"],
-        "formats": ["webdataset"],
-        "libraries": [
             {
                 "function": "Dataset",
                 "language": "python",
@@ -134,14 +107,24 @@ EXPECTED_WEBDATASET = (
                         "config_name": "default",
                         "arguments": {"record_set": "default", "partial": False},
                         "code": (
-                            "from mlcroissant import Dataset\n"
+                            "from mlcroissant "
+                            "import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=webdataset-dataset")\n'
+                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset")\n'
                             'records = ds.records("default")'
                         ),
                     }
                 ],
             },
+        ],
+    },
+    1.0,
+)
+EXPECTED_WEBDATASET = (
+    {
+        "tags": ["croissant"],
+        "formats": ["webdataset"],
+        "libraries": [
             {
                 "function": "load_dataset",
                 "language": "python",
@@ -172,6 +155,23 @@ EXPECTED_WEBDATASET = (
                             "urls = f\"pipe: curl -s -L -H 'Authorization:Bearer {get_token()}' {'::'.join(urls)}\"\n"
                             "\n"
                             "ds = wds.WebDataset(urls).decode()"
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "Dataset",
+                "language": "python",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default", "partial": False},
+                        "code": (
+                            "from mlcroissant import Dataset\n"
+                            "\n"
+                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=webdataset-dataset")\n'
+                            'records = ds.records("default")'
                         ),
                     }
                 ],
