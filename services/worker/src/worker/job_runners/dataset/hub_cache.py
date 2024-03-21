@@ -6,7 +6,14 @@ import logging
 from libcommon.exceptions import PreviousStepFormatError
 from libcommon.simple_cache import CachedArtifactNotFoundError, get_previous_step_or_raise
 
-from worker.dtos import CompatibleLibrary, DatasetHubCacheResponse, DatasetLibrary, DatasetTag, JobResult
+from worker.dtos import (
+    CompatibleLibrary,
+    DatasetHubCacheResponse,
+    DatasetLibrary,
+    DatasetModality,
+    DatasetTag,
+    JobResult,
+)
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 
@@ -65,6 +72,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
 
     tags: list[DatasetTag] = []
     libraries: list[DatasetLibrary] = []
+    modalities: list[DatasetModality] = []
     try:
         compatible_libraries_response = get_previous_step_or_raise(
             kind="dataset-compatible-libraries", dataset=dataset
@@ -76,7 +84,17 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
         logging.info(f"Missing 'dataset-compatible-libraries' response for {dataset=}")
     except KeyError:
         raise PreviousStepFormatError(
-            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags''."
+            "Previous step 'dataset-compatible-libraries' did not return the expected content: 'tags', 'libraries'."
+        )
+
+    try:
+        modalities_response = get_previous_step_or_raise(kind="dataset-modalities", dataset=dataset)
+        modalities = modalities_response["content"]["modalities"]
+    except CachedArtifactNotFoundError:
+        logging.info(f"Missing 'dataset-modalities' response for {dataset=}")
+    except KeyError:
+        raise PreviousStepFormatError(
+            "Previous step 'dataset-modalities' did not return the expected content: 'modalities'."
         )
 
     return (
@@ -87,6 +105,7 @@ def compute_hub_cache_response(dataset: str) -> tuple[DatasetHubCacheResponse, f
             num_rows=num_rows,
             tags=tags,
             libraries=libraries,
+            modalities=modalities,
         ),
         progress,
     )

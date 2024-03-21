@@ -32,6 +32,7 @@ from worker.job_runners.dataset.duckdb_index_size import (
 from worker.job_runners.dataset.hub_cache import DatasetHubCacheJobRunner
 from worker.job_runners.dataset.info import DatasetInfoJobRunner
 from worker.job_runners.dataset.is_valid import DatasetIsValidJobRunner
+from worker.job_runners.dataset.modalities import DatasetModalitiesJobRunner
 from worker.job_runners.dataset.opt_in_out_urls_count import (
     DatasetOptInOutUrlsCountJobRunner,
 )
@@ -231,6 +232,12 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 hf_datasets_cache=self.hf_datasets_cache,
             )
 
+        if job_type == DatasetModalitiesJobRunner.get_job_type():
+            return DatasetModalitiesJobRunner(
+                job_info=job_info,
+                app_config=self.app_config,
+            )
+
         supported_job_types = [
             DatasetConfigNamesJobRunner.get_job_type(),
             ConfigSplitNamesJobRunner.get_job_type(),
@@ -256,5 +263,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetDuckdbIndexSizeJobRunner.get_job_type(),
             DatasetHubCacheJobRunner.get_job_type(),
             DatasetCompatibleLibrariesJobRunner.get_job_type(),
+            DatasetModalitiesJobRunner.get_job_type(),
         ]
         raise KeyError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")
