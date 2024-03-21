@@ -20,7 +20,6 @@ from libcommon.exceptions import (
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
     PolarsParquetReadError,
-    PolarsSequenceSchemaError,
     PreviousStepFormatError,
     StatisticsComputationError,
 )
@@ -284,8 +283,6 @@ def raise_with_column_name(func: _ComputeStatisticsFuncT) -> _ComputeStatisticsF
     ) -> Any:
         try:
             return func(data, column_name, n_samples, *args, **kwargs)
-        except PolarsSequenceSchemaError as error:
-            raise error
         except Exception as error:
             raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
 
@@ -738,18 +735,14 @@ def compute_descriptive_statistics_response(
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
     ) -> Optional[SupportedColumns]:
-        if isinstance(dataset_feature, list):
-            # TODO: do I need the schema check here?
-            return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
+        if isinstance(dataset_feature, list) or (
+            isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
+        ):
+            schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
+            if isinstance(schema, List):  # compute only if it's internally a List! because it can also be Struct
+                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
-            if dataset_feature.get("_type") == "Sequence":
-                list_schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
-                if isinstance(list_schema, List):  # compute only if it's internally a list!
-                    return ListColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
-
             if dataset_feature.get("_type") == "ClassLabel":
                 return ClassLabelColumn(
                     feature_name=dataset_feature_name, n_samples=num_examples, feature_dict=dataset_feature
