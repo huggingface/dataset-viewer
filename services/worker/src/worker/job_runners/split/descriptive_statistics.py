@@ -739,7 +739,9 @@ def compute_descriptive_statistics_response(
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
             schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
-            if isinstance(schema, List):  # compute only if it's internally a List! because it can also be Struct
+            # Compute only if it's internally a List! because it can also be Struct, see
+            # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
+            if isinstance(schema, List):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
