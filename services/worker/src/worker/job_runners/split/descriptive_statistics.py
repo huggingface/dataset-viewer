@@ -272,7 +272,7 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
 
 
 class _ComputeStatisticsFuncT(Protocol):
-    def __call__(self, data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: Any, column_name: str, **kwargs: Any) -> Any:
         ...
 
 
@@ -283,11 +283,9 @@ def raise_with_column_name(func: _ComputeStatisticsFuncT) -> _ComputeStatisticsF
     """
 
     @functools.wraps(func)
-    def _compute_statistics_wrapper(
-        data: pl.DataFrame, column_name: str, n_samples: int, *args: Any, **kwargs: Any
-    ) -> Any:
+    def _compute_statistics_wrapper(*args: Any, column_name: str, **kwargs: Any) -> Any:
         try:
-            return func(data, column_name, n_samples, *args, **kwargs)
+            return func(column_name=column_name, *args, **kwargs)
         except Exception as error:
             raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
 
@@ -363,7 +361,9 @@ class ClassLabelColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, feature_dict=self.feature_dict)
+        stats = self._compute_statistics(
+            data, column_name=self.name, n_samples=self.n_samples, feature_dict=self.feature_dict
+        )
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.CLASS_LABEL,
@@ -419,7 +419,7 @@ class FloatColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
+        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.FLOAT,
@@ -477,7 +477,7 @@ class IntColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
+        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.INT,
@@ -519,12 +519,12 @@ class StringColumn(Column):
             pl.col(column_name).str.len_chars().alias(lengths_column_name)
         )
         lengths_stats: NumericalStatisticsItem = IntColumn._compute_statistics(
-            lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples
+            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples
         )
         return lengths_stats
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
+        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
         string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -551,7 +551,7 @@ class BoolColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples)
+        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.BOOL,
@@ -587,7 +587,7 @@ class ListColumn(Column):
         lengths_column_name = f"{column_name}_len"
         lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
         lengths_stats = IntColumn._compute_statistics(
-            lengths_df, lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
+            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
         )
 
         return NumericalStatisticsItem(
@@ -602,7 +602,7 @@ class ListColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, self.name, self.n_samples, n_bins=self.n_bins)
+        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.LIST,
@@ -777,10 +777,11 @@ def compute_descriptive_statistics_response(
             resume_download=False,
         )
 
-    local_parquet_glob_path = Path(local_parquet_directory) / config / f"{split_directory}/*.parquet"
+    local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
+    local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
     num_examples = pl.read_parquet(
-        local_parquet_glob_path, columns=[pl.scan_parquet(local_parquet_glob_path).columns[0]]
+        local_parquet_split_glob, columns=[pl.scan_parquet(local_parquet_split_glob).columns[0]]
     ).shape[0]
 
     def _column_from_feature(
@@ -789,7 +790,7 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, list) or (
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
-            schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
+            schema = pl.scan_parquet(local_parquet_split_glob).schema[dataset_feature_name]
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
             if isinstance(schema, List):
@@ -847,13 +848,14 @@ def compute_descriptive_statistics_response(
 
     for column in columns:
         if isinstance(column, AudioColumn):
-            column_stats = column.compute_and_prepare_response(local_parquet_directory)
+            column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+                data = pl.read_parquet(local_parquet_split_glob, columns=[column.name])
             except Exception as error:
                 raise PolarsParquetReadError(
-                    f"Error reading parquet file(s) at {local_parquet_glob_path=}, columns=[{column.name}]: {error}", error
+                    f"Error reading parquet file(s) at {local_parquet_split_glob=}, columns=[{column.name}]: {error}",
+                    error,
                 )
             column_stats = column.compute_and_prepare_response(data)
         all_stats.append(column_stats)
