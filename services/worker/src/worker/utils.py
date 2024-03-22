@@ -1,16 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-import functools
 import itertools
 import logging
 import sys
-import time
 import traceback
 import warnings
-from collections.abc import Callable, Sequence
 from fnmatch import fnmatch
-from typing import Any, Optional, TypeVar, Union, cast
+from typing import Optional, Union
 from urllib.parse import quote
 
 import PIL
@@ -32,43 +29,11 @@ from libcommon.exceptions import (
     StreamingRowsError,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
+from libcommon.utils import retry
 from pyarrow.parquet import ParquetFile
 
 MAX_IMAGE_PIXELS = 10_000_000_000
 # ^ see https://pillow.readthedocs.io/en/stable/reference/Image.html#PIL.Image.MAX_IMAGE_PIXELS
-
-
-FuncT = TypeVar("FuncT", bound=Callable[..., Any])
-RETRY_SLEEPS = (1, 1, 1, 10, 10, 10, 60, 60, 60, 10 * 60)
-RETRY_ON: tuple[type[Exception]] = (Exception,)
-
-
-class retry:
-    """retries with an increasing sleep before every attempt"""
-
-    def __init__(self, sleeps: Sequence[float] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
-        self.sleeps = sleeps
-        self.on = on
-
-    def __call__(self, func: FuncT) -> FuncT:
-        @functools.wraps(func)
-        def decorator(*args: Any, **kwargs: Any) -> Any:
-            attempt = 0
-            last_err = None
-            while attempt < len(self.sleeps):
-                try:
-                    """always sleep before calling the function. It will prevent rate limiting in the first place"""
-                    duration = self.sleeps[attempt]
-                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
-                    time.sleep(duration)
-                    return func(*args, **kwargs)
-                except tuple(self.on) as err:
-                    logging.info(f"Got a {type(err)}. Let's retry.")
-                    last_err = err
-                    attempt += 1
-            raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err
-
-        return cast(FuncT, decorator)
 
 
 @retry(on=[ConnectionError])
@@ -189,7 +154,6 @@ def get_parquet_file(url: str, fs: HTTPFileSystem, hf_token: Optional[str]) -> P
 
 DATASET_TYPE = "dataset"
 
-HF_HUB_HTTP_ERROR_RETRY_SLEEPS = [1, 1, 1, 10, 10, 10]
 LIST_REPO_REFS_RETRY_SLEEPS = [1, 1, 1, 10, 10]
 LOCK_GIT_BRANCH_RETRY_SLEEPS = [1, 1, 1, 1, 1, 10, 10, 10, 10, 100] * 3
 

@@ -46,6 +46,8 @@ export S3_REGION_NAME := us-east-1
 # S3_ACCESS_KEY_ID       <- secret
 # S3_SECRET_ACCESS_KEY   <- secret
 
+export HF_HUB_ENABLE_HF_TRANSFER := 1
+
 # makefile variables
 DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml
 

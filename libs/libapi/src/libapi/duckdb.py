@@ -3,20 +3,19 @@
 
 import json
 import logging
-import os
 import re
 from hashlib import sha1
 from typing import Optional
 
 import anyio
 from anyio import Path
-from huggingface_hub import hf_hub_download
 from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, DUCKDB_VERSION, SPLIT_DUCKDB_INDEX_KIND
 from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
 from libcommon.storage import StrPath, init_dir
 from libcommon.storage_client import StorageClient
+from libcommon.utils import download_file_from_hub
 
 from libapi.utils import get_cache_entry_from_step
 
@@ -78,17 +77,13 @@ def download_index_file(
 ) -> None:
     logging.info(f"init_dir {index_folder}")
     init_dir(index_folder)
-
-    # see https://pypi.org/project/hf-transfer/ for more details about how to enable hf_transfer
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-    hf_hub_download(
+    download_file_from_hub(
         repo_type=REPO_TYPE,
         revision=target_revision,
         repo_id=dataset,
         filename=repo_file_location,
         local_dir=index_folder,
-        local_dir_use_symlinks=False,
-        token=hf_token,
+        hf_token=hf_token,
         cache_dir=cache_folder,
     )
 

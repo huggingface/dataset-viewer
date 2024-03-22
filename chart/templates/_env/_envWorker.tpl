@@ -112,4 +112,6 @@
   value: {{ .Values.descriptiveStatistics.maxSplitSizeBytes | quote }}
 - name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
   value: {{ .Values.descriptiveStatistics.cacheDirectory | quote }}
+- name: HF_HUB_ENABLE_HF_TRANSFER
+  value: "1"
 {{- end -}}
