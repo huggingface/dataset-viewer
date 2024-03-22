@@ -66,6 +66,7 @@ jobs:
           S3_REGION_NAME: "us-east-1"
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
+          HF_HUB_ENABLE_HF_TRANSFER: "1"
         run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry

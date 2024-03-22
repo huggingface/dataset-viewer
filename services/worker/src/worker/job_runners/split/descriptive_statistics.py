@@ -4,7 +4,6 @@
 import enum
 import functools
 import logging
-import os
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional, Protocol, TypedDict, Union
@@ -12,7 +11,6 @@ from typing import Any, Optional, Protocol, TypedDict, Union
 import numpy as np
 import polars as pl
 from datasets import Features
-from huggingface_hub import hf_hub_download
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -30,13 +28,12 @@ from libcommon.parquet_utils import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from libcommon.utils import download_file_from_hub
 from polars import List
-from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
 from worker.dtos import CompleteJobResult
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
-from worker.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, retry
 
 REPO_TYPE = "dataset"
 
@@ -706,21 +703,18 @@ def compute_descriptive_statistics_response(
     split_parquet_files = split_parquet_files[:num_parquet_files_to_process]
 
     # store data as local parquet files for fast querying
-    os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
     logging.info(f"Downloading remote parquet files to a local directory {local_parquet_directory}. ")
     # For directories like "partial-train" for the file at "en/partial-train/0000.parquet" in the C4 dataset.
     # Note that "-" is forbidden for split names so it doesn't create directory names collisions.
     split_directory = extract_split_name_from_parquet_url(split_parquet_files[0]["url"])
     for parquet_file in split_parquet_files:
-        retry_download_hub_file = retry(on=[ReadTimeout], sleeps=HF_HUB_HTTP_ERROR_RETRY_SLEEPS)(hf_hub_download)
-        retry_download_hub_file(
+        download_file_from_hub(
             repo_type=REPO_TYPE,
             revision=parquet_revision,
             repo_id=dataset,
             filename=f"{config}/{split_directory}/{parquet_file['filename']}",
             local_dir=local_parquet_directory,
-            local_dir_use_symlinks=False,
-            token=hf_token,
+            hf_token=hf_token,
             cache_dir=local_parquet_directory,
             force_download=True,
             resume_download=False,
