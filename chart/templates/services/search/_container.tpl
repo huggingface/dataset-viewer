@@ -38,7 +38,7 @@
   - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
     value: "/tmp/duckdb-extensions"
   - name: HF_HUB_ENABLE_HF_TRANSFER
-    value: 1
+    value: "1"
   volumeMounts:
   {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   securityContext:
