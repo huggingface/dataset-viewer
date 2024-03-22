@@ -325,6 +325,15 @@ def hub_public_descriptive_statistics_string_text(datasets: Mapping[str, Dataset
 
 
 @pytest.fixture(scope="session")
+def hub_public_descriptive_statistics_not_supported(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="descriptive_statistics_not_supported", dataset=datasets["descriptive_statistics_not_supported"]
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_n_configs_with_default(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     default_config_name, _ = get_default_config_split()
     repo_id = create_hub_dataset_repo(
@@ -1041,6 +1050,19 @@ def hub_responses_descriptive_statistics_string_text(
         "name": hub_public_descriptive_statistics_string_text,
         "config_names_response": create_config_names_response(hub_public_descriptive_statistics_string_text),
         "splits_response": create_splits_response(hub_public_descriptive_statistics_string_text),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_descriptive_statistics_not_supported(
+    hub_public_descriptive_statistics_not_supported: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_descriptive_statistics_not_supported,
+        "config_names_response": create_config_names_response(hub_public_descriptive_statistics_not_supported),
+        "splits_response": create_splits_response(hub_public_descriptive_statistics_not_supported),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

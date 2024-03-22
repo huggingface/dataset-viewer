@@ -334,7 +334,15 @@ def count_expected_statistics_for_numerical_column(
 
 
 def count_expected_statistics_for_list_column(column: pd.Series) -> dict:  # type: ignore
-    lengths_column = column.map(lambda x: len(x) if x is not None else None)
+    if column.isnull().all():
+        lengths_column = pd.Series([None] * column.shape[0])
+        return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
+    column_without_na = column.dropna()
+    first_sample = column_without_na.iloc[0]
+    if isinstance(first_sample, dict):  # sequence is dict of lists
+        lengths_column = column.map(lambda x: len(next(iter(x.values()))) if x is not None else None)
+    else:
+        lengths_column = column.map(lambda x: len(x) if x is not None else None)
     return count_expected_statistics_for_numerical_column(lengths_column, dtype=ColumnType.INT)
 
 
@@ -637,15 +645,21 @@ def test_bool_statistics(
         "list__dict_column",
         "list__dict_nan_column",
         "list__dict_all_nan_column",
-        "list__sequence_column",
-        "list__sequence_nan_column",
-        "list__sequence_all_nan_column",
-        "list__sequence_dict_column",
-        "list__sequence_dict_nan_column",
-        "list__sequence_dict_all_nan_column",
-        "list__sequence_of_sequence_column",
-        "list__sequence_of_sequence_nan_column",
-        "list__sequence_of_sequence_all_nan_column",
+        "list__sequence_int_column",
+        "list__sequence_int_nan_column",
+        "list__sequence_int_all_nan_column",
+        "list__sequence_class_label_column",
+        "list__sequence_class_label_nan_column",
+        "list__sequence_class_label_all_nan_column",
+        "list__sequence_of_sequence_bool_column",
+        "list__sequence_of_sequence_bool_nan_column",
+        "list__sequence_of_sequence_bool_all_nan_column",
+        "list__sequence_of_sequence_dict_column",
+        "list__sequence_of_sequence_dict_nan_column",
+        "list__sequence_of_sequence_dict_all_nan_column",
+        "list__sequence_of_list_dict_column",
+        "list__sequence_of_list_dict_nan_column",
+        "list__sequence_of_list_dict_all_nan_column",
     ],
 )
 def test_list_statistics(
@@ -702,6 +716,7 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_string_text_partial", None),
+        ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
         ("gated", None),
         ("audio", "NoSupportedFeaturesError"),
     ],
@@ -716,6 +731,7 @@ def test_compute(
     hub_responses_descriptive_statistics_string_text: HubDatasetTest,
     hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
+    hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
     hub_responses_audio: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
@@ -727,6 +743,7 @@ def test_compute(
         "descriptive_statistics": hub_responses_descriptive_statistics,
         "descriptive_statistics_string_text": hub_responses_descriptive_statistics_string_text,
         "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
+        "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio": hub_responses_audio,
     }
@@ -814,7 +831,7 @@ def test_compute(
 
         response = response.content["statistics"]
         expected = expected_response["statistics"]  # type: ignore
-        assert len(response) == len(expected)  # type: ignore
+        assert len(response) == len(expected), set(expected) - set([res["column_name"] for res in response])  # type: ignore
         assert set([column_response["column_name"] for column_response in response]) == set(  # type: ignore
             expected
         )  # assert returned feature names are as expected

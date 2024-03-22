@@ -818,7 +818,7 @@ statistics_dataset = Dataset.from_dict(
             [],
         ],
         "list__dict_all_nan_column": nan_column(),
-        "list__sequence_column": [
+        "list__sequence_int_column": [
             [1],
             [1],
             [1],
@@ -840,7 +840,7 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__sequence_nan_column": [
+        "list__sequence_int_nan_column": [
             [1],
             [1],
             [1],
@@ -862,7 +862,553 @@ statistics_dataset = Dataset.from_dict(
             [],
             [],
         ],
-        "list__sequence_all_nan_column": nan_column(),
+        "list__sequence_int_all_nan_column": nan_column(),
+        "list__sequence_class_label_column": [
+            ["cat"],
+            ["cat"],
+            ["cat"],
+            ["cat", "dog"],
+            ["cat", "cat"],
+            ["cat", "cat"],
+            ["cat", "cat"],
+            ["cat", "cat"],
+            ["cat", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            [],
+            [],
+            [],
+            [],
+        ],
+        "list__sequence_class_label_nan_column": [
+            ["cat"],
+            ["cat"],
+            None,
+            ["cat", "dog"],
+            ["cat", "cat"],
+            ["cat", "cat"],
+            ["cat", "cat"],
+            None,
+            ["cat", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            None,
+            None,
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            ["cat", "cat", "cat", "dog", "cat", "cat", "dog"],
+            [],
+            [],
+            [],
+            [],
+        ],
+        "list__sequence_class_label_all_nan_column": nan_column(),
+        "list__sequence_of_sequence_bool_column": [
+            [[True]],
+            [[True]],
+            [[True]],
+            [[True], [None, True, False], []],
+            [[True, False]],
+            [[True, False], [True, False], [True]],
+            [[True]],
+            [[True, False, False], [True, False], [], [True, False], [True, False, True, False]],
+            [[True, False, False]],
+            [[True, False, False]],
+            [[True, False, False]],
+            [[True, False, False, False], [True], [], [None, True]],
+            [[True, False, False, False], [True], [None, True]],
+            [[True, False, False, False, True], [None, True]],
+            [[True], [False], [False], [False, None], [True, None, True]],
+            [[True]],
+            [[True, False], [False, False, True], [None, True]],
+            [[True, False, False, False], [None, True]],
+            [[True], [None, True, False]],
+            [[True], [True, False], [True, False]],
+        ],
+        "list__sequence_of_sequence_bool_nan_column": [
+            [[True]],
+            [[True]],
+            [[True]],
+            [[True], [None, True, False]],
+            None,
+            [[True, False], [True, False], [True], []],
+            [[True]],
+            [[True, False, False], [True, False], [True, False], [], [True, False, True, False]],
+            [[True, False, False]],
+            None,
+            [[True, False, False]],
+            [[True, False, False, False], [True], [None, True]],
+            [[True, False, False, False], [True], [None, True]],
+            [[True, False, False, False, True], [None, True]],
+            [[True], [False], [False], [False, None], [True, None, True]],
+            [[True]],
+            None,
+            [[True, False, False, False], [None, True]],
+            [[True], [None, True, False]],
+            [[True], [True, False], [True, False]],
+        ],
+        "list__sequence_of_sequence_bool_all_nan_column": nan_column(),
+        "list__sequence_of_sequence_dict_column": [
+            [[{"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [[]],
+            [[]],
+        ],
+        "list__sequence_of_sequence_dict_nan_column": [
+            [[{"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            None,
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            None,
+            None,
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ],
+                [],
+                [],
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [[]],
+            [[]],
+        ],
+        "list__sequence_of_sequence_dict_all_nan_column": nan_column(),
+        "list__sequence_of_list_dict_column": [
+            [[{"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [[]],
+            [[]],
+        ],
+        "list__sequence_of_list_dict_nan_column": [
+            [[{"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            [[{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {}]],
+            None,
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            None,
+            None,
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ],
+                [],
+                [],
+            ],
+            [
+                [
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                    {"author": "cat", "likes": 5},
+                ]
+            ],
+            [[]],
+            [[]],
+        ],
+        "list__sequence_of_list_dict_all_nan_column": nan_column(),
+    },
+    features=Features(
+        {
+            "string_label__column": Value("string"),
+            "string_label__nan_column": Value("string"),
+            "string_label__all_nan_column": Value("string"),
+            "int__column": Value("int32"),
+            "int__nan_column": Value("int32"),
+            "int__all_nan_column": Value("int32"),
+            "int__negative_column": Value("int32"),
+            "int__cross_zero_column": Value("int32"),
+            "int__large_values_column": Value("int32"),
+            "int__only_one_value_column": Value("int32"),
+            "int__only_one_value_nan_column": Value("int32"),
+            "float__column": Value("float32"),
+            "float__nan_column": Value("float32"),
+            "float__all_nan_column": Value("float32"),
+            "float__negative_column": Value("float64"),
+            "float__cross_zero_column": Value("float32"),
+            "float__large_values_column": Value("float32"),
+            "float__only_one_value_column": Value("float32"),
+            "float__only_one_value_nan_column": Value("float32"),
+            "class_label__column": ClassLabel(names=["cat", "dog"]),
+            "class_label__nan_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__all_nan_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__less_classes_column": ClassLabel(names=["cat", "dog"]),  # but only "cat" is in set
+            "class_label__string_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__string_nan_column": ClassLabel(names=["cat", "dog"]),
+            "class_label__string_all_nan_column": ClassLabel(names=["cat", "dog"]),
+            "bool__column": Value("bool"),
+            "bool__nan_column": Value("bool"),
+            "bool__all_nan_column": Value("bool"),
+            "list__int_column": [Value("int32")],
+            "list__int_nan_column": [Value("int32")],
+            "list__int_all_nan_column": [Value("int32")],
+            "list__string_column": [Value("string")],
+            "list__string_nan_column": [Value("string")],
+            "list__string_all_nan_column": [Value("string")],
+            "list__dict_column": [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}],
+            "list__dict_nan_column": [
+                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
+            ],
+            "list__dict_all_nan_column": [
+                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
+            ],
+            "list__sequence_int_column": Sequence(Value("int64")),
+            "list__sequence_int_nan_column": Sequence(Value("int64")),
+            "list__sequence_int_all_nan_column": Sequence(Value("int64")),
+            "list__sequence_class_label_column": Sequence(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_class_label_nan_column": Sequence(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_class_label_all_nan_column": Sequence(ClassLabel(names=["cat", "dog"])),
+            "list__sequence_of_sequence_bool_column": Sequence(Sequence(Value("bool"))),
+            "list__sequence_of_sequence_bool_nan_column": Sequence(Sequence(Value("bool"))),
+            "list__sequence_of_sequence_bool_all_nan_column": Sequence(Sequence(Value("bool"))),
+            "list__sequence_of_sequence_dict_column": Sequence(
+                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+            ),
+            "list__sequence_of_sequence_dict_nan_column": Sequence(
+                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+            ),
+            "list__sequence_of_sequence_dict_all_nan_column": Sequence(
+                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+            ),
+            "list__sequence_of_list_dict_column": Sequence(
+                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
+            ),
+            "list__sequence_of_list_dict_nan_column": Sequence(
+                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
+            ),
+            "list__sequence_of_list_dict_all_nan_column": Sequence(
+                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
+            ),
+        }
+    ),
+)
+
+
+statistics_string_text_dataset = Dataset.from_dict(
+    {
+        "string_text__column": long_text_column(),
+        "string_text__nan_column": long_text_nan_column(),
+        "string_text__large_string_column": long_text_column(),
+        "string_text__large_string_nan_column": long_text_nan_column(),
+    },
+    features=Features(
+        {
+            "string_text__column": Value("string"),
+            "string_text__nan_column": Value("string"),
+            "string_text__large_string_column": Value("large_string"),
+            "string_text__large_string_nan_column": Value("large_string"),
+        }
+    ),
+)
+
+
+# we don't support dicts of lists
+statistics_not_supported_dataset = Dataset.from_dict(
+    {
         "list__sequence_dict_column": [
             [{"author": "cat", "content": "mouse", "likes": 5}],
             [{"author": "cat", "content": "mouse", "likes": 5}, {"author": "cat", "content": "mouse", "likes": 5}],
@@ -1016,129 +1562,18 @@ statistics_dataset = Dataset.from_dict(
             [],
         ],
         "list__sequence_dict_all_nan_column": nan_column(),
-        "list__sequence_of_sequence_column": [
-            [["cat"]],
-            [["cat"]],
-            [["cat"]],
-            [["cat"], [None, "cat", "sat"]],
-            [["cat", "sat"]],
-            [["cat", "sat"], ["cat", "sat"], ["cat"]],
-            [["cat"]],
-            [["cat", "sat", "mat"], ["cat", "sat"], ["cat", "sat"], ["cat", "sat", "cat", "sat"]],
-            [["cat", "sat", "mat"]],
-            [["cat", "sat", "mat"]],
-            [["cat", "sat", "mat"]],
-            [["cat", "sat", "mat", "blat"], ["flat", "hat", "none of that"], [None, "this is sad..."]],
-            [["cat", "sat", "mat", "blat"], ["flat", "hat", "none of that"], [None, "this is sad..."]],
-            [["cat", "sat", "mat", "blat", "flat", "hat", "none of that"], [None, "this is sad..."]],
-            [["cat"], ["sat"], ["mat"], ["blat", None], ["flat", "hat", "none of that", None, "this is sad..."]],
-            [["cat"]],
-            [["cat", "sat"], ["mat", "blat", "flat", "hat", "none of that"], [None, "this is sad..."]],
-            [["cat", "sat", "mat", "blat", "flat", "hat"], ["none of that", None, "this is sad..."]],
-            [["cat"], [None, "cat", "sat"]],
-            [["cat"], ["cat", "sat"], ["cat", "sat"]],
-        ],
-        "list__sequence_of_sequence_nan_column": [
-            [["cat"]],
-            [["cat"]],
-            [["cat"]],
-            [[None], [None, "cat", "sat"]],
-            [["cat", "sat"]],
-            [["cat", "sat"], ["cat", "sat"], ["cat"]],
-            [[None]],
-            [["cat", "sat", "mat"], ["cat", "sat"], ["cat", "sat"], ["cat", "sat", "cat", "sat"]],
-            [["cat", "sat", "mat"]],
-            [["cat", "sat", "mat"]],
-            [["cat", "sat", "mat"]],
-            [[None]],
-            [["cat", "sat", "mat", "blat"], ["flat", "hat", "none of that"], [None]],
-            [["cat", "sat", "mat", "blat", "flat", "hat", "none of that"], [None, "this is sad..."]],
-            [["cat"], ["sat"], ["mat"], ["blat"], [], ["flat", "hat", "none of that", None, "this is sad..."]],
-            [[None]],
-            [["cat", "sat"], ["mat", "blat", "flat", "hat", "none of that"], [None], [], [], ["this is sad..."]],
-            [["cat", "sat", "mat", "blat", "flat", "hat"], ["none of that", None, "this is sad..."]],
-            [[]],
-            [[]],
-        ],
-        "list__sequence_of_sequence_all_nan_column": nan_column(),
     },
     features=Features(
         {
-            "string_label__column": Value("string"),
-            "string_label__nan_column": Value("string"),
-            "string_label__all_nan_column": Value("string"),
-            "int__column": Value("int32"),
-            "int__nan_column": Value("int32"),
-            "int__all_nan_column": Value("int32"),
-            "int__negative_column": Value("int32"),
-            "int__cross_zero_column": Value("int32"),
-            "int__large_values_column": Value("int32"),
-            "int__only_one_value_column": Value("int32"),
-            "int__only_one_value_nan_column": Value("int32"),
-            "float__column": Value("float32"),
-            "float__nan_column": Value("float32"),
-            "float__all_nan_column": Value("float32"),
-            "float__negative_column": Value("float64"),
-            "float__cross_zero_column": Value("float32"),
-            "float__large_values_column": Value("float32"),
-            "float__only_one_value_column": Value("float32"),
-            "float__only_one_value_nan_column": Value("float32"),
-            "class_label__column": ClassLabel(names=["cat", "dog"]),
-            "class_label__nan_column": ClassLabel(names=["cat", "dog"]),
-            "class_label__all_nan_column": ClassLabel(names=["cat", "dog"]),
-            "class_label__less_classes_column": ClassLabel(names=["cat", "dog"]),  # but only "cat" is in set
-            "class_label__string_column": ClassLabel(names=["cat", "dog"]),
-            "class_label__string_nan_column": ClassLabel(names=["cat", "dog"]),
-            "class_label__string_all_nan_column": ClassLabel(names=["cat", "dog"]),
-            "bool__column": Value("bool"),
-            "bool__nan_column": Value("bool"),
-            "bool__all_nan_column": Value("bool"),
-            "list__int_column": [Value("int32")],
-            "list__int_nan_column": [Value("int32")],
-            "list__int_all_nan_column": [Value("int32")],
-            "list__string_column": [Value("string")],
-            "list__string_nan_column": [Value("string")],
-            "list__string_all_nan_column": [Value("string")],
-            "list__dict_column": [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}],
-            "list__dict_nan_column": [
+            "list__sequence_dict_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__dict_all_nan_column": [
+            ),
+            "list__sequence_dict_nan_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_column": Sequence(Value("int64")),
-            "list__sequence_nan_column": Sequence(Value("int64")),
-            "list__sequence_all_nan_column": Sequence(Value("int64")),
-            "list__sequence_dict_column": [
+            ),
+            "list__sequence_dict_all_nan_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_dict_nan_column": [
-                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_dict_all_nan_column": [
-                {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
-            ],
-            "list__sequence_of_sequence_column": Sequence(Sequence(Value("string"))),
-            "list__sequence_of_sequence_nan_column": Sequence(Sequence(Value("string"))),
-            "list__sequence_of_sequence_all_nan_column": Sequence(Sequence(Value("string"))),
-        }
-    ),
-)
-
-
-statistics_string_text_dataset = Dataset.from_dict(
-    {
-        "string_text__column": long_text_column(),
-        "string_text__nan_column": long_text_nan_column(),
-        "string_text__large_string_column": long_text_column(),
-        "string_text__large_string_nan_column": long_text_nan_column(),
-    },
-    features=Features(
-        {
-            "string_text__column": Value("string"),
-            "string_text__nan_column": Value("string"),
-            "string_text__large_string_column": Value("large_string"),
-            "string_text__large_string_nan_column": Value("large_string"),
+            ),
         }
     ),
 )
