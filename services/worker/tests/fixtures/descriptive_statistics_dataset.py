@@ -1366,22 +1366,18 @@ statistics_dataset = Dataset.from_dict(
             "list__sequence_of_sequence_bool_nan_column": Sequence(Sequence(Value("bool"))),
             "list__sequence_of_sequence_bool_all_nan_column": Sequence(Sequence(Value("bool"))),
             "list__sequence_of_sequence_dict_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
             "list__sequence_of_sequence_dict_nan_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
             "list__sequence_of_sequence_dict_all_nan_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
-            "list__sequence_of_list_dict_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
-            ),
-            "list__sequence_of_list_dict_nan_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
-            ),
+            "list__sequence_of_list_dict_column": Sequence([{"author": Value("string"), "likes": Value("int32")}]),
+            "list__sequence_of_list_dict_nan_column": Sequence([{"author": Value("string"), "likes": Value("int32")}]),
             "list__sequence_of_list_dict_all_nan_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
+                [{"author": Value("string"), "likes": Value("int32")}]
             ),
         }
     ),
