@@ -115,6 +115,7 @@ CacheableErrorCode = Literal[
     "PreviousStepFormatError",
     "PreviousStepStatusError",
     "PreviousStepStillProcessingError",
+    "PolarsParquetReadError",
     "RowsPostProcessingError",
     "SplitsNamesError",
     "SplitNamesFromStreamingError",
@@ -410,6 +411,13 @@ class PreviousStepStatusError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PreviousStepStatusError", cause, False)
+
+
+class PolarsParquetReadError(CacheableError):
+    """Error while reading parquet files with polars."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "PolarsParquetReadError", cause, False)
 
 
 class PreviousStepStillProcessingError(CacheableError):

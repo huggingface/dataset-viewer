@@ -19,6 +19,7 @@ from libcommon.exceptions import (
     FeaturesResponseEmptyError,
     NoSupportedFeaturesError,
     ParquetResponseEmptyError,
+    PolarsParquetReadError,
     PreviousStepFormatError,
     StatisticsComputationError,
 )
@@ -29,6 +30,7 @@ from libcommon.parquet_utils import (
 )
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
+from polars import List
 from requests.exceptions import ReadTimeout
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -733,13 +735,16 @@ def compute_descriptive_statistics_response(
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
     ) -> Optional[SupportedColumns]:
-        if isinstance(dataset_feature, list):
-            return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
-
-        if isinstance(dataset_feature, dict):
-            if dataset_feature.get("_type") == "Sequence":
+        if isinstance(dataset_feature, list) or (
+            isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
+        ):
+            schema = pl.scan_parquet(local_parquet_glob_path).schema[dataset_feature_name]
+            # Compute only if it's internally a List! because it can also be Struct, see
+            # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
+            if isinstance(schema, List):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
+        if isinstance(dataset_feature, dict):
             if dataset_feature.get("_type") == "ClassLabel":
                 return ClassLabelColumn(
                     feature_name=dataset_feature_name, n_samples=num_examples, feature_dict=dataset_feature
@@ -785,7 +790,12 @@ def compute_descriptive_statistics_response(
     )
 
     for column in columns:
-        data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+        try:
+            data = pl.read_parquet(local_parquet_glob_path, columns=[column.name])
+        except Exception as error:
+            raise PolarsParquetReadError(
+                f"Error reading parquet file(s) at {local_parquet_glob_path=}, columns=[{column.name}]: {error}", error
+            )
         column_stats = column.compute_and_prepare_response(data)
         all_stats.append(column_stats)
 
