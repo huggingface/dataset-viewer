@@ -273,7 +273,7 @@ def test_validate_jwt_algorithm(algorithm: str, expectation: Any) -> None:
             pytest.raises(JWTMissingRequiredClaim),
         ),
         (
-            {"sub": sub_ok_1, "permissions": {"NOT-repo.content.read": read_ok}, "exp": exp_ok},
+            {"sub": sub_ok_1, "permissions": "NOT-PERMISSIONS-DICT", "exp": exp_ok},
             pytest.raises(JWTMissingRequiredClaim),
         ),
         ({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}}, pytest.raises(JWTMissingRequiredClaim)),
@@ -294,6 +294,50 @@ def test_validate_jwt_content_format(payload: dict[str, str], expectation: Any) 
 )
 def test_validate_jwt_read(read: str, expectation: Any) -> None:
     assert_jwt(encode_jwt({"sub": sub_ok_1, "permissions": {"repo.content.read": read}, "exp": exp_ok}), expectation)
+
+
+@pytest.mark.parametrize(
+    "permissions,expectation",
+    [
+        ({}, pytest.raises(JWTInvalidClaimRead)),
+        ({"NOT-repo.content.read": True}, pytest.raises(JWTInvalidClaimRead)),
+        ({"repo.content.read": False}, pytest.raises(JWTInvalidClaimRead)),
+        (
+            {"repo.read": False, "repo.write": False, "repo.content.write": False, "repo.content.read": False},
+            pytest.raises(JWTInvalidClaimRead),
+        ),
+        ({"repo.read": True}, does_not_raise()),
+        ({"repo.write": True}, does_not_raise()),
+        ({"repo.content.read": True}, does_not_raise()),
+        ({"repo.content.write": True}, does_not_raise()),
+        (
+            {"repo.read": True, "repo.write": False, "repo.content.write": False, "repo.content.read": False},
+            does_not_raise(),
+        ),
+        (
+            {"repo.read": False, "repo.write": True, "repo.content.write": False, "repo.content.read": False},
+            does_not_raise(),
+        ),
+        (
+            {"repo.read": False, "repo.write": False, "repo.content.write": True, "repo.content.read": False},
+            does_not_raise(),
+        ),
+        (
+            {"repo.read": False, "repo.write": False, "repo.content.write": False, "repo.content.read": True},
+            does_not_raise(),
+        ),
+        (
+            {"repo.read": True, "repo.write": True, "repo.content.write": True, "repo.content.read": True},
+            does_not_raise(),
+        ),
+        (
+            {"repo.write": True, "repo.content.read": False},  # <- we allow it, even if this seems contradictory
+            does_not_raise(),
+        ),
+    ],
+)
+def test_validate_jwt_permissions(permissions: dict[str, bool], expectation: Any) -> None:
+    assert_jwt(encode_jwt({"sub": sub_ok_1, "permissions": permissions, "exp": exp_ok}), expectation)
 
 
 @pytest.mark.parametrize(
