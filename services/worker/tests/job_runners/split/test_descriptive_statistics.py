@@ -471,6 +471,20 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
     return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": True}
 
 
+@pytest.fixture
+def audio_statistics_expected() -> dict:  # type: ignore
+    audio_lengths = [1.0, 2.0, 3.0, 4.0]  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
+    audio_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(audio_lengths), dtype=ColumnType.FLOAT
+    )
+    expected_statistics = {
+        "column_name": "audio",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": audio_statistics,
+    }
+    return {"num_examples": 4, "statistics": {"audio": expected_statistics}, "partial": False}
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -717,8 +731,8 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        ("audio_statistics", None),
         ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
     ],
 )
 def test_compute(
@@ -732,12 +746,13 @@ def test_compute(
     hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
-    hub_responses_audio: HubDatasetTest,
+    hub_responses_audio_statistics: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
     descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
+    audio_statistics_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -745,7 +760,7 @@ def test_compute(
         "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
-        "audio": hub_responses_audio,
+        "audio_statistics": hub_responses_audio_statistics,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
@@ -753,6 +768,7 @@ def test_compute(
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
         "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
+        "audio_statistics": audio_statistics_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -849,6 +865,7 @@ def test_compute(
                 ColumnType.INT,
                 ColumnType.STRING_TEXT,
                 ColumnType.LIST,
+                ColumnType.AUDIO,
             ]:
                 hist, expected_hist = (
                     column_response_stats.pop("histogram"),

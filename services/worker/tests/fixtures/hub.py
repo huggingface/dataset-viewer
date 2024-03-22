@@ -334,6 +334,13 @@ def hub_public_descriptive_statistics_not_supported(datasets: Mapping[str, Datas
 
 
 @pytest.fixture(scope="session")
+def hub_public_audio_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="audio_statistics", dataset=datasets["audio_statistics"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_n_configs_with_default(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     default_config_name, _ = get_default_config_split()
     repo_id = create_hub_dataset_repo(
@@ -1063,6 +1070,19 @@ def hub_responses_descriptive_statistics_not_supported(
         "name": hub_public_descriptive_statistics_not_supported,
         "config_names_response": create_config_names_response(hub_public_descriptive_statistics_not_supported),
         "splits_response": create_splits_response(hub_public_descriptive_statistics_not_supported),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_audio_statistics(
+    hub_public_audio_statistics: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_audio_statistics,
+        "config_names_response": create_config_names_response(hub_public_audio_statistics),
+        "splits_response": create_splits_response(hub_public_audio_statistics),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }
