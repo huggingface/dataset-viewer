@@ -331,7 +331,7 @@ def test_validate_jwt_read(read: str, expectation: Any) -> None:
             does_not_raise(),
         ),
         (
-            {"repo.write": True, "repo.content.read": False},  # <- we allow it, even if this seems contradictory
+            {"repo.write": True, "repo.content.read": False},  # a False permission does not block the True ones
             does_not_raise(),
         ),
     ],

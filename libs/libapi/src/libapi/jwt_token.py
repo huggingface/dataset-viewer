@@ -308,5 +308,6 @@ def validate_jwt(
     permissions = decoded.get("permissions")
     if not isinstance(permissions, dict):
         raise JWTMissingRequiredClaim("The 'permissions' claim in the JWT payload must be a dict.")
-    if all(permissions.get(permission) is not True for permission in READ_PERMISSIONS):
+    if not any(permissions.get(permission) is True for permission in READ_PERMISSIONS):
+        # ^ any True permission among READ_PERMISSIONS is enough to read the dataset
         raise JWTInvalidClaimRead("No permission in JWT payload is True. Not allowed to read the dataset.")
