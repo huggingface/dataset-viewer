@@ -37,6 +37,7 @@ from worker.dtos import (
     CompatibleLibrary,
     CompleteJobResult,
     DatasetCompatibleLibrariesResponse,
+    DatasetFormat,
     DatasetLibrary,
     DatasetTag,
     LoadingCode,
@@ -111,22 +112,21 @@ def get_builder_configs_with_simplified_data_files(
         base_path=base_path,
         download_config=download_config,
     )
-    if not metadata_configs:  # inferred patterns are ugly, so let's simplify them
-        for config in builder_configs:
-            data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
-            config.data_files = DataFilesPatternsDict(
-                {
-                    str(split): (
-                        simplify_data_files_patterns(
-                            data_files_patterns=config.data_files[split],
-                            base_path=base_path,
-                            download_config=download_config,
-                            allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
-                        )
+    for config in builder_configs:
+        data_files = config.data_files.resolve(base_path=base_path, download_config=download_config)
+        config.data_files = DataFilesPatternsDict(
+            {
+                str(split): (
+                    simplify_data_files_patterns(
+                        data_files_patterns=config.data_files[split],
+                        base_path=base_path,
+                        download_config=download_config,
+                        allowed_extensions=_MODULE_TO_EXTENSIONS[module_name],
                     )
-                    for split in data_files
-                }
-            )
+                )
+                for split in data_files
+            }
+        )
     return builder_configs
 
 
@@ -568,6 +568,16 @@ get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str]], Com
 }
 
 
+get_format_for_builder: dict[str, DatasetFormat] = {
+    "webdataset": "webdataset",
+    "json": "json",
+    "csv": "csv",
+    "parquet": "parquet",
+    "imagefolder": "imagefolder",
+    "audiofolder": "audiofolder",
+}
+
+
 def compute_compatible_libraries_response(
     dataset: str, hf_token: Optional[str] = None
 ) -> DatasetCompatibleLibrariesResponse:
@@ -595,6 +605,7 @@ def compute_compatible_libraries_response(
     http_status = dataset_info_response["http_status"]
     tags: list[DatasetTag] = []
     libraries: list[CompatibleLibrary] = []
+    formats: list[DatasetFormat] = []
     infos: list[dict[str, Any]] = []
     builder_name: Optional[str] = None
     if http_status == HTTPStatus.OK:
@@ -607,20 +618,22 @@ def compute_compatible_libraries_response(
                 "Previous step 'dataset-info' did not return the expected content.", e
             ) from e
     if infos:
-        # mlcroissant library
-        libraries.append(get_mlcroissant_compatible_library(dataset, infos, partial=partial))
-        tags.append("croissant")
         # datasets library
         libraries.append(get_hf_datasets_compatible_library(dataset, infos))
         # pandas or dask or webdataset library
         builder_name = infos[0]["builder_name"]
+        if builder_name in get_format_for_builder:
+            formats.append(get_format_for_builder[builder_name])
         if builder_name in get_compatible_library_for_builder:
             try:
                 compatible_library = get_compatible_library_for_builder[builder_name](dataset, hf_token)
                 libraries.append(compatible_library)
             except NotImplementedError:
                 pass
-    return DatasetCompatibleLibrariesResponse(tags=tags, libraries=libraries)
+        # mlcroissant library
+        libraries.append(get_mlcroissant_compatible_library(dataset, infos, partial=partial))
+        tags.append("croissant")
+    return DatasetCompatibleLibrariesResponse(tags=tags, libraries=libraries, formats=formats)
 
 
 class DatasetCompatibleLibrariesJobRunner(DatasetJobRunnerWithDatasetsCache):

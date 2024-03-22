@@ -26,7 +26,11 @@ from datasets import (
 )
 from datasets.features.features import FeatureType
 
-from .descriptive_statistics_dataset import statistics_dataset, statistics_string_text_dataset
+from .descriptive_statistics_dataset import (
+    statistics_dataset,
+    statistics_not_supported_dataset,
+    statistics_string_text_dataset,
+)
 
 
 def value(content: Any, dtype: Any) -> Dataset:
@@ -141,6 +145,7 @@ def datasets() -> Mapping[str, Dataset]:
                         "http://testurl.test/test_image2.jpg",
                         "other",
                         "http://testurl.test/test_image3-optIn.png",
+                        None,
                     ]
                 },
                 dtype=pd.StringDtype(storage="python"),
@@ -172,4 +177,5 @@ def datasets() -> Mapping[str, Dataset]:
         ),
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,
+        "descriptive_statistics_not_supported": statistics_not_supported_dataset,
     }

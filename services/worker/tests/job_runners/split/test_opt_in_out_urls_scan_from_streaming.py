@@ -120,7 +120,7 @@ DEFAULT_EMPTY_RESPONSE = {
             IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             {
                 "has_urls_columns": True,
-                "num_scanned_rows": 4,
+                "num_scanned_rows": 5,
                 "opt_in_urls": [
                     {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
@@ -130,7 +130,7 @@ DEFAULT_EMPTY_RESPONSE = {
                 "urls_columns": ["col"],
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
-                "num_urls": 4,
+                "num_urls": 5,
                 "full_scan": True,
             },
         ),
@@ -154,11 +154,11 @@ DEFAULT_EMPTY_RESPONSE = {
         ),
         (
             "spawning_opt_in_out",
-            4,  # dataset has same amount of rows
+            5,  # dataset has same amount of rows
             IMAGE_URL_COLUMNS_RESPONSE_WITH_DATA,
             {
                 "has_urls_columns": True,
-                "num_scanned_rows": 4,
+                "num_scanned_rows": 5,
                 "opt_in_urls": [
                     {"url": "http://testurl.test/test_image3-optIn.png", "row_idx": 3, "column_name": "col"}
                 ],
@@ -168,7 +168,7 @@ DEFAULT_EMPTY_RESPONSE = {
                 "urls_columns": ["col"],
                 "num_opt_out_urls": 1,
                 "num_opt_in_urls": 1,
-                "num_urls": 4,
+                "num_urls": 5,
                 "full_scan": True,
             },
         ),

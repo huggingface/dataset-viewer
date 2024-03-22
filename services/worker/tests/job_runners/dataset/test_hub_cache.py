@@ -58,24 +58,72 @@ UPSTREAM_RESPONSE_SIZE_NO_PROGRESS: UpstreamResponse = UpstreamResponse(
     content={"size": {"dataset": {"num_rows": 1000}}, "partial": True},
     progress=None,
 )
-UPSTREAM_RESPONSE_LOADING_TAGS_OK: UpstreamResponse = UpstreamResponse(
+UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK: UpstreamResponse = UpstreamResponse(
     kind="dataset-compatible-libraries",
     dataset=DATASET,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
-    content={"tags": ["tag"], "libraries": ["library"]},
+    content={"tags": ["tag"], "libraries": [{"library": "library"}], "formats": ["format"]},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_MODALITIES_OK: UpstreamResponse = UpstreamResponse(
+    kind="dataset-modalities",
+    dataset=DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"tags": ["tag"], "modalities": ["modality"]},
     progress=1.0,
 )
 EXPECTED_OK = (
-    {"viewer": False, "preview": True, "partial": False, "num_rows": 1000, "tags": [], "libraries": []},
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": False,
+        "num_rows": 1000,
+        "tags": [],
+        "libraries": [],
+        "modalities": [],
+        "formats": [],
+    },
     0.2,
 )
 EXPECTED_NO_PROGRESS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": [], "libraries": []},
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": True,
+        "num_rows": 1000,
+        "tags": [],
+        "libraries": [],
+        "modalities": [],
+        "formats": [],
+    },
     0.5,
 )
-EXPECTED_OK_WITH_TAGS = (
-    {"viewer": False, "preview": True, "partial": True, "num_rows": 1000, "tags": ["tag"], "libraries": ["library"]},
+EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": True,
+        "num_rows": 1000,
+        "tags": ["tag"],
+        "libraries": ["library"],
+        "modalities": [],
+        "formats": ["format"],
+    },
+    0.5,
+)
+EXPECTED_OK_WITH_MODALITIES = (
+    {
+        "viewer": False,
+        "preview": True,
+        "partial": True,
+        "num_rows": 1000,
+        "tags": [],
+        "libraries": [],
+        "modalities": ["modality"],
+        "formats": [],
+    },
     0.5,
 )
 
@@ -129,9 +177,17 @@ def get_job_runner(
             [
                 UPSTREAM_RESPONSE_IS_VALID_OK,
                 UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
-                UPSTREAM_RESPONSE_LOADING_TAGS_OK,
+                UPSTREAM_RESPONSE_COMPATIBLE_LIBRARIES_OK,
             ],
-            EXPECTED_OK_WITH_TAGS,
+            EXPECTED_OK_WITH_LIBRARIES_AND_FORMATS,
+        ),
+        (
+            [
+                UPSTREAM_RESPONSE_IS_VALID_OK,
+                UPSTREAM_RESPONSE_SIZE_NO_PROGRESS,
+                UPSTREAM_RESPONSE_MODALITIES_OK,
+            ],
+            EXPECTED_OK_WITH_MODALITIES,
         ),
     ],
 )

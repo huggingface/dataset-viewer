@@ -680,14 +680,21 @@ specification: ProcessingGraphSpecification = {
             "dataset-is-valid",
             "dataset-size",
             "dataset-compatible-libraries",
+            "dataset-modalities",
         ],
-        "job_runner_version": 1,
+        "job_runner_version": 2,
         "difficulty": 20,
     },
     "dataset-compatible-libraries": {
         "input_type": "dataset",
         "triggered_by": "dataset-info",
-        "job_runner_version": 2,
+        "job_runner_version": 3,
+        "difficulty": 20,
+    },
+    "dataset-modalities": {
+        "input_type": "dataset",
+        "triggered_by": "dataset-info",
+        "job_runner_version": 1,
         "difficulty": 20,
     },
 }
