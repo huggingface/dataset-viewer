@@ -268,7 +268,7 @@ def validate_jwt(
                 jwt=token,
                 key=public_key,
                 algorithms=[algorithm],
-                options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
+                options={"require": ["exp", "sub", "permissions"], "verify_exp": verify_exp},
             )
             logging.debug(f"Decoded JWT is: '{public_key}'.")
             break
@@ -302,6 +302,14 @@ def validate_jwt(
             "The 'sub' claim in JWT payload is invalid. It should be in the form 'datasets/<...dataset"
             " identifier...>' or '/datasets/<...dataset identifier...>'."
         )
-    read = decoded.get("read")
-    if read is not True:
-        raise JWTInvalidClaimRead("The 'read' claim in JWT payload is invalid. It should be set to 'true'.")
+    permissions = decoded.get("permissions")
+    try:
+        read_permission = permissions["repo.content.read"]
+        if read_permission is not True:
+            raise JWTInvalidClaimRead(
+                "The 'repo.content.read' permission in JWT payload is invalid. It should be set to 'true'."
+            )
+    except KeyError as e:
+        raise JWTMissingRequiredClaim(
+            "The claim ('permissions[repo.content.read]') is missing in the JWT payload.", e
+        ) from e

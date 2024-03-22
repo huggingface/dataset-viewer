@@ -179,8 +179,11 @@ def test_get_jwt_public_keys(
 
 
 token_for_severo_glue = (
-    "eyJhbGciOiJFZERTQSJ9.eyJyZWFkIjp0cnVlLCJzdWIiOiJkYXRhc2V0cy9zZXZlcm8vZ2x1ZSIsImV4cCI6MTY3ODgwMjk0NH0"
-    ".nIi1ZKinMBpYi4kKtirW-cQEt1cGnAziTGmJsZeN5UpE62jz4DcPaIPlSI5P5ciGOlTxy4SEhD1WITkQzpo3Aw"
+    "eyJhbGciOiJFZERTQSJ9.eyJyZWFkIjp0cnVlLCJwZXJtaXNzaW9ucyI6eyJyZXBvLmNvbnRlbnQucmVhZCI6dHJ1ZX0sIm9uQm"
+    "VoYWxmT2YiOnsia2luZCI6InVzZXIiLCJfaWQiOiI2MGE3NmIxNzRlMjQzNjE3OTFmZTgyMmQiLCJ1c2VyIjoic2V2ZXJvIn0sI"
+    "mlhdCI6MTcxMTEwNTc4Nywic3ViIjoiL2RhdGFzZXRzL3NldmVyby9nbHVlIiwiZXhwIjoxNzExMTA5Mzg3LCJpc3MiOiJodHRw"
+    "czovL2h1Z2dpbmdmYWNlLmNvIn0.S30KD2nEmu7WhKjpd7qfyUS6-WOMeUpPQBsPgx5Nvw9aMr_8PYUxsmWi4tv1tkppg6iYcEs"
+    "7NQ6HiFeXGmRDDQ"
 )
 dataset_severo_glue = "severo/glue"
 
@@ -192,7 +195,7 @@ def test_is_jwt_valid_with_ec() -> None:
         public_keys=[eddsa_public_key_pem],
         algorithm=algorithm_name_eddsa,
         verify_exp=False,
-        # This is a test token generated on 2023/03/14, so we don't want to verify the exp.
+        # This is a test token generated on 2024/03/22, so we don't want to verify the exp.
     )
 
 
@@ -214,7 +217,7 @@ sub_wrong_8 = f"/datasets/{wrong_dataset}"
 read_ok = True
 read_wrong_1 = False
 read_wrong_2 = "True"
-payload_ok = {"sub": sub_ok_1, "read": read_ok, "exp": exp_ok}
+payload_ok = {"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}
 algorithm_ok = algorithm_name_eddsa
 algorithm_wrong = algorithm_name_rs256
 
@@ -261,12 +264,20 @@ def test_validate_jwt_algorithm(algorithm: str, expectation: Any) -> None:
     [
         ({}, pytest.raises(JWTMissingRequiredClaim)),
         ({"sub": sub_ok_1}, pytest.raises(JWTMissingRequiredClaim)),
-        ({"read": read_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"permissions": {"repo.content.read": read_ok}}, pytest.raises(JWTMissingRequiredClaim)),
         ({"exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
-        ({"read": read_ok, "exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"permissions": {"repo.content.read": read_ok}, "exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
         ({"sub": sub_ok_1, "exp": exp_ok}, pytest.raises(JWTMissingRequiredClaim)),
-        ({"sub": sub_ok_1, "read": read_ok}, pytest.raises(JWTMissingRequiredClaim)),
-        ({"sub": sub_ok_1, "read": read_ok, "exp": exp_ok}, does_not_raise()),
+        (
+            {"sub": sub_ok_1, "NOT-permissions": {"repo.content.read": read_ok}, "exp": exp_ok},
+            pytest.raises(JWTMissingRequiredClaim),
+        ),
+        (
+            {"sub": sub_ok_1, "permissions": {"NOT-repo.content.read": read_ok}, "exp": exp_ok},
+            pytest.raises(JWTMissingRequiredClaim),
+        ),
+        ({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}}, pytest.raises(JWTMissingRequiredClaim)),
+        ({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}, does_not_raise()),
     ],
 )
 def test_validate_jwt_content_format(payload: dict[str, str], expectation: Any) -> None:
@@ -282,7 +293,7 @@ def test_validate_jwt_content_format(payload: dict[str, str], expectation: Any) 
     ],
 )
 def test_validate_jwt_read(read: str, expectation: Any) -> None:
-    assert_jwt(encode_jwt({"sub": sub_ok_1, "read": read, "exp": exp_ok}), expectation)
+    assert_jwt(encode_jwt({"sub": sub_ok_1, "permissions": {"repo.content.read": read}, "exp": exp_ok}), expectation)
 
 
 @pytest.mark.parametrize(
@@ -301,7 +312,7 @@ def test_validate_jwt_read(read: str, expectation: Any) -> None:
     ],
 )
 def test_validate_jwt_subject(sub: str, expectation: Any) -> None:
-    assert_jwt(encode_jwt({"sub": sub, "read": read_ok, "exp": exp_ok}), expectation)
+    assert_jwt(encode_jwt({"sub": sub, "permissions": {"repo.content.read": read_ok}, "exp": exp_ok}), expectation)
 
 
 @pytest.mark.parametrize(
@@ -314,6 +325,6 @@ def test_validate_jwt_subject(sub: str, expectation: Any) -> None:
 )
 def test_validate_jwt_expiration(expiration: str, expectation: Any) -> None:
     assert_jwt(
-        encode_jwt({"sub": sub_ok_1, "read": read_ok, "exp": expiration}),
+        encode_jwt({"sub": sub_ok_1, "permissions": {"repo.content.read": read_ok}, "exp": expiration}),
         expectation,
     )
