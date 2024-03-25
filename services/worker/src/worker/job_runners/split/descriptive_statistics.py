@@ -7,7 +7,7 @@ import io
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Optional, Protocol, TypedDict, Union
+from typing import Any, Callable, Optional, TypedDict, Union
 
 import librosa
 import numpy as np
@@ -33,7 +33,6 @@ from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
 from polars import List
-from requests.exceptions import ReadTimeout
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -269,12 +268,7 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
     return nan_count, nan_proportion
 
 
-class _ComputeStatisticsFuncT(Protocol):
-    def __call__(self, *args: Any, column_name: str, **kwargs: Any) -> Any:
-        ...
-
-
-def raise_with_column_name(func: _ComputeStatisticsFuncT) -> _ComputeStatisticsFuncT:
+def raise_with_column_name(func: Callable) -> Callable:  # type: ignore
     """
     Wraps error from Column._compute_statistics() so that we always keep information about which
     column caused an error.
@@ -303,15 +297,12 @@ class Column:
 
     @staticmethod
     def _compute_statistics(
-        data: pl.DataFrame,
-        column_name: str,
-        n_samples: int,
         *args: Any,
         **kwargs: Any,
     ) -> SupportedStatistics:
         raise NotImplementedError
 
-    def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, *args: Any, **kwargs: Any) -> StatisticsPerColumnItem:
         raise NotImplementedError
 
 
@@ -608,21 +599,15 @@ class ListColumn(Column):
         )
 
 
-class AudioColumn:
-    def __init__(
-        self,
-        feature_name: str,
-        n_samples: int,
-        n_bins: int,
-    ):
-        self.name = feature_name
-        self.n_samples = n_samples
+class AudioColumn(Column):
+    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
+        super().__init__(*args, **kwargs)
         self.n_bins = n_bins
 
     @staticmethod
-    def get_duration(example) -> float:
+    def get_duration(example: dict[str, Any]) -> float:
         with io.BytesIO(example["bytes"]) as f:
-            return librosa.get_duration(path=f)
+            return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @staticmethod
     @raise_with_column_name
@@ -633,15 +618,17 @@ class AudioColumn:
         n_bins: int,
     ) -> NumericalStatisticsItem:
         table = pq.read_table(parquet_dir, columns=[column_name])
+        # TODO: check if nan_count == n_samples
         data = table.to_pydict()[column_name]
         durations = thread_map(AudioColumn.get_duration, data)
         duration_df = pl.from_dict({column_name: durations})
-        return FloatColumn._compute_statistics(
+        duration_stats: NumericalStatisticsItem = FloatColumn._compute_statistics(
             data=duration_df,
             column_name=column_name,
             n_samples=n_samples,
             n_bins=n_bins,
         )
+        return duration_stats
 
     def compute_and_prepare_response(self, parquet_dir: Path) -> StatisticsPerColumnItem:
         stats = self._compute_statistics(
