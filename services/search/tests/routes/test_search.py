@@ -86,15 +86,22 @@ def test_full_text_search(
     con.sql("PRAGMA create_fts_index('data', '__hf_index_id', '*', overwrite=1);")
     con.close()
 
-    # assert search results
-    (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
-    assert num_rows_total is not None
-    assert pa_table is not None
-    assert num_rows_total == expected_num_rows_total
-
     fields = [pa.field("__hf_index_id", pa.int64()), pa.field("text", pa.string())]
     filtered_df = pd.DataFrame(expected_result)
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
+
+    # assert search results without FTS by batches
+    (num_rows_total, pa_table) = full_text_search(5, False, index_file_location, query, offset, length)
+    assert num_rows_total is not None
+    assert pa_table is not None
+    assert num_rows_total == expected_num_rows_total
+    assert pa_table == expected_table
+
+    # assert search results with FTS by batches
+    (num_rows_total, pa_table) = full_text_search(5, True, index_file_location, query, offset, length)
+    assert num_rows_total is not None
+    assert pa_table is not None
+    assert num_rows_total == expected_num_rows_total
     assert pa_table == expected_table
 
     # ensure that database has not been modified
