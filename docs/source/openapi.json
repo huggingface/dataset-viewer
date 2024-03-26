@@ -6128,6 +6128,176 @@
                         }
                       ]
                     }
+                  },
+                  "A split (MLCommons/peoples_speech) with audio column": {
+                    "summary": "Statistics on an audio column 'audio'.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=MLCommons/peoples_speech&config=validation&split=validation.",
+                    "value": {
+                      "num_examples": 18622,
+                      "statistics": [
+                          {
+                              "column_name": "audio",
+                              "column_type": "audio",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 0.653,
+                                  "max": 105.97,
+                                  "mean": 6.41103,
+                                  "median": 4.8815,
+                                  "std": 5.63269,
+                                  "histogram": {
+                                      "hist": [
+                                          15867,
+                                          2319,
+                                          350,
+                                          67,
+                                          12,
+                                          5,
+                                          0,
+                                          1,
+                                          0,
+                                          1
+                                      ],
+                                      "bin_edges": [
+                                          0.653,
+                                          11.1847,
+                                          21.7164,
+                                          32.2481,
+                                          42.7798,
+                                          53.3115,
+                                          63.8432,
+                                          74.3749,
+                                          84.9066,
+                                          95.4383,
+                                          105.97
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "duration_ms",
+                              "column_type": "int",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 833,
+                                  "max": 105970,
+                                  "mean": 6411.06079,
+                                  "median": 4881.5,
+                                  "std": 5632.67057,
+                                  "histogram": {
+                                      "hist": [
+                                          15950,
+                                          2244,
+                                          345,
+                                          64,
+                                          12,
+                                          5,
+                                          0,
+                                          1,
+                                          0,
+                                          1
+                                      ],
+                                      "bin_edges": [
+                                          833,
+                                          11347,
+                                          21861,
+                                          32375,
+                                          42889,
+                                          53403,
+                                          63917,
+                                          74431,
+                                          84945,
+                                          95459,
+                                          105970
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "id",
+                              "column_type": "string_text",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 43,
+                                  "max": 197,
+                                  "mean": 120.06675,
+                                  "median": 136.0,
+                                  "std": 44.49607,
+                                  "histogram": {
+                                      "hist": [
+                                          3599,
+                                          939,
+                                          278,
+                                          1914,
+                                          1838,
+                                          1646,
+                                          4470,
+                                          1443,
+                                          1976,
+                                          519
+                                      ],
+                                      "bin_edges": [
+                                          43,
+                                          59,
+                                          75,
+                                          91,
+                                          107,
+                                          123,
+                                          139,
+                                          155,
+                                          171,
+                                          187,
+                                          197
+                                      ]
+                                  }
+                              }
+                          },
+                          {
+                              "column_name": "text",
+                              "column_type": "string_text",
+                              "column_statistics": {
+                                  "nan_count": 0,
+                                  "nan_proportion": 0.0,
+                                  "min": 1,
+                                  "max": 1219,
+                                  "mean": 94.52873,
+                                  "median": 75.0,
+                                  "std": 79.11078,
+                                  "histogram": {
+                                      "hist": [
+                                          13703,
+                                          3975,
+                                          744,
+                                          146,
+                                          36,
+                                          10,
+                                          5,
+                                          1,
+                                          1,
+                                          1
+                                      ],
+                                      "bin_edges": [
+                                          1,
+                                          123,
+                                          245,
+                                          367,
+                                          489,
+                                          611,
+                                          733,
+                                          855,
+                                          977,
+                                          1099,
+                                          1219
+                                      ]
+                                  }
+                              }
+                          }
+                      ],
+                      "partial": false
+                  }
                   }
                 }
               }
