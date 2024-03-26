@@ -490,7 +490,7 @@ def audio_statistics_expected() -> dict:  # type: ignore
         column=pd.Series(nan_audio_lengths), dtype=ColumnType.FLOAT
     )
     expected_nan_statistics = {
-        "column_name": "audio",
+        "column_name": "audio_nan",
         "column_type": ColumnType.AUDIO,
         "column_statistics": nan_audio_statistics,
     }
