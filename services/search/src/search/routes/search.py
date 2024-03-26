@@ -61,7 +61,7 @@ FTS_BATCH_SIZE = 1000
 
 logger = logging.getLogger(__name__)
 
-DATASETS_WITH_FTS_BY_BATCHES = ["wikimedia/wikipedia", "asoria/bolivian-recipes"]
+DATASETS_WITH_FTS_BY_BATCHES = ["wikimedia/wikipedia", "asoria/search_test"]
 
 
 def _search_by_table(con: DuckDBPyConnection, query: str, offset: int, length: int) -> pa.Table:
@@ -89,7 +89,7 @@ def _search_by_batches(
         pa_tables.append(pa_table)
         num_matched_rows += pa_table.num_rows
         logging.info(f"{pa_table.num_rows} rows for batch {index} - {num_matched_rows} for table")
-        if num_matched_rows < (offset + length):
+        if num_matched_rows > (offset + length):
             break
     pa_result = pa.concat_tables(pa_tables)
     pa_result = pa_result.sort_by([("__hf_fts_score", "descending")]).drop("__hf_fts_score")
