@@ -232,6 +232,9 @@ def get_jwt_public_keys(
         raise JWTKeysError("Failed to create the JWT public keys.") from err
 
 
+READ_PERMISSIONS = ["repo.content.read", "repo.content.write", "repo.read", "repo.write"]
+
+
 def validate_jwt(
     dataset: str, token: Any, public_keys: list[str], algorithm: str, verify_exp: Optional[bool] = True
 ) -> None:
@@ -268,7 +271,7 @@ def validate_jwt(
                 jwt=token,
                 key=public_key,
                 algorithms=[algorithm],
-                options={"require": ["exp", "sub", "read"], "verify_exp": verify_exp},
+                options={"require": ["exp", "sub", "permissions"], "verify_exp": verify_exp},
             )
             logging.debug(f"Decoded JWT is: '{public_key}'.")
             break
@@ -302,6 +305,9 @@ def validate_jwt(
             "The 'sub' claim in JWT payload is invalid. It should be in the form 'datasets/<...dataset"
             " identifier...>' or '/datasets/<...dataset identifier...>'."
         )
-    read = decoded.get("read")
-    if read is not True:
-        raise JWTInvalidClaimRead("The 'read' claim in JWT payload is invalid. It should be set to 'true'.")
+    permissions = decoded.get("permissions")
+    if not isinstance(permissions, dict):
+        raise JWTMissingRequiredClaim("The 'permissions' claim in the JWT payload must be a dict.")
+    if not any(permissions.get(permission) is True for permission in READ_PERMISSIONS):
+        # ^ any True permission among READ_PERMISSIONS is enough to read the dataset
+        raise JWTInvalidClaimRead("No permission in JWT payload is True. Not allowed to read the dataset.")
