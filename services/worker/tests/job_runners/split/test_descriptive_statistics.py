@@ -9,8 +9,10 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import polars as pl
+import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
+from datasets.table import embed_table_storage
 from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
 from libcommon.exceptions import StatisticsComputationError
@@ -27,6 +29,7 @@ from worker.job_runners.split.descriptive_statistics import (
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,
     NO_LABEL_VALUE,
+    AudioColumn,
     BoolColumn,
     ClassLabelColumn,
     ColumnType,
@@ -482,7 +485,38 @@ def audio_statistics_expected() -> dict:  # type: ignore
         "column_type": ColumnType.AUDIO,
         "column_statistics": audio_statistics,
     }
-    return {"num_examples": 4, "statistics": {"audio": expected_statistics}, "partial": False}
+    nan_audio_lengths = [1.0, 3.0]  # take first and third audio file for this testcase
+    nan_audio_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(nan_audio_lengths), dtype=ColumnType.FLOAT
+    )
+    expected_nan_statistics = {
+        "column_name": "audio",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": nan_audio_statistics,
+    }
+    expected_all_nan_statistics = {
+        "column_name": "audio_all_nan",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": {
+            "nan_count": 4,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        },
+    }
+    return {
+        "num_examples": 4,
+        "statistics": {
+            "audio": expected_statistics,
+            "audio_nan": expected_nan_statistics,
+            "audio_all_nan": expected_all_nan_statistics,
+        },
+        "partial": False,
+    }
 
 
 @pytest.mark.parametrize(
@@ -722,6 +756,31 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
     conversations_schema = List(Struct({"from": String, "value": String, "weight": Float64}))
     assert "conversations" in df.schema
     assert df.schema["conversations"] == conversations_schema
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    ["audio", "audio_nan", "audio_all_nan"],
+)
+def test_audio_statistics(
+    column_name: str,
+    audio_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    expected = audio_statistics_expected["statistics"][column_name]["column_statistics"]
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    dataset_table = datasets["audio_statistics"].data
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
+    pq.write_table(dataset_table_embedded, parquet_filename)
+    computed = AudioColumn._compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
+        n_bins=N_BINS,
+    )
+    assert computed == expected
 
 
 @pytest.mark.parametrize(

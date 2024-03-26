@@ -1583,11 +1583,20 @@ audio_dataset = Dataset.from_dict(
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_2.wav"),
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
             str(Path(__file__).resolve().parent / "data" / "audio" / "audio_4.wav"),
-        ]
+        ],
+        "audio_nan": [
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_1.wav"),
+            None,
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
+            None,
+        ],
+        "audio_all_nan": [None, None, None, None],
     },
     features=Features(
         {
             "audio": Audio(sampling_rate=1600),
+            "audio_nan": Audio(sampling_rate=1600),
+            "audio_all_nan": Audio(sampling_rate=1600),
         }
     ),
 )
