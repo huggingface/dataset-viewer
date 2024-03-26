@@ -609,9 +609,16 @@ class AudioColumn(Column):
         durations = []
         for filename in parquet_files:
             shard_audios = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
-            shard_durations = thread_map(
-                AudioColumn.get_duration, shard_audios, desc=f"Computing durations of audio for {filename}", leave=False
-            ) if shard_audios else []
+            shard_durations = (
+                thread_map(
+                    AudioColumn.get_duration,
+                    shard_audios,
+                    desc=f"Computing durations of audio for {filename}",
+                    leave=False,
+                )
+                if shard_audios
+                else []
+            )
             durations.extend(shard_durations)
 
         if not durations:
