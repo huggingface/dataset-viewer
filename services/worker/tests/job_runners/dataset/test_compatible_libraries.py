@@ -4,6 +4,7 @@
 from collections.abc import Callable, Iterator
 from http import HTTPStatus
 from typing import Any
+from unittest.mock import patch
 
 import fsspec
 import pytest
@@ -182,11 +183,12 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                         "config_name": "default",
                         "arguments": {"record_set": "default", "partial": False},
                         "code": (
-                            "from mlcroissant "
-                            "import Dataset\n"
+                            "import requests\n"
+                            "from huggingface_hub.file_download import build_hf_headers\n"
+                            "from mlcroissant import Dataset\n"
                             f"{LOGIN_COMMENT}\n"
                             "headers = build_hf_headers()  # handles authentication\n"
-                            'jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset-login_required", headers=headers)\n'
+                            'jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset-login_required", headers=headers).json()\n'
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
@@ -291,7 +293,8 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
 
     HfFileSystem = fsspec.get_filesystem_class("hf")
     fsspec.register_implementation("hf", MockHfFileSystem, clobber=True)
-    yield MockHfFileSystem()
+    with patch("worker.job_runners.dataset.compatible_libraries.HfFileSystem", MockHfFileSystem):
+        yield MockHfFileSystem()
     fsspec.register_implementation("hf", HfFileSystem, clobber=True)
 
 
