@@ -16,9 +16,7 @@ ENV PYTHONFAULTHANDLER=1 \
 
 # System deps:
 RUN apt-get update \
-    && apt-get install -y build-essential unzip wget make \
-    libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config \
-    poppler-utils procps htop \
+    && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
