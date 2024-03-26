@@ -277,7 +277,7 @@ def raise_with_column_name(func: Callable) -> Callable:  # type: ignore
     @functools.wraps(func)
     def _compute_statistics_wrapper(*args: Any, column_name: str, **kwargs: Any) -> Any:
         try:
-            return func(column_name=column_name, *args, **kwargs)
+            return func(*args, column_name=column_name, **kwargs)
         except Exception as error:
             raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
 
