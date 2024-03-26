@@ -47,38 +47,40 @@ from starlette.responses import Response
 
 from search.duckdb_connection import duckdb_connect
 
-FTS_COMMAND_COUNT = "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data) A WHERE __hf_fts_score IS NOT NULL;"
+FTS_COUNT_COMMAND = "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data) A WHERE __hf_fts_score IS NOT NULL;"
 
 
-FTS_COMMAND = (
+FTS_BY_TABLE_COMMAND = (
     "SELECT * EXCLUDE (__hf_fts_score) FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score"
     " FROM data) A WHERE __hf_fts_score IS NOT NULL ORDER BY __hf_fts_score DESC OFFSET {offset} LIMIT {length};"
 )
-FTS_BATCH_COMMAND = "SELECT * FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data WHERE __hf_index_id BETWEEN {offset} and {length}) A WHERE __hf_fts_score IS NOT NULL;"
+
+FTS_BY_BATCHES_COMMAND = "SELECT * FROM (SELECT *, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data WHERE __hf_index_id BETWEEN {offset} and {length}) A WHERE __hf_fts_score IS NOT NULL;"
+
 FTS_BATCH_SIZE = 1000
 
 logger = logging.getLogger(__name__)
 
-DATASETS_WITH_FTS_BATCHES = ["wikimedia/wikipedia"]
+DATASETS_WITH_FTS_BY_BATCHES = ["wikimedia/wikipedia", "asoria/bolivian-recipes"]
 
 
-def _full_text_search_table(con: DuckDBPyConnection, query: str, offset: int, length: int) -> pa.Table:
+def _search_by_table(con: DuckDBPyConnection, query: str, offset: int, length: int) -> pa.Table:
     query_result = con.execute(
-        query=FTS_COMMAND.format(offset=offset, length=length),
+        query=FTS_BY_TABLE_COMMAND.format(offset=offset, length=length),
         parameters=[query],
     )
     return query_result.arrow()
 
 
-def _full_text_search_batches(
+def _search_by_batches(
     num_original_rows: int, con: DuckDBPyConnection, query: str, offset: int, length: int
 ) -> pa.Table:
     num_matched_rows = 0
     index = 0
     pa_tables = []
 
-    while index < num_original_rows and num_matched_rows < (offset + length):
-        fts_query = FTS_BATCH_COMMAND.format(offset=index, length=index + FTS_BATCH_SIZE)
+    for index in range(index, num_original_rows, FTS_BATCH_SIZE):
+        fts_query = FTS_BY_BATCHES_COMMAND.format(offset=index, length=index + FTS_BATCH_SIZE)
         logging.info(fts_query)
         pa_table = con.execute(
             query=fts_query,
@@ -86,11 +88,11 @@ def _full_text_search_batches(
         ).arrow()
         pa_tables.append(pa_table)
         num_matched_rows += pa_table.num_rows
-        logging.info(f"{index=} done with {pa_table.num_rows} - current number of matches rows {num_matched_rows}")
-        index += FTS_BATCH_SIZE
+        logging.info(f"{pa_table.num_rows} rows for batch {index} - {num_matched_rows} for table")
+        if num_matched_rows < (offset + length):
+            break
     pa_result = pa.concat_tables(pa_tables)
-    pa_result = pa_result.sort_by([("__hf_fts_score", "descending")])
-    pa_result = pa_result.drop("__hf_fts_score")
+    pa_result = pa_result.sort_by([("__hf_fts_score", "descending")]).drop("__hf_fts_score")
     return pa_result.slice(offset, length)
 
 
@@ -104,13 +106,13 @@ def full_text_search(
     extensions_directory: Optional[str] = None,
 ) -> tuple[int, pa.Table]:
     with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
-        count_result = con.execute(query=FTS_COMMAND_COUNT, parameters=[query]).fetchall()
+        count_result = con.execute(query=FTS_COUNT_COMMAND, parameters=[query]).fetchall()
         num_rows_total = count_result[0][0]  # it will always return a non-empty list with one element in a tuple
         logging.debug(f"got {num_rows_total=} results for {query=}")
         pa_table = (
-            _full_text_search_batches(num_original_rows, con, query, offset, length)
+            _search_by_batches(num_original_rows, con, query, offset, length)
             if fts_batches
-            else _full_text_search_table(con, query, offset, length)
+            else _search_by_table(con, query, offset, length)
         )
         return num_rows_total, pa_table
 
@@ -243,7 +245,7 @@ def create_search_endpoint(
 
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
-                    fts_batches = dataset in DATASETS_WITH_FTS_BATCHES
+                    fts_batches = dataset in DATASETS_WITH_FTS_BY_BATCHES
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         full_text_search,
                         num_original_rows,
