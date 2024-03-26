@@ -1084,7 +1084,7 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool", "list"]
+        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool", "list", "audio"]
       },
       "Histogram": {
         "type": "object",
