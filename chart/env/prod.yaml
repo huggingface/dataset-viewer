@@ -395,7 +395,7 @@ search:
       memory: "6500Mi"
     limits:
       cpu: 16
-      memory: "6500Mi"
+      memory: "9500Mi"
 
 sseApi:
   # Number of uvicorn workers for running the application
