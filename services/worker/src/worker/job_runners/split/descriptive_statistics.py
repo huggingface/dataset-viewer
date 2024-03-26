@@ -604,12 +604,19 @@ class AudioColumn(Column):
         n_samples: int,
         n_bins: int,
     ) -> NumericalStatisticsItem:
-        table = pq.read_table(parquet_directory, columns=[column_name]).drop_null()
-        if table.shape[0] == 0:
+        logging.info(f"Compute statistics for Audio column {column_name} with librosa and polars. ")
+        parquet_files = list(parquet_directory.glob("*.parquet"))
+        durations = []
+        for filename in parquet_files:
+            shard_audios = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
+            shard_durations = thread_map(
+                AudioColumn.get_duration, shard_audios, desc=f"Computing durations of audio for {filename}", leave=False
+            ) if shard_audios else []
+            durations.extend(shard_durations)
+
+        if not durations:
             return all_nan_statistics_item(n_samples)
 
-        data = table.to_pydict()[column_name]
-        durations = thread_map(AudioColumn.get_duration, data)
         nan_count = n_samples - len(durations)
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         duration_df = pl.from_dict({column_name: durations})
