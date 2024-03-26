@@ -284,6 +284,19 @@ def raise_with_column_name(func: Callable) -> Callable:  # type: ignore
     return _compute_statistics_wrapper
 
 
+def all_nan_statistics_item(n_samples: int) -> NumericalStatisticsItem:
+    return NumericalStatisticsItem(
+        nan_count=n_samples,
+        nan_proportion=1.0,
+        min=None,
+        max=None,
+        mean=None,
+        median=None,
+        std=None,
+        histogram=None,
+    )
+
+
 class Column:
     """Abstract class to compute stats for columns of all supported data types."""
 
@@ -373,16 +386,8 @@ class FloatColumn(Column):
         logging.info(f"Compute statistics for float column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
-            return NumericalStatisticsItem(
-                nan_count=n_samples,
-                nan_proportion=1.0,
-                min=None,
-                max=None,
-                mean=None,
-                median=None,
-                std=None,
-                histogram=None,
-            )
+            return all_nan_statistics_item(n_samples)
+
         minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
 
@@ -429,16 +434,7 @@ class IntColumn(Column):
         logging.info(f"Compute statistics for integer column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples=n_samples)
         if nan_count == n_samples:
-            return NumericalStatisticsItem(
-                nan_count=n_samples,
-                nan_proportion=1.0,
-                min=None,
-                max=None,
-                mean=None,
-                median=None,
-                std=None,
-                histogram=None,
-            )
+            return all_nan_statistics_item(n_samples)
 
         minimum, maximum, mean, median, std = min_max_mean_median_std(data, column_name)
         logging.debug(f"{minimum=}, {maximum=}, {mean=}, {median=}, {std=}, {nan_count=} {nan_proportion=}")
@@ -561,18 +557,9 @@ class ListColumn(Column):
         logging.info(f"Compute statistics for list/Sequence column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:
-            return NumericalStatisticsItem(
-                nan_count=n_samples,
-                nan_proportion=1.0,
-                min=None,
-                max=None,
-                mean=None,
-                median=None,
-                std=None,
-                histogram=None,
-            )
-        df_without_na = data.select(pl.col(column_name)).drop_nulls()
+            return all_nan_statistics_item(n_samples)
 
+        df_without_na = data.select(pl.col(column_name)).drop_nulls()
         lengths_column_name = f"{column_name}_len"
         lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
         lengths_stats = IntColumn._compute_statistics(
@@ -612,27 +599,29 @@ class AudioColumn(Column):
     @staticmethod
     @raise_with_column_name
     def _compute_statistics(
-        parquet_dir: Path,
+        parquet_directory: Path,
         column_name: str,
         n_samples: int,
         n_bins: int,
     ) -> NumericalStatisticsItem:
-        table = pq.read_table(parquet_dir, columns=[column_name])
-        # TODO: check if nan_count == n_samples
+        table = pq.read_table(parquet_directory, columns=[column_name]).drop_null()
+        if table.shape[0] == 0:
+            return all_nan_statistics_item(n_samples)
+
         data = table.to_pydict()[column_name]
         durations = thread_map(AudioColumn.get_duration, data)
         duration_df = pl.from_dict({column_name: durations})
         duration_stats: NumericalStatisticsItem = FloatColumn._compute_statistics(
             data=duration_df,
             column_name=column_name,
-            n_samples=n_samples,
+            n_samples=table.shape[0],
             n_bins=n_bins,
         )
         return duration_stats
 
-    def compute_and_prepare_response(self, parquet_dir: Path) -> StatisticsPerColumnItem:
+    def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
         stats = self._compute_statistics(
-            parquet_dir=parquet_dir, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins
+            parquet_directory=parquet_directory, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
