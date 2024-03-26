@@ -655,7 +655,7 @@ def compute_compatible_libraries_response(
     http_status = dataset_info_response["http_status"]
     login_required = True
     try:
-        login_required = not HfFileSystem(token="no_token").isdir("datasets/" + dataset)
+        login_required = not HfFileSystem(token="no_token").isdir("datasets/" + dataset)  # nosec
     except NotImplementedError:  # hfh doesn't implement listing user's datasets
         pass
     tags: list[DatasetTag] = []
