@@ -170,12 +170,12 @@ Currently, statistics are supported for strings, float and integer numbers, list
 `column_type` in response can be one of the following values:
 
 * `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature which represents categorical data
-* `float` - for float dtypes
-* `int` - for integer dtypes
-* `bool` - for boolean dtype
-* `string_label` - for string dtypes being treated as categories (see below)
-* `string_text` - for string dtypes if they do not represent categories (see below)
-* `list` - for lists of any other data types
+* `float` - for float data types
+* `int` - for integer data types
+* `bool` - for boolean data type
+* `string_label` - for string data types being treated as categories (see below)
+* `string_text` - for string data types if they do not represent categories (see below)
+* `list` - for lists of any other data types (including lists)
 * `audio` - for audio data
 
 ### `class_label`
