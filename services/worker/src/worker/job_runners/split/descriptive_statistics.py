@@ -610,14 +610,25 @@ class AudioColumn(Column):
 
         data = table.to_pydict()[column_name]
         durations = thread_map(AudioColumn.get_duration, data)
+        nan_count = n_samples - len(durations)
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         duration_df = pl.from_dict({column_name: durations})
         duration_stats: NumericalStatisticsItem = FloatColumn._compute_statistics(
             data=duration_df,
             column_name=column_name,
-            n_samples=table.shape[0],
+            n_samples=len(durations),
             n_bins=n_bins,
         )
-        return duration_stats
+        return NumericalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            min=duration_stats["min"],
+            max=duration_stats["max"],
+            mean=duration_stats["mean"],
+            median=duration_stats["median"],
+            std=duration_stats["std"],
+            histogram=duration_stats["histogram"],
+        )
 
     def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
         stats = self._compute_statistics(

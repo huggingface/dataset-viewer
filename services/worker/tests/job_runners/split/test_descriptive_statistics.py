@@ -485,7 +485,7 @@ def audio_statistics_expected() -> dict:  # type: ignore
         "column_type": ColumnType.AUDIO,
         "column_statistics": audio_statistics,
     }
-    nan_audio_lengths = [1.0, 3.0]  # take first and third audio file for this testcase
+    nan_audio_lengths = [1.0, None, 3.0, None]  # take first and third audio file for this testcase
     nan_audio_statistics = count_expected_statistics_for_numerical_column(
         column=pd.Series(nan_audio_lengths), dtype=ColumnType.FLOAT
     )
