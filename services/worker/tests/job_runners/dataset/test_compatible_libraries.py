@@ -15,6 +15,7 @@ from pytest import TempPathFactory
 
 from worker.config import AppConfig
 from worker.job_runners.dataset.compatible_libraries import (
+    LOGIN_COMMENT,
     DatasetCompatibleLibrariesJobRunner,
     get_builder_configs_with_simplified_data_files,
     get_compatible_library_for_builder,
@@ -33,12 +34,21 @@ def prepare_and_clean_mongo(app_config: AppConfig) -> None:
 GetJobRunner = Callable[[str, AppConfig], DatasetCompatibleLibrariesJobRunner]
 
 PARQUET_DATASET = "parquet-dataset"
+PARQUET_DATASET_LOGIN_REQUIRED = "parquet-dataset-login_required"
 WEBDATASET_DATASET = "webdataset-dataset"
 ERROR_DATASET = "error-dataset"
 
 UPSTREAM_RESPONSE_INFO_PARQUET: UpstreamResponse = UpstreamResponse(
     kind="dataset-info",
     dataset=PARQUET_DATASET,
+    dataset_git_revision=REVISION_NAME,
+    http_status=HTTPStatus.OK,
+    content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
+    progress=1.0,
+)
+UPSTREAM_RESPONSE_INFO_PARQUET_LOGIN_REQUIRED: UpstreamResponse = UpstreamResponse(
+    kind="dataset-info",
+    dataset=PARQUET_DATASET_LOGIN_REQUIRED,
     dataset_git_revision=REVISION_NAME,
     http_status=HTTPStatus.OK,
     content={"dataset_info": {"default": {"config_name": "default", "builder_name": "parquet"}}, "partial": False},
@@ -121,6 +131,72 @@ EXPECTED_PARQUET = (
     },
     1.0,
 )
+
+EXPECTED_PARQUET_LOGIN_REQUIRED = (
+    {
+        "tags": ["croissant"],
+        "formats": ["parquet"],
+        "libraries": [
+            {
+                "function": "load_dataset",
+                "language": "python",
+                "library": "datasets",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {},
+                        "code": (
+                            f'from datasets import load_dataset\n{LOGIN_COMMENT}\nds = load_dataset("parquet-dataset-login_required")'
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "pd.read_parquet",
+                "language": "python",
+                "library": "pandas",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {
+                            "splits": {
+                                "test": "test.parquet",
+                                "train": "train.parquet",
+                            }
+                        },
+                        "code": (
+                            "import pandas as pd\n"
+                            f"{LOGIN_COMMENT}\n"
+                            "splits = {'train': 'train.parquet', 'test': 'test.parquet'}\n"
+                            'df = pd.read_parquet("hf://datasets/parquet-dataset-login_required/" + splits["train"])'
+                        ),
+                    }
+                ],
+            },
+            {
+                "function": "Dataset",
+                "language": "python",
+                "library": "mlcroissant",
+                "loading_codes": [
+                    {
+                        "config_name": "default",
+                        "arguments": {"record_set": "default", "partial": False},
+                        "code": (
+                            "from mlcroissant "
+                            "import Dataset\n"
+                            f"{LOGIN_COMMENT}\n"
+                            "headers = build_hf_headers()  # handles authentication\n"
+                            'jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset-login_required", headers=headers)\n'
+                            "ds = Dataset(jsonld=jsonld)\n"
+                            'records = ds.records("default")'
+                        ),
+                    }
+                ],
+            },
+        ],
+    },
+    1.0,
+)
 EXPECTED_WEBDATASET = (
     {
         "tags": ["croissant"],
@@ -191,6 +267,10 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     (hf / "datasets" / PARQUET_DATASET / "train.parquet").touch()
     (hf / "datasets" / PARQUET_DATASET / "test.parquet").touch()
 
+    (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED).mkdir(parents=True)
+    (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "train.parquet").touch()
+    (hf / "datasets" / PARQUET_DATASET_LOGIN_REQUIRED / "test.parquet").touch()
+
     (hf / "datasets" / WEBDATASET_DATASET).mkdir(parents=True)
     (hf / "datasets" / WEBDATASET_DATASET / "0000.tar").touch()
     (hf / "datasets" / WEBDATASET_DATASET / "0001.tar").touch()
@@ -200,8 +280,14 @@ def mock_hffs(tmp_path_factory: TempPathFactory) -> Iterator[fsspec.AbstractFile
     class MockHfFileSystem(DirFileSystem):  # type: ignore[misc]
         protocol = "hf"
 
-        def __init__(self, path: str = str(hf), target_protocol: str = "local", **kwargs: dict[str, Any]) -> None:
+        def __init__(self, path: str = str(hf), target_protocol: str = "local", **kwargs: Any) -> None:
             super().__init__(path=path, target_protocol=target_protocol, **kwargs)
+            self.logged_in = kwargs.get("token") != "no_token"
+
+        def isdir(self, path: str, **kwargs: Any) -> bool:
+            if "login_required" in path and not self.logged_in:
+                return False
+            return bool(super().isdir(path, **kwargs))
 
     HfFileSystem = fsspec.get_filesystem_class("hf")
     fsspec.register_implementation("hf", MockHfFileSystem, clobber=True)
@@ -248,6 +334,13 @@ def get_job_runner(
                 UPSTREAM_RESPONSE_INFO_PARQUET,
             ],
             EXPECTED_PARQUET,
+        ),
+        (
+            PARQUET_DATASET_LOGIN_REQUIRED,
+            [
+                UPSTREAM_RESPONSE_INFO_PARQUET_LOGIN_REQUIRED,
+            ],
+            EXPECTED_PARQUET_LOGIN_REQUIRED,
         ),
         (
             WEBDATASET_DATASET,
@@ -406,10 +499,11 @@ def test_get_builder_configs_with_simplified_data_files(
     expected_library: str,
 ) -> None:
     hf_token = None
+    login_required = False
     configs = get_builder_configs_with_simplified_data_files(dataset, module_name=module_name, hf_token=hf_token)
     assert len(configs) == 1
     config = configs[0]
     assert config.data_files == expected_data_files
     assert module_name in get_compatible_library_for_builder
-    compatible_library = get_compatible_library_for_builder[module_name](dataset, hf_token)
+    compatible_library = get_compatible_library_for_builder[module_name](dataset, hf_token, login_required)
     assert compatible_library["library"] == expected_library

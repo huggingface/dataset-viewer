@@ -243,12 +243,14 @@ def simplify_data_files_patterns(
     return patterns
 
 
-DATASETS_CODE = """from datasets import load_dataset
+LOGIN_COMMENT = "\n# Don't forget to login e.g. using `huggingface-cli login` to access this dataset"
 
+DATASETS_CODE = """from datasets import load_dataset
+{comment}
 ds = load_dataset("{dataset}")"""
 
 DATASETS_CODE_CONFIGS = """from datasets import load_dataset
-
+{comment}
 ds = load_dataset("{dataset}", "{config_name}")"""
 
 
@@ -257,8 +259,19 @@ MLCROISSANT_CODE_RECORD_SETS = """from mlcroissant import Dataset
 ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={dataset}")
 records = ds.records("{record_set}")"""
 
+MLCROISSANT_CODE_RECORD_SETS_WITH_LOGIN = """import requests
+from huggingface_hub.file_download import build_hf_headers
+from mlcroissant import Dataset
+{comment}
+headers = build_hf_headers()  # handles authentication
+jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset={dataset}", headers=headers).json()
+ds = Dataset(jsonld=jsonld)
+records = ds.records("{record_set}")"""
 
-def get_hf_datasets_compatible_library(dataset: str, infos: list[dict[str, Any]]) -> CompatibleLibrary:
+
+def get_hf_datasets_compatible_library(
+    dataset: str, infos: list[dict[str, Any]], login_required: bool
+) -> CompatibleLibrary:
     return {
         "language": "python",
         "library": "datasets",
@@ -268,9 +281,13 @@ def get_hf_datasets_compatible_library(dataset: str, infos: list[dict[str, Any]]
                 "config_name": info["config_name"],
                 "arguments": {"config_name": info["config_name"]} if len(infos) > 1 else {},
                 "code": (
-                    DATASETS_CODE_CONFIGS.format(dataset=dataset, config_name=info["config_name"])
+                    DATASETS_CODE_CONFIGS.format(
+                        dataset=dataset,
+                        config_name=info["config_name"],
+                        comment=LOGIN_COMMENT if login_required else "",
+                    )
                     if len(infos) > 1
-                    else DATASETS_CODE.format(dataset=dataset)
+                    else DATASETS_CODE.format(dataset=dataset, comment=LOGIN_COMMENT if login_required else "")
                 ),
             }
             for info in infos
@@ -278,8 +295,12 @@ def get_hf_datasets_compatible_library(dataset: str, infos: list[dict[str, Any]]
     }
 
 
-def get_mlcroissant_compatible_library(dataset: str, infos: list[dict[str, Any]], partial: bool) -> CompatibleLibrary:
+def get_mlcroissant_compatible_library(
+    dataset: str, infos: list[dict[str, Any]], login_required: bool, partial: bool
+) -> CompatibleLibrary:
     comment = "\n# The Croissant metadata exposes the first 5GB of this dataset" if partial else ""
+    if login_required:
+        comment += LOGIN_COMMENT
     return {
         "language": "python",
         "library": "mlcroissant",
@@ -292,7 +313,13 @@ def get_mlcroissant_compatible_library(dataset: str, infos: list[dict[str, Any]]
                     "partial": partial,
                 },
                 "code": (
-                    MLCROISSANT_CODE_RECORD_SETS.format(
+                    MLCROISSANT_CODE_RECORD_SETS_WITH_LOGIN.format(
+                        dataset=dataset,
+                        record_set=get_record_set(dataset=dataset, config_name=info["config_name"]),
+                        comment=comment,
+                    )
+                    if login_required
+                    else MLCROISSANT_CODE_RECORD_SETS.format(
                         dataset=dataset,
                         record_set=get_record_set(dataset=dataset, config_name=info["config_name"]),
                         comment=comment,
@@ -305,30 +332,30 @@ def get_mlcroissant_compatible_library(dataset: str, infos: list[dict[str, Any]]
 
 
 PANDAS_CODE = """import pandas as pd
-
+{comment}
 df = {function}("hf://datasets/{dataset}/{data_file}"{args})"""
 
 
 PANDAS_CODE_SPLITS = """import pandas as pd
-
+{comment}
 splits = {splits}
 df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"{args}])"""
 
 
 DASK_CODE = """import dask.dataframe as dd
-
+{comment}
 df = {function}("hf://datasets/{dataset}/{pattern}")"""
 
 
 DASK_CODE_SPLITS = """import dask.dataframe as dd
-
+{comment}
 splits = {splits}
 df = {function}("hf://datasets/{dataset}/" + splits["{first_split}"])"""
 
 
 WEBDATASET_CODE = """import webdataset as wds
 from huggingface_hub import HfFileSystem, get_token, hf_hub_url
-
+{comment}
 fs = HfFileSystem()
 files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/{dataset}/{pattern}")]
 urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]
@@ -341,7 +368,7 @@ WEBDATASET_CODE_SPLITS = """import webdataset as wds
 from huggingface_hub import HfFileSystem, get_token, hf_hub_url
 
 splits = {splits}
-
+{comment}
 fs = HfFileSystem()
 files = [fs.resolve_path(path) for path in fs.glob("hf://datasets/{dataset}/" + splits["{first_split}"])]
 urls = [hf_hub_url(file.repo_id, file.path_in_repo, repo_type="dataset") for file in files]
@@ -350,7 +377,9 @@ urls = f"pipe: curl -s -L -H 'Authorization:Bearer {{get_token()}}' {{'::'.join(
 ds = {function}(urls).decode()"""
 
 
-def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
+def get_compatible_libraries_for_json(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="json", hf_token=hf_token)
     for config in builder_configs:
@@ -371,6 +400,7 @@ def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> 
         for loading_code in loading_codes
         for data_file in loading_code["arguments"]["splits"].values()
     )
+    comment = LOGIN_COMMENT if login_required else ""
     if is_single_file:
         library = "pandas"
         function = "pd.read_json"
@@ -384,7 +414,7 @@ def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> 
             if len(loading_code["arguments"]["splits"]) == 1:
                 data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
-                    function=function, dataset=dataset, data_file=data_file, args=args
+                    function=function, dataset=dataset, data_file=data_file, args=args, comment=comment
                 )
             else:
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
@@ -393,6 +423,7 @@ def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> 
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     args=args,
+                    comment=comment,
                 )
     else:
         library = "dask"
@@ -400,18 +431,21 @@ def get_compatible_libraries_for_json(dataset: str, hf_token: Optional[str]) -> 
         for loading_code in loading_codes:
             if len(loading_code["arguments"]["splits"]) == 1:
                 pattern = next(iter(loading_code["arguments"]["splits"].values()))
-                loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
+                loading_code["code"] = DASK_CODE.format(
+                    function=function, dataset=dataset, pattern=pattern, comment=comment
+                )
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
+                    comment=comment,
                 )
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
+def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str], login_required: bool) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="csv", hf_token=hf_token)
     for config in builder_configs:
@@ -432,6 +466,7 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> C
         for loading_code in loading_codes
         for data_file in loading_code["arguments"]["splits"].values()
     )
+    comment = LOGIN_COMMENT if login_required else ""
     if is_single_file:
         library = "pandas"
         function = "pd.read_csv"
@@ -444,7 +479,7 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> C
             if len(loading_code["arguments"]["splits"]) == 1:
                 data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
-                    function=function, dataset=dataset, data_file=data_file, args=args
+                    function=function, dataset=dataset, data_file=data_file, args=args, comment=comment
                 )
             else:
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
@@ -453,6 +488,7 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> C
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     args=args,
+                    comment=comment,
                 )
     else:
         library = "dask"
@@ -467,11 +503,14 @@ def get_compatible_libraries_for_csv(dataset: str, hf_token: Optional[str]) -> C
                     dataset=dataset,
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
+                    comment=comment,
                 )
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
+def get_compatible_libraries_for_parquet(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(dataset, module_name="parquet", hf_token=hf_token)
     for config in builder_configs:
@@ -492,6 +531,7 @@ def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) 
         for loading_code in loading_codes
         for data_file in loading_code["arguments"]["splits"].values()
     )
+    comment = LOGIN_COMMENT if login_required else ""
     if is_single_file:
         library = "pandas"
         function = "pd.read_parquet"
@@ -499,7 +539,7 @@ def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) 
             if len(loading_code["arguments"]["splits"]) == 1:
                 data_file = next(iter(loading_code["arguments"]["splits"].values()))
                 loading_code["code"] = PANDAS_CODE.format(
-                    function=function, dataset=dataset, data_file=data_file, args=""
+                    function=function, dataset=dataset, data_file=data_file, args="", comment=comment
                 )
             else:
                 loading_code["code"] = PANDAS_CODE_SPLITS.format(
@@ -508,6 +548,7 @@ def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) 
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
                     args="",
+                    comment=comment,
                 )
     else:
         library = "dask"
@@ -515,18 +556,23 @@ def get_compatible_libraries_for_parquet(dataset: str, hf_token: Optional[str]) 
         for loading_code in loading_codes:
             if len(loading_code["arguments"]["splits"]) == 1:
                 pattern = next(iter(loading_code["arguments"]["splits"].values()))
-                loading_code["code"] = DASK_CODE.format(function=function, dataset=dataset, pattern=pattern)
+                loading_code["code"] = DASK_CODE.format(
+                    function=function, dataset=dataset, pattern=pattern, comment=comment
+                )
             else:
                 loading_code["code"] = DASK_CODE_SPLITS.format(
                     function=function,
                     dataset=dataset,
                     splits=loading_code["arguments"]["splits"],
                     first_split=next(iter(loading_code["arguments"]["splits"])),
+                    comment=comment,
                 )
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-def get_compatible_libraries_for_webdataset(dataset: str, hf_token: Optional[str]) -> CompatibleLibrary:
+def get_compatible_libraries_for_webdataset(
+    dataset: str, hf_token: Optional[str], login_required: bool
+) -> CompatibleLibrary:
     library: DatasetLibrary
     builder_configs = get_builder_configs_with_simplified_data_files(
         dataset, module_name="webdataset", hf_token=hf_token
@@ -546,21 +592,25 @@ def get_compatible_libraries_for_webdataset(dataset: str, hf_token: Optional[str
     ]
     library = "webdataset"
     function = "wds.WebDataset"
+    comment = LOGIN_COMMENT if login_required else ""
     for loading_code in loading_codes:
         if len(loading_code["arguments"]["splits"]) == 1:
             pattern = next(iter(loading_code["arguments"]["splits"].values()))
-            loading_code["code"] = WEBDATASET_CODE.format(function=function, dataset=dataset, pattern=pattern)
+            loading_code["code"] = WEBDATASET_CODE.format(
+                function=function, dataset=dataset, pattern=pattern, comment=comment
+            )
         else:
             loading_code["code"] = WEBDATASET_CODE_SPLITS.format(
                 function=function,
                 dataset=dataset,
                 splits=loading_code["arguments"]["splits"],
                 first_split=next(iter(loading_code["arguments"]["splits"])),
+                comment=comment,
             )
     return {"language": "python", "library": library, "function": function, "loading_codes": loading_codes}
 
 
-get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str]], CompatibleLibrary]] = {
+get_compatible_library_for_builder: dict[str, Callable[[str, Optional[str], bool], CompatibleLibrary]] = {
     "webdataset": get_compatible_libraries_for_webdataset,
     "json": get_compatible_libraries_for_json,
     "csv": get_compatible_libraries_for_csv,
@@ -603,6 +653,11 @@ def compute_compatible_libraries_response(
 
     dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
     http_status = dataset_info_response["http_status"]
+    login_required = True
+    try:
+        login_required = not HfFileSystem(token="no_token").isdir("datasets/" + dataset)
+    except NotImplementedError:  # hfh doesn't implement listing user's datasets
+        pass
     tags: list[DatasetTag] = []
     libraries: list[CompatibleLibrary] = []
     formats: list[DatasetFormat] = []
@@ -619,19 +674,23 @@ def compute_compatible_libraries_response(
             ) from e
     if infos:
         # datasets library
-        libraries.append(get_hf_datasets_compatible_library(dataset, infos))
+        libraries.append(get_hf_datasets_compatible_library(dataset, infos=infos, login_required=login_required))
         # pandas or dask or webdataset library
         builder_name = infos[0]["builder_name"]
         if builder_name in get_format_for_builder:
             formats.append(get_format_for_builder[builder_name])
         if builder_name in get_compatible_library_for_builder:
             try:
-                compatible_library = get_compatible_library_for_builder[builder_name](dataset, hf_token)
+                compatible_library = get_compatible_library_for_builder[builder_name](
+                    dataset, hf_token, login_required
+                )
                 libraries.append(compatible_library)
             except NotImplementedError:
                 pass
         # mlcroissant library
-        libraries.append(get_mlcroissant_compatible_library(dataset, infos, partial=partial))
+        libraries.append(
+            get_mlcroissant_compatible_library(dataset, infos, login_required=login_required, partial=partial)
+        )
         tags.append("croissant")
     return DatasetCompatibleLibrariesResponse(tags=tags, libraries=libraries, formats=formats)
 
