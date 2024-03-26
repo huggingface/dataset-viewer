@@ -117,6 +117,8 @@ The response has three fields: `num_examples`, `statistics`, and `partial`. `par
 * `string_label` - for string dtypes ("string", "large_string") - if there are less than or equal to `MAX_NUM_STRING_LABELS` unique values (hardcoded in worker's code, for now it's 30)
 * `string_text` - for string dtypes ("string", "large_string") - if there are more than `MAX_NUM_STRING_LABELS` unique values
 * `bool` - for boolean dtype ("bool")
+* `list` - for lists of other data types (including lists)
+* `audio` - for audio data
 
 `column_statistics` content depends on the feature type, see examples below.
 ##### class_label
@@ -445,6 +447,96 @@ If a string column doesn't satisfy the conditions to be considered a category (s
                 'True': 10
             }
         }
+}
+```
+</p>
+</details>
+
+##### list
+
+Show distribution of lists lengths. Note: dictionaries of lists are not supported (only lists of dictionaries).
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    "column_name": "list_col",
+    "column_type": "list",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 1,
+        "max": 3,
+        "mean": 1.01741,
+        "median": 1.0,
+        "std": 0.13146,
+        "histogram": {
+            "hist": [
+                11177,
+                196,
+                1
+            ],
+            "bin_edges": [
+                1,
+                2,
+                3,
+                3
+            ]
+        }
+    }
+}
+```
+</p>
+</details>
+
+##### audio
+
+Shows distribution of audio files durations.
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    "column_name": "audio_col",
+    "column_type": "audio",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0,
+        "min": 1.02,
+        "max": 15,
+        "mean": 13.93042,
+        "median": 14.77,
+        "std": 2.63734,
+        "histogram": {
+            "hist": [
+                32,
+                25,
+                18,
+                24,
+                22,
+                17,
+                18,
+                19,
+                55,
+                1770
+            ],
+            "bin_edges": [
+                1.02,
+                2.418,
+                3.816,
+                5.214,
+                6.612,
+                8.01,
+                9.408,
+                10.806,
+                12.204,
+                13.602,
+                15
+            ]
+        }
+    }
 }
 ```
 </p>
