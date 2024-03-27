@@ -48,7 +48,15 @@ from search.duckdb_connection import duckdb_connect
 
 logger = logging.getLogger(__name__)
 
-DATASETS_WITH_FTS_BY_STAGE_TABLE = ["wikimedia/wikipedia", "asoria/search_test"]
+DATASETS_WITH_FTS_BY_STAGE_TABLE = [
+    "wikimedia/wikipedia",
+    "asoria/search_test",
+    "lhallee/BIOGRID_STRING",
+    "Phando/vqa_v2",
+    "rntc/pubmed_preprocess",
+    "allenai/c4",
+    "laion/conceptual-captions-12m-webdataset",
+]
 
 FTS_FULL_TABLE_COUNT_COMMAND = (
     "SELECT COUNT(*) FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM"
