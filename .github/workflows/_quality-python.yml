@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: |
             ${{ inputs.working-directory }}/poetry.lock
       - name: Install packages
-        run: sudo apt update; sudo apt install -y libicu-dev ffmpeg libavcodec-extra libsndfile1 llvm pkg-config poppler-utils
+        run: sudo apt update; sudo apt install -y ffmpeg libavcodec-extra libsndfile1
       - name: Verify consistency of poetry.lock with pyproject.toml
         run: poetry lock --no-update --check
       - name: Install dependencies
