@@ -613,7 +613,7 @@ class AudioColumn(Column):
                 thread_map(
                     AudioColumn.get_duration,
                     shard_audios,
-                    desc=f"Computing durations of audio for {filename}",
+                    desc=f"Computing durations of audio for {filename.name}",
                     leave=False,
                 )
                 if shard_audios
