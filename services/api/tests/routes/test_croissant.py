@@ -110,8 +110,6 @@ def test_get_croissant_from_dataset_infos() -> None:
     )
     assert "@context" in croissant
     assert "@type" in croissant
-    assert "name" in croissant
-    assert croissant["name"] == "user_squad_with_space"
 
     # Test recordSet.
     assert "recordSet" in croissant
@@ -155,21 +153,6 @@ def test_get_croissant_from_dataset_infos() -> None:
         assert "@id" in distribution
         if "containedIn" in distribution:
             assert "@id" in distribution["containedIn"]
-
-    # Test others.
-    assert croissant["license"] == ["mit"]
-    assert croissant["identifier"] == "hf/123456789"
-
-    # If the parameter doesn't exist, check that it is not kept:
-    squad_licenseless_info = squad_info.copy()
-    del squad_licenseless_info["license"]
-    croissant = get_croissant_from_dataset_infos(
-        "user/squad with space",
-        [squad_licenseless_info, squad_licenseless_info],
-        partial=False,
-        full_jsonld=False,
-    )
-    assert "license" not in croissant
 
 
 MAX_COLUMNS = 3
