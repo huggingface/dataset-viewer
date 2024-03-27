@@ -688,7 +688,7 @@ specification: ProcessingGraphSpecification = {
     "dataset-compatible-libraries": {
         "input_type": "dataset",
         "triggered_by": "dataset-info",
-        "job_runner_version": 3,
+        "job_runner_version": 4,
         "difficulty": 20,
     },
     "dataset-modalities": {
