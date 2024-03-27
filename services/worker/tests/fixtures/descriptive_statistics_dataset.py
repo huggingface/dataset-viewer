@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2024 The HuggingFace Authors.
 
+from pathlib import Path
 from typing import Optional
 
-from datasets import ClassLabel, Dataset, Features, Sequence, Value
+from datasets import Audio, ClassLabel, Dataset, Features, Sequence, Value
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1366,22 +1367,18 @@ statistics_dataset = Dataset.from_dict(
             "list__sequence_of_sequence_bool_nan_column": Sequence(Sequence(Value("bool"))),
             "list__sequence_of_sequence_bool_all_nan_column": Sequence(Sequence(Value("bool"))),
             "list__sequence_of_sequence_dict_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
             "list__sequence_of_sequence_dict_nan_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
             "list__sequence_of_sequence_dict_all_nan_column": Sequence(
-                Sequence({"author": Value("string"), "content": Value("string"), "likes": Value("int32")})
+                Sequence({"author": Value("string"), "likes": Value("int32")})
             ),
-            "list__sequence_of_list_dict_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
-            ),
-            "list__sequence_of_list_dict_nan_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
-            ),
+            "list__sequence_of_list_dict_column": Sequence([{"author": Value("string"), "likes": Value("int32")}]),
+            "list__sequence_of_list_dict_nan_column": Sequence([{"author": Value("string"), "likes": Value("int32")}]),
             "list__sequence_of_list_dict_all_nan_column": Sequence(
-                [{"author": Value("string"), "content": Value("string"), "likes": Value("int32")}]
+                [{"author": Value("string"), "likes": Value("int32")}]
             ),
         }
     ),
@@ -1574,6 +1571,32 @@ statistics_not_supported_dataset = Dataset.from_dict(
             "list__sequence_dict_all_nan_column": Sequence(
                 {"author": Value("string"), "content": Value("string"), "likes": Value("int32")}
             ),
+        }
+    ),
+)
+
+
+audio_dataset = Dataset.from_dict(
+    {
+        "audio": [
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_1.wav"),
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_2.wav"),
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_4.wav"),
+        ],
+        "audio_nan": [
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_1.wav"),
+            None,
+            str(Path(__file__).resolve().parent / "data" / "audio" / "audio_3.wav"),
+            None,
+        ],
+        "audio_all_nan": [None, None, None, None],
+    },
+    features=Features(
+        {
+            "audio": Audio(sampling_rate=1600),
+            "audio_nan": Audio(sampling_rate=1600),
+            "audio_all_nan": Audio(sampling_rate=1600),
         }
     ),
 )

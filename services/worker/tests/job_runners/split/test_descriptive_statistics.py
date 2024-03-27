@@ -9,8 +9,10 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import polars as pl
+import pyarrow.parquet as pq
 import pytest
 from datasets import ClassLabel, Dataset
+from datasets.table import embed_table_storage
 from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
 from libcommon.exceptions import StatisticsComputationError
@@ -27,6 +29,7 @@ from worker.job_runners.split.descriptive_statistics import (
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,
     NO_LABEL_VALUE,
+    AudioColumn,
     BoolColumn,
     ClassLabelColumn,
     ColumnType,
@@ -471,6 +474,51 @@ def descriptive_statistics_string_text_partial_expected(datasets: Mapping[str, D
     return {"num_examples": df.shape[0], "statistics": expected_statistics, "partial": True}
 
 
+@pytest.fixture
+def audio_statistics_expected() -> dict:  # type: ignore
+    audio_lengths = [1.0, 2.0, 3.0, 4.0]  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
+    audio_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(audio_lengths), dtype=ColumnType.FLOAT
+    )
+    expected_statistics = {
+        "column_name": "audio",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": audio_statistics,
+    }
+    nan_audio_lengths = [1.0, None, 3.0, None]  # take first and third audio file for this testcase
+    nan_audio_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(nan_audio_lengths), dtype=ColumnType.FLOAT
+    )
+    expected_nan_statistics = {
+        "column_name": "audio_nan",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": nan_audio_statistics,
+    }
+    expected_all_nan_statistics = {
+        "column_name": "audio_all_nan",
+        "column_type": ColumnType.AUDIO,
+        "column_statistics": {
+            "nan_count": 4,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        },
+    }
+    return {
+        "num_examples": 4,
+        "statistics": {
+            "audio": expected_statistics,
+            "audio_nan": expected_nan_statistics,
+            "audio_all_nan": expected_all_nan_statistics,
+        },
+        "partial": False,
+    }
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -711,14 +759,39 @@ def test_polars_struct_thread_panic_error(struct_thread_panic_error_parquet_file
 
 
 @pytest.mark.parametrize(
+    "column_name",
+    ["audio", "audio_nan", "audio_all_nan"],
+)
+def test_audio_statistics(
+    column_name: str,
+    audio_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    expected = audio_statistics_expected["statistics"][column_name]["column_statistics"]
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    dataset_table = datasets["audio_statistics"].data
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
+    pq.write_table(dataset_table_embedded, parquet_filename)
+    computed = AudioColumn._compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
+        n_bins=N_BINS,
+    )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [
         ("descriptive_statistics", None),
         ("descriptive_statistics_string_text", None),
         ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
+        ("audio_statistics", None),
         ("gated", None),
-        ("audio", "NoSupportedFeaturesError"),
     ],
 )
 def test_compute(
@@ -732,12 +805,13 @@ def test_compute(
     hub_responses_descriptive_statistics_parquet_builder: HubDatasetTest,
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
-    hub_responses_audio: HubDatasetTest,
+    hub_responses_audio_statistics: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
     descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
+    audio_statistics_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -745,7 +819,7 @@ def test_compute(
         "descriptive_statistics_string_text_partial": hub_responses_descriptive_statistics_parquet_builder,
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
-        "audio": hub_responses_audio,
+        "audio_statistics": hub_responses_audio_statistics,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
@@ -753,6 +827,7 @@ def test_compute(
         "gated": descriptive_statistics_expected,
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
         "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
+        "audio_statistics": audio_statistics_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -849,6 +924,7 @@ def test_compute(
                 ColumnType.INT,
                 ColumnType.STRING_TEXT,
                 ColumnType.LIST,
+                ColumnType.AUDIO,
             ]:
                 hist, expected_hist = (
                     column_response_stats.pop("histogram"),

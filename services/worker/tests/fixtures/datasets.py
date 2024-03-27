@@ -27,6 +27,7 @@ from datasets import (
 from datasets.features.features import FeatureType
 
 from .descriptive_statistics_dataset import (
+    audio_dataset,
     statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
@@ -178,4 +179,5 @@ def datasets() -> Mapping[str, Dataset]:
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,
         "descriptive_statistics_not_supported": statistics_not_supported_dataset,
+        "audio_statistics": audio_dataset,
     }

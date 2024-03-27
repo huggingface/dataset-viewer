@@ -165,16 +165,18 @@ The response JSON contains three keys:
 
 ## Response structure by data type
 
-Currently, statistics are supported for strings, float and integer numbers, and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
+Currently, statistics are supported for strings, float and integer numbers, lists, audio data and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
 
 `column_type` in response can be one of the following values:
 
-* `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature
-* `float` - for float dtypes
-* `int` - for integer dtypes
-* `bool` - for boolean dtype
-* `string_label` - for string dtypes being treated as categories (see below)
-* `string_text` - for string dtypes if they do not represent categories (see below)
+* `class_label` - for [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature which represents categorical data
+* `float` - for float data types
+* `int` - for integer data types
+* `bool` - for boolean data type
+* `string_label` - for string data types being treated as categories (see below)
+* `string_text` - for string data types if they do not represent categories (see below)
+* `list` - for lists of any other data types (including lists)
+* `audio` - for audio data
 
 ### `class_label`
 
@@ -421,6 +423,110 @@ If string column does not satisfy the conditions to be treated as a `string_labe
       ]
     }
   }
+}
+```
+
+</p>
+</details>
+
+### list
+
+For lists, the distribution of their lengths is computed. The following measures are returned:
+
+* minimum, maximum, mean, and standard deviation of lists lengths
+* number and proportion of `null` values
+* histogram of lists lengths with up to 10 bins
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+    "column_name": "chat_history",
+    "column_type": "list",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 1,
+        "max": 3,
+        "mean": 1.01741,
+        "median": 1.0,
+        "std": 0.13146,
+        "histogram": {
+            "hist": [
+                11177,
+                196,
+                1
+            ],
+            "bin_edges": [
+                1,
+                2,
+                3,
+                3
+            ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
+Note that dictionaries of lists are not supported.
+
+
+### audio
+
+For audio data, the distribution of audio files durations is computed. The following measures are returned:
+
+* minimum, maximum, mean, and standard deviation of audio files durations
+* number and proportion of `null` values
+* histogram of audio files durations with 10 bins
+
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+    "column_name": "audio",
+    "column_type": "audio",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0,
+        "min": 1.02,
+        "max": 15,
+        "mean": 13.93042,
+        "median": 14.77,
+        "std": 2.63734,
+        "histogram": {
+            "hist": [
+                32,
+                25,
+                18,
+                24,
+                22,
+                17,
+                18,
+                19,
+                55,
+                1770
+            ],
+            "bin_edges": [
+                1.02,
+                2.418,
+                3.816,
+                5.214,
+                6.612,
+                8.01,
+                9.408,
+                10.806,
+                12.204,
+                13.602,
+                15
+            ]
+        }
+    }
 }
 ```
 
