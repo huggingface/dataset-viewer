@@ -122,7 +122,7 @@ EXPECTED_PARQUET = (
                             "from mlcroissant "
                             "import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/parquet-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
@@ -188,7 +188,7 @@ EXPECTED_PARQUET_LOGIN_REQUIRED = (
                             "from mlcroissant import Dataset\n"
                             f"{LOGIN_COMMENT}\n"
                             "headers = build_hf_headers()  # handles authentication\n"
-                            'jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset=parquet-dataset-login_required", headers=headers).json()\n'
+                            'jsonld = requests.get("https://huggingface.co/api/datasets/parquet-dataset-login_required/croissant", headers=headers).json()\n'
                             "ds = Dataset(jsonld=jsonld)\n"
                             'records = ds.records("default")'
                         ),
@@ -249,7 +249,7 @@ EXPECTED_WEBDATASET = (
                         "code": (
                             "from mlcroissant import Dataset\n"
                             "\n"
-                            'ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=webdataset-dataset")\n'
+                            'ds = Dataset(jsonld="https://huggingface.co/api/datasets/webdataset-dataset/croissant")\n'
                             'records = ds.records("default")'
                         ),
                     }
