@@ -3,7 +3,7 @@ import re
 from collections.abc import Mapping
 from http import HTTPStatus
 from itertools import islice
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from datasets import ClassLabel, Features, Image, Value
 from libapi.authentication import auth_check
@@ -64,16 +64,6 @@ def _escape_name(name: str, names: set[str]) -> str:
     return escaped_name
 
 
-def _extract_doi_tag(info: Mapping[str, Any]) -> Union[str, None]:
-    """Extracts https://huggingface.co/docs/hub/en/doi."""
-    tags = info.get("tags", [])
-    if isinstance(tags, list):
-        for tag in tags:
-            if isinstance(tag, str) and tag.startswith("doi:"):
-                return tag.replace("doi:", "", 1)
-    return None
-
-
 def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
     """Removes None values in the first depth of a dict."""
     return {k: v for k, v in json.items() if v is not None}
@@ -97,13 +87,9 @@ def get_croissant_from_dataset_infos(
             }
         )
     ]
-    identifier = None
-    _license = None
     record_set = []
     for info in infos:
         description_body = ""
-        _license = info.get("license")
-        identifier = _extract_doi_tag(info)
         config = info["config_name"]
         features = Features.from_dict(info["features"])
         fields: list[dict[str, Any]] = []
@@ -233,12 +219,7 @@ def get_croissant_from_dataset_infos(
         {
             "@context": context,
             "@type": "sc:Dataset",
-            "name": _escape_name(dataset, names),
             "conformsTo": "http://mlcommons.org/croissant/1.0",
-            "description": f"{dataset} dataset hosted on Hugging Face and contributed by the HF Datasets community",
-            "identifier": identifier,
-            "license": _license,
-            "url": f"https://huggingface.co/datasets/{dataset}",
             "distribution": distribution,
             "recordSet": record_set,
         }
