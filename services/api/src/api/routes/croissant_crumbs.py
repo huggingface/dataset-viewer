@@ -69,9 +69,14 @@ def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
     return {k: v for k, v in json.items() if v is not None}
 
 
-def get_croissant_from_dataset_infos(
+def get_croissant_crumbs_from_dataset_infos(
     dataset: str, infos: list[Mapping[str, Any]], partial: bool, full_jsonld: bool
 ) -> Mapping[str, Any]:
+    """Generates the "crumbs" of the Croissant JSON-LD metadata from the dataset infos.
+
+    It's only a subset of the full JSON-LD metadata. See the Hugging Face API `/croissant` endpoint
+    to get the complete Croissant JSON-LD metadata.
+    """
     repo_name = "repo"
     names: set[str] = set(repo_name)
     distribution = [
@@ -234,7 +239,7 @@ def _get_full_jsonld_parameter(request: Request) -> bool:
     return True
 
 
-def create_croissant_endpoint(
+def create_croissant_crumbs_endpoint(
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
@@ -245,15 +250,16 @@ def create_croissant_endpoint(
     max_age_long: int = 0,
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
+    endpoint_name: str = "croissant-crumbs",
 ) -> Endpoint:
-    async def croissant_endpoint(request: Request) -> Response:
-        endpoint_name = "croissant"
+    async def croissant_crumbs_endpoint(request: Request) -> Response:
         context = f"endpoint: {endpoint_name}"
+        method = "croissant_crumbs_endpoint"
         revision: Optional[str] = None
-        with StepProfiler(method="croissant_endpoint", step="all", context=context):
+        with StepProfiler(method=method, step="all", context=context):
             try:
                 with StepProfiler(
-                    method="croissant_endpoint",
+                    method=method,
                     step="validate parameters and get processing steps",
                     context=context,
                 ):
@@ -263,7 +269,7 @@ def create_croissant_endpoint(
                     if not are_valid_parameters([dataset]):
                         raise MissingRequiredParameterError("Parameter 'dataset' is required")
                 # if auth_check fails, it will raise an exception that will be caught below
-                with StepProfiler(method="croissant_endpoint", step="check authentication", context=context):
+                with StepProfiler(method=method, step="check authentication", context=context):
                     await auth_check(
                         dataset,
                         external_auth_url=external_auth_url,
@@ -273,7 +279,7 @@ def create_croissant_endpoint(
                         hf_timeout_seconds=hf_timeout_seconds,
                     )
                 # getting result based on processing steps
-                with StepProfiler(method="croissant_endpoint", step="get info cache entry", context=context):
+                with StepProfiler(method=method, step="get info cache entry", context=context):
                     info_result = get_cache_entry_from_step(
                         processing_step_name=DATASET_INFO_KIND,
                         dataset=dataset,
@@ -292,17 +298,17 @@ def create_croissant_endpoint(
                 if http_status == HTTPStatus.OK:
                     infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
                     partial = content["partial"]
-                    with StepProfiler(method="croissant_endpoint", step="generate croissant json", context=context):
-                        croissant = get_croissant_from_dataset_infos(
+                    with StepProfiler(method=method, step="generate croissant crumbs json", context=context):
+                        croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
                             dataset=dataset,
                             infos=infos,
                             partial=partial,
                             full_jsonld=full_jsonld,
                         )
-                    with StepProfiler(method="croissant_endpoint", step="generate OK response", context=context):
-                        return get_json_ok_response(content=croissant, max_age=max_age_long, revision=revision)
+                    with StepProfiler(method=method, step="generate OK response", context=context):
+                        return get_json_ok_response(content=croissant_crumbs, max_age=max_age_long, revision=revision)
                 else:
-                    with StepProfiler(method="croissant_endpoint", step="generate error response", context=context):
+                    with StepProfiler(method=method, step="generate error response", context=context):
                         return get_json_error_response(
                             content=content,
                             status_code=http_status,
@@ -312,7 +318,7 @@ def create_croissant_endpoint(
                         )
             except Exception as e:
                 error = e if isinstance(e, ApiError) else UnexpectedApiError("Unexpected error.", e)
-                with StepProfiler(method="croissant_endpoint", step="generate API error response", context=context):
+                with StepProfiler(method=method, step="generate API error response", context=context):
                     return get_json_api_error_response(error=error, max_age=max_age_short, revision=revision)
 
-    return croissant_endpoint
+    return croissant_crumbs_endpoint
