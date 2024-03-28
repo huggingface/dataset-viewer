@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from api.routes.croissant import get_croissant_from_dataset_infos
+from api.routes.croissant_crumbs import get_croissant_crumbs_from_dataset_infos
 
 squad_info = {
     "description": "Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles, where the answer to every question is a segment of text, or span, from the corresponding reading passage, or the question might be unanswerable.\n",
@@ -92,42 +92,40 @@ v1_context = {
 
 
 def test_get_croissant_context_from_dataset_infos() -> None:
-    croissant = get_croissant_from_dataset_infos(
+    croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
         "user/squad with space",
         [squad_info, squad_info],
         partial=False,
         full_jsonld=False,
     )
-    assert croissant["@context"] == v1_context
+    assert croissant_crumbs["@context"] == v1_context
 
 
-def test_get_croissant_from_dataset_infos() -> None:
-    croissant = get_croissant_from_dataset_infos(
+def test_get_croissant_crumbs_from_dataset_infos() -> None:
+    croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
         "user/squad with space",
         [squad_info, squad_info],
         partial=False,
         full_jsonld=False,
     )
-    assert "@context" in croissant
-    assert "@type" in croissant
-    assert "name" in croissant
-    assert croissant["name"] == "user_squad_with_space"
+    assert "@context" in croissant_crumbs
+    assert "@type" in croissant_crumbs
 
     # Test recordSet.
-    assert "recordSet" in croissant
-    assert croissant["recordSet"]
-    assert isinstance(croissant["recordSet"], list)
-    assert len(croissant["recordSet"]) == 2
-    assert croissant["recordSet"][0]["@type"] == croissant["recordSet"][1]["@type"] == "cr:RecordSet"
-    assert croissant["recordSet"][0]["name"] == "record_set_user_squad_with_space"
-    assert croissant["recordSet"][1]["name"] == "record_set_user_squad_with_space_0"
-    assert isinstance(croissant["recordSet"][0]["field"], list)
+    assert "recordSet" in croissant_crumbs
+    assert croissant_crumbs["recordSet"]
+    assert isinstance(croissant_crumbs["recordSet"], list)
+    assert len(croissant_crumbs["recordSet"]) == 2
+    assert croissant_crumbs["recordSet"][0]["@type"] == croissant_crumbs["recordSet"][1]["@type"] == "cr:RecordSet"
+    assert croissant_crumbs["recordSet"][0]["name"] == "record_set_user_squad_with_space"
+    assert croissant_crumbs["recordSet"][1]["name"] == "record_set_user_squad_with_space_0"
+    assert isinstance(croissant_crumbs["recordSet"][0]["field"], list)
     assert isinstance(squad_info["features"], dict)
-    assert "1 skipped column: answers" in croissant["recordSet"][0]["description"]
-    assert croissant["recordSet"][0]["@id"] == "record_set_user_squad_with_space"
-    assert croissant["recordSet"][1]["@id"] == "record_set_user_squad_with_space_0"
-    for i, _ in enumerate(croissant["recordSet"]):
-        for field in croissant["recordSet"][i]["field"]:
+    assert "1 skipped column: answers" in croissant_crumbs["recordSet"][0]["description"]
+    assert croissant_crumbs["recordSet"][0]["@id"] == "record_set_user_squad_with_space"
+    assert croissant_crumbs["recordSet"][1]["@id"] == "record_set_user_squad_with_space_0"
+    for i, _ in enumerate(croissant_crumbs["recordSet"]):
+        for field in croissant_crumbs["recordSet"][i]["field"]:
             assert "source" in field
             assert "fileSet" in field["source"]
             assert "@id" in field["source"]["fileSet"]
@@ -136,40 +134,25 @@ def test_get_croissant_from_dataset_infos() -> None:
             assert field["source"]["extract"]["column"] == field["@id"].split("/")[-1]
 
     # Test fields.
-    assert len(croissant["recordSet"][0]["field"]) == 4
-    assert len(croissant["recordSet"][1]["field"]) == 4
-    for field in croissant["recordSet"][0]["field"]:
+    assert len(croissant_crumbs["recordSet"][0]["field"]) == 4
+    assert len(croissant_crumbs["recordSet"][1]["field"]) == 4
+    for field in croissant_crumbs["recordSet"][0]["field"]:
         assert field["@type"] == "cr:Field"
         assert field["dataType"] == "sc:Text"
-    assert len(croissant["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
+    assert len(croissant_crumbs["recordSet"][0]["field"]) == len(squad_info["features"]) - 1
 
     # Test distribution.
-    assert "distribution" in croissant
-    assert croissant["distribution"]
-    assert isinstance(croissant["distribution"], list)
-    assert croissant["distribution"][0]["@type"] == "cr:FileObject"
-    assert croissant["distribution"][1]["@type"] == "cr:FileSet"
-    assert croissant["distribution"][2]["@type"] == "cr:FileSet"
-    assert croissant["distribution"][0]["name"] == "repo"
-    for distribution in croissant["distribution"]:
+    assert "distribution" in croissant_crumbs
+    assert croissant_crumbs["distribution"]
+    assert isinstance(croissant_crumbs["distribution"], list)
+    assert croissant_crumbs["distribution"][0]["@type"] == "cr:FileObject"
+    assert croissant_crumbs["distribution"][1]["@type"] == "cr:FileSet"
+    assert croissant_crumbs["distribution"][2]["@type"] == "cr:FileSet"
+    assert croissant_crumbs["distribution"][0]["name"] == "repo"
+    for distribution in croissant_crumbs["distribution"]:
         assert "@id" in distribution
         if "containedIn" in distribution:
             assert "@id" in distribution["containedIn"]
-
-    # Test others.
-    assert croissant["license"] == ["mit"]
-    assert croissant["identifier"] == "hf/123456789"
-
-    # If the parameter doesn't exist, check that it is not kept:
-    squad_licenseless_info = squad_info.copy()
-    del squad_licenseless_info["license"]
-    croissant = get_croissant_from_dataset_infos(
-        "user/squad with space",
-        [squad_licenseless_info, squad_licenseless_info],
-        partial=False,
-        full_jsonld=False,
-    )
-    assert "license" not in croissant
 
 
 MAX_COLUMNS = 3
@@ -182,13 +165,13 @@ MAX_COLUMNS = 3
         (False, MAX_COLUMNS),
     ],
 )
-def test_get_croissant_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int) -> None:
-    with patch("api.routes.croissant.MAX_COLUMNS", MAX_COLUMNS):
-        croissant = get_croissant_from_dataset_infos(
+def test_get_croissant_crumbs_from_dataset_infos_max_columns(full_jsonld: bool, num_columns: int) -> None:
+    with patch("api.routes.croissant_crumbs.MAX_COLUMNS", MAX_COLUMNS):
+        croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
             "user/squad with space",
             [squad_info, squad_info],
             partial=False,
             full_jsonld=full_jsonld,
         )
-    assert len(croissant["recordSet"][0]["field"]) == num_columns
-    assert full_jsonld or "max number of columns reached" in croissant["recordSet"][0]["description"]
+    assert len(croissant_crumbs["recordSet"][0]["field"]) == num_columns
+    assert full_jsonld or "max number of columns reached" in croissant_crumbs["recordSet"][0]["description"]
