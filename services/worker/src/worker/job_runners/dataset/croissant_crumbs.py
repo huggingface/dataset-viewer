@@ -15,7 +15,7 @@ from libcommon.simple_cache import (
     get_previous_step_or_raise,
 )
 
-from worker.dtos import CompleteJobResult, DatasetCroissantCrumbsResponse
+from worker.dtos import CompleteJobResult
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
 
 HF_TO_CROISSANT_VALUE_TYPE = {
@@ -56,7 +56,7 @@ def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def get_croissant_crumbs_from_dataset_infos(
-    dataset: str, infos: list[Mapping[str, Any]], partial: bool
+    dataset: str, infos: list[Mapping[str, Any]], partial: bool, truncated_configs: bool
 ) -> Mapping[str, Any]:
     """Generates the "crumbs" of the Croissant JSON-LD metadata from the dataset infos.
 
@@ -148,6 +148,8 @@ def get_croissant_crumbs_from_dataset_infos(
         description = f"{dataset} - '{config}' subset"
         if partial:
             description += " (first 5GB)"
+        if truncated_configs:
+            description += f" (only the first {CROISSANT_MAX_CONFIGS} subsets are included in this metadata)"
         if len(splits) > 1:
             description_body += f"\n- {len(splits)} split{'s' if len(splits) > 1 else ''}: {', '.join(splits)}"
         if skipped_columns:
@@ -214,7 +216,7 @@ def get_croissant_crumbs_from_dataset_infos(
     )
 
 
-def compute_croissant_crumbs_response(dataset: str) -> DatasetCroissantCrumbsResponse:
+def compute_croissant_crumbs_response(dataset: str) -> Mapping[str, Any]:
     """
     Get the response of 'dataset-croissant-crumbs' for one specific dataset on huggingface.co.
 
@@ -233,12 +235,7 @@ def compute_croissant_crumbs_response(dataset: str) -> DatasetCroissantCrumbsRes
         [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step has not the expected format
 
-    Returns:
-        `DatasetCroissantCrumbsResponse`: The croissant response (schema metadata). It has fields:
-        - **croissant_crumbs** (`dict[str, Any]`): the croissant metadata parts.
-        - **truncated_configs** (`bool`): true if only the first 100 configs are included in the croissant metadata parts,
-          but the dataset had more than 100 configs.
-        - **partial** (`bool`): true if the dataset is partial (see partial conversion to Parquet).
+    Returns `dict[str, Any]`: the croissant metadata parts.
     """
     logging.info(f"compute 'dataset-croissant-crumbs' for {dataset=}")
 
@@ -248,12 +245,12 @@ def compute_croissant_crumbs_response(dataset: str) -> DatasetCroissantCrumbsRes
         truncated_configs = len(content["dataset_info"]) > CROISSANT_MAX_CONFIGS
         infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
         partial = content["partial"]
-        croissant_crumbs = get_croissant_crumbs_from_dataset_infos(dataset=dataset, infos=infos, partial=partial)
+        croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
+            dataset=dataset, infos=infos, partial=partial, truncated_configs=truncated_configs
+        )
     except KeyError as e:
         raise PreviousStepFormatError("Previous step 'dataset-info' did not return the expected content.", e) from e
-    return DatasetCroissantCrumbsResponse(
-        croissant_crumbs=croissant_crumbs, truncated_configs=truncated_configs, partial=partial
-    )
+    return croissant_crumbs
 
 
 class DatasetCroissantCrumbsJobRunner(DatasetJobRunner):

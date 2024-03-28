@@ -21,17 +21,16 @@ MAX_COLUMNS = 1_000
 
 def truncate_features_from_croissant_crumbs_response(content: Mapping[str, Any]) -> None:
     """Truncate the features from a croissant-crumbs response to avoid returning a large response."""
-    if "croissant_crumbs" in content and isinstance(content["croissant_crumbs"], dict):
-        if "recordSet" in content["croissant_crumbs"] and isinstance(content["croissant_crumbs"]["recordSet"], list):
-            for record in content["croissant_crumbs"]["recordSet"]:
-                if (
-                    isinstance(record, dict)
-                    and "field" in record
-                    and isinstance(record["field"], list)
-                    and len(record["field"]) > MAX_COLUMNS
-                ):
-                    num_columns = len(record["field"])
-                    record["field"] = record["field"][:MAX_COLUMNS]
-                    record[
-                        "description"
-                    ] += f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
+    if isinstance(content, dict) and "recordSet" in content and isinstance(content["recordSet"], list):
+        for record in content["recordSet"]:
+            if (
+                isinstance(record, dict)
+                and "field" in record
+                and isinstance(record["field"], list)
+                and len(record["field"]) > MAX_COLUMNS
+            ):
+                num_columns = len(record["field"])
+                record["field"] = record["field"][:MAX_COLUMNS]
+                record[
+                    "description"
+                ] += f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
