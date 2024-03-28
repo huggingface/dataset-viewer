@@ -6,12 +6,6 @@ Datasets Server automatically generates the metadata in [Croissant](https://gith
 
 Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically.
 
-<Tip>
-
-The [specification](https://github.com/mlcommons/croissant/blob/main/docs/croissant-spec.md) is still in early draft status. It may evolve in the future, and backward compatibility is not guaranteed.
-
-</Tip>
-
 ## Get the metadata
 
 This guide shows you how to use Hugging Face `/croissant` endpoint to retrieve the Croissant metadata associated to a dataset.
