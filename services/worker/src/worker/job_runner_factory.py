@@ -26,7 +26,7 @@ from worker.job_runners.config.size import ConfigSizeJobRunner
 from worker.job_runners.config.split_names import ConfigSplitNamesJobRunner
 from worker.job_runners.dataset.compatible_libraries import DatasetCompatibleLibrariesJobRunner
 from worker.job_runners.dataset.config_names import DatasetConfigNamesJobRunner
-from worker.job_runners.dataset.croissant import DatasetCroissantJobRunner
+from worker.job_runners.dataset.croissant_crumbs import DatasetCroissantCrumbsJobRunner
 from worker.job_runners.dataset.duckdb_index_size import (
     DatasetDuckdbIndexSizeJobRunner,
 )
@@ -232,8 +232,8 @@ class JobRunnerFactory(BaseJobRunnerFactory):
                 job_info=job_info,
                 app_config=self.app_config,
             )
-        if job_type == DatasetCroissantJobRunner.get_job_type():
-            return DatasetCroissantJobRunner(
+        if job_type == DatasetCroissantCrumbsJobRunner.get_job_type():
+            return DatasetCroissantCrumbsJobRunner(
                 job_info=job_info,
                 app_config=self.app_config,
             )
@@ -263,6 +263,6 @@ class JobRunnerFactory(BaseJobRunnerFactory):
             DatasetHubCacheJobRunner.get_job_type(),
             DatasetCompatibleLibrariesJobRunner.get_job_type(),
             DatasetModalitiesJobRunner.get_job_type(),
-            DatasetCroissantJobRunner.get_job_type(),
+            DatasetCroissantCrumbsJobRunner.get_job_type(),
         ]
         raise KeyError(f"Unsupported job type: '{job_type}'. The supported job types are: {supported_job_types}")

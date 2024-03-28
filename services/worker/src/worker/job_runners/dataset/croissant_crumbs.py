@@ -1,0 +1,266 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 The HuggingFace Authors.
+
+import logging
+import re
+from collections.abc import Mapping
+from itertools import islice
+from typing import Any
+
+from datasets import ClassLabel, Features, Image, Value
+from libcommon.constants import CROISSANT_MAX_CONFIGS
+from libcommon.croissant_utils import get_record_set
+from libcommon.exceptions import PreviousStepFormatError
+from libcommon.simple_cache import (
+    get_previous_step_or_raise,
+)
+
+from worker.dtos import CompleteJobResult, DatasetCroissantCrumbsResponse
+from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunner
+
+HF_TO_CROISSANT_VALUE_TYPE = {
+    "string": "sc:Text",
+    "int32": "sc:Integer",
+    "int64": "sc:Integer",
+    "float32": "sc:Float",
+    "float64": "sc:Float",
+    "bool": "sc:Boolean",
+}
+
+NAME_PATTERN_REGEX = "[^a-zA-Z0-9\\-_\\.]"
+
+
+def _escape_name(name: str, names: set[str]) -> str:
+    """Escapes names and IDs in Croissant.
+
+    Reasons:
+    - `/` are used in the syntax as delimiters. So we replace them.
+    - Two FileObject/FileSet/RecordSet/Fields cannot have the same ID. So we append a postfix in case it happens.
+
+    Args:
+        name: The initial non-escaped name.
+        names: The set of already existing names.
+    Returns:
+        `str`: The escaped name.
+    """
+    escaped_name = re.sub(NAME_PATTERN_REGEX, "_", name)
+    while escaped_name in names:
+        escaped_name = f"{escaped_name}_0"
+    names.add(escaped_name)
+    return escaped_name
+
+
+def _remove_none_values(json: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Removes None values in the first depth of a dict."""
+    return {k: v for k, v in json.items() if v is not None}
+
+
+def get_croissant_crumbs_from_dataset_infos(
+    dataset: str, infos: list[Mapping[str, Any]], partial: bool
+) -> Mapping[str, Any]:
+    """Generates the "crumbs" of the Croissant JSON-LD metadata from the dataset infos.
+
+    It's only a subset of the full JSON-LD metadata. See the Hugging Face API `/croissant` endpoint
+    to get the complete Croissant JSON-LD metadata.
+    """
+    repo_name = "repo"
+    names: set[str] = set(repo_name)
+    distribution = [
+        _remove_none_values(
+            {
+                "@type": "cr:FileObject",
+                "@id": repo_name,
+                "name": repo_name,
+                "description": "The Hugging Face git repository.",
+                "contentUrl": f"https://huggingface.co/datasets/{dataset}/tree/refs%2Fconvert%2Fparquet",
+                "encodingFormat": "git+https",
+                "sha256": "https://github.com/mlcommons/croissant/issues/80",
+            }
+        )
+    ]
+    record_set = []
+    for info in infos:
+        description_body = ""
+        config = info["config_name"]
+        features = Features.from_dict(info["features"])
+        fields: list[dict[str, Any]] = []
+        splits = list(info["splits"])
+        distribution_name = _escape_name(f"parquet-files-for-config-{config}", names)
+        distribution.append(
+            _remove_none_values(
+                {
+                    "@type": "cr:FileSet",
+                    "@id": distribution_name,
+                    "name": distribution_name,
+                    "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+                    "containedIn": {"@id": repo_name},
+                    "encodingFormat": "application/x-parquet",
+                    "includes": f"{config}/*/*.parquet",
+                }
+            )
+        )
+        skipped_columns = []
+        record_set_name = get_record_set(dataset=dataset, config_name=config)
+        record_set_name = _escape_name(record_set_name, names)
+        for column, feature in features.items():
+            fields_names: set[str] = set()
+            field_name = f"{record_set_name}/{_escape_name(column, fields_names)}"
+            if isinstance(feature, Value) and feature.dtype in HF_TO_CROISSANT_VALUE_TYPE:
+                fields.append(
+                    {
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
+                        "description": f"Column '{column}' from the Hugging Face parquet file.",
+                        "dataType": HF_TO_CROISSANT_VALUE_TYPE[feature.dtype],
+                        "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+                    }
+                )
+            elif isinstance(feature, Image):
+                fields.append(
+                    {
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
+                        "description": f"Image column '{column}' from the Hugging Face parquet file.",
+                        "dataType": "sc:ImageObject",
+                        "source": {
+                            "fileSet": {"@id": distribution_name},
+                            "extract": {"column": column},
+                            "transform": {"jsonPath": "bytes"},
+                        },
+                    }
+                )
+            elif isinstance(feature, ClassLabel):
+                fields.append(
+                    {
+                        "@type": "cr:Field",
+                        "@id": field_name,
+                        "name": field_name,
+                        "description": f"ClassLabel column '{column}' from the Hugging Face parquet file.\nLabels:\n"
+                        + ", ".join(f"{name} ({i})" for i, name in enumerate(feature.names)),
+                        "dataType": "sc:Integer",
+                        "source": {"fileSet": {"@id": distribution_name}, "extract": {"column": column}},
+                    }
+                )
+            else:
+                skipped_columns.append(column)
+        description = f"{dataset} - '{config}' subset"
+        if partial:
+            description += " (first 5GB)"
+        if len(splits) > 1:
+            description_body += f"\n- {len(splits)} split{'s' if len(splits) > 1 else ''}: {', '.join(splits)}"
+        if skipped_columns:
+            description_body += f"\n- {len(skipped_columns)} skipped column{'s' if len(skipped_columns) > 1 else ''}: {', '.join(skipped_columns)}"
+        if description_body:
+            description += "\n\nAdditional information:"
+            description += description_body
+        record_set.append(
+            _remove_none_values(
+                {
+                    "@type": "cr:RecordSet",
+                    "@id": record_set_name,
+                    "name": record_set_name,
+                    "description": description,
+                    "field": fields,
+                }
+            )
+        )
+    context = {
+        "@language": "en",
+        "@vocab": "https://schema.org/",
+        "citeAs": "cr:citeAs",
+        "column": "cr:column",
+        "conformsTo": "dct:conformsTo",
+        "cr": "http://mlcommons.org/croissant/",
+        "data": {"@id": "cr:data", "@type": "@json"},
+        "dataBiases": "cr:dataBiases",
+        "dataCollection": "cr:dataCollection",
+        "dataType": {"@id": "cr:dataType", "@type": "@vocab"},
+        "dct": "http://purl.org/dc/terms/",
+        "extract": "cr:extract",
+        "field": "cr:field",
+        "fileProperty": "cr:fileProperty",
+        "fileObject": "cr:fileObject",
+        "fileSet": "cr:fileSet",
+        "format": "cr:format",
+        "includes": "cr:includes",
+        "isLiveDataset": "cr:isLiveDataset",
+        "jsonPath": "cr:jsonPath",
+        "key": "cr:key",
+        "md5": "cr:md5",
+        "parentField": "cr:parentField",
+        "path": "cr:path",
+        "personalSensitiveInformation": "cr:personalSensitiveInformation",
+        "recordSet": "cr:recordSet",
+        "references": "cr:references",
+        "regex": "cr:regex",
+        "repeated": "cr:repeated",
+        "replace": "cr:replace",
+        "sc": "https://schema.org/",
+        "separator": "cr:separator",
+        "source": "cr:source",
+        "subField": "cr:subField",
+        "transform": "cr:transform",
+    }
+    return _remove_none_values(
+        {
+            "@context": context,
+            "@type": "sc:Dataset",
+            "conformsTo": "http://mlcommons.org/croissant/1.0",
+            "distribution": distribution,
+            "recordSet": record_set,
+        }
+    )
+
+
+def compute_croissant_crumbs_response(dataset: str) -> DatasetCroissantCrumbsResponse:
+    """
+    Get the response of 'dataset-croissant-crumbs' for one specific dataset on huggingface.co.
+
+    If the dataset contains more than 100 configs, only the first 100 configs are included in the croissant metadata parts.
+
+    Here, we don't truncate the number of fields. See the /croissant-crumbs endpoint implementation in services/api for
+      truncation of the fields.
+
+    Args:
+        dataset (`str`):
+            A namespace (user or an organization) and a repo name separated by a `/`.
+
+    Raises:
+        [~`libcommon.simple_cache.CachedArtifactError`]:
+          If the previous step gave an error.
+        [~`libcommon.exceptions.PreviousStepFormatError`]:
+            If the content of the previous step has not the expected format
+
+    Returns:
+        `DatasetCroissantCrumbsResponse`: The croissant response (schema metadata). It has fields:
+        - **croissant_crumbs** (`dict[str, Any]`): the croissant metadata parts.
+        - **truncated_configs** (`bool`): true if only the first 100 configs are included in the croissant metadata parts,
+          but the dataset had more than 100 configs.
+        - **partial** (`bool`): true if the dataset is partial (see partial conversion to Parquet).
+    """
+    logging.info(f"compute 'dataset-croissant-crumbs' for {dataset=}")
+
+    dataset_info_response = get_previous_step_or_raise(kind="dataset-info", dataset=dataset)
+    try:
+        content = dataset_info_response["content"]
+        truncated_configs = len(content["dataset_info"]) > CROISSANT_MAX_CONFIGS
+        infos = list(islice(content["dataset_info"].values(), CROISSANT_MAX_CONFIGS))
+        partial = content["partial"]
+        croissant_crumbs = get_croissant_crumbs_from_dataset_infos(dataset=dataset, infos=infos, partial=partial)
+    except KeyError as e:
+        raise PreviousStepFormatError("Previous step 'dataset-info' did not return the expected content.", e) from e
+    return DatasetCroissantCrumbsResponse(
+        croissant_crumbs=croissant_crumbs, truncated_configs=truncated_configs, partial=partial
+    )
+
+
+class DatasetCroissantCrumbsJobRunner(DatasetJobRunner):
+    @staticmethod
+    def get_job_type() -> str:
+        return "dataset-croissant-crumbs"
+
+    def compute(self) -> CompleteJobResult:
+        response_content = compute_croissant_crumbs_response(dataset=self.dataset)
+        return CompleteJobResult(response_content)

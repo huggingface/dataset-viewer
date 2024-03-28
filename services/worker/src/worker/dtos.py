@@ -251,8 +251,8 @@ class DatasetModalitiesResponse(TypedDict):
     modalities: list[DatasetModality]
 
 
-class DatasetCroissantResponse(TypedDict):
-    croissant: Mapping[str, Any]
+class DatasetCroissantCrumbsResponse(TypedDict):
+    croissant_crumbs: Mapping[str, Any]
     truncated_configs: bool
     partial: bool
 

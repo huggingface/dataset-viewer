@@ -4,7 +4,7 @@
 import logging
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Any, Optional, TypedDict
+from typing import Optional, TypedDict
 
 from libapi.authentication import auth_check
 from libapi.exceptions import (
@@ -21,6 +21,7 @@ from libapi.utils import (
     get_json_error_response,
     get_json_ok_response,
 )
+from libcommon.croissant_utils import truncate_features_from_croissant_crumbs_response
 from libcommon.exceptions import NotSupportedError
 from libcommon.processing_graph import InputType, ProcessingGraph, ProcessingStep
 from libcommon.prometheus import StepProfiler
@@ -84,28 +85,6 @@ HARD_CODED_OPT_IN_OUT_URLS = {
 }
 
 
-MAX_COLUMNS = 1_000
-# ^ same value as the default for FIRST_ROWS_COLUMNS_MAX_NUMBER (see services/worker)
-
-
-def truncate_features_from_croissant_response(content: Mapping[str, Any]) -> None:
-    """Truncate the features from a croissant response to avoid returning a large response."""
-    if "croissant" in content and isinstance(content["croissant"], dict):
-        if "recordSet" in content["croissant"] and isinstance(content["croissant"]["recordSet"], list):
-            for record in content["croissant"]["recordSet"]:
-                if (
-                    isinstance(record, dict)
-                    and "field" in record
-                    and isinstance(record["field"], list)
-                    and len(record["field"]) > MAX_COLUMNS
-                ):
-                    num_columns = len(record["field"])
-                    record["field"] = record["field"][:MAX_COLUMNS]
-                    record[
-                        "description"
-                    ] += f"\n- {num_columns - MAX_COLUMNS} skipped column{'s' if num_columns - MAX_COLUMNS > 1 else ''} (max number of columns reached)"
-
-
 def get_input_types_by_priority(step_by_input_type: StepByInputType) -> list[InputType]:
     input_type_order: list[InputType] = ["split", "config", "dataset"]
     return [input_type for input_type in input_type_order if input_type in step_by_input_type]
@@ -144,7 +123,7 @@ def create_endpoint(
                         dataset, config, split, step_by_input_type
                     )
                     processing_step = step_by_input_type[input_type]
-                    # full: only used in /croissant
+                    # full: only used in /croissant-crumbs endpoint
                     full = get_request_parameter(request, "full", default="true").lower() != "false"
                 # if auth_check fails, it will raise an exception that will be caught below
                 with StepProfiler(method="processing_step_endpoint", step="check authentication", context=context):
@@ -187,13 +166,13 @@ def create_endpoint(
                     if endpoint_name == "/first-rows" and assets_storage_client.url_signer:
                         with StepProfiler(method="processing_step_endpoint", step="sign assets urls", context=context):
                             assets_storage_client.url_signer.sign_urls_in_first_rows_in_place(content)
-                    elif endpoint_name == "/croissant" and not full:
+                    elif endpoint_name == "/croissant-crumbs" and not full:
                         with StepProfiler(
                             method="processing_step_endpoint",
-                            step="truncate features from croissant response",
+                            step="truncate features from croissant-crumbs response",
                             context=context,
                         ):
-                            truncate_features_from_croissant_response(content)
+                            truncate_features_from_croissant_crumbs_response(content)
                     with StepProfiler(method="processing_step_endpoint", step="generate OK response", context=context):
                         return get_json_ok_response(content=content, max_age=max_age_long, revision=revision)
 

@@ -1,15 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
-
-from unittest.mock import patch
-
-import pytest
 from libcommon.processing_graph import processing_graph
 from pytest import raises
 
 from api.config import EndpointConfig
-from api.routes.endpoint import EndpointsDefinition, truncate_features_from_croissant_response
+from api.routes.endpoint import EndpointsDefinition
 
 
 def test_endpoints_definition() -> None:
@@ -64,10 +60,10 @@ def test_endpoints_definition() -> None:
     assert is_valid["config"] is not None
     assert is_valid["split"] is not None
 
-    croissant = definition["/croissant"]
-    assert croissant is not None
-    assert sorted(list(croissant)) == ["dataset"]
-    assert croissant["dataset"] is not None
+    croissant_crumbs = definition["/croissant-crumbs"]
+    assert croissant_crumbs is not None
+    assert sorted(list(croissant_crumbs)) == ["dataset"]
+    assert croissant_crumbs["dataset"] is not None
 
     # assert old deleted endpoints don't exist
     with raises(KeyError):
@@ -76,27 +72,5 @@ def test_endpoints_definition() -> None:
         _ = definition["/parquet-and-dataset-info"]
     with raises(KeyError):
         _ = definition["/config-names"]
-
-
-MAX_COLUMNS = 3
-
-
-@pytest.mark.parametrize("num_columns", [1, 3])
-def test_truncate_features_from_croissant_response(num_columns: int) -> None:
-    content = {
-        "croissant": {
-            "recordSet": [
-                {
-                    "field": [{"name": f"col_{i}", "type": "string"} for i in range(num_columns)],
-                    "description": "description",
-                }
-            ]
-        }
-    }
-    with patch("api.routes.endpoint.MAX_COLUMNS", 2):
-        truncate_features_from_croissant_response(content)
-    if num_columns <= 2:
-        assert len(content["croissant"]["recordSet"][0]["field"]) == num_columns
-    else:
-        assert len(content["croissant"]["recordSet"][0]["field"]) == 2
-        assert "max number of columns reached" in content["croissant"]["recordSet"][0]["description"]
+    with raises(KeyError):
+        _ = definition["/croissant"]
