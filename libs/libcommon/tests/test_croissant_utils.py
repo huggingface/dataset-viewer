@@ -8,8 +8,6 @@ import pytest
 
 from libcommon.croissant_utils import truncate_features_from_croissant_crumbs_response
 
-MAX_COLUMNS = 3
-
 
 @pytest.mark.parametrize("num_columns", [1, 3])
 def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> None:
@@ -23,7 +21,7 @@ def test_truncate_features_from_croissant_crumbs_response(num_columns: int) -> N
             ]
         }
     }
-    with patch("api.routes.endpoint.MAX_COLUMNS", 2):
+    with patch("libcommon.croissant_utils.MAX_COLUMNS", 2):
         truncate_features_from_croissant_crumbs_response(content)
     if num_columns <= 2:
         assert len(content["croissant_crumbs"]["recordSet"][0]["field"]) == num_columns

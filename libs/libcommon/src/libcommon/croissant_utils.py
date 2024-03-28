@@ -21,7 +21,7 @@ MAX_COLUMNS = 1_000
 
 def truncate_features_from_croissant_crumbs_response(content: Mapping[str, Any]) -> None:
     """Truncate the features from a croissant-crumbs response to avoid returning a large response."""
-    if "croissant" in content and isinstance(content["croissant_crumbs"], dict):
+    if "croissant_crumbs" in content and isinstance(content["croissant_crumbs"], dict):
         if "recordSet" in content["croissant_crumbs"] and isinstance(content["croissant_crumbs"]["recordSet"], list):
             for record in content["croissant_crumbs"]["recordSet"]:
                 if (
