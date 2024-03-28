@@ -481,9 +481,9 @@ def get_writer_batch_size_from_info(ds_config_info: datasets.info.DatasetInfo) -
             Writer batch size to pass to a dataset builder.
             If `None`, then it will use the `datasets` default.
     """
-    if "Audio(" in str(ds_config_info.features):
+    if ds_config_info.builder_name == "audiofolder" or "Audio(" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS
-    elif "Image(" in str(ds_config_info.features):
+    elif ds_config_info.builder_name == "imagefolder" or "Image(" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS
     elif "'binary'" in str(ds_config_info.features):
         return PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS
