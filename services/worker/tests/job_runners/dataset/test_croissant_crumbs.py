@@ -95,20 +95,14 @@ v1_context = {
 
 def test_get_croissant_context_from_dataset_infos() -> None:
     croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
-        "user/squad with space",
-        [squad_info, squad_info],
-        partial=False,
-        full_jsonld=False,
+        "user/squad with space", [squad_info, squad_info], partial=False
     )
     assert croissant_crumbs["@context"] == v1_context
 
 
 def test_get_croissant_crumbs_from_dataset_infos() -> None:
     croissant_crumbs = get_croissant_crumbs_from_dataset_infos(
-        "user/squad with space",
-        [squad_info, squad_info],
-        partial=False,
-        full_jsonld=False,
+        "user/squad with space", [squad_info, squad_info], partial=False
     )
     assert "@context" in croissant_crumbs
     assert "@type" in croissant_crumbs
