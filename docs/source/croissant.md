@@ -8,7 +8,7 @@ Croissant is a metadata format build on top of [schema.org](https://schema.org/)
 
 ## Get the metadata
 
-This guide shows you how to use Hugging Face `/croissant` endpoint to retrieve the Croissant metadata associated to a dataset.
+This guide shows you how to use [Hugging Face `/croissant` endpoint](https://huggingface.co/docs/hub/api#get-apidatasetsrepoidcroissant) to retrieve the Croissant metadata associated to a dataset.
 
 The `/croissant` endpoint takes the dataset name in the URL, for example for the `ibm/duorc` dataset:
 
