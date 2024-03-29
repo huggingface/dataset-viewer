@@ -198,7 +198,7 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  schedule: "45 22 * * *"
+  schedule: "45 10 * * *"
   # every day
   nodeSelector:
     role-datasets-server: "true"
