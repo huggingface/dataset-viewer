@@ -386,7 +386,7 @@ search:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 24
+  replicas: 7
   service:
     type: NodePort
   resources:
@@ -395,7 +395,7 @@ search:
       memory: "6500Mi"
     limits:
       cpu: 16
-      memory: "9500Mi"
+      memory: "28610Mi"
 
 sseApi:
   # Number of uvicorn workers for running the application
