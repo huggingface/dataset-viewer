@@ -392,10 +392,10 @@ search:
   resources:
     requests:
       cpu: 1
-      memory: "6500Mi"
+      memory: "30Gi"
     limits:
       cpu: 16
-      memory: "28610Mi"
+      memory: "30Gi"
 
 sseApi:
   # Number of uvicorn workers for running the application
