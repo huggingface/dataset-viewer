@@ -2,7 +2,7 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union
 
 from huggingface_hub.hf_api import DatasetInfo, HfApi
@@ -174,7 +174,7 @@ class OperationsStatistics:
     num_backfilled_datasets: int = 0
     num_deleted_datasets: int = 0
     num_untouched_datasets: int = 0
-    tasks: TasksStatistics = TasksStatistics()
+    tasks: TasksStatistics = field(default_factory=TasksStatistics)
 
     def add(self, other: "OperationsStatistics") -> None:
         self.num_backfilled_datasets += other.num_backfilled_datasets

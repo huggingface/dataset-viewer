@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import concurrent.futures
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from libcommon.dtos import Priority
@@ -10,13 +11,16 @@ from libcommon.operations import OperationsStatistics, backfill_dataset
 from libcommon.simple_cache import get_all_datasets, get_datasets_with_retryable_errors
 from libcommon.storage_client import StorageClient
 
+MAX_BACKFILL_WORKERS = 8
+LOG_BATCH = 100
+
 
 @dataclass
 class BackfillStatistics:
     num_total_datasets: int = 0
     num_analyzed_datasets: int = 0
     num_error_datasets: int = 0
-    operations: OperationsStatistics = OperationsStatistics()
+    operations: OperationsStatistics = field(default_factory=OperationsStatistics)
 
     def add(self, other: "BackfillStatistics") -> None:
         self.num_total_datasets += other.num_total_datasets
@@ -69,39 +73,67 @@ def backfill_retryable_errors(
     )
 
 
+def try_backfill_dataset(
+    dataset: str,
+    hf_endpoint: str,
+    blocked_datasets: list[str],
+    hf_token: Optional[str] = None,
+    storage_clients: Optional[list[StorageClient]] = None,
+) -> BackfillStatistics:
+    try:
+        return BackfillStatistics(
+            num_analyzed_datasets=1,
+            operations=backfill_dataset(
+                dataset=dataset,
+                hf_endpoint=hf_endpoint,
+                blocked_datasets=blocked_datasets,
+                hf_token=hf_token,
+                priority=Priority.LOW,
+                hf_timeout_seconds=None,
+                storage_clients=storage_clients,
+            ),
+        )
+
+    except Exception as e:
+        logging.warning(f"failed to update_dataset {dataset}: {e}")
+        return BackfillStatistics(num_analyzed_datasets=1, num_error_datasets=1)
+
+
 def backfill_datasets(
     dataset_names: set[str],
     hf_endpoint: str,
     blocked_datasets: list[str],
     hf_token: Optional[str] = None,
     storage_clients: Optional[list[StorageClient]] = None,
-) -> None:
+) -> BackfillStatistics:
     logging.info(f"analyzing {len(dataset_names)} datasets in the database")
-    statistics = BackfillStatistics(num_total_datasets=len(dataset_names))
-    log_batch = 100
 
-    for dataset in dataset_names:
-        try:
-            statistics.add(
-                BackfillStatistics(
-                    num_analyzed_datasets=1,
-                    operations=backfill_dataset(
-                        dataset=dataset,
-                        hf_endpoint=hf_endpoint,
-                        blocked_datasets=blocked_datasets,
-                        hf_token=hf_token,
-                        priority=Priority.LOW,
-                        hf_timeout_seconds=None,
-                        storage_clients=storage_clients,
-                    ),
+    statistics = BackfillStatistics(num_total_datasets=len(dataset_names))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_BACKFILL_WORKERS) as executor:
+        futures_to_dataset = {
+            executor.submit(
+                try_backfill_dataset, dataset, hf_endpoint, blocked_datasets, hf_token, storage_clients
+            ): dataset
+            for dataset in dataset_names
+        }
+        # Start the load operations and gives stats on the progress
+        for future in concurrent.futures.as_completed(futures_to_dataset):
+            dataset = futures_to_dataset[future]
+            try:
+                dataset_statistics = future.result()
+            except Exception as e:
+                logging.warning(f"{dataset} generated an exception: {e}")
+                dataset_statistics = BackfillStatistics(
+                    num_total_datasets=1, num_analyzed_datasets=1, num_error_datasets=1
                 )
-            )
-        except Exception as e:
-            logging.warning(f"failed to update_dataset {dataset}: {e}")
-            statistics.add(BackfillStatistics(num_analyzed_datasets=1, num_error_datasets=1))
-        logging.debug(statistics.get_log())
-        if statistics.num_analyzed_datasets % log_batch == 0:
-            logging.info(statistics.get_log())
+            finally:
+                statistics.add(dataset_statistics)
+                logging.debug(statistics.get_log())
+                if statistics.num_analyzed_datasets % LOG_BATCH == 0:
+                    logging.info(statistics.get_log())
 
     logging.info(statistics.get_log())
     logging.info("backfill completed")
+
+    return statistics
