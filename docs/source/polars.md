@@ -8,7 +8,7 @@
 
 </Tip>
 
-Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from Datasets Server:
+Let's start by grabbing the URLs to the `train` split of the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from the dataset viewer API:
 
 ```py
 r = requests.get("https://datasets-server.huggingface.co/parquet?dataset=blog_authorship_corpus")

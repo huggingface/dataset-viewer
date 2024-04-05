@@ -289,7 +289,7 @@ hfDatasetsCache:
   cacheDirectory: "/tmp/hf-datasets-cache"
 
 discussions:
-  # name of the Hub user associated with the Datasets Server bot app
+  # name of the Hub user associated with the dataset viewer bot app
   botAssociatedUserName: "parquet-converter"
 
 # --- jobs (pre-install/upgrade hooks) ---

@@ -47,8 +47,8 @@ See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for the fol
 
 Set environment variables to configure the `post-messages` job:
 
-- `DISCUSSIONS_BOT_ASSOCIATED_USER_NAME`: name of the Hub user associated with the Datasets Server bot app.
-- `DISCUSSIONS_BOT_TOKEN`: token of the Datasets Server bot used to post messages in Hub discussions.
+- `DISCUSSIONS_BOT_ASSOCIATED_USER_NAME`: name of the Hub user associated with the dataset viewer bot app.
+- `DISCUSSIONS_BOT_TOKEN`: token of the dataset viewer bot used to post messages in Hub discussions.
 - `DISCUSSIONS_PARQUET_REVISION`: revision (branch) where the converted Parquet files are stored.
 
 

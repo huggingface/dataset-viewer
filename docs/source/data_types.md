@@ -1,6 +1,6 @@
 # Data types
 
-Datasets supported by Datasets Server have a tabular format, meaning a data point is represented in a row and its features are contained in columns. Using the `/first-rows` endpoint allows you to preview the first 100 rows of a dataset and information about each feature. Within the `features` key, you'll notice it returns a `_type` field. This value describes the data type of the column, and it is also known as a dataset's [`Features`](https://huggingface.co/docs/datasets/about_dataset_features). 
+Datasets supported by the dataset viewer have a tabular format, meaning a data point is represented in a row and its features are contained in columns. Using the `/first-rows` endpoint allows you to preview the first 100 rows of a dataset and information about each feature. Within the `features` key, you'll notice it returns a `_type` field. This value describes the data type of the column, and it is also known as a dataset's [`Features`](https://huggingface.co/docs/datasets/about_dataset_features). 
 
 There are several different data `Features` for representing different data formats such as [`Audio`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Audio) and [`Image`](https://huggingface.co/docs/datasets/v2.5.2/en/package_reference/main_classes#datasets.Image) for speech and image data respectively. Knowing a dataset feature gives you a better understanding of the data type you're working with, and how you can preprocess it.
 

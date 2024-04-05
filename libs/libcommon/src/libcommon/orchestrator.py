@@ -762,7 +762,7 @@ class DatasetRemovalPlan(Plan):
 
 def remove_dataset(dataset: str, storage_clients: Optional[list[StorageClient]] = None) -> TasksStatistics:
     """
-    Remove the dataset from the Datasets Server
+    Remove the dataset from the dataset viewer
 
     Args:
         dataset (`str`): The name of the dataset.

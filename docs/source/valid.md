@@ -1,11 +1,11 @@
 # Check dataset validity
 
-Before you download a dataset from the Hub, it is helpful to know if a specific dataset you're interested in is available. Datasets Server provides the `/is-valid` endpoint to check if a specific dataset works without any errors.
+Before you download a dataset from the Hub, it is helpful to know if a specific dataset you're interested in is available. The dataset viewer provides the `/is-valid` endpoint to check if a specific dataset works without any errors.
 
 The API endpoint will return an error for datasets that cannot be loaded with the [🤗 Datasets](https://github.com/huggingface/datasets) library, for example, because the data hasn't been uploaded or the format is not supported.
 
 <Tip warning={true}>
-  The largest datasets are partially supported by Datasets Server. If they are{" "}
+  The largest datasets are partially supported by the dataset viewer. If they are{" "}
   <a href="https://huggingface.co/docs/datasets/stream">streamable</a>, Datasets
   Server can extract the first 100 rows without downloading the whole dataset.
   This is especially useful for previewing large datasets where downloading the

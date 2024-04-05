@@ -162,7 +162,7 @@ Return the api ingress anotation
 {{- end -}}
 
 {{/*
-Datasets Server base url
+The dataset viewer API base url
 */}}
 {{- define "datasetsServer.ingress.hostname" -}}
 {{ .Values.global.huggingface.ingress.subdomains.datasetsServer }}.{{ .Values.global.huggingface.ingress.domain }}

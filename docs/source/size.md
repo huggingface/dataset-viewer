@@ -1,6 +1,6 @@
 # Get the number of rows and the size in bytes
 
-This guide shows you how to use Datasets Server's `/size` endpoint to retrieve a dataset's size programmatically. Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/getSize).
+This guide shows you how to use the dataset viewer's `/size` endpoint to retrieve a dataset's size programmatically. Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/getSize).
 
 The `/size` endpoint accepts the dataset name as its query parameter:
 

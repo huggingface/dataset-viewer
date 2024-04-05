@@ -1,6 +1,6 @@
 # Explore statistics over split data
 
-Datasets Server provides a `/statistics` endpoint for fetching some basic statistics precomputed for a requested dataset. This will get you a quick insight on how the data is distributed.
+The dataset viewer provides a `/statistics` endpoint for fetching some basic statistics precomputed for a requested dataset. This will get you a quick insight on how the data is distributed.
 
 <Tip warning={true}>
   Currently, statistics are computed only for <a href="./parquet">datasets with Parquet exports</a>.

@@ -2,7 +2,7 @@
 
 [[open-in-colab]]
 
-In this quickstart, you'll learn how to use the Datasets Server's REST API to:
+In this quickstart, you'll learn how to use the dataset viewer's REST API to:
 
 - Check whether a dataset on the Hub is functional.
 - Return the configuration and splits of a dataset.
@@ -31,11 +31,11 @@ Each feature is served through an endpoint summarized in the table below:
 | [/statistics](./statistics) | GET    | Get statistics about a dataset split.                   | - `dataset`: name of the dataset<br>- `config`: name of the config<br>- `split`: name of the split                                                                          |
 | [/croissant](./croissant) | GET    | Get Croissant metadata about a dataset.                   | - `dataset`: name of the dataset                                                                          |
 
-There is no installation or setup required to use Datasets Server.
+There is no installation or setup required to use the dataset viewer API.
 
 <Tip>
   Sign up for a <a href="https://huggingface.co/join">Hugging Face account</a>{" "}
-  if you don't already have one! While you can use Datasets Server without a
+  if you don't already have one! While you can use the dataset viewer API without a
   Hugging Face account, you won't be able to access{" "}
   <a href="https://huggingface.co/docs/hub/datasets-gated">gated datasets</a>{" "}
   like{" "}
@@ -61,7 +61,7 @@ For [private](https://huggingface.co/docs/hub/repositories-settings#private-repo
 
 <Tip>
 
-Datasets Server supports private datasets owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
+The dataset viewer supports private datasets owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
 
 </Tip>
 
@@ -477,7 +477,7 @@ The response looks like:
 
 ## Access Parquet files
 
-Datasets Server converts every dataset on the Hub to the [Parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the Parquet URLs for a dataset:
+The dataset viewer converts every dataset on the Hub to the [Parquet](https://parquet.apache.org/) format. The `/parquet` endpoint returns a JSON list of the Parquet URLs for a dataset:
 
 <inferencesnippet>
 <python>

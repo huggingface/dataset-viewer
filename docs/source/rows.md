@@ -1,6 +1,6 @@
 # Download slices of rows
 
-Datasets Server provides a `/rows` endpoint for visualizing any slice of rows of a dataset. This will let you walk-through and inspect the data contained in a dataset.
+The dataset viewer provides a `/rows` endpoint for visualizing any slice of rows of a dataset. This will let you walk-through and inspect the data contained in a dataset.
 
 <div class="flex justify-center">
     <img style="margin-bottom: 0;" class="block dark:hidden" src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets-server/oasst1_light.png"/>
@@ -10,11 +10,11 @@ Datasets Server provides a `/rows` endpoint for visualizing any slice of rows of
 <Tip warning={true}>
   Currently, only {" "}
   <a href="./parquet">datasets with parquet exports</a>
-  are supported so Datasets Server can extract any slice of rows without downloading the
+  are supported so the dataset viewer can extract any slice of rows without downloading the
   whole dataset.
 </Tip>
 
-This guide shows you how to use Datasets Server's `/rows` endpoint to download slices of a dataset.
+This guide shows you how to use the dataset viewer's `/rows` endpoint to download slices of a dataset.
 Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df),
 [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api),
 or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).

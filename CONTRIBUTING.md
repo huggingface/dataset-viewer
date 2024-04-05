@@ -1,8 +1,8 @@
-# How to contribute to the Datasets Server?
+# How to contribute to the dataset viewer?
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-The Datasets Server is an open source project, so all contributions and suggestions are welcome.
+The dataset viewer is an open source project, so all contributions and suggestions are welcome.
 
 You can contribute in many different ways: giving ideas, answering questions, reporting bugs, proposing enhancements,
 improving the documentation, fixing bugs...

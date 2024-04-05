@@ -1,14 +1,14 @@
 # Search text in a dataset
 
-Datasets Server provides a `/search` endpoint for searching words in a dataset.
+The dataset viewer provides a `/search` endpoint for searching words in a dataset.
 
 <Tip warning={true}>
   Currently, only <a href="./parquet">datasets with Parquet exports</a>
-  are supported so Datasets Server can index the contents and run the search without
+  are supported so the dataset viewer can index the contents and run the search without
   downloading the whole dataset.
 </Tip>
 
-This guide shows you how to use Datasets Server's `/search` endpoint to search for a query string.
+This guide shows you how to use the dataset viewer's `/search` endpoint to search for a query string.
 Feel free to also try it out with [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/searchRows).
 
 The text is searched in the columns of type `string`, even if the values are nested in a dictionary.
