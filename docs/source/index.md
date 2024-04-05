@@ -37,4 +37,4 @@ Let the dataset viewer take care of the heavy lifting so you can use a simple **
   </a>
 </p>
 
-Join the growing community on the [forum](https://discuss.huggingface.co/) or [Discord](https://discord.com/invite/JfAtkvEtRb) today, and give the [dataset viewer repository](https://github.com/huggingface/datasets-server) a ⭐️ if you're interested in the latest updates!
+Join the growing community on the [forum](https://discuss.huggingface.co/) or [Discord](https://discord.com/invite/JfAtkvEtRb) today, and give the [dataset viewer repository](https://github.com/huggingface/dataset-viewer) a ⭐️ if you're interested in the latest updates!

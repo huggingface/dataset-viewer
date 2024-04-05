@@ -97,7 +97,7 @@ class Loop:
             while True:
                 if self.has_resources() and self.process_next_job():
                     # loop immediately to try another job
-                    # see https://github.com/huggingface/datasets-server/issues/265
+                    # see https://github.com/huggingface/dataset-viewer/issues/265
                     continue
                 with StepProfiler("loop", "sleep"):
                     self.sleep()

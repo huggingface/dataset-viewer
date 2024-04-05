@@ -1,6 +1,6 @@
-# Datasets server databases migrations
+# Dataset viewer databases migrations
 
-> Scripts to migrate the datasets server databases
+> Scripts to migrate the dataset viewer databases
 
 ## Configuration
 

@@ -69,7 +69,7 @@ will see a bot add a comment to a link where the documentation with your changes
 Accepted files are Markdown (.md or .mdx).
 
 Create a file with its extension and put it in the source directory. You can then link it to the toc-tree by putting
-the filename without the extension in the [`_toctree.yml`](https://github.com/huggingface/datasets-server/blob/main/docs/source/_toctree.yml) file.
+the filename without the extension in the [`_toctree.yml`](https://github.com/huggingface/dataset-viewer/blob/main/docs/source/_toctree.yml) file.
 
 ## Adding an image
 

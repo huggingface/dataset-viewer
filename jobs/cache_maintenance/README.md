@@ -1,4 +1,4 @@
-# Datasets server maintenance job
+# Dataset viewer maintenance job
 
 > Job to run maintenance actions on the datasets-server
 

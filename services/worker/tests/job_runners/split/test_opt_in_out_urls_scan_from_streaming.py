@@ -305,7 +305,7 @@ def test_compute_error_from_spawning(
 @pytest.mark.skip(
     reason=(
         "Temporarily disabled, we can't use secrets on fork repos. See"
-        " https://github.com/huggingface/datasets-server/issues/1085"
+        " https://github.com/huggingface/dataset-viewer/issues/1085"
     )
 )
 @pytest.mark.asyncio

@@ -1,12 +1,12 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Datasets server API",
-    "description": "The 🤗 Datasets server API gives access to the contents, metadata and basic statistics of the Hugging Face Hub datasets.",
+    "title": "Dataset viewer server API",
+    "description": "The 🤗 dataset viewer API gives access to the contents, metadata and basic statistics of the Hugging Face Hub datasets.",
     "contact": {
       "name": "API Support",
       "email": "website@huggingface.co",
-      "url": "https://github.com/huggingface/datasets-server/"
+      "url": "https://github.com/huggingface/dataset-viewer/"
     },
     "version": "1.0",
     "license": {
@@ -312,7 +312,13 @@
       },
       "PaginatedResponse": {
         "type": "object",
-        "required": ["features", "rows", "num_rows_total", "num_rows_per_page", "partial"],
+        "required": [
+          "features",
+          "rows",
+          "num_rows_total",
+          "num_rows_per_page",
+          "partial"
+        ],
         "properties": {
           "features": {
             "type": "array",
@@ -1084,7 +1090,16 @@
       },
       "ColumnType": {
         "type": "string",
-        "enum": ["float", "int", "class_label", "string_label", "string_text", "bool", "list", "audio"]
+        "enum": [
+          "float",
+          "int",
+          "class_label",
+          "string_label",
+          "string_text",
+          "bool",
+          "list",
+          "audio"
+        ]
       },
       "Histogram": {
         "type": "object",
@@ -1128,12 +1143,17 @@
           "mean": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
           "median": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
           "std": { "oneOf": [{ "type": "number" }, { "type": "null" }] },
-          "histogram": { "oneOf": [{ "$ref": "#/components/schemas/Histogram" }, { "type": "null" }] }
+          "histogram": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/Histogram" },
+              { "type": "null" }
+            ]
+          }
         }
       },
       "CategoricalStatisticsItem": {
         "type": "object",
-        "description": "note that fields 'no_label_count' and 'no_label_proportion' are not required, because some old entries still miss them, and we don't want to recompute all of them. See https://github.com/huggingface/datasets-server/issues/2573.",
+        "description": "note that fields 'no_label_count' and 'no_label_proportion' are not required, because some old entries still miss them, and we don't want to recompute all of them. See https://github.com/huggingface/dataset-viewer/issues/2573.",
         "required": ["nan_count", "nan_proportion", "n_unique", "frequencies"],
         "properties": {
           "nan_count": {
@@ -1178,18 +1198,18 @@
         }
       },
       "SupportedStatistics": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/NumericalStatisticsItem"
-              },
-              {
-                "$ref": "#/components/schemas/CategoricalStatisticsItem"
-              },
-              {
-                "$ref": "#/components/schemas/BoolStatisticsItem"
-              }
-            ]
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/NumericalStatisticsItem"
           },
+          {
+            "$ref": "#/components/schemas/CategoricalStatisticsItem"
+          },
+          {
+            "$ref": "#/components/schemas/BoolStatisticsItem"
+          }
+        ]
+      },
       "StatisticsPerColumnItem": {
         "type": "object",
         "required": ["column_name", "column_type", "column_statistics"],
@@ -1201,7 +1221,7 @@
             "$ref": "#/components/schemas/ColumnType"
           },
           "column_statistics": {
-                "$ref": "#/components/schemas/SupportedStatistics"
+            "$ref": "#/components/schemas/SupportedStatistics"
           }
         }
       },
@@ -1373,14 +1393,14 @@
       },
       "UnexpectedJsonError": {
         "summary": "The server encountered an unexpected error",
-        "description": "This error indicates a bug in the code or a failure in the infrastructure. It can be reported to https://github.com/huggingface/datasets-server/issues.",
+        "description": "This error indicates a bug in the code or a failure in the infrastructure. It can be reported to https://github.com/huggingface/dataset-viewer/issues.",
         "value": {
           "error": "Unexpected error."
         }
       },
       "UnexpectedTextError": {
         "summary": "The server encountered an unexpected error",
-        "description": "This error indicates a bug in the code or a failure in the infrastructure. It can be reported to https://github.com/huggingface/datasets-server/issues.",
+        "description": "This error indicates a bug in the code or a failure in the infrastructure. It can be reported to https://github.com/huggingface/dataset-viewer/issues.",
         "value": "Internal Server Error."
       }
     },
@@ -2263,8 +2283,16 @@
                       "config": "default",
                       "split": "train",
                       "features": [
-                        { "feature_idx": 0, "name": "imageA", "type": { "_type": "Image" } },
-                        { "feature_idx": 1, "name": "imageB", "type": { "_type": "Image" } }
+                        {
+                          "feature_idx": 0,
+                          "name": "imageA",
+                          "type": { "_type": "Image" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "imageB",
+                          "type": { "_type": "Image" }
+                        }
                       ],
                       "rows": [
                         {
@@ -2710,8 +2738,16 @@
                     "description": "Try with https://datasets-server.huggingface.co/rows?dataset=huggan/horse2zebra&config=default&split=train&offset=234&length=3.",
                     "value": {
                       "features": [
-                        { "feature_idx": 0, "name": "imageA", "type": { "_type": "Image" } },
-                        { "feature_idx": 1, "name": "imageB", "type": { "_type": "Image" } }
+                        {
+                          "feature_idx": 0,
+                          "name": "imageA",
+                          "type": { "_type": "Image" }
+                        },
+                        {
+                          "feature_idx": 1,
+                          "name": "imageB",
+                          "type": { "_type": "Image" }
+                        }
                       ],
                       "rows": [
                         {
@@ -2811,7 +2847,7 @@
                   },
                   "error in the dataset itself": {
                     "summary": "An error while processing the dataset prevents the response to be created.",
-                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/datasets-server/issues/1661.",
+                    "description": "Try with https://datasets-server.huggingface.co/rows?dataset=atomic&config=atomic&split=train. It's a bug, it should be a 500 error, see https://github.com/huggingface/dataset-viewer/issues/1661.",
                     "value": { "error": "Not found." }
                   }
                 }
@@ -3118,7 +3154,11 @@
                     "description": "Try with https://datasets-server.huggingface.co/search?dataset=lambdalabs/pokemon-blip-captions&config=default&split=train&query=bird&length=3.",
                     "value": {
                       "features": [
-                        { "feature_idx": 0, "name": "image", "type": { "_type": "Image" } },
+                        {
+                          "feature_idx": 0,
+                          "name": "image",
+                          "type": { "_type": "Image" }
+                        },
                         {
                           "feature_idx": 1,
                           "name": "text",
@@ -3359,7 +3399,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/search?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&query=test",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }
@@ -3495,7 +3535,7 @@
                         {
                           "feature_idx": 4,
                           "name": "Age",
-                          "type":{ "dtype": "float64", "_type": "Value" }
+                          "type": { "dtype": "float64", "_type": "Value" }
                         },
                         {
                           "feature_idx": 5,
@@ -3576,7 +3616,7 @@
                         {
                           "feature_idx": 4,
                           "name": "Age",
-                          "type":{ "dtype": "float64", "_type": "Value" }
+                          "type": { "dtype": "float64", "_type": "Value" }
                         },
                         {
                           "feature_idx": 5,
@@ -3657,7 +3697,7 @@
                         {
                           "feature_idx": 4,
                           "name": "Age",
-                          "type":{ "dtype": "float64", "_type": "Value" }
+                          "type": { "dtype": "float64", "_type": "Value" }
                         },
                         {
                           "feature_idx": 5,
@@ -3737,7 +3777,7 @@
                         {
                           "feature_idx": 4,
                           "name": "Age",
-                          "type":{ "dtype": "float64", "_type": "Value" }
+                          "type": { "dtype": "float64", "_type": "Value" }
                         },
                         {
                           "feature_idx": 5,
@@ -3993,7 +4033,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/filter?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation&where=question_id=4",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }
@@ -4421,7 +4461,7 @@
                         "url": { "dtype": "string", "_type": "Value" }
                       },
                       "partial": true
-                    }                    
+                    }
                   },
                   "dataset where no parquet file could be created": {
                     "summary": "When the parquet files cannot be created for a configuration, it's listed in 'failed'.",
@@ -4533,7 +4573,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/parquet?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }
@@ -4848,7 +4888,12 @@
                         "builder_name": "parquet",
                         "dataset_name": "glue",
                         "config_name": "ax",
-                        "version": { "version_str": "0.0.0", "major": 0, "minor": 0, "patch": 0 },
+                        "version": {
+                          "version_str": "0.0.0",
+                          "major": 0,
+                          "minor": 0,
+                          "patch": 0
+                        },
                         "splits": {
                           "test": {
                             "name": "test",
@@ -4973,7 +5018,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/info?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }
@@ -5224,7 +5269,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/size?dataset=echarlaix/vqa-lxmert&config=vqa",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }
@@ -5239,7 +5284,7 @@
         "summary": "Get the number of opted-in and opted-out image URLs in a dataset.",
         "description": "Based on the API of spawning.ai, returns the number of image URLs that have been opted-in and opted-out. Use the optional config and splits parameters to filter the response. Only a sample of the rows is scanned, the first 100K rows at the moment.",
         "externalDocs": {
-          "description": "See spawning.io (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/datasets-server/issues/1664.",
+          "description": "See spawning.io (Hub docs). The doc is still missing for the endpoint, see https://github.com/huggingface/dataset-viewer/issues/1664.",
           "url": "https://huggingface.co/docs/datasets-server/"
         },
         "operationId": "getOptInOutUrls",
@@ -6060,30 +6105,10 @@
                             "median": 511,
                             "std": 323.1375,
                             "histogram": {
-                              "hist": [
-                                4598,
-                                3939,
-                                721,
-                                133,
-                                20,
-                                7,
-                                5,
-                                3,
-                                0,
-                                1
-                              ],
+                              "hist": [4598, 3939, 721, 133, 20, 7, 5, 3, 0, 1],
                               "bin_edges": [
-                                35,
-                                504,
-                                973,
-                                1442,
-                                1911,
-                                2380,
-                                2849,
-                                3318,
-                                3787,
-                                4256,
-                                4720
+                                35, 504, 973, 1442, 1911, 2380, 2849, 3318,
+                                3787, 4256, 4720
                               ]
                             }
                           }
@@ -6101,27 +6126,10 @@
                             "std": 8.85434,
                             "histogram": {
                               "hist": [
-                                43,
-                                1914,
-                                4636,
-                                2046,
-                                501,
-                                159,
-                                68,
-                                34,
-                                26
+                                43, 1914, 4636, 2046, 501, 159, 68, 34, 26
                               ],
                               "bin_edges": [
-                                20,
-                                29,
-                                38,
-                                47,
-                                56,
-                                65,
-                                74,
-                                83,
-                                92,
-                                100
+                                20, 29, 38, 47, 56, 65, 74, 83, 92, 100
                               ]
                             }
                           }
@@ -6135,169 +6143,95 @@
                     "value": {
                       "num_examples": 18622,
                       "statistics": [
-                          {
-                              "column_name": "audio",
-                              "column_type": "audio",
-                              "column_statistics": {
-                                  "nan_count": 0,
-                                  "nan_proportion": 0.0,
-                                  "min": 0.653,
-                                  "max": 105.97,
-                                  "mean": 6.41103,
-                                  "median": 4.8815,
-                                  "std": 5.63269,
-                                  "histogram": {
-                                      "hist": [
-                                          15867,
-                                          2319,
-                                          350,
-                                          67,
-                                          12,
-                                          5,
-                                          0,
-                                          1,
-                                          0,
-                                          1
-                                      ],
-                                      "bin_edges": [
-                                          0.653,
-                                          11.1847,
-                                          21.7164,
-                                          32.2481,
-                                          42.7798,
-                                          53.3115,
-                                          63.8432,
-                                          74.3749,
-                                          84.9066,
-                                          95.4383,
-                                          105.97
-                                      ]
-                                  }
-                              }
-                          },
-                          {
-                              "column_name": "duration_ms",
-                              "column_type": "int",
-                              "column_statistics": {
-                                  "nan_count": 0,
-                                  "nan_proportion": 0.0,
-                                  "min": 833,
-                                  "max": 105970,
-                                  "mean": 6411.06079,
-                                  "median": 4881.5,
-                                  "std": 5632.67057,
-                                  "histogram": {
-                                      "hist": [
-                                          15950,
-                                          2244,
-                                          345,
-                                          64,
-                                          12,
-                                          5,
-                                          0,
-                                          1,
-                                          0,
-                                          1
-                                      ],
-                                      "bin_edges": [
-                                          833,
-                                          11347,
-                                          21861,
-                                          32375,
-                                          42889,
-                                          53403,
-                                          63917,
-                                          74431,
-                                          84945,
-                                          95459,
-                                          105970
-                                      ]
-                                  }
-                              }
-                          },
-                          {
-                              "column_name": "id",
-                              "column_type": "string_text",
-                              "column_statistics": {
-                                  "nan_count": 0,
-                                  "nan_proportion": 0.0,
-                                  "min": 43,
-                                  "max": 197,
-                                  "mean": 120.06675,
-                                  "median": 136.0,
-                                  "std": 44.49607,
-                                  "histogram": {
-                                      "hist": [
-                                          3599,
-                                          939,
-                                          278,
-                                          1914,
-                                          1838,
-                                          1646,
-                                          4470,
-                                          1443,
-                                          1976,
-                                          519
-                                      ],
-                                      "bin_edges": [
-                                          43,
-                                          59,
-                                          75,
-                                          91,
-                                          107,
-                                          123,
-                                          139,
-                                          155,
-                                          171,
-                                          187,
-                                          197
-                                      ]
-                                  }
-                              }
-                          },
-                          {
-                              "column_name": "text",
-                              "column_type": "string_text",
-                              "column_statistics": {
-                                  "nan_count": 0,
-                                  "nan_proportion": 0.0,
-                                  "min": 1,
-                                  "max": 1219,
-                                  "mean": 94.52873,
-                                  "median": 75.0,
-                                  "std": 79.11078,
-                                  "histogram": {
-                                      "hist": [
-                                          13703,
-                                          3975,
-                                          744,
-                                          146,
-                                          36,
-                                          10,
-                                          5,
-                                          1,
-                                          1,
-                                          1
-                                      ],
-                                      "bin_edges": [
-                                          1,
-                                          123,
-                                          245,
-                                          367,
-                                          489,
-                                          611,
-                                          733,
-                                          855,
-                                          977,
-                                          1099,
-                                          1219
-                                      ]
-                                  }
-                              }
+                        {
+                          "column_name": "audio",
+                          "column_type": "audio",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 0.653,
+                            "max": 105.97,
+                            "mean": 6.41103,
+                            "median": 4.8815,
+                            "std": 5.63269,
+                            "histogram": {
+                              "hist": [15867, 2319, 350, 67, 12, 5, 0, 1, 0, 1],
+                              "bin_edges": [
+                                0.653, 11.1847, 21.7164, 32.2481, 42.7798,
+                                53.3115, 63.8432, 74.3749, 84.9066, 95.4383,
+                                105.97
+                              ]
+                            }
                           }
+                        },
+                        {
+                          "column_name": "duration_ms",
+                          "column_type": "int",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 833,
+                            "max": 105970,
+                            "mean": 6411.06079,
+                            "median": 4881.5,
+                            "std": 5632.67057,
+                            "histogram": {
+                              "hist": [15950, 2244, 345, 64, 12, 5, 0, 1, 0, 1],
+                              "bin_edges": [
+                                833, 11347, 21861, 32375, 42889, 53403, 63917,
+                                74431, 84945, 95459, 105970
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "id",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 43,
+                            "max": 197,
+                            "mean": 120.06675,
+                            "median": 136.0,
+                            "std": 44.49607,
+                            "histogram": {
+                              "hist": [
+                                3599, 939, 278, 1914, 1838, 1646, 4470, 1443,
+                                1976, 519
+                              ],
+                              "bin_edges": [
+                                43, 59, 75, 91, 107, 123, 139, 155, 171, 187,
+                                197
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "text",
+                          "column_type": "string_text",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 1,
+                            "max": 1219,
+                            "mean": 94.52873,
+                            "median": 75.0,
+                            "std": 79.11078,
+                            "histogram": {
+                              "hist": [
+                                13703, 3975, 744, 146, 36, 10, 5, 1, 1, 1
+                              ],
+                              "bin_edges": [
+                                1, 123, 245, 367, 489, 611, 733, 855, 977, 1099,
+                                1219
+                              ]
+                            }
+                          }
+                        }
                       ],
                       "partial": false
-                  }
+                    }
                   }
                 }
               }
@@ -6392,7 +6326,7 @@
                     "summary": "The dataset is blocked manually on the server.",
                     "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=echarlaix/vqa-lxmert&config=vqa&split=validation",
                     "value": {
-                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/datasets-server if you want this dataset to be supported."
+                      "error": "The parquet conversion has been disabled for this dataset for now. Please open an issue in https://github.com/huggingface/dataset-viewer if you want this dataset to be supported."
                     }
                   }
                 }

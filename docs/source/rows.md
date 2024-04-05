@@ -198,7 +198,7 @@ If the result has `partial: true` it means that the slices couldn't be run on th
 
 ### Caching
 
-The images and audio samples are cached by the datasets server temporarily.
+The images and audio samples are cached by the dataset viewer temporarily.
 Internally we empty the cached assets of certain datasets from time to time based on usage.
 
 If a certain asset is not available, you may have to call `/rows` again.

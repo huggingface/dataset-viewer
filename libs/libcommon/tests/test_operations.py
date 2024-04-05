@@ -314,7 +314,7 @@ def test_2274_only_one_entry(
     JOB_RUNNER_VERSION = 1
     FIRST_CACHE_KIND = "dataset-config-names"
 
-    # see https://github.com/huggingface/datasets-server/issues/2274
+    # see https://github.com/huggingface/dataset-viewer/issues/2274
     with tmp_dataset(namespace=NORMAL_USER, token=NORMAL_USER_TOKEN, private=False) as dataset:
         queue = Queue()
 

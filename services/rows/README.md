@@ -1,4 +1,4 @@
-# Datasets server API - rows endpoint
+# Dataset viewer API - rows endpoint
 
 > **GET** /rows
 

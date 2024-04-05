@@ -1,4 +1,4 @@
-# Datasets server - reverse proxy
+# Dataset viewer - reverse proxy
 
 > Reverse-proxy in front of the API
 

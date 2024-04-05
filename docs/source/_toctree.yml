@@ -1,7 +1,7 @@
 - title: Get Started
   sections:
     - local: index
-      title: 🤗 Datasets server
+      title: 🤗 Dataset viewer
     - local: quick_start
       title: Quickstart
     - local: analyze_data

@@ -25,7 +25,7 @@ version: 2.0.0
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 #
-# See https://github.com/huggingface/datasets-server/releases
+# See https://github.com/huggingface/dataset-viewer/releases
 appVersion: "0.22.2"
 
 icon: https://huggingface.co/front/assets/huggingface_logo-noborder.svg

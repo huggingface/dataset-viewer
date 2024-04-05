@@ -99,7 +99,7 @@ def image(
                 storage_client=storage_client,
             )
         except OSError:
-            # if wrong format, try the next one, see https://github.com/huggingface/datasets-server/issues/191
+            # if wrong format, try the next one, see https://github.com/huggingface/dataset-viewer/issues/191
             #  OSError: cannot write mode P as JPEG
             #  OSError: cannot write mode RGBA as JPEG
             continue

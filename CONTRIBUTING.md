@@ -28,14 +28,14 @@ If you would like to work on any of the open Issues:
 
 ## How to create a Pull Request?
 
-1. Fork the [repository](https://github.com/huggingface/datasets-server) by clicking on the 'Fork' button on the repository's page. This creates a copy of the code under your GitHub user account.
+1. Fork the [repository](https://github.com/huggingface/dataset-viewer) by clicking on the 'Fork' button on the repository's page. This creates a copy of the code under your GitHub user account.
 
 2. Clone your fork to your local disk, and add the base repository as a remote:
 
    ```bash
    git clone git@github.com:<your Github handle>/datasets-server.git
    cd datasets-server
-   git remote add upstream https://github.com/huggingface/datasets-server.git
+   git remote add upstream https://github.com/huggingface/dataset-viewer.git
    ```
 
 3. Create a new branch to hold your development changes:

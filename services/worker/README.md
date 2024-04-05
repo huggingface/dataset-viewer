@@ -1,4 +1,4 @@
-# Datasets server - worker
+# Dataset viewer - worker
 
 > Workers that pre-compute and cache the response for each of the processing steps.
 

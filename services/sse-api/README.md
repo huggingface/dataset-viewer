@@ -1,6 +1,6 @@
-# Datasets server SSE API
+# Dataset viewer SSE API
 
-> Server-sent events API for the Datasets server. It's used to update the Hugging Face Hub's backend cache.
+> Server-sent events API for the dataset viewer. It's used to update the Hugging Face Hub's backend cache.
 
 ## Configuration
 

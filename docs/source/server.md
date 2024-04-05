@@ -1,6 +1,6 @@
 # Server infrastructure
 
-The [dataset viewer](https://github.com/huggingface/datasets-server) has two main components that work together to return queries about a dataset instantly:
+The [dataset viewer](https://github.com/huggingface/dataset-viewer) has two main components that work together to return queries about a dataset instantly:
 
 - a user-facing web API for exploring and returning information about a dataset
 - a server runs the queries ahead of time and caches them in a database
@@ -25,7 +25,7 @@ You might've noticed the `/rows` and `/search` endpoints don't have a job in the
 
 Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and configurations. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
 
-Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
+Take a look at the [workers configuration](https://github.com/huggingface/dataset-viewer/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
 
 ## Cache
 
