@@ -1,10 +1,10 @@
 # Preview a dataset
 
-Datasets Server provides a `/first-rows` endpoint for visualizing the first 100 rows of a dataset. This'll give you a good idea of the data types and example data contained in a dataset.
+The dataset viewer provides a `/first-rows` endpoint for visualizing the first 100 rows of a dataset. This'll give you a good idea of the data types and example data contained in a dataset.
 
 ![dataset-viewer](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/dataset-viewer.png)
 
-This guide shows you how to use Datasets Server's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
+This guide shows you how to use the dataset viewer's `/first-rows` endpoint to preview a dataset. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-32d6a8be-b800-446a-8cee-f6b5ca1710df), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listFirstRows).
 
 The `/first-rows` endpoint accepts three query parameters:
 

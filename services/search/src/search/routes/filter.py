@@ -137,7 +137,7 @@ def create_filter_endpoint(
                     )
                 with StepProfiler(method="filter_endpoint", step="get features"):
                     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
-                    # see https://github.com/huggingface/datasets-server/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+                    # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
                     features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
                 with StepProfiler(method="filter_endpoint", step="get supported and unsupported columns"):
                     supported_columns, unsupported_columns = get_supported_unsupported_columns(

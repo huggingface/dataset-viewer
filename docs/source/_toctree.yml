@@ -1,7 +1,7 @@
 - title: Get Started
   sections:
     - local: index
-      title: 🤗 Datasets server
+      title: 🤗 Dataset viewer
     - local: quick_start
       title: Quickstart
     - local: analyze_data
@@ -30,7 +30,7 @@
       title: Explore dataset statistics
     - local: croissant
       title: Get Croissant metadata
-    - title: Query datasets from Datasets Server
+    - title: Query datasets from dataset viewer API
       sections:
         - local: parquet_process
           title: Overview

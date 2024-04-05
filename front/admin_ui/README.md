@@ -1,5 +1,5 @@
 ---
-title: Datasets Server Admin UI
+title: Dataset viewer admin UI
 emoji: 📊
 colorFrom: gray
 colorTo: purple

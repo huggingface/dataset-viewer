@@ -1,6 +1,6 @@
 # List Parquet files
 
-Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), Datasets Server automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format.
+Datasets can be published in any format (CSV, JSONL, directories of images, etc.) to the Hub, and they are easily accessed with the 🤗 [Datasets](https://huggingface.co/docs/datasets/) library. For a more performant experience (especially when it comes to large datasets), the dataset viewer automatically converts every dataset to the [Parquet](https://parquet.apache.org/) format.
 
 ## What is Parquet?
 
@@ -21,13 +21,13 @@ The Parquet files are published to the Hub on a specific `refs/convert/parquet` 
 
 <Tip>
 
-In order for Datasets Server to generate a Parquet version of a dataset, the dataset must be _public_, or owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
+In order for the dataset viewer to generate a Parquet version of a dataset, the dataset must be _public_, or owned by a [PRO user](https://huggingface.co/pricing) or an [Enterprise Hub organization](https://huggingface.co/enterprise).
 
 </Tip>
 
-## Using the Datasets Server API
+## Using the dataset viewer API
 
-This guide shows you how to use Datasets Server's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
+This guide shows you how to use the dataset viewer's `/parquet` endpoint to retrieve a list of a dataset's files converted to Parquet. Feel free to also try it out with [Postman](https://www.postman.com/huggingface/workspace/hugging-face-apis/request/23242779-f0cde3b9-c2ee-4062-aaca-65c4cfdd96f8), [RapidAPI](https://rapidapi.com/hugging-face-hugging-face-default/api/hugging-face-datasets-api), or [ReDoc](https://redocly.github.io/redoc/?url=https://datasets-server.huggingface.co/openapi.json#operation/listSplits).
 
 The `/parquet` endpoint accepts the dataset name as its query parameter:
 
@@ -195,7 +195,7 @@ Big datasets are partitioned into Parquet files (shards) of about 500MB each. Th
 }
 ```
 
-To read and query the Parquet files, take a look at the [Query datasets from Datasets Server](parquet_process) guide.
+To read and query the Parquet files, take a look at the [Query datasets from the dataset viewer API](parquet_process) guide.
 
 ## Partially converted datasets
 
@@ -205,7 +205,7 @@ In that case the Parquet files are generated up to 5GB and placed in a split dir
 
 ## Parquet-native datasets
 
-When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule suffers an exception to ensure the Datasets Server API to stay fast: if the [row group](https://parquet.apache.org/docs/concepts/) size of the original Parquet files is too big, new Parquet files are generated.
+When the dataset is already in Parquet format, the data are not converted and the files in `refs/convert/parquet` are links to the original files. This rule suffers an exception to ensure the dataset viewer API to stay fast: if the [row group](https://parquet.apache.org/docs/concepts/) size of the original Parquet files is too big, new Parquet files are generated.
 
 ## Using the Hugging Face Hub API
 

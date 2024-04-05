@@ -28,7 +28,7 @@ server {
   set $cached_assets_storage_root ${CACHED_ASSETS_STORAGE_ROOT};
 
   location /openapi.json {
-    return 307 https://raw.githubusercontent.com/huggingface/datasets-server/main/${OPENAPI_FILE};
+    return 307 https://raw.githubusercontent.com/huggingface/dataset-viewer/main/${OPENAPI_FILE};
   }
 
   location /assets/ {

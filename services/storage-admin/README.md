@@ -1,4 +1,4 @@
-# Datasets server - storage admin
+# Dataset viewer - storage admin
 
 > A Ubuntu machine to log into and manage the storage manually
 

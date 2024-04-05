@@ -1,4 +1,4 @@
-# Datasets server API - search and filter endpoints
+# Dataset viewer API - search and filter endpoints
 
 > **GET** /search
 >

@@ -1,6 +1,6 @@
 # Get Croissant metadata
 
-Datasets Server automatically generates the metadata in [Croissant](https://github.com/mlcommons/croissant) format (JSON-LD) for every dataset on the Hugging Face Hub. It lists the dataset's name, description, URL, and the distribution of the dataset as Parquet files, including the columns' metadata. The Croissant metadata is available for all the datasets that can be [converted to Parquet format](./parquet#conversion-to-parquet).
+The dataset viewer automatically generates the metadata in [Croissant](https://github.com/mlcommons/croissant) format (JSON-LD) for every dataset on the Hugging Face Hub. It lists the dataset's name, description, URL, and the distribution of the dataset as Parquet files, including the columns' metadata. The Croissant metadata is available for all the datasets that can be [converted to Parquet format](./parquet#conversion-to-parquet).
 
 ## What is Croissant?
 

@@ -350,7 +350,7 @@ def test_delete_dataset_responses() -> None:
 
 
 def test_big_row() -> None:
-    # https://github.com/huggingface/datasets-server/issues/197
+    # https://github.com/huggingface/dataset-viewer/issues/197
     kind = CACHE_KIND
     dataset = DATASET_NAME
     dataset_git_revision = REVISION_NAME

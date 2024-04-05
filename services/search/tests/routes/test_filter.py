@@ -74,7 +74,7 @@ def test_validate_where_parameter_raises(where: str) -> None:
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
 def test_execute_filter_query(index_file_location: str, columns: list[str]) -> None:
     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
-    # see https://github.com/huggingface/datasets-server/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
+    # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
     columns.append(ROW_IDX_COLUMN)
     where, limit, offset = "gender='female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(

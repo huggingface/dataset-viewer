@@ -15,10 +15,10 @@ dev-start: export COMPOSE_PROJECT_NAME := dev-datasets-server
 dev-stop: export COMPOSE_PROJECT_NAME := dev-datasets-server
 
 # makefile variables per target
-start: DOCKER_COMPOSE := ./tools/docker-compose-datasets-server.yml
-stop: DOCKER_COMPOSE := ./tools/docker-compose-datasets-server.yml
-dev-start: DOCKER_COMPOSE := ./tools/docker-compose-dev-datasets-server.yml
-dev-stop: DOCKER_COMPOSE := ./tools/docker-compose-dev-datasets-server.yml
+start: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
+stop: DOCKER_COMPOSE := ./tools/docker-compose-dataset-viewer.yml
+dev-start: DOCKER_COMPOSE := ./tools/docker-compose-dev-dataset-viewer.yml
+dev-stop: DOCKER_COMPOSE := ./tools/docker-compose-dev-dataset-viewer.yml
 
 include tools/Docker.mk
 

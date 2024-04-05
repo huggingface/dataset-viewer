@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "admin-ui"
 version = "0.1.0"
-description = "Admin interface for datasets-server"
+description = "Admin interface for the dataset viewer"
 authors = ["Quentin Lhoest <quentin@huggingface.co>"]
 
 [tool.poetry.dependencies]

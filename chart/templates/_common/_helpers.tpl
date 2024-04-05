@@ -162,7 +162,7 @@ Return the api ingress anotation
 {{- end -}}
 
 {{/*
-Datasets Server base url
+The dataset viewer API base url
 */}}
 {{- define "datasetsServer.ingress.hostname" -}}
 {{ .Values.global.huggingface.ingress.subdomains.datasetsServer }}.{{ .Values.global.huggingface.ingress.domain }}
@@ -195,7 +195,7 @@ The cached-assets base URL
 
 {{/*
 The parquet-metadata/ subpath in the EFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the chart (dataset-viewer/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "parquetMetadata.subpath" -}}
@@ -204,7 +204,7 @@ The parquet-metadata/ subpath in the EFS
 
 {{/*
 The duckdb-index/ subpath in EFS
-- in a subdirectory named as the chart (datasets-server/), and below it,
+- in a subdirectory named as the chart (dataset-viewer/), and below it,
 - in a subdirectory named as the Release, so that Releases will not share the same dir
 */}}
 {{- define "duckDBIndex.subpath" -}}

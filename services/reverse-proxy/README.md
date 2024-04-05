@@ -1,8 +1,8 @@
-# Datasets server - reverse proxy
+# Dataset viewer - reverse proxy
 
 > Reverse-proxy in front of the API
 
-See [docker-compose-datasets-server.yml](../../tools/docker-compose-datasets-server.yml) for usage.
+See [docker-compose-dataset-viewer.yml](../../tools/docker-compose-dataset-viewer.yml) for usage.
 
 Note that the template configuration is located in [chart/nginx-templates/](../../chart/nginx-templates/) in order to be reachable by the Helm chart to deploy on Kubernetes.
 

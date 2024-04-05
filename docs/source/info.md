@@ -1,6 +1,6 @@
 # Get dataset information
 
-Datasets Server provides an `/info` endpoint for exploring the general information about dataset, including such fields as description, citation, homepage, license and features.
+The dataset viewer provides an `/info` endpoint for exploring the general information about dataset, including such fields as description, citation, homepage, license and features.
 
 The `/info` endpoint accepts two query parameters:
 

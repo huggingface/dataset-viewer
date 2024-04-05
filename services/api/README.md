@@ -1,6 +1,6 @@
-# Datasets server API
+# Dataset viewer API
 
-> API for HugginFace 🤗 datasets viewer
+> API for HuggingFace 🤗 dataset viewer
 
 ## Configuration
 

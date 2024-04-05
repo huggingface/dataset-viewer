@@ -1,11 +1,11 @@
 # Server infrastructure
 
-The [Datasets Server](https://github.com/huggingface/datasets-server) has two main components that work together to return queries about a dataset instantly:
+The [dataset viewer](https://github.com/huggingface/dataset-viewer) has two main components that work together to return queries about a dataset instantly:
 
 - a user-facing web API for exploring and returning information about a dataset
 - a server runs the queries ahead of time and caches them in a database
 
-While most of the documentation is focused on the web API, the server is crucial because it performs all the time-consuming preprocessing and stores the results so the web API can retrieve and serve them to the user. This saves a user time because instead of generating the response every time it gets requested, Datasets Server can return the preprocessed results instantly from the cache.
+While most of the documentation is focused on the web API, the server is crucial because it performs all the time-consuming preprocessing and stores the results so the web API can retrieve and serve them to the user. This saves a user time because instead of generating the response every time it gets requested, the dataset viewer can return the preprocessed results instantly from the cache.
 
 There are three elements that keep the server running: the job queue, workers, and the cache.
 
@@ -25,10 +25,10 @@ You might've noticed the `/rows` and `/search` endpoints don't have a job in the
 
 Workers are responsible for executing the jobs in the queue. They complete the actual preprocessing requests, such as getting a list of splits and configurations. The workers can be controlled by configurable environment variables, like the minimum or the maximum number of rows returned by a worker or the maximum number of jobs to start per dataset user or organization.
 
-Take a look at the [workers configuration](https://github.com/huggingface/datasets-server/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
+Take a look at the [workers configuration](https://github.com/huggingface/dataset-viewer/tree/main/services/worker#configuration) for a complete list of the environment variables if you're interested in learning more.
 
 ## Cache
 
-Once the workers complete a job, the results are stored - or _cached_ - in a Mongo database. When a user makes a request with an endpoint like `/first-rows`, Datasets Server retrieves the preprocessed response from the cache, and serves it to the user. This eliminates the time a user would've waited if the server hadn't already completed the job and stored the response.
+Once the workers complete a job, the results are stored - or _cached_ - in a Mongo database. When a user makes a request with an endpoint like `/first-rows`, the dataset viewer retrieves the preprocessed response from the cache, and serves it to the user. This eliminates the time a user would've waited if the server hadn't already completed the job and stored the response.
 
 As a result, users can get their requested information about a dataset (even large ones) nearly instantaneously!

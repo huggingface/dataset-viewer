@@ -238,7 +238,7 @@ services:
     #   - ${WORKER_UVICORN_PORT-8086}:${WORKER_UVICORN_PORT-8086}
     # ^ disabling, since having 4 replicas of the worker service with the same port causes issue:
     # Error response from daemon: driver failed programming external connectivity on endpoint
-    # dev-datasets-server-worker-2 (3619ef10b728504a43005f0381d4bc98da5f3a398475f8e3b305b1f504f40012):
+    # dev-dataset-viewer-worker-2 (3619ef10b728504a43005f0381d4bc98da5f3a398475f8e3b305b1f504f40012):
     # Bind for 0.0.0.0:8186 failed: port is already allocated
     depends_on:
       mongodb:

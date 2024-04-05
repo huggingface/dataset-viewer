@@ -1,8 +1,8 @@
-# How to contribute to the Datasets Server?
+# How to contribute to the dataset viewer?
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-The Datasets Server is an open source project, so all contributions and suggestions are welcome.
+The dataset viewer is an open source project, so all contributions and suggestions are welcome.
 
 You can contribute in many different ways: giving ideas, answering questions, reporting bugs, proposing enhancements,
 improving the documentation, fixing bugs...
@@ -28,14 +28,14 @@ If you would like to work on any of the open Issues:
 
 ## How to create a Pull Request?
 
-1. Fork the [repository](https://github.com/huggingface/datasets-server) by clicking on the 'Fork' button on the repository's page. This creates a copy of the code under your GitHub user account.
+1. Fork the [repository](https://github.com/huggingface/dataset-viewer) by clicking on the 'Fork' button on the repository's page. This creates a copy of the code under your GitHub user account.
 
 2. Clone your fork to your local disk, and add the base repository as a remote:
 
    ```bash
-   git clone git@github.com:<your Github handle>/datasets-server.git
-   cd datasets-server
-   git remote add upstream https://github.com/huggingface/datasets-server.git
+   git clone git@github.com:<your Github handle>/dataset-viewer.git
+   cd dataset-viewer
+   git remote add upstream https://github.com/huggingface/dataset-viewer.git
    ```
 
 3. Create a new branch to hold your development changes:

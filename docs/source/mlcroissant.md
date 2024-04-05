@@ -4,11 +4,11 @@
 
 <Tip>
 
-💡 Learn more about how to get the metadata from the Datasets Server API in the [Get Croissant metadata](croissant) guide.
+💡 Learn more about how to get the metadata from the dataset viewer API in the [Get Croissant metadata](croissant) guide.
 
 </Tip>
 
-Let's start by parsing the Croissant metadata for the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset from Datasets Server. Be sure to first install `mlcroissant[parquet]` and `GitPython` to be able to load Parquet files over the git+https protocol.
+Let's start by parsing the Croissant metadata for the [`blog_authorship_corpus`](https://huggingface.co/datasets/blog_authorship_corpus) dataset. Be sure to first install `mlcroissant[parquet]` and `GitPython` to be able to load Parquet files over the git+https protocol.
 
 ```py
 from mlcroissant import Dataset

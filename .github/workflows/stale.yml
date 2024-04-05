@@ -10,7 +10,7 @@ on:
 jobs:
   close_stale_issues:
     name: Close Stale Issues
-    if: github.repository == 'huggingface/datasets-server'
+    if: github.repository == 'huggingface/dataset-viewer'
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

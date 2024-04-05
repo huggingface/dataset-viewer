@@ -119,7 +119,7 @@ def test_get_supported_unsupported_columns() -> None:
     assert unsupported_columns == ["audio1", "audio2", "audio3", "binary"]
 
 
-# specific test created for https://github.com/huggingface/datasets-server/issues/2045
+# specific test created for https://github.com/huggingface/dataset-viewer/issues/2045
 # which is reproduced only when using s3 for fsspec
 def test_ogg_audio_with_s3(
     datasets_fixtures: Mapping[str, DatasetFixture],

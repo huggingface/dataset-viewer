@@ -1,4 +1,4 @@
-# Datasets server admin service
+# Dataset viewer admin service
 
 > Admin endpoints
 
