@@ -12,7 +12,7 @@ Let's start by parsing the Croissant metadata for the [`blog_authorship_corpus`]
 
 ```py
 from mlcroissant import Dataset
-ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset=blog_authorship_corpus")
+ds = Dataset(jsonld="https://huggingface.co/api/datasets/blog_authorship_corpus/croissant")
 ```
 
 To read from the first subset (called RecordSet in Croissant's vocabulary), use the [`records`](https://github.com/mlcommons/croissant/blob/cd64e12c733cf8bf48f2f85c951c1c67b1c94f5a/python/mlcroissant/mlcroissant/_src/datasets.py#L86) function, which returns an iterator of dicts.

@@ -198,17 +198,17 @@ backfill:
   log:
     level: "debug"
   action: "backfill"
-  schedule: "45 22 * * *"
+  schedule: "25 10 * * *"
   # every day
   nodeSelector:
     role-datasets-server: "true"
   resources:
     requests:
       cpu: 1
-      memory: "1Gi"
+      memory: "10Gi"
     limits:
       cpu: 2
-      memory: "8Gi"
+      memory: "10Gi"
 
 backfillRetryableErrors:
   enabled: true
@@ -386,16 +386,16 @@ search:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 24
+  replicas: 7
   service:
     type: NodePort
   resources:
     requests:
       cpu: 1
-      memory: "6500Mi"
+      memory: "30Gi"
     limits:
       cpu: 16
-      memory: "9500Mi"
+      memory: "30Gi"
 
 sseApi:
   # Number of uvicorn workers for running the application

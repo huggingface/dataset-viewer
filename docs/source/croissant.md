@@ -6,25 +6,18 @@ Datasets Server automatically generates the metadata in [Croissant](https://gith
 
 Croissant is a metadata format build on top of [schema.org](https://schema.org/) aimed at describing datasets used for machine learning to help indexing, searching and loading them programmatically.
 
-<Tip>
-
-The [specification](https://github.com/mlcommons/croissant/blob/main/docs/croissant-spec.md) is still in early draft status. It may evolve in the future, and backward compatibility is not guaranteed.
-
-</Tip>
-
 ## Get the metadata
 
-This guide shows you how to use Datasets Server's `/croissant` endpoint to retrieve the Croissant metadata associated to a dataset.
+This guide shows you how to use [Hugging Face `/croissant` endpoint](https://huggingface.co/docs/hub/api#get-apidatasetsrepoidcroissant) to retrieve the Croissant metadata associated to a dataset.
 
-
-The `/croissant` endpoint accepts the dataset name as its query parameter:
+The `/croissant` endpoint takes the dataset name in the URL, for example for the `ibm/duorc` dataset:
 
 <inferencesnippet>
 <python>
 ```python
 import requests
 headers = {"Authorization": f"Bearer {API_TOKEN}"}
-API_URL = "https://datasets-server.huggingface.co/croissant?dataset=ibm/duorc"
+API_URL = "https://huggingface.co/api/datasets/ibm/duorc/croissant"
 def query():
     response = requests.get(API_URL, headers=headers)
     return response.json()
@@ -36,7 +29,7 @@ data = query()
 import fetch from "node-fetch";
 async function query(data) {
     const response = await fetch(
-        "https://datasets-server.huggingface.co/croissant?dataset=ibm/duorc",
+        "https://huggingface.co/api/datasets/ibm/duorc/croissant",
         {
             headers: { Authorization: `Bearer ${API_TOKEN}` },
             method: "GET"
@@ -52,12 +45,14 @@ query().then((response) => {
 </js>
 <curl>
 ```curl
-curl https://datasets-server.huggingface.co/croissant?dataset=ibm/duorc \
+curl https://huggingface.co/api/datasets/ibm/duorc/croissant \
         -X GET \
         -H "Authorization: Bearer ${API_TOKEN}"
 ```
 </curl>
 </inferencesnippet>
+
+Under the hood it uses the `https://datasets-server.huggingface.co/croissant-crumbs` endpoint and enriches it with the Hub metadata.
 
 The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metadata in the Croissant format. For example, the [`ibm/duorc`](https://huggingface.co/datasets/ibm/duorc) dataset has two configurations, `ParaphraseRC` and `SelfRC` (see the [List splits and configurations](./splits) guide for more details about splits and configurations). The metadata links to their Parquet files and describes the type of each of the six columns: `plot_id`, `plot`, `title`, `question_id`, `question`, and `no_answer`:
 
@@ -66,37 +61,51 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
   "@context": {
     "@language": "en",
     "@vocab": "https://schema.org/",
-    "column": "ml:column",
-    "data": { "@id": "ml:data", "@type": "@json" },
-    "dataType": { "@id": "ml:dataType", "@type": "@vocab" },
-    "extract": "ml:extract",
-    "field": "ml:field",
-    "fileProperty": "ml:fileProperty",
-    "format": "ml:format",
-    "includes": "ml:includes",
-    "isEnumeration": "ml:isEnumeration",
-    "jsonPath": "ml:jsonPath",
-    "ml": "http://mlcommons.org/schema/",
-    "parentField": "ml:parentField",
-    "path": "ml:path",
-    "recordSet": "ml:recordSet",
-    "references": "ml:references",
-    "regex": "ml:regex",
-    "repeated": "ml:repeated",
-    "replace": "ml:replace",
+    "citeAs": "cr:citeAs",
+    "column": "cr:column",
+    "conformsTo": "dct:conformsTo",
+    "cr": "http://mlcommons.org/croissant/",
+    "data": {
+      "@id": "cr:data",
+      "@type": "@json"
+    },
+    "dataBiases": "cr:dataBiases",
+    "dataCollection": "cr:dataCollection",
+    "dataType": {
+      "@id": "cr:dataType",
+      "@type": "@vocab"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "extract": "cr:extract",
+    "field": "cr:field",
+    "fileProperty": "cr:fileProperty",
+    "fileObject": "cr:fileObject",
+    "fileSet": "cr:fileSet",
+    "format": "cr:format",
+    "includes": "cr:includes",
+    "isLiveDataset": "cr:isLiveDataset",
+    "jsonPath": "cr:jsonPath",
+    "key": "cr:key",
+    "md5": "cr:md5",
+    "parentField": "cr:parentField",
+    "path": "cr:path",
+    "personalSensitiveInformation": "cr:personalSensitiveInformation",
+    "recordSet": "cr:recordSet",
+    "references": "cr:references",
+    "regex": "cr:regex",
+    "repeated": "cr:repeated",
+    "replace": "cr:replace",
     "sc": "https://schema.org/",
-    "separator": "ml:separator",
-    "source": "ml:source",
-    "subField": "ml:subField",
-    "transform": "ml:transform"
+    "separator": "cr:separator",
+    "source": "cr:source",
+    "subField": "cr:subField",
+    "transform": "cr:transform"
   },
   "@type": "sc:Dataset",
-  "name": "ibm_duorc",
-  "description": "ibm/duorc dataset hosted on Hugging Face and contributed by the HF Datasets community",
-  "url": "https://huggingface.co/datasets/ibm/duorc",
   "distribution": [
     {
-      "@type": "sc:FileObject",
+      "@type": "cr:FileObject",
+      "@id": "repo",
       "name": "repo",
       "description": "The Hugging Face git repository.",
       "contentUrl": "https://huggingface.co/datasets/ibm/duorc/tree/refs%2Fconvert%2Fparquet",
@@ -104,156 +113,257 @@ The endpoint response is a [JSON-LD](https://json-ld.org/) containing the metada
       "sha256": "https://github.com/mlcommons/croissant/issues/80"
     },
     {
-      "@type": "sc:FileSet",
+      "@type": "cr:FileSet",
+      "@id": "parquet-files-for-config-ParaphraseRC",
       "name": "parquet-files-for-config-ParaphraseRC",
-      "containedIn": "repo",
+      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+      "containedIn": {
+        "@id": "repo"
+      },
       "encodingFormat": "application/x-parquet",
       "includes": "ParaphraseRC/*/*.parquet"
     },
     {
-      "@type": "sc:FileSet",
+      "@type": "cr:FileSet",
+      "@id": "parquet-files-for-config-SelfRC",
       "name": "parquet-files-for-config-SelfRC",
-      "containedIn": "repo",
+      "description": "The underlying Parquet files as converted by Hugging Face (see: https://huggingface.co/docs/datasets-server/parquet).",
+      "containedIn": {
+        "@id": "repo"
+      },
       "encodingFormat": "application/x-parquet",
       "includes": "SelfRC/*/*.parquet"
     }
   ],
   "recordSet": [
     {
-      "@type": "ml:RecordSet",
+      "@type": "cr:RecordSet",
+      "@id": "ParaphraseRC",
       "name": "ParaphraseRC",
       "description": "ibm/duorc - 'ParaphraseRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
       "field": [
         {
-          "@type": "ml:Field",
-          "name": "plot_id",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/plot_id",
+          "name": "ParaphraseRC/plot_id",
           "description": "Column 'plot_id' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "plot_id" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "plot_id"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "plot",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/plot",
+          "name": "ParaphraseRC/plot",
           "description": "Column 'plot' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "plot" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "plot"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "title",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/title",
+          "name": "ParaphraseRC/title",
           "description": "Column 'title' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "title" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "title"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "question_id",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/question_id",
+          "name": "ParaphraseRC/question_id",
           "description": "Column 'question_id' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "question_id" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "question_id"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "question",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/question",
+          "name": "ParaphraseRC/question",
           "description": "Column 'question' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "question" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "question"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "no_answer",
+          "@type": "cr:Field",
+          "@id": "ParaphraseRC/no_answer",
+          "name": "ParaphraseRC/no_answer",
           "description": "Column 'no_answer' from the Hugging Face parquet file.",
           "dataType": "sc:Boolean",
           "source": {
-            "distribution": "parquet-files-for-config-ParaphraseRC",
-            "extract": { "column": "no_answer" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-ParaphraseRC"
+            },
+            "extract": {
+              "column": "no_answer"
+            }
           }
         }
       ]
     },
     {
-      "@type": "ml:RecordSet",
+      "@type": "cr:RecordSet",
+      "@id": "SelfRC",
       "name": "SelfRC",
       "description": "ibm/duorc - 'SelfRC' subset\n\nAdditional information:\n- 3 splits: train, validation, test\n- 1 skipped column: answers",
       "field": [
         {
-          "@type": "ml:Field",
-          "name": "plot_id",
+          "@type": "cr:Field",
+          "@id": "SelfRC/plot_id",
+          "name": "SelfRC/plot_id",
           "description": "Column 'plot_id' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "plot_id" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "plot_id"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "plot",
+          "@type": "cr:Field",
+          "@id": "SelfRC/plot",
+          "name": "SelfRC/plot",
           "description": "Column 'plot' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "plot" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "plot"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "title",
+          "@type": "cr:Field",
+          "@id": "SelfRC/title",
+          "name": "SelfRC/title",
           "description": "Column 'title' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "title" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "title"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "question_id",
+          "@type": "cr:Field",
+          "@id": "SelfRC/question_id",
+          "name": "SelfRC/question_id",
           "description": "Column 'question_id' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "question_id" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "question_id"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "question",
+          "@type": "cr:Field",
+          "@id": "SelfRC/question",
+          "name": "SelfRC/question",
           "description": "Column 'question' from the Hugging Face parquet file.",
           "dataType": "sc:Text",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "question" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "question"
+            }
           }
         },
         {
-          "@type": "ml:Field",
-          "name": "no_answer",
+          "@type": "cr:Field",
+          "@id": "SelfRC/no_answer",
+          "name": "SelfRC/no_answer",
           "description": "Column 'no_answer' from the Hugging Face parquet file.",
           "dataType": "sc:Boolean",
           "source": {
-            "distribution": "parquet-files-for-config-SelfRC",
-            "extract": { "column": "no_answer" }
+            "fileSet": {
+              "@id": "parquet-files-for-config-SelfRC"
+            },
+            "extract": {
+              "column": "no_answer"
+            }
           }
         }
       ]
     }
-  ]
+  ],
+  "name": "duorc",
+  "description": "\n\t\n\t\t\n\t\n\t\n\t\tDataset Card for duorc\n\t\n\n\n\t\n\t\t\n\t\n\t\n\t\tDataset Summary\n\t\n\nThe DuoRC dataset is an English language dataset of questions and answers gathered from crowdsourced AMT workers on Wikipedia and IMDb movie plots. The workers were given freedom to pick answer from the plots or synthesize their own answers. It contains two sub-datasets - SelfRC and ParaphraseRC. SelfRC dataset is built on Wikipedia movie plots solely. ParaphraseRC has questions written from Wikipedia movie plots and the… See the full description on the dataset page: https://huggingface.co/datasets/ibm/duorc.",
+  "alternateName": [
+    "ibm/duorc",
+    "DuoRC"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "IBM",
+    "url": "https://huggingface.co/ibm"
+  },
+  "keywords": [
+    "question-answering",
+    "text2text-generation",
+    "abstractive-qa",
+    "extractive-qa",
+    "crowdsourced",
+    "crowdsourced",
+    "monolingual",
+    "100K<n<1M",
+    "10K<n<100K",
+    "original",
+    "English",
+    "mit",
+    "Croissant",
+    "arxiv:1804.07927",
+    "🇺🇸 Region: US"
+  ],
+  "license": "https://choosealicense.com/licenses/mit/",
+  "sameAs": "https://duorc.github.io/",
+  "url": "https://huggingface.co/datasets/ibm/duorc"
 }
 ```
 

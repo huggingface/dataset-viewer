@@ -24,7 +24,7 @@ from datasets import (
     Value,
 )
 from datasets.features.features import FeatureType, _visit
-from PIL import Image as PILImage  # type: ignore
+from PIL import Image as PILImage
 
 from libcommon.dtos import FeatureItem
 from libcommon.storage_client import StorageClient

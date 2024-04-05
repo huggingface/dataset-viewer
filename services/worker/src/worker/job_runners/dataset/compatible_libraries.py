@@ -256,7 +256,7 @@ ds = load_dataset("{dataset}", "{config_name}")"""
 
 MLCROISSANT_CODE_RECORD_SETS = """from mlcroissant import Dataset
 {comment}
-ds = Dataset(jsonld="https://datasets-server.huggingface.co/croissant?dataset={dataset}")
+ds = Dataset(jsonld="https://huggingface.co/api/datasets/{dataset}/croissant")
 records = ds.records("{record_set}")"""
 
 MLCROISSANT_CODE_RECORD_SETS_WITH_LOGIN = """import requests
@@ -264,7 +264,7 @@ from huggingface_hub.file_download import build_hf_headers
 from mlcroissant import Dataset
 {comment}
 headers = build_hf_headers()  # handles authentication
-jsonld = requests.get("https://datasets-server.huggingface.co/croissant?dataset={dataset}", headers=headers).json()
+jsonld = requests.get("https://huggingface.co/api/datasets/{dataset}/croissant", headers=headers).json()
 ds = Dataset(jsonld=jsonld)
 records = ds.records("{record_set}")"""
 
