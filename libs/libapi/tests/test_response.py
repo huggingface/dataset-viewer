@@ -7,7 +7,7 @@ import pytest
 from datasets import Dataset, Image
 from datasets.table import embed_table_storage
 from libcommon.storage_client import StorageClient
-from PIL import Image as PILImage  # type: ignore
+from PIL import Image as PILImage
 
 from libapi.response import ROW_IDX_COLUMN, create_response
 
