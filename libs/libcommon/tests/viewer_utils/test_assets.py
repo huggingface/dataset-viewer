@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import validators  # type: ignore
-from PIL import Image as PILImage  # type: ignore
+from PIL import Image as PILImage
 
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.asset import create_audio_file, create_image_file, generate_object_key
