@@ -67,7 +67,7 @@ jobs:
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
           HF_HUB_ENABLE_HF_TRANSFER: "1"
-        run: docker compose -f docker-compose-datasets-server.yml up -d --wait --wait-timeout 20
+        run: docker compose -f docker-compose-dataset-viewer.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry
         run: pipx install poetry==${{ env.poetry-version }}

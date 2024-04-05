@@ -1,6 +1,6 @@
 # Dataset viewer maintenance job
 
-> Job to run maintenance actions on the datasets-server
+> Job to run maintenance actions on the dataset viewer.
 
 Available actions:
 

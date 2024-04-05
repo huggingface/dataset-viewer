@@ -14,7 +14,7 @@
   {{- else }}
   value: {{ .Values.secrets.appParquetConverterHfToken.value }}
   {{- end }}
-  # ^ we use the same token (datasets-server-bot) for discussions and for uploading parquet files
+  # ^ we use the same token (dataset viewer bot) for discussions and for uploading parquet files
 - name: DISCUSSIONS_PARQUET_REVISION
   value: {{ .Values.parquetAndInfo.targetRevision | quote }}
 {{- end -}}

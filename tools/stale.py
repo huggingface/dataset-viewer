@@ -21,7 +21,7 @@ LABELS_TO_EXEMPT_IN_LOWERCASE = [label.lower() for label in ["P0", "P1", "P2"]]
 
 def main():
     g = Github(os.environ["GITHUB_TOKEN"])
-    repo = g.get_repo("huggingface/datasets-server")
+    repo = g.get_repo("huggingface/dataset-viewer")
     open_issues = repo.get_issues(state="open")
 
     for issue in open_issues:

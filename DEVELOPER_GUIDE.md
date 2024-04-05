@@ -7,8 +7,8 @@ This document is intended for developers who want to install, test or contribute
 To start working on the project:
 
 ```bash
-git clone git@github.com:huggingface/datasets-server.git
-cd datasets-server
+git clone git@github.com:huggingface/dataset-viewer.git
+cd dataset-viewer
 ```
 
 Install docker (see https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository and https://docs.docker.com/engine/install/linux-postinstall/)

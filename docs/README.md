@@ -48,7 +48,7 @@ The documentation is available at http://localhost:3000/.
 To build the documentation, launch:
 
 ```bash
-BUILD_DIR=/tmp/doc-datasets-server/ make build
+BUILD_DIR=/tmp/doc-dataset-viewer/ make build
 ```
 
 You can adapt the `BUILD_DIR` environment variable to set any temporary folder that you prefer. This command will create it and generate

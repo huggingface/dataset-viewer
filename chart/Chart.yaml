@@ -3,7 +3,7 @@
 
 apiVersion: v2
 name: datasets-server
-description: A Helm chart for the datasets-server application
+description: A Helm chart for the dataset-viewer application
 
 # A chart can be either an 'application' or a 'library' chart.
 #

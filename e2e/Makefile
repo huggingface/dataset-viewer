@@ -49,7 +49,7 @@ export S3_REGION_NAME := us-east-1
 export HF_HUB_ENABLE_HF_TRANSFER := 1
 
 # makefile variables
-DOCKER_COMPOSE := ../tools/docker-compose-datasets-server.yml
+DOCKER_COMPOSE := ../tools/docker-compose-dataset-viewer.yml
 
 include ../tools/Python.mk
 include ../tools/PythonTest.mk

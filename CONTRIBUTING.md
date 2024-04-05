@@ -33,8 +33,8 @@ If you would like to work on any of the open Issues:
 2. Clone your fork to your local disk, and add the base repository as a remote:
 
    ```bash
-   git clone git@github.com:<your Github handle>/datasets-server.git
-   cd datasets-server
+   git clone git@github.com:<your Github handle>/dataset-viewer.git
+   cd dataset-viewer
    git remote add upstream https://github.com/huggingface/dataset-viewer.git
    ```
 

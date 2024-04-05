@@ -6,7 +6,7 @@ A Python library with common code (cache, queue, workers logic, processing steps
 
 Set the assets (images and audio files) environment variables to configure the following aspects:
 
-- `ASSETS_BASE_URL`: base URL for the assets files. Set accordingly to the datasets-server domain, e.g., https://datasets-server.huggingface.co/assets. Defaults to `http://localhost/assets`.
+- `ASSETS_BASE_URL`: base URL for the assets files. Set accordingly to the dataset viewer domain, e.g., https://datasets-server.huggingface.co/assets. Defaults to `http://localhost/assets`.
 - `ASSETS_STORAGE_PROTOCOL`: fsspec protocol for storage, it can take values `file` or `s3`. Defaults to `file`, which means local file system is used.
 - `ASSETS_STORAGE_ROOT`: name of the folder where assets are stored. If using `s3` protocol, the first part of the path is the bucket name. Defaults to `/storage/assets`.
 
@@ -14,7 +14,7 @@ Set the assets (images and audio files) environment variables to configure the f
 
 Set the cached-assets (images and audio files) environment variables to configure the following aspects:
 
-- `CACHED_ASSETS_BASE_URL`: base URL for the cached assets files. Set accordingly to the datasets-server domain, e.g., https://datasets-server.huggingface.co/cached-assets. Defaults to `http://localhost/cached-assets`.
+- `CACHED_ASSETS_BASE_URL`: base URL for the cached assets files. Set accordingly to the dataset viewer domain, e.g., https://datasets-server.huggingface.co/cached-assets. Defaults to `http://localhost/cached-assets`.
 - `CACHED_ASSETS_STORAGE_PROTOCOL`: fsspec protocol for storage, it can take values `file` or `s3`. Defaults to `file`, which means local file system is used.
 - `CACHED_ASSETS_STORAGE_ROOT`: name of the folder where cached assets are stored. If using `s3` protocol, the first part of the path is the bucket name. Defaults to `/storage/cached-assets`.
 
