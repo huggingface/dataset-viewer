@@ -223,7 +223,7 @@ def test_normal_user_blocked_private(csv_path: str) -> None:
         token=NORMAL_USER_TOKEN,
         files={"data.csv": csv_path},
         dataset_prefix="blocked-",
-        # ^ should be caught by COMMON_BLOCKED_DATASETS := "DSSUser/blocked-*"
+        # ^ should be caught by COMMON_BLOCKED_DATASETS := "DVUser/blocked-*"
         repo_settings={"private": True},
     ) as dataset:
         poll_parquet_until_ready_and_assert(
@@ -240,7 +240,7 @@ def test_normal_user_blocked_public(csv_path: str) -> None:
         token=NORMAL_USER_TOKEN,
         files={"data.csv": csv_path},
         dataset_prefix="blocked-",
-        # ^ should be caught by COMMON_BLOCKED_DATASETS := "DSSUser/blocked-*"
+        # ^ should be caught by COMMON_BLOCKED_DATASETS := "DVUser/blocked-*"
     ) as dataset:
         poll_parquet_until_ready_and_assert(
             dataset=dataset, expected_status_code=501, expected_error_code="DatasetInBlockListError"

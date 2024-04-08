@@ -22,8 +22,8 @@ def monkeypatch_session(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Mo
     assets_root = str(tmp_path_factory.mktemp("assets_root"))
     monkeypatch_session.setenv("CACHED_ASSETS_STORAGE_ROOT", assets_root)
     monkeypatch_session.setenv("ASSETS_STORAGE_ROOT", assets_root)
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     hostname = "localhost"
     port = "8888"
     monkeypatch_session.setenv("API_HF_TIMEOUT_SECONDS", "10")

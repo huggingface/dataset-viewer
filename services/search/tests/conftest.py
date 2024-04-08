@@ -20,8 +20,8 @@ def monkeypatch_session(tmp_path_factory: TempPathFactory) -> Iterator[MonkeyPat
     assets_root = str(tmp_path_factory.mktemp("assets_root"))
     monkeypatch_session.setenv("CACHED_ASSETS_STORAGE_ROOT", assets_root)
     monkeypatch_session.setenv("ASSETS_STORAGE_ROOT", assets_root)
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     monkeypatch_session.setenv("CACHED_ASSETS_BASE_URL", "http://localhost/cached-assets")
     hostname = "localhost"
     port = "8888"

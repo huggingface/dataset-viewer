@@ -14,8 +14,6 @@ from libcommon.constants import DATASET_SEPARATOR
 from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_client import StorageClient
 
-ASSET_DIR_MODE = 0o755
-DATASETS_SERVER_MDATE_FILENAME = ".dss"
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
 
 
