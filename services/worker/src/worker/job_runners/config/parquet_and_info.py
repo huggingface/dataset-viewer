@@ -525,6 +525,9 @@ def copy_parquet_files(builder: DatasetBuilder) -> list[CommitOperationCopy]:
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
+    empty_splits = [split for split in data_files if not data_files[split]]
+    if empty_splits:
+        raise EmptyDatasetError(f"Empty parquet data_files for splits: {empty_splits}")
     parquet_operations = []
     total_num_parquet_files = sum(len(data_files[split]) for split in data_files)
     if total_num_parquet_files >= MAX_FILES_PER_DIRECTORY:
@@ -673,6 +676,9 @@ def fill_builder_info(
     data_files = builder.config.data_files
     if not data_files:
         raise EmptyDatasetError("Empty parquet data_files")
+    empty_splits = [split for split in data_files if not data_files[split]]
+    if empty_splits:
+        raise EmptyDatasetError(f"Empty parquet data_files for splits: {empty_splits}")
     builder.info.builder_name = builder.name
     builder.info.dataset_name = builder.dataset_name
     builder.info.config_name = builder.config.name
