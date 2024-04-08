@@ -11,6 +11,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
+fsspec = "~2023.10"
 huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
