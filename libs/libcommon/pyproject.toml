@@ -25,7 +25,6 @@ pyarrow = "^14.0.1"
 pydub = "^0.25.1"
 pymongo = { extras = ["srv"], version = "^4.5.0" }
 pytz = "^2020.1"
-s3fs = "^2023.10.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 tqdm = "^4.65.0"
