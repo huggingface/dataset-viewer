@@ -17,8 +17,8 @@ from sse_api.config import AppConfig
 @pytest.fixture(scope="session")
 def monkeypatch_session() -> Iterator[pytest.MonkeyPatch]:
     monkeypatch_session = pytest.MonkeyPatch()
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     hostname = "localhost"
     port = "8888"
     monkeypatch_session.setenv("API_HF_TIMEOUT_SECONDS", "10")
@@ -55,7 +55,7 @@ def cache_mongo_host(env: Env) -> str:
 
 @pytest.fixture(scope="function")
 def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
-    database = "datasets_server_cache_test"
+    database = "dataset_viewer_cache_test"
     host = cache_mongo_host
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
