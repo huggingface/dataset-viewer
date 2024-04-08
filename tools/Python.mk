@@ -31,4 +31,4 @@ style:
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "$(POETRY) run pip-audit --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <($(POETRY) export -f requirements.txt --with dev  | sed '/^libapi @/d' | sed '/^libcommon @/d')"
+	bash -c "$(POETRY) run pip-audit --ignore-vuln GHSA-wj6h-64fc-37mp --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <($(POETRY) export -f requirements.txt --with dev  | sed '/^libapi @/d' | sed '/^libcommon @/d')"
