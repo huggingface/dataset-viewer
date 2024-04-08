@@ -34,5 +34,5 @@ style:
 
 .PHONY: pip-audit
 pip-audit:
-	bash -c "$(POETRY) run pip-audit --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <(poetry export -f requirements.txt --with dev  | sed '/^kenlm @/d' |sed '/^torch @/d' | sed '/^libapi @/d' | sed '/^libcommon @/d' | sed '/^trec-car-tools @/d')"
+	bash -c "$(POETRY) run pip-audit --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <(poetry export -f requirements.txt --with dev  | sed '/^libapi @/d' | sed '/^libcommon @/d')"
 # ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"
