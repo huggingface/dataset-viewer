@@ -22,9 +22,6 @@ quality:
 	$(POETRY) run mypy tests src
 	$(POETRY) run bandit -r src
 
-#$(MAKE) pip-audit
-# ^ 20231121 - disabled until we upgrade to huggingface-hub@0.20
-
 # Format source code automatically
 .PHONY: style
 style:
@@ -35,4 +32,3 @@ style:
 .PHONY: pip-audit
 pip-audit:
 	bash -c "$(POETRY) run pip-audit --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <($(POETRY) export -f requirements.txt --with dev  | sed '/^libapi @/d' | sed '/^libcommon @/d')"
-# ^ we remove problematic lines to have a working pip-audit. See https://github.com/pypa/pip-audit/issues/84#issuecomment-1326203111 for "requests"
