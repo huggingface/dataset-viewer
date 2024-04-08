@@ -51,7 +51,7 @@ jobs:
           WORKER_SLEEP_SECONDS: "1"
           MONGO_PORT: ${{ env.mongo-port }}
           MONGO_REPLICASET: ${{ env.replicaset }}
-          COMMON_BLOCKED_DATASETS: "DSSUser/blocked-*"
+          COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
           # the containers need to access S3 and Cloudfront
@@ -109,7 +109,7 @@ jobs:
           PORT_REVERSE_PROXY: "8000"
           PROMETHEUS_MULTIPROC_DIR: "/tmp"
           WORKER_SLEEP_SECONDS: "1"
-          COMMON_BLOCKED_DATASETS: "DSSUser/blocked-*"
+          COMMON_BLOCKED_DATASETS: "DVUser/blocked-*"
           ADMIN_HF_ORGANIZATION: "valid_org"
           E2E_ADMIN_USER_TOKEN: "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"
         run: |

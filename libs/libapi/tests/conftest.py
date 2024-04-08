@@ -59,8 +59,8 @@ def image_path() -> str:
 @fixture(scope="session")
 def monkeypatch_session(tmp_path_factory: TempPathFactory) -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     yield monkeypatch_session
     monkeypatch_session.undo()
 

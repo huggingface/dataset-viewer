@@ -18,14 +18,14 @@ matplotlib.use("SVG")
 
 DEV = os.environ.get("DEV", False)
 HF_ENDPOINT = os.environ.get("HF_ENDPOINT", "https://huggingface.co")
-PROD_DSS_ENDPOINT = os.environ.get(
-    "PROD_DSS_ENDPOINT", "https://datasets-server.huggingface.co"
+PROD_DV_ENDPOINT = os.environ.get(
+    "PROD_DV_ENDPOINT", "https://datasets-server.huggingface.co"
 )
-DEV_DSS_ENDPOINT = os.environ.get("DEV_DSS_ENDPOINT", "http://localhost:8100")
+DEV_DV_ENDPOINT = os.environ.get("DEV_DV_ENDPOINT", "http://localhost:8100")
 ADMIN_HF_ORGANIZATION = os.environ.get("ADMIN_HF_ORGANIZATION", "huggingface")
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
-DSS_ENDPOINT = DEV_DSS_ENDPOINT if DEV else PROD_DSS_ENDPOINT
+DV_ENDPOINT = DEV_DV_ENDPOINT if DEV else PROD_DV_ENDPOINT
 
 
 # global state (shared with all the user sessions)
@@ -34,13 +34,13 @@ pending_jobs_df = None
 
 def healthcheck():
     try:
-        response = requests.head(f"{DSS_ENDPOINT}/admin/healthcheck", timeout=10)
+        response = requests.head(f"{DV_ENDPOINT}/admin/healthcheck", timeout=10)
     except requests.ConnectionError as error:
-        return f"❌ Failed to connect to {DSS_ENDPOINT} (error {error})"
+        return f"❌ Failed to connect to {DV_ENDPOINT} (error {error})"
     if response.status_code == 200:
-        return f"*Connected to {DSS_ENDPOINT}*"
+        return f"*Connected to {DV_ENDPOINT}*"
     else:
-        return f"❌ Failed to connect to {DSS_ENDPOINT} (error {response.status_code})"
+        return f"❌ Failed to connect to {DV_ENDPOINT} (error {response.status_code})"
 
 
 def draw_graph(width, height):
@@ -126,7 +126,7 @@ with gr.Blocks() as demo:
                     }
                     headers = {"Authorization": f"Bearer {token}"}
                     response = requests.get(
-                        f"{DSS_ENDPOINT}/admin/num-dataset-infos-by-builder-name",
+                        f"{DV_ENDPOINT}/admin/num-dataset-infos-by-builder-name",
                         headers=headers,
                         timeout=60,
                     )
@@ -165,7 +165,7 @@ with gr.Blocks() as demo:
                             value=pd.DataFrame(
                                 {
                                     "Error": [
-                                        f"❌ Failed to fetch dataset infos from {DSS_ENDPOINT} (error {response.status_code})"
+                                        f"❌ Failed to fetch dataset infos from {DV_ENDPOINT} (error {response.status_code})"
                                     ]
                                 }
                             ),
@@ -181,7 +181,7 @@ with gr.Blocks() as demo:
 
                         def get_is_valid_response(dataset: str):
                             return requests.get(
-                                f"{DSS_ENDPOINT}/is-valid?dataset={dataset}",
+                                f"{DV_ENDPOINT}/is-valid?dataset={dataset}",
                                 headers=headers,
                                 timeout=60,
                             )
@@ -289,7 +289,7 @@ with gr.Blocks() as demo:
                     global pending_jobs_df
                     headers = {"Authorization": f"Bearer {token}"}
                     response = requests.get(
-                        f"{DSS_ENDPOINT}/admin/pending-jobs",
+                        f"{DV_ENDPOINT}/admin/pending-jobs",
                         headers=headers,
                         timeout=60,
                     )
@@ -346,7 +346,7 @@ with gr.Blocks() as demo:
                                 value=pd.DataFrame(
                                     {
                                         "Error": [
-                                            f"❌ Failed to view pending jobs to {DSS_ENDPOINT} (error {response.status_code})"
+                                            f"❌ Failed to view pending jobs to {DV_ENDPOINT} (error {response.status_code})"
                                         ]
                                     }
                                 ),
@@ -478,7 +478,7 @@ with gr.Blocks() as demo:
                             params["difficulty"] = refresh_difficulty
                         params = urllib.parse.urlencode(params)
                         response = requests.post(
-                            f"{DSS_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}",
+                            f"{DV_ENDPOINT}/admin/force-refresh/{refresh_type}?{params}",
                             headers=headers,
                             timeout=60,
                         )
@@ -542,7 +542,7 @@ with gr.Blocks() as demo:
                     }
                     params = urllib.parse.urlencode(params)
                     response = requests.post(
-                        f"{DSS_ENDPOINT}/admin/recreate-dataset?{params}",
+                        f"{DV_ENDPOINT}/admin/recreate-dataset?{params}",
                         headers=headers,
                         timeout=60,
                     )
@@ -577,7 +577,7 @@ with gr.Blocks() as demo:
                 def get_dataset_status(token, dataset):
                     headers = {"Authorization": f"Bearer {token}"}
                     response = requests.get(
-                        f"{DSS_ENDPOINT}/admin/dataset-status?dataset={dataset}",
+                        f"{DV_ENDPOINT}/admin/dataset-status?dataset={dataset}",
                         headers=headers,
                         timeout=60,
                     )

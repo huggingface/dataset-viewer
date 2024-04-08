@@ -47,7 +47,7 @@ def queue_mongo_host(env: Env) -> str:
 
 @fixture
 def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
-    database = "datasets_server_queue_test"
+    database = "dataset_viewer_queue_test"
     host = queue_mongo_host
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
@@ -61,7 +61,7 @@ def queue_mongo_resource(queue_mongo_host: str) -> Iterator[QueueMongoResource]:
 
 @fixture
 def cache_mongo_resource(cache_mongo_host: str) -> Iterator[CacheMongoResource]:
-    database = "datasets_server_cache_test"
+    database = "dataset_viewer_cache_test"
     host = cache_mongo_host
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")

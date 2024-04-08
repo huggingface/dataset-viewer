@@ -37,7 +37,7 @@ def get_job_info(prefix: str = "base") -> JobInfo:
         job_id=job_id + "0" * (24 - len(job_id)),
         type="dataset-config-names",
         params={
-            "dataset": f"DSSUser/{prefix}_dataset_{_TIME}",
+            "dataset": f"DVUser/{prefix}_dataset_{_TIME}",
             "revision": "revision",
             "config": "default",
             "split": "train",

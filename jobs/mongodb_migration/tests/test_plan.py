@@ -17,7 +17,7 @@ from mongodb_migration.resources import MigrationsMongoResource
 
 @pytest.fixture(autouse=True)
 def migrations_mongo_resource(mongo_host: str) -> Iterator[MigrationsMongoResource]:
-    database = "datasets_server_migrations_test"
+    database = "dataset_viewer_migrations_test"
     if "test" not in database:
         raise ValueError("Test must be launched on a test mongo database")
     with MigrationsMongoResource(database=database, host=mongo_host) as resource:

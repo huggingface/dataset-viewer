@@ -78,8 +78,8 @@ def set_env_vars(
     datasets_cache_directory: Path, modules_cache_directory: Path, worker_state_file_path: str
 ) -> Iterator[MonkeyPatch]:
     mp = MonkeyPatch()
-    mp.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    mp.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    mp.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    mp.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     mp.setenv("COMMON_HF_ENDPOINT", CI_HUB_ENDPOINT)
     mp.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
     mp.setenv("ASSETS_BASE_URL", "http://localhost/assets")
