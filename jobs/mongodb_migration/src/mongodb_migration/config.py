@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from environs import Env
 from libcommon.config import CacheConfig, LogConfig, QueueConfig
 
-DATABASE_MIGRATIONS_MONGO_DATABASE = "datasets_server_maintenance"
+DATABASE_MIGRATIONS_MONGO_DATABASE = "dataset_viewer_maintenance"
 DATABASE_MIGRATIONS_MONGO_URL = "mongodb://localhost:27017"
 
 

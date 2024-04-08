@@ -22,8 +22,8 @@ from .constants import (
 @fixture(scope="session")
 def monkeypatch_session() -> Iterator[MonkeyPatch]:
     monkeypatch_session = MonkeyPatch()
-    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch_session.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch_session.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     monkeypatch_session.setenv("COMMON_HF_ENDPOINT", CI_HUB_ENDPOINT)
     monkeypatch_session.setenv("COMMON_HF_TOKEN", CI_APP_TOKEN)
     monkeypatch_session.setenv("DISCUSSIONS_BOT_ASSOCIATED_USER_NAME", CI_PARQUET_CONVERTER_USER)

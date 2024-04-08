@@ -12,7 +12,7 @@ pinned: false
 
 ## Datasets-server Admin UI
 
-Deployed at (internal) https://huggingface.co/spaces/datasets-maintainers/datasets-server-admin-ui
+Deployed at (internal) https://huggingface.co/spaces/datasets-maintainers/dataset-viewer-admin-ui
 
 ### Setup:
 

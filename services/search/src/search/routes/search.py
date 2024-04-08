@@ -53,6 +53,13 @@ JOIN_STAGE_AND_DATA_COMMAND = (
     "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
 )
 
+SPLITS_WITH_LOCAL_STORAGE = [
+    "wikimedia/wikipedia-20231101.en-train",
+    "MohamedRashad/Arabic-CivitAi-Images-default-train",
+    "jp1924/VIsualQuestionAnswering-default-train",
+    "asoria/search_test-default-train",
+]
+
 
 def full_text_search(
     index_file_location: str,
@@ -183,8 +190,13 @@ def create_search_endpoint(
                     partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
+                    duckdb_index_file_downloads = (
+                        "/tmp"  # nosec - will be reverted after testing
+                        if f"{dataset}-{config}-{split}" in SPLITS_WITH_LOCAL_STORAGE
+                        else duckdb_index_file_directory
+                    )
                     index_file_location = await get_index_file_location_and_download_if_missing(
-                        duckdb_index_file_directory=duckdb_index_file_directory,
+                        duckdb_index_file_directory=duckdb_index_file_downloads,
                         dataset=dataset,
                         config=config,
                         split=split,

@@ -15,7 +15,7 @@ from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import hf_raise_for_status
 
 # see https://github.com/huggingface/moon-landing/blob/main/server/scripts/staging-seed-db.ts
-CI_HUB_USER = "DSSUser"
+CI_HUB_USER = "DVUser"
 CI_HUB_USER_API_TOKEN = "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"
 
 CI_HUB_ENDPOINT = "https://hub-ci.huggingface.co"

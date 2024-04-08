@@ -16,8 +16,8 @@ API_HF_WEBHOOK_SECRET = "some secret"
 @fixture(scope="module")
 def real_monkeypatch() -> Iterator[MonkeyPatch]:
     monkeypatch = MonkeyPatch()
-    monkeypatch.setenv("CACHE_MONGO_DATABASE", "datasets_server_cache_test")
-    monkeypatch.setenv("QUEUE_MONGO_DATABASE", "datasets_server_queue_test")
+    monkeypatch.setenv("CACHE_MONGO_DATABASE", "dataset_viewer_cache_test")
+    monkeypatch.setenv("QUEUE_MONGO_DATABASE", "dataset_viewer_queue_test")
     monkeypatch.setenv("COMMON_HF_ENDPOINT", "https://huggingface.co")
     monkeypatch.setenv("COMMON_HF_TOKEN", "")
     monkeypatch.setenv("API_HF_WEBHOOK_SECRET", API_HF_WEBHOOK_SECRET)
