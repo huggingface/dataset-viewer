@@ -17,10 +17,10 @@ from libcommon.resources import (
 
 
 def test_database_resource(queue_mongo_host: str) -> None:
-    database_1 = "datasets_server_1"
-    database_2 = "datasets_server_2"
+    database_1 = "dataset_viewer_1"
+    database_2 = "dataset_viewer_2"
     host = queue_mongo_host
-    mongoengine_alias = "datasets_server_mongo_alias"
+    mongoengine_alias = "dataset_viewer_mongo_alias"
     server_selection_timeout_ms = 5_000
     resource_1 = MongoResource(
         database=database_1,
@@ -63,7 +63,7 @@ def test_database_resource_errors(
 ) -> None:
     if not host:
         host = queue_mongo_host
-    database = "datasets_server_test"
+    database = "dataset_viewer_test"
     resource = MongoResource(
         database=database,
         host=host,

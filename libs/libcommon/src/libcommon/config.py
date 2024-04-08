@@ -173,7 +173,7 @@ class LogConfig:
             )
 
 
-CACHE_MONGO_DATABASE = "datasets_server_cache"
+CACHE_MONGO_DATABASE = "dataset_viewer_cache"
 CACHE_MONGO_URL = "mongodb://localhost:27017"
 
 
@@ -192,7 +192,7 @@ class CacheConfig:
             )
 
 
-QUEUE_MONGO_DATABASE = "datasets_server_queue"
+QUEUE_MONGO_DATABASE = "dataset_viewer_queue"
 QUEUE_MONGO_URL = "mongodb://localhost:27017"
 
 
