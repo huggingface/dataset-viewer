@@ -43,3 +43,17 @@ e2e:
 	$(MAKE) -C e2e/ e2e
 
 # for install, quality checks and tests of every job, lib, service or worker, see the Makefile in the corresponding folder
+
+.PHONY: install
+install:
+	$(MAKE) -C libs/libcommon install
+	$(MAKE) -C libs/libapi install
+	$(MAKE) -C jobs/cache_maintenance install
+	$(MAKE) -C jobs/mongodb_migration install
+	$(MAKE) -C services/admin install
+	$(MAKE) -C services/api install
+	$(MAKE) -C services/rows install
+	$(MAKE) -C services/search install
+	$(MAKE) -C services/sse-api install
+	$(MAKE) -C services/worker install
+	$(MAKE) -C e2e install
