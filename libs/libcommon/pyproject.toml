@@ -11,6 +11,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
+fsspec = {version = "~2023.10", extras = ["s3"]}
 huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
@@ -24,12 +25,12 @@ pyarrow = "^14.0.1"
 pydub = "^0.25.1"
 pymongo = { extras = ["srv"], version = "^4.6.3" }
 pytz = "^2020.1"
-s3fs = "^2023.10.0"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
 tqdm = "^4.65.0"
 
 [tool.poetry.group.dev.dependencies]
+aiobotocore = "^2.7.0"
 bandit = "^1.7.4"
 boto3 = "^1.28.0"
 httpx = "^0.26.0"
