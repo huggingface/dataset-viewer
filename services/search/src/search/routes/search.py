@@ -53,9 +53,7 @@ JOIN_STAGE_AND_DATA_COMMAND = (
     "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
 )
 
-SPLITS_WITH_LOCAL_STORAGE = [
-    "jp1924/VisualQuestionAnswering-default-train",
-]
+SPLITS_WITH_LOCAL_STORAGE = ["jp1924/VisualQuestionAnswering-default-train", "ad6398/Deepmind-CodeContest-Unrolled"]
 
 
 def full_text_search(
@@ -68,7 +66,7 @@ def full_text_search(
     with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
         fts_stage_table = con.execute(query=FTS_STAGE_TABLE_COMMAND, parameters=[query]).arrow()
         num_rows_total = fts_stage_table.num_rows
-        logging.debug(f"got {num_rows_total=} results for {query=} using stage table {offset=} {length=}")
+        logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
         fts_stage_table = fts_stage_table.sort_by([("__hf_fts_score", "descending")]).slice(offset, length)
         pa_table = con.execute(query=JOIN_STAGE_AND_DATA_COMMAND).arrow()
     return num_rows_total, pa_table
@@ -93,7 +91,7 @@ async def create_response(
         features,
     )
     pa_table = pa_table.drop(unsupported_columns)
-    logging.debug(f"create response for {dataset=} {config=} {split=}")
+    logging.info(f"create response for {dataset=} {config=} {split=}")
 
     return PaginatedResponse(
         features=to_features_list(features_without_key),
@@ -238,6 +236,7 @@ def create_search_endpoint(
                         num_rows_total=num_rows_total,
                         partial=partial,
                     )
+                    logging.info(f"transform rows finished for {dataset=} {config=} {split=}")
                 with StepProfiler(method="search_endpoint", step="generate the OK response"):
                     return get_json_ok_response(response, max_age=max_age_long, revision=revision)
             except Exception as e:
