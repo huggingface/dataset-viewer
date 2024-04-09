@@ -802,6 +802,7 @@ files = [
 [package.dependencies]
 aiohttp = {version = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1", optional = true, markers = "extra == \"http\""}
 requests = {version = "*", optional = true, markers = "extra == \"http\""}
+s3fs = {version = "*", optional = true, markers = "extra == \"s3\""}
 
 [package.extras]
 abfs = ["adlfs"]
@@ -3700,4 +3701,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.18"
-content-hash = "1032d1aa168d7cb9ee28591c3a4ca96ce915e5b8421192e1cf8771b155704f70"
+content-hash = "14f7033e65f69d02d3262e3acd68c825f1c0ad6b078fe2435a4306de3830c84b"
