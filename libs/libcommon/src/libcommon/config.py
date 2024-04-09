@@ -11,14 +11,14 @@ from environs import Env
 StorageProtocol = Literal["file", "s3"]
 
 ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_STORAGE_PROTOCOL = "file"
+ASSETS_STORAGE_PROTOCOL: StorageProtocol = "file"
 ASSETS_STORAGE_ROOT = "/storage/assets"
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_protocol: str = ASSETS_STORAGE_PROTOCOL
+    storage_protocol: StorageProtocol = ASSETS_STORAGE_PROTOCOL
     storage_root: str = ASSETS_STORAGE_ROOT
 
     @classmethod
@@ -55,14 +55,14 @@ class S3Config:
 
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_STORAGE_PROTOCOL = "file"
+CACHED_ASSETS_STORAGE_PROTOCOL: StorageProtocol = "file"
 CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
     base_url: str = CACHED_ASSETS_BASE_URL
-    storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
+    storage_protocol: StorageProtocol = CACHED_ASSETS_STORAGE_PROTOCOL
     storage_root: str = CACHED_ASSETS_STORAGE_ROOT
 
     @classmethod
