@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 import logging
-from typing import Any, Optional
+from typing import Literal, Optional, Union, cast
 
 import fsspec
+from fsspec.implementations.local import LocalFileSystem
+from s3fs import S3FileSystem  # type: ignore
 
 from libcommon.config import S3Config
 from libcommon.url_signer import URLSigner
@@ -26,8 +28,8 @@ class StorageClient:
         url_signer (`URLSigner`, *optional*): The url signer to use for signing urls
     """
 
-    _fs: Any
-    protocol: str
+    _fs: Union[LocalFileSystem, S3FileSystem]
+    protocol: Literal["file", "s3"]
     storage_root: str
     base_url: str
     overwrite: bool
@@ -44,7 +46,7 @@ class StorageClient:
     ) -> None:
         logging.info(f"trying to initialize storage client with {protocol=} {storage_root=} {base_url=} {overwrite=}")
         self.storage_root = storage_root
-        self.protocol = protocol
+        self.protocol = cast(Literal["file", "s3"], protocol)
         self.base_url = base_url
         self.overwrite = overwrite
         self.url_signer = url_signer
