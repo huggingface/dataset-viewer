@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Literal, Optional
 
 from environs import Env
+from marshmallow.validate import OneOf
 
 StorageProtocol = Literal["file", "s3"]
 
@@ -27,7 +28,11 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=ASSETS_STORAGE_PROTOCOL),
+                storage_protocol=env.str(
+                    name="STORAGE_PROTOCOL",
+                    default=ASSETS_STORAGE_PROTOCOL,
+                    validate=OneOf(["file", "s3"], error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+                ),
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
 
@@ -71,7 +76,11 @@ class CachedAssetsConfig:
         with env.prefixed("CACHED_ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
+                storage_protocol=env.str(
+                    name="STORAGE_PROTOCOL",
+                    default=CACHED_ASSETS_STORAGE_PROTOCOL,
+                    validate=OneOf(["file", "s3"], error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+                ),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )
 
