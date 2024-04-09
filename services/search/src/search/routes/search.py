@@ -53,9 +53,7 @@ JOIN_STAGE_AND_DATA_COMMAND = (
     "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
 )
 
-SPLITS_WITH_LOCAL_STORAGE = [
-    "jp1924/VisualQuestionAnswering-default-train",
-]
+SPLITS_WITH_LOCAL_STORAGE = ["jp1924/VisualQuestionAnswering-default-train", "ad6398/Deepmind-CodeContest-Unrolled"]
 
 
 def full_text_search(
