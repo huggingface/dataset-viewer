@@ -4,9 +4,11 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Literal, Optional
 
 from environs import Env
+
+StorageProtocol = Literal["file", "s3"]
 
 ASSETS_BASE_URL = "http://localhost/assets"
 ASSETS_STORAGE_PROTOCOL = "file"

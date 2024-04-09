@@ -7,7 +7,7 @@ import fsspec
 from fsspec.implementations.local import LocalFileSystem
 from s3fs import S3FileSystem  # type: ignore
 
-from libcommon.config import S3Config
+from libcommon.config import S3Config, StorageProtocol
 from libcommon.url_signer import URLSigner
 
 
@@ -29,7 +29,7 @@ class StorageClient:
     """
 
     _fs: Union[LocalFileSystem, S3FileSystem]
-    protocol: Literal["file", "s3"]
+    protocol: StorageProtocol
     storage_root: str
     base_url: str
     overwrite: bool
