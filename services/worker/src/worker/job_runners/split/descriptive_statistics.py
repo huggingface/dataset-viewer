@@ -776,9 +776,7 @@ def compute_descriptive_statistics_response(
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
     local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
-    num_examples = pl.read_parquet(
-        local_parquet_split_glob, columns=[pl.scan_parquet(local_parquet_split_glob).columns[0]]
-    ).shape[0]
+    num_examples = pq.read_table(local_parquet_split_directory, columns=[next(iter(features))]).shape[0]
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
