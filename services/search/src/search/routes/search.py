@@ -54,10 +54,7 @@ JOIN_STAGE_AND_DATA_COMMAND = (
 )
 
 SPLITS_WITH_LOCAL_STORAGE = [
-    "wikimedia/wikipedia-20231101.en-train",
-    "MohamedRashad/Arabic-CivitAi-Images-default-train",
-    "jp1924/VIsualQuestionAnswering-default-train",
-    "asoria/search_test-default-train",
+    "jp1924/VisualQuestionAnswering-default-train",
 ]
 
 

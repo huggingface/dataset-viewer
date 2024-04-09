@@ -23,7 +23,7 @@ pillow = "^10.3.0"
 psutil = "^5.9.4"
 pyarrow = "^14.0.1"
 pydub = "^0.25.1"
-pymongo = { extras = ["srv"], version = "^4.5.0" }
+pymongo = { extras = ["srv"], version = "^4.6.3" }
 pytz = "^2020.1"
 soundfile = ">=0.12.1"
 starlette-prometheus = "^0.9.0"
