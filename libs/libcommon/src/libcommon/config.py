@@ -9,6 +9,7 @@ from typing import Literal, Optional
 from environs import Env
 from marshmallow.validate import OneOf
 
+STORAGE_PROTOCOL_VALUES: list[str] = ["file", "s3"]
 StorageProtocol = Literal["file", "s3"]
 
 ASSETS_BASE_URL = "http://localhost/assets"
@@ -31,7 +32,7 @@ class AssetsConfig:
                 storage_protocol=env.str(
                     name="STORAGE_PROTOCOL",
                     default=ASSETS_STORAGE_PROTOCOL,
-                    validate=OneOf(["file", "s3"], error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+                    validate=OneOf(STORAGE_PROTOCOL_VALUES, error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
                 ),
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
@@ -79,7 +80,9 @@ class CachedAssetsConfig:
                 storage_protocol=env.str(
                     name="STORAGE_PROTOCOL",
                     default=CACHED_ASSETS_STORAGE_PROTOCOL,
-                    validate=OneOf(["file", "s3"], error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+                    validate=OneOf(
+                        STORAGE_PROTOCOL_VALUES, error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"
+                    ),
                 ),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )
