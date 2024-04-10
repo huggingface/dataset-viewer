@@ -7,6 +7,7 @@ from pathlib import Path
 
 import duckdb
 import pyarrow as pa
+import pyarrow.compute as pc
 import pytest
 from datasets import Dataset
 from libapi.exceptions import InvalidParameterError
@@ -72,19 +73,37 @@ def test_validate_where_parameter_raises(where: str) -> None:
 
 
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
-def test_execute_filter_query(index_file_location: str, columns: list[str]) -> None:
+@pytest.mark.parametrize("orderby", ["", "age", "age DESC"])
+def test_execute_filter_query(columns: list[str], orderby: str, index_file_location: str) -> None:
     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
     # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
-    columns.append(ROW_IDX_COLUMN)
+    columns = columns + [ROW_IDX_COLUMN]
     where, limit, offset = "gender='female'", 1, 1
     num_rows_total, pa_table = execute_filter_query(
-        index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
+        index_file_location=index_file_location,
+        columns=columns,
+        where=where,
+        orderby=orderby,
+        limit=limit,
+        offset=offset,
     )
     assert num_rows_total == 2
-    expected = pa.Table.from_pydict(
-        {"__hf_index_id": [3], "name": ["Simone"], "gender": ["female"], "age": [30]}
-    ).select(columns)
-    assert pa_table == expected
+    expected_pa_table = pa.Table.from_pydict(
+        {
+            "__hf_index_id": [0, 1, 2, 3],
+            "name": ["Marie", "Paul", "Leo", "Simone"],
+            "gender": ["female", "male", "male", "female"],
+            "age": [35, 30, 25, 30],
+        }
+    ).filter(pc.field("gender") == "female")
+    if orderby:
+        if orderby.endswith(" DESC"):
+            sorting = [(orderby.removesuffix(" DESC"), "descending")]
+            expected_pa_table = expected_pa_table.sort_by(sorting)
+        else:
+            expected_pa_table = expected_pa_table.sort_by(orderby)
+    expected_pa_table = expected_pa_table.slice(offset, limit).select(columns)
+    assert pa_table == expected_pa_table
 
 
 @pytest.mark.parametrize("where", ["non-existing-column=30", "name=30", "name>30"])
@@ -92,7 +111,12 @@ def test_execute_filter_query_raises(where: str, index_file_location: str) -> No
     columns, limit, offset = ["name", "gender", "age"], 100, 0
     with pytest.raises(InvalidParameterError):
         _ = execute_filter_query(
-            index_file_location=index_file_location, columns=columns, where=where, limit=limit, offset=offset
+            index_file_location=index_file_location,
+            columns=columns,
+            where=where,
+            orderby="",
+            limit=limit,
+            offset=offset,
         )
 
 
