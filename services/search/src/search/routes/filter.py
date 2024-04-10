@@ -42,6 +42,7 @@ FILTER_QUERY = """\
     SELECT {columns}
     FROM data
     WHERE {where}
+    {orderby}
     LIMIT {limit}
     OFFSET {offset}"""
 
@@ -82,9 +83,12 @@ def create_filter_endpoint(
                     split = get_request_parameter(request, "split", required=True)
                     where = get_request_parameter(request, "where", required=True)
                     validate_where_parameter(where)
+                    orderby = get_request_parameter(request, "orderby")
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
-                    logger.info(f"/filter, {dataset=}, {config=}, {split=}, {where=}, {offset=}, {length=}")
+                    logger.info(
+                        f"/filter, {dataset=}, {config=}, {split=}, {where=}, {orderby=}, {offset=}, {length=}"
+                    )
                 with StepProfiler(method="filter_endpoint", step="check authentication"):
                     # If auth_check fails, it will raise an exception that will be caught below
                     await auth_check(
@@ -149,6 +153,7 @@ def create_filter_endpoint(
                         index_file_location,
                         supported_columns,
                         where,
+                        orderby,
                         length,
                         offset,
                         extensions_directory,
@@ -182,6 +187,7 @@ def execute_filter_query(
     index_file_location: str,
     columns: list[str],
     where: str,
+    orderby: str,
     limit: int,
     offset: int,
     extensions_directory: Optional[str] = None,
@@ -190,6 +196,7 @@ def execute_filter_query(
         filter_query = FILTER_QUERY.format(
             columns=",".join([f'"{column}"' for column in columns]),
             where=where,
+            orderby=f"ORDER BY {orderby}" if orderby else "",
             limit=limit,
             offset=offset,
         )
