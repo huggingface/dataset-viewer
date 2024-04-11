@@ -12,6 +12,7 @@ from typing import Any, Callable, Optional, TypedDict, Union
 import librosa
 import numpy as np
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
 from libcommon.dtos import JobInfo
@@ -32,7 +33,6 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
-from pyarrow import LargeListType, ListType
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -777,7 +777,7 @@ def compute_descriptive_statistics_response(
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
 
     pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
-    num_examples = sum(fragment.metadata.num_rows for fragment in ds.fragments)
+    num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -789,7 +789,7 @@ def compute_descriptive_statistics_response(
             feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if pyarrow.types.is_list(feature_arrow_type) or pyarrow.types.is_large_list(feature_arrow_type)
+            if pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
