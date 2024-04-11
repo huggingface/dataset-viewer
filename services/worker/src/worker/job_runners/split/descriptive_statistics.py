@@ -14,8 +14,8 @@ import numpy as np
 import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import Features
-from datasets.features.features import _ArrayXD, _visit
+from datasets import Features, Sequence
+from datasets.features.features import FeatureType, _ArrayXD
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -660,18 +660,22 @@ class AudioColumn(Column):
 SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
 
 
-def has_extension_feature(features: dict[str, Any]) -> bool:
-    """
-    Return True if set of features has at least one, possibly nested, arrow extension feature: Array2D, Array3D, Array4D,
-    or Array5D. Return False otherwise.
-    """
+def is_extension(feature: FeatureType) -> bool:
+    """Check if a (possibly nested) feature is an arrow extension feature (Array2D, Array3D, Array4D, or Array5D)."""
+    if isinstance(feature, dict):
+        return any(is_extension(f) for f in feature.values())
+    elif isinstance(feature, (list, tuple)):
+        return any(is_extension(f) for f in feature)
+    elif isinstance(feature, Sequence):
+        return is_extension(feature.feature)
+    else:
+        return isinstance(feature, _ArrayXD)
+
+
+def get_extension_features(features: dict[str, Any]) -> set[str]:
+    """Return set of names of extension features (Array2D, Array3D, Array4D, or Array5D) within provided features."""
     features = Features.from_dict(features)
-    extension_feature_found = False
-    def find_extension_feature(feature):
-        nonlocal extension_feature_found
-        extension_feature_found = extension_feature_found or isinstance(feature, _ArrayXD)
-    _visit(features, find_extension_feature)
-    return extension_feature_found
+    return {feature_name for feature_name, feature in features.items() if is_extension(feature)}
 
 
 def compute_descriptive_statistics_response(
@@ -793,7 +797,12 @@ def compute_descriptive_statistics_response(
 
     pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
-    split_has_extension_feature = has_extension_feature(features)
+    split_extension_features = get_extension_features(features)
+    features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if feature_name not in split_extension_features
+    }
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -863,7 +872,7 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                if split_has_extension_feature:
+                if split_extension_features:
                     data = pl.from_arrow(pq.read_table(local_parquet_split_directory, columns=[column.name]))
                     assert isinstance(data, pl.DataFrame)  # type narrowing
                 else:
