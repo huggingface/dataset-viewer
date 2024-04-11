@@ -775,7 +775,6 @@ def compute_descriptive_statistics_response(
         )
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
-    local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
     num_examples = pq.read_table(local_parquet_split_directory).shape[0]
 
@@ -851,7 +850,7 @@ def compute_descriptive_statistics_response(
                 data: pl.DataFrame = pl.DataFrame._from_arrow(table)
             except Exception as error:
                 raise PolarsParquetReadError(
-                    f"Error reading parquet file(s) at {local_parquet_split_glob=}, columns=[{column.name}]: {error}",
+                    f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
                     error,
                 )
             column_stats = column.compute_and_prepare_response(data)
