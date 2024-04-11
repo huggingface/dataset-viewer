@@ -15,6 +15,7 @@ import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features
+from datasets.features.features import _ArrayXD, _visit
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -659,6 +660,18 @@ class AudioColumn(Column):
 SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
 
 
+def has_extension_feature(features: dict[str, Any]) -> bool:
+    """
+    Return True if set of features has at least one, possibly nested, arrow extension feature: Array2D, Array3D, Array4D,
+    or Array5D. Return False otherwise.
+    """
+    features = Features.from_dict(features)
+    for feature_name, feature in features.items():
+        if _visit(feature, lambda feature: isinstance(feature, _ArrayXD)):
+            return True
+    return False
+
+
 def compute_descriptive_statistics_response(
     dataset: str,
     config: str,
@@ -778,6 +791,7 @@ def compute_descriptive_statistics_response(
 
     pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
     num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
+    split_has_extension_feature = has_extension_feature(features)
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -847,9 +861,11 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                table = pq.read_table(local_parquet_split_directory, columns=[column.name])
-                data = pl.from_arrow(table)
-                assert isinstance(data, pl.DataFrame)  # type narrowing
+                if split_has_extension_feature:
+                    data = pl.from_arrow(pq.read_table(local_parquet_split_directory, columns=[column.name]))
+                    assert isinstance(data, pl.DataFrame)  # type narrowing
+                else:
+                    data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
             except Exception as error:
                 raise PolarsParquetReadError(
                     f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
