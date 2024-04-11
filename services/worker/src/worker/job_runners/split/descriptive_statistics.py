@@ -55,7 +55,6 @@ MAX_NUM_STRING_LABELS = 1000
 
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
-EXTENSION_FEATURES = ["Array2D", "Array3D", "Array4D", "Array5D"]
 
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
