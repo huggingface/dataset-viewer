@@ -6,7 +6,6 @@ import logging
 from libapi.utils import Endpoint
 from libcommon.prometheus import (
     Prometheus,
-    update_duckdb_disk_usage,
     update_parquet_metadata_disk_usage,
     update_queue_jobs_total,
     update_responses_in_cache_total,
