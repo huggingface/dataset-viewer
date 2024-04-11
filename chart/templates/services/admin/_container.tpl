@@ -39,7 +39,6 @@
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountDuckDBIndexRO" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false

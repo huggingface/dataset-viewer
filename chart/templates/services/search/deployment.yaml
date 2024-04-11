@@ -24,8 +24,6 @@ spec:
     spec:
       {{- include "dnsConfig" . | nindent 6 }}
       {{- include "image.imagePullSecrets" . | nindent 6 }}
-      initContainers:
-        {{ include "initContainerDuckDBIndex" . | nindent 8 }}
       containers: {{ include "containerSearch" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.search.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.search.tolerations | nindent 8 }}

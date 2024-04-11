@@ -144,8 +144,6 @@ uid: 1000
 gid: 3000
 
 persistence:
-  duckDBIndex:
-    existingClaim: ""
   parquetMetadata:
     existingClaim: ""
 
@@ -336,42 +334,6 @@ backfillRetryableErrors:
     limits:
       cpu: 0
   tolerations: []
-
-cleanDuckdbIndexCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "cache/*"
-
-cleanDuckdbIndexDownloads:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 0 * * *"
-  # at 00:00
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "downloads/*"
 
 postMessages:
   enabled: true
