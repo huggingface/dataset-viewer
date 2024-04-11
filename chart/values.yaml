@@ -259,8 +259,8 @@ parquetMetadata:
   storageDirectory: "/storage/parquet-metadata"
 
 duckDBIndex:
-  # Directory on the shared storage (used to cache the duckdb files for /filter and /search)
-  cacheDirectory: "/storage/duckdb-index"
+  # Directory on the local storage (used to cache the duckdb files for /filter and /search)
+  cacheDirectory: "/tmp/duckdb-index"
   # Directory on the worker (used temporarily to prepare the duckdb indexes before sending to the Hub)
   workerDirectory: "/tmp/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.

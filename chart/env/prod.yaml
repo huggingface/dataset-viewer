@@ -386,7 +386,7 @@ search:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 7
+  replicas: 4
   service:
     type: NodePort
   resources:
