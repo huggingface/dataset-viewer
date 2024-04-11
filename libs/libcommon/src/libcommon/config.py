@@ -4,19 +4,23 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Literal, Optional
 
 from environs import Env
+from marshmallow.validate import OneOf
+
+STORAGE_PROTOCOL_VALUES: list[str] = ["file", "s3"]
+StorageProtocol = Literal["file", "s3"]
 
 ASSETS_BASE_URL = "http://localhost/assets"
-ASSETS_STORAGE_PROTOCOL = "file"
+ASSETS_STORAGE_PROTOCOL: StorageProtocol = "file"
 ASSETS_STORAGE_ROOT = "/storage/assets"
 
 
 @dataclass(frozen=True)
 class AssetsConfig:
     base_url: str = ASSETS_BASE_URL
-    storage_protocol: str = ASSETS_STORAGE_PROTOCOL
+    storage_protocol: StorageProtocol = ASSETS_STORAGE_PROTOCOL
     storage_root: str = ASSETS_STORAGE_ROOT
 
     @classmethod
@@ -25,7 +29,11 @@ class AssetsConfig:
         with env.prefixed("ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=ASSETS_BASE_URL),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=ASSETS_STORAGE_PROTOCOL),
+                storage_protocol=env.str(
+                    name="STORAGE_PROTOCOL",
+                    default=ASSETS_STORAGE_PROTOCOL,
+                    validate=OneOf(STORAGE_PROTOCOL_VALUES, error="ASSETS_STORAGE_PROTOCOL must be one of: {choices}"),
+                ),
                 storage_root=env.str(name="STORAGE_ROOT", default=ASSETS_STORAGE_ROOT),
             )
 
@@ -53,14 +61,14 @@ class S3Config:
 
 
 CACHED_ASSETS_BASE_URL = "http://localhost/cached-assets"
-CACHED_ASSETS_STORAGE_PROTOCOL = "file"
+CACHED_ASSETS_STORAGE_PROTOCOL: StorageProtocol = "file"
 CACHED_ASSETS_STORAGE_ROOT = "/storage/cached-assets"
 
 
 @dataclass(frozen=True)
 class CachedAssetsConfig:
     base_url: str = CACHED_ASSETS_BASE_URL
-    storage_protocol: str = CACHED_ASSETS_STORAGE_PROTOCOL
+    storage_protocol: StorageProtocol = CACHED_ASSETS_STORAGE_PROTOCOL
     storage_root: str = CACHED_ASSETS_STORAGE_ROOT
 
     @classmethod
@@ -69,7 +77,13 @@ class CachedAssetsConfig:
         with env.prefixed("CACHED_ASSETS_"):
             return cls(
                 base_url=env.str(name="BASE_URL", default=CACHED_ASSETS_BASE_URL),
-                storage_protocol=env.str(name="STORAGE_PROTOCOL", default=CACHED_ASSETS_STORAGE_PROTOCOL),
+                storage_protocol=env.str(
+                    name="STORAGE_PROTOCOL",
+                    default=CACHED_ASSETS_STORAGE_PROTOCOL,
+                    validate=OneOf(
+                        STORAGE_PROTOCOL_VALUES, error="CACHED_ASSETS_STORAGE_PROTOCOL must be one of: {choices}"
+                    ),
+                ),
                 storage_root=env.str(name="STORAGE_ROOT", default=CACHED_ASSETS_STORAGE_ROOT),
             )
 
