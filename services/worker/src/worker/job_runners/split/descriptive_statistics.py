@@ -32,7 +32,7 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
-from polars import List
+from pyarrow import LargeListType, ListType
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -55,6 +55,8 @@ MAX_NUM_STRING_LABELS = 1000
 
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
+EXTENSION_FEATURES = ["Array2D", "Array3D", "Array4D", "Array5D"]
+
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -776,7 +778,7 @@ def compute_descriptive_statistics_response(
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
     local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
-    num_examples = pq.read_table(local_parquet_split_directory, columns=[next(iter(features))]).shape[0]
+    num_examples = pq.read_table(local_parquet_split_directory).shape[0]
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -784,10 +786,11 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, list) or (
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
-            schema = pl.scan_parquet(local_parquet_split_glob).schema[dataset_feature_name]
+            first_parquet_file = local_parquet_split_directory / split_parquet_files[0]["filename"]
+            feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if isinstance(schema, List):
+            if isinstance(feature_arrow_type, ListType) or isinstance(feature_arrow_type, LargeListType):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
@@ -845,7 +848,8 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                data = pl.read_parquet(local_parquet_split_glob, columns=[column.name])
+                table = pq.read_table(local_parquet_split_directory, columns=[column.name])
+                data: pl.DataFrame = pl.DataFrame._from_arrow(table)
             except Exception as error:
                 raise PolarsParquetReadError(
                     f"Error reading parquet file(s) at {local_parquet_split_glob=}, columns=[{column.name}]: {error}",
