@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from datasets import Audio, ClassLabel, Dataset, Features, Sequence, Value
+from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Sequence, Value
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1312,6 +1312,28 @@ statistics_dataset = Dataset.from_dict(
             [[]],
         ],
         "list__sequence_of_list_dict_all_nan_column": nan_column(),
+        "array__column": [
+            [[1, 2, 3]],
+            [[1, 2, 3]],
+            [[1, 2, 3]],
+            [[4, 5, 6]],
+            [[4, 5, 6]],
+            [[4, 5, 6]],
+            [[7, 8, 9]],
+            [[7, 8, 9]],
+            [[7, 8, 9]],
+            [[10, 11, 12]],
+            [[10, 11, 12]],
+            [[10, 11, 12]],
+            [[13, 14, 15]],
+            [[13, 14, 15]],
+            [[13, 14, 15]],
+            [[16, 17, 18]],
+            [[16, 17, 18]],
+            [[16, 17, 18]],
+            [[19, 20, 21]],
+            [[19, 20, 21]],
+        ],
     },
     features=Features(
         {
@@ -1380,6 +1402,7 @@ statistics_dataset = Dataset.from_dict(
             "list__sequence_of_list_dict_all_nan_column": Sequence(
                 [{"author": Value("string"), "likes": Value("int32")}]
             ),
+            "array__column": Array2D(shape=(1, 3), dtype="int32"),
         }
     ),
 )

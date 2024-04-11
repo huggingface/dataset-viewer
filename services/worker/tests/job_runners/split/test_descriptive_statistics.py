@@ -411,7 +411,10 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     df = ds.to_pandas()
     expected_statistics = {}
     for column_name in df.columns:
-        column_type = ColumnType(column_name.split("__")[0])
+        _type = column_name.split("__")[0]
+        if _type == "array":
+            continue
+        column_type = ColumnType(_type)
         column_data = df[column_name]
         if column_type is ColumnType.STRING_LABEL:
             column_stats = count_expected_statistics_for_string_column(column_data)
