@@ -776,7 +776,8 @@ def compute_descriptive_statistics_response(
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
 
-    num_examples = pq.read_table(local_parquet_split_directory, columns=[next(iter(features))]).shape[0]
+    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
+    num_examples = sum(fragment.metadata.num_rows for fragment in ds.fragments)
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -788,7 +789,7 @@ def compute_descriptive_statistics_response(
             feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if isinstance(feature_arrow_type, ListType) or isinstance(feature_arrow_type, LargeListType):
+            if pyarrow.types.is_list(feature_arrow_type) or pyarrow.types.is_large_list(feature_arrow_type)
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
@@ -847,7 +848,8 @@ def compute_descriptive_statistics_response(
         else:
             try:
                 table = pq.read_table(local_parquet_split_directory, columns=[column.name])
-                data: pl.DataFrame = pl.DataFrame._from_arrow(table)
+                data = pl.from_arrow(table)
+                assert isinstance(data, pl.DataFrame)  # type narrowing
             except Exception as error:
                 raise PolarsParquetReadError(
                     f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
