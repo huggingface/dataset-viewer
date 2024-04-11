@@ -12,8 +12,10 @@ from typing import Any, Callable, Optional, TypedDict, Union
 import librosa
 import numpy as np
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import Features
+from datasets import Features, Sequence
+from datasets.features.features import FeatureType, _ArrayXD
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -32,7 +34,6 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
-from polars import List
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -55,6 +56,7 @@ MAX_NUM_STRING_LABELS = 1000
 
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
+
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -658,6 +660,24 @@ class AudioColumn(Column):
 SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
 
 
+def is_extension(feature: FeatureType) -> bool:
+    """Check if a (possibly nested) feature is an arrow extension feature (Array2D, Array3D, Array4D, or Array5D)."""
+    if isinstance(feature, dict):
+        return any(is_extension(f) for f in feature.values())
+    elif isinstance(feature, (list, tuple)):
+        return any(is_extension(f) for f in feature)
+    elif isinstance(feature, Sequence):
+        return is_extension(feature.feature)
+    else:
+        return isinstance(feature, _ArrayXD)
+
+
+def get_extension_features(features: dict[str, Any]) -> set[str]:
+    """Return set of names of extension features (Array2D, Array3D, Array4D, or Array5D) within provided features."""
+    features = Features.from_dict(features)
+    return {feature_name for feature_name, feature in features.items() if is_extension(feature)}
+
+
 def compute_descriptive_statistics_response(
     dataset: str,
     config: str,
@@ -774,11 +794,15 @@ def compute_descriptive_statistics_response(
         )
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
-    local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
-    num_examples = pl.read_parquet(
-        local_parquet_split_glob, columns=[pl.scan_parquet(local_parquet_split_glob).columns[0]]
-    ).shape[0]
+    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
+    num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
+    split_extension_features = get_extension_features(features)
+    features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if feature_name not in split_extension_features
+    }
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -786,10 +810,11 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, list) or (
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
-            schema = pl.scan_parquet(local_parquet_split_glob).schema[dataset_feature_name]
+            first_parquet_file = local_parquet_split_directory / split_parquet_files[0]["filename"]
+            feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if isinstance(schema, List):
+            if pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
 
         if isinstance(dataset_feature, dict):
@@ -847,10 +872,15 @@ def compute_descriptive_statistics_response(
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                data = pl.read_parquet(local_parquet_split_glob, columns=[column.name])
+                if split_extension_features:
+                    data = pl.DataFrame._from_arrow(
+                        pq.read_table(local_parquet_split_directory, columns=[column.name])
+                    )
+                else:
+                    data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
             except Exception as error:
                 raise PolarsParquetReadError(
-                    f"Error reading parquet file(s) at {local_parquet_split_glob=}, columns=[{column.name}]: {error}",
+                    f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
                     error,
                 )
             column_stats = column.compute_and_prepare_response(data)
