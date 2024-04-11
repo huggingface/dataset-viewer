@@ -666,10 +666,12 @@ def has_extension_feature(features: dict[str, Any]) -> bool:
     or Array5D. Return False otherwise.
     """
     features = Features.from_dict(features)
-    for feature_name, feature in features.items():
-        if _visit(feature, lambda feature: isinstance(feature, _ArrayXD)):
-            return True
-    return False
+    extension_feature_found = False
+    def find_extension_feature(feature):
+        nonlocal extension_feature_found
+        extension_feature_found = extension_feature_found or isinstance(feature, _ArrayXD)
+    _visit(features, find_extension_feature)
+    return extension_feature_found
 
 
 def compute_descriptive_statistics_response(
