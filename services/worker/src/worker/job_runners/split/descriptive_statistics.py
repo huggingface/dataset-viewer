@@ -873,8 +873,9 @@ def compute_descriptive_statistics_response(
         else:
             try:
                 if split_extension_features:
-                    data = pl.from_arrow(pq.read_table(local_parquet_split_directory, columns=[column.name]))
-                    assert isinstance(data, pl.DataFrame)  # type narrowing
+                    data = pl.DataFrame._from_arrow(
+                        pq.read_table(local_parquet_split_directory, columns=[column.name])
+                    )
                 else:
                     data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
             except Exception as error:
