@@ -35,6 +35,10 @@
     value: {{ .Values.duckDBIndex.targetRevision | quote }}
   - name: DUCKDB_INDEX_CACHE_DIRECTORY
     value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
+  - name: DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA
+    value: {{ .Values.search.cleanCacheProba | quote }}
+  - name: DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS
+    value: {{ .Values.search.expiredTimeIntervalSeconds | quote }}
   - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
     value: "/tmp/duckdb-extensions"
   - name: HF_HUB_ENABLE_HF_TRANSFER

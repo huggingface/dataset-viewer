@@ -109,16 +109,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 app.kubernetes.io/component: "{{ include "name" . }}-backfill-retryable-errors"
 {{- end -}}
 
-{{- define "labels.cleanDuckdbIndexCache" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-cache"
-{{- end -}}
-
-{{- define "labels.cleanDuckdbIndexDownloads" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-downloads"
-{{- end -}}
-
 {{- define "labels.postMessages" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-post-messages"

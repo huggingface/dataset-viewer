@@ -534,6 +534,10 @@ search:
   uvicornNumWorkers: "1"
   # Application endpoint port
   uvicornPort: 8080
+  # Probability of cleaning the downloads folder at each request.
+  cleanCacheProba: 0.05
+  # Retention period of time for downloads.
+  expiredTimeIntervalSeconds: 43_200 # 12 hours
 
   nodeSelector: {}
   replicas: 1

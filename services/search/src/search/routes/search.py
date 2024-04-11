@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import random
 from http import HTTPStatus
 from typing import Optional
 
@@ -35,7 +36,7 @@ from libcommon.constants import MAX_NUM_ROWS_PER_PAGE
 from libcommon.dtos import PaginatedResponse
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import (
     get_supported_unsupported_columns,
@@ -52,11 +53,6 @@ FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT __hf_index_id, fts_main_data.ma
 JOIN_STAGE_AND_DATA_COMMAND = (
     "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
 )
-
-SPLITS_WITH_LOCAL_STORAGE = [
-    "jp1924/VisualQuestionAnswering-default-train",
-    "ad6398/Deepmind-CodeContest-Unrolled-default-train",
-]
 
 
 def full_text_search(
@@ -131,6 +127,8 @@ def create_search_endpoint(
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
     extensions_directory: Optional[str] = None,
+    clean_cache_proba: float = 0.0,
+    expiredTimeIntervalSeconds: int = 60,
 ) -> Endpoint:
     async def search_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -188,13 +186,8 @@ def create_search_endpoint(
                     partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
-                    duckdb_index_file_downloads = (
-                        "/tmp"  # nosec - will be reverted after testing
-                        if f"{dataset}-{config}-{split}" in SPLITS_WITH_LOCAL_STORAGE
-                        else duckdb_index_file_directory
-                    )
                     index_file_location = await get_index_file_location_and_download_if_missing(
-                        duckdb_index_file_directory=duckdb_index_file_downloads,
+                        duckdb_index_file_directory=duckdb_index_file_directory,
                         dataset=dataset,
                         config=config,
                         split=split,
@@ -215,7 +208,10 @@ def create_search_endpoint(
                         length,
                         extensions_directory,
                     )
-
+                with StepProfiler(method="search_endpoint", step="clean old indexes"):
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
+                        clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
                 with StepProfiler(method="search_endpoint", step="create response"):
                     # Features can be missing in old cache entries,
                     # but in this case it's ok to get them from the Arrow schema.

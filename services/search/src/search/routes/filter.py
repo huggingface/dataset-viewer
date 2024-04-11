@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import random
 import re
 from http import HTTPStatus
 from typing import Optional
@@ -30,7 +31,7 @@ from libapi.utils import (
 )
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
@@ -71,6 +72,8 @@ def create_filter_endpoint(
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
     extensions_directory: Optional[str] = None,
+    clean_cache_proba: float = 0.0,
+    expiredTimeIntervalSeconds: int = 60,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -153,6 +156,10 @@ def create_filter_endpoint(
                         offset,
                         extensions_directory,
                     )
+                with StepProfiler(method="search_endpoint", step="clean old indexes"):
+                    # no need to do it every time
+                    if random.random() < clean_cache_proba:  # nosec
+                        clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = await create_response(
                         dataset=dataset,

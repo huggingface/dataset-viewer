@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2022 The HuggingFace Authors.
 
+import time
 from pathlib import Path
 from typing import Optional
 
 import pytest
+from pytest import TempPathFactory
 
-from libcommon.storage import StrPath, init_dir, remove_dir
+from libcommon.storage import StrPath, clean_dir, init_dir, remove_dir
 
 
 @pytest.mark.parametrize(
@@ -74,3 +76,27 @@ def test_remove_dir(tmp_path_factory: pytest.TempPathFactory, exists: bool, is_s
     assert not tmp_path.is_dir()
     assert not tmp_file.exists()
     assert not tmp_file.is_file()
+
+
+def test_clean_directory(tmp_path_factory: TempPathFactory) -> None:
+    hf_datasets_cache_directory = tmp_path_factory.mktemp("test_clean_directory") / "hf_datasets_cache"
+    hf_datasets_cache_directory.mkdir(parents=True, exist_ok=True)
+    expired_time_interval_seconds = 2
+
+    test_dataset_cache = hf_datasets_cache_directory / "medium/datasets/test_dataset_cache"
+    test_dataset_cache.mkdir(parents=True, exist_ok=True)
+    cache_file = test_dataset_cache / "foo"
+    cache_file.touch()
+
+    # ensure file exists
+    assert cache_file.is_file()
+    folder_pattern = f"{hf_datasets_cache_directory}/*/datasets/*"
+    # try to delete it inmediatly after creation, it should remain
+    clean_dir(str(folder_pattern), expired_time_interval_seconds)
+    assert cache_file.is_file()
+
+    # try to delete it after more that time interval, it should be deleted
+    cache_file.touch()
+    time.sleep(expired_time_interval_seconds + 2)
+    clean_dir(str(folder_pattern), expired_time_interval_seconds)
+    assert not cache_file.is_file()
