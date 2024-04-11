@@ -536,7 +536,7 @@ search:
   uvicornPort: 8080
   # Probability of cleaning the downloads folder at each request.
   cleanCacheProba: 0.05
-  # Retention period of time for downloads.
+  # Retention period for downloads.
   expiredTimeIntervalSeconds: 43_200 # 12 hours
 
   nodeSelector: {}
