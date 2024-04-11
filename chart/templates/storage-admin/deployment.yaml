@@ -24,5 +24,4 @@ spec:
       nodeSelector: {{ toYaml .Values.storageAdmin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.storageAdmin.tolerations | nindent 8 }}
       volumes:
-        {{ include "volumeDuckDBIndex" . | nindent 8 }}
         {{ include "volumeParquetMetadata" . | nindent 8 }}

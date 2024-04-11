@@ -19,7 +19,6 @@ from starlette.responses import Response
 
 
 def create_metrics_endpoint(
-    duckdb_directory: StrPath,
     parquet_metadata_directory: StrPath,
 ) -> Endpoint:
     prometheus = Prometheus()
@@ -30,7 +29,6 @@ def create_metrics_endpoint(
         update_worker_size_jobs_count()
         update_responses_in_cache_total()
         # TODO: Update disk usage from fsspec
-        update_duckdb_disk_usage(directory=duckdb_directory)
         update_parquet_metadata_disk_usage(directory=parquet_metadata_directory)
         return Response(prometheus.getLatestContent(), headers={"Content-Type": CONTENT_TYPE_LATEST})
 

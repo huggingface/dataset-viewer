@@ -15,8 +15,6 @@
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
-  - name: DUCKDB_INDEX_CACHE_DIRECTORY
-    value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   # service
   - name: ADMIN_HF_ORGANIZATION
     value: {{ .Values.admin.hfOrganization | quote }}
