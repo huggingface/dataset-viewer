@@ -396,6 +396,7 @@ search:
       alb.ingress.kubernetes.io/group.order: "1"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-search=true
       alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
+      alb.ingress.kubernetes.io/target-type: ip
   resources:
     requests:
       cpu: 1
