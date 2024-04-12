@@ -551,6 +551,7 @@ search:
     annotations: {}
   ingress:
     enabled: true
+    annotations: {}
   tolerations: []
 
 sseApi:

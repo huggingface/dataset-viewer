@@ -268,3 +268,16 @@ Return the HUB url
 http://{{ $hubName }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the api ingress anotation
+note: keep $instanceAnnotations in first position during the merge, to avoid override annotations in other pods
+*/}}
+{{- define "datasetsServer.instance.ingress.annotations" -}}
+{{- $instanceAnnotations := .instance.ingress.annotations -}}
+{{- $defaultAnnotations := .context.Values.ingress.annotations -}}
+{{- $dict := merge $instanceAnnotations $defaultAnnotations -}}
+{{- range $key, $value := $dict }}
+{{ $key | quote }}: {{ $value | quote }}
+{{- end }}
+{{- end -}}

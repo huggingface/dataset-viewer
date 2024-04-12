@@ -2,8 +2,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  {{- $annotations := fromYaml (include "datasetsServer.ingress.annotations" .) }}
-  annotations: {{ toYaml $annotations | nindent 4 }}
+  {{- $annotations := fromYaml (include "datasetsServer.instance.ingress.annotations" (dict "instance" .Values.search "context" $ )) }}
+  annotations: {{ toYaml $annotations | nindent 4}}
   labels: {{ include "labels.search" . | nindent 4 }}
   name: "{{ include "name" . }}-search"
   namespace: {{ .Release.Namespace }}
