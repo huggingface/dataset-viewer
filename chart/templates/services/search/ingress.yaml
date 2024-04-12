@@ -1,0 +1,33 @@
+{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.search.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  {{- $annotations := fromYaml (include "datasetsServer.ingress.annotations" .) }}
+  annotations: {{ toYaml $annotations | nindent 4 }}
+  labels: {{ include "labels.search" . | nindent 4 }}
+  name: "{{ include "name" . }}-search"
+  namespace: {{ .Release.Namespace }}
+spec:
+  rules:
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "name" . }}-search"
+                port:
+                  name: http
+            path: /search
+            pathType: Prefix
+  {{- if include "hf.common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
+  tls:
+    - hosts:
+        - {{ include "datasetsServer.ingress.hostname" . }}
+      secretName: {{ printf "%s-tls" (include "datasetsServer.ingress.hostname" .) }}
+  {{- else if .Values.ingress.tls -}}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
+  {{- end }}
+{{- end }}
