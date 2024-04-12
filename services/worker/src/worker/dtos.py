@@ -145,7 +145,6 @@ class SplitDuckdbIndex(SplitHubFile):
     partial: Optional[bool]
     num_rows: Optional[int]
     num_bytes: Optional[int]
-    duckdb_version: str
 
 
 class SplitDuckdbIndexSize(TypedDict):
