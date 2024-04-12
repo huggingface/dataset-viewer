@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
 
+import errno
 import json
 import logging
+import os
 import re
 from hashlib import sha1
 from typing import Optional
@@ -17,6 +19,7 @@ from libcommon.storage import StrPath, init_dir
 from libcommon.storage_client import StorageClient
 from libcommon.utils import download_file_from_hub
 
+from libapi.exceptions import DownloadIndexError
 from libapi.utils import get_cache_entry_from_step
 
 REPO_TYPE = "dataset"
@@ -30,6 +33,7 @@ async def get_index_file_location_and_download_if_missing(
     config: str,
     split: str,
     filename: str,
+    size_bytes: int,
     url: str,
     target_revision: str,
     hf_token: Optional[str],
@@ -51,6 +55,7 @@ async def get_index_file_location_and_download_if_missing(
                     cache_folder,
                     index_folder,
                     target_revision,
+                    size_bytes,
                     dataset,
                     repo_file_location,
                     hf_token,
@@ -67,25 +72,39 @@ def get_download_folder(root_directory: StrPath, dataset: str, revision: str, co
     return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{DUCKDB_VERSION}/{subdirectory}"
 
 
+def available_disk_space(save_path: str, required_space: int) -> bool:
+    disk_stat = os.statvfs(save_path)
+    # Calculate free space in bytes
+    free_space = disk_stat.f_bavail * disk_stat.f_frsize
+    return free_space >= required_space
+
+
 def download_index_file(
     cache_folder: str,
     index_folder: str,
     target_revision: str,
+    size_bytes: int,
     dataset: str,
     repo_file_location: str,
     hf_token: Optional[str] = None,
 ) -> None:
     logging.info(f"init_dir {index_folder}")
-    init_dir(index_folder)
-    download_file_from_hub(
-        repo_type=REPO_TYPE,
-        revision=target_revision,
-        repo_id=dataset,
-        filename=repo_file_location,
-        local_dir=index_folder,
-        hf_token=hf_token,
-        cache_dir=cache_folder,
-    )
+    if not available_disk_space(cache_folder, size_bytes):
+        raise DownloadIndexError("Unable to download index file")  # Should we show the remaining disk space?
+    try:
+        init_dir(index_folder)
+        download_file_from_hub(
+            repo_type=REPO_TYPE,
+            revision=target_revision,
+            repo_id=dataset,
+            filename=repo_file_location,
+            local_dir=index_folder,
+            hf_token=hf_token,
+            cache_dir=cache_folder,
+        )
+    except OSError as err:
+        if err.errno == errno.ENOSPC:
+            raise DownloadIndexError("Unable to download index file", err)
 
 
 def get_cache_entry_from_duckdb_index_job(

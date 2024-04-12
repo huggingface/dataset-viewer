@@ -124,6 +124,7 @@ def create_filter_endpoint(
                     # check if the index is on the full dataset or if it's partial
                     url = duckdb_index_cache_entry["content"]["url"]
                     filename = duckdb_index_cache_entry["content"]["filename"]
+                    index_size = duckdb_index_cache_entry["content"]["size"]
                     partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
@@ -134,6 +135,7 @@ def create_filter_endpoint(
                         split=split,
                         revision=revision,
                         filename=filename,
+                        size_bytes=index_size,
                         url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
@@ -156,7 +158,7 @@ def create_filter_endpoint(
                         offset,
                         extensions_directory,
                     )
-                with StepProfiler(method="search_endpoint", step="clean old indexes"):
+                with StepProfiler(method="filter_endpoint", step="clean old indexes"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
                         clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)

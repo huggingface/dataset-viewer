@@ -183,6 +183,7 @@ def create_search_endpoint(
                     # check if the index is on the full dataset or if it's partial
                     url = duckdb_index_cache_entry["content"]["url"]
                     filename = duckdb_index_cache_entry["content"]["filename"]
+                    index_size = duckdb_index_cache_entry["content"]["size"]
                     partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="search_endpoint", step="download index file if missing"):
@@ -193,6 +194,7 @@ def create_search_endpoint(
                         split=split,
                         revision=revision,
                         filename=filename,
+                        size_bytes=index_size,
                         url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
