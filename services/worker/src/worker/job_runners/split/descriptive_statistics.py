@@ -34,6 +34,7 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
+from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -73,6 +74,7 @@ class ColumnType(str, enum.Enum):
     STRING_LABEL = "string_label"
     STRING_TEXT = "string_text"
     AUDIO = "audio"
+    IMAGE = "image"
 
 
 class Histogram(TypedDict):
@@ -657,7 +659,79 @@ class AudioColumn(Column):
         )
 
 
-SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
+class ImageColumn(Column):
+    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.n_bins = n_bins
+
+    @staticmethod
+    def get_width(example: dict[str, Any]) -> float:
+        with io.BytesIO(example["bytes"]) as f:
+            image = Image.open(f)
+            return image.size[0]
+
+    @staticmethod
+    @raise_with_column_name
+    def _compute_statistics(
+        parquet_directory: Path,
+        column_name: str,
+        n_samples: int,
+        n_bins: int,
+    ) -> NumericalStatisticsItem:
+        logging.info(f"Compute statistics for Image column {column_name} with PIL and polars. ")
+        parquet_files = list(parquet_directory.glob("*.parquet"))
+        widths = []
+        for filename in parquet_files:
+            shard_images = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
+            shard_widths = (
+                thread_map(
+                    ImageColumn.get_width,
+                    shard_images,
+                    desc=f"Computing widths of images for {filename.name}",
+                    leave=False,
+                )
+                if shard_images
+                else []
+            )
+            widths.extend(shard_widths)
+
+        if not widths:
+            return all_nan_statistics_item(n_samples)
+
+        nan_count = n_samples - len(widths)
+        nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
+        widths_df = pl.from_dict({column_name: widths})
+        widths_stats: NumericalStatisticsItem = IntColumn._compute_statistics(
+            data=widths_df,
+            column_name=column_name,
+            n_samples=len(widths),
+            n_bins=n_bins,
+        )
+        return NumericalStatisticsItem(
+            nan_count=nan_count,
+            nan_proportion=nan_proportion,
+            min=widths_stats["min"],
+            max=widths_stats["max"],
+            mean=widths_stats["mean"],
+            median=widths_stats["median"],
+            std=widths_stats["std"],
+            histogram=widths_stats["histogram"],
+        )
+
+    def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
+        stats = self._compute_statistics(
+            parquet_directory=parquet_directory, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins
+        )
+        return StatisticsPerColumnItem(
+            column_name=self.name,
+            column_type=ColumnType.IMAGE,
+            column_statistics=stats,
+        )
+
+
+SupportedColumns = Union[
+    ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn, ImageColumn
+]
 
 
 def is_extension(feature: FeatureType) -> bool:
