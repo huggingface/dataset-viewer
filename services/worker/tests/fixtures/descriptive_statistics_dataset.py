@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Sequence, Value
+from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, Sequence, Value
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1643,6 +1643,23 @@ audio_dataset = Dataset.from_dict(
             "audio": Audio(sampling_rate=1600),
             "audio_nan": Audio(sampling_rate=1600),
             "audio_all_nan": Audio(sampling_rate=1600),
+        }
+    ),
+)
+
+
+image_dataset = Dataset.from_dict(
+    {
+        "image": [
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_1.jpg"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_2.png"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_4.jpg"),
+        ],
+    },
+    features=Features(
+        {
+            "image": Image(),
         }
     ),
 )
