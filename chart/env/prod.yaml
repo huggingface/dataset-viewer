@@ -347,17 +347,17 @@ api:
   # https://docs.gunicorn.org/en/stable/design.html#how-many-workers
   uvicornNumWorkers: "9"
   nodeSelector:
-    role-datasets-server: "true"
-  replicas: 8
+    role-datasets-server-api: "true"
+  replicas: 12
   service:
     type: NodePort
   resources:
     requests:
-      cpu: 1
-      memory: "8Gi"
+      cpu: 4
+      memory: "14Gi"
     limits:
       cpu: 4
-      memory: "8Gi"
+      memory: "14Gi"
 
 rows:
   # Number of uvicorn workers for running the application
