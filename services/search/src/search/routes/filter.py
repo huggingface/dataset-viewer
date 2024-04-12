@@ -161,7 +161,8 @@ def create_filter_endpoint(
                 with StepProfiler(method="filter_endpoint", step="clean old indexes"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
-                        clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
+                        with StepProfiler(method="search_endpoint", step="clean old indexes"):
+                            clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = await create_response(
                         dataset=dataset,

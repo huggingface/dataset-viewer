@@ -210,10 +210,10 @@ def create_search_endpoint(
                         length,
                         extensions_directory,
                     )
-                with StepProfiler(method="search_endpoint", step="clean old indexes"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
-                        clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
+                        with StepProfiler(method="search_endpoint", step="clean old indexes"):
+                            clean_dir(str(duckdb_index_file_directory), expiredTimeIntervalSeconds)
                 with StepProfiler(method="search_endpoint", step="create response"):
                     # Features can be missing in old cache entries,
                     # but in this case it's ok to get them from the Arrow schema.
