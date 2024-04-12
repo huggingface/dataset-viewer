@@ -583,6 +583,8 @@ search:
   service:
     type: ""
     annotations: {}
+  ingress:
+    enabled: true
   tolerations: []
 
 sseApi:
