@@ -34,6 +34,7 @@ from worker.job_runners.split.descriptive_statistics import (
     ClassLabelColumn,
     ColumnType,
     FloatColumn,
+    ImageColumn,
     IntColumn,
     ListColumn,
     SplitDescriptiveStatisticsJobRunner,
@@ -522,6 +523,28 @@ def audio_statistics_expected() -> dict:  # type: ignore
     }
 
 
+@pytest.fixture
+def image_statistics_expected() -> dict:  # type: ignore
+    image_widths = [640, 1440, 520, 1240]  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
+    image_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(image_widths), dtype=ColumnType.INT
+    )
+    expected_statistics = {
+        "column_name": "audio",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": image_statistics,
+    }
+    return {
+        "num_examples": 4,
+        "statistics": {
+            "image": expected_statistics,
+            # "audio_nan": expected_nan_statistics,
+            # "audio_all_nan": expected_all_nan_statistics,
+        },
+        "partial": False,
+    }
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -778,6 +801,31 @@ def test_audio_statistics(
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = AudioColumn._compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
+        n_bins=N_BINS,
+    )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    ["image"],
+)
+def test_image_statistics(
+    column_name: str,
+    image_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    expected = image_statistics_expected["statistics"][column_name]["column_statistics"]
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    dataset_table = datasets["image_statistics"].data
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
+    pq.write_table(dataset_table_embedded, parquet_filename)
+    computed = ImageColumn._compute_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
