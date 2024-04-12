@@ -16,10 +16,7 @@ from huggingface_hub._commit_api import (
 )
 from huggingface_hub.hf_api import HfApi
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
-from libcommon.constants import (
-    DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY,
-    DUCKDB_VERSION,
-)
+from libcommon.constants import DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -314,7 +311,7 @@ def compute_split_duckdb_index_response(
         partial=partial,
         num_rows=num_rows,
         num_bytes=num_bytes,
-        duckdb_version=DUCKDB_VERSION,
+        duckdb_version=duckdb.__version__,
     )
 
 
