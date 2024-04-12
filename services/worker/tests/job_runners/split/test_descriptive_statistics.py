@@ -530,7 +530,7 @@ def image_statistics_expected() -> dict:  # type: ignore
         column=pd.Series(image_widths), dtype=ColumnType.INT
     )
     expected_statistics = {
-        "column_name": "audio",
+        "column_name": "image",
         "column_type": ColumnType.IMAGE,
         "column_statistics": image_statistics,
     }
@@ -857,12 +857,14 @@ def test_compute(
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
     hub_responses_audio_statistics: HubDatasetTest,
+    hub_responses_image_statistics: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
     descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
     audio_statistics_expected: dict,  # type: ignore
+    image_statistics_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -871,6 +873,7 @@ def test_compute(
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
+        "image_statistics": hub_responses_image_statistics,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
@@ -879,6 +882,7 @@ def test_compute(
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
         "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
         "audio_statistics": audio_statistics_expected,
+        "image_statistics": image_statistics_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -976,6 +980,7 @@ def test_compute(
                 ColumnType.STRING_TEXT,
                 ColumnType.LIST,
                 ColumnType.AUDIO,
+                ColumnType.IMAGE,
             ]:
                 hist, expected_hist = (
                     column_response_stats.pop("histogram"),
