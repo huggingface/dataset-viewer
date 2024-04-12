@@ -902,6 +902,11 @@ def compute_descriptive_statistics_response(
                     feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
                 )
 
+            if dataset_feature.get("_type") == "Image":
+                return ImageColumn(
+                    feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
+                )
+
             if dataset_feature.get("_type") == "Value":
                 if dataset_feature.get("dtype") in INTEGER_DTYPES:
                     return IntColumn(
@@ -942,7 +947,7 @@ def compute_descriptive_statistics_response(
     )
 
     for column in columns:
-        if isinstance(column, AudioColumn):
+        if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
