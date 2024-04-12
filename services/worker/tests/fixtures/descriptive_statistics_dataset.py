@@ -1656,10 +1656,19 @@ image_dataset = Dataset.from_dict(
             str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
             str(Path(__file__).resolve().parent / "data" / "image" / "image_4.jpg"),
         ],
+        "image_nan": [
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_1.jpg"),
+            None,
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
+            None,
+        ],
+        "image_all_nan": [None, None, None, None],
     },
     features=Features(
         {
             "image": Image(),
+            "image_nan": Image(),
+            "image_all_nan": Image(),
         }
     ),
 )

@@ -525,7 +525,7 @@ def audio_statistics_expected() -> dict:  # type: ignore
 
 @pytest.fixture
 def image_statistics_expected() -> dict:  # type: ignore
-    image_widths = [640, 1440, 520, 1240]  # datasets consists of 4 audio files of 1, 2, 3, 4 seconds lengths
+    image_widths = [640, 1440, 520, 1240]  # datasets consists of 4 image files
     image_statistics = count_expected_statistics_for_numerical_column(
         column=pd.Series(image_widths), dtype=ColumnType.INT
     )
@@ -534,12 +534,35 @@ def image_statistics_expected() -> dict:  # type: ignore
         "column_type": ColumnType.IMAGE,
         "column_statistics": image_statistics,
     }
+    nan_image_lengths = [640, None, 520, None]  # take first and third image file for this testcase
+    nan_image_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(nan_image_lengths), dtype=ColumnType.INT
+    )
+    expected_nan_statistics = {
+        "column_name": "image_nan",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": nan_image_statistics,
+    }
+    expected_all_nan_statistics = {
+        "column_name": "image_all_nan",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": {
+            "nan_count": 4,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        },
+    }
     return {
         "num_examples": 4,
         "statistics": {
             "image": expected_statistics,
-            # "audio_nan": expected_nan_statistics,
-            # "audio_all_nan": expected_all_nan_statistics,
+            "image_nan": expected_nan_statistics,
+            "image_all_nan": expected_all_nan_statistics,
         },
         "partial": False,
     }
@@ -811,7 +834,7 @@ def test_audio_statistics(
 
 @pytest.mark.parametrize(
     "column_name",
-    ["image"],
+    ["image", "image_nan", "image_all_nan"],
 )
 def test_image_statistics(
     column_name: str,
@@ -823,7 +846,7 @@ def test_image_statistics(
     parquet_directory = tmp_path_factory.mktemp("data")
     parquet_filename = parquet_directory / "data.parquet"
     dataset_table = datasets["image_statistics"].data
-    dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
     computed = ImageColumn._compute_statistics(
         parquet_directory=parquet_directory,
@@ -842,6 +865,7 @@ def test_image_statistics(
         ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
         ("audio_statistics", None),
+        ("image_statistics", None),
         ("gated", None),
     ],
 )
