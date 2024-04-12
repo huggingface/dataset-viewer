@@ -19,6 +19,16 @@ spec:
                   name: http
             path: /search
             pathType: Prefix
+    - host: {{ include "datasetsServer.ingress.hostname" . }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: "{{ include "name" . }}-search"
+                port:
+                  name: http
+            path: /filter
+            pathType: Prefix
   {{- if include "hf.common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
   tls:
     - hosts:

@@ -1,11 +1,11 @@
-{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.reverseProxy.ingress.enabled -}}
+{{- if and .Values.global.huggingface.ingress.enabled .Values.ingress.enabled .Values.rows.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  {{- $annotations := fromYaml (include "datasetsServer.ingress.annotations" .) }}
-  annotations: {{ toYaml $annotations | nindent 4 }}
-  labels: {{ include "labels.reverseProxy" . | nindent 4 }}
-  name: {{ include "name" . }}
+  {{- $annotations := fromYaml (include "datasetsServer.instance.ingress.annotations" (dict "instance" .Values.rows "context" $ )) }}
+  annotations: {{ toYaml $annotations | nindent 4}}
+  labels: {{ include "labels.rows" . | nindent 4 }}
+  name: "{{ include "name" . }}-rows"
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
@@ -14,10 +14,10 @@ spec:
         paths:
           - backend:
               service:
-                name: "{{ include "name" . }}-reverse-proxy"
+                name: "{{ include "name" . }}-rows"
                 port:
                   name: http
-            path: /
+            path: /rows
             pathType: Prefix
   {{- if include "hf.common.ingress.certManagerRequest" ( dict "annotations" $annotations ) }}
   tls:

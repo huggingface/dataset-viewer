@@ -331,6 +331,11 @@ admin:
   replicas: 2
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
       cpu: 1
@@ -352,6 +357,11 @@ api:
   replicas: 12
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-api=true
   resources:
     requests:
       cpu: 4
@@ -371,6 +381,11 @@ rows:
   replicas: 12
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-rows=true
   resources:
     requests:
       cpu: 1
@@ -415,6 +430,11 @@ sseApi:
   replicas: 2
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "2"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
       cpu: 1
