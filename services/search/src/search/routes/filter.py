@@ -158,7 +158,6 @@ def create_filter_endpoint(
                         offset,
                         extensions_directory,
                     )
-                with StepProfiler(method="filter_endpoint", step="clean old indexes"):
                     # no need to do it every time
                     if random.random() < clean_cache_proba:  # nosec
                         with StepProfiler(method="search_endpoint", step="clean old indexes"):
