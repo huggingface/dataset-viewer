@@ -39,7 +39,7 @@ async def get_index_file_location_and_download_if_missing(
     hf_token: Optional[str],
 ) -> str:
     with StepProfiler(method="get_index_file_location_and_download_if_missing", step="all"):
-        index_folder = get_download_folder(duckdb_index_file_directory, dataset, config, split, revision)
+        index_folder = get_download_folder(duckdb_index_file_directory, size_bytes, dataset, config, split, revision)
         # For directories like "partial-train" for the file
         # at "en/partial-train/0000.parquet" in the C4 dataset.
         # Note that "-" is forbidden for split names, so it doesn't create directory names collisions.
@@ -55,7 +55,6 @@ async def get_index_file_location_and_download_if_missing(
                     cache_folder,
                     index_folder,
                     target_revision,
-                    size_bytes,
                     dataset,
                     repo_file_location,
                     hf_token,
@@ -65,17 +64,20 @@ async def get_index_file_location_and_download_if_missing(
         return index_file_location
 
 
-def get_download_folder(root_directory: StrPath, dataset: str, revision: str, config: str, split: str) -> str:
+def get_download_folder(root_directory: StrPath, size_bytes: int, dataset: str, revision: str, config: str, split: str) -> str:
+    if not available_disk_space(root_directory, size_bytes):
+        raise DownloadIndexError("Unable to download index file")
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
     return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{DUCKDB_VERSION}/{subdirectory}"
 
 
-def available_disk_space(save_path: str, required_space: int) -> bool:
-    disk_stat = os.statvfs(save_path)
+def available_disk_space(path: StrPath, required_space: int) -> bool:
+    disk_stat = os.statvfs(path)
     # Calculate free space in bytes
     free_space = disk_stat.f_bavail * disk_stat.f_frsize
+    logging.debug(f"{free_space} available space, needed {required_space}")
     return free_space >= required_space
 
 
@@ -83,14 +85,11 @@ def download_index_file(
     cache_folder: str,
     index_folder: str,
     target_revision: str,
-    size_bytes: int,
     dataset: str,
     repo_file_location: str,
     hf_token: Optional[str] = None,
 ) -> None:
     logging.info(f"init_dir {index_folder}")
-    if not available_disk_space(cache_folder, size_bytes):
-        raise DownloadIndexError("Unable to download index file")  # Should we show the remaining disk space?
     try:
         init_dir(index_folder)
         download_file_from_hub(
