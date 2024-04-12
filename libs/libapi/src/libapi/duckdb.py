@@ -64,9 +64,13 @@ async def get_index_file_location_and_download_if_missing(
         return index_file_location
 
 
-def get_download_folder(root_directory: StrPath, size_bytes: int, dataset: str, revision: str, config: str, split: str) -> str:
+def get_download_folder(
+    root_directory: StrPath, size_bytes: int, dataset: str, revision: str, config: str, split: str
+) -> str:
     if not available_disk_space(root_directory, size_bytes):
-        raise DownloadIndexError("Unable to download index file")
+        raise DownloadIndexError(
+            "Cannot perform the search due to a lack of disk space on the server. Please report the issue."
+        )
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
@@ -103,7 +107,9 @@ def download_index_file(
         )
     except OSError as err:
         if err.errno == errno.ENOSPC:
-            raise DownloadIndexError("Unable to download index file", err)
+            raise DownloadIndexError(
+                "Cannot perform the operation due to a lack of disk space on the server. Please report the issue.", err
+            )
 
 
 def get_cache_entry_from_duckdb_index_job(
