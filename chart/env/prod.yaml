@@ -233,8 +233,6 @@ cleanDuckdbIndexCache:
   expiredTimeIntervalSeconds: 259_200 # 3 days
 
 cleanDuckdbIndexDownloads:
-  schedule: "*/10 * * * *"
-  # every 10 minutes
   nodeSelector:
     role-datasets-server: "true"
   expiredTimeIntervalSeconds: 259_200 # 3 days
