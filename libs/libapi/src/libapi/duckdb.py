@@ -67,22 +67,22 @@ async def get_index_file_location_and_download_if_missing(
 def get_download_folder(
     root_directory: StrPath, size_bytes: int, dataset: str, revision: str, config: str, split: str
 ) -> str:
-    if not available_disk_space(root_directory, size_bytes):
-        raise DownloadIndexError(
-            "Cannot perform the search due to a lack of disk space on the server. Please report the issue."
-        )
+    check_available_disk_space(root_directory, size_bytes)
     payload = (dataset, config, split, revision)
     hash_suffix = sha1(json.dumps(payload, sort_keys=True).encode(), usedforsecurity=False).hexdigest()[:8]
     subdirectory = "".join([c if re.match(r"[\w-]", c) else "-" for c in f"{dataset}-{hash_suffix}"])
     return f"{root_directory}/{DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY}/{subdirectory}"
 
 
-def available_disk_space(path: StrPath, required_space: int) -> bool:
+def check_available_disk_space(path: StrPath, required_space: int) -> None:
     disk_stat = os.statvfs(path)
     # Calculate free space in bytes
     free_space = disk_stat.f_bavail * disk_stat.f_frsize
     logging.debug(f"{free_space} available space, needed {required_space}")
-    return free_space >= required_space
+    if free_space < required_space:
+        raise DownloadIndexError(
+            "Cannot perform the search due to a lack of disk space on the server. Please report the issue."
+        )
 
 
 def download_index_file(
