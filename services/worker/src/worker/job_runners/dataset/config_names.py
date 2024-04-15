@@ -86,7 +86,7 @@ def compute_config_names_response(
                 for config in list(config_names):
                     try:
                         builder = load_dataset_builder(
-                            path=dataset, token=hf_token, trust_remote_code=trust_remote_code
+                            path=dataset, name=config, token=hf_token, trust_remote_code=trust_remote_code
                         )
                         dl_manager = StreamingDownloadManager(
                             download_config=DownloadConfig(token=hf_token),
