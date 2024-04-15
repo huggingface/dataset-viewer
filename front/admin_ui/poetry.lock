@@ -1445,7 +1445,7 @@ huggingface-hub = {version = "^0.21.4", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
-numpy = "^1"
+numpy = "^1.22.4"
 orjson = "^3.9.15"
 pandas = "^2.2.0"
 pillow = "^10.3.0"
