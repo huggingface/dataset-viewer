@@ -4,8 +4,15 @@
 import logging
 from typing import Optional
 
-from datasets import get_dataset_config_names, get_dataset_default_config_name
+from datasets import (
+    DownloadConfig,
+    StreamingDownloadManager,
+    get_dataset_config_names,
+    get_dataset_default_config_name,
+    load_dataset_builder,
+)
 from datasets.data_files import EmptyDatasetError as _EmptyDatasetError
+from datasets.exceptions import DefunctDatasetError
 from libcommon.exceptions import (
     ConfigNamesError,
     DatasetModuleNotInstalledError,
@@ -74,6 +81,24 @@ def compute_config_names_response(
                 token=hf_token,
                 trust_remote_code=trust_remote_code,
             )
+            # we might have to ignore defunct configs for datasets with a script
+            if trust_remote_code:
+                for config in list(config_names):
+                    try:
+                        builder = load_dataset_builder(
+                            path=dataset, token=hf_token, trust_remote_code=trust_remote_code
+                        )
+                        dl_manager = StreamingDownloadManager(
+                            download_config=DownloadConfig(token=hf_token),
+                            base_path=builder.base_path,
+                            dataset_name=builder.dataset_name,
+                        )
+                        # this raises DefunctDatasetError if the config is defunct
+                        builder._split_generators(dl_manager)
+                    except Exception as err:
+                        if isinstance(err, DefunctDatasetError):
+                            config_names.remove(config)
+                            logging.info(f"Config {config} is defunct - ignoring it.")
         config_name_items: list[ConfigNameItem] = [
             {"dataset": dataset, "config": str(config)}
             for config in sorted(
