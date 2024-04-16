@@ -334,7 +334,7 @@ admin:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/group.order: "1"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
@@ -360,7 +360,7 @@ api:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "3"
+      alb.ingress.kubernetes.io/group.order: "2"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-api=true
   resources:
     requests:
@@ -408,7 +408,7 @@ search:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "1"
+      alb.ingress.kubernetes.io/group.order: "4"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-search=true
       alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
       alb.ingress.kubernetes.io/target-type: ip
@@ -433,7 +433,7 @@ sseApi:
   ingress:
     enabled: true
     annotations:
-      alb.ingress.kubernetes.io/group.order: "2"
+      alb.ingress.kubernetes.io/group.order: "5"
       alb.ingress.kubernetes.io/target-node-labels: role-datasets-server=true
   resources:
     requests:
