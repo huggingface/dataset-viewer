@@ -165,7 +165,7 @@ The response JSON contains three keys:
 
 ## Response structure by data type
 
-Currently, statistics are supported for strings, float and integer numbers, lists, audio data and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
+Currently, statistics are supported for strings, float and integer numbers, lists, audio and image data and the special [`datasets.ClassLabel`](https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.ClassLabel) feature type of the [`datasets`](https://huggingface.co/docs/datasets/) library.
 
 `column_type` in response can be one of the following values:
 
@@ -177,6 +177,7 @@ Currently, statistics are supported for strings, float and integer numbers, list
 * `string_text` - for string data types if they do not represent categories (see below)
 * `list` - for lists of any other data types (including lists)
 * `audio` - for audio data
+* `image` - for image data
 
 ### `class_label`
 
@@ -524,6 +525,64 @@ For audio data, the distribution of audio files durations is computed. The follo
                 12.204,
                 13.602,
                 15
+            ]
+        }
+    }
+}
+```
+
+</p>
+</details>
+
+
+### audio
+
+For image data, the distribution of images widths is computed. The following measures are returned:
+
+* minimum, maximum, mean, and standard deviation of widths of image files
+* number and proportion of `null` values
+* histogram of images widths with 10 bins
+
+<details><summary>Example </summary>
+<p>
+
+```json
+{
+    "column_name": "image",
+    "column_type": "image",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 256,
+        "max": 873,
+        "mean": 327.99339,
+        "median": 341.0,
+        "std": 60.07286,
+        "histogram": {
+            "hist": [
+                1734,
+                1637,
+                1326,
+                121,
+                10,
+                3,
+                1,
+                3,
+                1,
+                2
+            ],
+            "bin_edges": [
+                256,
+                318,
+                380,
+                442,
+                504,
+                566,
+                628,
+                690,
+                752,
+                814,
+                873
             ]
         }
     }
