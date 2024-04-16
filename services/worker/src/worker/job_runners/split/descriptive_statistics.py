@@ -644,6 +644,10 @@ class MediaColumn(Column):
             histogram=transformed_stats["histogram"],
         )
 
+    @classmethod
+    def get_column_type(cls) -> ColumnType:
+        return ColumnType(cls.__name__.split("Column")[0].lower())
+
     def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
         stats = self.compute_statistics(
             parquet_directory=parquet_directory,
@@ -653,7 +657,7 @@ class MediaColumn(Column):
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
-            column_type=ColumnType.AUDIO,
+            column_type=self.get_column_type(),
             column_statistics=stats,
         )
 
