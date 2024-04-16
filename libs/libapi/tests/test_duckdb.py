@@ -48,6 +48,7 @@ async def test_get_index_file_location_and_download_if_missing(
             split=split,
             revision=revision,
             filename=filename,
+            size_bytes=100,
             url=url,
             target_revision=target_revision,
             hf_token=None,

@@ -6,12 +6,7 @@
   image: {{ include "services.storageAdmin.image" . }}
   imagePullPolicy: {{ .Values.images.pullPolicy }}
   volumeMounts:
-  {{ include "volumeMountDuckDBIndexRW" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRW" . | nindent 2 }}
-  - mountPath: /volumes/duckdb-index
-    mountPropagation: None
-    name: volume-duckdb-index
-    readOnly: false
   - mountPath: /volumes/parquet-metadata
     mountPropagation: None
     name: volume-parquet-metadata

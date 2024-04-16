@@ -16,7 +16,7 @@ from search.routes.search import full_text_search
 
 def test_get_download_folder(duckdb_index_cache_directory: StrPath) -> None:
     dataset, config, split, revision = "dataset", "config", "split", "revision"
-    index_folder = get_download_folder(duckdb_index_cache_directory, dataset, config, split, revision)
+    index_folder = get_download_folder(duckdb_index_cache_directory, 100, dataset, config, split, revision)
     assert index_folder is not None
     assert str(duckdb_index_cache_directory) in index_folder
 

@@ -9,6 +9,7 @@ from libcommon.exceptions import CustomError
 
 ApiErrorCode = Literal[
     "AuthCheckHubRequestError",
+    "DownloadIndexError",
     "ExternalAuthenticatedError",
     "ExternalUnauthenticatedError",
     "InvalidParameter",
@@ -52,6 +53,15 @@ class AuthCheckHubRequestError(ApiError):
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(
             message, HTTPStatus.INTERNAL_SERVER_ERROR, "AuthCheckHubRequestError", cause=cause, disclose_cause=False
+        )
+
+
+class DownloadIndexError(ApiError):
+    """The index download failed."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(
+            message, HTTPStatus.INTERNAL_SERVER_ERROR, "DownloadIndexError", cause=cause, disclose_cause=True
         )
 
 

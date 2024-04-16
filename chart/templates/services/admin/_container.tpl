@@ -15,8 +15,6 @@
   {{ include "envAssets" . | nindent 2 }}
   {{ include "envCachedAssets" . | nindent 2 }}
   {{ include "envParquetMetadata" . | nindent 2 }}
-  - name: DUCKDB_INDEX_CACHE_DIRECTORY
-    value: {{ .Values.duckDBIndex.cacheDirectory | quote }}
   # service
   - name: ADMIN_HF_ORGANIZATION
     value: {{ .Values.admin.hfOrganization | quote }}
@@ -41,7 +39,6 @@
   - name: ADMIN_UVICORN_PORT
     value: {{ .Values.admin.uvicornPort | quote }}
   volumeMounts:
-  {{ include "volumeMountDuckDBIndexRO" . | nindent 2 }}
   {{ include "volumeMountParquetMetadataRO" . | nindent 2 }}
   securityContext:
     allowPrivilegeEscalation: false
