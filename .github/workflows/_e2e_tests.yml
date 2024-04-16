@@ -6,7 +6,7 @@ on:
   workflow_call:
 env:
   python-version: 3.9.18
-  poetry-version: "1.7.1"
+  poetry-version: "1.8.2"
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   working-directory: e2e
@@ -66,7 +66,6 @@ jobs:
           S3_REGION_NAME: "us-east-1"
           CLOUDFRONT_KEY_PAIR_ID: "K3814DK2QUJ71H"
           CLOUDFRONT_PRIVATE_KEY: ${{ secrets.CLOUDFRONT_PRIVATE_KEY }}
-          HF_HUB_ENABLE_HF_TRANSFER: "1"
         run: docker compose -f docker-compose-dataset-viewer.yml up -d --wait --wait-timeout 20
         working-directory: ./tools
       - name: Install poetry

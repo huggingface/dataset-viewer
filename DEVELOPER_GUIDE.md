@@ -191,13 +191,13 @@ Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
 
 - Either a single version:
 ```bash
-pipx install poetry==1.7.1
+pipx install poetry==1.8.2
 poetry --version
 ```
 - Or a parallel version (with a unique suffix):
 ```bash
-pipx install poetry==1.7.1 --suffix=@1.7.1
-poetry@1.7.1 --version
+pipx install poetry==1.8.2 --suffix=@1.8.2
+poetry@1.8.2 --version
 ```
 
 Set the Python version to use with Poetry:
@@ -207,7 +207,7 @@ poetry env use 3.9.18
 ```
 or
 ```bash
-poetry@1.7.1 env use 3.9.18
+poetry@1.8.2 env use 3.9.18
 ```
 
 Install the dependencies:
@@ -265,13 +265,13 @@ Install Poetry with [pipx](https://pipx.pypa.io/stable/installation/):
 
 - Either a single version:
 ```bash
-pipx install poetry==1.7.1
+pipx install poetry==1.8.2
 poetry --version
 ```
 - Or a parallel version (with a unique suffix):
 ```bash
-pipx install poetry==1.7.1 --suffix=@1.7.1
-poetry@1.7.1 --version
+pipx install poetry==1.8.2 --suffix=@1.8.2
+poetry@1.8.2 --version
 ```
 
 append the following lines to ~/.zshrc:
@@ -294,7 +294,7 @@ poetry env use 3.9.18
 ```
 or
 ```bash
-poetry@1.7.1 env use 3.9.18
+poetry@1.8.2 env use 3.9.18
 ```
 
 Avoid an issue with Apache beam (https://github.com/python-poetry/poetry/issues/4888#issuecomment-1208408509):
@@ -304,7 +304,7 @@ poetry config experimental.new-installer false
 ```
 or
 ```bash
-poetry@1.7.1 config experimental.new-installer false
+poetry@1.8.2 config experimental.new-installer false
 ```
 
 Install the dependencies:
