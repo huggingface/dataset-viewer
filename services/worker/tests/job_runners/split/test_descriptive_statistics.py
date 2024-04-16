@@ -15,7 +15,6 @@ from datasets import ClassLabel, Dataset
 from datasets.table import embed_table_storage
 from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
-from libcommon.exceptions import StatisticsComputationError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -85,30 +84,6 @@ def test_generate_bins(
         assert pytest.approx(bins) == expected_bins
     else:
         assert bins == expected_bins
-
-
-# test raise_with_column_name decorator works
-def test_error_contains_column_name(
-    datasets: Mapping[str, Dataset],
-) -> None:
-    correct_column_name = "float__column"
-    data = datasets["descriptive_statistics"].to_dict()
-    _ = FloatColumn._compute_statistics(
-        data=pl.from_dict(data),
-        column_name=correct_column_name,
-        n_bins=N_BINS,
-        n_samples=len(data[correct_column_name]),
-    )  # should not raise
-
-    incorrect_column_name = "random_column"
-    with pytest.raises(StatisticsComputationError) as e:
-        _ = FloatColumn._compute_statistics(  # internal error happens here
-            data=pl.from_dict(data),
-            column_name=incorrect_column_name,
-            n_bins=N_BINS,
-            n_samples=len(next(iter(data.values()))),
-        )
-    assert f"Error for column={incorrect_column_name}: error" in str(e.value)
 
 
 @pytest.fixture
@@ -588,7 +563,7 @@ def test_float_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = FloatColumn._compute_statistics(
+    computed = FloatColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -622,7 +597,7 @@ def test_int_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = IntColumn._compute_statistics(
+    computed = IntColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -663,7 +638,7 @@ def test_string_statistics(
     else:
         expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics"].to_dict()
-    computed = StringColumn._compute_statistics(
+    computed = StringColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -698,7 +673,7 @@ def test_class_label_statistics(
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ClassLabelColumn._compute_statistics(
+    computed = ClassLabelColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
@@ -722,7 +697,7 @@ def test_bool_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = BoolColumn._compute_statistics(
+    computed = BoolColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
@@ -766,7 +741,7 @@ def test_list_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ListColumn._compute_statistics(
+    computed = ListColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_bins=N_BINS,
@@ -823,7 +798,7 @@ def test_audio_statistics(
     dataset_table = datasets["audio_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = AudioColumn._compute_statistics(
+    computed = AudioColumn.compute_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
@@ -848,7 +823,7 @@ def test_image_statistics(
     dataset_table = datasets["image_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = ImageColumn._compute_statistics(
+    computed = ImageColumn.compute_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
