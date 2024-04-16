@@ -58,6 +58,7 @@ class StorageClient:
                 key=s3_config.access_key_id,
                 secret=s3_config.secret_access_key,
                 client_kwargs={"region_name": s3_config.region_name},
+                max_paths=100,  # to avoid the DirCache from growing too much
             )
         elif protocol == "file":
             self._fs = fsspec.filesystem(protocol, auto_mkdir=True)
