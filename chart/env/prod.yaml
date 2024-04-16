@@ -227,16 +227,6 @@ backfillRetryableErrors:
       cpu: 2
       memory: "8Gi"
 
-cleanDuckdbIndexCache:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 259_200 # 3 days
-
-cleanDuckdbIndexDownloads:
-  nodeSelector:
-    role-datasets-server: "true"
-  expiredTimeIntervalSeconds: 259_200 # 3 days
-
 postMessages:
   nodeSelector:
     role-datasets-server: "true"
@@ -387,7 +377,7 @@ search:
   uvicornNumWorkers: "2"
   nodeSelector:
     role-datasets-server-search: "true"
-  replicas: 7
+  replicas: 4
   service:
     type: NodePort
   ingress:

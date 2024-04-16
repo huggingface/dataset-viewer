@@ -29,11 +29,6 @@ The following environment variables are used to configure the Uvicorn server (`A
 
 - `PROMETHEUS_MULTIPROC_DIR`: the directory where the uvicorn workers share their prometheus metrics. See https://github.com/prometheus/client_python#multiprocess-mode-eg-gunicorn. Defaults to empty, in which case every worker manages its own metrics, and the /metrics endpoint returns the metrics of a random worker.
 
-### Storage
-
-- `DUCKDB_INDEX_CACHE_DIRECTORY`: storage directory where `split-duckdb-index` job runner stores temporal downloaded parquet files.
-Same directory is used for /search and /filter endpoint for temporal duckdb index files are downloaded.  
-
 ### Common
 
 See [../../libs/libcommon/README.md](../../libs/libcommon/README.md) for more information about the common configuration.

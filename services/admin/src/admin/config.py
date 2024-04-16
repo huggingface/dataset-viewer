@@ -78,22 +78,6 @@ class AdminConfig:
             )
 
 
-DUCKDB_INDEX_CACHE_DIRECTORY = None
-
-
-@dataclass(frozen=True)
-class DuckDBIndexConfig:
-    cache_directory: Optional[str] = DUCKDB_INDEX_CACHE_DIRECTORY
-
-    @classmethod
-    def from_env(cls) -> "DuckDBIndexConfig":
-        env = Env(expand_vars=True)
-        with env.prefixed("DUCKDB_INDEX_"):
-            return cls(
-                cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
-            )
-
-
 @dataclass(frozen=True)
 class AppConfig:
     admin: AdminConfig = field(default_factory=AdminConfig)
@@ -101,7 +85,6 @@ class AppConfig:
     cache: CacheConfig = field(default_factory=CacheConfig)
     cached_assets: CachedAssetsConfig = field(default_factory=CachedAssetsConfig)
     common: CommonConfig = field(default_factory=CommonConfig)
-    duckdb_index: DuckDBIndexConfig = field(default_factory=DuckDBIndexConfig)
     log: LogConfig = field(default_factory=LogConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     queue: QueueConfig = field(default_factory=QueueConfig)
@@ -115,7 +98,6 @@ class AppConfig:
             assets=AssetsConfig.from_env(),
             cache=CacheConfig.from_env(),
             cached_assets=CachedAssetsConfig.from_env(),
-            duckdb_index=DuckDBIndexConfig.from_env(),
             log=LogConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
             queue=QueueConfig.from_env(),
