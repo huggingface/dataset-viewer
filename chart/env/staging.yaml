@@ -223,6 +223,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/group.order: "100"
 
 # --- services ---
 
@@ -231,6 +232,10 @@ admin:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "1"
   resources:
     requests:
       cpu: 100m
@@ -244,6 +249,10 @@ api:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "2"
   resources:
     requests:
       cpu: 100m
@@ -257,6 +266,10 @@ rows:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "3"
   resources:
     requests:
       cpu: 100m
@@ -270,6 +283,10 @@ search:
   replicas: 1
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "4"
   resources:
     requests:
       cpu: 100m
