@@ -535,7 +535,7 @@ For audio data, the distribution of audio files durations is computed. The follo
 </details>
 
 
-### audio
+### image
 
 For image data, the distribution of images widths is computed. The following measures are returned:
 
