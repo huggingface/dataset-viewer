@@ -10,7 +10,7 @@ python = "3.9.18"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
-huggingface-hub = "^0.21.4"
+huggingface-hub = "^0.22.2"
 mypy = "^1.8.0"
 pip-audit = "^2.5.4"
 pytest = "^7.2.1"
