@@ -119,6 +119,7 @@ The response has three fields: `num_examples`, `statistics`, and `partial`. `par
 * `bool` - for boolean dtype ("bool")
 * `list` - for lists of other data types (including lists)
 * `audio` - for audio data
+* `image` - for image data
 
 `column_statistics` content depends on the feature type, see examples below.
 ##### class_label
@@ -542,7 +543,57 @@ Shows distribution of audio files durations.
 </p>
 </details>
 
+##### image
 
+Shows distribution of image files widths.
+
+<details><summary>example: </summary>
+<p>
+
+```python
+{
+    "column_name": "image",
+    "column_type": "image",
+    "column_statistics": {
+        "nan_count": 0,
+        "nan_proportion": 0.0,
+        "min": 256,
+        "max": 873,
+        "mean": 327.99339,
+        "median": 341.0,
+        "std": 60.07286,
+        "histogram": {
+            "hist": [
+                1734,
+                1637,
+                1326,
+                121,
+                10,
+                3,
+                1,
+                3,
+                1,
+                2
+            ],
+            "bin_edges": [
+                256,
+                318,
+                380,
+                442,
+                504,
+                566,
+                628,
+                690,
+                752,
+                814,
+                873
+            ]
+        }
+    }
+}
+```
+</p>
+</details>
 
 ### Splits worker
 
