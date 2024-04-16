@@ -17,7 +17,7 @@ h5py = "^3.10.0"
 libcommon = {path = "../../libs/libcommon", develop = true}
 lxml = "^4.9.2"
 mirakuru = "^2.4.2"
-numpy = "~1.22.4"
+numpy = "^1.22.4"
 openpyxl = "^3.1.1"
 pillow = "^10.3.0"
 polars = ">=0.20.0"

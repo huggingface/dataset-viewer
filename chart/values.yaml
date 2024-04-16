@@ -360,8 +360,8 @@ cleanDuckdbIndexDownloads:
   log:
     level: "info"
   action: "clean-directory"
-  schedule: "0 0 * * *"
-  # at 00:00
+  schedule: "0 */3 * * *"
+  # every 3 hours
   nodeSelector: {}
   resources:
     requests:
@@ -582,6 +582,9 @@ search:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 

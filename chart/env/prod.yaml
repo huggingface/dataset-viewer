@@ -311,6 +311,7 @@ ingress:
     alb.ingress.kubernetes.io/scheme: "internet-facing"
     alb.ingress.kubernetes.io/group.name: "datasets-server"
     kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/group.order: "100"
 
 # --- services ---
 
@@ -389,6 +390,13 @@ search:
   replicas: 7
   service:
     type: NodePort
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/group.order: "1"
+      alb.ingress.kubernetes.io/target-node-labels: role-datasets-server-search=true
+      alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=300
+      alb.ingress.kubernetes.io/target-type: ip
   resources:
     requests:
       cpu: 1
