@@ -676,14 +676,14 @@ class ImageColumn(MediaColumn):
     transform_column = IntColumn
 
     @staticmethod
-    def get_width(example: dict[str, Any]) -> float:
+    def get_width(example: dict[str, Any]) -> int:
         """Get image widths."""
         with io.BytesIO(example["bytes"]) as f:
             image = Image.open(f)
             return image.size[0]
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> float:
+    def transform(cls, example: dict[str, Any]) -> int:
         return cls.get_width(example)
 
 
