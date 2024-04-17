@@ -16,18 +16,27 @@ lock:
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
-	$(POETRY) run ruff check src
-	$(POETRY) run ruff check tests --ignore=ARG
-	$(POETRY) run ruff format --check src tests
-	$(POETRY) run mypy tests src
-	$(POETRY) run bandit -r src
+# Run ruff linter
+	if [ -d src ]; then $(POETRY) run ruff check src; fi
+	if [ -d tests ]; then $(POETRY) run ruff check tests --ignore=ARG; fi
+# Run ruff formatter
+	if [ -d src ]; then $(POETRY) run ruff format --check src; fi
+	if [ -d tests ]; then $(POETRY) run ruff format --check tests; fi
+# Run mypy
+	if [ -d src ]; then $(POETRY) run mypy src; fi
+	if [ -d tests ]; then $(POETRY) run mypy tests; fi
+# Run bandit
+	if [ -d src ]; then $(POETRY) run bandit -r src; fi
 
 # Format source code automatically
 .PHONY: style
 style:
-	$(POETRY) run ruff check --fix src
-	$(POETRY) run ruff check --fix tests --ignore=ARG
-	$(POETRY) run ruff format src tests
+# Run ruff linter
+	if [ -d src ]; then $(POETRY) run ruff check --fix src; fi
+	if [ -d tests ]; then $(POETRY) run ruff check --fix tests --ignore=ARG; fi
+# Run ruff formatter
+	if [ -d src ]; then $(POETRY) run ruff format src; fi
+	if [ -d tests ]; then $(POETRY) run ruff format tests; fi
 
 .PHONY: pip-audit
 pip-audit:
