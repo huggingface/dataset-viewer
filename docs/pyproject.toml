@@ -1,4 +1,5 @@
 [tool.poetry]
+package-mode = false
 authors = ["Sylvain Lesage <sylvain.lesage@huggingface.co>"]
 description = "Documentation for dataset-viewer"
 name = "dataset-viewer-doc"
