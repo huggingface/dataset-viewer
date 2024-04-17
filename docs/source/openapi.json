@@ -1098,7 +1098,8 @@
           "string_text",
           "bool",
           "list",
-          "audio"
+          "audio",
+          "image"
         ]
       },
       "Histogram": {
@@ -6230,6 +6231,89 @@
                           }
                         }
                       ],
+                      "partial": false
+                    }
+                  },
+                  "A split (Matthijs/snacks) with image column": {
+                    "summary": "Statistics on an image column 'image'.",
+                    "description": "Try with https://datasets-server.huggingface.co/statistics?dataset=Matthijs/snacks&config=default&split=train.",
+                    "value": {
+                      "num_examples": 4838,
+                      "statistics": [
+                        {
+                          "column_name": "image",
+                          "column_type": "image",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "min": 256,
+                            "max": 873,
+                            "mean": 327.99339,
+                            "median": 341.0,
+                            "std": 60.07286,
+                            "histogram": {
+                              "hist": [
+                                  1734,
+                                  1637,
+                                  1326,
+                                  121,
+                                  10,
+                                  3,
+                                  1,
+                                  3,
+                                  1,
+                                  2
+                              ],
+                              "bin_edges": [
+                                  256,
+                                  318,
+                                  380,
+                                  442,
+                                  504,
+                                  566,
+                                  628,
+                                  690,
+                                  752,
+                                  814,
+                                  873
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "column_name": "label",
+                          "column_type": "class_label",
+                          "column_statistics": {
+                            "nan_count": 0,
+                            "nan_proportion": 0.0,
+                            "no_label_count": 0,
+                            "no_label_proportion": 0.0,
+                            "n_unique": 20,
+                            "frequencies": {
+                              "apple": 250,
+                              "banana": 250,
+                              "cake": 249,
+                              "candy": 249,
+                              "carrot": 249,
+                              "cookie": 249,
+                              "doughnut": 250,
+                              "grape": 250,
+                              "hot dog": 250,
+                              "ice cream": 250,
+                              "juice": 250,
+                              "muffin": 250,
+                              "orange": 249,
+                              "pineapple": 260,
+                              "popcorn": 180,
+                              "pretzel": 154,
+                              "salad": 250,
+                              "strawberry": 249,
+                              "waffle": 250,
+                              "watermelon": 250
+                            }
+                          }
+                        }
+                    ],
                       "partial": false
                     }
                   }
