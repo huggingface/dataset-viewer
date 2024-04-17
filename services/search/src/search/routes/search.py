@@ -211,6 +211,7 @@ def create_search_endpoint(
                         extensions_directory,
                     )
                     # no need to do it every time
+                    # TODO: Will be moved to another process in parallel
                     if random.random() < clean_cache_proba:  # nosec
                         with StepProfiler(method="search_endpoint", step="clean old indexes"):
                             clean_dir(
