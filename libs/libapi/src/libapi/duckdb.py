@@ -75,7 +75,12 @@ def get_download_folder(
 
 
 def check_available_disk_space(path: StrPath, required_space: int) -> None:
-    disk_stat = os.statvfs(path)
+    try:
+        disk_stat = os.statvfs(path)
+    except FileNotFoundError:
+        # The path does not exist, we create it and
+        init_dir(path)
+        disk_stat = os.statvfs(path)
     # Calculate free space in bytes
     free_space = disk_stat.f_bavail * disk_stat.f_frsize
     logging.debug(f"{free_space} available space, needed {required_space}")
