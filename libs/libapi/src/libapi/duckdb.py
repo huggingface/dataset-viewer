@@ -11,7 +11,7 @@ from typing import Optional
 
 import anyio
 from anyio import Path
-from libcommon.constants import DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY, SPLIT_DUCKDB_INDEX_KIND
+from libcommon.constants import SPLIT_DUCKDB_INDEX_KIND
 from libcommon.parquet_utils import extract_split_name_from_parquet_url
 from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntry
@@ -23,6 +23,7 @@ from libapi.exceptions import DownloadIndexError
 from libapi.utils import get_cache_entry_from_step
 
 REPO_TYPE = "dataset"
+DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
 HUB_DOWNLOAD_CACHE_FOLDER = "cache"
 
 

@@ -39,9 +39,12 @@ class DuckDbIndexConfig:
         with env.prefixed("DUCKDB_INDEX_"):
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DUCKDB_INDEX_CACHE_DIRECTORY),
-                clean_cache_proba=env.float(name="CLEAN_CACHE_PROBA", default=DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA),
+                clean_cache_proba=env.float(
+                    name="CACHE_CLEAN_CACHE_PROBA", default=DUCKDB_INDEX_CACHE_CLEAN_CACHE_PROBA
+                ),
                 expired_time_interval_seconds=env.int(
-                    name="EXPIRED_TIME_INTERVAL_SECONDS", default=DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS
+                    name="CACHE_EXPIRED_TIME_INTERVAL_SECONDS",
+                    default=DUCKDB_INDEX_CACHE_EXPIRED_TIME_INTERVAL_SECONDS,
                 ),
                 target_revision=env.str(name="TARGET_REVISION", default=DUCKDB_INDEX_TARGET_REVISION),
                 extensions_directory=env.str(name="EXTENSIONS_DIRECTORY", default=DUCKDB_INDEX_EXTENSIONS_DIRECTORY),
