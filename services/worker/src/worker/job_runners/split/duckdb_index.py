@@ -5,9 +5,10 @@ import copy
 import logging
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import duckdb
+import polars as pl
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
@@ -39,6 +40,7 @@ from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_h
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
+from worker.job_runners.split.descriptive_statistics import STRING_DTYPES
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
@@ -52,12 +54,22 @@ DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
+CREATE_TMP_TABLE_COMMAND = "CREATE OR REPLACE TABLE tmp AS SELECT {column_name} from {source_df}"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
+# ALTER_TABLE_BY_ADDING_TRANSFORMED_INT_COLUMN = "ALTER TABLE data ADD COLUMN {column_name} BIGINT"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
 CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
+
+ADD_COLUMN_COMMAND = """
+    ALTER TABLE data ADD COLUMN {column_name} BIGINT;
+    UPDATE data
+        SET {column_name} = tmp.{column_name}
+    FROM tmp
+        WHERE data.__hf_index_id = tmp.__hf_index_id;
+"""
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -74,6 +86,38 @@ def get_indexable_columns(features: Features) -> list[str]:
         if indexable:
             indexable_columns.append(column)
     return indexable_columns
+
+
+def get_transformable_columns(features: dict[str, Any]) -> dict[str, list[str]]:
+    transformable_columns: dict[str, list[str]] = {
+        "audio": [],
+        "image": [],
+        "string": [],
+    }
+    for feature_name, feature in features.items():
+        if isinstance(feature, dict):
+            if feature.get("_type") == "Audio":
+                transformable_columns["audio"].append(feature_name)
+
+            if feature.get("_type") == "Image":
+                transformable_columns["image"].append(feature_name)
+
+            if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
+                transformable_columns["string"].append(feature_name)
+    return transformable_columns
+
+
+def index_string_length_column(parquet_files: str, column_name: str, con: duckdb.DuckDBPyConnection) -> None:
+    df = pl.read_parquet(parquet_files, columns=[column_name])
+    lengths_column_name = f"{column_name}__hf_len"
+    lengths_df = df.select(pl.col(column_name)).with_columns(
+        pl.col(column_name).str.len_chars().alias(lengths_column_name)
+    )
+    con.sql(CREATE_TMP_TABLE_COMMAND.format(column_name=lengths_column_name, source_df=lengths_df))
+    con.sql(CREATE_SEQUENCE_COMMAND)
+    con.sql("ALTER TABLE tmp ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');")
+    con.sql(ADD_COLUMN_COMMAND.format(column_name=lengths_column_name))
+    con.sql("DROP TABLE tmp;")
 
 
 def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
@@ -170,6 +214,8 @@ def compute_split_duckdb_index_response(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
+    transformable_columns = get_transformable_columns(features)
+
     for parquet_file in parquet_file_names:
         download_file_from_hub(
             repo_type=REPO_TYPE,
@@ -183,6 +229,7 @@ def compute_split_duckdb_index_response(
             resume_download=False,
         )
     all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
+
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
     # index all columns
@@ -206,6 +253,12 @@ def compute_split_duckdb_index_response(
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
             logging.info(create_index_sql)
             con.sql(create_index_sql)
+
+        for column_type, column_names in transformable_columns.items():
+            for column_name in column_names:
+                if column_type == "string":
+                    index_string_length_column(all_split_parquets, column_name, con)
+
     finally:
         con.close()
 
