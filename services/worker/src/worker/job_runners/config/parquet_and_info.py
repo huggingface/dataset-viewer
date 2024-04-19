@@ -56,7 +56,6 @@ from libcommon.exceptions import (
     DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
-    DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
     ExternalFilesSizeRequestError,
@@ -529,12 +528,6 @@ def copy_parquet_files(builder: DatasetBuilder) -> list[CommitOperationCopy]:
     if empty_splits:
         raise EmptyDatasetError(f"Empty parquet data_files for splits: {empty_splits}")
     parquet_operations = []
-    total_num_parquet_files = sum(len(data_files[split]) for split in data_files)
-    if total_num_parquet_files >= MAX_FILES_PER_DIRECTORY:
-        raise DatasetWithTooManyParquetFilesError(
-            f"The dataset has {total_num_parquet_files} parquet files and can't be linked in the parquet directory "
-            f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
-        )
     for split in data_files:
         for shard_idx, data_file in enumerate(data_files[split]):
             # data_file format for hub files is hf://datasets/{repo_id}@{revision}/{path_in_repo}
