@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 import duckdb
 import polars as pl
+import pyarrow.parquet as pq
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
@@ -37,10 +38,11 @@ from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry
+from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
-from worker.job_runners.split.descriptive_statistics import STRING_DTYPES
+from worker.job_runners.split.descriptive_statistics import STRING_DTYPES, AudioColumn
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
@@ -70,6 +72,8 @@ ADD_COLUMN_COMMAND = """
     FROM tmp
         WHERE data.__hf_index_id = tmp.__hf_index_id;
 """
+
+ADD_COLUMNS_BY_POSITIONAL_JOIN_COMMAND = "SELECT data.*, tmp.* FROM data POSITIONAL JOIN tmp;"
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -107,17 +111,47 @@ def get_transformable_columns(features: dict[str, Any]) -> dict[str, list[str]]:
     return transformable_columns
 
 
-def index_string_length_column(parquet_files: str, column_name: str, con: duckdb.DuckDBPyConnection) -> None:
-    df = pl.read_parquet(parquet_files, columns=[column_name])
+def compute_string_length_column(
+    all_split_parquets: str, column_name: str, target_df: Optional[pl.DataFrame]
+) -> pl.DataFrame:
+    df = pl.read_parquet(all_split_parquets, columns=[column_name])
     lengths_column_name = f"{column_name}__hf_len"
     lengths_df = df.select(pl.col(column_name)).with_columns(
         pl.col(column_name).str.len_chars().alias(lengths_column_name)
     )
-    con.sql(CREATE_TMP_TABLE_COMMAND.format(column_name=lengths_column_name, source_df=lengths_df))
-    con.sql(CREATE_SEQUENCE_COMMAND)
-    con.sql("ALTER TABLE tmp ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');")
-    con.sql(ADD_COLUMN_COMMAND.format(column_name=lengths_column_name))
-    con.sql("DROP TABLE tmp;")
+    if target_df is None:
+        return lengths_df.select(pl.col(lengths_column_name))
+
+    target_df.insert_column(target_df.shape[1], lengths_df[lengths_column_name])
+    return target_df
+
+
+def compute_audio_duration_column(
+    parquet_directory: Path,
+    column_name: str,
+    target_df: Optional[pl.DataFrame],
+) -> pl.DataFrame:
+    parquet_files = list(parquet_directory.glob("*.parquet"))
+    duration_column_name = f"{column_name}__hf_duration"
+    transformed_values = []
+    for filename in parquet_files:
+        shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
+        shard_transformed_values = (
+            thread_map(
+                AudioColumn.transform,
+                shard_items,
+                desc=f"Transforming values of {column_name} for {filename}",
+                leave=False,
+            )
+            if shard_items
+            else []
+        )
+        transformed_values.extend(shard_transformed_values)
+    duration_df = pl.from_dict({column_name: transformed_values})
+    if target_df is None:
+        return duration_df
+    target_df.insert_column(target_df.shape[1], duration_df[duration_column_name])
+    return target_df
 
 
 def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
@@ -228,7 +262,16 @@ def compute_split_duckdb_index_response(
             force_download=True,
             resume_download=False,
         )
-    all_split_parquets = f"{duckdb_index_file_directory}/{config}/{split_directory}/*.parquet"
+    split_parquet_directory = duckdb_index_file_directory / config / split_directory
+    all_split_parquets = str(split_parquet_directory / "*.parquet")
+
+    transformed_df = None
+    for column_type, column_names in transformable_columns.items():
+        for column_name in column_names:
+            if column_type == "string":
+                transformed_df = compute_string_length_column(all_split_parquets, column_name, transformed_df)
+            if column_type == "audio":
+                transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
 
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
@@ -246,6 +289,13 @@ def compute_split_duckdb_index_response(
         logging.info(create_command_sql)
         con.sql(create_command_sql)
 
+        if transformed_df is not None:
+            # update original data with results of transformations (string lengths, audio durations, etc.):
+            con.sql(
+                "CREATE OR REPLACE TABLE data AS "
+                "SELECT data.*, transformed_df.* FROM data POSITIONAL JOIN transformed_df;"
+            )  # TODO: not sure this is efficient
+
         is_indexable = len(indexable_columns) > 0
         if is_indexable:
             # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
@@ -253,11 +303,6 @@ def compute_split_duckdb_index_response(
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
             logging.info(create_index_sql)
             con.sql(create_index_sql)
-
-        for column_type, column_names in transformable_columns.items():
-            for column_name in column_names:
-                if column_type == "string":
-                    index_string_length_column(all_split_parquets, column_name, con)
 
     finally:
         con.close()
