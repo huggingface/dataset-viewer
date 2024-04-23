@@ -305,7 +305,7 @@ def dataset_sharded_with_config_parquet_metadata(
                 "num_rows": pq.read_metadata(ds_sharded_fs.open(parquet_file_path)).num_rows,
                 "parquet_metadata_subpath": f"ds_sharded/--/{parquet_file_path}",
             }
-            for parquet_file_path in ds_sharded_fs.glob("default/**.parquet")
+            for parquet_file_path in ds_sharded_fs.glob("default/**/*.parquet")
         ]
     }
     upsert_response(
