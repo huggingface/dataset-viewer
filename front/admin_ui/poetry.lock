@@ -992,18 +992,17 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2023.10.0"
+version = "2024.3.1"
 description = "File-system specification"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fsspec-2023.10.0-py3-none-any.whl", hash = "sha256:346a8f024efeb749d2a5fca7ba8854474b1ff9af7c3faaf636a4548781136529"},
-    {file = "fsspec-2023.10.0.tar.gz", hash = "sha256:330c66757591df346ad3091a53bd907e15348c2ba17d63fd54f5c39c4457d2a5"},
+    {file = "fsspec-2024.3.1-py3-none-any.whl", hash = "sha256:918d18d41bf73f0e2b261824baeb1b124bcf771767e3a26425cd7dec3332f512"},
+    {file = "fsspec-2024.3.1.tar.gz", hash = "sha256:f39780e282d7d117ffb42bb96992f8a90795e4d0fb0f661a70ca39fe9c43ded9"},
 ]
 
 [package.dependencies]
 aiohttp = {version = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1", optional = true, markers = "extra == \"http\""}
-requests = {version = "*", optional = true, markers = "extra == \"http\""}
 s3fs = {version = "*", optional = true, markers = "extra == \"s3\""}
 
 [package.extras]
@@ -1021,7 +1020,7 @@ github = ["requests"]
 gs = ["gcsfs"]
 gui = ["panel"]
 hdfs = ["pyarrow (>=1)"]
-http = ["aiohttp (!=4.0.0a0,!=4.0.0a1)", "requests"]
+http = ["aiohttp (!=4.0.0a0,!=4.0.0a1)"]
 libarchive = ["libarchive-c"]
 oci = ["ocifs"]
 s3 = ["s3fs"]
@@ -1446,7 +1445,7 @@ appdirs = "^1.4.4"
 cryptography = "^42.0.4"
 datasets = {version = "^2.19.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-fsspec = {version = "~2023.10", extras = ["s3"]}
+fsspec = {version = "2024.3.1", extras = ["s3"]}
 huggingface-hub = {version = "^0.22.2", extras = ["hf-transfer"]}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
@@ -2855,23 +2854,23 @@ files = [
 
 [[package]]
 name = "s3fs"
-version = "2023.10.0"
+version = "2024.3.1"
 description = "Convenient Filesystem interface over S3"
 optional = false
 python-versions = ">= 3.8"
 files = [
-    {file = "s3fs-2023.10.0-py3-none-any.whl", hash = "sha256:3df68ff4f5f70c3338219a66df92e91fd15c6b78d0f559e57f617dfdd49feb41"},
-    {file = "s3fs-2023.10.0.tar.gz", hash = "sha256:c40f238ccc9fefff3f6d09d4b5762abd6c913ba42e1a328976b54d038901b835"},
+    {file = "s3fs-2024.3.1-py3-none-any.whl", hash = "sha256:f4566a5446c473740d272ec08e0b4aae8db1aa05f662c42ff0aa2c89bb5060ea"},
+    {file = "s3fs-2024.3.1.tar.gz", hash = "sha256:1b8bc8dbd65e7b60f5487378f6eeffe1de59aa72caa9efca6dad6ab877405487"},
 ]
 
 [package.dependencies]
-aiobotocore = ">=2.7.0,<2.8.0"
+aiobotocore = ">=2.5.4,<3.0.0"
 aiohttp = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1"
-fsspec = "2023.10.0"
+fsspec = "2024.3.1"
 
 [package.extras]
-awscli = ["aiobotocore[awscli] (>=2.7.0,<2.8.0)"]
-boto3 = ["aiobotocore[boto3] (>=2.7.0,<2.8.0)"]
+awscli = ["aiobotocore[awscli] (>=2.5.4,<3.0.0)"]
+boto3 = ["aiobotocore[boto3] (>=2.5.4,<3.0.0)"]
 
 [[package]]
 name = "scikit-learn"
