@@ -147,7 +147,7 @@ def compute_audio_duration_column(
             else []
         )
         transformed_values.extend(shard_transformed_values)
-    duration_df = pl.from_dict({column_name: transformed_values})
+    duration_df = pl.from_dict({duration_column_name: transformed_values})
     if target_df is None:
         return duration_df
     target_df.insert_column(target_df.shape[1], duration_df[duration_column_name])
@@ -266,12 +266,16 @@ def compute_split_duckdb_index_response(
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
     transformed_df = None
-    for column_type, column_names in transformable_columns.items():
-        for column_name in column_names:
+    for column_type, transformable_column_names in transformable_columns.items():
+        for column_name in transformable_column_names:
             if column_type == "string":
+                logging.debug("compute for strings")
                 transformed_df = compute_string_length_column(all_split_parquets, column_name, transformed_df)
             if column_type == "audio":
+                logging.debug("compute for audio")
                 transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
+
+    logging.debug(transformed_df.head())
 
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
@@ -288,13 +292,19 @@ def compute_split_duckdb_index_response(
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)
+        logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
+        logging.debug(con.sql("SELECT count(*) FROM data;"))
 
         if transformed_df is not None:
             # update original data with results of transformations (string lengths, audio durations, etc.):
+            logging.info(f"updating data with {transformed_df.columns}")
             con.sql(
                 "CREATE OR REPLACE TABLE data AS "
                 "SELECT data.*, transformed_df.* FROM data POSITIONAL JOIN transformed_df;"
             )  # TODO: not sure this is efficient
+
+        logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
+        logging.debug(con.sql("SELECT count(*) FROM data;"))
 
         is_indexable = len(indexable_columns) > 0
         if is_indexable:
