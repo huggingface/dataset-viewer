@@ -106,8 +106,6 @@
 - name: DUCKDB_INDEX_EXTENSIONS_DIRECTORY
   value: "/tmp/duckdb-extensions"
 # specific to 'split-descriptive-statistics'
-- name: DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
-  value: {{ .Values.descriptiveStatistics.histogramNumBins | quote }}
 - name: DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
   value: {{ .Values.descriptiveStatistics.maxSplitSizeBytes | quote }}
 - name: DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY

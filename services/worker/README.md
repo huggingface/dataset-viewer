@@ -102,7 +102,6 @@ Set environment variables to configure the `descriptive-statistics` worker (`DES
 
 - `DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY`: directory to which a dataset in parquet format is downloaded. Defaults to empty.
 - `DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES`: if size in bytes of raw uncompressed split data is larger than this value, only first `n` parquet files are used so that their sum of uncompressed content in bytes is not greater than approximately `DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES`. Defaults to `100_000_000`.
-- `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`: number of histogram bins (see examples below for more info).
 - 
 #### How descriptive statistics are computed 
 
@@ -152,7 +151,7 @@ The response has three fields: `num_examples`, `statistics`, and `partial`. `par
 
 ##### float
 
-Bin size for histogram is counted as `(max_value - min_value) / DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`
+Bin size for histogram is counted as `(max_value - min_value) / NUM_BINS`. Currently `NUM_BINS` is 10.
 
 <details><summary>example: </summary>
 <p>
@@ -204,7 +203,7 @@ Bin size for histogram is counted as `(max_value - min_value) / DESCRIPTIVE_STAT
 
 ##### int
 
-As bin edges for integer values also must be integers, bin size is counted as `np.ceil((max_value - min_value + 1) / DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS)`. Rounding up means that there might be smaller number of bins in response then provided `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`. The last bin's size might be smaller than that of the others if the feature's range is not divisible by the rounded bin size. 
+As bin edges for integer values also must be integers, bin size is counted as `np.ceil((max_value - min_value + 1) / NUM_BINS)`. Currently `NUM_BINS` is 10. Rounding up means that there might be smaller number of bins in response then `NUM_BINS`. The last bin's size might be smaller than that of the others if the feature's range is not divisible by the rounded bin size. 
 
 <details><summary>examples: </summary>
 <p>
@@ -351,7 +350,7 @@ As bin edges for integer values also must be integers, bin size is counted as `n
 
 ##### string_label
 
-If the proportion of unique values in a column (within requested split) is <= `MAX_PROPORTION_STRING_LABELS` (currently 0.2) and the number of unique values is <= `MAX_NUM_STRING_LABELS` (currently 1000), the column is considered to be a category and the categories counts are computed. If the proportion on unique values is > `MAX_PROPORTION_STRING_LABELS` but the number of unique values is <= `DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS`, it is still treated as category.
+If the proportion of unique values in a column (within requested split) is <= `MAX_PROPORTION_STRING_LABELS` (currently 0.2) and the number of unique values is <= `MAX_NUM_STRING_LABELS` (currently 1000), the column is considered to be a category and the categories counts are computed. If the proportion on unique values is > `MAX_PROPORTION_STRING_LABELS` but the number of unique values is <= `NUM_BINS`, it is still treated as category.
 
 <details><summary>examples: </summary>
 <p>

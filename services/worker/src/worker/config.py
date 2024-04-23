@@ -294,7 +294,6 @@ class DuckDbIndexConfig:
 
 
 DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY = None
-DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS = 10
 DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES = 100_000_000
 
 
@@ -302,7 +301,6 @@ DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES = 100_000_000
 class DescriptiveStatisticsConfig:
     cache_directory: Optional[str] = DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY
     parquet_revision: str = PARQUET_AND_INFO_TARGET_REVISION
-    histogram_num_bins: int = DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS
     max_split_size_bytes: int = DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
 
     @classmethod
@@ -313,10 +311,6 @@ class DescriptiveStatisticsConfig:
             return cls(
                 cache_directory=env.str(name="CACHE_DIRECTORY", default=DESCRIPTIVE_STATISTICS_CACHE_DIRECTORY),
                 parquet_revision=parquet_revision,
-                histogram_num_bins=env.int(
-                    name="HISTOGRAM_NUM_BINS",
-                    default=DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS,
-                ),
                 max_split_size_bytes=env.int(
                     name="MAX_SPLIT_SIZE_BYTES", default=DESCRIPTIVE_STATISTICS_MAX_SPLIT_SIZE_BYTES
                 ),
