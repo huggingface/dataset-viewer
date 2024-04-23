@@ -108,7 +108,7 @@ def ds_image_fs(ds_image: Dataset, tmpfs: AbstractFileSystem) -> Generator[Abstr
 def ds_parquet_metadata_dir(
     ds_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
 ) -> Generator[StrPath, None, None]:
-    parquet_shard_paths = ds_fs.glob("**.parquet")
+    parquet_shard_paths = ds_fs.glob("**/*.parquet")
     for parquet_shard_path in parquet_shard_paths:
         parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds" / "--" / parquet_shard_path
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
@@ -179,7 +179,7 @@ def dataset_with_config_parquet_metadata(
 def ds_empty_parquet_metadata_dir(
     ds_empty_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
 ) -> Generator[StrPath, None, None]:
-    parquet_shard_paths = ds_empty_fs.glob("**.parquet")
+    parquet_shard_paths = ds_empty_fs.glob("**/*.parquet")
     for parquet_shard_path in parquet_shard_paths:
         parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds_empty" / "--" / parquet_shard_path
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
@@ -250,7 +250,7 @@ def dataset_empty_with_config_parquet_metadata(
 def ds_sharded_parquet_metadata_dir(
     ds_sharded_fs: AbstractFileSystem, parquet_metadata_directory: StrPath
 ) -> Generator[StrPath, None, None]:
-    parquet_shard_paths = ds_sharded_fs.glob("**.parquet")
+    parquet_shard_paths = ds_sharded_fs.glob("**/*.parquet")
     for parquet_shard_path in parquet_shard_paths:
         parquet_file_metadata_path = Path(parquet_metadata_directory) / "ds_sharded" / "--" / parquet_shard_path
         parquet_file_metadata_path.parent.mkdir(parents=True, exist_ok=True)
