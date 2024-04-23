@@ -275,8 +275,6 @@ def compute_split_duckdb_index_response(
                 logging.debug("compute for audio")
                 transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
 
-    logging.debug(transformed_df.head())
-
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
     # index all columns
@@ -296,6 +294,7 @@ def compute_split_duckdb_index_response(
         logging.debug(con.sql("SELECT count(*) FROM data;"))
 
         if transformed_df is not None:
+            logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"updating data with {transformed_df.columns}")
             con.sql(
