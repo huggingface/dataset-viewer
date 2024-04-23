@@ -9,7 +9,6 @@ from typing import Any, Optional
 
 import duckdb
 import polars as pl
-import pyarrow.parquet as pq
 from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
@@ -38,11 +37,10 @@ from libcommon.queue import lock
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_hub, retry
-from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
-from worker.job_runners.split.descriptive_statistics import STRING_DTYPES, AudioColumn
+from worker.job_runners.split.descriptive_statistics import STRING_DTYPES, AudioColumn, ImageColumn, StringColumn
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
@@ -116,9 +114,7 @@ def compute_string_length_column(
 ) -> pl.DataFrame:
     df = pl.read_parquet(all_split_parquets, columns=[column_name])
     lengths_column_name = f"{column_name}__hf_len"
-    lengths_df = df.select(pl.col(column_name)).with_columns(
-        pl.col(column_name).str.len_chars().alias(lengths_column_name)
-    )
+    lengths_df = StringColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
 
@@ -131,26 +127,28 @@ def compute_audio_duration_column(
     column_name: str,
     target_df: Optional[pl.DataFrame],
 ) -> pl.DataFrame:
-    parquet_files = list(parquet_directory.glob("*.parquet"))
     duration_column_name = f"{column_name}__hf_duration"
-    transformed_values = []
-    for filename in parquet_files:
-        shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
-        shard_transformed_values = (
-            thread_map(
-                AudioColumn.transform,
-                shard_items,
-                desc=f"Transforming values of {column_name} for {filename}",
-                leave=False,
-            )
-            if shard_items
-            else []
-        )
-        transformed_values.extend(shard_transformed_values)
-    duration_df = pl.from_dict({duration_column_name: transformed_values})
+    durations = AudioColumn.compute_transformed_data(parquet_directory, column_name, AudioColumn.get_duration)
+    duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
         return duration_df
     target_df.insert_column(target_df.shape[1], duration_df[duration_column_name])
+    return target_df
+
+
+def compute_image_width_length_column(
+    parquet_directory: Path,
+    column_name: str,
+    target_df: Optional[pl.DataFrame],
+) -> pl.DataFrame:
+    shapes = ImageColumn.compute_transformed_data(parquet_directory, column_name, ImageColumn.get_shape)
+    widths, heights = list(zip(*shapes))
+    width_column_name, height_column_name = f"{column_name}__hf_width", f"{column_name}__hf_height"
+    shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
+    if target_df is None:
+        return shapes_df
+    target_df.insert_column(target_df.shape[1], shapes_df[width_column_name])
+    target_df.insert_column(target_df.shape[1], shapes_df[height_column_name])
     return target_df
 
 

@@ -5,7 +5,7 @@ import io
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Callable, Optional, TypedDict, Union
 
 import librosa
 import numpy as np
@@ -477,6 +477,17 @@ class StringColumn(Column):
         self.n_bins = n_bins
 
     @classmethod
+    def compute_transformed_data(
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        transformed_column_name: str,
+    ) -> pl.DataFrame:
+        return data.select(pl.col(column_name)).with_columns(
+            pl.col(column_name).str.len_chars().alias(transformed_column_name)
+        )
+
+    @classmethod
     def _compute_statistics(
         cls, data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
@@ -499,9 +510,7 @@ class StringColumn(Column):
             )
 
         lengths_column_name = f"{column_name}_len"
-        lengths_df = data.select(pl.col(column_name)).with_columns(
-            pl.col(column_name).str.len_chars().alias(lengths_column_name)
-        )
+        lengths_df = cls.compute_transformed_data(data, column_name, transformed_column_name=lengths_column_name)
         lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
             lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples
         )
@@ -598,20 +607,16 @@ class MediaColumn(Column):
         raise NotImplementedError
 
     @classmethod
-    def _compute_statistics(
-        cls,
-        parquet_directory: Path,
-        column_name: str,
-        n_samples: int,
-        n_bins: int,
-    ) -> SupportedStatistics:
+    def compute_transformed_data(
+        cls, parquet_directory: Path, column_name: str, transform_func: Callable[[Any], Any]
+    ) -> list[Any]:
         parquet_files = list(parquet_directory.glob("*.parquet"))
         transformed_values = []
         for filename in parquet_files:
             shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
             shard_transformed_values = (
                 thread_map(
-                    cls.transform,
+                    transform_func,
                     shard_items,
                     desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
                     leave=False,
@@ -620,7 +625,17 @@ class MediaColumn(Column):
                 else []
             )
             transformed_values.extend(shard_transformed_values)
+        return transformed_values
 
+    @classmethod
+    def _compute_statistics(
+        cls,
+        parquet_directory: Path,
+        column_name: str,
+        n_samples: int,
+        n_bins: int,
+    ) -> SupportedStatistics:
+        transformed_values = cls.compute_transformed_data(parquet_directory, column_name, cls.transform)
         if not transformed_values:
             return all_nan_statistics_item(n_samples)
 
@@ -685,6 +700,13 @@ class ImageColumn(MediaColumn):
         with io.BytesIO(example["bytes"]) as f:
             image = Image.open(f)
             return image.size[0]
+
+    @staticmethod
+    def get_shape(example: dict[str, Any]) -> tuple[int, int]:
+        """Get image widths and heights."""
+        with io.BytesIO(example["bytes"]) as f:
+            image = Image.open(f)
+            return image.size
 
     @classmethod
     def transform(cls, example: dict[str, Any]) -> int:
