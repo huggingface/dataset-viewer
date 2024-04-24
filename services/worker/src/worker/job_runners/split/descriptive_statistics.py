@@ -42,6 +42,7 @@ from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 REPO_TYPE = "dataset"
 
 DECIMALS = 5
+NUM_BINS = 10
 
 # the maximum proportion of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
@@ -377,13 +378,12 @@ class ClassLabelColumn(Column):
 
 
 class FloatColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
     @classmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
@@ -398,7 +398,7 @@ class FloatColumn(Column):
             column_type=ColumnType.FLOAT,
             min_value=minimum,
             max_value=maximum,
-            n_bins=n_bins,
+            n_bins=NUM_BINS,
             n_samples=n_samples - nan_count,
         )
 
@@ -414,7 +414,7 @@ class FloatColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.FLOAT,
@@ -423,13 +423,12 @@ class FloatColumn(Column):
 
 
 class IntColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
     @classmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples=n_samples)
         if nan_count == n_samples:
@@ -445,7 +444,7 @@ class IntColumn(Column):
             column_type=ColumnType.INT,
             min_value=minimum,
             max_value=maximum,
-            n_bins=n_bins,
+            n_bins=NUM_BINS,
             n_samples=n_samples - nan_count,
         )
 
@@ -461,7 +460,7 @@ class IntColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.INT,
@@ -472,19 +471,18 @@ class IntColumn(Column):
 class StringColumn(Column):
     transform_column = IntColumn
 
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
     @classmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
         if (
             n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
-        ) or n_unique <= n_bins:
+        ) or n_unique <= NUM_BINS:
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
@@ -503,12 +501,12 @@ class StringColumn(Column):
             pl.col(column_name).str.len_chars().alias(lengths_column_name)
         )
         lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples
+            lengths_df, column_name=lengths_column_name, n_samples=n_samples
         )
         return lengths_stats
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -543,13 +541,12 @@ class BoolColumn(Column):
 class ListColumn(Column):
     transform_column = IntColumn
 
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
     @classmethod
     def _compute_statistics(
-        cls, data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:
@@ -559,7 +556,7 @@ class ListColumn(Column):
         lengths_column_name = f"{column_name}_len"
         lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
         lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
+            lengths_df, column_name=lengths_column_name, n_samples=n_samples - nan_count
         )
 
         return NumericalStatisticsItem(
@@ -574,7 +571,7 @@ class ListColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.LIST,
@@ -584,10 +581,6 @@ class ListColumn(Column):
 
 class MediaColumn(Column):
     transform_column: type[Column]
-
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
 
     @classmethod
     def transform(cls, example: dict[str, Any]) -> Any:
@@ -603,7 +596,6 @@ class MediaColumn(Column):
         parquet_directory: Path,
         column_name: str,
         n_samples: int,
-        n_bins: int,
     ) -> SupportedStatistics:
         parquet_files = list(parquet_directory.glob("*.parquet"))
         transformed_values = []
@@ -631,7 +623,6 @@ class MediaColumn(Column):
             data=transformed_df,
             column_name=column_name,
             n_samples=len(transformed_values),
-            n_bins=n_bins,
         )
         return NumericalStatisticsItem(
             nan_count=nan_count,
@@ -653,7 +644,6 @@ class MediaColumn(Column):
             parquet_directory=parquet_directory,
             column_name=self.name,
             n_samples=self.n_samples,
-            n_bins=self.n_bins,
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -721,7 +711,6 @@ def compute_descriptive_statistics_response(
     local_parquet_directory: Path,
     hf_token: Optional[str],
     parquet_revision: str,
-    histogram_num_bins: int,
     max_split_size_bytes: int,
     parquet_metadata_directory: StrPath,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -743,9 +732,6 @@ def compute_descriptive_statistics_response(
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
             The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
-        histogram_num_bins (`int`):
-            (Maximum) number of bins to compute histogram for numerical data.
-            The resulting number of bins might be lower than the requested one for integer data.
         max_split_size_bytes (`int`):
             If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
@@ -851,7 +837,7 @@ def compute_descriptive_statistics_response(
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
             if pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type):
-                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
+                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
         if isinstance(dataset_feature, dict):
             if dataset_feature.get("_type") == "ClassLabel":
@@ -860,30 +846,20 @@ def compute_descriptive_statistics_response(
                 )
 
             if dataset_feature.get("_type") == "Audio":
-                return AudioColumn(
-                    feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                )
+                return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
             if dataset_feature.get("_type") == "Image":
-                return ImageColumn(
-                    feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                )
+                return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
             if dataset_feature.get("_type") == "Value":
                 if dataset_feature.get("dtype") in INTEGER_DTYPES:
-                    return IntColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return IntColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") in FLOAT_DTYPES:
-                    return FloatColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return FloatColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") in STRING_DTYPES:
-                    return StringColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return StringColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") == "bool":
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
@@ -975,7 +951,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 local_parquet_directory=self.cache_subdirectory,
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
-                histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )
