@@ -471,6 +471,12 @@ class IntColumn(Column):
 class StringColumn(Column):
     transform_column = IntColumn
 
+    @staticmethod
+    def is_class(n_unique: int, n_samples: int) -> bool:
+        return (
+            n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
+        ) or n_unique <= NUM_BINS
+
     @classmethod
     def compute_transformed_data(
         cls,
@@ -491,9 +497,7 @@ class StringColumn(Column):
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
-        if (
-            n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
-        ) or n_unique <= NUM_BINS:
+        if cls.is_class(n_unique, n_samples):
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
@@ -551,6 +555,16 @@ class ListColumn(Column):
     transform_column = IntColumn
 
     @classmethod
+    def compute_transformed_data(
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        transformed_column_name: str,
+    ) -> pl.DataFrame:
+        df_without_na = data.select(pl.col(column_name)).drop_nulls()
+        return df_without_na.with_columns(pl.col(column_name).list.len().alias(transformed_column_name))
+
+    @classmethod
     def _compute_statistics(
         cls,
         data: pl.DataFrame,
@@ -561,9 +575,8 @@ class ListColumn(Column):
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
 
-        df_without_na = data.select(pl.col(column_name)).drop_nulls()
         lengths_column_name = f"{column_name}_len"
-        lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
+        lengths_df = cls.compute_transformed_data(data, column_name, lengths_column_name)
         lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
             lengths_df, column_name=lengths_column_name, n_samples=n_samples - nan_count
         )
@@ -626,7 +639,6 @@ class MediaColumn(Column):
         parquet_directory: Path,
         column_name: str,
         n_samples: int,
-        n_bins: int,
     ) -> SupportedStatistics:
         transformed_values = cls.compute_transformed_data(parquet_directory, column_name, cls.transform)
         if not transformed_values:
@@ -709,14 +721,14 @@ SupportedColumns = Union[
 ]
 
 
-def is_extension(feature: FeatureType) -> bool:
+def is_extension_feature(feature: FeatureType) -> bool:
     """Check if a (possibly nested) feature is an arrow extension feature (Array2D, Array3D, Array4D, or Array5D)."""
     if isinstance(feature, dict):
-        return any(is_extension(f) for f in feature.values())
+        return any(is_extension_feature(f) for f in feature.values())
     elif isinstance(feature, (list, tuple)):
-        return any(is_extension(f) for f in feature)
+        return any(is_extension_feature(f) for f in feature)
     elif isinstance(feature, Sequence):
-        return is_extension(feature.feature)
+        return is_extension_feature(feature.feature)
     else:
         return isinstance(feature, _ArrayXD)
 
@@ -724,7 +736,14 @@ def is_extension(feature: FeatureType) -> bool:
 def get_extension_features(features: dict[str, Any]) -> set[str]:
     """Return set of names of extension features (Array2D, Array3D, Array4D, or Array5D) within provided features."""
     features = Features.from_dict(features)
-    return {feature_name for feature_name, feature in features.items() if is_extension(feature)}
+    return {feature_name for feature_name, feature in features.items() if is_extension_feature(feature)}
+
+
+def is_list_pa_type(first_parquet_file: Path, feature_name: str) -> bool:
+    # Check if (Sequence) feature is internally a List, because it can also be Struct, see
+    # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
+    feature_arrow_type = pq.read_schema(first_parquet_file).field(feature_name).type
+    return pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type)
 
 
 def compute_descriptive_statistics_response(
@@ -855,11 +874,11 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, list) or (
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
-            first_parquet_file = local_parquet_split_directory / split_parquet_files[0]["filename"]
-            feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type):
+            if is_list_pa_type(
+                local_parquet_split_directory / split_parquet_files[0]["filename"], dataset_feature_name
+            ):
                 return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
         if isinstance(dataset_feature, dict):

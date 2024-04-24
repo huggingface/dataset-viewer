@@ -40,7 +40,14 @@ from libcommon.utils import HF_HUB_HTTP_ERROR_RETRY_SLEEPS, download_file_from_h
 
 from worker.config import AppConfig, DuckDbIndexConfig
 from worker.dtos import CompleteJobResult, SplitDuckdbIndex
-from worker.job_runners.split.descriptive_statistics import STRING_DTYPES, AudioColumn, ImageColumn, StringColumn
+from worker.job_runners.split.descriptive_statistics import (
+    STRING_DTYPES,
+    AudioColumn,
+    ImageColumn,
+    ListColumn,
+    StringColumn,
+    is_list_pa_type,
+)
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
@@ -90,13 +97,18 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_transformable_columns(features: dict[str, Any]) -> dict[str, list[str]]:
+def get_transformable_columns(features: dict[str, Any], first_parquet_file: Path) -> dict[str, list[str]]:
     transformable_columns: dict[str, list[str]] = {
         "audio": [],
         "image": [],
         "string": [],
+        "list": [],
     }
     for feature_name, feature in features.items():
+        if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
+            if is_list_pa_type(first_parquet_file, feature_name):
+                transformable_columns["list"].append(feature_name)
+
         if isinstance(feature, dict):
             if feature.get("_type") == "Audio":
                 transformable_columns["audio"].append(feature_name)
@@ -111,10 +123,30 @@ def get_transformable_columns(features: dict[str, Any]) -> dict[str, list[str]]:
 
 def compute_string_length_column(
     all_split_parquets: str, column_name: str, target_df: Optional[pl.DataFrame]
-) -> pl.DataFrame:
+) -> Optional[pl.DataFrame]:
     df = pl.read_parquet(all_split_parquets, columns=[column_name])
+    n_unique = df[column_name].n_unique()
+    n_samples = df.shape[0]
+    if StringColumn.is_class(n_unique, n_samples):
+        # do nothing
+        return target_df
+
     lengths_column_name = f"{column_name}__hf_len"
     lengths_df = StringColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
+    if target_df is None:
+        return lengths_df.select(pl.col(lengths_column_name))
+
+    target_df.insert_column(target_df.shape[1], lengths_df[lengths_column_name])
+    return target_df
+
+
+def compute_list_length_column(
+    all_split_parquets: str, column_name: str, target_df: Optional[pl.DataFrame]
+) -> Optional[pl.DataFrame]:
+    df = pl.read_parquet(all_split_parquets, columns=[column_name])
+    # TODO: all nan?
+    lengths_column_name = f"{column_name}__hf_len"
+    lengths_df = ListColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
 
@@ -246,8 +278,6 @@ def compute_split_duckdb_index_response(
             f"Previous step '{config_parquet_metadata_step}' did not return the expected content.", e
         ) from e
 
-    transformable_columns = get_transformable_columns(features)
-
     for parquet_file in parquet_file_names:
         download_file_from_hub(
             repo_type=REPO_TYPE,
@@ -263,15 +293,22 @@ def compute_split_duckdb_index_response(
     split_parquet_directory = duckdb_index_file_directory / config / split_directory
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
+    # TODO: refactor this shit
+    transformable_columns = get_transformable_columns(features, split_parquet_directory / parquet_file_names[0])
     transformed_df = None
-    for column_type, transformable_column_names in transformable_columns.items():
-        for column_name in transformable_column_names:
-            if column_type == "string":
-                logging.debug("compute for strings")
-                transformed_df = compute_string_length_column(all_split_parquets, column_name, transformed_df)
-            if column_type == "audio":
-                logging.debug("compute for audio")
-                transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
+    for column_name in transformable_columns["string"]:
+        logging.debug("compute for strings")
+        transformed_df = compute_string_length_column(all_split_parquets, column_name, transformed_df)
+    for column_name in transformable_columns["list"]:
+        logging.debug("compute for lists")
+        transformed_df = compute_list_length_column(all_split_parquets, column_name, transformed_df)
+    for column_name in transformable_columns["audio"]:
+        logging.debug("compute for audio")
+        transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
+    for column_name in transformable_columns["image"]:
+        logging.debug("compute for image")
+        transformed_df = compute_image_width_length_column(split_parquet_directory, column_name, transformed_df)
+
 
     create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
 
