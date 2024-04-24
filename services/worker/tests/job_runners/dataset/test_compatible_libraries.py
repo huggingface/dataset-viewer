@@ -404,7 +404,7 @@ def test_compute_error(
         (
             "Anthropic/hh-rlhf",
             "json",
-            {"default": {"test": ["**/*/test.jsonl.gz"], "train": ["**/*/train.jsonl.gz"]}},
+            {"default": {"test": ["**/test.jsonl.gz"], "train": ["**/train.jsonl.gz"]}},
         ),
         ("laion/conceptual-captions-12m-webdataset", "webdataset", {"default": {"train": ["**/*.tar"]}}),
         (
@@ -487,8 +487,8 @@ def test_simplify_data_files_patterns(
             "Anthropic/hh-rlhf",
             "json",
             {
-                "train": ["**/*/train.jsonl.gz"],
-                "test": ["**/*/test.jsonl.gz"],
+                "train": ["**/train.jsonl.gz"],
+                "test": ["**/test.jsonl.gz"],
             },
             "dask",
         ),

@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-import os
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
@@ -28,6 +27,7 @@ from worker.job_runners.split.descriptive_statistics import (
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,
     NO_LABEL_VALUE,
+    NUM_BINS,
     AudioColumn,
     BoolColumn,
     ClassLabelColumn,
@@ -50,8 +50,6 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatisticsJo
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetJobRunner]
 GetParquetMetadataJobRunner = Callable[[str, str, AppConfig], ConfigParquetMetadataJobRunner]
-
-N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
 
 
 @pytest.mark.parametrize(
@@ -77,9 +75,9 @@ def test_generate_bins(
     expected_bins: list[Union[int, float]],
 ) -> None:
     bins = generate_bins(
-        min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
+        min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=NUM_BINS
     )
-    assert 2 <= len(bins) <= N_BINS + 1
+    assert 2 <= len(bins) <= NUM_BINS + 1
     if column_type is column_type.FLOAT:
         assert pytest.approx(bins) == expected_bins
     else:
@@ -282,10 +280,10 @@ def count_expected_statistics_for_numerical_column(
         if minimum == maximum:
             hist, bin_edges = np.array([column[~column.isna()].count()]), np.array([minimum, maximum])
         else:
-            hist, bin_edges = np.histogram(column[~column.isna()], bins=N_BINS)
+            hist, bin_edges = np.histogram(column[~column.isna()], bins=NUM_BINS)
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
-        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=N_BINS)
+        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=NUM_BINS)
         hist, bin_edges = np.histogram(column[~column.isna()], bins)
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
@@ -355,7 +353,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # t
     if (
         n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS
         and n_unique <= MAX_NUM_STRING_LABELS
-        or n_unique <= N_BINS
+        or n_unique <= NUM_BINS
     ):
         return {
             "nan_count": nan_count,
@@ -566,7 +564,6 @@ def test_float_statistics(
     computed = FloatColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
@@ -600,7 +597,6 @@ def test_int_statistics(
     computed = IntColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     print(computed)
@@ -641,7 +637,6 @@ def test_string_statistics(
     computed = StringColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     if column_name.startswith("string_text__"):
@@ -744,7 +739,6 @@ def test_list_statistics(
     computed = ListColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     assert computed == expected
@@ -802,7 +796,6 @@ def test_audio_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
-        n_bins=N_BINS,
     )
     assert computed == expected
 
@@ -827,7 +820,6 @@ def test_image_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
-        n_bins=N_BINS,
     )
     assert computed == expected
 
