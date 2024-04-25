@@ -1241,11 +1241,7 @@ def compute_config_parquet_and_info_response(
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except ValueError as err:
         if "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
+            raise DatasetWithScriptNotSupportedError from err
         raise
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err

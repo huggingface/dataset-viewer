@@ -218,11 +218,7 @@ def compute_first_rows_from_streaming_response(
         )
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
+            raise DatasetWithScriptNotSupportedError from err
         raise InfoError(
             f"The info cannot be fetched for the config '{config}' of the dataset.",
             cause=err,
@@ -246,11 +242,7 @@ def compute_first_rows_from_streaming_response(
             features = iterable_dataset.features
         except Exception as err:
             if isinstance(err, ValueError) and "trust_remote_code" in str(err):
-                raise DatasetWithScriptNotSupportedError(
-                    "The dataset viewer doesn't support this dataset because it runs "
-                    "arbitrary python code. Please open a discussion in the discussion tab "
-                    "if you think this is an error and tag @lhoestq and @severo."
-                ) from err
+                raise DatasetWithScriptNotSupportedError from err
             raise FeaturesError(
                 (
                     f"Cannot extract the features (columns) for the split '{split}' of the config '{config}' of the"
