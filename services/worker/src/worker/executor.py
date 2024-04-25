@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -81,7 +82,6 @@ class WorkerExecutor:
         return TCPExecutor(start_web_app_command, host=uvicorn_config.hostname, port=uvicorn_config.port, timeout=10)
 
     def start(self) -> None:
-        exceptions = []
         worker_loop_executor = self._create_worker_loop_executor()
         worker_loop_executor.start()  # blocking until the banner is printed
         self.executors.append(worker_loop_executor)
@@ -90,21 +90,8 @@ class WorkerExecutor:
         web_app_executor.start()  # blocking until the banner is printed
         self.executors.append(web_app_executor)
 
-        def custom_exception_handler(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
-            nonlocal exceptions
-            logging.exception(f"Executor got exception {context=}")
-            # first, handle with default handler
-            loop.default_exception_handler(context)
-
-            exception = context.get("exception")
-            if exception:
-                exceptions.append(repr(exception))
-                loop.stop()
-
         loop = asyncio.get_event_loop()
-        # TODO(QL): re-enable once the fineweb crash are investgated and fixed
-        # loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
-        # loop.set_exception_handler(custom_exception_handler)
+        loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
 
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
@@ -131,8 +118,6 @@ class WorkerExecutor:
             every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1.0, stop_on=False)
         )
         logging.info("Executor loop finished.")
-        if exceptions:
-            raise RuntimeError(f"Some async tasks failed: {exceptions}")
 
     def sigterm_stop(self) -> None:
         logging.error("Executor received SIGTERM")
