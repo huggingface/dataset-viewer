@@ -739,10 +739,10 @@ def get_extension_features(features: dict[str, Any]) -> set[str]:
     return {feature_name for feature_name, feature in features.items() if is_extension_feature(feature)}
 
 
-def is_list_pa_type(first_parquet_file: Path, feature_name: str) -> bool:
+def is_list_pa_type(parquet_file_path: Path, feature_name: str) -> bool:
     # Check if (Sequence) feature is internally a List, because it can also be Struct, see
     # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-    feature_arrow_type = pq.read_schema(first_parquet_file).field(feature_name).type
+    feature_arrow_type = pq.read_schema(parquet_file_path).field(feature_name).type
     return pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type)
 
 
