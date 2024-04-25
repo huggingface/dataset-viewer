@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import os
-import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -103,8 +102,9 @@ class WorkerExecutor:
                 loop.stop()
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
-        loop.set_exception_handler(custom_exception_handler)
+        # TODO(QL): re-enable once the fineweb crash are investgated and fixed
+        # loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
+        # loop.set_exception_handler(custom_exception_handler)
 
         logging.info("Starting heartbeat.")
         loop.create_task(every(self.heartbeat, seconds=self.heartbeat_interval_seconds))
@@ -135,7 +135,7 @@ class WorkerExecutor:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
 
     def sigterm_stop(self) -> None:
-        logging.exception("Executor received SIGTERM")
+        logging.error("Executor received SIGTERM")
         self.stop()
 
     def stop(self) -> None:
