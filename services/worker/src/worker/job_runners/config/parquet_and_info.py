@@ -93,7 +93,7 @@ SLEEPS = [0.2, 1, 1, 10, 10, 10]
 T = TypeVar("T")
 
 
-def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: dict[str, Any]) -> Response:
+def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> Response:
     kwargs["timeout"] = kwargs.get("timeout", 10)
     return http_backoff(method, url, **kwargs)
 
