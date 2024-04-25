@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import os
-import signal
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
