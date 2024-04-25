@@ -165,9 +165,47 @@ RETRY_ON: tuple[type[Exception]] = (Exception,)
 class retry:
     """retries with an increasing sleep before every attempt"""
 
+    min_num_subsequent_identical_logs_for_grouping = 10
+    log_grouping_time_interval = 30  # 30 sec
+
     def __init__(self, sleeps: Sequence[float] = RETRY_SLEEPS, on: Sequence[type[Exception]] = RETRY_ON) -> None:
         self.sleeps = sleeps
         self.on = on
+        self._last_log = ""
+        self._log_time = 0.0
+        self._repeats = 0
+
+    def grouped_log(self, log: str) -> None:
+        if time.time() > self._log_time + self.log_grouping_time_interval or log != self._last_log:
+            if self._repeats >= self.min_num_subsequent_identical_logs_for_grouping:
+                logging.info(
+                    self._last_log
+                    + f" (repeated {self._repeats} times in the last {time.time() - self._log_time:.2f}s)"
+                )
+            logging.info(log)
+            self._last_log = log
+            self._log_time = time.time()
+            self._repeats = 0
+        else:
+            prev_repeats_str, new_repeats_str = str(self._repeats), str(self._repeats + 1)
+            self._repeats += 1
+            if self._repeats < self.min_num_subsequent_identical_logs_for_grouping:
+                logging.info(log)
+            elif self._repeats == self.min_num_subsequent_identical_logs_for_grouping:
+                logging.info(f"Grouping log '{log}' for up to {self.log_grouping_time_interval}s")
+            elif prev_repeats_str[0] != new_repeats_str[0] or len(prev_repeats_str) < len(new_repeats_str):
+                logging.info(
+                    log + f" (repeated {self._repeats} times in the last {time.time() - self._log_time:.2f}s)"
+                )
+
+    def flush_logs(self) -> None:
+        if self._repeats > 0:
+            logging.info(
+                self._last_log + f" (repeated {self._repeats} times in the last {time.time() - self._log_time:.2f}s)"
+            )
+        self._last_log = ""
+        self._log_time = 0.0
+        self._repeats = 0
 
     def __call__(self, func: FuncT) -> FuncT:
         @functools.wraps(func)
@@ -178,13 +216,14 @@ class retry:
                 try:
                     """always sleep before calling the function. It will prevent rate limiting in the first place"""
                     duration = self.sleeps[attempt]
-                    logging.info(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
+                    self.grouped_log(f"Sleep during {duration} seconds to preventively mitigate rate limiting.")
                     time.sleep(duration)
                     return func(*args, **kwargs)
                 except tuple(self.on) as err:
-                    logging.info(f"Got a {type(err)}. Let's retry.")
+                    logging.info(f"Got a {type(err).__name__}. Let's retry.")
                     last_err = err
                     attempt += 1
+            self.flush_logs()
             raise RuntimeError(f"Give up after {attempt} attempts. The last one raised {type(last_err)}") from last_err
 
         return cast(FuncT, decorator)
