@@ -93,6 +93,7 @@ class WorkerExecutor:
 
         def custom_exception_handler(loop: asyncio.AbstractEventLoop, context: dict[str, Any]) -> None:
             nonlocal exceptions
+            logging.exception(f"Executor got exception {context=}")
             # first, handle with default handler
             loop.default_exception_handler(context)
 
@@ -102,7 +103,7 @@ class WorkerExecutor:
                 loop.stop()
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGTERM, self.stop)
+        loop.add_signal_handler(signal.SIGTERM, self.sigterm_stop)
         loop.set_exception_handler(custom_exception_handler)
 
         logging.info("Starting heartbeat.")
@@ -129,8 +130,13 @@ class WorkerExecutor:
         loop.run_until_complete(
             every(self.is_worker_alive, worker_loop_executor=worker_loop_executor, seconds=1.0, stop_on=False)
         )
+        logging.info("Executor loop finished.")
         if exceptions:
             raise RuntimeError(f"Some async tasks failed: {exceptions}")
+
+    def sigterm_stop(self) -> None:
+        logging.exception("Executor received SIGTERM")
+        self.stop()
 
     def stop(self) -> None:
         for executor in self.executors:
@@ -207,4 +213,24 @@ class WorkerExecutor:
                 error_msg += f" when running job_id={state['current_job_info']['job_id']}"
             logging.error(error_msg)
             raise
+        except BaseException as err:
+            explanation = f"{type(err).__name__}: {err}"
+            error_msg = f"Worker crashed ({explanation})"
+            state = self.get_state()
+            if state and state["current_job_info"]:
+                error_msg += f" when running job_id={state['current_job_info']['job_id']}"
+            logging.error(error_msg)
+            raise
+        if worker_loop_executor.process:
+            return_code = worker_loop_executor.process.returncode
+            if return_code is not None and return_code != 0:
+                explanation = f"return code {return_code}"
+                if return_code == -9:
+                    explanation += " SIGKILL - surely an OOM"
+                error_msg = f"Worker crashed ({explanation})"
+                state = self.get_state()
+                if state and state["current_job_info"]:
+                    error_msg += f" when running job_id={state['current_job_info']['job_id']}"
+                logging.error(error_msg)
+                raise
         return False
