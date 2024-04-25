@@ -71,6 +71,54 @@ class OptInOutUrlsScanResponse(OptInOutUrlsCountResponse):
     opt_out_urls: list[OptUrl]
 
 
+class PresidioEntity(TypedDict):
+    text: str
+    type: str
+    row_idx: int
+    column_name: str
+
+
+class PresidioEntitiesCountResponse(TypedDict):
+    scanned_columns: list[str]
+    num_in_vehicle_registration_entities: int
+    num_organization_entities: int
+    num_sg_nric_fin_entities: int
+    num_person_entities: int
+    num_credit_card_entities: int
+    num_medical_license_entities: int
+    num_nrp_entities: int
+    num_us_ssn_entities: int
+    num_crypto_entities: int
+    num_date_time_entities: int
+    num_location_entities: int
+    num_us_driver_license_entities: int
+    num_phone_number_entities: int
+    num_url_entities: int
+    num_us_passport_entities: int
+    num_age_entities: int
+    num_au_acn_entities: int
+    num_email_address_entities: int
+    num_in_pan_entities: int
+    num_ip_address_entities: int
+    num_id_entities: int
+    num_us_bank_number_entities: int
+    num_in_aadhaar_entities: int
+    num_us_itin_entities: int
+    num_au_medicare_entities: int
+    num_iban_code_entities: int
+    num_au_tfn_entities: int
+    num_uk_nhs_entities: int
+    num_email_entities: int
+    num_au_abn_entities: int
+    num_scanned_rows: int
+    has_scanned_columns: bool
+    full_scan: bool
+
+
+class PresidioEntitiesScanResponse(PresidioEntitiesCountResponse):
+    entities: list[PresidioEntity]
+
+
 class ImageUrlColumnsResponse(TypedDict):
     columns: list[str]
 

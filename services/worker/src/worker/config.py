@@ -186,6 +186,26 @@ class OptInOutUrlsScanConfig:
             )
 
 
+PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER = 10
+PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER = 1000
+PRESIDIO_ENTITIES_SCAN_STRING_CHUNK_MAX_LENGTH = 2000
+
+
+@dataclass(frozen=True)
+class PresidioEntitiesScanConfig:
+    columns_max_number: int = PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER
+    rows_max_number: int = PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER
+
+    @classmethod
+    def from_env(cls) -> "PresidioEntitiesScanConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("PRESIDIO_ENTITIES_SCAN_"):
+            return cls(
+                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER),
+                rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER),
+            )
+
+
 PARQUET_AND_INFO_COMMIT_MESSAGE = "Update parquet files"
 PARQUET_AND_INFO_COMMITTER_HF_TOKEN = None
 PARQUET_AND_INFO_MAX_DATASET_SIZE_BYTES = 100_000_000
@@ -333,6 +353,7 @@ class AppConfig:
     s3: S3Config = field(default_factory=S3Config)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
+    presidio_scan: PresidioEntitiesScanConfig = field(default_factory=PresidioEntitiesScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
     duckdb_index: DuckDbIndexConfig = field(default_factory=DuckDbIndexConfig)
     descriptive_statistics: DescriptiveStatisticsConfig = field(default_factory=DescriptiveStatisticsConfig)
@@ -353,6 +374,7 @@ class AppConfig:
             s3=S3Config.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
+            presidio_scan=PresidioEntitiesScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),
             duckdb_index=DuckDbIndexConfig.from_env(),
             descriptive_statistics=DescriptiveStatisticsConfig.from_env(),
