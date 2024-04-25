@@ -215,13 +215,27 @@ def get_parquet_metadata_job_runner(
     return _get_job_runner
 
 
+expected_columns = [
+    "text",
+    "column with spaces",
+    "__hf_index_id",
+    "text__hf_len",
+    "column with spaces__hf_len",
+]
+expected_columns_multiple_files = [  # no text columns in `hub_public_csv` dataset
+    "col_1",
+    "col_2",
+    "col_3",
+]
+
+
 @pytest.mark.parametrize(
-    "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
+    "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code,expected_columns",
     [
-        ("duckdb_index", None, 5, True, False, None),
-        ("duckdb_index_from_partial_export", None, 5, True, True, None),
-        ("gated", None, 5, True, False, None),
-        ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None),
+        ("duckdb_index", None, 5, True, False, None, expected_columns),
+        ("duckdb_index_from_partial_export", None, 5, True, True, None, expected_columns),
+        ("gated", None, 5, True, False, None, expected_columns),
+        ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None, expected_columns_multiple_files),
     ],
 )
 def test_compute(
@@ -239,6 +253,7 @@ def test_compute(
     expected_rows_count: int,
     expected_partial: bool,
     expected_error_code: str,
+    expected_columns: Optional[list[str]],
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
@@ -335,7 +350,9 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        response = job_runner.compute()
+        with patch("worker.job_runners.split.duckdb_index.StringColumn.is_class") as mock:
+            mock.return_value = False
+            response = job_runner.compute()
         assert response
         content = response.content
         url = content["url"]
@@ -374,6 +391,8 @@ def test_compute(
         assert isinstance(record_count, list)
         assert record_count[0] == (expected_rows_count,)
 
+        columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
+        assert columns == expected_columns
         if has_fts:
             # perform a search to validate fts feature
             query = "Lord Vader"
