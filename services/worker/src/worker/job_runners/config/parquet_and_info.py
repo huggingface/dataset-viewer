@@ -708,6 +708,8 @@ def fill_builder_info(
 
         if len(urls) > 1:
             try:
+                if len(urls) > 100:
+                    logging.info(f"Validating lots of Parquet files: {len(urls)}")
                 num_examples_and_sizes: list[tuple[int, int]] = thread_map(
                     functools.partial(
                         retry_validate_get_num_examples_and_size,
