@@ -44,6 +44,7 @@ from huggingface_hub._commit_api import (
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
 from huggingface_hub.hf_file_system import HfFileSystem, HfFileSystemFile
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
+from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
@@ -90,6 +91,11 @@ MAX_OPERATIONS_PER_COMMIT = 500
 SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 T = TypeVar("T")
+
+
+def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: dict[str, Any]) -> Response:
+    kwargs["timeout"] = kwargs.get("timeout", 10)
+    return http_backoff(method, url, **kwargs)
 
 
 def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
@@ -1261,7 +1267,8 @@ def compute_config_parquet_and_info_response(
             parquet_operations = copy_parquet_files(builder)
             logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-            fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
+            with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
+                fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy
