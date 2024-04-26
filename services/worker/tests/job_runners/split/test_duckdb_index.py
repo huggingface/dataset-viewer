@@ -2,12 +2,12 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from dataclasses import replace
 from http import HTTPStatus
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import datasets.config
@@ -17,7 +17,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Features, Image, Sequence, Value
+from datasets import Dataset, Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -230,6 +230,17 @@ expected_columns_multiple_files = [  # no text columns in `hub_public_csv` datas
 ]
 
 
+@pytest.fixture
+def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
+    ds = datasets["duckdb_index"]
+    expected: dict[str, list[Any]] = ds[:]
+    for feature_name, feature in ds.features.items():
+        if isinstance(feature, Value) and feature.dtype == "string":
+            expected[f"{feature_name}__hf_len"] = [len(text) for text in ds[feature_name]]
+    expected["__hf_index_id"] = list(range(ds.num_rows))
+    return expected
+
+
 @pytest.mark.parametrize(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code,expected_columns",
     [
@@ -255,6 +266,7 @@ def test_compute(
     expected_partial: bool,
     expected_error_code: str,
     expected_columns: Optional[list[str]],
+    expected_values: dict[str, list[Any]],
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
@@ -394,6 +406,11 @@ def test_compute(
 
         columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
         assert columns == expected_columns
+        if dataset != "partial_duckdb_index_from_multiple_files_public":
+            data = con.sql("SELECT * FROM data;").df().to_dict()
+            data = {name: list(values_with_indices.values()) for name, values_with_indices in data.items()}
+            assert data == expected_values
+
         if has_fts:
             # perform a search to validate fts feature
             query = "Lord Vader"
