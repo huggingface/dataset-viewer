@@ -561,8 +561,14 @@ class ListColumn(Column):
         column_name: str,
         transformed_column_name: str,
     ) -> pl.DataFrame:
-        df_without_na = data.select(pl.col(column_name)).drop_nulls()
-        return df_without_na.with_columns(pl.col(column_name).list.len().alias(transformed_column_name))
+        # polars counts len(null) in list type column as 0, while we want to keep null
+        return data.select(
+            pl.col(column_name),
+            pl.when(pl.col(column_name).is_not_null())
+            .then(pl.col(column_name).list.len())
+            .otherwise(pl.lit(None))
+            .alias(transformed_column_name),
+        )
 
     @classmethod
     def _compute_statistics(

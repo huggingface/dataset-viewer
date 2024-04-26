@@ -219,11 +219,16 @@ def get_parquet_metadata_job_runner(
 expected_columns = [
     "text",
     "column with spaces",
+    "list",
+    "sequence_list",
+    "sequence_struct",
     "text__hf_len",
     "column with spaces__hf_len",
+    "list__hf_len",
+    "sequence_list__hf_len",
     "__hf_index_id",
 ]
-expected_columns_multiple_files = [  # no text columns in `hub_public_csv` dataset
+expected_columns_multiple_files = [  # no text or transformable columns in `hub_public_csv` dataset
     "col_1",
     "col_2",
     "col_3",  # note that there is no `__hf_index_id` column because there is no search index
@@ -235,8 +240,10 @@ def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
     ds = datasets["duckdb_index"]
     expected: dict[str, list[Any]] = ds[:]
     for feature_name, feature in ds.features.items():
-        if isinstance(feature, Value) and feature.dtype == "string":
-            expected[f"{feature_name}__hf_len"] = [len(text) for text in ds[feature_name]]
+        is_string = isinstance(feature, Value) and feature.dtype == "string"
+        is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
+        if is_string or is_list:
+            expected[f"{feature_name}__hf_len"] = [len(row) if row is not None else None for row in ds[feature_name]]
     expected["__hf_index_id"] = list(range(ds.num_rows))
     return expected
 
@@ -406,9 +413,9 @@ def test_compute(
 
         columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
         assert columns == expected_columns
-        if dataset != "partial_duckdb_index_from_multiple_files_public":
-            data = con.sql("SELECT * FROM data;").df().to_dict()
-            data = {name: list(values_with_indices.values()) for name, values_with_indices in data.items()}
+        if not multiple_parquet_files:
+            data = con.sql("SELECT * FROM data;").fetchall()
+            data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}
             assert data == expected_values
 
         if has_fts:

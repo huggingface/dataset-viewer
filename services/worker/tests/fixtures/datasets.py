@@ -153,29 +153,60 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
-        "duckdb_index": Dataset.from_pandas(
-            pd.DataFrame(
+        "duckdb_index": Dataset.from_dict(
+            {
+                "text": [
+                    (
+                        "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
+                        " comlink"
+                    ),
+                    "There goes another one.",
+                    "Vader turns round and round in circles as his ship spins into space.",
+                    "We count thirty Rebel ships, Lord Vader.",
+                    "The wingman spots the pirateship coming at him and warns the Dark Lord",
+                ],
+                "column with spaces": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e",
+                ],
+                "list": [
+                    [1],
+                    [1, 2],
+                    None,
+                    [1, 2, 3, 4],
+                    [1, 2, 3, 4, 5],
+                ],
+                "sequence_list": [
+                    [1],
+                    [1, 2],
+                    None,
+                    [1, 2, 3, 4],
+                    [1, 2, 3, 4, 5],
+                ],
+                "sequence_struct": [
+                    [],
+                    [{"author": "cat", "likes": 5}],
+                    [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
+                    [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
+                    None,
+                ],
+                # "audio": audio_dataset["audio"] + [None],
+                # "image": image_dataset["image"] + [None],
+            },
+            features=Features(
                 {
-                    "text": [
-                        (
-                            "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
-                            " comlink"
-                        ),
-                        "There goes another one.",
-                        "Vader turns round and round in circles as his ship spins into space.",
-                        "We count thirty Rebel ships, Lord Vader.",
-                        "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                    ],
-                    "column with spaces": [
-                        "a",
-                        "b",
-                        "c",
-                        "d",
-                        "e",
-                    ],
-                },
-                dtype=pd.StringDtype(storage="python"),
-            )
+                    "text": Value(dtype="string"),
+                    "column with spaces": Value(dtype="string"),
+                    "list": [Value(dtype="int32")],
+                    "sequence_list": Sequence(Value(dtype="int32")),
+                    "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
+                    # "audio": Audio(sampling_rate=1600),
+                    # "image": Image(),
+                }
+            ),
         ),
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,
