@@ -61,11 +61,9 @@ DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
-CREATE_TMP_TABLE_COMMAND = "CREATE OR REPLACE TABLE tmp AS SELECT {column_name} from {source_df}"
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
-# ALTER_TABLE_BY_ADDING_TRANSFORMED_INT_COLUMN = "ALTER TABLE data ADD COLUMN {column_name} BIGINT"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
-CREATE_TABLE_COMMANDS = CREATE_TABLE_COMMAND + CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
+CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
@@ -309,8 +307,7 @@ def compute_split_duckdb_index_response(
         logging.debug("compute for image")
         transformed_df = compute_image_width_length_column(split_parquet_directory, column_name, transformed_df)
 
-
-    create_command_sql = CREATE_TABLE_COMMANDS.format(columns=column_names, source=all_split_parquets)
+    create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
 
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
@@ -344,6 +341,7 @@ def compute_split_duckdb_index_response(
         if is_indexable:
             # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
             # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
+            con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
             logging.info(create_index_sql)
             con.sql(create_index_sql)
@@ -432,6 +430,7 @@ def compute_split_duckdb_index_response(
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
 
+    # TODO: update features with transformed columns
     # we added the __hf_index_id column for the index
     features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 

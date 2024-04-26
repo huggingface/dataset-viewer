@@ -30,7 +30,8 @@ from worker.job_runners.config.parquet_and_info import ConfigParquetAndInfoJobRu
 from worker.job_runners.config.parquet_metadata import ConfigParquetMetadataJobRunner
 from worker.job_runners.split.duckdb_index import (
     CREATE_INDEX_COMMAND,
-    CREATE_TABLE_COMMANDS,
+    CREATE_INDEX_ID_COLUMN_COMMANDS,
+    CREATE_TABLE_COMMAND,
     SplitDuckDbIndexJobRunner,
     get_delete_operations,
     get_indexable_columns,
@@ -218,14 +219,14 @@ def get_parquet_metadata_job_runner(
 expected_columns = [
     "text",
     "column with spaces",
-    "__hf_index_id",
     "text__hf_len",
     "column with spaces__hf_len",
+    "__hf_index_id",
 ]
 expected_columns_multiple_files = [  # no text columns in `hub_public_csv` dataset
     "col_1",
     "col_2",
-    "col_3",
+    "col_3",  # note that there is no `__hf_index_id` column because there is no search index
 ]
 
 
@@ -503,7 +504,8 @@ FTS_COMMAND = (
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
     columns = ",".join('"' + str(column) + '"' for column in df.columns)
-    duckdb.sql(CREATE_TABLE_COMMANDS.format(columns=columns, source="df"))
+    duckdb.sql(CREATE_TABLE_COMMAND.format(columns=columns, source="df"))
+    duckdb.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     duckdb.sql(CREATE_INDEX_COMMAND.format(columns=columns))
     result = duckdb.execute(FTS_COMMAND, parameters=[query]).df()
     assert list(result.__hf_index_id) == expected_ids
@@ -516,7 +518,8 @@ def test_table_column_hf_index_id_is_monotonic_increasing(tmp_path: Path) -> Non
     db_path = str(tmp_path / "index.duckdb")
     column_names = ",".join(f'"{column}"' for column in pa_table.column_names)
     with duckdb.connect(db_path) as con:
-        con.sql(CREATE_TABLE_COMMANDS.format(columns=column_names, source=parquet_path))
+        con.sql(CREATE_TABLE_COMMAND.format(columns=column_names, source=parquet_path))
+        con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
     with duckdb.connect(db_path) as con:
         df = con.sql("SELECT * FROM data").to_df()
     assert df["__hf_index_id"].is_monotonic_increasing
