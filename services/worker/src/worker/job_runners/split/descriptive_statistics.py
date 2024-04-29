@@ -5,7 +5,7 @@ import io
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Callable, Optional, TypedDict, Union
+from typing import Any, Callable, Optional, TypedDict, Union, Tuple
 
 import librosa
 import numpy as np
@@ -690,15 +690,15 @@ class AudioColumn(MediaColumn):
     transform_column = FloatColumn
 
     @staticmethod
-    def get_duration(example: dict[str, Any]) -> float:
+    def get_duration(example: Optional[dict[str, Any]]) -> Optional[float]:
         """Get audio durations"""
+        if example is None:
+            return None
         with io.BytesIO(example["bytes"]) as f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @classmethod
     def transform(cls, example: Optional[dict[str, Any]]) -> Optional[float]:
-        if example is None:
-            return None
         return cls.get_duration(example)
 
 
@@ -706,23 +706,25 @@ class ImageColumn(MediaColumn):
     transform_column = IntColumn
 
     @staticmethod
-    def get_width(example: dict[str, Any]) -> int:
+    def get_width(example: Optional[dict[str, Any]]) -> Optional[int]:
         """Get image widths."""
+        if example is None:
+            return None
         with io.BytesIO(example["bytes"]) as f:
             image = Image.open(f)
             return image.size[0]
 
     @staticmethod
-    def get_shape(example: dict[str, Any]) -> tuple[int, int]:
+    def get_shape(example: Optional[dict[str, Any]]) -> Union[tuple[None, None], tuple[int, int]]:
         """Get image widths and heights."""
+        if example is None:
+            return None, None
         with io.BytesIO(example["bytes"]) as f:
             image = Image.open(f)
             return image.size
 
     @classmethod
     def transform(cls, example: Optional[dict[str, Any]]) -> Optional[int]:
-        if example is None:
-            return None
         return cls.get_width(example)
 
 
