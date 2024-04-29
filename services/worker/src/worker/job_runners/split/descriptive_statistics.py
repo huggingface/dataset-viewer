@@ -584,7 +584,7 @@ class ListColumn(Column):
         lengths_column_name = f"{column_name}_len"
         lengths_df = cls.compute_transformed_data(data, column_name, lengths_column_name)
         lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_samples=n_samples - nan_count
+            lengths_df, column_name=lengths_column_name, n_samples=n_samples
         )
 
         return NumericalStatisticsItem(
@@ -625,7 +625,7 @@ class MediaColumn(Column):
         parquet_files = list(parquet_directory.glob("*.parquet"))
         transformed_values = []
         for filename in parquet_files:
-            shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
+            shard_items = pq.read_table(filename, columns=[column_name]).to_pydict()[column_name]
             shard_transformed_values = (
                 thread_map(
                     transform_func,
@@ -647,16 +647,16 @@ class MediaColumn(Column):
         n_samples: int,
     ) -> SupportedStatistics:
         transformed_values = cls.compute_transformed_data(parquet_directory, column_name, cls.transform)
-        if not transformed_values:
+        nan_count = sum(value is None for value in transformed_values)
+        if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
 
-        nan_count = n_samples - len(transformed_values)
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
         transformed_df = pl.from_dict({column_name: transformed_values})
         transformed_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
             data=transformed_df,
             column_name=column_name,
-            n_samples=len(transformed_values),
+            n_samples=n_samples,
         )
         return NumericalStatisticsItem(
             nan_count=nan_count,
@@ -696,7 +696,9 @@ class AudioColumn(MediaColumn):
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> float:
+    def transform(cls, example: Optional[dict[str, Any]]) -> Optional[float]:
+        if example is None:
+            return None
         return cls.get_duration(example)
 
 
@@ -718,7 +720,9 @@ class ImageColumn(MediaColumn):
             return image.size
 
     @classmethod
-    def transform(cls, example: dict[str, Any]) -> int:
+    def transform(cls, example: Optional[dict[str, Any]]) -> Optional[int]:
+        if example is None:
+            return None
         return cls.get_width(example)
 
 
