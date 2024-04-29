@@ -17,9 +17,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Dataset, Features, Image, Sequence, Value, Audio
-from datasets.table import embed_table_storage
+from datasets import Audio, Dataset, Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
+from datasets.table import embed_table_storage
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -427,8 +427,8 @@ def test_compute(
         assert columns == expected_columns
         if not multiple_parquet_files:
             data = con.sql("SELECT * FROM data;").fetchall()
-            data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}
-            assert data == expected_values
+            data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}  # type: ignore
+            assert data == expected_values  # type: ignore
 
         if has_fts:
             # perform a search to validate fts feature
