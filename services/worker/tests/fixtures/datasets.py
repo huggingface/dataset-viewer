@@ -193,8 +193,8 @@ def datasets() -> Mapping[str, Dataset]:
                     [{"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}, {"author": "cat", "likes": 5}],
                     None,
                 ],
-                # "audio": audio_dataset["audio"] + [None],
-                # "image": image_dataset["image"] + [None],
+                "audio": audio_dataset["audio"] + [None],
+                "image": image_dataset["image"] + [None],
             },
             features=Features(
                 {
@@ -203,8 +203,8 @@ def datasets() -> Mapping[str, Dataset]:
                     "list": [Value(dtype="int32")],
                     "sequence_list": Sequence(Value(dtype="int32")),
                     "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
-                    # "audio": Audio(sampling_rate=1600),
-                    # "image": Image(),
+                    "audio": Audio(sampling_rate=1600, decode=False),
+                    "image": Image(decode=False),
                 }
             ),
         ),

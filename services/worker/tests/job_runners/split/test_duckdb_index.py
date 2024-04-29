@@ -17,7 +17,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Dataset, Features, Image, Sequence, Value
+from datasets import Dataset, Features, Image, Sequence, Value, Audio
+from datasets.table import embed_table_storage
 from datasets.packaged_modules.csv.csv import CsvConfig
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -216,16 +217,21 @@ def get_parquet_metadata_job_runner(
     return _get_job_runner
 
 
-expected_columns = [
+expected_columns_duckdb_index = [
     "text",
     "column with spaces",
     "list",
     "sequence_list",
     "sequence_struct",
+    "audio",
+    "image",
     "text__hf_len",
     "column with spaces__hf_len",
     "list__hf_len",
     "sequence_list__hf_len",
+    "audio__hf_duration",
+    "image__hf_width",
+    "image__hf_height",
     "__hf_index_id",
 ]
 expected_columns_multiple_files = [  # no text or transformable columns in `hub_public_csv` dataset
@@ -238,12 +244,18 @@ expected_columns_multiple_files = [  # no text or transformable columns in `hub_
 @pytest.fixture
 def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
     ds = datasets["duckdb_index"]
+    ds = Dataset(embed_table_storage(ds.data))
     expected: dict[str, list[Any]] = ds[:]
     for feature_name, feature in ds.features.items():
         is_string = isinstance(feature, Value) and feature.dtype == "string"
         is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
         if is_string or is_list:
             expected[f"{feature_name}__hf_len"] = [len(row) if row is not None else None for row in ds[feature_name]]
+        elif isinstance(feature, Audio):
+            expected[f"{feature_name}__hf_duration"] = [1.0, 2.0, 3.0, 4.0, None]
+        elif isinstance(feature, Image):
+            expected[f"{feature_name}__hf_width"] = [640, 1440, 520, 1240, None]
+            expected[f"{feature_name}__hf_height"] = [480, 1058, 400, 930, None]
     expected["__hf_index_id"] = list(range(ds.num_rows))
     return expected
 
@@ -251,9 +263,9 @@ def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
 @pytest.mark.parametrize(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code,expected_columns",
     [
-        ("duckdb_index", None, 5, True, False, None, expected_columns),
-        ("duckdb_index_from_partial_export", None, 5, True, True, None, expected_columns),
-        ("gated", None, 5, True, False, None, expected_columns),
+        ("duckdb_index", None, 5, True, False, None, expected_columns_duckdb_index),
+        ("duckdb_index_from_partial_export", None, 5, True, True, None, expected_columns_duckdb_index),
+        ("gated", None, 5, True, False, None, expected_columns_duckdb_index),
         ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None, expected_columns_multiple_files),
     ],
 )
