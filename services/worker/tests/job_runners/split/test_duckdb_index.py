@@ -17,7 +17,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import requests
-from datasets import Features, Image, Sequence, Value
+from datasets import Features, Image, Sequence, Translation, TranslationVariableLanguages, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
@@ -219,7 +219,6 @@ def get_parquet_metadata_job_runner(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
         ("duckdb_index", None, 5, True, False, None),
-        ("duckdb_index_large_string", None, 5, True, False, None),
         ("duckdb_index_from_partial_export", None, 5, True, True, None),
         ("gated", None, 5, True, False, None),
         ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None),
@@ -233,7 +232,6 @@ def test_compute(
     app_config: AppConfig,
     hub_responses_public: HubDatasetTest,
     hub_responses_duckdb_index: HubDatasetTest,
-    hub_responses_duckdb_index_large_string: HubDatasetTest,
     hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     max_split_size_bytes: Optional[int],
@@ -244,7 +242,6 @@ def test_compute(
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
-        "duckdb_index_large_string": hub_responses_duckdb_index_large_string,
         "duckdb_index_from_partial_export": hub_responses_duckdb_index,
         "gated": hub_responses_gated_duckdb_index,
         "partial_duckdb_index_from_multiple_files_public": hub_responses_public,
@@ -440,7 +437,10 @@ def test_get_delete_operations(split_names: set[str], config: str, deleted_files
 @pytest.mark.parametrize(
     "features, expected",
     [
-        (Features({"col_1": Value("string"), "col_2": Value("int64")}), ["col_1"]),
+        (
+            Features({"col_1": Value("string"), "col_2": Value("int64"), "col_3": Value("large_string")}),
+            ["col_1", "col_3"],
+        ),
         (
             Features(
                 {
@@ -454,6 +454,15 @@ def test_get_delete_operations(split_names: set[str], config: str, deleted_files
             ["nested_1", "nested_2", "nested_3", "nested_4"],
         ),
         (Features({"col_1": Image()}), []),
+        (
+            Features(
+                {
+                    "col_1": Translation(languages=["en", "fr"]),
+                    "col_2": TranslationVariableLanguages(languages=["fr", "en"]),
+                }
+            ),
+            ["col_1", "col_2"],
+        ),
     ],
 )
 def test_get_indexable_columns(features: Features, expected: list[str]) -> None:
