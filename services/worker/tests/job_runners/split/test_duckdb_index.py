@@ -226,10 +226,10 @@ expected_columns_duckdb_index = [
     "sequence_struct",
     "audio",
     "image",
-    "text__hf_len",
-    "column with spaces__hf_len",
-    "list__hf_len",
-    "sequence_list__hf_len",
+    "text__hf_length",
+    "column with spaces__hf_length",
+    "list__hf_length",
+    "sequence_list__hf_length",
     "audio__hf_duration",
     "image__hf_width",
     "image__hf_height",
@@ -251,7 +251,7 @@ def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         is_string = isinstance(feature, Value) and feature.dtype == "string"
         is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
         if is_string or is_list:
-            expected[f"{feature_name}__hf_len"] = [len(row) if row is not None else None for row in ds[feature_name]]
+            expected[f"{feature_name}__hf_length"] = [len(row) if row is not None else None for row in ds[feature_name]]
         elif isinstance(feature, Audio):
             if "all_nan" in feature_name:
                 expected[f"{feature_name}__hf_duration"] = all_nan_column(5)

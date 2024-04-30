@@ -129,7 +129,7 @@ def compute_string_length_column(
         # do nothing
         return target_df
 
-    lengths_column_name = f"{column_name}__hf_len"
+    lengths_column_name = f"{column_name}__hf_length"
     lengths_df = StringColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
@@ -143,7 +143,7 @@ def compute_list_length_column(
 ) -> Optional[pl.DataFrame]:
     df = pl.read_parquet(all_split_parquets, columns=[column_name])
     # TODO: all nan?
-    lengths_column_name = f"{column_name}__hf_len"
+    lengths_column_name = f"{column_name}__hf_length"
     lengths_df = ListColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
