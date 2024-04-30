@@ -10,7 +10,6 @@ from typing import Any, Callable, Optional, TypedDict, Union
 import librosa
 import numpy as np
 import polars as pl
-import pyarrow as pa
 import pyarrow.parquet as pq
 from datasets import Features, Sequence
 from datasets.features.features import FeatureType, _ArrayXD
@@ -27,6 +26,7 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import (
     extract_split_name_from_parquet_url,
     get_num_parquet_files_to_process,
+    is_list_pa_type,
     parquet_export_is_partial,
 )
 from libcommon.simple_cache import get_previous_step_or_raise
@@ -745,14 +745,6 @@ def get_extension_features(features: dict[str, Any]) -> set[str]:
     """Return set of names of extension features (Array2D, Array3D, Array4D, or Array5D) within provided features."""
     features = Features.from_dict(features)
     return {feature_name for feature_name, feature in features.items() if is_extension_feature(feature)}
-
-
-def is_list_pa_type(parquet_file_path: Path, feature_name: str) -> bool:
-    # Check if (Sequence) feature is internally a List, because it can also be Struct, see
-    # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-    feature_arrow_type = pq.read_schema(parquet_file_path).field(feature_name).type
-    is_list: bool = pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type)
-    return is_list
 
 
 def compute_descriptive_statistics_response(

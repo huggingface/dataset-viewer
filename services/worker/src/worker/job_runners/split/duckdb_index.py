@@ -31,6 +31,7 @@ from libcommon.exceptions import (
 from libcommon.parquet_utils import (
     extract_split_name_from_parquet_url,
     get_num_parquet_files_to_process,
+    is_list_pa_type,
     parquet_export_is_partial,
 )
 from libcommon.queue import lock
@@ -46,7 +47,6 @@ from worker.job_runners.split.descriptive_statistics import (
     ImageColumn,
     ListColumn,
     StringColumn,
-    is_list_pa_type,
 )
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 from worker.utils import (
