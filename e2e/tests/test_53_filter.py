@@ -13,9 +13,10 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
     offset = 1
     length = 2
     where = "col_4='B'"
+    orderby = "col_2 DESC"
     filter_response = poll_until_ready_and_assert(
         relative_url=(
-            f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
+            f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}&orderby={orderby}"
         ),
         check_x_revision=True,
         dataset=dataset,
@@ -44,13 +45,13 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
         "truncated_cells": [],
     }, rows[0]
     assert rows[1] == {
-        "row_idx": 3,
+        "row_idx": 0,
         "row": {
-            "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
-            "col_2": 3,
-            "col_3": 3.0,
+            "col_1": "There goes another one.",
+            "col_2": 0,
+            "col_3": 0.0,
             "col_4": "B",
-            "col_5": None,
+            "col_5": True,
         },
         "truncated_cells": [],
     }, rows[1]
