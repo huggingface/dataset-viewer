@@ -218,30 +218,6 @@ def get_parquet_metadata_job_runner(
     return _get_job_runner
 
 
-expected_columns_duckdb_index = [
-    "text",
-    "column with spaces",
-    "list",
-    "sequence_list",
-    "sequence_struct",
-    "audio",
-    "image",
-    "text__hf_length",
-    "column with spaces__hf_length",
-    "list__hf_length",
-    "sequence_list__hf_length",
-    "audio__hf_duration",
-    "image__hf_width",
-    "image__hf_height",
-    "__hf_index_id",
-]
-expected_columns_multiple_files = [  # no text or transformable columns in `hub_public_csv` dataset
-    "col_1",
-    "col_2",
-    "col_3",  # note that there is no `__hf_index_id` column because there is no search index
-]
-
-
 @pytest.fixture
 def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
     ds = datasets["duckdb_index"]
