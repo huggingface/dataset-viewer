@@ -41,7 +41,7 @@ from search.duckdb_connection import duckdb_connect
 FILTER_QUERY = """\
     SELECT {columns}
     FROM data
-    WHERE {where}
+    {where}
     {orderby}
     LIMIT {limit}
     OFFSET {offset}"""
@@ -49,7 +49,7 @@ FILTER_QUERY = """\
 FILTER_COUNT_QUERY = """\
     SELECT COUNT(*)
     FROM data
-    WHERE {where}"""
+    {where}"""
 
 SQL_INVALID_SYMBOLS = "|".join([";", "--", r"/\*", r"\*/"])
 SQL_INVALID_SYMBOLS_PATTERN = re.compile(rf"(?:{SQL_INVALID_SYMBOLS})", flags=re.IGNORECASE)
@@ -81,7 +81,7 @@ def create_filter_endpoint(
                     dataset = get_request_parameter(request, "dataset", required=True)
                     config = get_request_parameter(request, "config", required=True)
                     split = get_request_parameter(request, "split", required=True)
-                    where = get_request_parameter(request, "where", required=True)
+                    where = get_request_parameter(request, "where")
                     validate_query_parameter(where, "where")
                     orderby = get_request_parameter(request, "orderby")
                     validate_query_parameter(orderby, "orderby")
@@ -196,17 +196,17 @@ def execute_filter_query(
     with duckdb_connect(extensions_directory=extensions_directory, database=index_file_location) as con:
         filter_query = FILTER_QUERY.format(
             columns=",".join([f'"{column}"' for column in columns]),
-            where=where,
+            where=f"WHERE {where}" if where else "",
             orderby=f"ORDER BY {orderby}" if orderby else "",
             limit=limit,
             offset=offset,
         )
-        filter_count_query = FILTER_COUNT_QUERY.format(where=where)
+        filter_count_query = FILTER_COUNT_QUERY.format(where=f"WHERE {where}" if where else "")
         try:
             pa_table = con.sql(filter_query).arrow()
             num_rows_total = con.sql(filter_count_query).fetchall()[0][0]
-        except duckdb.Error:
-            raise InvalidParameterError(message="Parameter 'where' is invalid")
+        except duckdb.Error as err:
+            raise InvalidParameterError(message="A query parameter is invalid") from err
     return num_rows_total, pa_table
 
 
