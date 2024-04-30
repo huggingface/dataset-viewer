@@ -201,7 +201,9 @@ class PresidioEntitiesScanConfig:
         env = Env(expand_vars=True)
         with env.prefixed("PRESIDIO_ENTITIES_SCAN_"):
             return cls(
-                columns_max_number=env.int(name="COLUMNS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER),
+                columns_max_number=env.int(
+                    name="COLUMNS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_COLUMNS_MAX_NUMBER
+                ),
                 rows_max_number=env.int(name="ROWS_MAX_NUMBER", default=PRESIDIO_ENTITIES_SCAN_ROWS_MAX_NUMBER),
             )
 

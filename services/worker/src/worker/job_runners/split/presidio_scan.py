@@ -3,9 +3,10 @@
 
 import logging
 from collections import Counter
-from itertools import islice, count
+from collections.abc import Iterable
+from itertools import count, islice
 from pathlib import Path
-from typing import Iterable, Optional, TypeVar
+from typing import Literal, Optional, TypeVar, Union, overload
 
 from datasets import get_dataset_config_info
 from libcommon.dtos import JobInfo, Row
@@ -21,33 +22,78 @@ from worker.dtos import CompleteJobResult, PresidioEntitiesScanResponse, Presidi
 from worker.job_runners.split.split_job_runner import SplitJobRunnerWithDatasetsCache
 from worker.utils import get_rows_or_raise, resolve_trust_remote_code
 
-
 T = TypeVar("T")
+BATCH_SIZE = 10
+batch_analyzer: Optional[BatchAnalyzerEngine] = None
 
 
+@overload
 def batched(it: Iterable[T], n: int) -> Iterable[list[T]]:
+    ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[False]) -> Iterable[list[T]]:
+    ...
+
+
+@overload
+def batched(it: Iterable[T], n: int, with_indices: Literal[True]) -> Iterable[tuple[list[int], list[T]]]:
+    ...
+
+
+def batched(
+    it: Iterable[T], n: int, with_indices: bool = False
+) -> Union[Iterable[list[T]], Iterable[tuple[list[int], list[T]]]]:
     it = iter(it)
+    indices_batches = batched(count(), n)
     while batch := list(islice(it, n)):
-        yield batch
+        yield (next(indices_batches), batch) if with_indices else batch
 
 
-def analyze(batch_analyzer: BatchAnalyzerEngine, batch: list[dict[str, str]], indices: Iterable[int], column_names: list[str]) -> list[PresidioEntity]:
-    texts = [f"The following is {column_name} data:\n\n{example[column_name] or ''}" for example in batch for column_name in column_names]
+def analyze(
+    batch_analyzer: BatchAnalyzerEngine,
+    batch: list[dict[str, str]],
+    indices: Iterable[int],
+    scanned_columns: list[str],
+) -> list[PresidioEntity]:
+    texts = [
+        f"The following is {column_name} data:\n\n{example[column_name] or ''}"
+        for example in batch
+        for column_name in scanned_columns
+    ]
     return [
         PresidioEntity(
-            text=texts[i][recognizer_result.start:recognizer_result.end],
+            text=texts[i][recognizer_result.start : recognizer_result.end],
             type=recognizer_result.entity_type,
             row_idx=row_idx,
-            column_name=column_name
+            column_name=column_name,
         )
-        for i, row_idx, recognizer_results in zip(count(), indices, batch_analyzer.analyze_iterator(texts, language="en", score_threshold=0.8))
-        for column_name, recognizer_result in zip(column_names, recognizer_results)
+        for i, row_idx, recognizer_results in zip(
+            count(), indices, batch_analyzer.analyze_iterator(texts, language="en", score_threshold=0.8)
+        )
+        for column_name, recognizer_result in zip(scanned_columns, recognizer_results)
         if recognizer_result.start >= len(f"The following is {column_name} data:\n\n")
     ]
 
 
 def presidio_scan_entities(rows: list[Row], scanned_columns: list[str]) -> list[PresidioEntity]:
-    pass # TODO(QL): Implement
+    global batch_analyzer
+    if batch_analyzer is None:
+        batch_analyser = BatchAnalyzerEngine(AnalyzerEngine())
+    presidio_entities: list[PresidioEntity] = []
+    rows_with_scanned_columns_only = (
+        {column_name: str(row[column_name] or "") for column_name in scanned_columns} for row in rows
+    )
+    for indices, batch in batched(rows_with_scanned_columns_only, BATCH_SIZE, with_indices=True):
+        for presidio_entitiy in analyze(
+            batch_analyzer=batch_analyser,
+            batch=batch,
+            indices=indices,
+            scanned_columns=scanned_columns,
+        ):
+            presidio_entities.append(presidio_entitiy)
+    return presidio_entities
 
 
 def compute_presidio_entities_scan_response(
@@ -57,11 +103,6 @@ def compute_presidio_entities_scan_response(
     hf_token: Optional[str],
     rows_max_number: int,
     columns_max_number: int,
-    urls_number_per_batch: int,
-    spawning_token: Optional[str],
-    max_concurrent_requests_number: int,
-    max_requests_per_second: int,
-    spawning_url: str,
     dataset_scripts_allow_list: list[str],
 ) -> PresidioEntitiesScanResponse:
     """
@@ -82,16 +123,6 @@ def compute_presidio_entities_scan_response(
             The maximum number of rows of the response.
         columns_max_number (`int`):
             The maximum number of supported columns.
-        urls_number_per_batch (`int`):
-            The number of batch URLs to be sent to spawning service.
-        spawning_token (`str`, *optional*):
-            An authentication token to use spawning service (See https://api.spawning.ai/spawning-api)
-        max_concurrent_requests_number (`int`):
-            The maximum number of requests to be processed concurrently.
-        max_requests_per_second (`int`):
-            The maximum number of requests to be processed by second.
-        spawning_url (`str`):
-            Spawgning API URL
         dataset_scripts_allow_list (`list[str]`):
             List of datasets for which we support dataset scripts.
             Unix shell-style wildcards also work in the dataset name for namespaced datasets,
