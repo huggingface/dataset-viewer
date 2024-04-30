@@ -328,6 +328,9 @@ def compute_split_duckdb_index_response(
             logging.info(create_index_sql)
             con.sql(create_index_sql)
 
+        if transformed_df is not None or is_indexable:
+            # update features with newly created columns
+            features = Features.from_arrow_schema(con.table("data").arrow().schema).to_dict()
     finally:
         con.close()
 
@@ -411,10 +414,6 @@ def compute_split_duckdb_index_response(
     repo_file = repo_files[0]
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
-
-    # TODO: update features with transformed columns
-    # we added the __hf_index_id column for the index
-    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
     return SplitDuckdbIndex(
         dataset=dataset,
