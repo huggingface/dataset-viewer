@@ -78,13 +78,14 @@ def test_validate_query_parameter_raises(parameter_name: str, parameter_value: s
         validate_query_parameter(parameter_value + sql_injection, parameter_name)
 
 
-@pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
 @pytest.mark.parametrize("orderby", ["", "age", "age DESC"])
-def test_execute_filter_query(columns: list[str], orderby: str, index_file_location: str) -> None:
+@pytest.mark.parametrize("where", ["", "gender='female'"])
+@pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
+def test_execute_filter_query(columns: list[str], where: str, orderby: str, index_file_location: str) -> None:
     # in split-duckdb-index we always add the ROW_IDX_COLUMN column
     # see https://github.com/huggingface/dataset-viewer/blob/main/services/worker/src/worker/job_runners/split/duckdb_index.py#L305
     columns = columns + [ROW_IDX_COLUMN]
-    where, limit, offset = "gender='female'", 1, 1
+    limit, offset = 1, 1
     num_rows_total, pa_table = execute_filter_query(
         index_file_location=index_file_location,
         columns=columns,
@@ -93,7 +94,8 @@ def test_execute_filter_query(columns: list[str], orderby: str, index_file_locat
         limit=limit,
         offset=offset,
     )
-    assert num_rows_total == 2
+    expected_num_rows_total = 2 if where else 4
+    assert num_rows_total == expected_num_rows_total
     expected_pa_table = pa.Table.from_pydict(
         {
             "__hf_index_id": [0, 1, 2, 3],
@@ -101,7 +103,9 @@ def test_execute_filter_query(columns: list[str], orderby: str, index_file_locat
             "gender": ["female", "male", "male", "female"],
             "age": [35, 30, 25, 30],
         }
-    ).filter(pc.field("gender") == "female")
+    )
+    if where:
+        expected_pa_table = expected_pa_table.filter(pc.field("gender") == "female")
     if orderby:
         if orderby.endswith(" DESC"):
             sorting = [(orderby.removesuffix(" DESC"), "descending")]
