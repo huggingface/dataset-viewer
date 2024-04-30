@@ -309,6 +309,15 @@ def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_public_duckdb_index_large_string(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="duckdb_index_large_string", dataset=datasets["duckdb_index_large_string"]
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="descriptive_statistics", dataset=datasets["descriptive_statistics"])
     yield repo_id
@@ -790,6 +799,10 @@ TEXT_cols = {
     "text": {"_type": "Value", "dtype": "string"},
 }
 
+LARGE_TEXT_cols = {
+    "text": {"_type": "Value", "dtype": "large_string"},
+}
+
 TEXT_rows = [
     {"text": text}
     for text in [
@@ -1006,6 +1019,21 @@ def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
         "first_rows_response": create_first_rows_response(hub_public_duckdb_index, TEXT_cols, TEXT_rows),
         "parquet_and_info_response": create_parquet_and_info_response(
             dataset=hub_public_duckdb_index, data_type="csv"
+        ),
+    }
+
+
+@pytest.fixture
+def hub_responses_duckdb_index_large_string(hub_public_duckdb_index_large_string: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index_large_string,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index_large_string),
+        "splits_response": create_splits_response(hub_public_duckdb_index_large_string),
+        "first_rows_response": create_first_rows_response(
+            hub_public_duckdb_index_large_string, LARGE_TEXT_cols, TEXT_rows
+        ),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index_large_string, data_type="csv"
         ),
     }
 
