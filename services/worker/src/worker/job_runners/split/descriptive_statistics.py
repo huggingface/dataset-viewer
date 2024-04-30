@@ -626,15 +626,11 @@ class MediaColumn(Column):
         transformed_values = []
         for filename in parquet_files:
             shard_items = pq.read_table(filename, columns=[column_name]).to_pydict()[column_name]
-            shard_transformed_values = (
-                thread_map(
-                    transform_func,
-                    shard_items,
-                    desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
-                    leave=False,
-                )
-                if shard_items
-                else []
+            shard_transformed_values = thread_map(
+                transform_func,
+                shard_items,
+                desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
+                leave=False,
             )
             transformed_values.extend(shard_transformed_values)
         return transformed_values

@@ -39,6 +39,7 @@ from worker.job_runners.split.duckdb_index import (
 )
 from worker.resources import LibrariesResource
 
+from ...fixtures.descriptive_statistics_dataset import all_nan_column
 from ...fixtures.hub import HubDatasetTest
 from ..utils import REVISION_NAME
 
@@ -252,21 +253,28 @@ def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         if is_string or is_list:
             expected[f"{feature_name}__hf_len"] = [len(row) if row is not None else None for row in ds[feature_name]]
         elif isinstance(feature, Audio):
-            expected[f"{feature_name}__hf_duration"] = [1.0, 2.0, 3.0, 4.0, None]
+            if "all_nan" in feature_name:
+                expected[f"{feature_name}__hf_duration"] = all_nan_column(5)
+            else:
+                expected[f"{feature_name}__hf_duration"] = [1.0, 2.0, 3.0, 4.0, None]
         elif isinstance(feature, Image):
-            expected[f"{feature_name}__hf_width"] = [640, 1440, 520, 1240, None]
-            expected[f"{feature_name}__hf_height"] = [480, 1058, 400, 930, None]
+            if "all_nan" in feature_name:
+                expected[f"{feature_name}__hf_width"] = all_nan_column(5)
+                expected[f"{feature_name}__hf_height"] = all_nan_column(5)
+            else:
+                expected[f"{feature_name}__hf_width"] = [640, 1440, 520, 1240, None]
+                expected[f"{feature_name}__hf_height"] = [480, 1058, 400, 930, None]
     expected["__hf_index_id"] = list(range(ds.num_rows))
     return expected
 
 
 @pytest.mark.parametrize(
-    "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code,expected_columns",
+    "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
-        ("duckdb_index", None, 5, True, False, None, expected_columns_duckdb_index),
-        ("duckdb_index_from_partial_export", None, 5, True, True, None, expected_columns_duckdb_index),
-        ("gated", None, 5, True, False, None, expected_columns_duckdb_index),
-        ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None, expected_columns_multiple_files),
+        ("duckdb_index", None, 5, True, False, None),
+        ("duckdb_index_from_partial_export", None, 5, True, True, None),
+        ("gated", None, 5, True, False, None),
+        ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None),
     ],
 )
 def test_compute(
@@ -284,7 +292,6 @@ def test_compute(
     expected_rows_count: int,
     expected_partial: bool,
     expected_error_code: str,
-    expected_columns: Optional[list[str]],
     expected_values: dict[str, list[Any]],
 ) -> None:
     hub_datasets = {
@@ -424,11 +431,14 @@ def test_compute(
         assert record_count[0] == (expected_rows_count,)
 
         columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
-        assert columns == expected_columns
         if not multiple_parquet_files:
+            expected_columns = expected_values.keys()
+            assert set(columns) == set(expected_columns)
             data = con.sql("SELECT * FROM data;").fetchall()
             data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}  # type: ignore
             assert data == expected_values  # type: ignore
+        else:
+            assert "__hf_index_id" not in columns
 
         if has_fts:
             # perform a search to validate fts feature

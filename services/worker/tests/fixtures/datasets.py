@@ -27,6 +27,7 @@ from datasets import (
 from datasets.features.features import FeatureType
 
 from .descriptive_statistics_dataset import (
+    all_nan_column,
     audio_dataset,
     image_dataset,
     statistics_dataset,
@@ -165,6 +166,7 @@ def datasets() -> Mapping[str, Dataset]:
                     "We count thirty Rebel ships, Lord Vader.",
                     "The wingman spots the pirateship coming at him and warns the Dark Lord",
                 ],
+                "text_all_nan": all_nan_column(5),
                 "column with spaces": [
                     "a",
                     "b",
@@ -179,6 +181,7 @@ def datasets() -> Mapping[str, Dataset]:
                     [1, 2, 3, 4],
                     [1, 2, 3, 4, 5],
                 ],
+                "list_all_nan": all_nan_column(5),
                 "sequence_list": [
                     [1],
                     [1, 2],
@@ -186,6 +189,7 @@ def datasets() -> Mapping[str, Dataset]:
                     [1, 2, 3, 4],
                     [1, 2, 3, 4, 5],
                 ],
+                "sequence_list_all_nan": all_nan_column(5),
                 "sequence_struct": [
                     [],
                     [{"author": "cat", "likes": 5}],
@@ -194,17 +198,24 @@ def datasets() -> Mapping[str, Dataset]:
                     None,
                 ],
                 "audio": audio_dataset["audio"] + [None],
+                "audio_all_nan": all_nan_column(5),
                 "image": image_dataset["image"] + [None],
+                "image_all_nan": all_nan_column(5),
             },
             features=Features(
                 {
                     "text": Value(dtype="string"),
+                    "text_all_nan": Value(dtype="string"),
                     "column with spaces": Value(dtype="string"),
                     "list": [Value(dtype="int32")],
+                    "list_all_nan": [Value(dtype="int32")],
                     "sequence_list": Sequence(Value(dtype="int32")),
+                    "sequence_list_all_nan": Sequence(Value(dtype="int32")),
                     "sequence_struct": Sequence({"author": Value("string"), "likes": Value("int32")}),
                     "audio": Audio(sampling_rate=1600, decode=False),
+                    "audio_all_nan": Audio(sampling_rate=1600, decode=False),
                     "image": Image(decode=False),
+                    "image_all_nan": Image(decode=False),
                 }
             ),
         ),
