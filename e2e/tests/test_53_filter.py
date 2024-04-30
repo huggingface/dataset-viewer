@@ -66,6 +66,7 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
 @pytest.mark.parametrize(
     "where,expected_num_rows",
     [
+        ("", 4),
         ("col_2=3", 1),
         ("col_2<3", 3),
         ("col_2>3", 0),
@@ -79,8 +80,11 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
 def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, normal_user_public_dataset: str) -> None:
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
+    relative_url = f"/filter?dataset={dataset}&config={config}&split={split}"
+    if where:
+        relative_url += f"&where={where}"
     response = poll_until_ready_and_assert(
-        relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
+        relative_url=relative_url,
         check_x_revision=True,
         dataset=dataset,
     )
