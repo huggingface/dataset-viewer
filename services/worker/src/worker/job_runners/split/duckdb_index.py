@@ -95,34 +95,10 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def get_transformable_columns(features: dict[str, Any], first_parquet_file: Path) -> dict[str, list[str]]:
-    transformable_columns: dict[str, list[str]] = {
-        "audio": [],
-        "image": [],
-        "string": [],
-        "list": [],
-    }
-    for feature_name, feature in features.items():
-        if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
-            if is_list_pa_type(first_parquet_file, feature_name):
-                transformable_columns["list"].append(feature_name)
-
-        if isinstance(feature, dict):
-            if feature.get("_type") == "Audio":
-                transformable_columns["audio"].append(feature_name)
-
-            if feature.get("_type") == "Image":
-                transformable_columns["image"].append(feature_name)
-
-            if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
-                transformable_columns["string"].append(feature_name)
-    return transformable_columns
-
-
 def compute_string_length_column(
-    all_split_parquets: str, column_name: str, target_df: Optional[pl.DataFrame]
+    parquet_directory: Path, column_name: str, target_df: Optional[pl.DataFrame]
 ) -> Optional[pl.DataFrame]:
-    df = pl.read_parquet(all_split_parquets, columns=[column_name])
+    df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
     n_unique = df[column_name].n_unique()
     n_samples = df.shape[0]
     if StringColumn.is_class(n_unique, n_samples):
@@ -139,10 +115,9 @@ def compute_string_length_column(
 
 
 def compute_list_length_column(
-    all_split_parquets: str, column_name: str, target_df: Optional[pl.DataFrame]
-) -> Optional[pl.DataFrame]:
-    df = pl.read_parquet(all_split_parquets, columns=[column_name])
-    # TODO: all nan?
+    parquet_directory: Path, column_name: str, target_df: Optional[pl.DataFrame]
+) -> pl.DataFrame:
+    df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
     lengths_column_name = f"{column_name}__hf_length"
     lengths_df = ListColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
     if target_df is None:
@@ -180,6 +155,27 @@ def compute_image_width_length_column(
     target_df.insert_column(target_df.shape[1], shapes_df[width_column_name])
     target_df.insert_column(target_df.shape[1], shapes_df[height_column_name])
     return target_df
+
+
+def compute_transformed_data(features: dict[str, Any], parquet_directory: Path) -> Optional[pl.DataFrame]:
+    transformed_df = None
+    for feature_name, feature in features.items():
+        if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
+            first_parquet_file = list(parquet_directory.glob("*.parquet"))[0]
+            if is_list_pa_type(first_parquet_file, feature_name):
+                transformed_df = compute_list_length_column(parquet_directory, feature_name, transformed_df)
+
+        if isinstance(feature, dict):
+            if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
+                transformed_df = compute_string_length_column(parquet_directory, feature_name, transformed_df)
+
+            if feature.get("_type") == "Audio":
+                compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
+
+            if feature.get("_type") == "Image":
+                transformed_df = compute_image_width_length_column(parquet_directory, feature_name, transformed_df)
+
+    return transformed_df
 
 
 def get_delete_operations(all_repo_files: set[str], split_names: set[str], config: str) -> list[CommitOperationDelete]:
@@ -292,21 +288,7 @@ def compute_split_duckdb_index_response(
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
     # TODO: refactor this shit
-    transformable_columns = get_transformable_columns(features, split_parquet_directory / parquet_file_names[0])
-    transformed_df = None
-    for column_name in transformable_columns["string"]:
-        logging.debug("compute for strings")
-        transformed_df = compute_string_length_column(all_split_parquets, column_name, transformed_df)
-    for column_name in transformable_columns["list"]:
-        logging.debug("compute for lists")
-        transformed_df = compute_list_length_column(all_split_parquets, column_name, transformed_df)
-    for column_name in transformable_columns["audio"]:
-        logging.debug("compute for audio")
-        transformed_df = compute_audio_duration_column(split_parquet_directory, column_name, transformed_df)
-    for column_name in transformable_columns["image"]:
-        logging.debug("compute for image")
-        transformed_df = compute_image_width_length_column(split_parquet_directory, column_name, transformed_df)
-
+    transformed_df = compute_transformed_data(features, split_parquet_directory)
     create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
 
     # index all columns

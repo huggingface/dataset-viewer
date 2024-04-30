@@ -227,7 +227,9 @@ def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         is_string = isinstance(feature, Value) and feature.dtype == "string"
         is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
         if is_string or is_list:
-            expected[f"{feature_name}__hf_length"] = [len(row) if row is not None else None for row in ds[feature_name]]
+            expected[f"{feature_name}__hf_length"] = [
+                len(row) if row is not None else None for row in ds[feature_name]
+            ]
         elif isinstance(feature, Audio):
             if "all_nan" in feature_name:
                 expected[f"{feature_name}__hf_duration"] = all_nan_column(5)
