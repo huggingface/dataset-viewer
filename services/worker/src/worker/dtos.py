@@ -112,7 +112,7 @@ class PresidioEntitiesCountResponse(TypedDict):
     num_au_abn_entities: int
     num_scanned_rows: int
     has_scanned_columns: bool
-    full_scan: bool
+    full_scan: Union[bool, None]
 
 
 class PresidioEntitiesScanResponse(PresidioEntitiesCountResponse):
