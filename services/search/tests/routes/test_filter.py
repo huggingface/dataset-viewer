@@ -15,7 +15,7 @@ from libapi.response import ROW_IDX_COLUMN, create_response
 from libcommon.storage_client import StorageClient
 
 from search.config import AppConfig
-from search.routes.filter import execute_filter_query, validate_where_parameter
+from search.routes.filter import execute_filter_query, validate_query_parameter
 
 CACHED_ASSETS_FOLDER = "cached-assets"
 
@@ -61,15 +61,18 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     os.remove(index_file_location)
 
 
-@pytest.mark.parametrize("where", ["col='A'"])
-def test_validate_where_parameter(where: str) -> None:
-    validate_where_parameter(where)
+@pytest.mark.parametrize("parameter_name, parameter_value", [("where", "col='A'")])
+def test_validate_query_parameter(parameter_name: str, parameter_value: str) -> None:
+    validate_query_parameter(parameter_value, parameter_name)
 
 
-@pytest.mark.parametrize("where", ["col='A'; SELECT * from data", "col='A' /*", "col='A'--"])
-def test_validate_where_parameter_raises(where: str) -> None:
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value",
+    [("where", "col='A'; SELECT * from data"), ("where", "col='A' /*"), ("where", "col='A'--")],
+)
+def test_validate_query_parameter_raises(parameter_name: str, parameter_value: str) -> None:
     with pytest.raises(InvalidParameterError):
-        validate_where_parameter(where)
+        validate_query_parameter(parameter_value, parameter_name)
 
 
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])

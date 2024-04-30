@@ -82,7 +82,7 @@ def create_filter_endpoint(
                     config = get_request_parameter(request, "config", required=True)
                     split = get_request_parameter(request, "split", required=True)
                     where = get_request_parameter(request, "where", required=True)
-                    validate_where_parameter(where)
+                    validate_query_parameter(where, "where")
                     orderby = get_request_parameter(request, "orderby")
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
@@ -209,6 +209,6 @@ def execute_filter_query(
     return num_rows_total, pa_table
 
 
-def validate_where_parameter(where: str) -> None:
-    if SQL_INVALID_SYMBOLS_PATTERN.search(where):
-        raise InvalidParameterError(message="Parameter 'where' contains invalid symbols")
+def validate_query_parameter(parameter_value: str, parameter_name: str) -> None:
+    if SQL_INVALID_SYMBOLS_PATTERN.search(parameter_value):
+        raise InvalidParameterError(message=f"Parameter '{parameter_name}' contains invalid symbols")
