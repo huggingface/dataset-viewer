@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-import os
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from http import HTTPStatus
@@ -15,7 +14,6 @@ from datasets import ClassLabel, Dataset
 from datasets.table import embed_table_storage
 from huggingface_hub.hf_api import HfApi
 from libcommon.dtos import Priority
-from libcommon.exceptions import StatisticsComputationError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -29,11 +27,13 @@ from worker.job_runners.split.descriptive_statistics import (
     MAX_NUM_STRING_LABELS,
     MAX_PROPORTION_STRING_LABELS,
     NO_LABEL_VALUE,
+    NUM_BINS,
     AudioColumn,
     BoolColumn,
     ClassLabelColumn,
     ColumnType,
     FloatColumn,
+    ImageColumn,
     IntColumn,
     ListColumn,
     SplitDescriptiveStatisticsJobRunner,
@@ -50,8 +50,6 @@ GetJobRunner = Callable[[str, str, str, AppConfig], SplitDescriptiveStatisticsJo
 GetParquetAndInfoJobRunner = Callable[[str, str, AppConfig], ConfigParquetAndInfoJobRunner]
 GetParquetJobRunner = Callable[[str, str, AppConfig], ConfigParquetJobRunner]
 GetParquetMetadataJobRunner = Callable[[str, str, AppConfig], ConfigParquetMetadataJobRunner]
-
-N_BINS = int(os.getenv("DESCRIPTIVE_STATISTICS_HISTOGRAM_NUM_BINS", 10))
 
 
 @pytest.mark.parametrize(
@@ -77,37 +75,13 @@ def test_generate_bins(
     expected_bins: list[Union[int, float]],
 ) -> None:
     bins = generate_bins(
-        min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=N_BINS
+        min_value=min_value, max_value=max_value, column_name="dummy", column_type=column_type, n_bins=NUM_BINS
     )
-    assert 2 <= len(bins) <= N_BINS + 1
+    assert 2 <= len(bins) <= NUM_BINS + 1
     if column_type is column_type.FLOAT:
         assert pytest.approx(bins) == expected_bins
     else:
         assert bins == expected_bins
-
-
-# test raise_with_column_name decorator works
-def test_error_contains_column_name(
-    datasets: Mapping[str, Dataset],
-) -> None:
-    correct_column_name = "float__column"
-    data = datasets["descriptive_statistics"].to_dict()
-    _ = FloatColumn._compute_statistics(
-        data=pl.from_dict(data),
-        column_name=correct_column_name,
-        n_bins=N_BINS,
-        n_samples=len(data[correct_column_name]),
-    )  # should not raise
-
-    incorrect_column_name = "random_column"
-    with pytest.raises(StatisticsComputationError) as e:
-        _ = FloatColumn._compute_statistics(  # internal error happens here
-            data=pl.from_dict(data),
-            column_name=incorrect_column_name,
-            n_bins=N_BINS,
-            n_samples=len(next(iter(data.values()))),
-        )
-    assert f"Error for column={incorrect_column_name}: error" in str(e.value)
 
 
 @pytest.fixture
@@ -306,10 +280,10 @@ def count_expected_statistics_for_numerical_column(
         if minimum == maximum:
             hist, bin_edges = np.array([column[~column.isna()].count()]), np.array([minimum, maximum])
         else:
-            hist, bin_edges = np.histogram(column[~column.isna()], bins=N_BINS)
+            hist, bin_edges = np.histogram(column[~column.isna()], bins=NUM_BINS)
         bin_edges = bin_edges.astype(float).round(DECIMALS).tolist()
     else:
-        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=N_BINS)
+        bins = generate_bins(minimum, maximum, column_name="dummy", column_type=dtype, n_bins=NUM_BINS)
         hist, bin_edges = np.histogram(column[~column.isna()], bins)
         bin_edges = bin_edges.astype(int).tolist()
     hist = hist.astype(int).tolist()
@@ -379,7 +353,7 @@ def count_expected_statistics_for_string_column(column: pd.Series) -> dict:  # t
     if (
         n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS
         and n_unique <= MAX_NUM_STRING_LABELS
-        or n_unique <= N_BINS
+        or n_unique <= NUM_BINS
     ):
         return {
             "nan_count": nan_count,
@@ -411,7 +385,10 @@ def descriptive_statistics_expected(datasets: Mapping[str, Dataset]) -> dict:  #
     df = ds.to_pandas()
     expected_statistics = {}
     for column_name in df.columns:
-        column_type = ColumnType(column_name.split("__")[0])
+        _type = column_name.split("__")[0]
+        if _type == "array":
+            continue
+        column_type = ColumnType(_type)
         column_data = df[column_name]
         if column_type is ColumnType.STRING_LABEL:
             column_stats = count_expected_statistics_for_string_column(column_data)
@@ -519,6 +496,51 @@ def audio_statistics_expected() -> dict:  # type: ignore
     }
 
 
+@pytest.fixture
+def image_statistics_expected() -> dict:  # type: ignore
+    image_widths = [640, 1440, 520, 1240]  # datasets consists of 4 image files
+    image_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(image_widths), dtype=ColumnType.INT
+    )
+    expected_statistics = {
+        "column_name": "image",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": image_statistics,
+    }
+    nan_image_lengths = [640, None, 520, None]  # take first and third image file for this testcase
+    nan_image_statistics = count_expected_statistics_for_numerical_column(
+        column=pd.Series(nan_image_lengths), dtype=ColumnType.INT
+    )
+    expected_nan_statistics = {
+        "column_name": "image_nan",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": nan_image_statistics,
+    }
+    expected_all_nan_statistics = {
+        "column_name": "image_all_nan",
+        "column_type": ColumnType.IMAGE,
+        "column_statistics": {
+            "nan_count": 4,
+            "nan_proportion": 1.0,
+            "min": None,
+            "max": None,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "histogram": None,
+        },
+    }
+    return {
+        "num_examples": 4,
+        "statistics": {
+            "image": expected_statistics,
+            "image_nan": expected_nan_statistics,
+            "image_all_nan": expected_all_nan_statistics,
+        },
+        "partial": False,
+    }
+
+
 @pytest.mark.parametrize(
     "column_name",
     [
@@ -539,10 +561,9 @@ def test_float_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = FloatColumn._compute_statistics(
+    computed = FloatColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     expected_hist, computed_hist = expected.pop("histogram"), computed.pop("histogram")
@@ -573,10 +594,9 @@ def test_int_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = IntColumn._compute_statistics(
+    computed = IntColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     print(computed)
@@ -614,10 +634,9 @@ def test_string_statistics(
     else:
         expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
         data = datasets["descriptive_statistics"].to_dict()
-    computed = StringColumn._compute_statistics(
+    computed = StringColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     if column_name.startswith("string_text__"):
@@ -649,7 +668,7 @@ def test_class_label_statistics(
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     class_label_feature = datasets["descriptive_statistics"].features[column_name]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ClassLabelColumn._compute_statistics(
+    computed = ClassLabelColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
@@ -673,7 +692,7 @@ def test_bool_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = BoolColumn._compute_statistics(
+    computed = BoolColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
         n_samples=len(data[column_name]),
@@ -717,10 +736,9 @@ def test_list_statistics(
 ) -> None:
     expected = descriptive_statistics_expected["statistics"][column_name]["column_statistics"]
     data = datasets["descriptive_statistics"].to_dict()
-    computed = ListColumn._compute_statistics(
+    computed = ListColumn.compute_statistics(
         data=pl.from_dict(data),
         column_name=column_name,
-        n_bins=N_BINS,
         n_samples=len(data[column_name]),
     )
     assert computed == expected
@@ -774,11 +792,34 @@ def test_audio_statistics(
     dataset_table = datasets["audio_statistics"].data
     dataset_table_embedded = embed_table_storage(dataset_table)  # store audio as bytes instead of paths to files
     pq.write_table(dataset_table_embedded, parquet_filename)
-    computed = AudioColumn._compute_statistics(
+    computed = AudioColumn.compute_statistics(
         parquet_directory=parquet_directory,
         column_name=column_name,
         n_samples=4,
-        n_bins=N_BINS,
+    )
+    assert computed == expected
+
+
+@pytest.mark.parametrize(
+    "column_name",
+    ["image", "image_nan", "image_all_nan"],
+)
+def test_image_statistics(
+    column_name: str,
+    image_statistics_expected: dict,  # type: ignore
+    datasets: Mapping[str, Dataset],
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    expected = image_statistics_expected["statistics"][column_name]["column_statistics"]
+    parquet_directory = tmp_path_factory.mktemp("data")
+    parquet_filename = parquet_directory / "data.parquet"
+    dataset_table = datasets["image_statistics"].data
+    dataset_table_embedded = embed_table_storage(dataset_table)  # store image as bytes instead of paths to files
+    pq.write_table(dataset_table_embedded, parquet_filename)
+    computed = ImageColumn.compute_statistics(
+        parquet_directory=parquet_directory,
+        column_name=column_name,
+        n_samples=4,
     )
     assert computed == expected
 
@@ -791,6 +832,7 @@ def test_audio_statistics(
         ("descriptive_statistics_string_text_partial", None),
         ("descriptive_statistics_not_supported", "NoSupportedFeaturesError"),
         ("audio_statistics", None),
+        ("image_statistics", None),
         ("gated", None),
     ],
 )
@@ -806,12 +848,14 @@ def test_compute(
     hub_responses_gated_descriptive_statistics: HubDatasetTest,
     hub_responses_descriptive_statistics_not_supported: HubDatasetTest,
     hub_responses_audio_statistics: HubDatasetTest,
+    hub_responses_image_statistics: HubDatasetTest,
     hub_dataset_name: str,
     expected_error_code: Optional[str],
     descriptive_statistics_expected: dict,  # type: ignore
     descriptive_statistics_string_text_expected: dict,  # type: ignore
     descriptive_statistics_string_text_partial_expected: dict,  # type: ignore
     audio_statistics_expected: dict,  # type: ignore
+    image_statistics_expected: dict,  # type: ignore
 ) -> None:
     hub_datasets = {
         "descriptive_statistics": hub_responses_descriptive_statistics,
@@ -820,6 +864,7 @@ def test_compute(
         "descriptive_statistics_not_supported": hub_responses_descriptive_statistics_not_supported,
         "gated": hub_responses_gated_descriptive_statistics,
         "audio_statistics": hub_responses_audio_statistics,
+        "image_statistics": hub_responses_image_statistics,
     }
     expected = {
         "descriptive_statistics": descriptive_statistics_expected,
@@ -828,6 +873,7 @@ def test_compute(
         "descriptive_statistics_string_text": descriptive_statistics_string_text_expected,
         "descriptive_statistics_string_text_partial": descriptive_statistics_string_text_partial_expected,
         "audio_statistics": audio_statistics_expected,
+        "image_statistics": image_statistics_expected,
     }
     dataset = hub_datasets[hub_dataset_name]["name"]
     splits_response = hub_datasets[hub_dataset_name]["splits_response"]
@@ -925,6 +971,7 @@ def test_compute(
                 ColumnType.STRING_TEXT,
                 ColumnType.LIST,
                 ColumnType.AUDIO,
+                ColumnType.IMAGE,
             ]:
                 hist, expected_hist = (
                     column_response_stats.pop("histogram"),

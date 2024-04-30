@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from pytest import TempPathFactory
 
-from libapi.duckdb import get_index_file_location_and_download_if_missing
+from libapi.duckdb import check_available_disk_space, get_index_file_location_and_download_if_missing
 
 
 @pytest.mark.parametrize("partial_index", [False, True])
@@ -48,6 +48,7 @@ async def test_get_index_file_location_and_download_if_missing(
             split=split,
             revision=revision,
             filename=filename,
+            size_bytes=100,
             url=url,
             target_revision=target_revision,
             hf_token=None,
@@ -56,3 +57,11 @@ async def test_get_index_file_location_and_download_if_missing(
         args, kwargs = download_mock.call_args
         assert not args
         assert kwargs["repo_file_location"] == expected_repo_file_location
+
+
+@pytest.mark.parametrize("subpath", [None, "does_not_exist"])
+def test_check_available_disk_space(tmp_path_factory: TempPathFactory, subpath: Optional[str]) -> None:
+    path = tmp_path_factory.mktemp("test_check_available_disk_space")
+    if subpath:
+        path = path / subpath
+    check_available_disk_space(path=path, required_space=1)

@@ -7,9 +7,7 @@ HF_DATASETS_CACHE_APPNAME = "hf_datasets_cache"
 PARQUET_METADATA_CACHE_APPNAME = "datasets_server_parquet_metadata"
 DESCRIPTIVE_STATISTICS_CACHE_APPNAME = "dataset_viewer_descriptive_statistics"
 DUCKDB_INDEX_CACHE_APPNAME = "dataset_viewer_duckdb_index"
-DUCKDB_INDEX_DOWNLOADS_SUBDIRECTORY = "downloads"
 DUCKDB_INDEX_JOB_RUNNER_SUBDIRECTORY = "job_runner"
-DUCKDB_VERSION = "0.10.0"
 CACHE_METRICS_COLLECTION = "cacheTotalMetric"
 TYPE_AND_STATUS_JOB_COUNTS_COLLECTION = "jobTotalMetric"
 WORKER_TYPE_JOB_COUNTS_COLLECTION = "workerTypeJobCounts"
@@ -21,7 +19,6 @@ LOCK_TTL_SECONDS_NO_OWNER = 600  # 10 minutes
 LOCK_TTL_SECONDS_TO_START_JOB = 600  # 10 minutes
 LOCK_TTL_SECONDS_TO_WRITE_ON_GIT_BRANCH = 3600  # 1 hour
 
-MAX_FAILED_RUNS = 3
 DATASET_SEPARATOR = "--"
 DEFAULT_DIFFICULTY = 50
 DEFAULT_DIFFICULTY_MAX = 100
@@ -36,16 +33,22 @@ PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS = 100
 PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS = 100
 PARQUET_REVISION = "refs/convert/parquet"
 
-ERROR_CODES_TO_RETRY = {
-    "ConnectionError",
-    "CreateCommitError",
-    "ExternalServerError",
-    "HfHubError",
-    "JobManagerCrashedError",
-    "LockedDatasetTimeoutError",
-    "PreviousStepStillProcessingError",
-    "StreamingRowsError",
+
+DEFAULT_MAX_FAILED_RUNS = 3
+LARGE_MAX_FAILED_RUNS = 30  # for errors that should not be permanent
+MAX_FAILED_RUNS_PER_ERROR_CODE = {
+    # default
+    "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
+    "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
+    "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
+    # "always" retry
+    "CreateCommitError": LARGE_MAX_FAILED_RUNS,
+    "HfHubError": LARGE_MAX_FAILED_RUNS,
+    "LockedDatasetTimeoutError": LARGE_MAX_FAILED_RUNS,
+    "PreviousStepStillProcessingError": LARGE_MAX_FAILED_RUNS,
 }
+ERROR_CODES_TO_RETRY = list(MAX_FAILED_RUNS_PER_ERROR_CODE.keys())
 
 EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 

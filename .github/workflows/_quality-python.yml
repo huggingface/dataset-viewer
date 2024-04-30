@@ -12,7 +12,7 @@ env:
   # required to get access to use a cached poetry venv in "/home/runner/.cache/pypoetry/virtualenvs"
   POETRY_VIRTUALENVS_IN_PROJECT: false
   python-version: "3.9.18"
-  poetry-version: "1.7.1"
+  poetry-version: "1.8.2"
 jobs:
   code-quality:
     defaults:
@@ -40,15 +40,19 @@ jobs:
         run: |
           poetry env use "${{ env.python-version }}"
           poetry install
-      - name: Run ruff linter on src
-        run: poetry run ruff check src
-      - name: Run ruff linter on tests
-        run: poetry run ruff check tests --ignore=ARG
+      - name: Run ruff linter
+        run: |
+          if [ -d src ]; then poetry run ruff check src; fi
+          if [ -d tests ]; then poetry run ruff check tests --ignore=ARG; fi
       - name: Run ruff formatter
-        run: poetry run ruff format --check src tests
+        run: |
+          if [ -d src ]; then poetry run ruff format --check src; fi
+          if [ -d tests ]; then poetry run ruff format --check tests; fi
       - name: Run mypy
-        run: poetry run mypy tests src
+        run: |
+          if [ -d src ]; then poetry run mypy src; fi
+          if [ -d tests ]; then poetry run mypy tests; fi
       - name: Run bandit
-        run: poetry run bandit -r src
+        run: if [ -d src ]; then poetry run bandit -r src; fi
       - name: Run pip-audit
         run: bash -c "poetry run pip-audit --ignore-vuln GHSA-wj6h-64fc-37mp --ignore-vuln GHSA-wfm5-v35h-vwf4 --ignore-vuln GHSA-cwvm-v4w8-q58c --ignore-vuln PYSEC-2022-43059 -r <(poetry export -f requirements.txt --with dev | sed '/^libapi @/d' | sed '/^libcommon @/d')"

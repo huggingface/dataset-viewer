@@ -28,10 +28,19 @@ from datasets.features.features import FeatureType
 
 from .descriptive_statistics_dataset import (
     audio_dataset,
+    image_dataset,
     statistics_dataset,
     statistics_not_supported_dataset,
     statistics_string_text_dataset,
 )
+
+SEARCH_TEXT_CONTENT = [
+    ("Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the" " comlink"),
+    "There goes another one.",
+    "Vader turns round and round in circles as his ship spins into space.",
+    "We count thirty Rebel ships, Lord Vader.",
+    "The wingman spots the pirateship coming at him and warns the Dark Lord",
+]
 
 
 def value(content: Any, dtype: Any) -> Dataset:
@@ -155,16 +164,7 @@ def datasets() -> Mapping[str, Dataset]:
         "duckdb_index": Dataset.from_pandas(
             pd.DataFrame(
                 {
-                    "text": [
-                        (
-                            "Grand Moff Tarkin and Lord Vader are interrupted in their discussion by the buzz of the"
-                            " comlink"
-                        ),
-                        "There goes another one.",
-                        "Vader turns round and round in circles as his ship spins into space.",
-                        "We count thirty Rebel ships, Lord Vader.",
-                        "The wingman spots the pirateship coming at him and warns the Dark Lord",
-                    ],
+                    "text": SEARCH_TEXT_CONTENT,
                     "column with spaces": [
                         "a",
                         "b",
@@ -176,8 +176,19 @@ def datasets() -> Mapping[str, Dataset]:
                 dtype=pd.StringDtype(storage="python"),
             )
         ),
+        "duckdb_index_large_string": Dataset.from_dict(
+            {
+                "text": SEARCH_TEXT_CONTENT,
+            },
+            features=Features(
+                {
+                    "text": Value("large_string"),
+                }
+            ),
+        ),
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,
         "descriptive_statistics_not_supported": statistics_not_supported_dataset,
         "audio_statistics": audio_dataset,
+        "image_statistics": image_dataset,
     }

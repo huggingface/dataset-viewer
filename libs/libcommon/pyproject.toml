@@ -9,14 +9,14 @@ license = "Apache-2.0"
 python = "3.9.18"
 appdirs = "^1.4.4"
 cryptography = "^42.0.4"
-datasets = {version = "^2.18.0", extras = ["audio", "vision"]}
+datasets = {version = "^2.19.0", extras = ["audio", "vision"]}
 environs = "^9.5.0"
-fsspec = {version = "~2023.10", extras = ["s3"]}
-huggingface-hub = {extras = ["hf-transfer"], version = "^0.21.4"}
+fsspec = {version = "2024.3.1", extras = ["s3"]}
+huggingface-hub = {extras = ["hf-transfer"], version = "^0.22.2"}
 mongo-types = "0.15.1"
 mongoengine = "^0.27.0"
 networkx = "^3.0"
-numba = "0.56.4"
+numpy = "^1.22.4"
 orjson = "^3.9.15"
 pandas = "^2.2.0"
 pillow = "^10.3.0"

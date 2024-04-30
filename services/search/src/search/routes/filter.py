@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import logging
+import random
 import re
 from http import HTTPStatus
 from typing import Optional
@@ -30,7 +31,7 @@ from libapi.utils import (
 )
 from libcommon.duckdb_utils import duckdb_index_is_partial
 from libcommon.prometheus import StepProfiler
-from libcommon.storage import StrPath
+from libcommon.storage import StrPath, clean_dir
 from libcommon.storage_client import StorageClient
 from libcommon.viewer_utils.features import get_supported_unsupported_columns
 from starlette.requests import Request
@@ -72,6 +73,8 @@ def create_filter_endpoint(
     max_age_short: int = 0,
     storage_clients: Optional[list[StorageClient]] = None,
     extensions_directory: Optional[str] = None,
+    clean_cache_proba: float = 0.0,
+    expiredTimeIntervalSeconds: int = 60,
 ) -> Endpoint:
     async def filter_endpoint(request: Request) -> Response:
         revision: Optional[str] = None
@@ -126,6 +129,7 @@ def create_filter_endpoint(
                     # check if the index is on the full dataset or if it's partial
                     url = duckdb_index_cache_entry["content"]["url"]
                     filename = duckdb_index_cache_entry["content"]["filename"]
+                    index_size = duckdb_index_cache_entry["content"]["size"]
                     partial = duckdb_index_is_partial(url)
 
                 with StepProfiler(method="filter_endpoint", step="download index file if missing"):
@@ -136,6 +140,7 @@ def create_filter_endpoint(
                         split=split,
                         revision=revision,
                         filename=filename,
+                        size_bytes=index_size,
                         url=url,
                         target_revision=target_revision,
                         hf_token=hf_token,
@@ -159,6 +164,14 @@ def create_filter_endpoint(
                         offset,
                         extensions_directory,
                     )
+                    # no need to do it every time
+                    # TODO: Will be moved to another process in parallel
+                    if random.random() < clean_cache_proba:  # nosec
+                        with StepProfiler(method="filter_endpoint", step="clean old indexes"):
+                            clean_dir(
+                                duckdb_index_file_directory,
+                                expiredTimeIntervalSeconds,
+                            )
                 with StepProfiler(method="filter_endpoint", step="create response"):
                     response = await create_response(
                         dataset=dataset,

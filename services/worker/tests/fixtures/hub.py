@@ -309,6 +309,15 @@ def hub_public_duckdb_index(datasets: Mapping[str, Dataset]) -> Iterator[str]:
 
 
 @pytest.fixture(scope="session")
+def hub_public_duckdb_index_large_string(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(
+        prefix="duckdb_index_large_string", dataset=datasets["duckdb_index_large_string"]
+    )
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
 def hub_public_descriptive_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="descriptive_statistics", dataset=datasets["descriptive_statistics"])
     yield repo_id
@@ -336,6 +345,13 @@ def hub_public_descriptive_statistics_not_supported(datasets: Mapping[str, Datas
 @pytest.fixture(scope="session")
 def hub_public_audio_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
     repo_id = create_hub_dataset_repo(prefix="audio_statistics", dataset=datasets["audio_statistics"])
+    yield repo_id
+    delete_hub_dataset_repo(repo_id=repo_id)
+
+
+@pytest.fixture(scope="session")
+def hub_public_image_statistics(datasets: Mapping[str, Dataset]) -> Iterator[str]:
+    repo_id = create_hub_dataset_repo(prefix="image_statistics", dataset=datasets["image_statistics"])
     yield repo_id
     delete_hub_dataset_repo(repo_id=repo_id)
 
@@ -531,13 +547,13 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
         "splits": {"train": {"name": "train", "num_bytes": 96, "num_examples": 4, "dataset_name": dataset_name}},
         "download_checksums": {
             f"https://hub-ci.huggingface.co/datasets/{dataset}/resolve/__COMMIT__/dataset.csv": {
-                "num_bytes": 50,
+                "num_bytes": 55,
                 "checksum": None,
             }
         },
-        "download_size": 50,
+        "download_size": 55,
         "dataset_size": 96,
-        "size_in_bytes": 146,
+        "size_in_bytes": 151,
     }
 
 
@@ -783,6 +799,10 @@ TEXT_cols = {
     "text": {"_type": "Value", "dtype": "string"},
 }
 
+LARGE_TEXT_cols = {
+    "text": {"_type": "Value", "dtype": "large_string"},
+}
+
 TEXT_rows = [
     {"text": text}
     for text in [
@@ -1004,6 +1024,21 @@ def hub_responses_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
 
 
 @pytest.fixture
+def hub_responses_duckdb_index_large_string(hub_public_duckdb_index_large_string: str) -> HubDatasetTest:
+    return {
+        "name": hub_public_duckdb_index_large_string,
+        "config_names_response": create_config_names_response(hub_public_duckdb_index_large_string),
+        "splits_response": create_splits_response(hub_public_duckdb_index_large_string),
+        "first_rows_response": create_first_rows_response(
+            hub_public_duckdb_index_large_string, LARGE_TEXT_cols, TEXT_rows
+        ),
+        "parquet_and_info_response": create_parquet_and_info_response(
+            dataset=hub_public_duckdb_index_large_string, data_type="csv"
+        ),
+    }
+
+
+@pytest.fixture
 def hub_responses_partial_duckdb_index(hub_public_duckdb_index: str) -> HubDatasetTest:
     return {
         "name": hub_public_duckdb_index,
@@ -1083,6 +1118,19 @@ def hub_responses_audio_statistics(
         "name": hub_public_audio_statistics,
         "config_names_response": create_config_names_response(hub_public_audio_statistics),
         "splits_response": create_splits_response(hub_public_audio_statistics),
+        "first_rows_response": None,
+        "parquet_and_info_response": None,
+    }
+
+
+@pytest.fixture
+def hub_responses_image_statistics(
+    hub_public_image_statistics: str,
+) -> HubDatasetTest:
+    return {
+        "name": hub_public_image_statistics,
+        "config_names_response": create_config_names_response(hub_public_image_statistics),
+        "splits_response": create_splits_response(hub_public_image_statistics),
         "first_rows_response": None,
         "parquet_and_info_response": None,
     }

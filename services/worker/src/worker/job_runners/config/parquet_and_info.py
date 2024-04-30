@@ -44,6 +44,7 @@ from huggingface_hub._commit_api import (
 from huggingface_hub.hf_api import CommitInfo, DatasetInfo, HfApi, RepoFile
 from huggingface_hub.hf_file_system import HfFileSystem, HfFileSystemFile
 from huggingface_hub.utils._errors import HfHubHTTPError, RepositoryNotFoundError
+from huggingface_hub.utils._http import HTTP_METHOD_T, Response, http_backoff
 from libcommon.constants import (
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_AUDIO_DATASETS,
     PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS,
@@ -56,7 +57,6 @@ from libcommon.exceptions import (
     DatasetManualDownloadError,
     DatasetNotFoundError,
     DatasetWithScriptNotSupportedError,
-    DatasetWithTooManyParquetFilesError,
     EmptyDatasetError,
     ExternalFilesSizeRequestConnectionError,
     ExternalFilesSizeRequestError,
@@ -91,6 +91,11 @@ MAX_OPERATIONS_PER_COMMIT = 500
 SLEEPS = [0.2, 1, 1, 10, 10, 10]
 
 T = TypeVar("T")
+
+
+def http_backoff_with_timeout(method: HTTP_METHOD_T, url: str, **kwargs: Any) -> Response:
+    kwargs["timeout"] = kwargs.get("timeout", 10)
+    return http_backoff(method, url, **kwargs)
 
 
 def repo_file_rfilename_sort_key(repo_file: RepoFile) -> str:
@@ -529,12 +534,6 @@ def copy_parquet_files(builder: DatasetBuilder) -> list[CommitOperationCopy]:
     if empty_splits:
         raise EmptyDatasetError(f"Empty parquet data_files for splits: {empty_splits}")
     parquet_operations = []
-    total_num_parquet_files = sum(len(data_files[split]) for split in data_files)
-    if total_num_parquet_files >= MAX_FILES_PER_DIRECTORY:
-        raise DatasetWithTooManyParquetFilesError(
-            f"The dataset has {total_num_parquet_files} parquet files and can't be linked in the parquet directory "
-            f"because it exceeds the maximum number of files per directory ({MAX_FILES_PER_DIRECTORY})."
-        )
     for split in data_files:
         for shard_idx, data_file in enumerate(data_files[split]):
             # data_file format for hub files is hf://datasets/{repo_id}@{revision}/{path_in_repo}
@@ -715,6 +714,8 @@ def fill_builder_info(
 
         if len(urls) > 1:
             try:
+                if len(urls) > 100:
+                    logging.info(f"Validating lots of Parquet files: {len(urls)}")
                 num_examples_and_sizes: list[tuple[int, int]] = thread_map(
                     functools.partial(
                         retry_validate_get_num_examples_and_size,
@@ -1248,11 +1249,7 @@ def compute_config_parquet_and_info_response(
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except ValueError as err:
         if "trust_remote_code" in str(err):
-            raise DatasetWithScriptNotSupportedError(
-                "The dataset viewer doesn't support this dataset because it runs "
-                "arbitrary python code. Please open a discussion in the discussion tab "
-                "if you think this is an error and tag @lhoestq and @severo."
-            ) from err
+            raise DatasetWithScriptNotSupportedError from err
         raise
     except FileNotFoundError as err:
         raise DatasetNotFoundError("The dataset, or the revision, does not exist on the Hub.") from err
@@ -1266,7 +1263,8 @@ def compute_config_parquet_and_info_response(
             parquet_operations = copy_parquet_files(builder)
             logging.info(f"{len(parquet_operations)} parquet files to copy for {dataset=} {config=}.")
             validate = ParquetFileValidator(max_row_group_byte_size=max_row_group_byte_size_for_copy).validate
-            fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
+            with patch("huggingface_hub.hf_file_system.http_backoff", http_backoff_with_timeout):
+                fill_builder_info(builder, hf_endpoint=hf_endpoint, hf_token=hf_token, validate=validate)
         except TooBigRowGroupsError as err:
             # aim for a writer_batch_size that is factor of 100
             # and with a batch_byte_size that is smaller than max_row_group_byte_size_for_copy

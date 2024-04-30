@@ -19,7 +19,6 @@ import pytest
 import requests
 from datasets import Features, Image, Sequence, Value
 from datasets.packaged_modules.csv.csv import CsvConfig
-from libcommon.constants import DUCKDB_VERSION
 from libcommon.dtos import Priority
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
@@ -220,6 +219,7 @@ def get_parquet_metadata_job_runner(
     "hub_dataset_name,max_split_size_bytes,expected_rows_count,expected_has_fts,expected_partial,expected_error_code",
     [
         ("duckdb_index", None, 5, True, False, None),
+        ("duckdb_index_large_string", None, 5, True, False, None),
         ("duckdb_index_from_partial_export", None, 5, True, True, None),
         ("gated", None, 5, True, False, None),
         ("partial_duckdb_index_from_multiple_files_public", 1, 1, False, True, None),
@@ -233,6 +233,7 @@ def test_compute(
     app_config: AppConfig,
     hub_responses_public: HubDatasetTest,
     hub_responses_duckdb_index: HubDatasetTest,
+    hub_responses_duckdb_index_large_string: HubDatasetTest,
     hub_responses_gated_duckdb_index: HubDatasetTest,
     hub_dataset_name: str,
     max_split_size_bytes: Optional[int],
@@ -243,6 +244,7 @@ def test_compute(
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
+        "duckdb_index_large_string": hub_responses_duckdb_index_large_string,
         "duckdb_index_from_partial_export": hub_responses_duckdb_index,
         "gated": hub_responses_gated_duckdb_index,
         "partial_duckdb_index_from_multiple_files_public": hub_responses_public,
@@ -344,7 +346,6 @@ def test_compute(
         features = content["features"]
         has_fts = content["has_fts"]
         partial = content["partial"]
-        assert content["duckdb_version"] == DUCKDB_VERSION
         assert isinstance(has_fts, bool)
         assert has_fts == expected_has_fts
         assert isinstance(url, str)

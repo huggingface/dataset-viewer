@@ -23,9 +23,8 @@ from datasets.load import (
 )
 from datasets.packaged_modules import _MODULE_TO_EXTENSIONS, _PACKAGED_DATASETS_MODULES
 from datasets.utils.file_utils import cached_path
-from datasets.utils.hub import hf_hub_url
 from datasets.utils.metadata import MetadataConfigs
-from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem
+from huggingface_hub import DatasetCard, DatasetCardData, HfFileSystem, hf_hub_url
 from libcommon.constants import LOADING_METHODS_MAX_CONFIGS
 from libcommon.croissant_utils import get_record_set
 from libcommon.exceptions import DatasetWithTooComplexDataFilesPatternsError, PreviousStepFormatError
@@ -44,12 +43,21 @@ from worker.dtos import (
 )
 from worker.job_runners.dataset.dataset_job_runner import DatasetJobRunnerWithDatasetsCache
 
-NON_WORD_GLOB_SEPARATOR = f"[{NON_WORDS_CHARS}/]"
-NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", "\.").replace("/", "\/")
+BASE_PATTERNS_WITH_SEPARATOR = [
+    pattern
+    for pattern in datasets.data_files.KEYWORDS_IN_FILENAME_BASE_PATTERNS
+    + datasets.data_files.KEYWORDS_IN_DIR_NAME_BASE_PATTERNS
+    if "{sep}" in pattern
+]
+NON_WORD_GLOB_SEPARATOR = f"[{NON_WORDS_CHARS}]"
+NON_WORD_REGEX_SEPARATOR = NON_WORD_GLOB_SEPARATOR.replace(".", "\.")
 
-if any(
-    NON_WORD_GLOB_SEPARATOR not in pattern.format(keyword="train", sep=NON_WORDS_CHARS)
-    for pattern in datasets.data_files.KEYWORDS_IN_PATH_NAME_BASE_PATTERNS
+if (
+    any(
+        NON_WORD_GLOB_SEPARATOR not in pattern.format(keyword="train", sep=NON_WORDS_CHARS)
+        for pattern in BASE_PATTERNS_WITH_SEPARATOR
+    )
+    or not BASE_PATTERNS_WITH_SEPARATOR
 ):
     raise ImportError(
         f"Current `datasets` version is not compatible with simplify_data_files_patterns() which expects as keyword separator {NON_WORD_GLOB_SEPARATOR} for glob patterns. "
@@ -84,7 +92,7 @@ def get_builder_configs_with_simplified_data_files(
     download_config = DownloadConfig(token=hf_token)
     try:
         dataset_readme_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOCARD_FILENAME),
+            hf_hub_url(dataset, datasets.config.REPOCARD_FILENAME, repo_type="dataset"),
             download_config=download_config,
         )
         dataset_card_data = DatasetCard.load(Path(dataset_readme_path)).data
@@ -92,7 +100,7 @@ def get_builder_configs_with_simplified_data_files(
         dataset_card_data = DatasetCardData()
     try:
         standalone_yaml_path = cached_path(
-            hf_hub_url(dataset, datasets.config.REPOYAML_FILENAME),
+            hf_hub_url(dataset, datasets.config.REPOYAML_FILENAME, repo_type="dataset"),
             download_config=download_config,
         )
         with open(standalone_yaml_path, "r", encoding="utf-8") as f:
@@ -150,9 +158,9 @@ def simplify_data_files_patterns(
 
         ```
         data/train-[0-9][0-9][0-9][0-9][0-9]-of-[0-9][0-9][0-9][0-9][0-9]*.*        =>      data/train-*-of-*.parquet
-        **/*[-._ 0-9/]train[-._ 0-9/]**                                             =>      **/*_train_*.jsonl
-        test[-._ 0-9/]**                                                            =>      test[0-9].csv
-        train[-._ 0-9/]**                                                           =>      train-*.tar
+        **/*[-._ 0-9]train[-._ 0-9]*/**                                             =>      **/*_train_*.jsonl
+        test[-._ 0-9]*/**                                                            =>      test[0-9].csv
+        train[-._ 0-9]*/**                                                           =>      train-*.tar
         ```
     """
     patterns = DataFilesPatternsList([], allowed_extensions=None)

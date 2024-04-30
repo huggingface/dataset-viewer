@@ -7,12 +7,10 @@ from datetime import datetime
 
 from libcommon.log import init_logging
 from libcommon.resources import CacheMongoResource, QueueMongoResource
-from libcommon.storage import init_dir
 from libcommon.storage_client import StorageClient
 
 from cache_maintenance.backfill import backfill_all_datasets, backfill_retryable_errors
 from cache_maintenance.cache_metrics import collect_cache_metrics
-from cache_maintenance.clean_directory import clean_directory
 from cache_maintenance.config import JobConfig
 from cache_maintenance.discussions import post_messages
 from cache_maintenance.queue_metrics import collect_queue_metrics, collect_worker_size_jobs_count
@@ -75,13 +73,6 @@ def run_job() -> None:
                     blocked_datasets=job_config.common.blocked_datasets,
                     storage_clients=[cached_assets_storage_client, assets_storage_client],
                 )
-        elif action == "clean-directory":
-            directory_path = init_dir(directory=job_config.directory_cleaning.cache_directory)
-            folder_pattern = f"{directory_path}/{job_config.directory_cleaning.subfolder_pattern}"
-            clean_directory(
-                pattern=folder_pattern,
-                expired_time_interval_seconds=job_config.directory_cleaning.expired_time_interval_seconds,
-            )
         elif action == "collect-queue-metrics":
             if not queue_resource.is_available():
                 logging.warning(

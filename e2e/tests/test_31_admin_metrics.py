@@ -59,12 +59,6 @@ def test_metrics() -> None:
 
     # the disk usage metrics, on the other end, are computed at runtime, so we should see them
     assert has_metric(
-        name="duckdb_disk_usage",
-        labels={"type": "total", "pid": "[0-9]*"},
-        metric_names=metric_names,
-    ), "duckdb_disk_usage"
-
-    assert has_metric(
         name="parquet_metadata_disk_usage",
         labels={"type": "total", "pid": "[0-9]*"},
         metric_names=metric_names,

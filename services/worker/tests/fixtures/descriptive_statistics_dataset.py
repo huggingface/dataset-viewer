@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from datasets import Audio, ClassLabel, Dataset, Features, Sequence, Value
+from datasets import Array2D, Audio, ClassLabel, Dataset, Features, Image, Sequence, Value
 
 # from GLUE dataset, "ax" subset
 LONG_TEXTS = """The cat sat on the mat.
@@ -1312,6 +1312,50 @@ statistics_dataset = Dataset.from_dict(
             [[]],
         ],
         "list__sequence_of_list_dict_all_nan_column": nan_column(),
+        "array__list_column": [
+            [[[1, 2, 3]]],
+            [[[1, 2, 3]]],
+            [[[1, 2, 3]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[7, 8, 9]]],
+            [[[7, 8, 9]]],
+            [[[7, 8, 9]], [[7, 8, 9]], [[7, 8, 9]]],
+            [[[10, 11, 12]]],
+            [[[10, 11, 12]]],
+            [[[10, 11, 12]]],
+            [[[13, 14, 15]]],
+            [[[13, 14, 15]]],
+            [[[13, 14, 15]]],
+            [[[16, 17, 18]]],
+            [[[16, 17, 18]]],
+            [[[16, 17, 18]]],
+            [[[19, 20, 21]]],
+            [[[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]]],
+        ],
+        "array__sequence_column": [
+            [[[1, 2, 3]]],
+            [[[1, 2, 3]]],
+            [[[1, 2, 3]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[4, 5, 6]], [[4, 5, 6]]],
+            [[[7, 8, 9]]],
+            [[[7, 8, 9]]],
+            [[[7, 8, 9]], [[7, 8, 9]], [[7, 8, 9]]],
+            [[[10, 11, 12]]],
+            [[[10, 11, 12]]],
+            [[[10, 11, 12]]],
+            [[[13, 14, 15]]],
+            [[[13, 14, 15]]],
+            [[[13, 14, 15]]],
+            [[[16, 17, 18]]],
+            [[[16, 17, 18]]],
+            [[[16, 17, 18]]],
+            [[[19, 20, 21]]],
+            [[[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]], [[19, 20, 21]]],
+        ],
     },
     features=Features(
         {
@@ -1380,6 +1424,8 @@ statistics_dataset = Dataset.from_dict(
             "list__sequence_of_list_dict_all_nan_column": Sequence(
                 [{"author": Value("string"), "likes": Value("int32")}]
             ),
+            "array__list_column": [Array2D(shape=(1, 3), dtype="int32")],
+            "array__sequence_column": Sequence(Array2D(shape=(1, 3), dtype="int32")),
         }
     ),
 )
@@ -1597,6 +1643,32 @@ audio_dataset = Dataset.from_dict(
             "audio": Audio(sampling_rate=1600),
             "audio_nan": Audio(sampling_rate=1600),
             "audio_all_nan": Audio(sampling_rate=1600),
+        }
+    ),
+)
+
+
+image_dataset = Dataset.from_dict(
+    {
+        "image": [
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_1.jpg"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_2.png"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_4.jpg"),
+        ],
+        "image_nan": [
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_1.jpg"),
+            None,
+            str(Path(__file__).resolve().parent / "data" / "image" / "image_3.jpg"),
+            None,
+        ],
+        "image_all_nan": [None, None, None, None],
+    },
+    features=Features(
+        {
+            "image": Image(),
+            "image_nan": Image(),
+            "image_all_nan": Image(),
         }
     ),
 )

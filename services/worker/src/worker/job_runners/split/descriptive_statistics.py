@@ -1,19 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2023 The HuggingFace Authors.
-
 import enum
-import functools
 import io
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Callable, Optional, TypedDict, Union
+from typing import Any, Optional, TypedDict, Union
 
 import librosa
 import numpy as np
 import polars as pl
+import pyarrow as pa
 import pyarrow.parquet as pq
-from datasets import Features
+from datasets import Features, Sequence
+from datasets.features.features import FeatureType, _ArrayXD
 from libcommon.dtos import JobInfo
 from libcommon.exceptions import (
     CacheDirectoryNotInitializedError,
@@ -32,7 +32,7 @@ from libcommon.parquet_utils import (
 from libcommon.simple_cache import get_previous_step_or_raise
 from libcommon.storage import StrPath
 from libcommon.utils import download_file_from_hub
-from polars import List
+from PIL import Image
 from tqdm.contrib.concurrent import thread_map
 
 from worker.config import AppConfig, DescriptiveStatisticsConfig
@@ -42,6 +42,7 @@ from worker.job_runners.split.split_job_runner import SplitJobRunnerWithCache
 REPO_TYPE = "dataset"
 
 DECIMALS = 5
+NUM_BINS = 10
 
 # the maximum proportion of unique values in a string column so that it is considered to be a category,
 # otherwise it's treated as a string
@@ -55,6 +56,7 @@ MAX_NUM_STRING_LABELS = 1000
 
 # datasets.ClassLabel feature uses -1 to encode `no label` value
 NO_LABEL_VALUE = -1
+
 
 INTEGER_DTYPES = ["int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
 FLOAT_DTYPES = ["float16", "float32", "float64"]
@@ -71,6 +73,7 @@ class ColumnType(str, enum.Enum):
     STRING_LABEL = "string_label"
     STRING_TEXT = "string_text"
     AUDIO = "audio"
+    IMAGE = "image"
 
 
 class Histogram(TypedDict):
@@ -268,22 +271,6 @@ def nan_count_proportion(data: pl.DataFrame, column_name: str, n_samples: int) -
     return nan_count, nan_proportion
 
 
-def raise_with_column_name(func: Callable) -> Callable:  # type: ignore
-    """
-    Wraps error from Column._compute_statistics() so that we always keep information about which
-    column caused an error.
-    """
-
-    @functools.wraps(func)
-    def _compute_statistics_wrapper(*args: Any, column_name: str, **kwargs: Any) -> Any:
-        try:
-            return func(*args, column_name=column_name, **kwargs)
-        except Exception as error:
-            raise StatisticsComputationError(f"Error for column={column_name}: {error=}", error)
-
-    return _compute_statistics_wrapper
-
-
 def all_nan_statistics_item(n_samples: int) -> NumericalStatisticsItem:
     return NumericalStatisticsItem(
         nan_count=n_samples,
@@ -300,6 +287,11 @@ def all_nan_statistics_item(n_samples: int) -> NumericalStatisticsItem:
 class Column:
     """Abstract class to compute stats for columns of all supported data types."""
 
+    # Optional column class that might be used inside ._compute_statistics() if computation should be performed
+    # over some transformed values. For example, for StringColumn.transform_column is IntColumn
+    # because stats are calculated over string lengths which are integers.
+    transform_column: Optional[type["Column"]] = None
+
     def __init__(
         self,
         feature_name: str,
@@ -308,12 +300,26 @@ class Column:
         self.name = feature_name
         self.n_samples = n_samples
 
-    @staticmethod
+    @classmethod
     def _compute_statistics(
+        cls,
         *args: Any,
         **kwargs: Any,
     ) -> SupportedStatistics:
         raise NotImplementedError
+
+    @classmethod
+    def compute_statistics(
+        cls,
+        *args: Any,
+        column_name: str,
+        **kwargs: Any,
+    ) -> Any:
+        try:
+            logging.info(f"Compute statistics for {cls.__name__} {column_name}. ")
+            return cls._compute_statistics(*args, column_name=column_name, **kwargs)
+        except Exception as error:
+            raise StatisticsComputationError(f"Error for {cls.__name__}={column_name}: {error=}", error)
 
     def compute_and_prepare_response(self, *args: Any, **kwargs: Any) -> StatisticsPerColumnItem:
         raise NotImplementedError
@@ -324,12 +330,10 @@ class ClassLabelColumn(Column):
         super().__init__(*args, **kwargs)
         self.feature_dict = feature_dict
 
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
-        data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
+        cls, data: pl.DataFrame, column_name: str, n_samples: int, feature_dict: dict[str, Any]
     ) -> CategoricalStatisticsItem:
-        logging.info(f"Compute statistics for ClassLabel column {column_name} with polars. ")
         datasets_feature = Features.from_dict({column_name: feature_dict})[column_name]
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
 
@@ -363,7 +367,7 @@ class ClassLabelColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(
+        stats = self.compute_statistics(
             data, column_name=self.name, n_samples=self.n_samples, feature_dict=self.feature_dict
         )
         return StatisticsPerColumnItem(
@@ -374,16 +378,13 @@ class ClassLabelColumn(Column):
 
 
 class FloatColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
-        data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
-        logging.info(f"Compute statistics for float column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:  # all values are None
             return all_nan_statistics_item(n_samples)
@@ -397,7 +398,7 @@ class FloatColumn(Column):
             column_type=ColumnType.FLOAT,
             min_value=minimum,
             max_value=maximum,
-            n_bins=n_bins,
+            n_bins=NUM_BINS,
             n_samples=n_samples - nan_count,
         )
 
@@ -413,7 +414,7 @@ class FloatColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.FLOAT,
@@ -422,16 +423,13 @@ class FloatColumn(Column):
 
 
 class IntColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
-
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
-        data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
-        logging.info(f"Compute statistics for integer column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples=n_samples)
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
@@ -446,7 +444,7 @@ class IntColumn(Column):
             column_type=ColumnType.INT,
             min_value=minimum,
             max_value=maximum,
-            n_bins=n_bins,
+            n_bins=NUM_BINS,
             n_samples=n_samples - nan_count,
         )
 
@@ -462,7 +460,7 @@ class IntColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.INT,
@@ -471,21 +469,20 @@ class IntColumn(Column):
 
 
 class StringColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
+    transform_column = IntColumn
 
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
-        data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> Union[CategoricalStatisticsItem, NumericalStatisticsItem]:
-        logging.info(f"Compute statistics for string column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         n_unique = data[column_name].n_unique()
         if (
             n_unique / n_samples <= MAX_PROPORTION_STRING_LABELS and n_unique <= MAX_NUM_STRING_LABELS
-        ) or n_unique <= n_bins:
+        ) or n_unique <= NUM_BINS:
             labels2counts: dict[str, int] = value_counts(data, column_name) if nan_count != n_samples else {}
             logging.debug(f"{n_unique=} {nan_count=} {nan_proportion=} {labels2counts=}")
             # exclude counts of None values from frequencies if exist:
@@ -503,13 +500,13 @@ class StringColumn(Column):
         lengths_df = data.select(pl.col(column_name)).with_columns(
             pl.col(column_name).str.len_chars().alias(lengths_column_name)
         )
-        lengths_stats: NumericalStatisticsItem = IntColumn._compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples
+        lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+            lengths_df, column_name=lengths_column_name, n_samples=n_samples
         )
         return lengths_stats
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         string_type = ColumnType.STRING_LABEL if "frequencies" in stats else ColumnType.STRING_TEXT
         return StatisticsPerColumnItem(
             column_name=self.name,
@@ -519,11 +516,8 @@ class StringColumn(Column):
 
 
 class BoolColumn(Column):
-    @staticmethod
-    @raise_with_column_name
-    def _compute_statistics(data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
-        logging.info(f"Compute statistics for boolean column {column_name} with polars. ")
-        # df = pl.read_parquet(self.path, columns=[self.name])
+    @classmethod
+    def _compute_statistics(cls, data: pl.DataFrame, column_name: str, n_samples: int) -> BoolStatisticsItem:
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         values2counts: dict[str, int] = value_counts(data, column_name)
         # exclude counts of None values from frequencies if exist:
@@ -536,7 +530,7 @@ class BoolColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.BOOL,
@@ -545,16 +539,15 @@ class BoolColumn(Column):
 
 
 class ListColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
+    transform_column = IntColumn
 
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
-        data: pl.DataFrame, column_name: str, n_samples: int, n_bins: int
+        cls,
+        data: pl.DataFrame,
+        column_name: str,
+        n_samples: int,
     ) -> NumericalStatisticsItem:
-        logging.info(f"Compute statistics for list/Sequence column {column_name} with polars. ")
         nan_count, nan_proportion = nan_count_proportion(data, column_name, n_samples)
         if nan_count == n_samples:
             return all_nan_statistics_item(n_samples)
@@ -562,8 +555,8 @@ class ListColumn(Column):
         df_without_na = data.select(pl.col(column_name)).drop_nulls()
         lengths_column_name = f"{column_name}_len"
         lengths_df = df_without_na.with_columns(pl.col(column_name).list.len().alias(lengths_column_name))
-        lengths_stats = IntColumn._compute_statistics(
-            lengths_df, column_name=lengths_column_name, n_bins=n_bins, n_samples=n_samples - nan_count
+        lengths_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+            lengths_df, column_name=lengths_column_name, n_samples=n_samples - nan_count
         )
 
         return NumericalStatisticsItem(
@@ -578,7 +571,7 @@ class ListColumn(Column):
         )
 
     def compute_and_prepare_response(self, data: pl.DataFrame) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(data, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins)
+        stats = self.compute_statistics(data, column_name=self.name, n_samples=self.n_samples)
         return StatisticsPerColumnItem(
             column_name=self.name,
             column_type=ColumnType.LIST,
@@ -586,76 +579,129 @@ class ListColumn(Column):
         )
 
 
-class AudioColumn(Column):
-    def __init__(self, *args: Any, n_bins: int, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        self.n_bins = n_bins
+class MediaColumn(Column):
+    transform_column: type[Column]
 
-    @staticmethod
-    def get_duration(example: dict[str, Any]) -> float:
-        with io.BytesIO(example["bytes"]) as f:
-            return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
+    @classmethod
+    def transform(cls, example: dict[str, Any]) -> Any:
+        """
+        Function to use to transform the original values to further pass these transformed values to statistics
+        computation. Used inside ._compute_statistics() method.
+        """
+        raise NotImplementedError
 
-    @staticmethod
-    @raise_with_column_name
+    @classmethod
     def _compute_statistics(
+        cls,
         parquet_directory: Path,
         column_name: str,
         n_samples: int,
-        n_bins: int,
-    ) -> NumericalStatisticsItem:
-        logging.info(f"Compute statistics for Audio column {column_name} with librosa and polars. ")
+    ) -> SupportedStatistics:
         parquet_files = list(parquet_directory.glob("*.parquet"))
-        durations = []
+        transformed_values = []
         for filename in parquet_files:
-            shard_audios = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
-            shard_durations = (
+            shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
+            shard_transformed_values = (
                 thread_map(
-                    AudioColumn.get_duration,
-                    shard_audios,
-                    desc=f"Computing durations of audio for {filename.name}",
+                    cls.transform,
+                    shard_items,
+                    desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
                     leave=False,
                 )
-                if shard_audios
+                if shard_items
                 else []
             )
-            durations.extend(shard_durations)
+            transformed_values.extend(shard_transformed_values)
 
-        if not durations:
+        if not transformed_values:
             return all_nan_statistics_item(n_samples)
 
-        nan_count = n_samples - len(durations)
+        nan_count = n_samples - len(transformed_values)
         nan_proportion = np.round(nan_count / n_samples, DECIMALS).item() if nan_count != 0 else 0.0
-        duration_df = pl.from_dict({column_name: durations})
-        duration_stats: NumericalStatisticsItem = FloatColumn._compute_statistics(
-            data=duration_df,
+        transformed_df = pl.from_dict({column_name: transformed_values})
+        transformed_stats: NumericalStatisticsItem = cls.transform_column.compute_statistics(
+            data=transformed_df,
             column_name=column_name,
-            n_samples=len(durations),
-            n_bins=n_bins,
+            n_samples=len(transformed_values),
         )
         return NumericalStatisticsItem(
             nan_count=nan_count,
             nan_proportion=nan_proportion,
-            min=duration_stats["min"],
-            max=duration_stats["max"],
-            mean=duration_stats["mean"],
-            median=duration_stats["median"],
-            std=duration_stats["std"],
-            histogram=duration_stats["histogram"],
+            min=transformed_stats["min"],
+            max=transformed_stats["max"],
+            mean=transformed_stats["mean"],
+            median=transformed_stats["median"],
+            std=transformed_stats["std"],
+            histogram=transformed_stats["histogram"],
         )
 
+    @classmethod
+    def get_column_type(cls) -> ColumnType:
+        return ColumnType(cls.__name__.split("Column")[0].lower())
+
     def compute_and_prepare_response(self, parquet_directory: Path) -> StatisticsPerColumnItem:
-        stats = self._compute_statistics(
-            parquet_directory=parquet_directory, column_name=self.name, n_samples=self.n_samples, n_bins=self.n_bins
+        stats = self.compute_statistics(
+            parquet_directory=parquet_directory,
+            column_name=self.name,
+            n_samples=self.n_samples,
         )
         return StatisticsPerColumnItem(
             column_name=self.name,
-            column_type=ColumnType.AUDIO,
+            column_type=self.get_column_type(),
             column_statistics=stats,
         )
 
 
-SupportedColumns = Union[ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn]
+class AudioColumn(MediaColumn):
+    transform_column = FloatColumn
+
+    @staticmethod
+    def get_duration(example: dict[str, Any]) -> float:
+        """Get audio durations"""
+        with io.BytesIO(example["bytes"]) as f:
+            return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
+
+    @classmethod
+    def transform(cls, example: dict[str, Any]) -> float:
+        return cls.get_duration(example)
+
+
+class ImageColumn(MediaColumn):
+    transform_column = IntColumn
+
+    @staticmethod
+    def get_width(example: dict[str, Any]) -> int:
+        """Get image widths."""
+        with io.BytesIO(example["bytes"]) as f:
+            image = Image.open(f)
+            return image.size[0]
+
+    @classmethod
+    def transform(cls, example: dict[str, Any]) -> int:
+        return cls.get_width(example)
+
+
+SupportedColumns = Union[
+    ClassLabelColumn, IntColumn, FloatColumn, StringColumn, BoolColumn, ListColumn, AudioColumn, ImageColumn
+]
+
+
+def is_extension(feature: FeatureType) -> bool:
+    """Check if a (possibly nested) feature is an arrow extension feature (Array2D, Array3D, Array4D, or Array5D)."""
+    if isinstance(feature, dict):
+        return any(is_extension(f) for f in feature.values())
+    elif isinstance(feature, (list, tuple)):
+        return any(is_extension(f) for f in feature)
+    elif isinstance(feature, Sequence):
+        return is_extension(feature.feature)
+    else:
+        return isinstance(feature, _ArrayXD)
+
+
+def get_extension_features(features: dict[str, Any]) -> set[str]:
+    """Return set of names of extension features (Array2D, Array3D, Array4D, or Array5D) within provided features."""
+    features = Features.from_dict(features)
+    return {feature_name for feature_name, feature in features.items() if is_extension(feature)}
 
 
 def compute_descriptive_statistics_response(
@@ -665,7 +711,6 @@ def compute_descriptive_statistics_response(
     local_parquet_directory: Path,
     hf_token: Optional[str],
     parquet_revision: str,
-    histogram_num_bins: int,
     max_split_size_bytes: int,
     parquet_metadata_directory: StrPath,
 ) -> SplitDescriptiveStatisticsResponse:
@@ -687,9 +732,6 @@ def compute_descriptive_statistics_response(
             An app authentication token with read access to all the datasets.
         parquet_revision (`str`):
             The git revision (e.g. "refs/convert/parquet") from where to download the dataset's parquet files.
-        histogram_num_bins (`int`):
-            (Maximum) number of bins to compute histogram for numerical data.
-            The resulting number of bins might be lower than the requested one for integer data.
         max_split_size_bytes (`int`):
             If raw uncompressed split data is larger than this value, the statistics are computed
             only on the first parquet files, approximately up to this size, and the `partial` field will be set
@@ -774,11 +816,15 @@ def compute_descriptive_statistics_response(
         )
 
     local_parquet_split_directory = Path(local_parquet_directory) / config / split_directory
-    local_parquet_split_glob = local_parquet_split_directory / "*.parquet"
 
-    num_examples = pl.read_parquet(
-        local_parquet_split_glob, columns=[pl.scan_parquet(local_parquet_split_glob).columns[0]]
-    ).shape[0]
+    pq_split_dataset = pq.ParquetDataset(local_parquet_split_directory)
+    num_examples = sum(fragment.metadata.num_rows for fragment in pq_split_dataset.fragments)
+    split_extension_features = get_extension_features(features)
+    features = {
+        feature_name: feature
+        for feature_name, feature in features.items()
+        if feature_name not in split_extension_features
+    }
 
     def _column_from_feature(
         dataset_feature_name: str, dataset_feature: Union[dict[str, Any], list[Any]]
@@ -786,11 +832,12 @@ def compute_descriptive_statistics_response(
         if isinstance(dataset_feature, list) or (
             isinstance(dataset_feature, dict) and dataset_feature.get("_type") == "Sequence"
         ):
-            schema = pl.scan_parquet(local_parquet_split_glob).schema[dataset_feature_name]
+            first_parquet_file = local_parquet_split_directory / split_parquet_files[0]["filename"]
+            feature_arrow_type = pq.read_schema(first_parquet_file).field(dataset_feature_name).type
             # Compute only if it's internally a List! because it can also be Struct, see
             # https://huggingface.co/docs/datasets/v2.18.0/en/package_reference/main_classes#datasets.Features
-            if isinstance(schema, List):
-                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins)
+            if pa.types.is_list(feature_arrow_type) or pa.types.is_large_list(feature_arrow_type):
+                return ListColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
         if isinstance(dataset_feature, dict):
             if dataset_feature.get("_type") == "ClassLabel":
@@ -799,25 +846,20 @@ def compute_descriptive_statistics_response(
                 )
 
             if dataset_feature.get("_type") == "Audio":
-                return AudioColumn(
-                    feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                )
+                return AudioColumn(feature_name=dataset_feature_name, n_samples=num_examples)
+
+            if dataset_feature.get("_type") == "Image":
+                return ImageColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
             if dataset_feature.get("_type") == "Value":
                 if dataset_feature.get("dtype") in INTEGER_DTYPES:
-                    return IntColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return IntColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") in FLOAT_DTYPES:
-                    return FloatColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return FloatColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") in STRING_DTYPES:
-                    return StringColumn(
-                        feature_name=dataset_feature_name, n_samples=num_examples, n_bins=histogram_num_bins
-                    )
+                    return StringColumn(feature_name=dataset_feature_name, n_samples=num_examples)
 
                 if dataset_feature.get("dtype") == "bool":
                     return BoolColumn(feature_name=dataset_feature_name, n_samples=num_examples)
@@ -843,14 +885,19 @@ def compute_descriptive_statistics_response(
     )
 
     for column in columns:
-        if isinstance(column, AudioColumn):
+        if isinstance(column, AudioColumn) or isinstance(column, ImageColumn):
             column_stats = column.compute_and_prepare_response(local_parquet_split_directory)
         else:
             try:
-                data = pl.read_parquet(local_parquet_split_glob, columns=[column.name])
+                if split_extension_features:
+                    data = pl.DataFrame._from_arrow(
+                        pq.read_table(local_parquet_split_directory, columns=[column.name])
+                    )
+                else:
+                    data = pl.read_parquet(local_parquet_split_directory / "*.parquet", columns=[column.name])
             except Exception as error:
                 raise PolarsParquetReadError(
-                    f"Error reading parquet file(s) at {local_parquet_split_glob=}, columns=[{column.name}]: {error}",
+                    f"Error reading parquet file(s) at {local_parquet_split_directory=}, columns=[{column.name}]: {error}",
                     error,
                 )
             column_stats = column.compute_and_prepare_response(data)
@@ -904,7 +951,6 @@ class SplitDescriptiveStatisticsJobRunner(SplitJobRunnerWithCache):
                 local_parquet_directory=self.cache_subdirectory,
                 hf_token=self.app_config.common.hf_token,
                 parquet_revision=self.descriptive_statistics_config.parquet_revision,
-                histogram_num_bins=self.descriptive_statistics_config.histogram_num_bins,
                 max_split_size_bytes=self.descriptive_statistics_config.max_split_size_bytes,
                 parquet_metadata_directory=self.parquet_metadata_directory,
             )

@@ -109,16 +109,6 @@ app.kubernetes.io/component: "{{ include "name" . }}-backfill"
 app.kubernetes.io/component: "{{ include "name" . }}-backfill-retryable-errors"
 {{- end -}}
 
-{{- define "labels.cleanDuckdbIndexCache" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-cache"
-{{- end -}}
-
-{{- define "labels.cleanDuckdbIndexDownloads" -}}
-{{ include "hf.labels.commons" . }}
-app.kubernetes.io/component: "{{ include "name" . }}-clean-duckdb-downloads"
-{{- end -}}
-
 {{- define "labels.postMessages" -}}
 {{ include "hf.labels.commons" . }}
 app.kubernetes.io/component: "{{ include "name" . }}-post-messages"
@@ -277,4 +267,17 @@ Return the HUB url
 {{- $hubName := ((list $.Release.Name "hub") | join "-") | trunc 63 | trimSuffix "-" -}}
 http://{{ $hubName }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Return the api ingress anotation
+note: keep $instanceAnnotations in first position during the merge, to avoid override annotations in other pods
+*/}}
+{{- define "datasetsServer.instance.ingress.annotations" -}}
+{{- $instanceAnnotations := .instance.ingress.annotations -}}
+{{- $defaultAnnotations := .context.Values.ingress.annotations -}}
+{{- $dict := merge $instanceAnnotations $defaultAnnotations -}}
+{{- range $key, $value := $dict }}
+{{ $key | quote }}: {{ $value | quote }}
+{{- end }}
 {{- end -}}

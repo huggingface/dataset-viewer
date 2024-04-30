@@ -2,7 +2,9 @@
 # Copyright 2022 The HuggingFace Authors.
 
 import logging
+import os
 import shutil
+from datetime import datetime, timedelta
 from os import PathLike, makedirs
 from pathlib import Path
 from typing import Optional, Union
@@ -118,3 +120,45 @@ def remove_dir(directory: StrPath) -> None:
     """
     shutil.rmtree(directory, ignore_errors=True)
     logging.debug(f"Directory removed: {directory}")
+
+
+def clean_dir(root_folder: StrPath, expired_time_interval_seconds: int) -> None:
+    """
+    Delete temporary cache directories under a root folder.
+    """
+    logging.info(
+        f"looking for all files and directories under {root_folder} to delete files with last accessed time before {expired_time_interval_seconds} seconds ago or is empty folder"
+    )
+    now = datetime.now().replace(tzinfo=None)
+    errors = 0
+    total_dirs = 0
+    total_files = 0
+    total_disappeared_paths = 0
+
+    for root, _, files in os.walk(root_folder, topdown=False):
+        try:
+            for name in files:
+                path = os.path.join(root, name)
+                last_access_time_value = os.path.getatime(path)
+                last_access_datetime = datetime.fromtimestamp(last_access_time_value).replace(tzinfo=None)
+                if last_access_datetime + timedelta(seconds=expired_time_interval_seconds) <= now:
+                    logging.info(f"deleting file {path=} {last_access_datetime=}")
+                    os.remove(path)
+                    total_files += 1
+            try:
+                os.rmdir(root)
+                logging.info(f"deleting directory {root=} because it was empty")
+                total_dirs += 1
+            except OSError:
+                pass  # Ignore non-empty directories
+        except FileNotFoundError:
+            logging.error(f"failed to delete {path=} because it has disappeared during the loop")
+            total_disappeared_paths += 1
+    if total_files:
+        logging.info(f"clean_directory removed {total_files} files at the root of the cache directory.")
+    if total_disappeared_paths:
+        logging.info(
+            f"clean_directory failed to delete {total_disappeared_paths} paths because they disappeared during the loop."
+        )
+
+    logging.info(f"clean_directory removed {total_dirs - errors} directories at the root of the cache directory.")

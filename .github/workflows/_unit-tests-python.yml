@@ -14,7 +14,7 @@ env:
   mongo-port: "27017"
   mongo-version: "6.0.9"
   python-version: "3.9.18"
-  poetry-version: "1.7.1"
+  poetry-version: "1.8.2"
   replicaset: "rs0"
 jobs:
   unit-tests:

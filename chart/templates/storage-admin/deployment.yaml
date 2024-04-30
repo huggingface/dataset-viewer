@@ -18,11 +18,9 @@ spec:
       labels: {{ include "labels.storageAdmin" . | nindent 8 }}
     spec:
       initContainers:
-        {{ include "initContainerDuckDBIndex" . | nindent 8 }}
         {{ include "initContainerParquetMetadata" . | nindent 8 }}
       containers: {{ include "containerStorageAdmin" . | nindent 8 }}
       nodeSelector: {{ toYaml .Values.storageAdmin.nodeSelector | nindent 8 }}
       tolerations: {{ toYaml .Values.storageAdmin.tolerations | nindent 8 }}
       volumes:
-        {{ include "volumeDuckDBIndex" . | nindent 8 }}
         {{ include "volumeParquetMetadata" . | nindent 8 }}

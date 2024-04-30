@@ -79,11 +79,11 @@ images:
 
 common:
   # Comma-separated list of blocked datasets. No jobs will be processed for those datasets.
-  blockedDatasets: "open-llm-leaderboard/*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces"
+  blockedDatasets: "open-llm-leaderboard/*,lunaluan/*,atom-in-the-universe/*,cot-leaderboard/cot-eval-traces,mitermix/yt-links"
   # Comma-separated list of the datasets for which we support dataset scripts.
   # Unix shell-style wildcards also work in the dataset name for namespaced datasets, for example `some_namespace/*` to refer to all the datasets in the `some_namespace` namespace.
   # The keyword `{{ALL_DATASETS_WITH_NO_NAMESPACE}}` refers to all the datasets without namespace.
-  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas"
+  datasetScriptsAllowList: "{{ALL_DATASETS_WITH_NO_NAMESPACE}},hf-internal-testing/dataset_with_script,togethercomputer/RedPajama-Data-1T,togethercomputer/RedPajama-Data-V2,gaia-benchmark/GAIA,poloclub/diffusiondb,pufanyi/MIMICIT,mozilla-foundation/common_voice_*,google/fleurs,speechcolab/gigaspeech,espnet/yodas"
   # URL of the HuggingFace Hub
   hfEndpoint: ""
 
@@ -144,8 +144,6 @@ uid: 1000
 gid: 3000
 
 persistence:
-  duckDBIndex:
-    existingClaim: ""
   parquetMetadata:
     existingClaim: ""
 
@@ -259,8 +257,8 @@ parquetMetadata:
   storageDirectory: "/storage/parquet-metadata"
 
 duckDBIndex:
-  # Directory on the shared storage (used to cache the duckdb files for /filter and /search)
-  cacheDirectory: "/storage/duckdb-index"
+  # Directory on the local storage (used to cache the duckdb files for /filter and /search)
+  cacheDirectory: "/tmp/duckdb-index"
   # Directory on the worker (used temporarily to prepare the duckdb indexes before sending to the Hub)
   workerDirectory: "/tmp/duckdb-index"
   # the git commit message when the duckdb index file is uploaded to the Hub. Defaults to `Update duckdb index files`.
@@ -336,42 +334,6 @@ backfillRetryableErrors:
     limits:
       cpu: 0
   tolerations: []
-
-cleanDuckdbIndexCache:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 */3 * * *"
-  # every 3 hours
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "cache/*"
-
-cleanDuckdbIndexDownloads:
-  enabled: true
-  log:
-    level: "info"
-  action: "clean-directory"
-  schedule: "0 0 * * *"
-  # at 00:00
-  nodeSelector: {}
-  resources:
-    requests:
-      cpu: 0
-    limits:
-      cpu: 0
-  tolerations: []
-  # the time interval at which cached downloaded data files will be considered as expired and will be deleted
-  expiredTimeIntervalSeconds: 600
-  subfolderPattern: "downloads/*"
 
 postMessages:
   enabled: true
@@ -572,6 +534,10 @@ search:
   uvicornNumWorkers: "1"
   # Application endpoint port
   uvicornPort: 8080
+  # Probability of cleaning the downloads folder at each request.
+  cleanCacheProba: 0.05
+  # Retention period for downloads.
+  expiredTimeIntervalSeconds: 43_200 # 12 hours
 
   nodeSelector: {}
   replicas: 1
@@ -582,6 +548,9 @@ search:
       cpu: 0
   service:
     type: ""
+    annotations: {}
+  ingress:
+    enabled: true
     annotations: {}
   tolerations: []
 
