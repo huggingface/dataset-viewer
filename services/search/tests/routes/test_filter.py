@@ -61,18 +61,21 @@ def index_file_location(ds: Dataset) -> Generator[str, None, None]:
     os.remove(index_file_location)
 
 
-@pytest.mark.parametrize("parameter_name, parameter_value", [("where", "col='A'")])
+@pytest.mark.parametrize(
+    "parameter_name, parameter_value", [("where", "col='A'"), ("orderby", "A"), ("orderby", "A DESC")]
+)
 def test_validate_query_parameter(parameter_name: str, parameter_value: str) -> None:
     validate_query_parameter(parameter_value, parameter_name)
 
 
+@pytest.mark.parametrize("sql_injection", ["; SELECT * from data", " /*", "--"])
 @pytest.mark.parametrize(
     "parameter_name, parameter_value",
-    [("where", "col='A'; SELECT * from data"), ("where", "col='A' /*"), ("where", "col='A'--")],
+    [("where", "col='A'"), ("orderby", "A"), ("orderby", "A DESC")],
 )
-def test_validate_query_parameter_raises(parameter_name: str, parameter_value: str) -> None:
+def test_validate_query_parameter_raises(parameter_name: str, parameter_value: str, sql_injection: str) -> None:
     with pytest.raises(InvalidParameterError):
-        validate_query_parameter(parameter_value, parameter_name)
+        validate_query_parameter(parameter_value + sql_injection, parameter_name)
 
 
 @pytest.mark.parametrize("columns", [["name", "age"], ["name"]])
