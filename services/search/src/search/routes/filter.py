@@ -84,6 +84,7 @@ def create_filter_endpoint(
                     where = get_request_parameter(request, "where", required=True)
                     validate_query_parameter(where, "where")
                     orderby = get_request_parameter(request, "orderby")
+                    validate_query_parameter(orderby, "orderby")
                     offset = get_request_parameter_offset(request)
                     length = get_request_parameter_length(request)
                     logger.info(
