@@ -34,16 +34,17 @@ PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_IMAGE_DATASETS = 100
 PROCESSING_STEP_CONFIG_PARQUET_AND_INFO_ROW_GROUP_SIZE_FOR_BINARY_DATASETS = 100
 PARQUET_REVISION = "refs/convert/parquet"
 
-ERROR_CODES_TO_RETRY = {
-    "ConnectionError",
-    "CreateCommitError",
-    "ExternalServerError",
-    "HfHubError",
-    "JobManagerCrashedError",
-    "LockedDatasetTimeoutError",
-    "PreviousStepStillProcessingError",
-    "StreamingRowsError",
+MAX_FAILED_RUNS_PER_ERROR_CODE = {
+    "ConnectionError": DEFAULT_MAX_FAILED_RUNS,
+    "CreateCommitError": DEFAULT_MAX_FAILED_RUNS,
+    "ExternalServerError": DEFAULT_MAX_FAILED_RUNS,
+    "HfHubError": DEFAULT_MAX_FAILED_RUNS,
+    "JobManagerCrashedError": DEFAULT_MAX_FAILED_RUNS,
+    "LockedDatasetTimeoutError": DEFAULT_MAX_FAILED_RUNS,
+    "PreviousStepStillProcessingError": DEFAULT_MAX_FAILED_RUNS,
+    "StreamingRowsError": DEFAULT_MAX_FAILED_RUNS,
 }
+ERROR_CODES_TO_RETRY = list(MAX_FAILED_RUNS_PER_ERROR_CODE.keys())
 
 EXTERNAL_DATASET_SCRIPT_PATTERN = "datasets_modules/datasets"
 
