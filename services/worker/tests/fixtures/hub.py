@@ -551,9 +551,9 @@ def create_dataset_info_response_for_csv(dataset: str, config: str) -> Any:
                 "checksum": None,
             }
         },
-        "download_size": 50,
+        "download_size": 55,
         "dataset_size": 96,
-        "size_in_bytes": 146,
+        "size_in_bytes": 151,
     }
 
 
