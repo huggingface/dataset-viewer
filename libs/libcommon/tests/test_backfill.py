@@ -365,7 +365,7 @@ def test_plan_compute_all(processing_graph: ProcessingGraph, up_to_date: list[st
     ],
 )
 def test_plan_retry_error_max_failed_runs(failed_runs: int, max_failed_runs: int, should_create: bool) -> None:
-    with patch("libcommon.state.MAX_FAILED_RUNS", max_failed_runs):
+    with patch("libcommon.state.DEFAULT_MAX_FAILED_RUNS", max_failed_runs):
         processing_graph = PROCESSING_GRAPH_GENEALOGY
         error_code = list(ERROR_CODES_TO_RETRY)[0]
         compute_all(processing_graph=processing_graph)
