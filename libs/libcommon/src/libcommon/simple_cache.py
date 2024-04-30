@@ -579,7 +579,7 @@ def get_all_datasets() -> set[str]:
 
 
 def get_datasets_with_retryable_errors() -> set[str]:
-    return set(CachedResponseDocument.objects(error_code__in=list(ERROR_CODES_TO_RETRY)).distinct("dataset"))
+    return set(CachedResponseDocument.objects(error_code__in=ERROR_CODES_TO_RETRY).distinct("dataset"))
 
 
 def is_successful_response(kind: str, dataset: str, config: Optional[str] = None, split: Optional[str] = None) -> bool:
