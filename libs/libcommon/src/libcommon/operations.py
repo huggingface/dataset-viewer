@@ -23,6 +23,7 @@ from libcommon.exceptions import (
     NotSupportedRepositoryNotFoundError,
 )
 from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision
+from libcommon.state import UnexceptedConfigNamesError
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
 
@@ -260,11 +261,14 @@ def backfill_dataset(
     except NotSupportedError as e:
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         return delete_dataset(dataset=dataset, storage_clients=storage_clients)
-    tasks_statistics = backfill(
-        dataset=dataset,
-        revision=revision,
-        priority=priority,
-    )
+    try:
+        tasks_statistics = backfill(dataset=dataset, revision=revision, priority=priority)
+    except UnexceptedConfigNamesError:
+        logging.warning(
+            f"Dataset {dataset} has unexpected config names in cache. Let's first delete the dataset, then backfill again."
+        )
+        delete_dataset(dataset=dataset, storage_clients=storage_clients)
+        tasks_statistics = backfill(dataset=dataset, revision=revision, priority=priority)
     has_tasks = tasks_statistics.has_tasks()
     return OperationsStatistics(
         num_backfilled_datasets=1 if has_tasks else 0,
