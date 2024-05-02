@@ -492,6 +492,17 @@ FTS_COMMAND = (
         (pd.DataFrame([{"nested": {"foo": line}} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [{"foo": line}]} for line in DATA.split("\n")]), "bold", [2]),
         (pd.DataFrame([{"nested": [{"foo": line, "bar": 0}]} for line in DATA.split("\n")]), "bold", [2]),
+        (
+            pd.DataFrame(
+                [
+                    {"translation": {"en": "favorite music", "es": "música favorita"}},
+                    {"translation": {"en": "time to sleep", "es": "hora de dormir"}},
+                    {"translation": {"en": "i like rock music", "es": "me gusta la música rock"}},
+                ]
+            ),
+            "music",
+            [0,2],
+        ),
     ],
 )
 def test_index_command(df: pd.DataFrame, query: str, expected_ids: list[int]) -> None:
