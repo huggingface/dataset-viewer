@@ -301,6 +301,14 @@ class Column:
         self.n_samples = n_samples
 
     @classmethod
+    def compute_transformed_data(
+        cls,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        raise NotImplementedError
+
+    @classmethod
     def _compute_statistics(
         cls,
         *args: Any,
@@ -561,12 +569,11 @@ class ListColumn(Column):
         column_name: str,
         transformed_column_name: str,
     ) -> pl.DataFrame:
-        # polars counts len(null) in list type column as 0, while we want to keep null
         return data.select(
             pl.col(column_name),
             pl.when(pl.col(column_name).is_not_null())
             .then(pl.col(column_name).list.len())
-            .otherwise(pl.lit(None))
+            .otherwise(pl.lit(None))  # polars counts len(null) in list type column as 0, while we want to keep null
             .alias(transformed_column_name),
         )
 

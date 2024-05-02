@@ -5,7 +5,7 @@ import copy
 import logging
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import duckdb
 import polars as pl
@@ -73,6 +73,8 @@ INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
 
+LengthDtype = Literal["string", "list"]
+
 
 def get_indexable_columns(features: Features) -> list[str]:
     indexable_columns: list[str] = []
@@ -92,31 +94,18 @@ def get_indexable_columns(features: Features) -> list[str]:
     return indexable_columns
 
 
-def compute_string_length_column(
-    parquet_directory: Path, column_name: str, target_df: Optional[pl.DataFrame]
-) -> Optional[pl.DataFrame]:
-    df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
-    n_unique = df[column_name].n_unique()
-    n_samples = df.shape[0]
-    if StringColumn.is_class(n_unique, n_samples):
-        # do nothing
-        return target_df
-
-    lengths_column_name = f"{column_name}__hf_length"
-    lengths_df = StringColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
-    if target_df is None:
-        return lengths_df.select(pl.col(lengths_column_name))
-
-    target_df.insert_column(target_df.shape[1], lengths_df[lengths_column_name])
-    return target_df
-
-
-def compute_list_length_column(
-    parquet_directory: Path, column_name: str, target_df: Optional[pl.DataFrame]
+def compute_length_column(
+    parquet_directory: Path,
+    column_name: str,
+    target_df: Optional[pl.DataFrame],
+    dtype: LengthDtype,
 ) -> pl.DataFrame:
+    column_class = ListColumn if dtype == "list" else StringColumn
     df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
     lengths_column_name = f"{column_name}__hf_length"
-    lengths_df = ListColumn.compute_transformed_data(df, column_name, transformed_column_name=lengths_column_name)
+    lengths_df: pl.DataFrame = column_class.compute_transformed_data(
+        df, column_name, transformed_column_name=lengths_column_name
+    )
     if target_df is None:
         return lengths_df.select(pl.col(lengths_column_name))
 
@@ -160,11 +149,11 @@ def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) 
         if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
             first_parquet_file = list(parquet_directory.glob("*.parquet"))[0]
             if is_list_pa_type(first_parquet_file, feature_name):
-                transformed_df = compute_list_length_column(parquet_directory, feature_name, transformed_df)
+                transformed_df = compute_length_column(parquet_directory, feature_name, transformed_df, dtype="list")
 
         elif isinstance(feature, dict):
             if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
-                transformed_df = compute_string_length_column(parquet_directory, feature_name, transformed_df)
+                transformed_df = compute_length_column(parquet_directory, feature_name, transformed_df, dtype="string")
 
             elif feature.get("_type") == "Audio":
                 transformed_df = compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
