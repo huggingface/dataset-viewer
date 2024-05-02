@@ -61,22 +61,17 @@ DUCKDB_DEFAULT_INDEX_FILENAME = "index.duckdb"
 DUCKDB_DEFAULT_PARTIAL_INDEX_FILENAME = "partial-index.duckdb"
 CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {columns}, overwrite=1);"
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
+CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND = """
+    CREATE OR REPLACE TABLE data AS 
+    SELECT {column_names}, transformed_df.* FROM '{all_split_parquets}' 
+    POSITIONAL JOIN transformed_df;
+"""
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
 ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN = "ALTER TABLE data ADD COLUMN __hf_index_id BIGINT DEFAULT nextval('serial');"
 CREATE_INDEX_ID_COLUMN_COMMANDS = CREATE_SEQUENCE_COMMAND + ALTER_TABLE_BY_ADDING_SEQUENCE_COLUMN
 INSTALL_AND_LOAD_EXTENSION_COMMAND = "INSTALL 'fts'; LOAD 'fts';"
 SET_EXTENSIONS_DIRECTORY_COMMAND = "SET extension_directory='{directory}';"
 REPO_TYPE = "dataset"
-
-ADD_COLUMN_COMMAND = """
-    ALTER TABLE data ADD COLUMN {column_name} BIGINT;
-    UPDATE data
-        SET {column_name} = tmp.{column_name}
-    FROM tmp
-        WHERE data.__hf_index_id = tmp.__hf_index_id;
-"""
-
-ADD_COLUMNS_BY_POSITIONAL_JOIN_COMMAND = "SELECT data.*, tmp.* FROM data POSITIONAL JOIN tmp;"
 
 
 def get_indexable_columns(features: Features) -> list[str]:
@@ -304,16 +299,14 @@ def compute_split_duckdb_index_response(
             logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"updating data with {transformed_df.columns}")
-            create_command_sql = f"""
-                CREATE OR REPLACE TABLE data AS
-                SELECT {column_names}, transformed_df.* FROM '{all_split_parquets}' POSITIONAL JOIN transformed_df;
-            """
-            logging.info(create_command_sql)
+            create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND.format(
+                columns=column_names, source=all_split_parquets
+            )
 
         else:
             create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
-            logging.info(create_command_sql)
 
+        logging.info(create_command_sql)
         con.sql(create_command_sql)
         logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
         logging.debug(con.sql("SELECT count(*) FROM data;"))
