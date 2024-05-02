@@ -20,7 +20,15 @@ from libcommon.simple_cache import CacheEntryMetadata, fetch_names
 # TODO: assets, cached_assets, parquet files
 
 
-class UnexceptedConfigNamesError(Exception):
+class IncoherentCacheError(Exception):
+    pass
+
+
+class UnexceptedConfigNamesError(IncoherentCacheError):
+    pass
+
+
+class UnexceptedSplitNamesError(IncoherentCacheError):
     pass
 
 
@@ -223,6 +231,14 @@ class ConfigState:
                 names_field="splits",
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+
+        unexpected_split_names = set(self.cache_entries_df["split"].unique()).difference(
+            set(self.split_names).union({None})
+        )
+        if unexpected_split_names:
+            raise UnexceptedSplitNamesError(
+                f"Unexpected split names for dataset={self.dataset} config={self.config} ({len(unexpected_split_names)}): {list(islice(unexpected_split_names, 10))}{'' if len(unexpected_split_names) <= 10 else '...'}"
+            )
 
         with StepProfiler(
             method="ConfigState.__post_init__",

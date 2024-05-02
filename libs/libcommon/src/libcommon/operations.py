@@ -23,7 +23,7 @@ from libcommon.exceptions import (
     NotSupportedRepositoryNotFoundError,
 )
 from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision
-from libcommon.state import UnexceptedConfigNamesError
+from libcommon.state import IncoherentCacheError
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
 
@@ -263,9 +263,9 @@ def backfill_dataset(
         return delete_dataset(dataset=dataset, storage_clients=storage_clients)
     try:
         tasks_statistics = backfill(dataset=dataset, revision=revision, priority=priority)
-    except UnexceptedConfigNamesError:
+    except IncoherentCacheError:
         logging.warning(
-            f"Dataset {dataset} has unexpected config names in cache. Let's first delete the dataset, then backfill again."
+            f"Dataset {dataset} has incoherent entries in the cache. Let's first delete the dataset, then backfill again."
         )
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         tasks_statistics = backfill(dataset=dataset, revision=revision, priority=priority)
