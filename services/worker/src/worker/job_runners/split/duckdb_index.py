@@ -287,7 +287,6 @@ def compute_split_duckdb_index_response(
     split_parquet_directory = duckdb_index_file_directory / config / split_directory
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
-    # TODO: refactor this shit
     transformed_df = compute_transformed_data(features, split_parquet_directory)
     create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
 
@@ -328,11 +327,16 @@ def compute_split_duckdb_index_response(
             logging.info(create_index_sql)
             con.sql(create_index_sql)
 
-        if transformed_df is not None or is_indexable:
-            # update features with newly created columns
-            features = Features.from_arrow_schema(con.table("data").arrow().schema).to_dict()
     finally:
         con.close()
+
+    if transformed_df is not None:
+        transformed_arrow_schema = transformed_df.to_arrow().schema
+        transformed_features = Features.from_arrow_schema(transformed_arrow_schema).to_dict()
+        features.update(transformed_features)
+
+    if is_indexable:
+        features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
     logging.info(f"about to push index file to {target_revision}")
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
