@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import duckdb
+from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
 import polars as pl
-from datasets.features.features import Features, FeatureType, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
@@ -82,6 +82,8 @@ def get_indexable_columns(features: Features) -> list[str]:
         def check_indexable(feature: FeatureType) -> None:
             nonlocal indexable
             if isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+                indexable = True
+            elif isinstance(feature, (Translation, TranslationVariableLanguages)):
                 indexable = True
 
         _visit(feature, check_indexable)
@@ -289,16 +291,10 @@ def compute_split_duckdb_index_response(
     con = duckdb.connect(str(db_path.resolve()))
 
     try:
-        # configure duckdb extensions
-        if extensions_directory is not None:
-            con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
-
-        con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
-
         if transformed_df is not None:
             logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
-            logging.info(f"updating data with {transformed_df.columns}")
+            logging.info(f"Updating data with {transformed_df.columns}")
             create_command_sql = CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND.format(
                 columns=column_names, source=all_split_parquets
             )
@@ -311,8 +307,11 @@ def compute_split_duckdb_index_response(
         logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
         logging.debug(con.sql("SELECT count(*) FROM data;"))
 
-        is_indexable = len(indexable_columns) > 0
-        if is_indexable:
+        if is_indexable := len(indexable_columns) > 0:
+            # configure duckdb extensions
+            if extensions_directory is not None:
+                con.execute(SET_EXTENSIONS_DIRECTORY_COMMAND.format(directory=extensions_directory))
+            con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
             # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
             # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
             con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
@@ -411,6 +410,9 @@ def compute_split_duckdb_index_response(
     repo_file = repo_files[0]
     if repo_file.size is None:
         raise ValueError(f"Cannot get size of {repo_file.rfilename}")
+
+    # we added the __hf_index_id column for the index
+    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
     return SplitDuckdbIndex(
         dataset=dataset,

@@ -218,16 +218,6 @@ def datasets() -> Mapping[str, Dataset]:
                 }
             ),
         ),
-        "duckdb_index_large_string": Dataset.from_dict(
-            {
-                "text": SEARCH_TEXT_CONTENT,
-            },
-            features=Features(
-                {
-                    "text": Value("large_string"),
-                }
-            ),
-        ),
         "descriptive_statistics": statistics_dataset,
         "descriptive_statistics_string_text": statistics_string_text_dataset,
         "descriptive_statistics_not_supported": statistics_not_supported_dataset,
