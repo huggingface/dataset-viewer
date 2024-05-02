@@ -10,8 +10,7 @@ import pandas as pd
 from libcommon.constants import (
     CONFIG_SPLIT_NAMES_KIND,
     DATASET_CONFIG_NAMES_KIND,
-    ERROR_CODES_TO_RETRY,
-    MAX_FAILED_RUNS,
+    MAX_FAILED_RUNS_PER_ERROR_CODE,
 )
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.prometheus import StepProfiler
@@ -88,8 +87,9 @@ class CacheState:
     def is_error_to_retry(self) -> bool:
         return self.cache_entry_metadata is not None and (
             self.cache_entry_metadata["http_status"] >= 400
-            and self.cache_entry_metadata["error_code"] in ERROR_CODES_TO_RETRY
-            and self.cache_entry_metadata["failed_runs"] < MAX_FAILED_RUNS
+            and self.cache_entry_metadata["error_code"] in MAX_FAILED_RUNS_PER_ERROR_CODE
+            and self.cache_entry_metadata["failed_runs"]
+            < MAX_FAILED_RUNS_PER_ERROR_CODE[self.cache_entry_metadata["error_code"]]
         )
 
     def is_older_than(self, other: "CacheState") -> bool:

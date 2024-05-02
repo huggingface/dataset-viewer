@@ -86,7 +86,7 @@ def get_indexable_columns(features: Features) -> list[str]:
 
         def check_indexable(feature: FeatureType) -> None:
             nonlocal indexable
-            if isinstance(feature, Value) and feature.dtype == "string":
+            if isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
                 indexable = True
 
         _visit(feature, check_indexable)
