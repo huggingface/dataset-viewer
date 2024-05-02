@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import duckdb
-from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
 import polars as pl
+from datasets.features.features import Features, FeatureType, Translation, TranslationVariableLanguages, Value, _visit
 from huggingface_hub._commit_api import (
     CommitOperation,
     CommitOperationAdd,
