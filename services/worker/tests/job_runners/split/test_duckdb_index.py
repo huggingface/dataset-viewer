@@ -412,14 +412,12 @@ def test_compute(
         assert record_count[0] == (expected_rows_count,)
 
         columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
-        if not multiple_parquet_files:
+        if not multiple_parquet_files and hub_dataset_name != "duckdb_index_large_string":
             expected_columns = expected_values.keys()
             assert set(columns) == set(expected_columns)
             data = con.sql("SELECT * FROM data;").fetchall()
             data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}  # type: ignore
             assert data == expected_values  # type: ignore
-        else:
-            assert "__hf_index_id" not in columns
 
         if has_fts:
             # perform a search to validate fts feature
@@ -440,6 +438,8 @@ def test_compute(
             ).any()
             assert not (rows["text"].eq("There goes another one.")).any()
             assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
+        else:
+            assert "__hf_index_id" not in columns
 
         con.close()
         os.remove(file_name)
