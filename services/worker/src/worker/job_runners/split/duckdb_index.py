@@ -63,7 +63,7 @@ CREATE_INDEX_COMMAND = "PRAGMA create_fts_index('data', '__hf_index_id', {column
 CREATE_TABLE_COMMAND = "CREATE OR REPLACE TABLE data AS SELECT {columns} FROM '{source}';"
 CREATE_TABLE_JOIN_WITH_TRANSFORMED_DATA_COMMAND = """
     CREATE OR REPLACE TABLE data AS 
-    SELECT {column_names}, transformed_df.* FROM '{all_split_parquets}' 
+    SELECT {columns}, transformed_df.* FROM '{source}' 
     POSITIONAL JOIN transformed_df;
 """
 CREATE_SEQUENCE_COMMAND = "CREATE OR REPLACE SEQUENCE serial START 0 MINVALUE 0;"
