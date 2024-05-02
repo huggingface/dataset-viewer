@@ -81,7 +81,7 @@ def get_indexable_columns(features: Features) -> list[str]:
 
         def check_indexable(feature: FeatureType) -> None:
             nonlocal indexable
-            if isinstance(feature, Value) and feature.dtype in ("string", "large_string"):
+            if isinstance(feature, Value) and feature.dtype in STRING_DTYPES:
                 indexable = True
             elif isinstance(feature, (Translation, TranslationVariableLanguages)):
                 indexable = True
@@ -162,14 +162,14 @@ def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) 
             if is_list_pa_type(first_parquet_file, feature_name):
                 transformed_df = compute_list_length_column(parquet_directory, feature_name, transformed_df)
 
-        if isinstance(feature, dict):
+        elif isinstance(feature, dict):
             if feature.get("_type") == "Value" and feature.get("dtype") in STRING_DTYPES:
                 transformed_df = compute_string_length_column(parquet_directory, feature_name, transformed_df)
 
-            if feature.get("_type") == "Audio":
-                compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
+            elif feature.get("_type") == "Audio":
+                transformed_df = compute_audio_duration_column(parquet_directory, feature_name, transformed_df)
 
-            if feature.get("_type") == "Image":
+            elif feature.get("_type") == "Image":
                 transformed_df = compute_image_width_length_column(parquet_directory, feature_name, transformed_df)
 
     return transformed_df
