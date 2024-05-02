@@ -157,7 +157,7 @@ def compute_image_width_length_column(
     return target_df
 
 
-def compute_transformed_data(features: dict[str, Any], parquet_directory: Path) -> Optional[pl.DataFrame]:
+def compute_transformed_data(parquet_directory: Path, features: dict[str, Any]) -> Optional[pl.DataFrame]:
     transformed_df = None
     for feature_name, feature in features.items():
         if isinstance(feature, list) or (isinstance(feature, dict) and feature.get("_type") == "Sequence"):
@@ -287,8 +287,7 @@ def compute_split_duckdb_index_response(
     split_parquet_directory = duckdb_index_file_directory / config / split_directory
     all_split_parquets = str(split_parquet_directory / "*.parquet")
 
-    transformed_df = compute_transformed_data(features, split_parquet_directory)
-    create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
+    transformed_df = compute_transformed_data(split_parquet_directory, features)
 
     # index all columns
     db_path = duckdb_index_file_directory.resolve() / index_filename
@@ -301,20 +300,21 @@ def compute_split_duckdb_index_response(
 
         con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
 
-        logging.info(create_command_sql)
-        con.sql(create_command_sql)
-        logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
-        logging.debug(con.sql("SELECT count(*) FROM data;"))
-
         if transformed_df is not None:
             logging.debug(transformed_df.head())
             # update original data with results of transformations (string lengths, audio durations, etc.):
             logging.info(f"updating data with {transformed_df.columns}")
-            con.sql(
-                "CREATE OR REPLACE TABLE data AS "
-                "SELECT data.*, transformed_df.* FROM data POSITIONAL JOIN transformed_df;"
-            )  # TODO: not sure this is efficient
+            create_command_sql = f"""
+                CREATE OR REPLACE TABLE data AS
+                SELECT {column_names}, transformed_df.* FROM '{all_split_parquets}' POSITIONAL JOIN transformed_df;
+            """
+            logging.info(create_command_sql)
 
+        else:
+            create_command_sql = CREATE_TABLE_COMMAND.format(columns=column_names, source=all_split_parquets)
+            logging.info(create_command_sql)
+
+        con.sql(create_command_sql)
         logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
         logging.debug(con.sql("SELECT count(*) FROM data;"))
 
