@@ -3,6 +3,7 @@
 
 import logging
 from dataclasses import dataclass, field
+from itertools import islice
 from typing import Optional
 
 import pandas as pd
@@ -17,6 +18,18 @@ from libcommon.prometheus import StepProfiler
 from libcommon.simple_cache import CacheEntryMetadata, fetch_names
 
 # TODO: assets, cached_assets, parquet files
+
+
+class IncoherentCacheError(Exception):
+    pass
+
+
+class UnexceptedConfigNamesError(IncoherentCacheError):
+    pass
+
+
+class UnexceptedSplitNamesError(IncoherentCacheError):
+    pass
 
 
 @dataclass
@@ -219,6 +232,14 @@ class ConfigState:
                 name_field="split",
             )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
 
+        unexpected_split_names = set(self.cache_entries_df["split"].unique()).difference(
+            set(self.split_names).union({None})
+        )
+        if unexpected_split_names:
+            raise UnexceptedSplitNamesError(
+                f"Unexpected split names for dataset={self.dataset} config={self.config} ({len(unexpected_split_names)}): {list(islice(unexpected_split_names, 10))}{'' if len(unexpected_split_names) <= 10 else '...'}"
+            )
+
         with StepProfiler(
             method="ConfigState.__post_init__",
             step="get_split_states",
@@ -226,10 +247,10 @@ class ConfigState:
         ):
             self.split_states = [
                 SplitState(
-                    self.dataset,
-                    self.revision,
-                    self.config,
-                    split_name,
+                    dataset=self.dataset,
+                    revision=self.revision,
+                    config=self.config,
+                    split=split_name,
                     processing_graph=self.processing_graph,
                     pending_jobs_df=self.pending_jobs_df[self.pending_jobs_df["split"] == split_name],
                     cache_entries_df=self.cache_entries_df[self.cache_entries_df["split"] == split_name],
@@ -292,6 +313,14 @@ class DatasetState:
                     names_field="config_names",
                     name_field="config",
                 )  # Note that we use the cached content even the revision is different (ie. maybe obsolete)
+
+            unexpected_config_names = set(self.cache_entries_df["config"].unique()).difference(
+                set(self.config_names).union({None})
+            )
+            if unexpected_config_names:
+                raise UnexceptedConfigNamesError(
+                    f"Unexpected config names ({len(unexpected_config_names)}): {list(islice(unexpected_config_names, 10))}{'' if len(unexpected_config_names) <= 10 else '...'}"
+                )
 
             with StepProfiler(
                 method="DatasetState.__post_init__",
