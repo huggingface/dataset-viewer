@@ -293,6 +293,7 @@ def compute_split_duckdb_index_response(
 
         logging.info(create_command_sql)
         con.sql(create_command_sql)
+        con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
         logging.debug(con.sql("SELECT * FROM data LIMIT 5;"))
         logging.debug(con.sql("SELECT count(*) FROM data;"))
 
@@ -303,7 +304,6 @@ def compute_split_duckdb_index_response(
             con.execute(INSTALL_AND_LOAD_EXTENSION_COMMAND)
             # TODO: by default, 'porter' stemmer is being used, use a specific one by dataset language in the future
             # see https://duckdb.org/docs/extensions/full_text_search.html for more details about 'stemmer' parameter
-            con.sql(CREATE_INDEX_ID_COLUMN_COMMANDS)
             create_index_sql = CREATE_INDEX_COMMAND.format(columns=indexable_columns)
             logging.info(create_index_sql)
             con.sql(create_index_sql)
@@ -311,8 +311,7 @@ def compute_split_duckdb_index_response(
     finally:
         con.close()
 
-    if is_indexable:
-        features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
+    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
     logging.info(f"about to push index file to {target_revision}")
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)

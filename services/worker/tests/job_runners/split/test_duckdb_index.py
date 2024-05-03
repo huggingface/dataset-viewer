@@ -219,7 +219,7 @@ def get_parquet_metadata_job_runner(
 
 
 @pytest.fixture
-def expected_values(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
+def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
     ds = datasets["duckdb_index"]
     ds = Dataset(embed_table_storage(ds.data))
     expected: dict[str, list[Any]] = ds[:]
@@ -270,7 +270,7 @@ def test_compute(
     expected_rows_count: int,
     expected_partial: bool,
     expected_error_code: str,
-    expected_values: dict[str, list[Any]],
+    expected_data: dict[str, list[Any]],
 ) -> None:
     hub_datasets = {
         "duckdb_index": hub_responses_duckdb_index,
@@ -410,11 +410,14 @@ def test_compute(
 
         columns = [row[0] for row in con.sql("SELECT column_name FROM (DESCRIBE data);").fetchall()]
         if not multiple_parquet_files:
-            expected_columns = expected_values.keys()
-            assert set(columns) == set(expected_columns)
+            expected_columns = expected_data.keys()
+            assert sorted(columns) == sorted(expected_columns)
             data = con.sql("SELECT * FROM data;").fetchall()
             data = {column_name: list(values) for column_name, values in zip(columns, zip(*data))}  # type: ignore
-            assert data == expected_values  # type: ignore
+            assert data == expected_data  # type: ignore
+        else:
+            expected_columns = list(config_parquet_and_info["dataset_info"]["features"]) + ["__hf_index_id"]  # type: ignore
+            assert sorted(columns) == sorted(expected_columns)
 
         if has_fts:
             # perform a search to validate fts feature
@@ -435,8 +438,6 @@ def test_compute(
             ).any()
             assert not (rows["text"].eq("There goes another one.")).any()
             assert (rows["__hf_index_id"].isin([0, 2, 3, 4, 5, 7, 8, 9])).all()
-        else:
-            assert "__hf_index_id" not in columns
 
         con.close()
         os.remove(file_name)
