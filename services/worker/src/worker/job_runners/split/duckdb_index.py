@@ -311,11 +311,6 @@ def compute_split_duckdb_index_response(
     finally:
         con.close()
 
-    if transformed_df is not None:
-        transformed_arrow_schema = transformed_df.to_arrow().schema
-        transformed_features = Features.from_arrow_schema(transformed_arrow_schema).to_dict()
-        features.update(transformed_features)
-
     if is_indexable:
         features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
 
