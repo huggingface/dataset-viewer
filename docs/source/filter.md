@@ -16,6 +16,7 @@ The `/filter` endpoint accepts the following query parameters:
 - `config`: the configuration name, for example `cola`
 - `split`: the split name, for example `train`
 - `where`: the filter condition
+- `orderby`: the order-by clause
 - `offset`: the offset of the slice, for example `150`
 - `length`: the length of the slice, for example `10` (maximum: `100`)
 
@@ -38,6 +39,9 @@ either the string "name" column is equal to 'Simone' or the integer "children" c
   Additionally, if the string value contains a single quote, it must be escaped with another single quote,
   for example: <code>'O''Hara'</code>.
 </Tip>
+
+The `orderby` parameter must contain the column name whose values will be sorted (in ascending order by default).
+To sort the rows in descending order, use the DESC keyword, like `orderby=age DESC`.
 
 For example, let's filter those rows with no_answer=false in the `train` split of the `SelfRC` configuration of the `ibm/duorc` dataset restricting the results to the slice 150-151:
 
