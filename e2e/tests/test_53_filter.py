@@ -13,9 +13,10 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
     offset = 1
     length = 2
     where = "col_4='B'"
+    orderby = "col_2 DESC"
     filter_response = poll_until_ready_and_assert(
         relative_url=(
-            f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}"
+            f"/filter?dataset={dataset}&config={config}&split={split}&offset={offset}&length={length}&where={where}&orderby={orderby}"
         ),
         check_x_revision=True,
         dataset=dataset,
@@ -44,13 +45,13 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
         "truncated_cells": [],
     }, rows[0]
     assert rows[1] == {
-        "row_idx": 3,
+        "row_idx": 0,
         "row": {
-            "col_1": "The wingman spots the pirateship coming at him and warns the Dark Lord",
-            "col_2": 3,
-            "col_3": 3.0,
+            "col_1": "There goes another one.",
+            "col_2": 0,
+            "col_3": 0.0,
             "col_4": "B",
-            "col_5": None,
+            "col_5": True,
         },
         "truncated_cells": [],
     }, rows[1]
@@ -66,6 +67,7 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
 @pytest.mark.parametrize(
     "where,expected_num_rows",
     [
+        ("", 4),
         ("col_2=3", 1),
         ("col_2<3", 3),
         ("col_2>3", 0),
@@ -79,14 +81,45 @@ def test_filter_endpoint(normal_user_public_dataset: str) -> None:
 def test_filter_endpoint_parameter_where(where: str, expected_num_rows: int, normal_user_public_dataset: str) -> None:
     dataset = normal_user_public_dataset
     config, split = get_default_config_split()
+    relative_url = f"/filter?dataset={dataset}&config={config}&split={split}"
+    if where:
+        relative_url += f"&where={where}"
     response = poll_until_ready_and_assert(
-        relative_url=f"/filter?dataset={dataset}&config={config}&split={split}&where={where}",
+        relative_url=relative_url,
         check_x_revision=True,
         dataset=dataset,
     )
     content = response.json()
     assert "rows" in content, response
     assert len(content["rows"]) == expected_num_rows
+
+
+@pytest.mark.parametrize(
+    "orderby, expected_first_row_idx",
+    [
+        ("", 1),
+        ("col_4", 2),
+        ("col_3 DESC", 3),
+    ],
+)
+def test_filter_endpoint_parameter_orderby(
+    orderby: str, expected_first_row_idx: int, normal_user_public_dataset: str
+) -> None:
+    dataset = normal_user_public_dataset
+    config, split = get_default_config_split()
+    where = "col_2>0"
+    relative_url = f"/filter?dataset={dataset}&config={config}&split={split}&where={where}"
+    if orderby:
+        relative_url += f"&orderby={orderby}"
+    response = poll_until_ready_and_assert(
+        relative_url=relative_url,
+        check_x_revision=True,
+        dataset=dataset,
+    )
+    content = response.json()
+    assert "rows" in content, response
+    rows = content["rows"]
+    assert rows[0]["row_idx"] == expected_first_row_idx, rows[0]
 
 
 def test_filter_images_endpoint(normal_user_images_public_dataset: str) -> None:
