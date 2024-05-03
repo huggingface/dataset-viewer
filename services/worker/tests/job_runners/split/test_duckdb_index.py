@@ -367,8 +367,6 @@ def test_compute(
             job_runner.compute()
         assert e.typename == expected_error_code
     else:
-        # with patch("worker.job_runners.split.duckdb_index.StringColumn.is_class") as mock:
-        #     mock.return_value = False
         response = job_runner.compute()
         assert response
         content = response.content
