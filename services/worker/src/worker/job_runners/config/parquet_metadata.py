@@ -34,10 +34,14 @@ def create_parquet_metadata_file_from_remote_parquet(
         parquet_file = get_parquet_file(url=parquet_file_item["url"], fs=fs, hf_token=hf_token)
     except Exception as e:
         raise FileSystemError(f"Could not read the parquet files: {e}") from e
+    split = parquet_file_item["url"].split("/")[-2]
+    # ^ https://github.com/huggingface/dataset-viewer/issues/2768
+    # to support more than 10k parquet files, in which case, instead of "train" for example,
+    # the subdirectories are "train-part0", "train-part1", "train-part2", etc.
     parquet_metadata_subpath = create_parquet_metadata_file(
         dataset=parquet_file_item["dataset"],
         config=parquet_file_item["config"],
-        split=parquet_file_item["split"],
+        split=split,
         parquet_file_metadata=parquet_file.metadata,
         filename=parquet_file_item["filename"],
         parquet_metadata_directory=parquet_metadata_directory,
