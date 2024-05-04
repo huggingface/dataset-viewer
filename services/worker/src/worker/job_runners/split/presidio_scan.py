@@ -105,19 +105,20 @@ def analyze(
     ]
     return [
         PresidioEntity(
-            text=mask(texts[i][recognizer_result.start : recognizer_result.end]),
+            text=mask(texts[i * len(scanned_columns) + j][recognizer_result.start : recognizer_result.end]),
             type=recognizer_result.entity_type,
             row_idx=row_idx,
             column_name=column_name,
         )
-        for i, row_idx, recognizer_results in zip(
+        for i, row_idx, recognizer_row_results in zip(
             count(),
             indices,
-            _simple_analyze_iterator_cache(batch_analyzer, texts, language="en", score_threshold=0.8, cache=cache),
+            batched(_simple_analyze_iterator_cache(batch_analyzer, texts, language="en", score_threshold=0.8, cache=cache), len(scanned_columns)),
         )
-        for column_name, columns_description, recognizer_result in zip(
-            scanned_columns, columns_descriptions, recognizer_results
+        for j, column_name, columns_description, recognizer_results in zip(
+            count(), scanned_columns, columns_descriptions, recognizer_row_results
         )
+        for recognizer_result in recognizer_results
         if recognizer_result.start >= len(f"The following is {columns_description} data:\n\n")
     ]
 
