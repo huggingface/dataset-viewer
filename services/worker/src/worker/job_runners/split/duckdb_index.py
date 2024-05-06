@@ -311,8 +311,6 @@ def compute_split_duckdb_index_response(
     finally:
         con.close()
 
-    features["__hf_index_id"] = {"dtype": "int64", "_type": "Value"}
-
     logging.info(f"about to push index file to {target_revision}")
     hf_api = HfApi(endpoint=hf_endpoint, token=hf_token)
     committer_hf_api = HfApi(endpoint=hf_endpoint, token=committer_hf_token)
