@@ -81,15 +81,12 @@ async def create_response(
     storage_client: StorageClient,
     offset: int,
     features: Features,
+    unsupported_columns: list[str],
     num_rows_total: int,
     partial: bool,
 ) -> PaginatedResponse:
     features_without_key = features.copy()
     features_without_key.pop(ROW_IDX_COLUMN, None)
-
-    _, unsupported_columns = get_supported_unsupported_columns(
-        features,
-    )
     pa_table = pa_table.drop(unsupported_columns)
     logging.info(f"create response for {dataset=} {config=} {split=}")
 
@@ -234,7 +231,8 @@ def create_search_endpoint(
                         split=split,
                         storage_client=cached_assets_storage_client,
                         offset=offset,
-                        features=features,
+                        features=features or Features.from_arrow_schema(pa_table.schema),
+                        unsupported_columns=unsupported_columns,
                         num_rows_total=num_rows_total,
                         partial=partial,
                     )
