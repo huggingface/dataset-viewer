@@ -79,6 +79,7 @@ def test_full_text_search(
         },
         dtype=pd.StringDtype(storage="python"),
     )
+    features = ["__hf_index_id", "text"]
     create_command_sql = "CREATE OR REPLACE TABLE data AS SELECT nextval('serial') AS __hf_index_id, * FROM sample_df"
     con.sql(create_command_sql)
     con.execute(query="SELECT COUNT(*) FROM data;").fetchall()
@@ -91,7 +92,7 @@ def test_full_text_search(
     expected_table = pa.Table.from_pandas(filtered_df, schema=pa.schema(fields), preserve_index=False)
 
     # assert search results
-    (num_rows_total, pa_table) = full_text_search(index_file_location, query, offset, length)
+    (num_rows_total, pa_table) = full_text_search(index_file_location, features, query, offset, length)
     assert num_rows_total is not None
     assert pa_table is not None
     assert num_rows_total == expected_num_rows_total

@@ -50,13 +50,12 @@ from search.duckdb_connection import duckdb_connect
 logger = logging.getLogger(__name__)
 
 FTS_STAGE_TABLE_COMMAND = "SELECT * FROM (SELECT __hf_index_id, fts_main_data.match_bm25(__hf_index_id, ?) AS __hf_fts_score FROM data) A WHERE __hf_fts_score IS NOT NULL;"
-JOIN_STAGE_AND_DATA_COMMAND = (
-    "SELECT data.* FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
-)
+JOIN_STAGE_AND_DATA_COMMAND = "SELECT {columns} FROM fts_stage_table JOIN data USING(__hf_index_id) ORDER BY fts_stage_table.__hf_fts_score DESC;"
 
 
 def full_text_search(
     index_file_location: str,
+    columns: list[str],
     query: str,
     offset: int,
     length: int,
@@ -67,7 +66,9 @@ def full_text_search(
         num_rows_total = fts_stage_table.num_rows
         logging.info(f"got {num_rows_total=} results for {query=} using {offset=} {length=}")
         fts_stage_table = fts_stage_table.sort_by([("__hf_fts_score", "descending")]).slice(offset, length)
-        pa_table = con.execute(query=JOIN_STAGE_AND_DATA_COMMAND).arrow()
+        pa_table = con.execute(
+            query=JOIN_STAGE_AND_DATA_COMMAND.format(columns=",".join([f'"{column}"' for column in columns]))
+        ).arrow()
     return num_rows_total, pa_table
 
 
@@ -199,12 +200,18 @@ def create_search_endpoint(
                         target_revision=target_revision,
                         hf_token=hf_token,
                     )
-
+                with StepProfiler(method="search_endpoint", step="get features"):
+                    features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
+                with StepProfiler(method="search_endpoint", step="get supported and unsupported columns"):
+                    supported_columns, unsupported_columns = get_supported_unsupported_columns(
+                        features,
+                    )
                 with StepProfiler(method="search_endpoint", step="perform FTS command"):
                     logging.debug(f"connect to index file {index_file_location}")
                     num_rows_total, pa_table = await anyio.to_thread.run_sync(
                         full_text_search,
                         index_file_location,
+                        supported_columns,
                         query,
                         offset,
                         length,
@@ -219,16 +226,6 @@ def create_search_endpoint(
                                 expiredTimeIntervalSeconds,
                             )
                 with StepProfiler(method="search_endpoint", step="create response"):
-                    # Features can be missing in old cache entries,
-                    # but in this case it's ok to get them from the Arrow schema.
-                    # Indded at one point we refreshed all the datasets that need the features
-                    # to be cached (i.e. image and audio datasets).
-                    if "features" in duckdb_index_cache_entry["content"] and isinstance(
-                        duckdb_index_cache_entry["content"]["features"], dict
-                    ):
-                        features = Features.from_dict(duckdb_index_cache_entry["content"]["features"])
-                    else:
-                        features = Features.from_arrow_schema(pa_table.schema)
                     response = await create_response(
                         pa_table=pa_table,
                         dataset=dataset,
