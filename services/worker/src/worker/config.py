@@ -259,6 +259,22 @@ class ConfigNamesConfig:
             )
 
 
+SPLIT_NAMES_MAX_NUMBER = 30
+
+
+@dataclass(frozen=True)
+class SplitNamesConfig:
+    max_number: int = SPLIT_NAMES_MAX_NUMBER
+
+    @classmethod
+    def from_env(cls) -> "SplitNamesConfig":
+        env = Env(expand_vars=True)
+        with env.prefixed("SPLIT_NAMES_"):
+            return cls(
+                max_number=env.int(name="MAX_NUMBER", default=SPLIT_NAMES_MAX_NUMBER),
+            )
+
+
 DUCKDB_INDEX_CACHE_DIRECTORY = None
 DUCKDB_INDEX_COMMIT_MESSAGE = "Update duckdb index file"
 DUCKDB_INDEX_COMMITTER_HF_TOKEN = None
@@ -331,6 +347,7 @@ class AppConfig:
     queue: QueueConfig = field(default_factory=QueueConfig)
     rows_index: RowsIndexConfig = field(default_factory=RowsIndexConfig)
     s3: S3Config = field(default_factory=S3Config)
+    split_names: SplitNamesConfig = field(default_factory=SplitNamesConfig)
     worker: WorkerConfig = field(default_factory=WorkerConfig)
     urls_scan: OptInOutUrlsScanConfig = field(default_factory=OptInOutUrlsScanConfig)
     parquet_metadata: ParquetMetadataConfig = field(default_factory=ParquetMetadataConfig)
@@ -351,6 +368,7 @@ class AppConfig:
             parquet_and_info=ParquetAndInfoConfig.from_env(),
             queue=QueueConfig.from_env(),
             s3=S3Config.from_env(),
+            split_names=SplitNamesConfig.from_env(),
             worker=WorkerConfig.from_env(),
             urls_scan=OptInOutUrlsScanConfig.from_env(),
             parquet_metadata=ParquetMetadataConfig.from_env(),

@@ -221,6 +221,13 @@ class DatasetWithTooManyConfigsError(CacheableError):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
 
 
+class DatasetWithTooManySplitsError(CacheableError):
+    """The number of splits of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManySplitsError", cause, True)
+
+
 class DatasetWithTooManyParquetFilesError(CacheableError):
     """The number of parquet files of a dataset is too big."""
 
