@@ -102,7 +102,7 @@ def compute_length_column(
 ) -> pl.DataFrame:
     column_class = ListColumn if dtype == "list" else StringColumn
     df = pl.read_parquet(str(parquet_directory / "*.parquet"), columns=[column_name])
-    lengths_column_name = f"{column_name}__hf_length"
+    lengths_column_name = f"{column_name}.length"
     lengths_df: pl.DataFrame = column_class.compute_transformed_data(
         df, column_name, transformed_column_name=lengths_column_name
     )
@@ -118,7 +118,7 @@ def compute_audio_duration_column(
     column_name: str,
     target_df: Optional[pl.DataFrame],
 ) -> pl.DataFrame:
-    duration_column_name = f"{column_name}__hf_duration"
+    duration_column_name = f"{column_name}.duration"
     durations = AudioColumn.compute_transformed_data(parquet_directory, column_name, AudioColumn.get_duration)
     duration_df = pl.from_dict({duration_column_name: durations})
     if target_df is None:
@@ -134,7 +134,7 @@ def compute_image_width_length_column(
 ) -> pl.DataFrame:
     shapes = ImageColumn.compute_transformed_data(parquet_directory, column_name, ImageColumn.get_shape)
     widths, heights = list(zip(*shapes))
-    width_column_name, height_column_name = f"{column_name}__hf_width", f"{column_name}__hf_height"
+    width_column_name, height_column_name = f"{column_name}.width", f"{column_name}.height"
     shapes_df = pl.from_dict({width_column_name: widths, height_column_name: heights})
     if target_df is None:
         return shapes_df

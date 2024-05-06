@@ -227,21 +227,19 @@ def expected_data(datasets: Mapping[str, Dataset]) -> dict[str, list[Any]]:
         is_string = isinstance(feature, Value) and feature.dtype == "string"
         is_list = (isinstance(feature, list) or isinstance(feature, Sequence)) and feature_name != "sequence_struct"
         if is_string or is_list:
-            expected[f"{feature_name}__hf_length"] = [
-                len(row) if row is not None else None for row in ds[feature_name]
-            ]
+            expected[f"{feature_name}.length"] = [len(row) if row is not None else None for row in ds[feature_name]]
         elif isinstance(feature, Audio):
             if "all_nan" in feature_name:
-                expected[f"{feature_name}__hf_duration"] = all_nan_column(5)
+                expected[f"{feature_name}.duration"] = all_nan_column(5)
             else:
-                expected[f"{feature_name}__hf_duration"] = [1.0, 2.0, 3.0, 4.0, None]
+                expected[f"{feature_name}.duration"] = [1.0, 2.0, 3.0, 4.0, None]
         elif isinstance(feature, Image):
             if "all_nan" in feature_name:
-                expected[f"{feature_name}__hf_width"] = all_nan_column(5)
-                expected[f"{feature_name}__hf_height"] = all_nan_column(5)
+                expected[f"{feature_name}.width"] = all_nan_column(5)
+                expected[f"{feature_name}.height"] = all_nan_column(5)
             else:
-                expected[f"{feature_name}__hf_width"] = [640, 1440, 520, 1240, None]
-                expected[f"{feature_name}__hf_height"] = [480, 1058, 400, 930, None]
+                expected[f"{feature_name}.width"] = [640, 1440, 520, 1240, None]
+                expected[f"{feature_name}.height"] = [480, 1058, 400, 930, None]
     expected["__hf_index_id"] = list(range(ds.num_rows))
     return expected
 
