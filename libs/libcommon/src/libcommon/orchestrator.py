@@ -815,6 +815,42 @@ def set_revision(
     return plan.run()
 
 
+def smart_set_revision(
+    dataset: str,
+    revision: str,
+    priority: Priority,
+    processing_graph: ProcessingGraph = processing_graph,
+) -> TasksStatistics:
+    """
+    Set the current revision of the dataset in a smarter way.
+
+    /!\ This logic is WIP and hsould only be used on a subset of datasets for now.
+
+    If the revision is already set to the same value, this is a no-op.
+    Else: one job is created for every step that need to be recomputed,
+    and for the other step it updates its revision without recomputing.
+
+    Args:
+        dataset (`str`): The name of the dataset.
+        revision (`str`): The new revision of the dataset.
+        priority (`Priority`): The priority of the jobs to create.
+        processing_graph (`ProcessingGraph`, *optional*): The processing graph.
+
+    Returns:
+        `TasksStatistics`: The statistics of the set_revision.
+    """
+    logging.info(f"Analyzing {dataset}")
+    plan = DatasetBackfillPlan(
+        dataset=dataset,
+        revision=revision,
+        priority=priority,
+        processing_graph=processing_graph,
+        only_first_processing_steps=True,
+    )
+    logging.info(f"Applying smart_set_revision plan on {dataset}: plan={plan.as_response()}")
+    return plan.smart_run()
+
+
 def backfill(
     dataset: str,
     revision: str,

@@ -22,7 +22,7 @@ from libcommon.exceptions import (
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
-from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision
+from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision, smart_set_revision
 from libcommon.state import IncoherentCacheError
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
@@ -228,6 +228,15 @@ def update_dataset(
         logging.warning(f"Dataset {dataset} is not supported ({type(e)}). Let's delete the dataset.")
         delete_dataset(dataset=dataset, storage_clients=storage_clients)
         raise
+    if dataset == "HuggingFaceFW/fineweb" or dataset.startswith("datasets-maintainers/"):
+        try:
+            smart_set_revision(
+                dataset=dataset,
+                revision=revision,
+                priority=priority,
+            )
+        except Exception as err:
+            logging.error(f"smart_set_revision failed with {type(err).__name__}: {err}")
     set_revision(
         dataset=dataset,
         revision=revision,
