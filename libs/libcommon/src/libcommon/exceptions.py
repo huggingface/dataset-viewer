@@ -87,6 +87,7 @@ CacheableErrorCode = Literal[
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
+    "DatasetWithTooManySplitsError",
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
