@@ -2,7 +2,6 @@
 # Copyright 2022 The HuggingFace Authors.
 
 from io import BytesIO
-from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Optional, TypedDict
 from urllib import parse
@@ -11,15 +10,9 @@ from PIL import Image, ImageOps
 from pydub import AudioSegment  # type:ignore
 
 from libcommon.constants import DATASET_SEPARATOR
-from libcommon.storage import StrPath, remove_dir
 from libcommon.storage_client import StorageClient
 
 SUPPORTED_AUDIO_EXTENSION_TO_MEDIA_TYPE = {".wav": "audio/wav", ".mp3": "audio/mpeg"}
-
-
-def delete_asset_dir(dataset: str, directory: StrPath) -> None:
-    dir_path = Path(directory).resolve() / dataset
-    remove_dir(dir_path)
 
 
 class ImageSource(TypedDict):
@@ -36,6 +29,7 @@ class AudioSource(TypedDict):
 def generate_object_key(
     dataset: str, revision: str, config: str, split: str, row_idx: int, column: str, filename: str
 ) -> str:
+    # same pattern as in storage_client.py
     return f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{revision}/{DATASET_SEPARATOR}/{parse.quote(config)}/{parse.quote(split)}/{str(row_idx)}/{parse.quote(column)}/{filename}"
 
 

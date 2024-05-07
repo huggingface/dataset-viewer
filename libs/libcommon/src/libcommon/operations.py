@@ -233,7 +233,7 @@ def update_dataset(
             smart_set_revision(
                 dataset=dataset,
                 revision=revision,
-                priority=priority,
+                storage_clients=storage_clients,
             )
         except Exception as err:
             logging.error(f"smart_set_revision failed with {type(err).__name__}: {err}")

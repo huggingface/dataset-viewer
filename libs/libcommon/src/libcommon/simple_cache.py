@@ -311,6 +311,23 @@ def delete_dataset_responses(dataset: str) -> int:
     return 0 if num_deleted_cache_responses is None else num_deleted_cache_responses
 
 
+def update_revision_of_dataset_responses(dataset: str, old_revision: str, new_revision: str) -> int:
+    """
+    Update the revision of all responses for a dataset.
+
+    Args:
+        dataset (`str`): the dataset name
+        old_revision (`str`): the old revision
+        new_revision (`str`): the new revision
+
+    Returns:
+        `int`: The number of updated documents.
+    """
+    existing_cache = CachedResponseDocument.objects(dataset=dataset, revision=old_revision)
+    num_updated_cache_responses = existing_cache.update(revision=new_revision)
+    return 0 if num_updated_cache_responses is None else num_updated_cache_responses
+
+
 T = TypeVar("T")
 
 

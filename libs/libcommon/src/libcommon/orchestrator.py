@@ -28,6 +28,7 @@ from libcommon.simple_cache import (
     get_cache_entries_df,
     get_response_metadata,
     get_response_or_missing_error,
+    update_revision_of_dataset_responses,
     upsert_response_params,
 )
 from libcommon.state import ArtifactState, DatasetState, FirstStepsDatasetState
@@ -69,13 +70,17 @@ class TasksStatistics:
     num_created_jobs: int = 0
     num_deleted_waiting_jobs: int = 0
     num_deleted_cache_entries: int = 0
+    num_updated_cache_entries: int = 0
     num_deleted_storage_directories: int = 0
+    num_updated_storage_directories: int = 0
 
     def add(self, other: "TasksStatistics") -> None:
         self.num_created_jobs += other.num_created_jobs
         self.num_deleted_waiting_jobs += other.num_deleted_waiting_jobs
         self.num_deleted_cache_entries += other.num_deleted_cache_entries
+        self.num_updated_cache_entries += other.num_updated_cache_entries
         self.num_deleted_storage_directories += other.num_deleted_storage_directories
+        self.num_updated_storage_directories += other.num_updated_storage_directories
 
     def has_tasks(self) -> bool:
         return any(
@@ -83,15 +88,18 @@ class TasksStatistics:
                 self.num_created_jobs > 0,
                 self.num_deleted_waiting_jobs > 0,
                 self.num_deleted_cache_entries > 0,
+                self.num_updated_cache_entries > 0,
                 self.num_deleted_storage_directories > 0,
+                self.num_updated_storage_directories > 0,
             ]
         )
 
     def get_log(self) -> str:
         return (
             f"{self.num_created_jobs} created jobs, {self.num_deleted_waiting_jobs} deleted waiting jobs,"
-            f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_deleted_storage_directories} deleted"
-            f" storage directories"
+            f" {self.num_deleted_cache_entries} deleted cache entries, {self.num_updated_cache_entries} updated "
+            f"cache entries, {self.num_deleted_storage_directories} deleted"
+            f" storage directories, {self.num_updated_storage_directories} updated storage directories"
         )
 
 
@@ -211,6 +219,33 @@ class DeleteDatasetCacheEntriesTask(Task):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
 
+
+@dataclass
+class MoveDatasetCacheEntriesTask(Task):
+    dataset: str
+    old_revision: str
+    new_revision: str
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"MoveDatasetCacheEntriesTask,{len(self.dataset)}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Delete the dataset cache entries.
+
+        Returns:
+            `TasksStatistics`: The statistics of the cache entries deletion.
+        """
+        with StepProfiler(
+            method="MoveDatasetCacheEntriesTask.run",
+            step="all",
+            context=f"dataset={self.dataset}",
+        ):
+            return TasksStatistics(num_updated_cache_entries=update_revision_of_dataset_responses(dataset=self.dataset, old_revision=self.old_revision, new_revision=self.new_revision))
+
+
 @dataclass
 class DeleteDatasetStorageTask(Task):
     dataset: str
@@ -235,6 +270,35 @@ class DeleteDatasetStorageTask(Task):
         ):
             return TasksStatistics(
                 num_deleted_storage_directories=self.storage_client.delete_dataset_directory(self.dataset)
+            )
+
+
+@dataclass
+class UpdateRevisionOfDatasetStorageTask(Task):
+    dataset: str
+    old_revision: str
+    new_revision: str
+    storage_client: StorageClient
+
+    def __post_init__(self) -> None:
+        # for debug and testing
+        self.id = f"UpdateRevisionOfDatasetStorageTask,{self.dataset},{self.storage_client}"
+        self.long_id = self.id
+
+    def run(self) -> TasksStatistics:
+        """
+        Update the revision of the dataset directory from the storage.
+
+        Returns:
+            `TasksStatistics`: The statistics of the storage directory update.
+        """
+        with StepProfiler(
+            method="UpdateRevisionOfDatasetStorageTask.run",
+            step="all",
+            context=f"dataset={self.dataset},storage_client={self.storage_client}",
+        ):
+            return TasksStatistics(
+                num_updated_storage_directories=self.storage_client.update_revision_of_dataset_revision_directory(self.dataset, self.old_revision, self.new_revision)
             )
 
 
@@ -737,6 +801,21 @@ class DatasetBackfillPlan(Plan):
 
 
 @dataclass
+class SmartDatasetBackfillPlan(Plan):
+    dataset: str
+    revision: str
+    processing_graph: ProcessingGraph = field(default=processing_graph)
+    storage_clients: Optional[list[StorageClient]]
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.add_task(MoveDatasetCacheEntriesTask(dataset=self.dataset))
+        if self.storage_clients:
+            for storage_client in self.storage_clients:
+                self.add_task(UpdateRevisionOfDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
+
+
+@dataclass
 class DatasetRemovalPlan(Plan):
     """
     Plan to remove a dataset.
@@ -818,7 +897,6 @@ def set_revision(
 def smart_set_revision(
     dataset: str,
     revision: str,
-    priority: Priority,
     processing_graph: ProcessingGraph = processing_graph,
 ) -> TasksStatistics:
     """
@@ -833,22 +911,19 @@ def smart_set_revision(
     Args:
         dataset (`str`): The name of the dataset.
         revision (`str`): The new revision of the dataset.
-        priority (`Priority`): The priority of the jobs to create.
         processing_graph (`ProcessingGraph`, *optional*): The processing graph.
 
     Returns:
         `TasksStatistics`: The statistics of the set_revision.
     """
     logging.info(f"Analyzing {dataset}")
-    plan = DatasetBackfillPlan(
+    plan = SmartDatasetBackfillPlan(
         dataset=dataset,
         revision=revision,
-        priority=priority,
         processing_graph=processing_graph,
-        only_first_processing_steps=True,
     )
     logging.info(f"Applying smart_set_revision plan on {dataset}: plan={plan.as_response()}")
-    return plan.smart_run()
+    return plan.run()
 
 
 def backfill(

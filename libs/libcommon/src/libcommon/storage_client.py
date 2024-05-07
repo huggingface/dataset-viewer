@@ -2,11 +2,13 @@
 # Copyright 2023 The HuggingFace Authors.
 import logging
 from typing import Optional, Union
+from urllib import parse
 
 import fsspec
 from fsspec.implementations.local import LocalFileSystem
 from s3fs import S3FileSystem  # type: ignore
 
+from libcommon.constants import DATASET_SEPARATOR
 from libcommon.config import S3Config, StorageProtocol
 from libcommon.url_signer import URLSigner
 
@@ -111,6 +113,29 @@ class StorageClient:
             return 1
         except Exception:
             logging.warning(f"Could not delete directory {dataset_key}")
+            return 0
+
+    def update_revision_of_dataset_revision_directory(self, dataset: str, old_revision: str, new_revision: str) -> int:
+        """
+        Update the reivsion of a dataset directory
+
+        Args:
+            dataset (`str`): the dataset
+            old_revision (`str`): the old revision
+            new_revision (`str`): the new revision
+
+        Returns:
+            int: The number of directories updated (0 or 1)
+        """
+        # same pattern as in asset.py
+        old_dataset_revision_key = self.get_full_path(f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{old_revision}")
+        new_dataset_revision_key = self.get_full_path(f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{new_revision}")
+        try:
+            self._fs.mv(old_dataset_revision_key, new_dataset_revision_key, recursive=True)
+            logging.info(f"Revision of the directory updated: {old_dataset_revision_key} -> {new_dataset_revision_key}")
+            return 1
+        except Exception:
+            logging.warning(f"Could not update the revision of directory {old_dataset_revision_key} to {new_dataset_revision_key}")
             return 0
 
     def __repr__(self) -> str:
