@@ -149,10 +149,10 @@ def test_compute_split_names_from_info_response(
 
     if error_code:
         with pytest.raises(Exception) as e:
-            compute_split_names_from_info_response(dataset, config)
+            compute_split_names_from_info_response(dataset, config, max_number=999)
         assert e.typename == error_code
     else:
-        assert compute_split_names_from_info_response(dataset, config) == content
+        assert compute_split_names_from_info_response(dataset, config, max_number=999) == content
 
 
 def test_doesnotexist(
