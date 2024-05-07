@@ -125,6 +125,7 @@ CacheableErrorCode = Literal[
     "SplitWithTooBigParquetError",
     "StreamingRowsError",
     "TooBigContentError",
+    "TooLongColumnNameError",
     "TooManyColumnsError",
     "UnexpectedError",
     "UnsupportedExternalFilesError",
@@ -514,6 +515,13 @@ class TooManyColumnsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooManyColumnsError", cause, True)
+
+
+class TooLongColumnNameError(CacheableError):
+    """The column name is too long."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.INTERNAL_SERVER_ERROR, "TooLongColumnNameError", cause, True)
 
 
 class UnexpectedError(CacheableError):
