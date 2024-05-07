@@ -1248,7 +1248,6 @@ def compute_config_parquet_and_info_response(
             download_config=download_config,
             trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
         )
-        raise_if_long_column_name(builder.info)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except ValueError as err:
@@ -1312,6 +1311,8 @@ def compute_config_parquet_and_info_response(
         else:
             parquet_operations = convert_to_parquet(builder)
         logging.info(f"{len(parquet_operations)} parquet files are ready to be pushed for {dataset=} {config=}.")
+
+    raise_if_long_column_name(builder.info.features)
 
     try:
         with lock.git_branch(
