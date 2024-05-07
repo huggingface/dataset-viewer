@@ -14,7 +14,7 @@ from datasets import Dataset
 from datasets.packaged_modules import csv
 from fsspec import AbstractFileSystem
 from libcommon.dtos import Priority
-from libcommon.exceptions import CustomError
+from libcommon.exceptions import CustomError, TooLongColumnNameError
 from libcommon.resources import CacheMongoResource, QueueMongoResource
 from libcommon.simple_cache import upsert_response
 from libcommon.storage import StrPath
@@ -310,3 +310,26 @@ def test_compute(app_config: AppConfig, get_job_runner: GetJobRunner, hub_public
     assert content["features"][0]["type"]["dtype"] == "int64"  # <---|
     assert content["features"][1]["type"]["dtype"] == "int64"  # <---|- auto-detected by the datasets library
     assert content["features"][2]["type"]["dtype"] == "float64"  # <-|
+
+
+@pytest.mark.parametrize(
+    "max_column_name_length,raises",
+    [
+        (1, True),
+        (500, False),
+    ],
+)
+def test_long_column_name(
+    app_config: AppConfig, get_job_runner: GetJobRunner, hub_public_csv: str, max_column_name_length: int, raises: bool
+) -> None:
+    # no parquet-metadata entry available -> the job runner will use the streaming approach
+
+    dataset = hub_public_csv
+    config, split = get_default_config_split()
+    job_runner = get_job_runner(dataset, config, split, app_config)
+    with patch("worker.utils.MAX_COLUMN_NAME_LENGTH", max_column_name_length):
+        if raises:
+            with pytest.raises(TooLongColumnNameError):
+                job_runner.compute()
+        else:
+            job_runner.compute()

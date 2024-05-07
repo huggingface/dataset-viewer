@@ -218,7 +218,6 @@ def compute_first_rows_from_streaming_response(
         info = get_dataset_config_info(
             path=dataset, config_name=config, token=hf_token, trust_remote_code=trust_remote_code
         )
-        raise_if_long_column_name(info)
     except Exception as err:
         if isinstance(err, ValueError) and "trust_remote_code" in str(err):
             raise DatasetWithScriptNotSupportedError from err
@@ -255,6 +254,7 @@ def compute_first_rows_from_streaming_response(
             ) from err
     else:
         features = info.features
+    raise_if_long_column_name(features)
 
     def get_rows_content(rows_max_number: int) -> RowsContent:
         return get_rows_or_raise(

@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 import PIL
 import requests
-from datasets import Dataset, DatasetInfo, DownloadConfig, IterableDataset, load_dataset
+from datasets import Dataset, DatasetInfo, DownloadConfig, Features, IterableDataset, load_dataset
 from datasets.utils.file_utils import get_authentication_headers_for_url
 from fsspec.implementations.http import HTTPFileSystem
 from huggingface_hub.hf_api import HfApi
@@ -231,10 +231,10 @@ def resolve_trust_remote_code(dataset: str, allow_list: list[str]) -> bool:
     return False
 
 
-def raise_if_long_column_name(dataset_info: DatasetInfo) -> None:
-    if dataset_info.features is None:
+def raise_if_long_column_name(features: Optional[Features]) -> None:
+    if features is None:
         return
-    for feature_name in dataset_info.features:
+    for feature_name in features:
         if len(feature_name) > MAX_COLUMN_NAME_LENGTH:
             short_name = feature_name[: MAX_COLUMN_NAME_LENGTH - 3] + "..."
             raise TooLongColumnNameError(
