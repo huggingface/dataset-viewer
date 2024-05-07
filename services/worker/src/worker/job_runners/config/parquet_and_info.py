@@ -81,6 +81,7 @@ from worker.utils import (
     LOCK_GIT_BRANCH_RETRY_SLEEPS,
     create_branch,
     hf_hub_url,
+    raise_if_long_column_name,
     resolve_trust_remote_code,
 )
 
@@ -1202,6 +1203,8 @@ def compute_config_parquet_and_info_response(
             If the dataset has a dataset script and is not in the allow list.
         [~`libcommon.exceptions.PreviousStepFormatError`]:
             If the content of the previous step has not the expected format
+        [~`libcommon.exceptions.TooLongColumnNameError`]:
+            If one of the columns' name is too long (> 500 characters)
         [~`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError):
             If the datasets.config.HF_ENDPOINT is not set to the expected value
 
@@ -1245,6 +1248,7 @@ def compute_config_parquet_and_info_response(
             download_config=download_config,
             trust_remote_code=resolve_trust_remote_code(dataset=dataset, allow_list=dataset_scripts_allow_list),
         )
+        raise_if_long_column_name(builder.info)
     except _EmptyDatasetError as err:
         raise EmptyDatasetError(f"{dataset=} is empty.", cause=err) from err
     except ValueError as err:
