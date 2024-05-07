@@ -87,6 +87,7 @@ CacheableErrorCode = Literal[
     "DatasetWithTooComplexDataFilesPatternsError",
     "DatasetWithTooManyConfigsError",
     "DatasetWithTooManyParquetFilesError",
+    "DatasetWithTooManySplitsError",
     "DiskError",
     "DuckDBIndexFileNotFoundError",
     "EmptyDatasetError",
@@ -219,6 +220,13 @@ class DatasetWithTooManyConfigsError(CacheableError):
 
     def __init__(self, message: str, cause: Optional[BaseException] = None):
         super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManyConfigsError", cause, True)
+
+
+class DatasetWithTooManySplitsError(CacheableError):
+    """The number of splits of a dataset exceeded the limit."""
+
+    def __init__(self, message: str, cause: Optional[BaseException] = None):
+        super().__init__(message, HTTPStatus.NOT_IMPLEMENTED, "DatasetWithTooManySplitsError", cause, True)
 
 
 class DatasetWithTooManyParquetFilesError(CacheableError):
