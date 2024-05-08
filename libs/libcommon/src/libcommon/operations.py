@@ -22,7 +22,14 @@ from libcommon.exceptions import (
     NotSupportedPrivateRepositoryError,
     NotSupportedRepositoryNotFoundError,
 )
-from libcommon.orchestrator import TasksStatistics, backfill, get_revision, remove_dataset, set_revision, smart_set_revision
+from libcommon.orchestrator import (
+    TasksStatistics,
+    backfill,
+    get_revision,
+    remove_dataset,
+    set_revision,
+    smart_set_revision,
+)
 from libcommon.state import IncoherentCacheError
 from libcommon.storage_client import StorageClient
 from libcommon.utils import raise_if_blocked
@@ -234,6 +241,8 @@ def update_dataset(
                 dataset=dataset,
                 revision=revision,
                 storage_clients=storage_clients,
+                hf_endpoint=hf_endpoint,
+                hf_token=hf_token,
             )
         except Exception as err:
             logging.error(f"smart_set_revision failed with {type(err).__name__}: {err}")

@@ -6,9 +6,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import lru_cache
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
+import requests
+from huggingface_hub import DatasetCard, hf_hub_download
+from huggingface_hub.utils import build_hf_headers
 
 from libcommon.constants import (
     CONFIG_INFO_KIND,
@@ -219,31 +223,34 @@ class DeleteDatasetCacheEntriesTask(Task):
             return TasksStatistics(num_deleted_cache_entries=delete_dataset_responses(dataset=self.dataset))
 
 
-
 @dataclass
-class MoveDatasetCacheEntriesTask(Task):
+class UpdateRevisionOfDatasetCacheEntriesTask(Task):
     dataset: str
     old_revision: str
     new_revision: str
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"MoveDatasetCacheEntriesTask,{len(self.dataset)}"
+        self.id = f"UpdateRevisionOfDatasetCacheEntriesTask,{len(self.dataset)}"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
         """
-        Delete the dataset cache entries.
+        Update the revision of the dataset cache entries.
 
         Returns:
-            `TasksStatistics`: The statistics of the cache entries deletion.
+            `TasksStatistics`: The statistics of the cache entries updates.
         """
         with StepProfiler(
-            method="MoveDatasetCacheEntriesTask.run",
+            method="UpdateRevisionOfDatasetCacheEntriesTask.run",
             step="all",
             context=f"dataset={self.dataset}",
         ):
-            return TasksStatistics(num_updated_cache_entries=update_revision_of_dataset_responses(dataset=self.dataset, old_revision=self.old_revision, new_revision=self.new_revision))
+            return TasksStatistics(
+                num_updated_cache_entries=update_revision_of_dataset_responses(
+                    dataset=self.dataset, old_revision=self.old_revision, new_revision=self.new_revision
+                )
+            )
 
 
 @dataclass
@@ -298,7 +305,9 @@ class UpdateRevisionOfDatasetStorageTask(Task):
             context=f"dataset={self.dataset},storage_client={self.storage_client}",
         ):
             return TasksStatistics(
-                num_updated_storage_directories=self.storage_client.update_revision_of_dataset_revision_directory(self.dataset, self.old_revision, self.new_revision)
+                num_updated_storage_directories=self.storage_client.update_revision_of_dataset_revision_directory(
+                    self.dataset, self.old_revision, self.new_revision
+                )
             )
 
 
@@ -308,6 +317,8 @@ SupportedTask = Union[
     DeleteDatasetWaitingJobsTask,
     DeleteDatasetCacheEntriesTask,
     DeleteDatasetStorageTask,
+    UpdateRevisionOfDatasetCacheEntriesTask,
+    UpdateRevisionOfDatasetStorageTask,
 ]
 
 
@@ -800,19 +811,113 @@ class DatasetBackfillPlan(Plan):
             self.add_task(CreateJobsTask(job_infos=job_infos_to_create))
 
 
+class SmartUpdateImpossibleBecauseCacheIsEmpty(Exception):
+    pass
+
+
+class SmartUpdateImpossibleBecauseOfUpdatedFiles(Exception):
+    pass
+
+
+class SmartUpdateImpossibleBecauseOfUpdatedYAMLField(Exception):
+    pass
+
+
 @dataclass
-class SmartDatasetBackfillPlan(Plan):
+class SmartDatasetUpdatePlan(Plan):
     dataset: str
     revision: str
+    hf_endpoint: str
     processing_graph: ProcessingGraph = field(default=processing_graph)
-    storage_clients: Optional[list[StorageClient]]
+    storage_clients: Optional[list[StorageClient]] = None
+    hf_token: Optional[str] = None
+
+    old_revision: str = field(init=False)
+    diff: str = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.add_task(MoveDatasetCacheEntriesTask(dataset=self.dataset))
+        cache_kinds = [
+            processing_step.cache_kind for processing_step in self.processing_graph.get_first_processing_steps()
+        ]
+        cache_entries_df = get_cache_entries_df(
+            dataset=self.dataset,
+            cache_kinds=cache_kinds,
+        )
+        if len(cache_entries_df) == 0:
+            raise SmartUpdateImpossibleBecauseCacheIsEmpty()
+        self.old_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["revision"]
+        if self.old_revision == self.revision:
+            return
+        self.diff = self.get_diff()
+        files_impacted_by_commit = self.get_impacted_files()
+        if files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
+            raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(files_impacted_by_commit)[:1000])
+        updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
+        if "dataset_info" in updated_yaml_fields_in_dataset_card:
+            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("dataset_info")
+        if "configs" in updated_yaml_fields_in_dataset_card:
+            raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("configs")
+        self.add_task(
+            UpdateRevisionOfDatasetCacheEntriesTask(
+                dataset=self.dataset, old_revision=self.old_revision, new_revision=self.revision
+            )
+        )
         if self.storage_clients:
             for storage_client in self.storage_clients:
-                self.add_task(UpdateRevisionOfDatasetStorageTask(dataset=self.dataset, storage_client=storage_client))
+                self.add_task(
+                    UpdateRevisionOfDatasetStorageTask(
+                        dataset=self.dataset,
+                        old_revision=self.old_revision,
+                        new_revision=self.revision,
+                        storage_client=storage_client,
+                    )
+                )
+
+    def get_diff(self) -> str:
+        headers = build_hf_headers(token=self.hf_token, library_name="dataset-viewer")
+        resp = requests.get(
+            self.hf_endpoint + f"/datasets/{self.dataset}/commit/{self.revision}.diff", timeout=10, headers=headers
+        )
+        resp.raise_for_status()
+        assert isinstance(resp.text, str)
+        return resp.text
+
+    def get_impacted_files(self) -> set[str]:
+        return set(
+            line[len("--- a/") :]
+            for line in self.diff.split("\n")
+            if line.startswith("--- a/") or line.startswith("+++ b/")
+        )
+
+    def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
+        with Path(
+            hf_hub_download(
+                self.dataset,
+                "README.md",
+                repo_type="dataset",
+                token=self.hf_token,
+                revison=self.revision,
+                endpoint=self.hf_endpoint,
+            )
+        ).open(mode="r", newline="", encoding="utf-8") as f:
+            dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
+        with Path(
+            hf_hub_download(
+                self.dataset,
+                "README.md",
+                repo_type="dataset",
+                token=self.hf_token,
+                revison=self.old_revision,
+                endpoint=self.hf_endpoint,
+            )
+        ).open(mode="r", newline="", encoding="utf-8") as f:
+            old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
+        return [
+            yaml_field
+            for yaml_field in set(dataset_card_data_dict) & set(old_dataset_card_data_dict)
+            if dataset_card_data_dict.get(yaml_field) != old_dataset_card_data_dict.get(yaml_field)
+        ]
 
 
 @dataclass
@@ -897,7 +1002,10 @@ def set_revision(
 def smart_set_revision(
     dataset: str,
     revision: str,
+    hf_endpoint: str,
     processing_graph: ProcessingGraph = processing_graph,
+    storage_clients: Optional[list[StorageClient]] = None,
+    hf_token: Optional[str] = None,
 ) -> TasksStatistics:
     """
     Set the current revision of the dataset in a smarter way.
@@ -916,11 +1024,14 @@ def smart_set_revision(
     Returns:
         `TasksStatistics`: The statistics of the set_revision.
     """
-    logging.info(f"Analyzing {dataset}")
-    plan = SmartDatasetBackfillPlan(
+    logging.info(f"Analyzing {dataset} in a smart way")
+    plan = SmartDatasetUpdatePlan(
         dataset=dataset,
         revision=revision,
         processing_graph=processing_graph,
+        storage_clients=storage_clients,
+        hf_endpoint=hf_endpoint,
+        hf_token=hf_token,
     )
     logging.info(f"Applying smart_set_revision plan on {dataset}: plan={plan.as_response()}")
     return plan.run()
