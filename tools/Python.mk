@@ -13,6 +13,12 @@ lock:
 	$(POETRY) lock
 	$(POETRY) install
 
+.PHONY: lock-no-update
+lock-no-update:
+	rm -rf .venv/
+	$(POETRY) lock --no-update
+	$(POETRY) install
+
 # Check that source code meets quality standards + security
 .PHONY: quality
 quality:
