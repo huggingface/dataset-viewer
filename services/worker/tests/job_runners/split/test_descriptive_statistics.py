@@ -851,21 +851,6 @@ def test_image_statistics(
     assert computed == expected
 
 
-def test_bytes(tmp_path, datasets, tmp_path_factory):
-    import pyarrow as pa
-    parquet_directory = tmp_path_factory.mktemp("data")
-    parquet_filename = parquet_directory / "data.parquet"
-    # expected = image_statistics_expected["statistics"]["image"]["column_statistics"]
-    images = datasets["image_statistics"]["image"][:]
-    pa_table_bytes = pa.Table.from_pydict({"image": [open(image["path"], "rb").read() for image in images]})
-    pq.write_table(pa_table_bytes, parquet_filename)#, row_group_size=2)
-    computed = ImageColumn.compute_statistics(
-        parquet_directory=parquet_directory,
-        column_name="image",
-        n_samples=4,
-    )
-
-
 @pytest.mark.parametrize(
     "hub_dataset_name,expected_error_code",
     [
