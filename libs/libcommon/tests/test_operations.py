@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 from huggingface_hub.hf_api import DatasetInfo, HfApi
 from huggingface_hub.utils import HfHubHTTPError
-from requests import Response  # type: ignore
+from requests import Response
 
 from libcommon.constants import CONFIG_SPLIT_NAMES_KIND, DATASET_CONFIG_NAMES_KIND
 from libcommon.dtos import JobResult

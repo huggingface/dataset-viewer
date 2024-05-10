@@ -834,6 +834,7 @@ class SmartDatasetUpdatePlan(Plan):
 
     old_revision: str = field(init=False)
     diff: str = field(init=False)
+    files_impacted_by_commit: set[str] = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -846,13 +847,13 @@ class SmartDatasetUpdatePlan(Plan):
         )
         if len(cache_entries_df) == 0:
             raise SmartUpdateImpossibleBecauseCacheIsEmpty()
-        self.old_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["revision"]
+        self.old_revision = cache_entries_df.sort_values("updated_at").iloc[-1]["dataset_git_revision"]
         if self.old_revision == self.revision:
             return
         self.diff = self.get_diff()
-        files_impacted_by_commit = self.get_impacted_files()
-        if files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
-            raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(files_impacted_by_commit)[:1000])
+        self.files_impacted_by_commit = self.get_impacted_files()
+        if self.files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
+            raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
         updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
         if "dataset_info" in updated_yaml_fields_in_dataset_card:
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("dataset_info")

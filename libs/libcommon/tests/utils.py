@@ -2,15 +2,18 @@
 # Copyright 2023 The HuggingFace Authors.
 
 import itertools
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 from http import HTTPStatus
 from typing import Any, Optional
+from unittest.mock import patch
 
 from datasets import Dataset
 
 from libcommon.dtos import JobInfo, Priority, RowsContent
-from libcommon.orchestrator import DatasetBackfillPlan
+from libcommon.orchestrator import DatasetBackfillPlan, SmartDatasetUpdatePlan
 from libcommon.processing_graph import Artifact, ProcessingGraph
 from libcommon.queue import JobTotalMetricDocument, Queue, WorkerSizeJobsCountDocument
 from libcommon.simple_cache import upsert_response
@@ -45,6 +48,7 @@ CACHE_KIND = "cache_kind"
 CONTENT_ERROR = {"error": "error"}
 JOB_TYPE = "job_type"
 DIFFICULTY = 50
+HF_ENDPOINT = "https://endpoint-that-doesnt-exist.huggingface.co"
 
 STEP_DATASET_A = "dataset-config-names"
 STEP_CONFIG_B = "config-split-names"
@@ -122,6 +126,25 @@ ARTIFACT_SA_2_2 = f"{STEP_SA},{DATASET_NAME},{REVISION_NAME},{CONFIG_NAME_2},{SP
 PROCESSING_GRAPH_ONE_STEP = ProcessingGraph(
     {
         STEP_DA: {"input_type": "dataset"},
+    }
+)
+
+
+# Graph to test only one step
+#
+#    +-------+
+#    | DA    |
+#    +-------+
+#      |
+#      |
+#    +-------+
+#    | DB    |
+#    +-------+
+#
+PROCESSING_GRAPH_TWO_STEPS = ProcessingGraph(
+    {
+        STEP_DA: {"input_type": "dataset"},
+        STEP_DB: {"input_type": "dataset", "triggered_by": [STEP_DA]},  # child
     }
 )
 
@@ -234,6 +257,20 @@ def get_dataset_backfill_plan(
     )
 
 
+def get_smart_dataset_update_plan(
+    processing_graph: ProcessingGraph,
+    dataset: str = DATASET_NAME,
+    revision: str = REVISION_NAME,
+    hf_endpoint: str = HF_ENDPOINT,
+) -> SmartDatasetUpdatePlan:
+    return SmartDatasetUpdatePlan(
+        dataset=dataset,
+        revision=revision,
+        hf_endpoint=hf_endpoint,
+        processing_graph=processing_graph,
+    )
+
+
 def assert_equality(value: Any, expected: Any, context: Optional[str] = None) -> None:
     report = {"expected": expected, "got": value}
     if context is not None:
@@ -269,6 +306,13 @@ def assert_dataset_backfill_plan(
         context="queue_status",
     )
     assert_equality(dataset_backfill_plan.as_response(), sorted(tasks), context="tasks")
+
+
+def assert_smart_dataset_update_plan(
+    smart_dataset_update_plan: SmartDatasetUpdatePlan,
+    tasks: list[str],
+) -> None:
+    assert_equality(smart_dataset_update_plan.as_response(), sorted(tasks), context="tasks")
 
 
 def put_cache(
@@ -317,6 +361,21 @@ def put_cache(
         updated_at=updated_at,
         failed_runs=failed_runs,
     )
+
+
+@contextmanager
+def put_diff(
+    diff: str,
+    dataset: str = DATASET_NAME,
+    revision: str = REVISION_NAME,
+) -> Iterator[None]:
+    def mock_get_diff(self: SmartDatasetUpdatePlan = None) -> str:
+        if self.dataset == dataset and self.revision == revision:
+            return diff
+        raise RuntimeError(f"No diff for {dataset}@{self.revision}")
+
+    with patch.object(SmartDatasetUpdatePlan, "get_diff", mock_get_diff):
+        yield
 
 
 def process_next_job() -> None:
