@@ -616,11 +616,14 @@ def retry_validate_get_features_num_examples_size_and_compression_ratio(
     try:
         f = retry(on=[pa.ArrowInvalid], sleeps=SLEEPS)(open_file)(url, hf_endpoint, hf_token)
         pf, size = pq.ParquetFile(f), f.size
-        if validate:
-            validate(pf)
+        num_row_groups = pf.metadata.num_row_groups
+        compression_ratio = 0
+        if num_row_groups > 0:
+            if validate:
+                validate(pf)
+            first_row_group = pf.read_row_group(0)
+            compression_ratio = first_row_group.nbytes / first_row_group.num_rows
         features = Features.from_arrow_schema(pf.schema_arrow)
-        first_row_group = pf.read_row_group(0)
-        compression_ratio = first_row_group.nbytes / first_row_group.num_rows
         num_examples = pf.metadata.num_rows
         f.close()
         return features, num_examples, size, compression_ratio
