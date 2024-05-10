@@ -2,9 +2,9 @@
 # Copyright 2023 The HuggingFace Authors.
 import enum
 import io
-from functools import partial
 import logging
 from collections import Counter
+from functools import partial
 from pathlib import Path
 from typing import Any, Optional, TypedDict, Union
 
@@ -596,7 +596,7 @@ class MediaColumn(Column):
         column_type = pq.read_schema(filename).field(column_name).type
         if pa.types.is_struct(column_type):
             return True
-        elif pa.types.is_binary(column_type):
+        elif pa.types.is_binary(column_type) or pa.types.is_null(column_type):
             return False
         else:
             raise ValueError(
