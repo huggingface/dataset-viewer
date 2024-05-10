@@ -2,6 +2,7 @@
 # Copyright 2023 The HuggingFace Authors.
 import enum
 import io
+from functools import partial
 import logging
 from collections import Counter
 from pathlib import Path
@@ -613,13 +614,13 @@ class MediaColumn(Column):
         parquet_files = list(parquet_directory.glob("*.parquet"))
         is_struct = cls.is_struct_type(parquet_files[0], column_name)
         transformed_values = []
+        transform_func = partial(cls.transform, is_struct=is_struct)
         for filename in parquet_files:
             shard_items = pq.read_table(filename, columns=[column_name]).drop_null().to_pydict()[column_name]
             shard_transformed_values = (
                 thread_map(
-                    cls.transform,
+                    transform_func,
                     shard_items,
-                    is_struct,
                     desc=f"Transforming values of {cls.__name__} {column_name} for {filename.name}",
                     leave=False,
                 )
