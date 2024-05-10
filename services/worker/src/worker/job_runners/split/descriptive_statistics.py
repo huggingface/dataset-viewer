@@ -676,7 +676,7 @@ class AudioColumn(MediaColumn):
         """Get audio durations"""
         if example is None:
             return None
-        example_bytes = example["bytes"] if is_struct else example
+        example_bytes = example["bytes"] if is_struct else example  # type: ignore
         with io.BytesIO(example_bytes) as f:
             return librosa.get_duration(path=f)  # type: ignore   # expects PathLike but BytesIO also works
 
@@ -693,7 +693,7 @@ class ImageColumn(MediaColumn):
         """Get image widths."""
         if example is None:
             return None
-        example_bytes = example["bytes"] if is_struct else example
+        example_bytes = example["bytes"] if is_struct else example  # type: ignore
         with io.BytesIO(example_bytes) as f:
             image = Image.open(f)
             return image.size[0]
