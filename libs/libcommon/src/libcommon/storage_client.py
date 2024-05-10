@@ -8,8 +8,8 @@ import fsspec
 from fsspec.implementations.local import LocalFileSystem
 from s3fs import S3FileSystem  # type: ignore
 
-from libcommon.constants import DATASET_SEPARATOR
 from libcommon.config import S3Config, StorageProtocol
+from libcommon.constants import DATASET_SEPARATOR
 from libcommon.url_signer import URLSigner
 
 
@@ -132,10 +132,14 @@ class StorageClient:
         new_dataset_revision_key = self.get_full_path(f"{parse.quote(dataset)}/{DATASET_SEPARATOR}/{new_revision}")
         try:
             self._fs.mv(old_dataset_revision_key, new_dataset_revision_key, recursive=True)
-            logging.info(f"Revision of the directory updated: {old_dataset_revision_key} -> {new_dataset_revision_key}")
+            logging.info(
+                f"Revision of the directory updated: {old_dataset_revision_key} -> {new_dataset_revision_key}"
+            )
             return 1
         except Exception:
-            logging.warning(f"Could not update the revision of directory {old_dataset_revision_key} to {new_dataset_revision_key}")
+            logging.warning(
+                f"Could not update the revision of directory {old_dataset_revision_key} to {new_dataset_revision_key}"
+            )
             return 0
 
     def __repr__(self) -> str:

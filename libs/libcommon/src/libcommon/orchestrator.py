@@ -181,7 +181,7 @@ class DeleteDatasetWaitingJobsTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetJobs,{len(self.dataset)}"
+        self.id = "DeleteDatasetJobs,1"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -205,7 +205,7 @@ class DeleteDatasetCacheEntriesTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetCacheEntries,{len(self.dataset)}"
+        self.id = "DeleteDatasetCacheEntries,1"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -231,7 +231,7 @@ class UpdateRevisionOfDatasetCacheEntriesTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"UpdateRevisionOfDatasetCacheEntriesTask,{len(self.dataset)}"
+        self.id = "UpdateRevisionOfDatasetCacheEntriesTask,1"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -260,7 +260,7 @@ class DeleteDatasetStorageTask(Task):
 
     def __post_init__(self) -> None:
         # for debug and testing
-        self.id = f"DeleteDatasetStorageTask,{self.dataset},{self.storage_client}"
+        self.id = f"DeleteDatasetStorageTask,{self.dataset},1"
         self.long_id = self.id
 
     def run(self) -> TasksStatistics:
@@ -835,6 +835,7 @@ class SmartDatasetUpdatePlan(Plan):
     old_revision: str = field(init=False)
     diff: str = field(init=False)
     files_impacted_by_commit: set[str] = field(init=False)
+    updated_yaml_fields_in_dataset_card: list[str] = field(init=False)
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -854,10 +855,10 @@ class SmartDatasetUpdatePlan(Plan):
         self.files_impacted_by_commit = self.get_impacted_files()
         if self.files_impacted_by_commit - {"README.md", ".gitattributes", ".gitignore"}:
             raise SmartUpdateImpossibleBecauseOfUpdatedFiles(", ".join(self.files_impacted_by_commit)[:1000])
-        updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
-        if "dataset_info" in updated_yaml_fields_in_dataset_card:
+        self.updated_yaml_fields_in_dataset_card = self.get_updated_yaml_fields_in_dataset_card()
+        if "dataset_info" in self.updated_yaml_fields_in_dataset_card:
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("dataset_info")
-        if "configs" in updated_yaml_fields_in_dataset_card:
+        if "configs" in self.updated_yaml_fields_in_dataset_card:
             raise SmartUpdateImpossibleBecauseOfUpdatedYAMLField("configs")
         self.add_task(
             UpdateRevisionOfDatasetCacheEntriesTask(
@@ -892,31 +893,39 @@ class SmartDatasetUpdatePlan(Plan):
         )
 
     def get_updated_yaml_fields_in_dataset_card(self) -> list[str]:
-        with Path(
-            hf_hub_download(
-                self.dataset,
-                "README.md",
-                repo_type="dataset",
-                token=self.hf_token,
-                revison=self.revision,
-                endpoint=self.hf_endpoint,
-            )
-        ).open(mode="r", newline="", encoding="utf-8") as f:
-            dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
-        with Path(
-            hf_hub_download(
-                self.dataset,
-                "README.md",
-                repo_type="dataset",
-                token=self.hf_token,
-                revison=self.old_revision,
-                endpoint=self.hf_endpoint,
-            )
-        ).open(mode="r", newline="", encoding="utf-8") as f:
-            old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
+        if "README.md" not in self.files_impacted_by_commit:
+            return []
+        try:
+            with Path(
+                hf_hub_download(
+                    self.dataset,
+                    "README.md",
+                    repo_type="dataset",
+                    token=self.hf_token,
+                    revision=self.revision,
+                    endpoint=self.hf_endpoint,
+                )
+            ).open(mode="r", newline="", encoding="utf-8") as f:
+                dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
+        except Exception:
+            dataset_card_data_dict = {}
+        try:
+            with Path(
+                hf_hub_download(
+                    self.dataset,
+                    "README.md",
+                    repo_type="dataset",
+                    token=self.hf_token,
+                    revision=self.old_revision,
+                    endpoint=self.hf_endpoint,
+                )
+            ).open(mode="r", newline="", encoding="utf-8") as f:
+                old_dataset_card_data_dict = DatasetCard(f.read()).data.to_dict()
+        except Exception:
+            old_dataset_card_data_dict = {}
         return [
             yaml_field
-            for yaml_field in set(dataset_card_data_dict) & set(old_dataset_card_data_dict)
+            for yaml_field in set(dataset_card_data_dict) | set(old_dataset_card_data_dict)
             if dataset_card_data_dict.get(yaml_field) != old_dataset_card_data_dict.get(yaml_field)
         ]
 

@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 from http import HTTPStatus
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Optional
 from unittest.mock import patch
 
@@ -311,7 +313,15 @@ def assert_dataset_backfill_plan(
 def assert_smart_dataset_update_plan(
     smart_dataset_update_plan: SmartDatasetUpdatePlan,
     tasks: list[str],
+    files_impacted_by_commit: Optional[list[str]] = None,
+    updated_yaml_fields_in_dataset_card: Optional[list[str]] = None,
 ) -> None:
+    if files_impacted_by_commit is not None:
+        assert_equality(smart_dataset_update_plan.files_impacted_by_commit, set(files_impacted_by_commit))
+    if updated_yaml_fields_in_dataset_card is not None:
+        assert_equality(
+            smart_dataset_update_plan.updated_yaml_fields_in_dataset_card, updated_yaml_fields_in_dataset_card
+        )
     assert_equality(smart_dataset_update_plan.as_response(), sorted(tasks), context="tasks")
 
 
@@ -369,13 +379,38 @@ def put_diff(
     dataset: str = DATASET_NAME,
     revision: str = REVISION_NAME,
 ) -> Iterator[None]:
-    def mock_get_diff(self: SmartDatasetUpdatePlan = None) -> str:
+    original_get_diff = SmartDatasetUpdatePlan.get_diff
+
+    def mock_get_diff(self: SmartDatasetUpdatePlan) -> str:
         if self.dataset == dataset and self.revision == revision:
             return diff
-        raise RuntimeError(f"No diff for {dataset}@{self.revision}")
+        return original_get_diff(self)
 
     with patch.object(SmartDatasetUpdatePlan, "get_diff", mock_get_diff):
         yield
+
+
+@contextmanager
+def put_readme(
+    readme: str,
+    dataset: str = DATASET_NAME,
+    revision: str = REVISION_NAME,
+) -> Iterator[None]:
+    mocked_revision = revision
+    from libcommon.orchestrator import hf_hub_download as original_hf_hub_download  # type: ignore[attr-defined]
+
+    with NamedTemporaryFile() as temp_file:
+        Path(temp_file.name).write_text(readme, encoding="utf-8")
+
+        def mock_hf_hub_download(repo_id: str, filename: str, revision: str, **kwargs: Any) -> str:
+            if filename == "README.md" and dataset == repo_id and mocked_revision == revision:
+                return temp_file.name
+            out = original_hf_hub_download(repo_id, filename, revision=revision, **kwargs)
+            assert isinstance(out, str)
+            return out
+
+        with patch("libcommon.orchestrator.hf_hub_download", mock_hf_hub_download):
+            yield
 
 
 def process_next_job() -> None:
