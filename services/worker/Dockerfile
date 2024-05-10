@@ -19,6 +19,21 @@ RUN apt-get update \
     && apt-get install -y unzip wget procps htop ffmpeg libavcodec-extra libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Install libsndfile 1.2.2 from source because the version distributed by the package manager at the moment is 1.2.0 (see details here: https://github.com/libsndfile/libsndfile)
+# See issue with opus fomat: https://github.com/huggingface/dataset-viewer/issues/2584
+RUN apt-get update \
+    && apt-get install -y autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config git;
+WORKDIR /tmp
+RUN git clone --depth=1 --branch=1.2.2 https://github.com/libsndfile/libsndfile.git;
+WORKDIR /tmp/libsndfile
+RUN autoreconf -vif;
+RUN /tmp/libsndfile/configure --enable-werror;
+RUN make;
+RUN make install;
+RUN ldconfig;
+WORKDIR /tmp
+RUN rm -rf /tmp/libsndfile
+
 RUN pip install -U pip
 RUN pip install "poetry==$POETRY_VERSION"
 
